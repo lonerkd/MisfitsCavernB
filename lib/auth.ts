@@ -1,12 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!
-);
 
 export async function signUp(email: string, username: string, password: string) {
   try {

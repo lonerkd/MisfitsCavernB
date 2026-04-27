@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './prisma';
 import { parseScript } from './scriptos/parser';
-
-const prisma = new PrismaClient();
 
 export async function createScript(
   userId: string,
