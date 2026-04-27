@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ CORE MODELS ============
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  username          String    @unique
+  password_hash     String
+  
+  // Profile
+  avatar            String?
+  bio               String?
+  location          String?
+  
+  // Tier system (Free, Creator, Studio)
+  tier              String    @default("FREE")
+  tier_expires      DateTime?
+  
+  // Creator metadata
+  specialty         String?   // JSON: ["Director", "Writer"]
+  hourly_rate       Float?
+  availability      String    @default("available")
+  
+  // Social stats
+  followers_count   Int       @default(0)
+  following_count   Int       @default(0)
+  
+  // Relations
+  projects          Project[]
+  scripts           Script[]
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  
+  @@map("users")
+}
+
+model Script {
+  id                String    @id @default(cuid())
+  user_id           String
+  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  title             String
+  content           String    @db.Text
+  status            String    @default("draft")
+  visibility        String    @default("private")
+  
+  // Parsed data (from ScriptOS)
+  characters        String?   @db.Text // JSON array
+  scenes            String?   @db.Text // JSON array
+  
+  // Metadata
+  page_count        Int       @default(0)
+  word_count        Int       @default(0)
+  
+  // Project link
+  project_id        String?
+  project           Project?  @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  
+  @@index([user_id])
+  @@map("scripts")
+}
+
+model Project {
+  id                String    @id @default(cuid())
+  creator_id        String
+  creator           User      @relation(fields: [creator_id], references: [id], onDelete: Cascade)
+  
+  title             String
+  description       String?   @db.Text
+  status            String    @default("concept")
+  genre             String?
+  
+  // Visual
+  cover_image       String?   // URL to R2
+  trailer_video     String?   // URL to R2
+  
+  // Visibility
+  visibility        String    @default("private")
+  featured          Boolean   @default(false)
+  
+  // Relations
+  scripts           Script[]
+  assets            ProjectAsset[]
+  
+  // Stats
+  views             Int       @default(0)
+  likes             Int       @default(0)
+  
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  
+  @@index([creator_id])
+  @@map("projects")
+}
+
+model ProjectAsset {
+  id                String    @id @default(cuid())
+  project_id        String
+  project           Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  
+  title             String
+  type              String    // "storyboard", "concept", "video", "still", "document"
+  url               String    // R2 URL
+  description       String?
+  
+  created_at        DateTime  @default(now())
+  
+  @@index([project_id])
+  @@map("project_assets")
+}
+
+model Message {
+  id                String    @id @default(cuid())
+  user_id           String
+  project_id        String?
+  
+  content           String    @db.Text
+  is_edited         Boolean   @default(false)
+  
+  created_at        DateTime  @default(now())
+  
+  @@map("messages")
+}
