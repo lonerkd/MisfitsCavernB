@@ -163,7 +163,6 @@ model TimelineItem {
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
   
-  @@unique([project_id, id])
   @@index([project_id])
   @@map("timeline_items")
 }
@@ -181,7 +180,6 @@ model BudgetItem {
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
   
-  @@unique([project_id, id])
   @@index([project_id])
   @@map("budget_items")
 }
@@ -198,7 +196,6 @@ model ProjectComment {
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
   
-  @@unique([project_id, id])
   @@index([project_id])
   @@index([user_id])
   @@map("project_comments")
