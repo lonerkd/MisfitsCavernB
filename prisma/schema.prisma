@@ -92,9 +92,17 @@ model Project {
   visibility        String    @default("private")
   featured          Boolean   @default(false)
   
+  // Budget & Timeline (Phase 3)
+  budget            Float?
+  deadline          DateTime?
+  
   // Relations
   scripts           Script[]
   assets            ProjectAsset[]
+  crew              ProjectCrew[]
+  timeline          TimelineItem[]
+  budget_items      BudgetItem[]
+  comments          ProjectComment[]
   
   // Stats
   views             Int       @default(0)
@@ -121,6 +129,79 @@ model ProjectAsset {
   
   @@index([project_id])
   @@map("project_assets")
+}
+
+model ProjectCrew {
+  id            String    @id @default(cuid())
+  project_id    String
+  project       Project   @relation("crew", fields: [project_id], references: [id], onDelete: Cascade)
+  user_id       String
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  role          String    // "Director", "Producer", "Writer", "DP", etc.
+  hourly_rate   Float?
+  assigned_at   DateTime  @default(now())
+  
+  @@unique([project_id, user_id])
+  @@index([project_id])
+  @@index([user_id])
+  @@map("project_crews")
+}
+
+model TimelineItem {
+  id            String    @id @default(cuid())
+  project_id    String
+  project       Project   @relation("timeline", fields: [project_id], references: [id], onDelete: Cascade)
+  
+  phase         String    // "Development", "Pre-Production", "Production", "Post", "Release"
+  title         String
+  description   String?   @db.Text
+  start_date    DateTime
+  end_date      DateTime
+  completion    Int       @default(0) // 0-100%
+  
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  
+  @@unique([project_id, id])
+  @@index([project_id])
+  @@map("timeline_items")
+}
+
+model BudgetItem {
+  id            String    @id @default(cuid())
+  project_id    String
+  project       Project   @relation("budget_items", fields: [project_id], references: [id], onDelete: Cascade)
+  
+  category      String    // "Crew", "Equipment", "Location", "Post-Production", etc.
+  description   String
+  amount        Float
+  actual_cost   Float?    @default(0)
+  
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  
+  @@unique([project_id, id])
+  @@index([project_id])
+  @@map("budget_items")
+}
+
+model ProjectComment {
+  id            String    @id @default(cuid())
+  project_id    String
+  project       Project   @relation("comments", fields: [project_id], references: [id], onDelete: Cascade)
+  user_id       String
+  
+  content       String    @db.Text
+  is_edited     Boolean   @default(false)
+  
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  
+  @@unique([project_id, id])
+  @@index([project_id])
+  @@index([user_id])
+  @@map("project_comments")
 }
 
 model Message {
