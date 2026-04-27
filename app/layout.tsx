@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import dynamic from 'next/dynamic';
 import './globals.css';
+import { ToastProvider } from '@/components/Toast';
+
+const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 
 export const metadata: Metadata = {
-  title: 'Misfits Cavern - Creative Collaboration Platform',
-  description: 'The creative collaboration platform featuring ScriptOS screenwriting, portfolio showcase, and immersive design.',
+  title: 'Misfits Cavern — Creative Collaboration Platform',
+  description: 'The ultimate creative platform for screenwriting, portfolio showcase, and immersive digital collaboration.',
 };
 
 export const viewport: Viewport = {
@@ -11,11 +15,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
@@ -24,7 +24,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
       </head>
       <body>
-        {children}
+        <ToastProvider>
+          <CustomCursor />
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

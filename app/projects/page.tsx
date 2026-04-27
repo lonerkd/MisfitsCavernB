@@ -1,20 +1,25 @@
 'use client';
 
-import React from 'react';
-import { ArrowLeft, Calendar, Users, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Calendar, Users, Clock, Plus, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
+import SectionLabel from '@/components/SectionLabel';
+
+type Status = 'Pre-Production' | 'Production' | 'Post-Production' | 'Complete';
 
 interface Project {
   id: string;
   title: string;
   type: string;
-  status: 'Pre-Production' | 'Production' | 'Post-Production' | 'Complete';
+  status: Status;
   progress: number;
   deadline: string;
   team: string[];
   description: string;
+  color: string;
 }
 
 const PROJECTS: Project[] = [
@@ -26,7 +31,8 @@ const PROJECTS: Project[] = [
     progress: 85,
     deadline: '2026-06-30',
     team: ['Peter Olowude', 'Creative Team', 'Production'],
-    description: '133-page political noir screenplay submitted to A24 and Proximity Media'
+    description: '133-page political noir screenplay submitted to A24 and Proximity Media.',
+    color: '#ff3c00',
   },
   {
     id: '2',
@@ -36,7 +42,8 @@ const PROJECTS: Project[] = [
     progress: 95,
     deadline: '2026-05-15',
     team: ['Peter Olowude', 'Editor'],
-    description: 'High-energy visual rhythm. Every cut lands on the beat.'
+    description: 'High-energy visual rhythm. Final color grade and mix in progress.',
+    color: '#ffaa00',
   },
   {
     id: '3',
@@ -46,38 +53,125 @@ const PROJECTS: Project[] = [
     progress: 100,
     deadline: '2024-12-01',
     team: ['Peter Olowude', 'Cast', 'Crew'],
-    description: 'Crime thriller about two couriers and a mysterious delivery'
-  }
+    description: 'Crime thriller about two couriers and a deal that has to go right.',
+    color: '#00cc66',
+  },
 ];
 
-function StatusBadge({ status }: { status: string }) {
-  const getColor = () => {
-    switch (status) {
-      case 'Complete':
-        return '#00ff00';
-      case 'Post-Production':
-        return '#ffaa00';
-      case 'Production':
-        return 'var(--accent)';
-      default:
-        return '#666';
-    }
-  };
+const STATUS_COLORS: Record<Status, string> = {
+  'Pre-Production': '#888',
+  'Production': '#ff3c00',
+  'Post-Production': '#ffaa00',
+  'Complete': '#00cc66',
+};
 
+function StatusBadge({ status }: { status: Status }) {
   return (
-    <span
-      style={{
-        fontSize: 9,
-        letterSpacing: 2,
-        padding: '4px 10px',
-        border: `1px solid ${getColor()}`,
-        color: getColor(),
-        textTransform: 'uppercase',
-        fontFamily: 'var(--mono)'
-      }}
-    >
+    <span style={{
+      fontSize: 8,
+      letterSpacing: 2,
+      padding: '5px 12px',
+      border: `1px solid ${STATUS_COLORS[status]}55`,
+      color: STATUS_COLORS[status],
+      textTransform: 'uppercase',
+      fontFamily: 'var(--mono)',
+      borderRadius: 'var(--radius-sm)',
+      flexShrink: 0,
+    }}>
       {status}
     </span>
+  );
+}
+
+function ProjectCard({ project, index }: { project: Project; index: number }) {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <AnimatedSection delay={index * 0.1}>
+      <motion.div
+        onHoverStart={() => setHover(true)}
+        onHoverEnd={() => setHover(false)}
+        style={{
+          padding: 32,
+          background: 'var(--bg-2)',
+          border: `1px solid ${hover ? project.color + '33' : 'var(--border)'}`,
+          transition: 'border-color 0.4s, box-shadow 0.4s',
+          boxShadow: hover ? `0 20px 60px rgba(0,0,0,0.8), 0 0 40px ${project.color}08` : 'none',
+          borderRadius: 'var(--radius-sm)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Ghost number */}
+        <div style={{
+          position: 'absolute',
+          top: -20,
+          right: 20,
+          fontFamily: 'var(--display)',
+          fontSize: '8rem',
+          lineHeight: 1,
+          color: 'rgba(255,255,255,0.015)',
+          letterSpacing: -4,
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}>
+          {String(index + 1).padStart(2, '0')}
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 8, letterSpacing: 4, textTransform: 'uppercase', color: project.color, fontFamily: 'var(--mono)', marginBottom: 6 }}>
+                {project.type}
+              </div>
+              <h3 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', letterSpacing: 2 }}>
+                {project.title}
+              </h3>
+            </div>
+            <StatusBadge status={project.status} />
+          </div>
+
+          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--fg-muted)', marginBottom: 22 }}>
+            {project.description}
+          </p>
+
+          {/* Meta row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 14,
+            padding: '16px 0',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            marginBottom: 18,
+          }}>
+            {[
+              { Icon: Calendar, label: 'Deadline', value: new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) },
+              { Icon: Users, label: 'Team', value: `${project.team.length} Members` },
+              { Icon: Clock, label: 'Progress', value: `${project.progress}%` },
+            ].map(({ Icon, label, value }) => (
+              <div key={label}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 8, color: 'var(--fg-subtle)', marginBottom: 5, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                  <Icon size={9} /> {label}
+                </div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)' }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ height: 2, background: '#1a1a1a', overflow: 'hidden', borderRadius: 1 }}>
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: `${project.progress}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: index * 0.1 + 0.3 }}
+              style={{ height: '100%', background: project.color, borderRadius: 1 }}
+            />
+          </div>
+        </div>
+      </motion.div>
+    </AnimatedSection>
   );
 }
 
@@ -86,201 +180,90 @@ export default function ProjectsPage() {
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      {/* Header */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          padding: '18px 32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 100,
-          background: 'rgba(8, 8, 8, 0.8)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)'
-        }}
-      >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-          <ArrowLeft size={18} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 6, color: 'var(--fg)' }}>
-            PROJECTS
-          </div>
+      {/* Nav */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, width: '100%',
+        padding: '0 28px', height: 62,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 100,
+        background: 'rgba(8,8,8,0.92)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <ArrowLeft size={17} color="var(--fg)" />
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>PROJECTS</div>
         </Link>
 
-        <button className="link-btn">+ New Project</button>
+        <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Plus size={11} /> New Project
+        </button>
       </nav>
 
-      {/* Projects Section */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 18px 90px' }}>
+      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '100px 20px 80px' }}>
+
         <AnimatedSection>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
-            <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-            <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-              Production Pipeline — {PROJECTS.length} Active
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gap: 24 }}>
-            {PROJECTS.map((project, i) => (
-              <AnimatedSection key={project.id} delay={i * 0.1}>
-                <div
-                  style={{
-                    padding: 32,
-                    background: '#0a0a0a',
-                    border: '1px solid rgba(255, 255, 255, 0.04)',
-                    transition: 'all 0.3s'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 60, 0, 0.3)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.04)')}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 16 }}>
-                    <div>
-                      <span
-                        style={{
-                          fontSize: 8,
-                          letterSpacing: 3,
-                          textTransform: 'uppercase',
-                          color: 'var(--accent)',
-                          fontFamily: 'var(--mono)'
-                        }}
-                      >
-                        {project.type}
-                      </span>
-                      <h3
-                        style={{
-                          fontFamily: 'var(--display)',
-                          fontSize: '2rem',
-                          letterSpacing: 2,
-                          marginTop: 6
-                        }}
-                      >
-                        {project.title}
-                      </h3>
-                    </div>
-                    <StatusBadge status={project.status} />
-                  </div>
-
-                  <p
-                    style={{
-                      fontFamily: 'var(--serif)',
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      opacity: 0.6,
-                      marginBottom: 20
-                    }}
-                  >
-                    {project.description}
-                  </p>
-
-                  {/* Project Meta */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: 16,
-                      padding: '16px 0',
-                      borderTop: '1px solid rgba(255, 255, 255, 0.04)',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                      marginBottom: 16
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                        <Calendar size={10} /> Deadline
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>
-                        {new Date(project.deadline).toLocaleDateString()}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                        <Users size={10} /> Team
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>
-                        {project.team.length} Members
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                        <Clock size={10} /> Progress
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>
-                        {project.progress}%
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div style={{ height: 3, background: '#1a1a1a', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${project.progress}%`,
-                        background: 'var(--accent)',
-                        transition: 'width 0.5s'
-                      }}
-                    />
-                  </div>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
+          <SectionLabel text={`Production Pipeline — ${PROJECTS.length} Active`} />
         </AnimatedSection>
 
-        {/* Timeline View */}
-        <AnimatedSection delay={0.3}>
-          <div style={{ marginTop: 80 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
-              <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-              <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-                Production Timeline
-              </span>
-            </div>
+        {/* Project cards */}
+        <div style={{ display: 'grid', gap: 18, marginBottom: 90 }}>
+          {PROJECTS.map((p, i) => <ProjectCard key={p.id} project={p} index={i} />)}
+        </div>
 
-            <div style={{ position: 'relative', paddingLeft: 40 }}>
-              {/* Timeline line */}
-              <div
-                style={{
+        {/* Timeline */}
+        <AnimatedSection delay={0.2}>
+          <SectionLabel text="Production Timeline" />
+          <div style={{ position: 'relative', paddingLeft: 32 }}>
+            {/* Vertical line */}
+            <div style={{
+              position: 'absolute',
+              left: 8,
+              top: 4,
+              bottom: 4,
+              width: 1,
+              background: 'linear-gradient(to bottom, var(--accent), rgba(255,60,0,0))',
+            }} />
+
+            {PROJECTS.map((project, i) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, x: -16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                style={{ position: 'relative', marginBottom: i < PROJECTS.length - 1 ? 32 : 0 }}
+              >
+                {/* Dot */}
+                <div style={{
                   position: 'absolute',
-                  left: 12,
-                  top: 0,
-                  bottom: 0,
-                  width: 2,
-                  background: 'linear-gradient(to bottom, var(--accent), transparent)'
-                }}
-              />
+                  left: -24,
+                  top: 6,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: project.color,
+                  border: '2px solid var(--bg)',
+                  boxShadow: `0 0 10px ${project.color}55`,
+                }} />
 
-              {PROJECTS.map((project, i) => (
-                <div key={project.id} style={{ position: 'relative', marginBottom: 32 }}>
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: -28,
-                      top: 6,
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: 'var(--accent)',
-                      border: '2px solid var(--bg)'
-                    }}
-                  />
-                  <div style={{ fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                    {new Date(project.deadline).toLocaleDateString()}
-                  </div>
-                  <div style={{ fontFamily: 'var(--display)', fontSize: 16, letterSpacing: 2 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', marginBottom: 4 }}>
+                  {new Date(project.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', letterSpacing: 2 }}>
                     {project.title}
                   </div>
-                  <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-                    {project.status} • {project.progress}% Complete
-                  </div>
+                  <ChevronRight size={12} style={{ color: project.color, opacity: 0.6 }} />
+                  <StatusBadge status={project.status} />
                 </div>
-              ))}
-            </div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', marginTop: 4 }}>
+                  {project.type} · {project.progress}% Complete
+                </div>
+              </motion.div>
+            ))}
           </div>
         </AnimatedSection>
       </section>
