@@ -39,6 +39,7 @@ model User {
   // Relations
   projects          Project[]
   scripts           Script[]
+  crew_assignments  ProjectCrew[] @relation("crew_assignments")
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   
@@ -99,10 +100,10 @@ model Project {
   // Relations
   scripts           Script[]
   assets            ProjectAsset[]
-  crew              ProjectCrew[]
-  timeline          TimelineItem[]
-  budget_items      BudgetItem[]
-  comments          ProjectComment[]
+  crew              ProjectCrew[] @relation("crew")
+  timeline          TimelineItem[] @relation("timeline")
+  budget_items      BudgetItem[] @relation("budget_items")
+  comments          ProjectComment[] @relation("comments")
   
   // Stats
   views             Int       @default(0)
@@ -136,7 +137,7 @@ model ProjectCrew {
   project_id    String
   project       Project   @relation("crew", fields: [project_id], references: [id], onDelete: Cascade)
   user_id       String
-  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user          User      @relation("crew_assignments", fields: [user_id], references: [id], onDelete: Cascade)
   
   role          String    // "Director", "Producer", "Writer", "DP", etc.
   hourly_rate   Float?

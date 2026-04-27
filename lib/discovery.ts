@@ -18,7 +18,7 @@ export async function getPublicPortfolios(filters?: {
           take: 3,
         },
         _count: {
-          select: { followers_count: true, projects: true },
+          select: { projects: true },
         },
       },
       take: 50,
