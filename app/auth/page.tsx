@@ -1,27 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const [formData, setFormData] = useState({
-    email: '',
-    username: '',
-    password: '',
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const [formData, setFormData] = useState({ email: '', username: '', password: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,25 +17,23 @@ export default function AuthPage() {
     setError('');
 
     try {
-      const endpoint = mode === 'signin' ? '/api/auth/signin' : '/api/auth/signup';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          mode === 'signin'
-            ? { email: formData.email, password: formData.password }
-            : formData
-        ),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Authentication failed');
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: { data: { username: formData.username } }
+        });
+        if (error) throw error;
+        // Profile auto-created via trigger
+        router.push('/profile');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+        if (error) throw error;
+        router.push('/');
       }
-
-      const user = await response.json();
-      localStorage.setItem('user', JSON.stringify(user));
-      router.push('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -56,99 +42,88 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white/5 border border-white/10 rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            MISFITS CAVERN
-          </h1>
-          <p className="text-white/60 mb-8">
-            {mode === 'signin'
-              ? 'Sign in to your creative workspace'
-              : 'Create your creator profile'}
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-white/80 text-sm mb-2">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full bg-white/10 border border-white/20 rounded px-4 py-2 text-white placeholder:text-white/40"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-
-            {mode === 'signup' && (
-              <div>
-                <label className="block text-white/80 text-sm mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="w-full bg-white/10 border border-white/20 rounded px-4 py-2 text-white placeholder:text-white/40"
-                  placeholder="lonerkid"
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-white/80 text-sm mb-2">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full bg-white/10 border border-white/20 rounded px-4 py-2 text-white placeholder:text-white/40"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            {error && <div className="text-red-400 text-sm">{error}</div>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-2 rounded transition"
-            >
-              {loading ? 'Loading...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-white/60 text-sm text-center">
-              {mode === 'signin'
-                ? "Don't have an account? "
-                : 'Already have an account? '}
-              <button
-                onClick={() => {
-                  setMode(mode === 'signin' ? 'signup' : 'signin');
-                  setError('');
-                }}
-                className="text-orange-400 hover:text-orange-300 font-semibold"
-              >
-                {mode === 'signin' ? 'Sign Up' : 'Sign In'}
-              </button>
-            </p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: 440, padding: 40 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 8, marginBottom: 8 }}>
+            MISFITS<br />CAVERN
           </div>
-
-          <div className="mt-6">
-            <Link
-              href="/"
-              className="text-white/40 hover:text-white/60 text-sm text-center block"
-            >
-              ← Back to home
-            </Link>
+          <div style={{ fontSize: 9, letterSpacing: 4, opacity: 0.4, fontFamily: 'var(--mono)' }}>
+            {mode === 'signup' ? 'JOIN THE CREATIVE COLLECTIVE' : 'WELCOME BACK, CREATOR'}
           </div>
         </div>
+
+        {/* Mode Toggle */}
+        <div style={{ display: 'flex', marginBottom: 32, border: '1px solid rgba(255,255,255,0.08)' }}>
+          {(['signin', 'signup'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)}
+              style={{
+                flex: 1, padding: 14, background: mode === m ? 'var(--accent)' : 'transparent',
+                color: mode === m ? 'var(--bg)' : 'var(--fg)', border: 'none',
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}>
+              {m === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
+          <div>
+            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, opacity: 0.5, display: 'block', marginBottom: 8 }}>
+              EMAIL
+            </label>
+            <input type="email" required value={formData.email}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
+              placeholder="creator@misfitscavern.com"
+              style={{ width: '100%', padding: 14, background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)',
+                fontFamily: 'var(--mono)', fontSize: 12, outline: 'none',
+                transition: 'border-color 0.2s' }} />
+          </div>
+
+          {mode === 'signup' && (
+            <div>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, opacity: 0.5, display: 'block', marginBottom: 8 }}>
+                USERNAME
+              </label>
+              <input type="text" required={mode === 'signup'} value={formData.username}
+                onChange={e => setFormData({ ...formData, username: e.target.value })}
+                placeholder="your_handle"
+                style={{ width: '100%', padding: 14, background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)',
+                  fontFamily: 'var(--mono)', fontSize: 12, outline: 'none' }} />
+            </div>
+          )}
+
+          <div>
+            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, opacity: 0.5, display: 'block', marginBottom: 8 }}>
+              PASSWORD
+            </label>
+            <input type="password" required value={formData.password}
+              onChange={e => setFormData({ ...formData, password: e.target.value })}
+              placeholder="••••••••••"
+              style={{ width: '100%', padding: 14, background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)',
+                fontFamily: 'var(--mono)', fontSize: 12, outline: 'none' }} />
+          </div>
+
+          {error && (
+            <div style={{ padding: 12, background: 'rgba(255,60,0,0.1)', border: '1px solid rgba(255,60,0,0.3)',
+              fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)' }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading}
+            style={{ padding: 16, background: loading ? 'rgba(255,60,0,0.5)' : 'var(--accent)',
+              color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)',
+              fontSize: 11, letterSpacing: 3, cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s', marginTop: 8 }}>
+            {loading ? 'ENTERING THE CAVERN...' : (mode === 'signin' ? 'ENTER' : 'JOIN')}
+          </button>
+        </form>
       </div>
     </div>
   );
