@@ -1,289 +1,355 @@
 'use client';
 
-import React from 'react';
-import { ArrowLeft, Calendar, Users, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Plus, Trash2, Check } from 'lucide-react';
 import Link from 'next/link';
-import GrainOverlay from '@/components/GrainOverlay';
-import AnimatedSection from '@/components/AnimatedSection';
+import { getAllProjects, createProject, updateProject, deleteProject, addTask, toggleTask, deleteTask, type Project } from '@/lib/storage/projects';
 
-interface Project {
-  id: string;
-  title: string;
-  type: string;
-  status: 'Pre-Production' | 'Production' | 'Post-Production' | 'Complete';
-  progress: number;
-  deadline: string;
-  team: string[];
-  description: string;
-}
+const STATUSES = ['concept', 'pre-prod', 'production', 'post', 'released'] as const;
 
-const PROJECTS: Project[] = [
-  {
-    id: '1',
-    title: 'Femme Fatale',
-    type: 'Limited Series',
-    status: 'Pre-Production',
-    progress: 85,
-    deadline: '2026-06-30',
-    team: ['Peter Olowude', 'Creative Team', 'Production'],
-    description: '133-page political noir screenplay submitted to A24 and Proximity Media'
-  },
-  {
-    id: '2',
-    title: '10 Million',
-    type: 'Music Video',
-    status: 'Post-Production',
-    progress: 95,
-    deadline: '2026-05-15',
-    team: ['Peter Olowude', 'Editor'],
-    description: 'High-energy visual rhythm. Every cut lands on the beat.'
-  },
-  {
-    id: '3',
-    title: 'The Briefcase',
-    type: 'Short Film',
-    status: 'Complete',
-    progress: 100,
-    deadline: '2024-12-01',
-    team: ['Peter Olowude', 'Cast', 'Crew'],
-    description: 'Crime thriller about two couriers and a mysterious delivery'
-  }
-];
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [newProjectTitle, setNewProjectTitle] = useState('');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
 
-function StatusBadge({ status }: { status: string }) {
-  const getColor = () => {
-    switch (status) {
-      case 'Complete':
-        return '#00ff00';
-      case 'Post-Production':
-        return '#ffaa00';
-      case 'Production':
-        return 'var(--accent)';
-      default:
-        return '#666';
+  useEffect(() => {
+    const loaded = getAllProjects();
+    setProjects(loaded);
+    if (loaded.length > 0) {
+      setSelectedProject(loaded[0]);
+    }
+  }, []);
+
+  const handleCreateProject = () => {
+    if (newProjectTitle.trim()) {
+      const newProject = createProject(newProjectTitle);
+      setProjects([...projects, newProject]);
+      setSelectedProject(newProject);
+      setNewProjectTitle('');
+    }
+  };
+
+  const handleDeleteProject = (id: string) => {
+    if (deleteProject(id)) {
+      setProjects(projects.filter((p) => p.id !== id));
+      if (selectedProject?.id === id) {
+        setSelectedProject(projects.find((p) => p.id !== id) || null);
+      }
+    }
+  };
+
+  const handleStatusChange = (projectId: string, newStatus: string) => {
+    const updated = updateProject(projectId, { status: newStatus as any });
+    setProjects(projects.map((p) => (p.id === projectId ? updated : p)));
+    if (selectedProject?.id === projectId) {
+      setSelectedProject(updated);
+    }
+  };
+
+  const handleAddTask = (projectId: string) => {
+    if (newTaskTitle.trim()) {
+      const project = projects.find((p) => p.id === projectId);
+      if (project) {
+        addTask(projectId, newTaskTitle);
+        const updated = getAllProjects().find((p) => p.id === projectId);
+        if (updated) {
+          setProjects(projects.map((p) => (p.id === projectId ? updated : p)));
+          if (selectedProject?.id === projectId) {
+            setSelectedProject(updated);
+          }
+          setNewTaskTitle('');
+        }
+      }
+    }
+  };
+
+  const handleToggleTask = (projectId: string, taskId: string) => {
+    toggleTask(projectId, taskId);
+    const updated = getAllProjects().find((p) => p.id === projectId);
+    if (updated) {
+      setProjects(projects.map((p) => (p.id === projectId ? updated : p)));
+      if (selectedProject?.id === projectId) {
+        setSelectedProject(updated);
+      }
+    }
+  };
+
+  const handleDeleteTask = (projectId: string, taskId: string) => {
+    deleteTask(projectId, taskId);
+    const updated = getAllProjects().find((p) => p.id === projectId);
+    if (updated) {
+      setProjects(projects.map((p) => (p.id === projectId ? updated : p)));
+      if (selectedProject?.id === projectId) {
+        setSelectedProject(updated);
+      }
     }
   };
 
   return (
-    <span
-      style={{
-        fontSize: 9,
-        letterSpacing: 2,
-        padding: '4px 10px',
-        border: `1px solid ${getColor()}`,
-        color: getColor(),
-        textTransform: 'uppercase',
-        fontFamily: 'var(--mono)'
-      }}
-    >
-      {status}
-    </span>
-  );
-}
-
-export default function ProjectsPage() {
-  return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
-      <GrainOverlay />
-
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex' }}>
       {/* Header */}
-      <nav
+      <header
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100%',
-          padding: '18px 32px',
+          height: 60,
+          background: 'rgba(8, 8, 8, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+          padding: '16px 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 100,
-          background: 'rgba(8, 8, 8, 0.8)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)'
+          zIndex: 100
         }}
       >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-          <ArrowLeft size={18} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 6, color: 'var(--fg)' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
+          <ArrowLeft size={20} />
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
             PROJECTS
-          </div>
+          </h1>
         </Link>
+      </header>
 
-        <button className="link-btn">+ New Project</button>
-      </nav>
+      {/* Kanban Board */}
+      <div style={{ marginTop: 60, width: '100%', padding: 20, display: 'flex', gap: 20, overflowX: 'auto' }}>
+        {STATUSES.map((status) => (
+          <div
+            key={status}
+            style={{
+              flex: '0 0 300px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.04)',
+              padding: 16,
+              borderRadius: 4
+            }}
+          >
+            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, marginBottom: 16, textTransform: 'uppercase' }}>
+              {status.replace('-', ' ')} ({projects.filter((p) => p.status === status).length})
+            </h3>
 
-      {/* Projects Section */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '120px 18px 90px' }}>
-        <AnimatedSection>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
-            <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-            <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-              Production Pipeline — {PROJECTS.length} Active
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gap: 24 }}>
-            {PROJECTS.map((project, i) => (
-              <AnimatedSection key={project.id} delay={i * 0.1}>
-                <div
-                  style={{
-                    padding: 32,
-                    background: '#0a0a0a',
-                    border: '1px solid rgba(255, 255, 255, 0.04)',
-                    transition: 'all 0.3s'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 60, 0, 0.3)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.04)')}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 16 }}>
-                    <div>
-                      <span
-                        style={{
-                          fontSize: 8,
-                          letterSpacing: 3,
-                          textTransform: 'uppercase',
-                          color: 'var(--accent)',
-                          fontFamily: 'var(--mono)'
-                        }}
-                      >
-                        {project.type}
-                      </span>
-                      <h3
-                        style={{
-                          fontFamily: 'var(--display)',
-                          fontSize: '2rem',
-                          letterSpacing: 2,
-                          marginTop: 6
-                        }}
-                      >
-                        {project.title}
-                      </h3>
-                    </div>
-                    <StatusBadge status={project.status} />
-                  </div>
-
-                  <p
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {projects
+                .filter((p) => p.status === status)
+                .map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => setSelectedProject(project)}
                     style={{
-                      fontFamily: 'var(--serif)',
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      opacity: 0.6,
-                      marginBottom: 20
+                      padding: 12,
+                      background: project.id === selectedProject?.id ? 'rgba(255, 60, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                      border: project.id === selectedProject?.id ? '1px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (project.id !== selectedProject?.id) {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (project.id !== selectedProject?.id) {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      }
                     }}
                   >
-                    {project.description}
-                  </p>
-
-                  {/* Project Meta */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: 16,
-                      padding: '16px 0',
-                      borderTop: '1px solid rgba(255, 255, 255, 0.04)',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                      marginBottom: 16
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                        <Calendar size={10} /> Deadline
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>
-                        {new Date(project.deadline).toLocaleDateString()}
-                      </div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
+                      {project.title}
                     </div>
-
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                        <Users size={10} /> Team
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>
-                        {project.team.length} Members
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                        <Clock size={10} /> Progress
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>
-                        {project.progress}%
-                      </div>
-                    </div>
+                    <div style={{ fontSize: 9, opacity: 0.5 }}>{project.tasks.length} tasks</div>
                   </div>
+                ))}
 
-                  {/* Progress Bar */}
-                  <div style={{ height: 3, background: '#1a1a1a', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${project.progress}%`,
-                        background: 'var(--accent)',
-                        transition: 'width 0.5s'
-                      }}
-                    />
-                  </div>
-                </div>
-              </AnimatedSection>
-            ))}
-          </div>
-        </AnimatedSection>
-
-        {/* Timeline View */}
-        <AnimatedSection delay={0.3}>
-          <div style={{ marginTop: 80 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
-              <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-              <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-                Production Timeline
-              </span>
-            </div>
-
-            <div style={{ position: 'relative', paddingLeft: 40 }}>
-              {/* Timeline line */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 12,
-                  top: 0,
-                  bottom: 0,
-                  width: 2,
-                  background: 'linear-gradient(to bottom, var(--accent), transparent)'
-                }}
-              />
-
-              {PROJECTS.map((project, i) => (
-                <div key={project.id} style={{ position: 'relative', marginBottom: 32 }}>
-                  <div
+              {/* Add Project to Status */}
+              {status === 'concept' && (
+                <div style={{ marginTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: 12 }}>
+                  <input
+                    type="text"
+                    value={newProjectTitle}
+                    onChange={(e) => setNewProjectTitle(e.target.value)}
+                    placeholder="New project..."
                     style={{
-                      position: 'absolute',
-                      left: -28,
-                      top: 6,
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: 'var(--accent)',
-                      border: '2px solid var(--bg)'
+                      width: '100%',
+                      padding: 8,
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: 'var(--fg)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: 10,
+                      marginBottom: 8
                     }}
                   />
-                  <div style={{ fontSize: 9, opacity: 0.4, marginBottom: 4 }}>
-                    {new Date(project.deadline).toLocaleDateString()}
+                  <button
+                    onClick={handleCreateProject}
+                    style={{
+                      width: '100%',
+                      padding: 8,
+                      background: 'var(--accent)',
+                      color: 'var(--bg)',
+                      border: 'none',
+                      fontFamily: 'var(--mono)',
+                      fontSize: 9,
+                      letterSpacing: 1,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + CREATE
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Project Detail Panel */}
+      {selectedProject && (
+        <div
+          style={{
+            position: 'fixed',
+            right: 0,
+            top: 60,
+            width: 400,
+            height: 'calc(100vh - 60px)',
+            background: '#0a0a0a',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
+            padding: 24,
+            overflowY: 'auto',
+            zIndex: 50
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 20 }}>
+            <div>
+              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 4, opacity: 0.5 }}>PROJECT</h2>
+              <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2 }}>
+                {selectedProject.title}
+              </h3>
+            </div>
+            <button
+              onClick={() => {
+                handleDeleteProject(selectedProject.id);
+                setSelectedProject(null);
+              }}
+              style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.5 }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+
+          {/* Status Selector */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 9, opacity: 0.5, letterSpacing: 1 }}>STATUS</label>
+            <select
+              value={selectedProject.status}
+              onChange={(e) => handleStatusChange(selectedProject.id, e.target.value)}
+              style={{
+                width: '100%',
+                padding: 8,
+                marginTop: 8,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'var(--fg)',
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                cursor: 'pointer'
+              }}
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s.replace('-', ' ').toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tasks */}
+          <div>
+            <h4 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, marginBottom: 12, opacity: 0.5 }}>
+              TASKS ({selectedProject.tasks.length})
+            </h4>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {selectedProject.tasks.map((task) => (
+                <div
+                  key={task.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: 8,
+                    background: task.completed ? 'rgba(0, 255, 0, 0.05)' : 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <button
+                    onClick={() => handleToggleTask(selectedProject.id, task.id)}
+                    style={{
+                      background: task.completed ? 'var(--accent)' : 'rgba(255, 255, 255, 0.1)',
+                      border: 'none',
+                      color: task.completed ? 'var(--bg)' : 'var(--fg)',
+                      cursor: 'pointer',
+                      width: 20,
+                      height: 20,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {task.completed && <Check size={12} />}
+                  </button>
+                  <div style={{ flex: 1, fontSize: 11, textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.5 : 1 }}>
+                    {task.title}
                   </div>
-                  <div style={{ fontFamily: 'var(--display)', fontSize: 16, letterSpacing: 2 }}>
-                    {project.title}
-                  </div>
-                  <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>
-                    {project.status} • {project.progress}% Complete
-                  </div>
+                  <button
+                    onClick={() => handleDeleteTask(selectedProject.id, task.id)}
+                    style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               ))}
             </div>
+
+            {/* Add Task */}
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              placeholder="New task..."
+              style={{
+                width: '100%',
+                padding: 8,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'var(--fg)',
+                fontFamily: 'var(--mono)',
+                fontSize: 10,
+                marginBottom: 8
+              }}
+            />
+            <button
+              onClick={() => handleAddTask(selectedProject.id)}
+              style={{
+                width: '100%',
+                padding: 8,
+                background: 'rgba(255, 60, 0, 0.1)',
+                border: '1px solid var(--accent)',
+                color: 'var(--accent)',
+                fontFamily: 'var(--mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                cursor: 'pointer'
+              }}
+            >
+              + ADD TASK
+            </button>
           </div>
-        </AnimatedSection>
-      </section>
-    </main>
+        </div>
+      )}
+    </div>
   );
 }
