@@ -1,429 +1,403 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Play, X, ExternalLink, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, X, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import GrainOverlay from '@/components/GrainOverlay';
-
-// Helper for Google Drive thumbnails
-const IMG = (id: string, w: number = 800) => `https://lh3.googleusercontent.com/d/${id}=w${w}`;
-const IMG_FB = (id: string, w: number = 800) => `https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
-
-interface Video {
-  id: string;
-  title: string;
-  category: string;
-  role: string;
-  description: string;
-  driveId: string;
-  year: string;
-  featured?: boolean;
-}
-
-const VIDEOS: Video[] = [
-  {
-    id: '10m',
-    title: '10 Million',
-    category: 'Music Video',
-    role: 'Director of Photography / Editor',
-    description: 'High-energy visual rhythm. Every cut lands on the beat, every frame tells a story of ambition.',
-    driveId: '10A2uzDxrEEgx-6tiS3M_qbhAq72dglZt',
-    year: '2026',
-    featured: true
-  },
-  {
-    id: 'brief',
-    title: 'The Briefcase',
-    category: 'Short Film',
-    role: 'Writer / Cinematographer',
-    description: 'A crime thriller about two couriers, a mysterious briefcase, and a deal that has to go right.',
-    driveId: '1EM1AVe-50e6IMKL2m8teeakg6aSL3ctr',
-    year: '2024',
-    featured: true
-  },
-  {
-    id: 'audio',
-    title: 'The Audio Blueprint',
-    category: 'Documentary Teaser',
-    role: 'Director / Writer / Editor',
-    description: 'The invisible art of sound design in film — why audio is the secret weapon behind iconic movie moments.',
-    driveId: '1hpS5fIfDRthOgzCD0jda5IcuHiverR8n',
-    year: '2025'
-  },
-  {
-    id: 'psa',
-    title: 'The Grand PSA',
-    category: 'Commercial / PSA',
-    role: 'Writer / Director / DP / Editor',
-    description: 'A love letter to The Grand Theatre. Wrote the script, directed the shoot, graded the final cut.',
-    driveId: '1Mmk_nM_WXCskja0NEIa6PlM51cul-z00',
-    year: '2025'
-  },
-  {
-    id: 'altitude',
-    title: 'The Pursuit of Altitude',
-    category: 'Documentary',
-    role: 'Cinematographer / Editor',
-    description: 'Chasing elevation, both literal and metaphorical. Visual storytelling through landscape and movement.',
-    driveId: '1-bPAYnQROhT9awRMEBWuDCGSw04CtBgE',
-    year: '2024'
-  },
-  {
-    id: 'cook',
-    title: 'Live Cooking Demo',
-    category: 'Live Multi-Cam',
-    role: 'Camera Operator / Switcher',
-    description: 'Live multi-camera production. Real-time switching, no second takes, all precision.',
-    driveId: '13fmSRFNiGZl2b57-cd0qVnjcPx9IDUUZ',
-    year: '2025'
-  }
-];
-
-function Thumb({ driveId, alt }: { driveId: string; alt: string }) {
-  return (
-    <img
-      src={IMG(driveId, 800)}
-      alt={alt}
-      loading="lazy"
-      style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }}
-      onError={(e) => {
-        const target = e.target as HTMLImageElement;
-        if (!target.dataset.fb) {
-          target.dataset.fb = '1';
-          target.src = IMG_FB(driveId, 800);
-        } else {
-          target.style.opacity = '0';
-        }
-      }}
-    />
-  );
-}
-
-function VideoCard({ video, onClick, large }: { video: Video; onClick: (v: Video) => void; large?: boolean }) {
-  const [hover, setHover] = useState(false);
-
-  return (
-    <div
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        aspectRatio: large ? '21/9' : '16/9',
-        background: '#0e0e0e',
-        border: '1px solid rgba(255, 255, 255, 0.04)',
-        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-        transform: hover ? 'scale(1.006)' : 'scale(1)',
-        gridColumn: large ? '1 / -1' : undefined
-      }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      onClick={() => onClick(video)}
-    >
-      <Thumb driveId={video.driveId} alt={video.title} />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: hover
-            ? 'linear-gradient(transparent 20%, rgba(0, 0, 0, 0.88))'
-            : 'linear-gradient(transparent 30%, rgba(0, 0, 0, 0.92))',
-          transition: 'all 0.5s'
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: 14,
-          right: 14,
-          zIndex: 10,
-          fontSize: 9,
-          letterSpacing: 3,
-          textTransform: 'uppercase',
-          color: 'var(--accent)',
-          fontFamily: 'var(--mono)'
-        }}
-      >
-        {video.category}
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10
-        }}
-      >
-        <div
-          style={{
-            width: large ? 64 : 44,
-            height: large ? 64 : 44,
-            borderRadius: '50%',
-            border: `2px solid ${hover ? 'var(--accent)' : 'rgba(255, 255, 255, 0.3)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.4s',
-            transform: hover ? 'scale(1.1)' : 'scale(1)',
-            background: hover ? 'rgba(255, 60, 0, 0.1)' : 'transparent'
-          }}
-        >
-          <Play
-            size={large ? 22 : 15}
-            fill={hover ? '#ff3c00' : '#fff'}
-            color={hover ? '#ff3c00' : '#fff'}
-            style={{ marginLeft: 3 }}
-          />
-        </div>
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          padding: large ? 24 : 16,
-          zIndex: 10,
-          width: '100%',
-          transform: hover ? 'translateY(0)' : 'translateY(3px)',
-          transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
-      >
-        <h3
-          style={{
-            fontFamily: 'var(--display)',
-            fontSize: large ? 'clamp(1.8rem, 3.5vw, 2.8rem)' : 'clamp(1rem, 1.8vw, 1.4rem)',
-            letterSpacing: 2,
-            lineHeight: 1,
-            color: 'var(--fg)'
-          }}
-        >
-          {video.title}
-        </h3>
-        <p
-          style={{
-            fontSize: 9,
-            fontFamily: 'var(--mono)',
-            letterSpacing: 2,
-            color: 'rgba(255, 255, 255, 0.3)',
-            marginTop: 3,
-            textTransform: 'uppercase'
-          }}
-        >
-          {video.role} · {video.year}
-        </p>
-        {large && (
-          <p
-            style={{
-              fontFamily: 'var(--serif)',
-              fontSize: 13,
-              color: 'rgba(255, 255, 255, 0.4)',
-              marginTop: 6,
-              maxWidth: 480,
-              fontStyle: 'italic',
-              opacity: hover ? 1 : 0,
-              transform: hover ? 'translateY(0)' : 'translateY(8px)',
-              transition: 'all 0.4s 0.1s'
-            }}
-          >
-            {video.description}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function VideoModal({ video, onClose }: { video: Video | null; onClose: () => void }) {
-  if (!video) return null;
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9000,
-        background: 'rgba(0, 0, 0, 0.94)',
-        backdropFilter: 'blur(20px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        animation: 'fadeIn 0.3s ease-out'
-      }}
-      onClick={onClose}
-    >
-      <div style={{ width: '100%', maxWidth: 960, margin: '0 16px' }} onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 20,
-            right: 20,
-            background: 'none',
-            border: 'none',
-            color: 'rgba(255, 255, 255, 0.4)',
-            cursor: 'pointer',
-            padding: 8
-          }}
-        >
-          <X size={26} />
-        </button>
-        <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-          <iframe
-            src={`https://drive.google.com/file/d/${video.driveId}/preview`}
-            width="100%"
-            height="100%"
-            allow="autoplay;encrypted-media"
-            allowFullScreen
-            style={{ border: 'none' }}
-          />
-        </div>
-        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 14 }}>
-          <div>
-            <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: 'var(--fg)' }}>
-              {video.title}
-            </h3>
-            <p
-              style={{
-                fontSize: 9,
-                fontFamily: 'var(--mono)',
-                letterSpacing: 2,
-                color: 'var(--accent)',
-                textTransform: 'uppercase'
-              }}
-            >
-              {video.category} · {video.role} · {video.year}
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--serif)',
-                fontSize: 13,
-                color: 'rgba(255, 255, 255, 0.4)',
-                marginTop: 6,
-                fontStyle: 'italic',
-                maxWidth: 520
-              }}
-            >
-              {video.description}
-            </p>
-          </div>
-          <a
-            href={`https://drive.google.com/file/d/${video.driveId}/view`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-btn"
-          >
-            <ExternalLink size={11} /> Full Quality
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
+import {
+  getAllProjects,
+  createProject,
+  updateProject,
+  deleteProject,
+  addMedia,
+  deleteMedia,
+  extractYouTubeId,
+  getYouTubeThumbnail,
+  type PortfolioProject,
+  type MediaItem
+} from '@/lib/storage/portfolio';
 
 export default function PortfolioPage() {
-  const [activeVideo, setActiveVideo] = useState<Video | null>(null);
+  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [newProjectTitle, setNewProjectTitle] = useState('');
+  const [newMediaUrl, setNewMediaUrl] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
-  const featured = VIDEOS.filter((v) => v.featured);
-  const rest = VIDEOS.filter((v) => !v.featured);
+  useEffect(() => {
+    const loaded = getAllProjects();
+    setProjects(loaded);
+    if (loaded.length === 0) {
+      // Create default portfolio
+      const defaults = [
+        createProject('10 Million'),
+        createProject('The Briefcase'),
+        createProject('The Audio Blueprint')
+      ];
+      setProjects(defaults);
+    } else {
+      setSelectedProject(loaded[0]);
+    }
+  }, []);
+
+  const handleCreateProject = () => {
+    if (newProjectTitle.trim()) {
+      const project = createProject(newProjectTitle);
+      setProjects([...projects, project]);
+      setSelectedProject(project);
+      setNewProjectTitle('');
+    }
+  };
+
+  const handleDeleteProject = (id: string) => {
+    if (deleteProject(id)) {
+      setProjects(projects.filter((p) => p.id !== id));
+      if (selectedProject?.id === id) {
+        setSelectedProject(projects.find((p) => p.id !== id) || null);
+      }
+    }
+  };
+
+  const handleAddMedia = () => {
+    if (selectedProject && newMediaUrl.trim()) {
+      const youtubeId = extractYouTubeId(newMediaUrl);
+
+      if (youtubeId) {
+        const media = addMedia(selectedProject.id, youtubeId, 'youtube', `YouTube Video`, getYouTubeThumbnail(youtubeId));
+        const updated = getAllProjects().find((p) => p.id === selectedProject.id);
+        if (updated) {
+          setSelectedProject(updated);
+          setProjects(projects.map((p) => (p.id === selectedProject.id ? updated : p)));
+          setNewMediaUrl('');
+        }
+      } else {
+        alert('Invalid YouTube URL. Use: https://youtube.com/watch?v=VIDEO_ID or just the video ID');
+      }
+    }
+  };
+
+  const handleDeleteMedia = (mediaId: string) => {
+    if (selectedProject) {
+      deleteMedia(selectedProject.id, mediaId);
+      const updated = getAllProjects().find((p) => p.id === selectedProject.id);
+      if (updated) {
+        setSelectedProject(updated);
+        setProjects(projects.map((p) => (p.id === selectedProject.id ? updated : p)));
+        setSelectedMedia(null);
+      }
+    }
+  };
+
+  const categories = Array.from(new Set(projects.map((p) => p.category)));
+  const filtered = categoryFilter ? projects.filter((p) => p.category === categoryFilter) : projects;
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
-      <GrainOverlay />
-
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       {/* Header */}
-      <nav
+      <header
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100%',
-          padding: '18px 32px',
+          height: 60,
+          background: 'rgba(8, 8, 8, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+          padding: '16px 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 100,
-          background: 'rgba(8, 8, 8, 0.8)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)'
+          zIndex: 100
         }}
       >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-          <ArrowLeft size={18} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 6, color: 'var(--fg)' }}>
-            MISFITS CAVERN
-          </div>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
+          <ArrowLeft size={20} />
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
+            PORTFOLIO
+          </h1>
         </Link>
-      </nav>
+      </header>
 
-      {/* Portfolio Section */}
-      <section style={{ maxWidth: 1160, margin: '0 auto', padding: '120px 18px 90px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
-          <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-          <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-            The Work — {VIDEOS.length} Projects
-          </span>
-        </div>
+      <div style={{ marginTop: 60, display: 'flex', height: 'calc(100vh - 60px)' }}>
+        {/* Projects List */}
+        <div
+          style={{
+            width: 280,
+            background: '#0a0a0a',
+            borderRight: '1px solid rgba(255, 255, 255, 0.04)',
+            padding: 16,
+            overflowY: 'auto'
+          }}
+        >
+          <h3 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, marginBottom: 12, opacity: 0.5 }}>
+            PROJECTS
+          </h3>
 
-        {/* Featured */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, marginBottom: 3 }}>
-          {featured.map((video) => (
-            <VideoCard key={video.id} video={video} onClick={setActiveVideo} />
-          ))}
-        </div>
-
-        {/* Rest */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3 }}>
-          {rest.map((video) => (
-            <VideoCard key={video.id} video={video} onClick={setActiveVideo} />
-          ))}
-        </div>
-      </section>
-
-      {/* Marquee */}
-      <div
-        style={{
-          padding: '32px 0',
-          overflow: 'hidden',
-          borderTop: '1px solid rgba(255, 255, 255, 0.03)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.03)'
-        }}
-      >
-        <div style={{ display: 'flex', gap: 44, animation: 'marquee 30s linear infinite', whiteSpace: 'nowrap' }}>
-          {[
-            'CINEMATOGRAPHY',
-            'DIRECTING',
-            'MUSIC VIDEOS',
-            'COLOR GRADING',
-            'CREATIVE DIRECTION',
-            'EDITING',
-            'STORYTELLING',
-            'LIGHTING',
-            'WRITING',
-            'SOUND DESIGN',
-            'LIVE MULTI-CAM',
-            'CINEMATOGRAPHY',
-            'DIRECTING',
-            'MUSIC VIDEOS'
-          ].map((text, i) => (
-            <span
-              key={i}
+          <div style={{ marginBottom: 16 }}>
+            <input
+              type="text"
+              value={newProjectTitle}
+              onChange={(e) => setNewProjectTitle(e.target.value)}
+              placeholder="New project..."
               style={{
-                fontFamily: 'var(--display)',
-                fontSize: '1.1rem',
-                letterSpacing: 6,
-                flexShrink: 0,
-                opacity: i % 2 === 0 ? 1 : 0.12,
-                color: i % 2 === 0 ? 'var(--accent)' : 'var(--fg)'
+                width: '100%',
+                padding: 8,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: 'var(--fg)',
+                fontFamily: 'var(--mono)',
+                fontSize: 10,
+                marginBottom: 8
+              }}
+            />
+            <button
+              onClick={handleCreateProject}
+              style={{
+                width: '100%',
+                padding: 8,
+                background: 'var(--accent)',
+                color: 'var(--bg)',
+                border: 'none',
+                fontFamily: 'var(--mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                cursor: 'pointer'
               }}
             >
-              {text}
-            </span>
-          ))}
-        </div>
-      </div>
+              + CREATE
+            </button>
+          </div>
 
-      <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} />
-    </main>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {projects.map((project) => (
+              <button
+                key={project.id}
+                onClick={() => {
+                  setSelectedProject(project);
+                  setSelectedMedia(null);
+                }}
+                style={{
+                  padding: 12,
+                  background: selectedProject?.id === project.id ? 'rgba(255, 60, 0, 0.1)' : 'transparent',
+                  border: selectedProject?.id === project.id ? '1px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--fg)',
+                  fontFamily: 'var(--mono)',
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div>{project.title}</div>
+                <div style={{ fontSize: 8, opacity: 0.4, marginTop: 2 }}>{project.media.length} media</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content */}
+        {selectedProject && !selectedMedia && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Project Header */}
+            <div
+              style={{
+                height: 80,
+                borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                padding: '24px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}
+            >
+              <div>
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, margin: 0 }}>
+                  {selectedProject.title}
+                </h2>
+                <p style={{ fontSize: 10, opacity: 0.5, marginTop: 4 }}>
+                  {selectedProject.year} · {selectedProject.role}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDeleteProject(selectedProject.id)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--fg)',
+                  cursor: 'pointer',
+                  opacity: 0.5
+                }}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+
+            {/* Media Grid */}
+            <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16, marginBottom: 24 }}>
+                {selectedProject.media.map((media) => (
+                  <div
+                    key={media.id}
+                    onClick={() => setSelectedMedia(media)}
+                    style={{
+                      aspectRatio: '16/9',
+                      background: '#1a1a1a',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--accent)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    }}
+                  >
+                    {media.thumbnailUrl && (
+                      <img
+                        src={media.thumbnailUrl}
+                        alt={media.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    )}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0, 0, 0, 0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Play size={32} fill="rgba(255, 255, 255, 0.7)" />
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMedia(media.id);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        background: 'rgba(0, 0, 0, 0.6)',
+                        border: 'none',
+                        color: 'var(--fg)',
+                        cursor: 'pointer',
+                        padding: 4,
+                        zIndex: 10
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Media */}
+              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.04)', paddingTop: 20 }}>
+                <h3 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, marginBottom: 12, opacity: 0.5 }}>
+                  ADD YOUTUBE VIDEO
+                </h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    value={newMediaUrl}
+                    onChange={(e) => setNewMediaUrl(e.target.value)}
+                    placeholder="YouTube URL or video ID..."
+                    style={{
+                      flex: 1,
+                      padding: 10,
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: 'var(--fg)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: 11
+                    }}
+                  />
+                  <button
+                    onClick={handleAddMedia}
+                    style={{
+                      padding: '10px 20px',
+                      background: 'rgba(255, 60, 0, 0.1)',
+                      border: '1px solid var(--accent)',
+                      color: 'var(--accent)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: 9,
+                      letterSpacing: 1,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + ADD
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Video Player Modal */}
+        {selectedMedia && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.94)',
+              backdropFilter: 'blur(20px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9000
+            }}
+            onClick={() => setSelectedMedia(null)}
+          >
+            <div style={{ width: '100%', maxWidth: 960, margin: '0 16px' }} onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setSelectedMedia(null)}
+                style={{
+                  position: 'absolute',
+                  top: 20,
+                  right: 20,
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.4)',
+                  cursor: 'pointer',
+                  padding: 8,
+                  zIndex: 10
+                }}
+              >
+                <X size={26} />
+              </button>
+
+              {selectedMedia.type === 'youtube' && (
+                <div style={{ aspectRatio: '16/9', background: '#000' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${selectedMedia.url}?autoplay=1`}
+                    width="100%"
+                    height="100%"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              )}
+
+              <div style={{ marginTop: 20 }}>
+                <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2 }}>
+                  {selectedMedia.title}
+                </h3>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
