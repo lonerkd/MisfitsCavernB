@@ -63,7 +63,12 @@ export default function PortfolioPage() {
       const youtubeId = extractYouTubeId(newMediaUrl);
 
       if (youtubeId) {
-        const media = addMedia(selectedProject.id, youtubeId, 'youtube', `YouTube Video`, getYouTubeThumbnail(youtubeId));
+        const media = addMedia(selectedProject.id, {
+          title: 'YouTube Video',
+          type: 'youtube',
+          url: youtubeId,
+          thumbnailUrl: getYouTubeThumbnail(youtubeId)
+        });
         const updated = getAllProjects().find((p) => p.id === selectedProject.id);
         if (updated) {
           setSelectedProject(updated);
