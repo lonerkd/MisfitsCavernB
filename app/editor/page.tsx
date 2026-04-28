@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, exportScriptAsText, type StoredScript } from '@/lib/scriptos/storage';
 import { getCharacterNames, ELEMENT_CYCLE, getCurrentLine } from '@/lib/scriptos/editor-utils';
-import { exportAsF ountain } from '@/lib/scriptos/fountain-export';
+import { exportAsFountain } from '@/lib/scriptos/fountain-export';
 import type { ScriptLine } from '@/types/screenplay';
 
 export default function EditorPage() {
@@ -165,7 +165,7 @@ export default function EditorPage() {
 
   const handleFountainExport = () => {
     if (currentScript) {
-      exportAsF ountain(content, currentScript.title);
+      exportAsFountain(content, currentScript.title);
     }
   };
 

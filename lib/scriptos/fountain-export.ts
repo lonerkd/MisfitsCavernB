@@ -1,6 +1,6 @@
 import type { ScriptLine } from '@/types/screenplay';
 
-export function exportAsF ountain(content: string, title: string): void {
+export function exportAsFountain(content: string, title: string): void {
   // Fountain format is basically the raw text + metadata header
   const fountainContent = `Title: ${title}
 Author: Misfits Cavern
