@@ -1,192 +1,257 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { User, Menu, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
-  { label: 'editor', href: '/editor' },
-  { label: 'projects', href: '/projects' },
-  { label: 'jobs', href: '/jobs' },
-  { label: 'crew', href: '/crew' },
-  { label: 'studio', href: '/studio' },
-  { label: 'lounge', href: '/lounge' },
-  { label: 'portfolio', href: '/portfolio' },
+  { label: 'Editor', href: '/editor' },
+  { label: 'Portfolio', href: '/portfolio' },
+  { label: 'Studio', href: '/studio' },
+  { label: 'Projects', href: '/projects' },
+  { label: 'Lounge', href: '/lounge' },
+  { label: 'Showcase', href: '/showcase' },
 ];
 
 export default function Navigation() {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [pendingApps, setPendingApps] = useState(0);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) fetchPendingApps(user.id);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user || null);
-      if (session?.user) fetchPendingApps(session.user.id);
-      else setPendingApps(0);
-    });
-
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      subscription.unsubscribe();
-    };
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const fetchPendingApps = async (userId: string) => {
-    const { data: jobs } = await supabase.from('jobs').select('id').eq('created_by', userId);
-    if (!jobs || jobs.length === 0) return;
-    const jobIds = jobs.map(j => j.id);
-    const { count } = await supabase.from('job_applications').select('id', { count: 'exact', head: true })
-      .in('job_id', jobIds).eq('status', 'pending');
-    setPendingApps(count || 0);
-  };
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  // Close mobile menu on route change
+  useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
     <>
-      <nav
+      <motion.nav
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100%',
-          padding: '14px 24px',
+          padding: scrolled ? '14px 32px' : '20px 32px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 200,
-          background: scrolled || mobileOpen ? 'rgba(8,8,8,0.97)' : 'transparent',
-          backdropFilter: scrolled || mobileOpen ? 'blur(12px)' : 'none',
-          borderBottom: scrolled || mobileOpen ? '1px solid rgba(255,255,255,0.04)' : 'none',
-          transition: 'all 0.3s',
-          boxSizing: 'border-box',
+          zIndex: 1000,
+          background: scrolled ? 'rgba(8,8,8,0.88)' : 'transparent',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
+          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent',
+          transition: 'padding 0.4s, background 0.4s, border-color 0.4s, backdrop-filter 0.4s',
         }}
       >
-        <Link href="/" style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 6, color: 'var(--fg)', textDecoration: 'none' }}>
-          MISFITS
+        {/* Logo */}
+        <Link
+          href="/"
+          style={{
+            fontFamily: 'var(--display)',
+            fontSize: '1.1rem',
+            letterSpacing: 6,
+            color: 'var(--fg)',
+            textDecoration: 'none',
+            transition: 'opacity 0.3s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+        >
+          MISFITS CAVERN
         </Link>
 
-        {/* Desktop Nav */}
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }} className="desktop-nav">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              style={{
-                color: pathname === link.href ? 'var(--accent)' : 'var(--fg)',
-                textDecoration: 'none',
-                fontSize: 9,
-                letterSpacing: 3,
-                textTransform: 'uppercase',
-                transition: 'color 0.3s',
-                position: 'relative',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = pathname === link.href ? 'var(--accent)' : 'var(--fg)')}
-            >
-              {link.label}
-              {link.href === '/jobs' && pendingApps > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -10,
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: 'var(--accent)', display: 'block',
-                }} />
-              )}
-            </Link>
-          ))}
+        {/* Desktop links */}
+        <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}
+          className="hide-mobile">
+          {NAV_LINKS.map(link => {
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                style={{
+                  color: active ? 'var(--accent)' : 'var(--fg)',
+                  textDecoration: 'none',
+                  fontSize: 9,
+                  letterSpacing: 4,
+                  textTransform: 'uppercase',
+                  fontFamily: 'var(--mono)',
+                  transition: 'color 0.3s',
+                  position: 'relative',
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = active ? 'var(--accent)' : 'var(--fg)'; }}
+              >
+                {link.label}
+                {active && (
+                  <motion.div
+                    layoutId="nav-indicator"
+                    style={{
+                      position: 'absolute',
+                      bottom: -4,
+                      left: 0,
+                      right: 0,
+                      height: 1,
+                      background: 'var(--accent)',
+                    }}
+                  />
+                )}
+              </Link>
+            );
+          })}
 
-          <Link href={user ? '/profile' : '/auth'}
-            style={{ color: 'var(--fg)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 9, letterSpacing: 3, textTransform: 'uppercase' }}
-            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)'}
-            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg)'}>
-            <User size={12} /> {user ? 'profile' : 'sign in'}
+          <Link
+            href="/auth"
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 9,
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+              padding: '9px 18px',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: 'var(--fg)',
+              textDecoration: 'none',
+              borderRadius: 'var(--radius-full)',
+              transition: 'border-color 0.3s, background 0.3s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'var(--accent)';
+              e.currentTarget.style.background = 'rgba(255,60,0,0.06)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            Sign In
           </Link>
         </div>
 
         {/* Mobile hamburger */}
         <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="mobile-menu-btn"
-          style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', padding: 4 }}>
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </nav>
-
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <div
-          className="mobile-nav"
+          onClick={() => setOpen(!open)}
+          className="show-mobile"
           style={{
-            position: 'fixed',
-            top: 49,
-            left: 0,
-            width: '100%',
-            background: 'rgba(8,8,8,0.98)',
-            backdropFilter: 'blur(20px)',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            zIndex: 199,
-            padding: '20px 24px 28px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0,
+            background: 'none',
+            border: 'none',
+            color: 'var(--fg)',
+            padding: 4,
           }}
         >
-          {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href}
-              style={{
-                color: pathname === link.href ? 'var(--accent)' : 'rgba(255,255,255,0.7)',
-                textDecoration: 'none',
-                fontSize: 11,
-                letterSpacing: 3,
-                textTransform: 'uppercase',
-                fontFamily: 'var(--mono)',
-                padding: '14px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
-                display: 'block',
-              }}>
-              {link.label}
-            </Link>
-          ))}
-          <Link href={user ? '/profile' : '/auth'}
+          {open ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </motion.nav>
+
+      {/* Mobile menu */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              color: 'var(--accent)',
-              textDecoration: 'none',
-              fontSize: 11,
-              letterSpacing: 3,
-              textTransform: 'uppercase',
-              fontFamily: 'var(--mono)',
-              padding: '14px 0',
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              width: 280,
+              height: '100vh',
+              background: '#0a0a0a',
+              borderLeft: '1px solid rgba(255,255,255,0.04)',
+              zIndex: 999,
+              padding: '80px 32px 40px',
               display: 'flex',
-              alignItems: 'center',
+              flexDirection: 'column',
               gap: 8,
-              marginTop: 4,
-            }}>
-            <User size={13} /> {user ? 'profile' : 'sign in'}
-          </Link>
-        </div>
-      )}
+            }}
+          >
+            {NAV_LINKS.map((link, i) => (
+              <motion.div
+                key={link.href}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06, duration: 0.4 }}
+              >
+                <Link
+                  href={link.href}
+                  style={{
+                    display: 'block',
+                    fontFamily: 'var(--display)',
+                    fontSize: '1.6rem',
+                    letterSpacing: 3,
+                    color: pathname === link.href ? 'var(--accent)' : 'var(--fg)',
+                    textDecoration: 'none',
+                    padding: '12px 0',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  }}
+                >
+                  {link.label}
+                </Link>
+              </motion.div>
+            ))}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              style={{ marginTop: 'auto' }}
+            >
+              <Link
+                href="/auth"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  padding: '13px',
+                  background: 'var(--accent)',
+                  color: 'var(--bg)',
+                  fontFamily: 'var(--mono)',
+                  fontSize: 10,
+                  letterSpacing: 3,
+                  textTransform: 'uppercase',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Sign In
+              </Link>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile menu backdrop */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 998,
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <style>{`
-        .desktop-nav { display: flex !important; }
-        .mobile-menu-btn { display: none !important; }
         @media (max-width: 768px) {
-          .desktop-nav { display: none !important; }
-          .mobile-menu-btn { display: block !important; }
-          .mobile-nav { display: flex !important; }
+          .hide-mobile { display: none !important; }
+          .show-mobile { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .hide-mobile { display: flex !important; }
+          .show-mobile { display: none !important; }
         }
       `}</style>
     </>

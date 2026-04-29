@@ -1,323 +1,300 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, Smile, Hash } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Send, Music, Users, Smile } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
-
-const CHANNELS = [
-  { id: 'general', name: 'general', description: 'Open discussion' },
-  { id: 'writing-room', name: 'writing-room', description: 'Scripts, ideas, feedback' },
-  { id: 'music', name: 'music', description: 'Score, sound design' },
-  { id: 'feedback', name: 'feedback', description: 'Show your work' },
-];
-
-const EMOJIS = ['👍', '❤️', '🔥', '👀', '😂', '🎉'];
+import { motion, AnimatePresence } from 'framer-motion';
+import GrainOverlay from '@/components/GrainOverlay';
 
 interface Message {
   id: string;
-  sender_id: string;
-  channel_id: string;
-  content: string;
-  reactions: Record<string, string[]>;
-  created_at: string;
-  profiles?: { username: string; avatar_url?: string };
+  user: string;
+  text: string;
+  timestamp: Date;
+  mine?: boolean;
 }
 
-function Avatar({ username, avatar_url, size = 32 }: { username: string; avatar_url?: string; size?: number }) {
-  if (avatar_url) {
-    return <img src={avatar_url} alt={username} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />;
-  }
+const SEED_MESSAGES: Message[] = [
+  {
+    id: '1',
+    user: 'Peter',
+    text: 'Working on the final edit for 10 Million. The timing is sitting perfectly.',
+    timestamp: new Date('2026-04-27T01:30:00'),
+  },
+  {
+    id: '2',
+    user: 'Creative',
+    text: "Can't wait to see it. The rough cut was incredible — every cut felt intentional.",
+    timestamp: new Date('2026-04-27T01:32:00'),
+  },
+  {
+    id: '3',
+    user: 'Peter',
+    text: 'Starting on the Femme Fatale pitch deck next. Need to get it submission-ready.',
+    timestamp: new Date('2026-04-27T01:35:00'),
+  },
+];
+
+const CREW = [
+  { name: 'Peter Olowude', role: 'Director / DP', online: true },
+  { name: 'Creative Director', role: 'Art Direction', online: true },
+  { name: 'Producer', role: 'Production', online: false },
+];
+
+function MessageBubble({ msg }: { msg: Message }) {
+  const isMe = msg.mine;
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', background: 'var(--accent)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'var(--display)', fontSize: size * 0.4, color: 'var(--bg)', flexShrink: 0,
-    }}>
-      {username[0]?.toUpperCase() || '?'}
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        marginBottom: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isMe ? 'flex-end' : 'flex-start',
+      }}
+    >
+      {!isMe && (
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
+          <span style={{ fontFamily: 'var(--display)', fontSize: 13, letterSpacing: 2, color: 'var(--accent)' }}>
+            {msg.user}
+          </span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)' }}>
+            {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
+      <div style={{
+        maxWidth: '75%',
+        padding: '12px 16px',
+        background: isMe ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${isMe ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
+        borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+      }}>
+        <p style={{
+          fontFamily: 'var(--serif)',
+          fontSize: 14,
+          lineHeight: 1.65,
+          color: 'rgba(240,236,228,0.85)',
+          margin: 0,
+        }}>
+          {msg.text}
+        </p>
+      </div>
+      {isMe && (
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)', marginTop: 4 }}>
+          {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      )}
+    </motion.div>
   );
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString([], { month: 'long', day: 'numeric' });
-}
-
 export default function LoungePage() {
-  const [channel, setChannel] = useState(CHANNELS[0]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newMessage, setNewMessage] = useState('');
-  const [user, setUser] = useState<any>(null);
-  const [profileUsername, setProfileUsername] = useState('');
-  const [emojiPicker, setEmojiPicker] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
+  const [input, setInput] = useState('');
+  const [nowPlaying] = useState('lofi hip hop radio — beats to relax/study to');
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        const { data } = await supabase.from('profiles').select('username').eq('id', user.id).single();
-        if (data) setProfileUsername(data.username);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    loadMessages();
-    const sub = supabase
-      .channel(`lounge-${channel.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'messages',
-        filter: `channel_id=eq.${channel.id}`,
-      }, (payload) => fetchAndAppend(payload.new.id))
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'messages',
-        filter: `channel_id=eq.${channel.id}`,
-      }, (payload) => {
-        setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, reactions: payload.new.reactions } : m));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(sub); };
-  }, [channel.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const loadMessages = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('messages')
-      .select('*, profiles!messages_sender_id_fkey(username, avatar_url)')
-      .eq('channel_id', channel.id)
-      .order('created_at', { ascending: true })
-      .limit(100);
-    if (data) setMessages(data as Message[]);
-    setLoading(false);
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text) return;
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      user: 'You',
+      text,
+      timestamp: new Date(),
+      mine: true,
+    }]);
+    setInput('');
   };
-
-  const fetchAndAppend = async (id: string) => {
-    const { data } = await supabase
-      .from('messages')
-      .select('*, profiles!messages_sender_id_fkey(username, avatar_url)')
-      .eq('id', id).single();
-    if (data) setMessages(prev => [...prev, data as Message]);
-  };
-
-  const send = async () => {
-    const text = newMessage.trim();
-    if (!user || !text) return;
-    setNewMessage('');
-    await supabase.from('messages').insert({
-      sender_id: user.id,
-      channel_id: channel.id,
-      content: text,
-      reactions: {},
-    });
-    inputRef.current?.focus();
-  };
-
-  const react = async (msgId: string, emoji: string) => {
-    if (!user) return;
-    const msg = messages.find(m => m.id === msgId);
-    if (!msg) return;
-    const reactions = { ...msg.reactions };
-    if (!reactions[emoji]) reactions[emoji] = [];
-    const idx = reactions[emoji].indexOf(user.id);
-    if (idx >= 0) reactions[emoji].splice(idx, 1);
-    else reactions[emoji].push(user.id);
-    if (reactions[emoji].length === 0) delete reactions[emoji];
-    await supabase.from('messages').update({ reactions }).eq('id', msgId);
-    setMessages(messages.map(m => m.id === msgId ? { ...m, reactions } : m));
-    setEmojiPicker(null);
-  };
-
-  // Group messages: consecutive messages from same sender within 5 minutes
-  const grouped = messages.map((msg, i) => {
-    const prev = messages[i - 1];
-    const isGrouped = prev &&
-      prev.sender_id === msg.sender_id &&
-      new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
-    const showDate = !prev || formatDate(msg.created_at) !== formatDate(prev.created_at);
-    return { msg, isGrouped, showDate };
-  });
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex' }}>
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <GrainOverlay />
+
+      {/* Header */}
+      <nav style={{
+        position: 'sticky',
+        top: 0,
+        padding: '0 28px',
+        height: 62,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 100,
+        background: 'rgba(8,8,8,0.95)',
+        backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
-        padding: '0 24px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', zIndex: 100,
+        flexShrink: 0,
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>LOUNGE</h1>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <ArrowLeft size={17} color="var(--fg)" />
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>LOUNGE</div>
         </Link>
-        {profileUsername
-          ? <span style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.5 }}>{profileUsername}</span>
-          : <Link href="/auth" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', textDecoration: 'none' }}>Sign in to chat →</Link>
-        }
-      </header>
 
-      <div style={{ marginTop: 60, display: 'flex', width: '100%', height: 'calc(100vh - 60px)' }}>
-        {/* Sidebar */}
-        <div style={{ width: 220, background: '#080808', borderRight: '1px solid rgba(255,255,255,0.04)', padding: '20px 12px', flexShrink: 0 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, opacity: 0.3, marginBottom: 12, paddingLeft: 8 }}>CHANNELS</div>
-          {CHANNELS.map(ch => (
-            <button key={ch.id} onClick={() => setChannel(ch)}
-              style={{
-                width: '100%', padding: '10px 12px', marginBottom: 2,
-                background: channel.id === ch.id ? 'rgba(255,60,0,0.1)' : 'transparent',
-                border: 'none',
-                borderLeft: `2px solid ${channel.id === ch.id ? 'var(--accent)' : 'transparent'}`,
-                color: channel.id === ch.id ? 'var(--fg)' : 'rgba(255,255,255,0.45)',
-                fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer', textAlign: 'left',
-                transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6,
-              }}
-              onMouseEnter={e => { if (channel.id !== ch.id) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'; }}
-              onMouseLeave={e => { if (channel.id !== ch.id) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'; }}>
-              <Hash size={11} style={{ opacity: 0.5 }} />
-              {ch.name}
-            </button>
-          ))}
-
-          {!user && (
-            <div style={{ paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: 24 }}>
-              <Link href="/auth"
-                style={{ display: 'block', padding: '8px 12px', background: 'rgba(255,60,0,0.1)', border: '1px solid rgba(255,60,0,0.3)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textDecoration: 'none', textAlign: 'center' }}>
-                SIGN IN TO CHAT
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Chat area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          {/* Channel header */}
-          <div style={{ height: 48, borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.01)', flexShrink: 0 }}>
-            <Hash size={14} style={{ opacity: 0.4 }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{channel.name}</span>
-            <span style={{ fontSize: 10, opacity: 0.35, borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: 12 }}>{channel.description}</span>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          {/* Now playing */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 14px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 'var(--radius-full)',
+            maxWidth: 260,
+            overflow: 'hidden',
+          }}>
+            <Music size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            <span style={{
+              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
+              color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {nowPlaying}
+            </span>
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-muted)' }}>
+            <Users size={13} />
+            {CREW.filter(c => c.online).length} online
+          </div>
+        </div>
+      </nav>
+
+      {/* Body */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+        {/* Chat */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Messages */}
-          <div style={{ flex: 1, padding: '16px 24px', overflowY: 'auto' }}>
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: 60, opacity: 0.3, fontFamily: 'var(--mono)', fontSize: 11 }}>Loading messages...</div>
-            ) : messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, opacity: 0.3 }}>
-                <Hash size={32} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>No messages yet. Be the first.</div>
-              </div>
-            ) : (
-              <div style={{ maxWidth: 860 }}>
-                {grouped.map(({ msg, isGrouped, showDate }) => (
-                  <React.Fragment key={msg.id}>
-                    {showDate && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 16px' }}>
-                        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-                        <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 2, opacity: 0.4 }}>{formatDate(msg.created_at)}</span>
-                        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', gap: 12, marginBottom: isGrouped ? 2 : 16, paddingLeft: isGrouped ? 44 : 0 }}>
-                      {!isGrouped && (
-                        <div style={{ flexShrink: 0, marginTop: 2 }}>
-                          <Avatar username={msg.profiles?.username || '?'} avatar_url={msg.profiles?.avatar_url} size={32} />
-                        </div>
-                      )}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {!isGrouped && (
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold', color: 'var(--accent)' }}>
-                              {msg.profiles?.username || 'anonymous'}
-                            </span>
-                            <span style={{ fontSize: 9, opacity: 0.3, fontFamily: 'var(--mono)' }}>
-                              {formatTime(msg.created_at)}
-                            </span>
-                          </div>
-                        )}
-                        <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.88)', wordBreak: 'break-word' }}>
-                          {msg.content}
-                        </div>
-                        {/* Reactions */}
-                        {(Object.keys(msg.reactions || {}).length > 0 || user) && (
-                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }}>
-                            {Object.entries(msg.reactions || {}).map(([emoji, reactors]) => (
-                              reactors.length > 0 && (
-                                <button key={emoji} onClick={() => react(msg.id, emoji)}
-                                  style={{ padding: '2px 8px', background: user && reactors.includes(user.id) ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${user && reactors.includes(user.id) ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.1)'}`, color: 'var(--fg)', cursor: user ? 'pointer' : 'default', fontSize: 11, borderRadius: 2 }}>
-                                  {emoji} {reactors.length}
-                                </button>
-                              )
-                            ))}
-                            {user && (
-                              <div style={{ position: 'relative' }}>
-                                <button onClick={() => setEmojiPicker(emojiPicker === msg.id ? null : msg.id)}
-                                  style={{ padding: '2px 6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', borderRadius: 2, display: 'flex', alignItems: 'center' }}
-                                  title="Add reaction">
-                                  <Smile size={11} />
-                                </button>
-                                {emojiPicker === msg.id && (
-                                  <div style={{ position: 'absolute', bottom: 28, left: 0, background: '#1c1c1c', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: 8, display: 'flex', gap: 4, zIndex: 50 }}>
-                                    {EMOJIS.map(e => (
-                                      <button key={e} onClick={() => react(msg.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 4, borderRadius: 4, transition: 'background 0.1s' }}
-                                        onMouseEnter={e2 => (e2.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}
-                                        onMouseLeave={e2 => (e2.currentTarget as HTMLElement).style.background = 'none'}>
-                                        {e}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </React.Fragment>
-                ))}
-                <div ref={bottomRef} />
-              </div>
-            )}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
+            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+              {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+              <div ref={bottomRef} />
+            </div>
           </div>
 
           {/* Input */}
-          <div style={{ padding: '12px 24px 16px', borderTop: '1px solid rgba(255,255,255,0.04)', background: '#080808', flexShrink: 0 }}>
-            {user ? (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 4px 4px 16px' }}>
-                <input ref={inputRef} type="text" value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder={`Message #${channel.name}...`}
-                  style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none' }} />
-                <button onClick={send} disabled={!newMessage.trim()}
-                  style={{ padding: '10px 16px', background: newMessage.trim() ? 'var(--accent)' : 'rgba(255,60,0,0.2)', border: 'none', color: 'var(--bg)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: newMessage.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.2s' }}>
-                  <Send size={11} /> SEND
-                </button>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: 14, fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5 }}>
-                <Link href="/auth" style={{ color: 'var(--accent)' }}>Sign in</Link> to join the conversation
-              </div>
-            )}
+          <div style={{
+            padding: '16px 28px',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            background: '#090909',
+            flexShrink: 0,
+          }}>
+            <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <button style={{
+                background: 'none', border: 'none', color: 'var(--fg-muted)',
+                padding: 10, alignSelf: 'center', transition: 'color 0.2s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+                <Smile size={16} />
+              </button>
+
+              <textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Share your thoughts..."
+                rows={1}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--fg)',
+                  fontFamily: 'var(--serif)',
+                  fontSize: 14,
+                  resize: 'none',
+                  outline: 'none',
+                  transition: 'border-color 0.3s',
+                  lineHeight: 1.5,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.35)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+              />
+
+              <motion.button
+                onClick={handleSend}
+                whileHover={input.trim() ? { scale: 1.05 } : {}}
+                whileTap={input.trim() ? { scale: 0.95 } : {}}
+                style={{
+                  padding: '11px 18px',
+                  background: input.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                  border: 'none',
+                  color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  transition: 'background 0.3s, color 0.3s',
+                  alignSelf: 'flex-end',
+                }}
+              >
+                <Send size={12} /> Send
+              </motion.button>
+            </div>
           </div>
         </div>
+
+        {/* Crew sidebar */}
+        <div style={{
+          width: 240,
+          borderLeft: '1px solid rgba(255,255,255,0.04)',
+          background: '#090909',
+          padding: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          flexShrink: 0,
+          overflowY: 'auto',
+        }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
+            Crew
+          </div>
+
+          {CREW.map((member, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.08 }}
+              style={{
+                padding: '10px 12px',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                background: member.online ? 'rgba(0,204,102,0.03)' : 'transparent',
+              }}
+            >
+              <div style={{
+                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                background: member.online ? '#00cc66' : '#333',
+                boxShadow: member.online ? '0 0 6px rgba(0,204,102,0.5)' : 'none',
+              }} />
+              <div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: member.online ? 'var(--fg)' : 'var(--fg-muted)' }}>
+                  {member.name}
+                </div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                  {member.role}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      <style>{`
+        textarea::placeholder { color: rgba(240,236,228,0.18); }
+      `}</style>
+    </main>
   );
 }

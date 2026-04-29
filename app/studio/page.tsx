@@ -1,289 +1,267 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Trash2, Plus, Image, Type } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, FolderOpen, Image, Video, FileText, Music, Upload, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { motion } from 'framer-motion';
+import GrainOverlay from '@/components/GrainOverlay';
+import AnimatedSection from '@/components/AnimatedSection';
+import SectionLabel from '@/components/SectionLabel';
 
-interface Asset { id: string; title?: string; asset_url: string; asset_type: string; position_x: number; position_y: number; width: number; height: number; }
-interface Board { id: string; name: string; studio_assets: Asset[]; }
+interface Asset {
+  id: string;
+  name: string;
+  type: 'image' | 'video' | 'document' | 'audio';
+  category: string;
+  size: string;
+  dateAdded: string;
+}
+
+const ASSETS: Asset[] = [
+  { id: '1', name: 'Femme Fatale — Draft 9', type: 'document', category: 'Screenplays', size: '248 KB', dateAdded: '2026-04-15' },
+  { id: '2', name: '10 Million — Final Cut', type: 'video', category: 'Music Videos', size: '4.2 GB', dateAdded: '2026-04-20' },
+  { id: '3', name: 'The Briefcase — Poster Concept', type: 'image', category: 'Marketing', size: '3.8 MB', dateAdded: '2026-04-10' },
+  { id: '4', name: 'Production Score — V1', type: 'audio', category: 'Audio', size: '68 MB', dateAdded: '2026-03-28' },
+  { id: '5', name: 'Grand PSA — Grade LUT', type: 'document', category: 'Color', size: '12 KB', dateAdded: '2026-03-15' },
+  { id: '6', name: 'Altitude — Raw Footage B-Roll', type: 'video', category: 'Documentaries', size: '11.3 GB', dateAdded: '2026-02-20' },
+];
+
+const PROJECTS = [
+  {
+    title: 'Femme Fatale',
+    type: 'Limited Series',
+    status: 'Development',
+    statusColor: '#ffaa00',
+    completion: 85,
+    description: '133-page political noir. Submitted to A24 and Proximity Media.',
+  },
+  {
+    title: '10 Million',
+    type: 'Music Video',
+    status: 'Post-Production',
+    statusColor: 'var(--accent)',
+    completion: 95,
+    description: 'High-energy visual rhythm. Final color grade in progress.',
+  },
+];
+
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  image: <Image size={15} />,
+  video: <Video size={15} />,
+  document: <FileText size={15} />,
+  audio: <Music size={15} />,
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  image: '#0099ff',
+  video: '#ff3c00',
+  document: '#ffaa00',
+  audio: '#00cc66',
+};
+
+function AssetCard({ asset, index }: { asset: Asset; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.06, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -4, borderColor: `${TYPE_COLORS[asset.type]}44` } as any}
+      style={{
+        padding: '22px 20px',
+        background: 'var(--bg-2)',
+        border: '1px solid var(--border)',
+        cursor: 'none',
+        transition: 'border-color 0.4s, box-shadow 0.4s',
+        borderRadius: 'var(--radius-sm)',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.7), 0 0 30px ${TYPE_COLORS[asset.type]}0a`)}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ color: TYPE_COLORS[asset.type] }}>{TYPE_ICONS[asset.type]}</span>
+        <span style={{ fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: TYPE_COLORS[asset.type], fontFamily: 'var(--mono)', opacity: 0.85 }}>
+          {asset.category}
+        </span>
+      </div>
+
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 12, lineHeight: 1.4, marginBottom: 10, color: 'var(--fg)' }}>
+        {asset.name}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)' }}>
+        <span>{asset.size}</span>
+        <span>{new Date(asset.dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+      </div>
+    </motion.div>
+  );
+}
+
+function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: number }) {
+  return (
+    <AnimatedSection delay={index * 0.1}>
+      <motion.div
+        whileHover={{ borderColor: `${project.statusColor}33` } as any}
+        style={{
+          padding: 32,
+          background: 'var(--bg-2)',
+          border: '1px solid var(--border)',
+          transition: 'border-color 0.4s, box-shadow 0.4s',
+          borderRadius: 'var(--radius-sm)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 20px 60px rgba(0,0,0,0.8)`)}
+        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+      >
+        {/* Ghost title */}
+        <div style={{
+          position: 'absolute',
+          top: -10,
+          right: -8,
+          fontFamily: 'var(--display)',
+          fontSize: 'clamp(3rem, 8vw, 6rem)',
+          lineHeight: 1,
+          color: 'rgba(255,255,255,0.025)',
+          letterSpacing: -2,
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}>
+          {project.title.split(' ')[0].toUpperCase()}
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div>
+              <span style={{ fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.statusColor, fontFamily: 'var(--mono)' }}>
+                {project.type}
+              </span>
+              <h3 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: 2, marginTop: 6 }}>
+                {project.title}
+              </h3>
+            </div>
+            <span style={{
+              fontSize: 8,
+              letterSpacing: 2,
+              padding: '5px 12px',
+              border: `1px solid ${project.statusColor}55`,
+              color: project.statusColor,
+              textTransform: 'uppercase',
+              fontFamily: 'var(--mono)',
+              borderRadius: 'var(--radius-sm)',
+              flexShrink: 0,
+            }}>
+              {project.status}
+            </span>
+          </div>
+
+          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.92rem', color: 'var(--fg-muted)', marginBottom: 20 }}>
+            {project.description}
+          </p>
+
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', marginBottom: 6 }}>
+              <span>Completion</span>
+              <span style={{ color: project.statusColor }}>{project.completion}%</span>
+            </div>
+            <div style={{ height: 2, background: '#1a1a1a', overflow: 'hidden', borderRadius: 1 }}>
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: `${project.completion}%` }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+                style={{ height: '100%', background: project.statusColor, borderRadius: 1 }}
+              />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatedSection>
+  );
+}
 
 export default function StudioPage() {
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [selected, setSelected] = useState<Board | null>(null);
-  const [newBoardName, setNewBoardName] = useState('');
-  const [newAssetUrl, setNewAssetUrl] = useState('');
-  const [newAssetTitle, setNewAssetTitle] = useState('');
-  const [addMode, setAddMode] = useState<'image' | 'note'>('image');
-  const [dragging, setDragging] = useState<Asset | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [user, setUser] = useState<any>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const [filter, setFilter] = useState<string>('all');
+  const types = ['all', 'image', 'video', 'document', 'audio'];
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) load(user.id);
-    });
-  }, []);
-
-  const load = async (uid: string) => {
-    const { data } = await supabase
-      .from('studio_boards')
-      .select('*, studio_assets(*)')
-      .eq('user_id', uid)
-      .order('created_at', { ascending: false });
-    if (data) {
-      setBoards(data as Board[]);
-      if (data.length > 0) setSelected(data[0] as Board);
-    }
-  };
-
-  const createBoard = async () => {
-    if (!user || !newBoardName.trim()) return;
-    const { data } = await supabase
-      .from('studio_boards')
-      .insert({ user_id: user.id, name: newBoardName })
-      .select('*, studio_assets(*)')
-      .single();
-    if (data) {
-      setBoards([data as Board, ...boards]);
-      setSelected(data as Board);
-      setNewBoardName('');
-    }
-  };
-
-  const deleteBoard = async (id: string) => {
-    if (!confirm('Delete this board and all its assets?')) return;
-    await supabase.from('studio_boards').delete().eq('id', id);
-    const rest = boards.filter(b => b.id !== id);
-    setBoards(rest);
-    setSelected(selected?.id === id ? rest[0] || null : selected);
-  };
-
-  const addAsset = async () => {
-    if (!selected) return;
-    const isNote = addMode === 'note';
-    if (isNote && !newAssetTitle.trim()) return;
-    if (!isNote && !newAssetUrl.trim()) return;
-
-    const { data } = await supabase
-      .from('studio_assets')
-      .insert({
-        board_id: selected.id,
-        user_id: user.id,
-        asset_url: isNote ? '' : newAssetUrl,
-        asset_type: isNote ? 'note' : 'image',
-        title: newAssetTitle || '',
-        position_x: 80 + Math.floor(Math.random() * 300),
-        position_y: 80 + Math.floor(Math.random() * 200),
-        width: isNote ? 220 : 280,
-        height: isNote ? 140 : 200,
-      })
-      .select().single();
-    if (data) {
-      const updated = { ...selected, studio_assets: [...selected.studio_assets, data] };
-      setSelected(updated);
-      setBoards(boards.map(b => b.id === selected.id ? updated : b));
-      setNewAssetUrl('');
-      setNewAssetTitle('');
-    }
-  };
-
-  const deleteAsset = async (assetId: string) => {
-    if (!selected) return;
-    await supabase.from('studio_assets').delete().eq('id', assetId);
-    const updated = { ...selected, studio_assets: selected.studio_assets.filter(a => a.id !== assetId) };
-    setSelected(updated);
-    setBoards(boards.map(b => b.id === selected.id ? updated : b));
-  };
-
-  const handleDragStart = (e: React.DragEvent, asset: Asset) => {
-    if (!canvasRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    setDragging(asset);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!dragging || !selected || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = Math.max(0, e.clientX - rect.left - dragOffset.x);
-    const y = Math.max(0, e.clientY - rect.top - dragOffset.y);
-    await supabase.from('studio_assets').update({ position_x: Math.round(x), position_y: Math.round(y) }).eq('id', dragging.id);
-    const updated = {
-      ...selected,
-      studio_assets: selected.studio_assets.map(a => a.id === dragging.id ? { ...a, position_x: Math.round(x), position_y: Math.round(y) } : a),
-    };
-    setSelected(updated);
-    setBoards(boards.map(b => b.id === selected.id ? updated : b));
-    setDragging(null);
-  };
-
-  if (!user) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, marginBottom: 16 }}>Sign in to use Studio.</p>
-        <Link href="/auth" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11 }}>Sign in →</Link>
-      </div>
-    </div>
-  );
+  const filtered = filter === 'all' ? ASSETS : ASSETS.filter(a => a.type === filter);
 
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', overflow: 'hidden' }}>
-      <header style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: 60, background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '0 24px', display: 'flex', alignItems: 'center', zIndex: 100 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>STUDIO</h1>
-        </Link>
-        {selected && (
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, marginLeft: 20 }}>
-            {selected.name} · {selected.studio_assets.length} assets
-          </span>
-        )}
-      </header>
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+      <GrainOverlay />
 
-      {/* Board list sidebar */}
-      <div style={{ marginTop: 60, width: 220, background: '#080808', borderRight: '1px solid rgba(255,255,255,0.04)', padding: 16, overflowY: 'auto', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, opacity: 0.3, marginBottom: 12 }}>MOOD BOARDS</div>
-        <div style={{ marginBottom: 16 }}>
-          <input type="text" value={newBoardName} onChange={e => setNewBoardName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && createBoard()}
-            placeholder="New board name..."
-            style={{ width: '100%', padding: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 8, boxSizing: 'border-box' }} />
-          <button onClick={createBoard}
-            style={{ width: '100%', padding: 8, background: 'var(--accent)', color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            <Plus size={10} /> CREATE
+      {/* Nav */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, width: '100%',
+        padding: '0 28px', height: 62,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 100,
+        background: 'rgba(8,8,8,0.92)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <ArrowLeft size={17} color="var(--fg)" />
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>STUDIO</div>
+        </Link>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Upload size={11} /> Upload
+          </button>
+          <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={11} /> New Asset
           </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {boards.map(board => (
-            <button key={board.id} onClick={() => setSelected(board)}
-              style={{ padding: '10px 12px', background: selected?.id === board.id ? 'rgba(255,60,0,0.1)' : 'transparent', border: 'none', borderLeft: `2px solid ${selected?.id === board.id ? 'var(--accent)' : 'transparent'}`, color: selected?.id === board.id ? 'var(--fg)' : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-              onMouseEnter={e => { if (selected?.id !== board.id) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)'; }}
-              onMouseLeave={e => { if (selected?.id !== board.id) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.5)'; }}>
-              <div>{board.name}</div>
-              <div style={{ fontSize: 8, opacity: 0.4, marginTop: 2 }}>{board.studio_assets.length} assets</div>
-            </button>
-          ))}
-          {boards.length === 0 && (
-            <div style={{ fontSize: 10, opacity: 0.3, padding: 8, fontFamily: 'var(--mono)' }}>No boards yet</div>
-          )}
-        </div>
-      </div>
+      </nav>
 
-      {/* Canvas area */}
-      {selected ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginTop: 60, minWidth: 0 }}>
-          {/* Toolbar */}
-          <div style={{ height: 52, borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#080808', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setAddMode('image')}
-                style={{ padding: '6px 12px', background: addMode === 'image' ? 'rgba(255,60,0,0.15)' : 'transparent', border: `1px solid ${addMode === 'image' ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, color: addMode === 'image' ? 'var(--accent)' : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Image size={10} /> IMAGE
-              </button>
-              <button onClick={() => setAddMode('note')}
-                style={{ padding: '6px 12px', background: addMode === 'note' ? 'rgba(255,60,0,0.15)' : 'transparent', border: `1px solid ${addMode === 'note' ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, color: addMode === 'note' ? 'var(--accent)' : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Type size={10} /> NOTE
-              </button>
-              <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
-                {addMode === 'image' && (
-                  <input type="text" value={newAssetUrl} onChange={e => setNewAssetUrl(e.target.value)}
-                    placeholder="Image URL..."
-                    style={{ width: 220, padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10 }} />
-                )}
-                <input type="text" value={newAssetTitle} onChange={e => setNewAssetTitle(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addAsset()}
-                  placeholder={addMode === 'note' ? 'Note text...' : 'Label (optional)'}
-                  style={{ width: addMode === 'note' ? 220 : 120, padding: '6px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10 }} />
-                <button onClick={addAsset}
-                  style={{ padding: '6px 14px', background: 'var(--accent)', border: 'none', color: 'var(--bg)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer' }}>
-                  + ADD
-                </button>
-              </div>
-            </div>
-            <button onClick={() => deleteBoard(selected.id)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.25)', cursor: 'pointer' }} title="Delete board">
-              <Trash2 size={14} />
-            </button>
-          </div>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '100px 20px 80px' }}>
 
-          {/* Canvas */}
-          <div ref={canvasRef}
-            style={{
-              flex: 1, position: 'relative', overflow: 'auto', cursor: dragging ? 'grabbing' : 'default',
-              backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)`,
-              backgroundSize: '28px 28px',
-              backgroundPosition: '0 0',
-            }}
-            onDragOver={e => e.preventDefault()}
-            onDrop={handleDrop}>
+        {/* Asset Library */}
+        <AnimatedSection>
+          <SectionLabel text="Asset Library" />
 
-            {selected.studio_assets.length === 0 && (
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                <div style={{ textAlign: 'center', opacity: 0.2 }}>
-                  <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, marginBottom: 8 }}>EMPTY BOARD</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10 }}>Add images or notes using the toolbar above</div>
-                </div>
-              </div>
-            )}
-
-            {selected.studio_assets.map(asset => (
-              <div key={asset.id} draggable
-                onDragStart={e => handleDragStart(e, asset)}
-                onDragEnd={() => setDragging(null)}
+          {/* Filter tabs */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
+            {types.map(t => (
+              <button
+                key={t}
+                onClick={() => setFilter(t)}
                 style={{
-                  position: 'absolute',
-                  left: asset.position_x, top: asset.position_y,
-                  width: asset.width, height: asset.height,
-                  background: asset.asset_type === 'note' ? 'rgba(255,220,100,0.06)' : '#1a1a1a',
-                  border: `1px solid ${asset.asset_type === 'note' ? 'rgba(255,220,100,0.2)' : 'rgba(255,255,255,0.12)'}`,
-                  cursor: 'grab', overflow: 'hidden',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-                  transition: 'box-shadow 0.2s',
-                  userSelect: 'none',
+                  padding: '7px 16px',
+                  background: filter === t ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${filter === t ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
+                  color: filter === t ? 'var(--bg)' : 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)',
+                  fontSize: 9,
+                  letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  borderRadius: 'var(--radius-full)',
+                  transition: 'all 0.3s',
                 }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.4)'}>
-
-                {asset.asset_type === 'note' ? (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', padding: 14, boxSizing: 'border-box' }}>
-                    <div style={{ fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.6, color: 'rgba(255,220,100,0.8)', wordBreak: 'break-word' }}>
-                      {asset.title}
-                    </div>
-                  </div>
-                ) : asset.asset_url.trim() ? (
-                  <img src={asset.asset_url} alt={asset.title || 'asset'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontFamily: 'var(--mono)', opacity: 0.4 }}>
-                    {asset.title || 'No content'}
-                  </div>
-                )}
-
-                {asset.title && asset.asset_type === 'image' && asset.asset_url.trim() && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 8px', background: 'rgba(0,0,0,0.7)', fontSize: 9, fontFamily: 'var(--mono)', opacity: 0.8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {asset.title}
-                  </div>
-                )}
-
-                <button onClick={() => deleteAsset(asset.id)}
-                  style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.75)', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: 4, borderRadius: 2, display: 'flex', alignItems: 'center' }}>
-                  <Trash2 size={10} />
-                </button>
-              </div>
+              >
+                {t}
+              </button>
             ))}
           </div>
-        </div>
-      ) : (
-        <div style={{ flex: 1, marginTop: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.25 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 4, marginBottom: 8 }}>SELECT A BOARD</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 10 }}>or create one in the sidebar</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+            {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} />)}
+          </div>
+        </AnimatedSection>
+
+        {/* Active Projects */}
+        <div style={{ marginTop: 90 }}>
+          <AnimatedSection>
+            <SectionLabel text="Active Projects" />
+          </AnimatedSection>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {PROJECTS.map((p, i) => <ProjectCard key={p.title} project={p} index={i} />)}
           </div>
         </div>
-      )}
-    </div>
+      </section>
+    </main>
   );
 }

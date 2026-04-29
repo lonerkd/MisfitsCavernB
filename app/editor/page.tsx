@@ -1,126 +1,159 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, Download, FileText, Play, Navigation2, Eye, Cloud } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowLeft, Save, Download, FileText, Plus, X, ChevronDown, Loader } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, exportScriptAsText, type StoredScript } from '@/lib/scriptos/storage';
-import { getCharacterNames, ELEMENT_CYCLE, getCurrentLine } from '@/lib/scriptos/editor-utils';
-import { exportAsFountain } from '@/lib/scriptos/fountain-export';
 import type { ScriptLine } from '@/types/screenplay';
+import { useToast } from '@/components/Toast';
+
+const TYPE_LABELS: Record<string, string> = {
+  slug: 'SCENE',
+  character: 'CHAR',
+  dialogue: 'DIAL',
+  parenthetical: 'PRNTH',
+  transition: 'TRANS',
+  action: 'ACTION',
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  slug: '#ff3c00',
+  character: '#ffaa00',
+  dialogue: 'var(--fg)',
+  parenthetical: 'rgba(240,236,228,0.5)',
+  transition: '#888',
+  action: 'rgba(240,236,228,0.75)',
+};
+
+function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
+  const style: React.CSSProperties = {
+    fontFamily: 'Courier Prime, Courier, monospace',
+    fontSize: 12,
+    lineHeight: '1.7',
+    color: TYPE_COLORS[line.type] || 'var(--fg)',
+    marginBottom: 2,
+    padding: '2px 0',
+    whiteSpace: 'pre-wrap',
+  };
+
+  if (line.type === 'slug') {
+    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 16 : 0, marginBottom: 4 }}>{line.text}</div>;
+  }
+  if (line.type === 'character') {
+    return <div style={{ ...style, textAlign: 'center', textTransform: 'uppercase', fontWeight: 600, marginTop: 12, marginBottom: 0 }}>{line.text}</div>;
+  }
+  if (line.type === 'dialogue') {
+    return (
+      <div style={{ ...style, paddingLeft: 80, paddingRight: 60, maxWidth: '100%', marginBottom: 8 }}>
+        {line.text}
+      </div>
+    );
+  }
+  if (line.type === 'parenthetical') {
+    return (
+      <div style={{ ...style, paddingLeft: 100, fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>
+        {line.text}
+      </div>
+    );
+  }
+  if (line.type === 'transition') {
+    return <div style={{ ...style, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', marginTop: 16, marginBottom: 16 }}>{line.text}</div>;
+  }
+
+  return <div style={style}>{line.text || <span style={{ opacity: 0.2 }}>—</span>}</div>;
+}
+
+function ScriptItem({ script, active, onClick, onClose }: {
+  script: StoredScript;
+  active: boolean;
+  onClick: () => void;
+  onClose?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ x: 3 }}
+      onClick={onClick}
+      style={{
+        padding: '12px 14px',
+        marginBottom: 6,
+        border: `1px solid ${active ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.05)'}`,
+        background: active ? 'rgba(255,60,0,0.05)' : 'transparent',
+        cursor: 'none',
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 8,
+        transition: 'border-color 0.3s, background 0.3s',
+        borderRadius: 'var(--radius-sm)',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: 'var(--mono)',
+          fontSize: 11,
+          letterSpacing: 0.5,
+          color: active ? 'var(--accent)' : 'var(--fg)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          marginBottom: 3,
+        }}>
+          {script.title}
+        </div>
+        <div style={{ fontSize: 9, opacity: 0.35, fontFamily: 'var(--mono)' }}>
+          {new Date(script.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+const PLACEHOLDER = `FADE IN:
+
+INT. COFFEE SHOP - DAY
+
+The kind of place that hasn't changed in forty years. Good.
+
+JANE (30s, sharp eyes, cheap suit) sits at a corner table,
+typing furiously on a laptop that's seen better days.
+
+JANE
+(to herself)
+Got it. The perfect opening line.
+
+She leans back. Takes a long sip of cold coffee.
+
+CUT TO:`;
 
 export default function EditorPage() {
+  const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [scripts, setScripts] = useState<StoredScript[]>([]);
-  const [showScripts, setShowScripts] = useState(false);
-  const [showSceneNav, setShowSceneNav] = useState(false);
-  const [showTableRead, setShowTableRead] = useState(false);
-  const [cursorPos, setCursorPos] = useState(0);
-  const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
-  const [authedUser, setAuthedUser] = useState<any>(null);
-  const [cloudScript, setCloudScript] = useState<any>(null);
-  const [cloudScripts, setCloudScripts] = useState<any[]>([]);
-  const [saveStatus, setSaveStatus] = useState<'local'|'saving'|'saved'>('local');
-  const [versionHistory, setVersionHistory] = useState<any[]>([]);
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'preview' | 'stats'>('preview');
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      setAuthedUser(user);
-      if (user) {
-        const { data } = await supabase.from('scripts').select('*').eq('last_edited_by', user.id).order('updated_at', { ascending: false });
-        if (data && data.length > 0) {
-          setCloudScripts(data);
-          setCloudScript(data[0]);
-          setContent(data[0].content || '');
-          setSaveStatus('saved');
-        } else {
-          const { data: newScript } = await supabase.from('scripts').insert({ title: 'My First Screenplay', content: '', last_edited_by: user.id }).select().single();
-          if (newScript) { setCloudScript(newScript); setCloudScripts([newScript]); setSaveStatus('saved'); }
-        }
-      }
-    });
-  }, []);
-
-  // Load scripts on mount (local fallback for guests)
-  useEffect(() => {
-    const allScripts = getAllScripts();
-    setScripts(allScripts);
-    if (allScripts.length > 0) {
-      setCurrentScript(allScripts[allScripts.length - 1]);
+    const all = getAllScripts();
+    setScripts(all);
+    if (all.length > 0) {
+      const latest = all[all.length - 1];
+      setCurrentScript(latest);
+      setContent(latest.content);
     } else {
-      const newScript = createNewScript('My First Screenplay');
-      setCurrentScript(newScript);
-      setScripts([newScript]);
+      const fresh = createNewScript('My First Screenplay');
+      setCurrentScript(fresh);
+      setScripts([fresh]);
     }
   }, []);
 
-  // Cloud auto-save (debounced)
-  useEffect(() => {
-    if (!authedUser || !cloudScript) return;
-    setSaveStatus('saving');
-    const t = setTimeout(async () => {
-      await supabase.from('scripts').update({ content, updated_at: new Date().toISOString() }).eq('id', cloudScript.id);
-      setSaveStatus('saved');
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [content, authedUser, cloudScript?.id]);
-
-  const loadVersionHistory = async () => {
-    if (!cloudScript) return;
-    const { data } = await supabase.from('script_versions').select('*').eq('script_id', cloudScript.id).order('created_at', { ascending: false }).limit(20);
-    if (data) setVersionHistory(data);
-    setShowVersionHistory(true);
-  };
-
-  const restoreVersion = (versionContent: string) => {
-    if (confirm('Restore this version? Current content will be replaced.')) {
-      setContent(versionContent);
-      setShowVersionHistory(false);
-    }
-  };
-
-  const handleNewCloudScript = async () => {
-    if (!authedUser) return;
-    const { data } = await supabase.from('scripts').insert({ title: 'Untitled', content: '', last_edited_by: authedUser.id }).select().single();
-    if (data) { setCloudScript(data); setCloudScripts([data, ...cloudScripts]); setContent(''); setSaveStatus('saved'); setShowScripts(false); }
-  };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!textareaRef.current) return;
-
-      // Cmd+S / Ctrl+S to save
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-        return;
-      }
-
-      // Tab key - cycle element types
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        handleTabKey();
-        return;
-      }
-
-      // Track cursor position for real-time line type detection
-      setTimeout(() => {
-        setCursorPos(textareaRef.current?.selectionStart || 0);
-      }, 0);
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [content, lines]);
-
-  // Parse content when it changes
   useEffect(() => {
     if (content) {
       const result = parseScript(content);
@@ -132,459 +165,373 @@ export default function EditorPage() {
 
   // Auto-save
   useEffect(() => {
-    if (currentScript) {
-      const timeoutId = setTimeout(() => {
-        saveScript({
-          id: currentScript.id,
-          title: currentScript.title,
-          content
-        });
-      }, 1000);
-
-      return () => clearTimeout(timeoutId);
-    }
+    if (!currentScript) return;
+    const timer = setTimeout(() => {
+      saveScript({ id: currentScript.id, title: currentScript.title, content });
+    }, 1200);
+    return () => clearTimeout(timer);
   }, [content, currentScript]);
 
-  const getLineTypeAtCursor = (): string => {
-    const { line } = getCurrentLine(content, cursorPos);
-    const matchingLine = lines.find((l, i) => {
-      const lineStart = content.substring(0, i * 20).split('\n').length;
-      return l.text.trim() === line.trim();
-    });
-    return matchingLine?.type || 'action';
-  };
-
-  const handleTabKey = () => {
-    if (!textareaRef.current) return;
-
-    const start = textareaRef.current.selectionStart;
-    const { lineStart, lineEnd } = getCurrentLine(content, start);
-    const lineText = content.substring(lineStart, lineEnd - 1);
-
-    const currentType = getLineTypeAtCursor();
-    const currentIndex = ELEMENT_CYCLE.indexOf(currentType as any);
-    const nextIndex = (currentIndex + 1) % ELEMENT_CYCLE.length;
-    const nextType = ELEMENT_CYCLE[nextIndex];
-
-    const formatter = getElementFormatter(nextType);
-    const formattedLine = formatter(lineText.trim());
-
-    const newContent = content.substring(0, lineStart) + formattedLine + content.substring(lineEnd);
-
-    setContent(newContent);
+  const handleSave = useCallback(() => {
+    if (!currentScript) return;
+    setSaving(true);
+    saveScript({ id: currentScript.id, title: currentScript.title, content });
     setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.selectionStart = lineStart + formattedLine.length;
-        textareaRef.current.selectionEnd = lineStart + formattedLine.length;
-      }
-    }, 0);
-  };
+      setSaving(false);
+      toast('Screenplay saved.', 'success');
+    }, 400);
+  }, [currentScript, content, toast]);
 
-  const getElementFormatter = (type: string): ((text: string) => string) => {
-    switch (type) {
-      case 'slug':
-        return (text) => text.toUpperCase().trim();
-      case 'character':
-        return (text) => text.toUpperCase().trim();
-      case 'dialogue':
-        return (text) => text.trim();
-      case 'parenthetical':
-        return (text) => `(${text.replace(/[()]/g, '').trim()})`;
-      case 'action':
-        return (text) => text.trim();
-      case 'transition':
-        return (text) => text.toUpperCase().trim() + (text.toUpperCase().endsWith(':') ? '' : ':');
-      default:
-        return (text) => text.trim();
-    }
-  };
+  const handleExport = useCallback(() => {
+    if (!currentScript) return;
+    exportScriptAsText({ ...currentScript, content });
+    toast('Exported as .txt', 'info');
+  }, [currentScript, content, toast]);
 
-  const handleSave = async () => {
-    if (authedUser && cloudScript) {
-      setSaveStatus('saving');
-      const versionNum = (cloudScript.version || 1) + 1;
-      await supabase.from('scripts').update({ content, version: versionNum, updated_at: new Date().toISOString() }).eq('id', cloudScript.id);
-      await supabase.from('script_versions').insert({ script_id: cloudScript.id, content, version: versionNum, edited_by: authedUser.id });
-      setCloudScript({ ...cloudScript, version: versionNum });
-      setSaveStatus('saved');
-    } else if (currentScript) {
-      const saved = saveScript({ id: currentScript.id, title: currentScript.title, content });
-      setCurrentScript(saved);
-    }
-  };
-
-  const handleExport = () => {
-    if (currentScript) {
-      exportScriptAsText({ ...currentScript, content });
-    }
-  };
-
-  const handleFountainExport = () => {
-    if (currentScript) {
-      exportAsFountain(content, currentScript.title);
-    }
-  };
-
-  const handleNewScript = () => {
-    const newScript = createNewScript('Untitled');
-    setCurrentScript(newScript);
+  const handleNew = useCallback(() => {
+    const s = createNewScript('Untitled');
+    setCurrentScript(s);
     setContent('');
-    setScripts([...scripts, newScript]);
-    setShowScripts(false);
-  };
+    setScripts(prev => [...prev, s]);
+    setShowSidebar(false);
+    textareaRef.current?.focus();
+  }, []);
 
-  const handleLoadScript = (script: StoredScript) => {
+  const handleLoad = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content);
-    setShowScripts(false);
-  };
+    setShowSidebar(false);
+  }, []);
 
-  const getLineStyle = (type: string) => {
-    const baseStyle: React.CSSProperties = {
-      fontFamily: 'Courier Prime, Courier, monospace',
-      fontSize: '12px',
-      lineHeight: '1.5',
-      marginBottom: '12px',
-      whiteSpace: 'pre-wrap'
-    };
-
-    switch (type) {
-      case 'slug':
-        return { ...baseStyle, fontWeight: 'bold', textTransform: 'uppercase' as const, color: '#ff3c00' };
-      case 'character':
-        return { ...baseStyle, textAlign: 'center' as const, textTransform: 'uppercase' as const, fontWeight: 'bold' };
-      case 'dialogue':
-        return { ...baseStyle, maxWidth: '400px', margin: '0 auto 12px', paddingLeft: '100px', paddingRight: '80px' };
-      case 'parenthetical':
-        return { ...baseStyle, maxWidth: '300px', margin: '0 auto 6px', paddingLeft: '120px', fontStyle: 'italic', opacity: 0.7 };
-      case 'transition':
-        return { ...baseStyle, textAlign: 'right' as const, fontWeight: 'bold', textTransform: 'uppercase' as const };
-      case 'action':
-        return { ...baseStyle, maxWidth: '600px' };
-      default:
-        return baseStyle;
-    }
-  };
+  // Stats
+  const scenes = lines.filter(l => l.type === 'slug').length;
+  const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
+  const wordCount = content.split(/\s+/).filter(Boolean).length;
+  const pageEst = Math.max(1, Math.round(wordCount / 185));
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+
       {/* Header */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: 'rgba(8, 8, 8, 0.95)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-          padding: '16px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 100
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link href="/" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
-            <ArrowLeft size={20} />
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        background: 'rgba(8,8,8,0.96)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        padding: '0 24px',
+        height: 60,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 100,
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Link href="/" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+            <ArrowLeft size={18} />
           </Link>
-          {editingTitle ? (
-            <input
-              autoFocus
-              defaultValue={authedUser ? cloudScript?.title : currentScript?.title}
-              onBlur={async (e) => {
-                const t = e.target.value.trim() || 'Untitled';
-                if (authedUser && cloudScript) {
-                  await supabase.from('scripts').update({ title: t }).eq('id', cloudScript.id);
-                  setCloudScript({ ...cloudScript, title: t });
-                } else if (currentScript) {
-                  saveScript({ id: currentScript.id, title: t, content });
-                  setCurrentScript({ ...currentScript, title: t });
-                }
-                setEditingTitle(false);
-              }}
-              onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-              style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent)', color: 'var(--fg)', outline: 'none', width: 260 }}
-            />
-          ) : (
-            <h1 onClick={() => setEditingTitle(true)} title="Click to rename"
-              style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0, cursor: 'text' }}>
-              {authedUser ? (cloudScript?.title || 'EDITOR') : (currentScript?.title || 'EDITOR')}
-            </h1>
-          )}
+
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              fontFamily: 'var(--display)',
+              fontSize: '1.05rem',
+              letterSpacing: 4,
+              color: 'var(--accent)',
+            }}>
+              ScriptOS
+            </div>
+            <span style={{ fontSize: 9, opacity: 0.3, fontFamily: 'var(--mono)', letterSpacing: 2 }}>·</span>
+            <span style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 11,
+              color: 'var(--fg-muted)',
+              maxWidth: 200,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {currentScript?.title || 'Untitled'}
+            </span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {authedUser ? (
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: saveStatus === 'saved' ? 'var(--accent)' : 'rgba(255,255,255,0.3)', opacity: saveStatus === 'saving' ? 0.6 : 1 }}>
-              {saveStatus === 'saving' ? 'SAVING...' : saveStatus === 'saved' ? '✓ CLOUD SAVED' : ''}
-            </span>
-          ) : (
-            <Link href="/auth"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.6, textDecoration: 'none' }}>
-              <Cloud size={11} /> SIGN IN TO SYNC
-            </Link>
-          )}
-          {authedUser && cloudScript && (
-            <button onClick={loadVersionHistory} className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              History (v{cloudScript.version || 1})
-            </button>
-          )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Scripts picker */}
           <button
-            onClick={() => setShowScripts(!showScripts)}
+            onClick={() => setShowSidebar(!showSidebar)}
             className="link-btn"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <FileText size={12} /> Scripts ({authedUser ? cloudScripts.length : scripts.length})
+            <FileText size={11} /> Scripts ({scripts.length}) <ChevronDown size={10} style={{ opacity: 0.5, transform: showSidebar ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
           </button>
+
           <button
-            onClick={() => setShowSceneNav(!showSceneNav)}
+            onClick={handleSave}
             className="link-btn"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <Navigation2 size={12} /> Scenes ({lines.filter((l) => l.type === 'slug').length})
+            {saving ? <Loader size={11} style={{ animation: 'spin 0.8s linear infinite' }} /> : <Save size={11} />}
+            Save
           </button>
+
           <button
-            onClick={() => setShowTableRead(!showTableRead)}
+            onClick={handleExport}
             className="link-btn"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <Play size={12} /> Table Read
-          </button>
-          <button onClick={handleSave} className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Save size={12} /> Save
-          </button>
-          <button onClick={handleFountainExport} className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Download size={12} /> Fountain
+            <Download size={11} /> Export
           </button>
         </div>
       </header>
 
-      {/* Scripts Sidebar */}
-      {showScripts && (
-        <div style={{ position: 'fixed', top: 0, right: 0, width: 300, height: '100vh', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.04)', padding: 20, zIndex: 200, overflowY: 'auto' }}>
-          <h3 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, marginBottom: 20 }}>
-            {authedUser ? 'CLOUD SCRIPTS' : 'YOUR SCRIPTS'}
-          </h3>
-          <button onClick={authedUser ? handleNewCloudScript : handleNewScript}
-            style={{ width: '100%', padding: 12, background: 'var(--accent)', color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', marginBottom: 16 }}>
-            + NEW SCRIPT
-          </button>
-          {(authedUser ? cloudScripts : scripts).map((script: any) => {
-            const isActive = authedUser ? script.id === cloudScript?.id : script.id === currentScript?.id;
-            return (
-              <div key={script.id}
-                onClick={() => {
-                  if (authedUser) { setCloudScript(script); setContent(script.content || ''); }
-                  else handleLoadScript(script);
-                  setShowScripts(false);
-                }}
-                style={{ padding: 12, marginBottom: 8, border: isActive ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 4 }}>{script.title}</div>
-                <div style={{ fontSize: 9, opacity: 0.5 }}>
-                  {new Date(script.updated_at || script.updatedAt).toLocaleDateString()}
-                  {authedUser && script.version && <span style={{ marginLeft: 8 }}>v{script.version}</span>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Body */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
 
-      {/* Version History Panel */}
-      {showVersionHistory && (
-        <div style={{ position: 'fixed', top: 0, right: 0, width: 320, height: '100vh', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.04)', padding: 20, zIndex: 200, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, margin: 0 }}>VERSION HISTORY</h3>
-            <button onClick={() => setShowVersionHistory(false)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.5, fontSize: 18 }}>✕</button>
-          </div>
-          {versionHistory.length === 0 ? (
-            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4 }}>No saved versions yet. Press Cmd+S to create one.</p>
-          ) : versionHistory.map(v => (
-            <div key={v.id} style={{ padding: 14, marginBottom: 10, border: '1px solid rgba(255,255,255,0.08)', transition: 'all 0.2s' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)' }}>v{v.version}</span>
-                <span style={{ fontSize: 9, opacity: 0.4 }}>{new Date(v.created_at).toLocaleString()}</span>
+        {/* Scripts sidebar */}
+        <AnimatePresence>
+          {showSidebar && (
+            <motion.div
+              initial={{ x: -280, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -280, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                width: 260,
+                background: '#090909',
+                borderRight: '1px solid rgba(255,255,255,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                flexShrink: 0,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', opacity: 0.4 }}>
+                  Your Scripts
+                </span>
+                <button onClick={handleNew} style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'var(--accent)', border: 'none', color: 'var(--bg)',
+                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
+                  padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+                }}>
+                  <Plus size={10} /> New
+                </button>
               </div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.5, marginBottom: 10 }}>
-                {v.content.split('\n').length} lines · {v.content.split(/\s+/).length} words
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 10px' }}>
+                {scripts.map(s => (
+                  <ScriptItem
+                    key={s.id}
+                    script={s}
+                    active={s.id === currentScript?.id}
+                    onClick={() => handleLoad(s)}
+                  />
+                ))}
               </div>
-              <button onClick={() => restoreVersion(v.content)}
-                style={{ padding: '6px 14px', background: 'rgba(255,60,0,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer' }}>
-                RESTORE
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Scene Navigator */}
-      {showSceneNav && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            width: 300,
-            height: '100vh',
-            background: '#0a0a0a',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
-            padding: 20,
-            zIndex: 200,
-            overflowY: 'auto'
-          }}
-        >
-          <h3 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, marginBottom: 20 }}>
-            SCENE NAVIGATOR
-          </h3>
-          {lines
-            .filter((l) => l.type === 'slug')
-            .map((scene, i) => (
-              <div
-                key={scene.id}
-                onClick={() => {
-                  if (textareaRef.current) {
-                    textareaRef.current.focus();
-                    const scrollPos = content.substring(0, scene.index * 50).split('\n').reduce((acc, line) => acc + line.length + 1, 0);
-                    setTimeout(() => {
-                      if (textareaRef.current) {
-                        textareaRef.current.scrollTop = scrollPos;
-                      }
-                    }, 0);
-                  }
-                }}
-                style={{
-                  padding: 12,
-                  marginBottom: 8,
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)')}
-              >
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', marginBottom: 4 }}>
-                  Scene {i + 1}
-                </div>
-                <div style={{ fontSize: 10, opacity: 0.7 }}>{scene.text.trim()}</div>
-              </div>
-            ))}
-        </div>
-      )}
+        {/* Editor pane */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-      {/* Stats bar at bottom */}
-      {lines.length > 0 && !showScripts && !showVersionHistory && !showSceneNav && !showTableRead && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 32, background: 'rgba(8,8,8,0.9)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 24, padding: '0 40px', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.5, zIndex: 50 }}>
-          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{Math.max(1, Math.ceil(lines.length / 55))}</span> pages</span>
-          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{lines.filter(l => l.type === 'slug').length}</span> scenes</span>
-          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{getCharacterNames(lines).length}</span> characters</span>
-          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{lines.reduce((n, l) => n + (l.type === 'dialogue' || l.type === 'action' ? l.text.split(/\s+/).filter(Boolean).length : 0), 0)}</span> words</span>
-        </div>
-      )}
-
-      <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
-        {/* Editor — full width */}
-        <div style={{ flex: 1, padding: '40px 40px 60px', overflowY: 'auto' }}>
-          <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {/* Input */}
+          <div style={{
+            flex: 1,
+            padding: '40px 40px',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRight: '1px solid rgba(255,255,255,0.04)',
+          }}>
             <textarea
               ref={textareaRef}
               value={content}
-              onChange={(e) => {
-                setContent(e.target.value);
-                setCursorPos(e.currentTarget.selectionStart);
-              }}
-              onClick={(e) => setCursorPos(e.currentTarget.selectionStart)}
-              placeholder="Start writing your screenplay here...
-
-INT. COFFEE SHOP - DAY
-
-JANE sits at a corner table, typing furiously.
-
-JANE
-I've got it. The perfect opening line.
-
-She leans back, satisfied."
+              onChange={e => setContent(e.target.value)}
+              onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); handleSave(); } }}
+              placeholder={PLACEHOLDER}
+              spellCheck={false}
               style={{
-                width: '100%',
-                minHeight: 'calc(100vh - 140px)',
+                flex: 1,
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--fg)',
                 fontFamily: 'Courier Prime, Courier, monospace',
-                fontSize: '13px',
-                lineHeight: '1.6',
-                padding: 0,
+                fontSize: 13,
+                lineHeight: 1.7,
                 resize: 'none',
                 outline: 'none',
+                letterSpacing: 0.3,
               }}
             />
+            <div style={{
+              marginTop: 16,
+              paddingTop: 12,
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+              display: 'flex',
+              gap: 20,
+              fontFamily: 'var(--mono)',
+              fontSize: 9,
+              letterSpacing: 2,
+              color: 'var(--fg-subtle)',
+              flexWrap: 'wrap',
+            }}>
+              <span>{wordCount.toLocaleString()} words</span>
+              <span>{pageEst} est. page{pageEst !== 1 ? 's' : ''}</span>
+              <span>{scenes} scene{scenes !== 1 ? 's' : ''}</span>
+              <span style={{ marginLeft: 'auto', opacity: 0.5 }}>⌘S to save</span>
+            </div>
+          </div>
+
+          {/* Preview / Stats pane */}
+          <div style={{
+            width: '42%',
+            background: '#0a0a0a',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+            {/* Tab bar */}
+            <div style={{
+              display: 'flex',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+              padding: '0 20px',
+            }}>
+              {(['preview', 'stats'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: '14px 16px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: `2px solid ${activeTab === tab ? 'var(--accent)' : 'transparent'}`,
+                    color: activeTab === tab ? 'var(--fg)' : 'var(--fg-muted)',
+                    fontFamily: 'var(--mono)',
+                    fontSize: 9,
+                    letterSpacing: 3,
+                    textTransform: 'uppercase',
+                    transition: 'color 0.2s, border-color 0.2s',
+                    marginRight: 4,
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', letterSpacing: 1 }}>
+                  {lines.length} lines
+                </span>
+              </div>
+            </div>
+
+            {/* Preview tab */}
+            {activeTab === 'preview' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
+                {lines.length === 0 ? (
+                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', color: 'var(--fg-subtle)', textAlign: 'center', marginTop: 40 }}>
+                    Start writing to see your screenplay parse in real time.
+                  </div>
+                ) : (
+                  lines.map((line, i) => <LinePreview key={i} line={line} index={i} />)
+                )}
+              </div>
+            )}
+
+            {/* Stats tab */}
+            {activeTab === 'stats' && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px' }}>
+                {/* Counts */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 28 }}>
+                  {[
+                    { label: 'Words', value: wordCount.toLocaleString() },
+                    { label: 'Est. Pages', value: pageEst },
+                    { label: 'Scenes', value: scenes },
+                    { label: 'Characters', value: chars.length },
+                  ].map(stat => (
+                    <div key={stat.label} style={{
+                      padding: '14px 16px',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}>
+                      <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, color: 'var(--accent)', lineHeight: 1 }}>
+                        {stat.value}
+                      </div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginTop: 6 }}>
+                        {stat.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Characters */}
+                {chars.length > 0 && (
+                  <div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
+                      Characters
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {chars.map(c => (
+                        <span key={c} style={{
+                          fontFamily: 'var(--mono)',
+                          fontSize: 9,
+                          letterSpacing: 1,
+                          padding: '5px 10px',
+                          background: 'rgba(255,60,0,0.07)',
+                          border: '1px solid rgba(255,60,0,0.2)',
+                          borderRadius: 'var(--radius-sm)',
+                          color: 'var(--accent)',
+                          textTransform: 'uppercase',
+                        }}>
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Line breakdown */}
+                <div style={{ marginTop: 28 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
+                    Line Types
+                  </div>
+                  {Object.entries(TYPE_LABELS).map(([type, label]) => {
+                    const count = lines.filter(l => l.type === type).length;
+                    if (!count) return null;
+                    const pct = Math.round((count / lines.length) * 100);
+                    return (
+                      <div key={type} style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9, marginBottom: 4 }}>
+                          <span style={{ color: TYPE_COLORS[type] as string }}>{label}</span>
+                          <span style={{ color: 'var(--fg-muted)' }}>{count}</span>
+                        </div>
+                        <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1, overflow: 'hidden' }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                            style={{ height: '100%', background: TYPE_COLORS[type] as string, borderRadius: 1 }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Table Read panel — slides in as right panel */}
-        {showTableRead && (
-          <div
-            style={{
-              width: 480,
-              borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
-              padding: '32px 28px',
-              overflowY: 'auto',
-              background: '#0a0a0a',
-              flexShrink: 0,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, margin: 0, opacity: 0.5 }}>TABLE READ</h3>
-              <button onClick={() => setShowTableRead(false)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4, fontSize: 16 }}>✕</button>
-            </div>
-            <div style={{ marginBottom: 20 }}>
-              <select
-                value={selectedCharacter || ''}
-                onChange={(e) => setSelectedCharacter(e.target.value || null)}
-                style={{ width: '100%', padding: 8, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}
-              >
-                <option value="">All characters</option>
-                {getCharacterNames(lines).map((char) => (
-                  <option key={char} value={char}>{char}</option>
-                ))}
-              </select>
-            </div>
-            {lines.map((line, i) => {
-              const isCharacterLine = line.type === 'character';
-              const isDialogueLine = line.type === 'dialogue';
-              const characterName = line.meta?.characterName || '';
-
-              if (selectedCharacter && isCharacterLine && characterName === selectedCharacter) {
-                return (
-                  <div key={i} style={{ marginBottom: 8, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase' }}>{characterName}</div>
-                );
-              }
-
-              if (selectedCharacter && isDialogueLine) {
-                const prev = lines[i - 1];
-                if (prev?.meta?.characterName === selectedCharacter) {
-                  return (
-                    <div key={i} style={{ ...getLineStyle(line.type), background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', marginBottom: 12 }}>
-                      {line.text}
-                    </div>
-                  );
-                }
-              }
-
-              if (!selectedCharacter) {
-                return (
-                  <div key={i} style={getLineStyle(line.type)}>
-                    {line.text || <span style={{ opacity: 0.3 }}>[empty]</span>}
-                  </div>
-                );
-              }
-
-              return null;
-            })}
-          </div>
-        )}
       </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        textarea::placeholder { color: rgba(240,236,228,0.12); }
+      `}</style>
     </div>
   );
 }

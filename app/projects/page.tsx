@@ -1,229 +1,272 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Calendar, Users, Clock, Plus, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { motion } from 'framer-motion';
+import GrainOverlay from '@/components/GrainOverlay';
+import AnimatedSection from '@/components/AnimatedSection';
+import SectionLabel from '@/components/SectionLabel';
 
-const STATUSES = [
-  { key: 'concept', label: 'CONCEPT' },
-  { key: 'pre-production', label: 'PRE-PROD' },
-  { key: 'in-production', label: 'PRODUCTION' },
-  { key: 'post-production', label: 'POST' },
-  { key: 'completed', label: 'COMPLETED' },
-] as const;
+type Status = 'Pre-Production' | 'Production' | 'Post-Production' | 'Complete';
 
-type StatusKey = (typeof STATUSES)[number]['key'];
+interface Project {
+  id: string;
+  title: string;
+  type: string;
+  status: Status;
+  progress: number;
+  deadline: string;
+  team: string[];
+  description: string;
+  color: string;
+}
 
-interface Task { id: string; title: string; completed: boolean; }
-interface Project { id: string; title: string; status: StatusKey; project_tasks: Task[]; }
+const PROJECTS: Project[] = [
+  {
+    id: '1',
+    title: 'Femme Fatale',
+    type: 'Limited Series',
+    status: 'Pre-Production',
+    progress: 85,
+    deadline: '2026-06-30',
+    team: ['Peter Olowude', 'Creative Team', 'Production'],
+    description: '133-page political noir screenplay submitted to A24 and Proximity Media.',
+    color: '#ff3c00',
+  },
+  {
+    id: '2',
+    title: '10 Million',
+    type: 'Music Video',
+    status: 'Post-Production',
+    progress: 95,
+    deadline: '2026-05-15',
+    team: ['Peter Olowude', 'Editor'],
+    description: 'High-energy visual rhythm. Final color grade and mix in progress.',
+    color: '#ffaa00',
+  },
+  {
+    id: '3',
+    title: 'The Briefcase',
+    type: 'Short Film',
+    status: 'Complete',
+    progress: 100,
+    deadline: '2024-12-01',
+    team: ['Peter Olowude', 'Cast', 'Crew'],
+    description: 'Crime thriller about two couriers and a deal that has to go right.',
+    color: '#00cc66',
+  },
+];
 
-export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selected, setSelected] = useState<Project | null>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newTask, setNewTask] = useState('');
-  const [user, setUser] = useState<any>(null);
-  const [draggingProject, setDraggingProject] = useState<Project | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<StatusKey | null>(null);
+const STATUS_COLORS: Record<Status, string> = {
+  'Pre-Production': '#888',
+  'Production': '#ff3c00',
+  'Post-Production': '#ffaa00',
+  'Complete': '#00cc66',
+};
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) load(user.id);
-    });
-  }, []);
-
-  const load = async (uid: string) => {
-    const { data } = await supabase
-      .from('projects')
-      .select('*, project_tasks(*)')
-      .eq('creator_id', uid)
-      .order('created_at', { ascending: false });
-    if (data) {
-      setProjects(data as Project[]);
-      if (data.length > 0) setSelected(data[0] as Project);
-    }
-  };
-
-  const createProject = async () => {
-    if (!user || !newTitle.trim()) return;
-    const { data } = await supabase
-      .from('projects')
-      .insert({ title: newTitle, creator_id: user.id, status: 'concept' })
-      .select('*, project_tasks(*)')
-      .single();
-    if (data) {
-      setProjects([data as Project, ...projects]);
-      setSelected(data as Project);
-      setNewTitle('');
-    }
-  };
-
-  const deleteProject = async (id: string) => {
-    await supabase.from('projects').delete().eq('id', id);
-    const rest = projects.filter(p => p.id !== id);
-    setProjects(rest);
-    setSelected(selected?.id === id ? rest[0] || null : selected);
-  };
-
-  const updateStatus = async (id: string, status: StatusKey) => {
-    await supabase.from('projects').update({ status }).eq('id', id);
-    const update = (p: Project) => p.id === id ? { ...p, status } : p;
-    setProjects(projects.map(update));
-    if (selected?.id === id) setSelected({ ...selected, status });
-  };
-
-  const addTask = async (projectId: string) => {
-    if (!newTask.trim()) return;
-    const { data } = await supabase
-      .from('project_tasks')
-      .insert({ project_id: projectId, title: newTask, completed: false })
-      .select().single();
-    if (data) {
-      const update = (p: Project) => p.id === projectId ? { ...p, project_tasks: [...p.project_tasks, data] } : p;
-      setProjects(projects.map(update));
-      if (selected?.id === projectId) setSelected({ ...selected, project_tasks: [...selected.project_tasks, data] });
-      setNewTask('');
-    }
-  };
-
-  const toggleTask = async (projectId: string, taskId: string, completed: boolean) => {
-    await supabase.from('project_tasks').update({ completed: !completed }).eq('id', taskId);
-    const update = (p: Project) => p.id === projectId
-      ? { ...p, project_tasks: p.project_tasks.map(t => t.id === taskId ? { ...t, completed: !completed } : t) }
-      : p;
-    setProjects(projects.map(update));
-    if (selected?.id === projectId) setSelected({ ...selected, project_tasks: selected.project_tasks.map(t => t.id === taskId ? { ...t, completed: !completed } : t) });
-  };
-
-  const handleColumnDrop = async (targetStatus: StatusKey) => {
-    if (!draggingProject || draggingProject.status === targetStatus) {
-      setDraggingProject(null);
-      setDragOverColumn(null);
-      return;
-    }
-    await updateStatus(draggingProject.id, targetStatus);
-    setDraggingProject(null);
-    setDragOverColumn(null);
-  };
-
-  const deleteTask = async (projectId: string, taskId: string) => {
-    await supabase.from('project_tasks').delete().eq('id', taskId);
-    const update = (p: Project) => p.id === projectId
-      ? { ...p, project_tasks: p.project_tasks.filter(t => t.id !== taskId) }
-      : p;
-    setProjects(projects.map(update));
-    if (selected?.id === projectId) setSelected({ ...selected, project_tasks: selected.project_tasks.filter(t => t.id !== taskId) });
-  };
-
-  if (!user) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, marginBottom: 16 }}>Sign in to manage projects.</p>
-        <Link href="/auth" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11 }}>Sign in →</Link>
-      </div>
-    </div>
+function StatusBadge({ status }: { status: Status }) {
+  return (
+    <span style={{
+      fontSize: 8,
+      letterSpacing: 2,
+      padding: '5px 12px',
+      border: `1px solid ${STATUS_COLORS[status]}55`,
+      color: STATUS_COLORS[status],
+      textTransform: 'uppercase',
+      fontFamily: 'var(--mono)',
+      borderRadius: 'var(--radius-sm)',
+      flexShrink: 0,
+    }}>
+      {status}
+    </span>
   );
+}
+
+function ProjectCard({ project, index }: { project: Project; index: number }) {
+  const [hover, setHover] = useState(false);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-      <header style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: 60, background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '16px 24px', display: 'flex', alignItems: 'center', zIndex: 100 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>PROJECTS</h1>
-        </Link>
-      </header>
+    <AnimatedSection delay={index * 0.1}>
+      <motion.div
+        onHoverStart={() => setHover(true)}
+        onHoverEnd={() => setHover(false)}
+        style={{
+          padding: 32,
+          background: 'var(--bg-2)',
+          border: `1px solid ${hover ? project.color + '33' : 'var(--border)'}`,
+          transition: 'border-color 0.4s, box-shadow 0.4s',
+          boxShadow: hover ? `0 20px 60px rgba(0,0,0,0.8), 0 0 40px ${project.color}08` : 'none',
+          borderRadius: 'var(--radius-sm)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Ghost number */}
+        <div style={{
+          position: 'absolute',
+          top: -20,
+          right: 20,
+          fontFamily: 'var(--display)',
+          fontSize: '8rem',
+          lineHeight: 1,
+          color: 'rgba(255,255,255,0.015)',
+          letterSpacing: -4,
+          userSelect: 'none',
+          pointerEvents: 'none',
+        }}>
+          {String(index + 1).padStart(2, '0')}
+        </div>
 
-      <div style={{ marginTop: 60, padding: 20, display: 'flex', gap: 20, overflowX: 'auto', paddingRight: selected ? 440 : 20, height: 'calc(100vh - 60px)', alignItems: 'flex-start' }}>
-        {STATUSES.map(({ key, label }) => (
-          <div key={key}
-            style={{ flex: '0 0 280px', background: dragOverColumn === key ? 'rgba(255,60,0,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${dragOverColumn === key ? 'rgba(255,60,0,0.25)' : 'rgba(255,255,255,0.04)'}`, padding: 16, borderRadius: 4, transition: 'all 0.15s', minHeight: 200 }}
-            onDragOver={e => { e.preventDefault(); setDragOverColumn(key); }}
-            onDragLeave={() => setDragOverColumn(null)}
-            onDrop={() => handleColumnDrop(key)}>
-            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, marginBottom: 16, opacity: dragOverColumn === key ? 0.8 : 0.5 }}>
-              {label} · {projects.filter(p => p.status === key).length}
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {projects.filter(p => p.status === key).map(project => {
-                const total = project.project_tasks.length;
-                const done = project.project_tasks.filter(t => t.completed).length;
-                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                const isDragging = draggingProject?.id === project.id;
-                return (
-                  <div key={project.id}
-                    draggable
-                    onDragStart={() => setDraggingProject(project)}
-                    onDragEnd={() => { setDraggingProject(null); setDragOverColumn(null); }}
-                    onClick={() => setSelected(project)}
-                    style={{ padding: 12, background: selected?.id === project.id ? 'rgba(255,60,0,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selected?.id === project.id ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, cursor: 'grab', transition: 'all 0.2s', opacity: isDragging ? 0.4 : 1 }}
-                    onMouseEnter={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
-                    onMouseLeave={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 8 }}>{project.title}</div>
-                    {total > 0 && (
-                      <>
-                        <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginBottom: 6, borderRadius: 1, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#00ff00' : 'var(--accent)', transition: 'width 0.3s', borderRadius: 1 }} />
-                        </div>
-                        <div style={{ fontSize: 8, opacity: 0.4, fontFamily: 'var(--mono)' }}>{done}/{total} tasks · {pct}%</div>
-                      </>
-                    )}
-                    {total === 0 && <div style={{ fontSize: 9, opacity: 0.3, fontFamily: 'var(--mono)' }}>No tasks yet</div>}
-                  </div>
-                );
-              })}
-              {key === 'concept' && (
-                <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12 }}>
-                  <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && createProject()}
-                    placeholder="New project..." style={{ width: '100%', padding: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 8 }} />
-                  <button onClick={createProject} style={{ width: '100%', padding: 8, background: 'var(--accent)', color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer' }}>+ CREATE</button>
-                </div>
-              )}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 8, letterSpacing: 4, textTransform: 'uppercase', color: project.color, fontFamily: 'var(--mono)', marginBottom: 6 }}>
+                {project.type}
+              </div>
+              <h3 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', letterSpacing: 2 }}>
+                {project.title}
+              </h3>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {selected && (
-        <div style={{ position: 'fixed', right: 0, top: 60, width: 400, height: 'calc(100vh - 60px)', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.04)', padding: 24, overflowY: 'auto', zIndex: 50 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, margin: 0 }}>{selected.title}</h3>
-            <button onClick={() => { deleteProject(selected.id); setSelected(null); }} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4 }}>
-              <Trash2 size={16} />
-            </button>
+            <StatusBadge status={project.status} />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ fontSize: 9, opacity: 0.5, letterSpacing: 1, fontFamily: 'var(--mono)' }}>STATUS</label>
-            <select value={selected.status} onChange={e => updateStatus(selected.id, e.target.value as StatusKey)}
-              style={{ width: '100%', padding: 8, marginTop: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}>
-              {STATUSES.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </div>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', lineHeight: 1.7, color: 'var(--fg-muted)', marginBottom: 22 }}>
+            {project.description}
+          </p>
 
-          <div>
-            <h4 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, marginBottom: 12, opacity: 0.5 }}>TASKS · {selected.project_tasks.length}</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              {selected.project_tasks.map(task => (
-                <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: task.completed ? 'rgba(0,255,0,0.04)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <button onClick={() => toggleTask(selected.id, task.id, task.completed)}
-                    style={{ background: task.completed ? 'var(--accent)' : 'rgba(255,255,255,0.1)', border: 'none', color: task.completed ? 'var(--bg)' : 'var(--fg)', cursor: 'pointer', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {task.completed && <Check size={12} />}
-                  </button>
-                  <span style={{ flex: 1, fontSize: 11, textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.4 : 1 }}>{task.title}</span>
-                  <button onClick={() => deleteTask(selected.id, task.id)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}><Trash2 size={12} /></button>
+          {/* Meta row */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 14,
+            padding: '16px 0',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            marginBottom: 18,
+          }}>
+            {[
+              { Icon: Calendar, label: 'Deadline', value: new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) },
+              { Icon: Users, label: 'Team', value: `${project.team.length} Members` },
+              { Icon: Clock, label: 'Progress', value: `${project.progress}%` },
+            ].map(({ Icon, label, value }) => (
+              <div key={label}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 8, color: 'var(--fg-subtle)', marginBottom: 5, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                  <Icon size={9} /> {label}
                 </div>
-              ))}
-            </div>
-            <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addTask(selected.id)}
-              placeholder="New task..." style={{ width: '100%', padding: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 8 }} />
-            <button onClick={() => addTask(selected.id)} style={{ width: '100%', padding: 8, background: 'rgba(255,60,0,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer' }}>+ ADD TASK</button>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)' }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ height: 2, background: '#1a1a1a', overflow: 'hidden', borderRadius: 1 }}>
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: `${project.progress}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: index * 0.1 + 0.3 }}
+              style={{ height: '100%', background: project.color, borderRadius: 1 }}
+            />
           </div>
         </div>
-      )}
-    </div>
+      </motion.div>
+    </AnimatedSection>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+      <GrainOverlay />
+
+      {/* Nav */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, width: '100%',
+        padding: '0 28px', height: 62,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 100,
+        background: 'rgba(8,8,8,0.92)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <ArrowLeft size={17} color="var(--fg)" />
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>PROJECTS</div>
+        </Link>
+
+        <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Plus size={11} /> New Project
+        </button>
+      </nav>
+
+      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '100px 20px 80px' }}>
+
+        <AnimatedSection>
+          <SectionLabel text={`Production Pipeline — ${PROJECTS.length} Active`} />
+        </AnimatedSection>
+
+        {/* Project cards */}
+        <div style={{ display: 'grid', gap: 18, marginBottom: 90 }}>
+          {PROJECTS.map((p, i) => <ProjectCard key={p.id} project={p} index={i} />)}
+        </div>
+
+        {/* Timeline */}
+        <AnimatedSection delay={0.2}>
+          <SectionLabel text="Production Timeline" />
+          <div style={{ position: 'relative', paddingLeft: 32 }}>
+            {/* Vertical line */}
+            <div style={{
+              position: 'absolute',
+              left: 8,
+              top: 4,
+              bottom: 4,
+              width: 1,
+              background: 'linear-gradient(to bottom, var(--accent), rgba(255,60,0,0))',
+            }} />
+
+            {PROJECTS.map((project, i) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, x: -16 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                style={{ position: 'relative', marginBottom: i < PROJECTS.length - 1 ? 32 : 0 }}
+              >
+                {/* Dot */}
+                <div style={{
+                  position: 'absolute',
+                  left: -24,
+                  top: 6,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: project.color,
+                  border: '2px solid var(--bg)',
+                  boxShadow: `0 0 10px ${project.color}55`,
+                }} />
+
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', marginBottom: 4 }}>
+                  {new Date(project.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', letterSpacing: 2 }}>
+                    {project.title}
+                  </div>
+                  <ChevronRight size={12} style={{ color: project.color, opacity: 0.6 }} />
+                  <StatusBadge status={project.status} />
+                </div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', marginTop: 4 }}>
+                  {project.type} · {project.progress}% Complete
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </AnimatedSection>
+      </section>
+    </main>
   );
 }
