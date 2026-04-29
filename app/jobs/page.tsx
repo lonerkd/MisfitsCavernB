@@ -177,7 +177,8 @@ export default function JobsPage() {
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
             {jobs.map(job => (
-              <div key={job.id} style={{
+              <Link key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div style={{
                 padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)',
                 transition: 'all 0.2s'
               }}
@@ -203,13 +204,14 @@ export default function JobsPage() {
                   <div style={{ fontSize: 9, opacity: 0.4 }}>
                     Posted by {job.profiles?.username || 'creator'} · {new Date(job.created_at).toLocaleDateString()}
                   </div>
-                  <button onClick={() => handleApply(job.id)}
+                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleApply(job.id); }}
                     style={{ padding: '8px 20px', background: 'rgba(255,60,0,0.1)', border: '1px solid var(--accent)',
                       color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer' }}>
                     APPLY
                   </button>
                 </div>
               </div>
+              </Link>
             ))}
           </div>
         )}

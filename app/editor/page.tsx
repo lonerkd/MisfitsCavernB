@@ -22,27 +22,74 @@ export default function EditorPage() {
   const [cursorPos, setCursorPos] = useState(0);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
   const [authedUser, setAuthedUser] = useState<any>(null);
+  const [cloudScript, setCloudScript] = useState<any>(null);
+  const [cloudScripts, setCloudScripts] = useState<any[]>([]);
+  const [saveStatus, setSaveStatus] = useState<'local'|'saving'|'saved'>('local');
+  const [versionHistory, setVersionHistory] = useState<any[]>([]);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setAuthedUser(user));
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      setAuthedUser(user);
+      if (user) {
+        const { data } = await supabase.from('scripts').select('*').eq('last_edited_by', user.id).order('updated_at', { ascending: false });
+        if (data && data.length > 0) {
+          setCloudScripts(data);
+          setCloudScript(data[0]);
+          setContent(data[0].content || '');
+          setSaveStatus('saved');
+        } else {
+          const { data: newScript } = await supabase.from('scripts').insert({ title: 'My First Screenplay', content: '', last_edited_by: user.id }).select().single();
+          if (newScript) { setCloudScript(newScript); setCloudScripts([newScript]); setSaveStatus('saved'); }
+        }
+      }
+    });
   }, []);
 
-  // Load scripts on mount
+  // Load scripts on mount (local fallback for guests)
   useEffect(() => {
     const allScripts = getAllScripts();
     setScripts(allScripts);
-
     if (allScripts.length > 0) {
-      const latest = allScripts[allScripts.length - 1];
-      setCurrentScript(latest);
-      setContent(latest.content);
+      setCurrentScript(allScripts[allScripts.length - 1]);
     } else {
-      // Create first script
       const newScript = createNewScript('My First Screenplay');
       setCurrentScript(newScript);
       setScripts([newScript]);
     }
   }, []);
+
+  // Cloud auto-save (debounced)
+  useEffect(() => {
+    if (!authedUser || !cloudScript) return;
+    setSaveStatus('saving');
+    const t = setTimeout(async () => {
+      await supabase.from('scripts').update({ content, updated_at: new Date().toISOString() }).eq('id', cloudScript.id);
+      setSaveStatus('saved');
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [content, authedUser, cloudScript?.id]);
+
+  const loadVersionHistory = async () => {
+    if (!cloudScript) return;
+    const { data } = await supabase.from('script_versions').select('*').eq('script_id', cloudScript.id).order('created_at', { ascending: false }).limit(20);
+    if (data) setVersionHistory(data);
+    setShowVersionHistory(true);
+  };
+
+  const restoreVersion = (versionContent: string) => {
+    if (confirm('Restore this version? Current content will be replaced.')) {
+      setContent(versionContent);
+      setShowVersionHistory(false);
+    }
+  };
+
+  const handleNewCloudScript = async () => {
+    if (!authedUser) return;
+    const { data } = await supabase.from('scripts').insert({ title: 'Untitled', content: '', last_edited_by: authedUser.id }).select().single();
+    if (data) { setCloudScript(data); setCloudScripts([data, ...cloudScripts]); setContent(''); setSaveStatus('saved'); setShowScripts(false); }
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -152,13 +199,16 @@ export default function EditorPage() {
     }
   };
 
-  const handleSave = () => {
-    if (currentScript) {
-      const saved = saveScript({
-        id: currentScript.id,
-        title: currentScript.title,
-        content
-      });
+  const handleSave = async () => {
+    if (authedUser && cloudScript) {
+      setSaveStatus('saving');
+      const versionNum = (cloudScript.version || 1) + 1;
+      await supabase.from('scripts').update({ content, version: versionNum, updated_at: new Date().toISOString() }).eq('id', cloudScript.id);
+      await supabase.from('script_versions').insert({ script_id: cloudScript.id, content, version: versionNum, edited_by: authedUser.id });
+      setCloudScript({ ...cloudScript, version: versionNum });
+      setSaveStatus('saved');
+    } else if (currentScript) {
+      const saved = saveScript({ id: currentScript.id, title: currentScript.title, content });
       setCurrentScript(saved);
     }
   };
@@ -237,31 +287,54 @@ export default function EditorPage() {
           <Link href="/" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
             <ArrowLeft size={20} />
           </Link>
-          <h1
-            style={{
-              fontFamily: 'var(--display)',
-              fontSize: '1.2rem',
-              letterSpacing: 4,
-              margin: 0
-            }}
-          >
-            {currentScript?.title || 'EDITOR'}
-          </h1>
+          {editingTitle ? (
+            <input
+              autoFocus
+              defaultValue={authedUser ? cloudScript?.title : currentScript?.title}
+              onBlur={async (e) => {
+                const t = e.target.value.trim() || 'Untitled';
+                if (authedUser && cloudScript) {
+                  await supabase.from('scripts').update({ title: t }).eq('id', cloudScript.id);
+                  setCloudScript({ ...cloudScript, title: t });
+                } else if (currentScript) {
+                  saveScript({ id: currentScript.id, title: t, content });
+                  setCurrentScript({ ...currentScript, title: t });
+                }
+                setEditingTitle(false);
+              }}
+              onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent)', color: 'var(--fg)', outline: 'none', width: 260 }}
+            />
+          ) : (
+            <h1 onClick={() => setEditingTitle(true)} title="Click to rename"
+              style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0, cursor: 'text' }}>
+              {authedUser ? (cloudScript?.title || 'EDITOR') : (currentScript?.title || 'EDITOR')}
+            </h1>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {!authedUser && (
+          {authedUser ? (
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: saveStatus === 'saved' ? 'var(--accent)' : 'rgba(255,255,255,0.3)', opacity: saveStatus === 'saving' ? 0.6 : 1 }}>
+              {saveStatus === 'saving' ? 'SAVING...' : saveStatus === 'saved' ? '✓ CLOUD SAVED' : ''}
+            </span>
+          ) : (
             <Link href="/auth"
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.6, textDecoration: 'none' }}>
               <Cloud size={11} /> SIGN IN TO SYNC
             </Link>
+          )}
+          {authedUser && cloudScript && (
+            <button onClick={loadVersionHistory} className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              History (v{cloudScript.version || 1})
+            </button>
           )}
           <button
             onClick={() => setShowScripts(!showScripts)}
             className="link-btn"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <FileText size={12} /> Scripts ({scripts.length})
+            <FileText size={12} /> Scripts ({authedUser ? cloudScripts.length : scripts.length})
           </button>
           <button
             onClick={() => setShowSceneNav(!showSceneNav)}
@@ -288,62 +361,59 @@ export default function EditorPage() {
 
       {/* Scripts Sidebar */}
       {showScripts && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            width: 300,
-            height: '100vh',
-            background: '#0a0a0a',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
-            padding: 20,
-            zIndex: 200,
-            overflowY: 'auto'
-          }}
-        >
+        <div style={{ position: 'fixed', top: 0, right: 0, width: 300, height: '100vh', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.04)', padding: 20, zIndex: 200, overflowY: 'auto' }}>
           <h3 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, marginBottom: 20 }}>
-            YOUR SCRIPTS
+            {authedUser ? 'CLOUD SCRIPTS' : 'YOUR SCRIPTS'}
           </h3>
-          <button
-            onClick={handleNewScript}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: 'var(--accent)',
-              color: 'var(--bg)',
-              border: 'none',
-              fontFamily: 'var(--mono)',
-              fontSize: 10,
-              letterSpacing: 2,
-              cursor: 'pointer',
-              marginBottom: 16
-            }}
-          >
+          <button onClick={authedUser ? handleNewCloudScript : handleNewScript}
+            style={{ width: '100%', padding: 12, background: 'var(--accent)', color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', marginBottom: 16 }}>
             + NEW SCRIPT
           </button>
-          {scripts.map(script => (
-            <div
-              key={script.id}
-              onClick={() => handleLoadScript(script)}
-              style={{
-                padding: 12,
-                marginBottom: 8,
-                border: script.id === currentScript?.id ? '1px solid var(--accent)' : '1px solid rgba(255, 255, 255, 0.1)',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-              onMouseLeave={(e) => {
-                if (script.id !== currentScript?.id) {
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                }
-              }}
-            >
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 4 }}>{script.title}</div>
-              <div style={{ fontSize: 9, opacity: 0.5 }}>
-                {new Date(script.updatedAt).toLocaleDateString()}
+          {(authedUser ? cloudScripts : scripts).map((script: any) => {
+            const isActive = authedUser ? script.id === cloudScript?.id : script.id === currentScript?.id;
+            return (
+              <div key={script.id}
+                onClick={() => {
+                  if (authedUser) { setCloudScript(script); setContent(script.content || ''); }
+                  else handleLoadScript(script);
+                  setShowScripts(false);
+                }}
+                style={{ padding: 12, marginBottom: 8, border: isActive ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 4 }}>{script.title}</div>
+                <div style={{ fontSize: 9, opacity: 0.5 }}>
+                  {new Date(script.updated_at || script.updatedAt).toLocaleDateString()}
+                  {authedUser && script.version && <span style={{ marginLeft: 8 }}>v{script.version}</span>}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Version History Panel */}
+      {showVersionHistory && (
+        <div style={{ position: 'fixed', top: 0, right: 0, width: 320, height: '100vh', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.04)', padding: 20, zIndex: 200, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, margin: 0 }}>VERSION HISTORY</h3>
+            <button onClick={() => setShowVersionHistory(false)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.5, fontSize: 18 }}>✕</button>
+          </div>
+          {versionHistory.length === 0 ? (
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4 }}>No saved versions yet. Press Cmd+S to create one.</p>
+          ) : versionHistory.map(v => (
+            <div key={v.id} style={{ padding: 14, marginBottom: 10, border: '1px solid rgba(255,255,255,0.08)', transition: 'all 0.2s' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)' }}>v{v.version}</span>
+                <span style={{ fontSize: 9, opacity: 0.4 }}>{new Date(v.created_at).toLocaleString()}</span>
+              </div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.5, marginBottom: 10 }}>
+                {v.content.split('\n').length} lines · {v.content.split(/\s+/).length} words
+              </div>
+              <button onClick={() => restoreVersion(v.content)}
+                style={{ padding: '6px 14px', background: 'rgba(255,60,0,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer' }}>
+                RESTORE
+              </button>
             </div>
           ))}
         </div>
@@ -540,10 +610,11 @@ She leans back, satisfied."
               >
                 LIVE PREVIEW ({lines.length} lines)
               </h3>
-              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 20 }}>
-                <div>Words: {lines.reduce((n, l) => n + (l.type === 'dialogue' || l.type === 'action' ? l.text.split(/\s+/).length : 0), 0)}</div>
-                <div>Scenes: {lines.filter((l) => l.type === 'slug').length}</div>
-                <div>Characters: {getCharacterNames(lines).length}</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 20, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                <div><span style={{ color: 'var(--accent)' }}>{Math.max(1, Math.ceil(lines.length / 55))}</span> pages</div>
+                <div><span style={{ color: 'var(--accent)' }}>{lines.filter(l => l.type === 'slug').length}</span> scenes</div>
+                <div><span style={{ color: 'var(--accent)' }}>{getCharacterNames(lines).length}</span> characters</div>
+                <div><span style={{ color: 'var(--accent)' }}>{lines.reduce((n, l) => n + (l.type === 'dialogue' || l.type === 'action' ? l.text.split(/\s+/).filter(Boolean).length : 0), 0)}</span> words</div>
               </div>
               {lines.map((line, i) => (
                 <div key={i} style={getLineStyle(line.type)}>

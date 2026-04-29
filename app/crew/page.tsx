@@ -103,9 +103,10 @@ export default function CrewPage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {crew.map(member => (
-              <div key={member.id} style={{
+              <Link key={member.id} href={`/crew/${member.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div style={{
                 padding: 24, background: '#0a0a0a',
-                border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.2s'
+                border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.2s', height: '100%'
               }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
@@ -154,6 +155,7 @@ export default function CrewPage() {
                   )}
                 </div>
               </div>
+              </Link>
             ))}
           </div>
         )}

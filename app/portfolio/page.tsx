@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Play, X, ArrowLeft, Trash2, Plus } from 'lucide-react';
+import { Play, X, ArrowLeft, Trash2, Plus, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 
@@ -18,7 +18,7 @@ function extractYouTubeId(url: string): string | null {
 }
 
 interface MediaItem { id: string; title: string; media_type: string; url: string; thumbnail_url?: string; }
-interface Project { id: string; title: string; year?: number; role?: string; user_id?: string; portfolio_media: MediaItem[]; profiles?: { username: string }; }
+interface Project { id: string; title: string; year?: number; role?: string; user_id?: string; share_token?: string; portfolio_media: MediaItem[]; profiles?: { username: string }; }
 
 export default function PortfolioPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -196,9 +196,23 @@ export default function PortfolioPage() {
                 )}
               </div>
               {isOwner(selected) && (
-                <button onClick={() => deleteProject(selected.id)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4 }}>
-                  <Trash2 size={16} />
-                </button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  {selected.share_token && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/p/${selected.share_token}`);
+                        alert('Share link copied!');
+                      }}
+                      title="Copy public share link"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Share2 size={14} />
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1 }}>SHARE</span>
+                    </button>
+                  )}
+                  <button onClick={() => deleteProject(selected.id)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4 }}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               )}
             </div>
 
