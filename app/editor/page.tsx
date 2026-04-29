@@ -1,22 +1,27 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Save, Download, FileText, Plus, X, ChevronDown, Loader } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { 
+  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2, 
+  Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
+  Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
+  Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
+  Search, Replace, X, BarChart3, Lock
+} from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, createNewScript, exportScriptAsText, type StoredScript } from '@/lib/scriptos/storage';
+import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
+import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
+import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
+import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
+import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 
-const TYPE_LABELS: Record<string, string> = {
-  slug: 'SCENE',
-  character: 'CHAR',
-  dialogue: 'DIAL',
-  parenthetical: 'PRNTH',
-  transition: 'TRANS',
-  action: 'ACTION',
-};
+// ============================================================================
+// CONSTANTS & HELPERS
+// ============================================================================
 
 const TYPE_COLORS: Record<string, string> = {
   slug: '#ff3c00',
@@ -25,92 +30,8 @@ const TYPE_COLORS: Record<string, string> = {
   parenthetical: 'rgba(240,236,228,0.5)',
   transition: '#888',
   action: 'rgba(240,236,228,0.75)',
+  note: '#eab308'
 };
-
-function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
-  const style: React.CSSProperties = {
-    fontFamily: 'Courier Prime, Courier, monospace',
-    fontSize: 12,
-    lineHeight: '1.7',
-    color: TYPE_COLORS[line.type] || 'var(--fg)',
-    marginBottom: 2,
-    padding: '2px 0',
-    whiteSpace: 'pre-wrap',
-  };
-
-  if (line.type === 'slug') {
-    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 16 : 0, marginBottom: 4 }}>{line.text}</div>;
-  }
-  if (line.type === 'character') {
-    return <div style={{ ...style, textAlign: 'center', textTransform: 'uppercase', fontWeight: 600, marginTop: 12, marginBottom: 0 }}>{line.text}</div>;
-  }
-  if (line.type === 'dialogue') {
-    return (
-      <div style={{ ...style, paddingLeft: 80, paddingRight: 60, maxWidth: '100%', marginBottom: 8 }}>
-        {line.text}
-      </div>
-    );
-  }
-  if (line.type === 'parenthetical') {
-    return (
-      <div style={{ ...style, paddingLeft: 100, fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>
-        {line.text}
-      </div>
-    );
-  }
-  if (line.type === 'transition') {
-    return <div style={{ ...style, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', marginTop: 16, marginBottom: 16 }}>{line.text}</div>;
-  }
-
-  return <div style={style}>{line.text || <span style={{ opacity: 0.2 }}>—</span>}</div>;
-}
-
-function ScriptItem({ script, active, onClick, onClose }: {
-  script: StoredScript;
-  active: boolean;
-  onClick: () => void;
-  onClose?: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      whileHover={{ x: 3 }}
-      onClick={onClick}
-      style={{
-        padding: '12px 14px',
-        marginBottom: 6,
-        border: `1px solid ${active ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.05)'}`,
-        background: active ? 'rgba(255,60,0,0.05)' : 'transparent',
-        cursor: 'none',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: 8,
-        transition: 'border-color 0.3s, background 0.3s',
-        borderRadius: 'var(--radius-sm)',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontFamily: 'var(--mono)',
-          fontSize: 11,
-          letterSpacing: 0.5,
-          color: active ? 'var(--accent)' : 'var(--fg)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          marginBottom: 3,
-        }}>
-          {script.title}
-        </div>
-        <div style={{ fontSize: 9, opacity: 0.35, fontFamily: 'var(--mono)' }}>
-          {new Date(script.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 const PLACEHOLDER = `FADE IN:
 
@@ -125,9 +46,59 @@ JANE
 (to herself)
 Got it. The perfect opening line.
 
+[[NOTE: Ensure Jane's coffee looks untouched.]]
+
 She leans back. Takes a long sip of cold coffee.
 
 CUT TO:`;
+
+// ============================================================================
+// COMPONENTS
+// ============================================================================
+
+function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
+  const style: React.CSSProperties = {
+    fontFamily: 'Courier Prime, Courier, monospace',
+    fontSize: 14,
+    lineHeight: '1.7',
+    color: TYPE_COLORS[line.type] || 'var(--fg)',
+    marginBottom: 2,
+    padding: '2px 0',
+    whiteSpace: 'pre-wrap',
+  };
+
+  // Add notes syntax parsing [[Note]]
+  let displayContent = line.text;
+  if (displayContent.includes('[[') && displayContent.includes(']]')) {
+    style.color = TYPE_COLORS.note;
+    style.background = 'rgba(234, 179, 8, 0.1)';
+    style.padding = '4px 8px';
+    style.borderRadius = '4px';
+    style.borderLeft = '2px solid #eab308';
+  }
+
+  if (line.type === 'slug') {
+    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>{displayContent}</div>;
+  }
+  if (line.type === 'character') {
+    return <div style={{ ...style, textAlign: 'center', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{displayContent}</div>;
+  }
+  if (line.type === 'dialogue') {
+    return <div style={{ ...style, paddingLeft: 80, paddingRight: 60, maxWidth: '100%', marginBottom: 12 }}>{displayContent}</div>;
+  }
+  if (line.type === 'parenthetical') {
+    return <div style={{ ...style, paddingLeft: 100, fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>{displayContent}</div>;
+  }
+  if (line.type === 'transition') {
+    return <div style={{ ...style, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', marginTop: 16, marginBottom: 16 }}>{displayContent}</div>;
+  }
+
+  return <div style={style}>{displayContent || <span style={{ opacity: 0.2 }}>—</span>}</div>;
+}
+
+// ============================================================================
+// MAIN EDITOR
+// ============================================================================
 
 export default function EditorPage() {
   const { toast } = useToast();
@@ -135,43 +106,118 @@ export default function EditorPage() {
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
+  const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
-  const [showSidebar, setShowSidebar] = useState(false);
+  
+  // UI States
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'preview' | 'stats'>('preview');
+  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board'>('write');
+  const [focusMode, setFocusMode] = useState(false);
+  
+  // Tools & Tracking
+  const [dailyGoal, setDailyGoal] = useState(1000);
+  const [sprintActive, setSprintActive] = useState(false);
+  const [sprintTime, setSprintTime] = useState(15 * 60); // 15 mins
+  const [revisionMode, setRevisionMode] = useState(false);
+  
+  // Autocomplete state
+  const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 });
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteItems, setAutocompleteItems] = useState<string[]>([]);
 
+  // Find & Replace
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  const [findCount, setFindCount] = useState(0);
+
+  // Panels
+  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions'>('tools');
+  const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [charStats, setCharStats] = useState<CharacterStats[]>([]);
+
+  // Title Page & Settings
+  const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
+  const [showTitleEditor, setShowTitleEditor] = useState(false);
+  const [showSceneNumbers, setShowSceneNumbers] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Init
   useEffect(() => {
     const all = getAllScripts();
     setScripts(all);
     if (all.length > 0) {
       const latest = all[all.length - 1];
       setCurrentScript(latest);
-      setContent(latest.content);
+      setContent(latest.content || PLACEHOLDER);
+      setTitlePage(loadTitlePage(latest.id));
     } else {
       const fresh = createNewScript('My First Screenplay');
       setCurrentScript(fresh);
       setScripts([fresh]);
+      setContent(PLACEHOLDER);
     }
   }, []);
 
+  // Parser hook
   useEffect(() => {
     if (content) {
       const result = parseScript(content);
       setLines(result.lines);
+      if (result.elements) setElements(result.elements);
+      // Compute character stats
+      setCharStats(analyzeCharacters(result.lines, result.scenes));
     } else {
       setLines([]);
+      setElements({});
+      setCharStats([]);
     }
   }, [content]);
+
+  // Load revisions when script changes
+  useEffect(() => {
+    if (currentScript) {
+      setRevisions(getRevisions(currentScript.id));
+    }
+  }, [currentScript]);
+
+  // Find count
+  useEffect(() => {
+    if (findText && content) {
+      const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const matches = content.match(regex);
+      setFindCount(matches ? matches.length : 0);
+    } else {
+      setFindCount(0);
+    }
+  }, [findText, content]);
+
 
   // Auto-save
   useEffect(() => {
     if (!currentScript) return;
     const timer = setTimeout(() => {
       saveScript({ id: currentScript.id, title: currentScript.title, content });
-    }, 1200);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [content, currentScript]);
 
+  // Sprint Timer Hook
+  useEffect(() => {
+    let interval: any = null;
+    if (sprintActive && sprintTime > 0) {
+      interval = setInterval(() => setSprintTime(t => t - 1), 1000);
+    } else if (sprintTime === 0 && sprintActive) {
+      setSprintActive(false);
+      toast('Sprint completed!', 'success');
+    }
+    return () => clearInterval(interval);
+  }, [sprintActive, sprintTime, toast]);
+
+  // Actions
   const handleSave = useCallback(() => {
     if (!currentScript) return;
     setSaving(true);
@@ -182,355 +228,638 @@ export default function EditorPage() {
     }, 400);
   }, [currentScript, content, toast]);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback((format: string) => {
     if (!currentScript) return;
-    exportScriptAsText({ ...currentScript, content });
-    toast('Exported as .txt', 'info');
+    if (format === 'txt' || format === 'fountain') {
+      exportScriptAsText({ ...currentScript, content }, format as 'txt' | 'fountain');
+      toast(`Exported as .${format}`, 'success');
+    } else if (format === 'fdx') {
+      exportScriptAsFdx({ ...currentScript, content });
+      toast('Exported as .fdx (Final Draft)', 'success');
+    } else if (format === 'pdf') {
+      exportScriptAsPdf({ ...currentScript, content });
+      toast('Generating PDF...', 'success');
+    } else {
+      toast(`Exporting as ${format.toUpperCase()} (Pro Feature)`, 'info');
+    }
+    setShowFormatMenu(false);
   }, [currentScript, content, toast]);
 
-  const handleNew = useCallback(() => {
-    const s = createNewScript('Untitled');
-    setCurrentScript(s);
-    setContent('');
-    setScripts(prev => [...prev, s]);
-    setShowSidebar(false);
-    textareaRef.current?.focus();
-  }, []);
+  const handleFindReplace = useCallback(() => {
+    if (!findText) return;
+    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    setContent(prev => prev.replace(regex, replaceText));
+    toast(`Replaced ${findCount} occurrences`, 'success');
+  }, [findText, replaceText, findCount, toast]);
 
-  const handleLoad = useCallback((script: StoredScript) => {
-    setCurrentScript(script);
-    setContent(script.content);
-    setShowSidebar(false);
-  }, []);
+  const handleFindReplaceOne = useCallback(() => {
+    if (!findText) return;
+    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    setContent(prev => prev.replace(regex, replaceText));
+    toast('Replaced 1 occurrence', 'success');
+  }, [findText, replaceText, toast]);
+
+  const handleLockRevision = useCallback(() => {
+    if (!currentScript) return;
+    const rev = createRevision(currentScript.id, content);
+    setRevisions(prev => [...prev, rev]);
+    toast(`Locked as ${rev.label}`, 'success');
+  }, [currentScript, content, toast]);
+
+  // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowFindReplace(prev => !prev);
+      }
+      if (e.key === 'Escape') {
+        if (focusMode) setFocusMode(false);
+        if (showFindReplace) setShowFindReplace(false);
+        if (showFormatMenu) setShowFormatMenu(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        setFocusMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleSave, focusMode, showFindReplace, showFormatMenu]);
+
+  // Import .fountain / .txt file
+  const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
+      const imported = importScriptFromText(text, title);
+      setScripts(prev => [...prev, imported]);
+      setCurrentScript(imported);
+      setContent(text);
+      toast(`Imported "${title}"`, 'success');
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // reset input
+  }, [toast]);
+
+  // Title page save
+  const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
+    setTitlePage(prev => {
+      const updated = { ...prev, [field]: value };
+      if (currentScript) saveTitlePage(currentScript.id, updated);
+      return updated;
+    });
+  }, [currentScript]);
+
+  // Tab key cycling (in the textarea: Tab inserts element type based on context)
+  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const editor = textareaRef.current;
+      if (!editor) return;
+      const cursor = editor.selectionStart;
+      const currentLine = content.substring(0, cursor).split('\n').pop() || '';
+      const trimmed = currentLine.trim();
+
+      // If empty line, insert a scene heading template
+      if (!trimmed) {
+        insertElement('scene');
+        return;
+      }
+      // If uppercase short text (likely a character), insert dialogue below
+      if (trimmed === trimmed.toUpperCase() && trimmed.length > 1 && trimmed.length < 40) {
+        const after = content.substring(cursor);
+        setContent(content.substring(0, cursor) + '\n' + after);
+        setTimeout(() => {
+          editor.focus();
+          editor.setSelectionRange(cursor + 1, cursor + 1);
+        }, 0);
+        return;
+      }
+      // Default: insert 4 spaces (standard tab)
+      const before = content.substring(0, cursor);
+      const after = content.substring(editor.selectionEnd);
+      setContent(before + '    ' + after);
+      setTimeout(() => {
+        editor.focus();
+        editor.setSelectionRange(cursor + 4, cursor + 4);
+      }, 0);
+    }
+  }, [content]);
+
+  const insertElement = (type: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+
+    const snippets: Record<string, string> = {
+      'scene': '\n\nINT. LOCATION - DAY\n\n',
+      'action': '\n\nAction description here.\n\n',
+      'character': '\n\nCHARACTER NAME\n',
+      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
+      'transition': '\n\nCUT TO:\n\n',
+      'note': '\n\n[[Note: ]]'
+    };
+
+    const snippet = snippets[type] || '';
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const before = content.substring(0, start);
+    const after = content.substring(end);
+
+    setContent(before + snippet + after);
+    setTimeout(() => {
+      editor.focus();
+      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
+    }, 0);
+  };
+
+  const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+    
+    // Very basic Autocomplete Trigger (e.g. typing EXT.)
+    const cursor = e.target.selectionStart;
+    const currentLine = val.substring(0, cursor).split('\n').pop() || '';
+    
+    if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
+      // Show location hints
+      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()))];
+      if (locations.length > 0 && currentLine.length < 15) {
+        setAutocompleteItems(locations);
+        setShowAutocomplete(true);
+        // Mock cursor position
+        setCursorPos({ top: 100, left: 200 }); // In a real app, use getCaretCoordinates
+      }
+    } else {
+      setShowAutocomplete(false);
+    }
+  };
 
   // Stats
-  const scenes = lines.filter(l => l.type === 'slug').length;
+  const scenesList = lines.filter(l => l.type === 'slug');
   const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
+  const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Header */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        background: 'rgba(8,8,8,0.96)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        padding: '0 24px',
-        height: 60,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        zIndex: 100,
-        flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
-            <ArrowLeft size={18} />
-          </Link>
+      {/* TOOLBAR */}
+      {!focusMode && (
+        <header style={{
+          position: 'sticky', top: 0,
+          background: '#0a0a0a',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          padding: '0 24px',
+          height: 64,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 100,
+          flexShrink: 0,
+        }}>
+          {/* Left: Branding & Breadcrumbs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <Link href="/" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+              <ArrowLeft size={18} />
+            </Link>
 
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              fontFamily: 'var(--display)',
-              fontSize: '1.05rem',
-              letterSpacing: 4,
-              color: 'var(--accent)',
-            }}>
-              ScriptOS
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                className="link-btn"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
+              >
+                <List size={14} className="text-indigo-400" /> 
+                <span style={{ fontWeight: 600 }}>{currentScript?.title || 'Untitled'}</span>
+              </button>
+              
+              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+                {revisionMode ? 'Blue Revision' : 'Draft Mode'}
+              </span>
             </div>
-            <span style={{ fontSize: 9, opacity: 0.3, fontFamily: 'var(--mono)', letterSpacing: 2 }}>·</span>
-            <span style={{
-              fontFamily: 'var(--mono)',
-              fontSize: 11,
-              color: 'var(--fg-muted)',
-              maxWidth: 200,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}>
-              {currentScript?.title || 'Untitled'}
-            </span>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* Scripts picker */}
-          <button
-            onClick={() => setShowSidebar(!showSidebar)}
-            className="link-btn"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <FileText size={11} /> Scripts ({scripts.length}) <ChevronDown size={10} style={{ opacity: 0.5, transform: showSidebar ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
-          </button>
+          {/* Center: View Switcher */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 4 }}>
+            <button onClick={() => setActiveView('write')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'write' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'write' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
+              <Type size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Write
+            </button>
+            <button onClick={() => setActiveView('board')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'board' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'board' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
+              <LayoutDashboard size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Board
+            </button>
+            <button onClick={() => setActiveView('preview')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'preview' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'preview' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
+              <FileText size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Preview
+            </button>
+          </div>
 
-          <button
-            onClick={handleSave}
-            className="link-btn"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            {saving ? <Loader size={11} style={{ animation: 'spin 0.8s linear infinite' }} /> : <Save size={11} />}
-            Save
-          </button>
+          {/* Right: Tools & Export */}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            
+            <button onClick={() => setFocusMode(true)} className="link-btn" title="Focus Mode" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
+              <Maximize size={14} />
+            </button>
+            <button onClick={() => setShowRightSidebar(!showRightSidebar)} className="link-btn" title="Tools" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
+              <Settings size={14} />
+            </button>
+            <button onClick={handleLockRevision} className="link-btn" title="Lock Revision" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
+              <Lock size={14} />
+            </button>
 
-          <button
-            onClick={handleExport}
-            className="link-btn"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <Download size={11} /> Export
-          </button>
-        </div>
-      </header>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowFormatMenu(!showFormatMenu)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 16px', background: 'var(--accent)', color: 'var(--bg)',
+                  borderRadius: 'var(--radius-sm)', fontWeight: 600, fontSize: 12,
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                <Download size={14} /> Export <ChevronDown size={14} />
+              </button>
 
-      {/* Body */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+              {showFormatMenu && (
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: 8,
+                  background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 'var(--radius-sm)', padding: 6, minWidth: 160, zIndex: 100,
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                }}>
+                  {['fountain', 'fdx', 'pdf', 'txt'].map(fmt => (
+                    <button key={fmt} onClick={() => handleExport(fmt)} style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px',
+                      background: 'transparent', border: 'none', color: 'var(--fg)',
+                      fontSize: 12, cursor: 'pointer', borderRadius: 4, textTransform: 'uppercase',
+                      fontWeight: 500
+                    }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      Export .{fmt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-        {/* Scripts sidebar */}
+            <button
+              onClick={handleSave}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: 'var(--fg)',
+                borderRadius: 'var(--radius-sm)', fontWeight: 600, fontSize: 12,
+                border: 'none', cursor: 'pointer', opacity: saving ? 0.5 : 1
+              }}
+            >
+              {saving ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* FIND & REPLACE BAR */}
+      <AnimatePresence>
+        {showFindReplace && (
+          <motion.div initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -40, opacity: 0 }} style={{ background: '#111', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '8px 24px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <Search size={14} style={{ color: 'var(--fg-muted)' }} />
+            <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{findCount} found</span>
+            <button onClick={handleFindReplaceOne} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Replace</button>
+            <button onClick={handleFindReplace} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>All</button>
+            <button onClick={() => setShowFindReplace(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={14} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* WORKSPACE */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+        {/* LEFT NAVIGATOR (Scenes & Documents) */}
         <AnimatePresence>
-          {showSidebar && (
+          {showSidebar && !focusMode && (
             <motion.div
               initial={{ x: -280, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -280, opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
-                width: 260,
-                background: '#090909',
-                borderRight: '1px solid rgba(255,255,255,0.04)',
-                display: 'flex',
-                flexDirection: 'column',
-                flexShrink: 0,
-                overflow: 'hidden',
+                width: 260, background: '#0a0a0a', borderRight: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', flexDirection: 'column', flexShrink: 0,
               }}
             >
-              <div style={{ padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', opacity: 0.4 }}>
-                  Your Scripts
-                </span>
-                <button onClick={handleNew} style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  background: 'var(--accent)', border: 'none', color: 'var(--bg)',
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
-                  padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+              {/* Script Switcher */}
+              <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <button onClick={() => {
+                  const s = createNewScript('Untitled Script');
+                  setScripts([...scripts, s]);
+                  setCurrentScript(s);
+                  setContent('');
+                }} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  padding: '8px', borderRadius: 6, color: 'var(--fg)', fontSize: 12, cursor: 'pointer'
                 }}>
-                  <Plus size={10} /> New
+                  <Plus size={14} /> New Script
                 </button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', padding: '6px', borderRadius: 6, color: 'var(--fg-muted)', fontSize: 10, cursor: 'pointer' }}>
+                    <FileUp size={12} /> Import
+                  </button>
+                  <button onClick={() => setShowTitleEditor(!showTitleEditor)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', padding: '6px', borderRadius: 6, color: 'var(--fg-muted)', fontSize: 10, cursor: 'pointer' }}>
+                    <Book size={12} /> Title Page
+                  </button>
+                </div>
+                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx" onChange={handleImportFile} style={{ display: 'none' }} />
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 10px' }}>
-                {scripts.map(s => (
-                  <ScriptItem
-                    key={s.id}
-                    script={s}
-                    active={s.id === currentScript?.id}
-                    onClick={() => handleLoad(s)}
-                  />
+
+              {/* Scene Navigator */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+                <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12, marginLeft: 4 }}>Navigator</div>
+                
+                {scenesList.length === 0 && <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', padding: 4 }}>No scenes detected.</div>}
+                
+                {scenesList.map((scene, i) => (
+                  <button key={i} style={{
+                    width: '100%', textAlign: 'left', padding: '8px 12px', marginBottom: 2,
+                    background: 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer',
+                    color: 'var(--fg)', display: 'flex', flexDirection: 'column', gap: 4
+                  }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {showSceneNumbers ? `${i + 1}. ` : ''}{scene.text}
+                    </div>
+                    {/* Snippet of scene action if possible */}
+                    <div style={{ fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      Scene {i + 1}
+                    </div>
+                  </button>
                 ))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Editor pane */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* CENTER STAGE */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
+          
+          {/* Focus Exit */}
+          {focusMode && (
+            <button onClick={() => setFocusMode(false)} style={{
+              position: 'absolute', top: 20, right: 20, zIndex: 100,
+              background: 'transparent', border: 'none', color: '#666', cursor: 'pointer'
+            }}>
+              <Minimize size={20} />
+            </button>
+          )}
 
-          {/* Input */}
-          <div style={{
-            flex: 1,
-            padding: '40px 40px',
-            display: 'flex',
-            flexDirection: 'column',
-            borderRight: '1px solid rgba(255,255,255,0.04)',
-          }}>
+          {activeView === 'write' && (
             <textarea
               ref={textareaRef}
               value={content}
-              onChange={e => setContent(e.target.value)}
-              onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); handleSave(); } }}
+              onChange={handleEditorChange}
+              onKeyDown={handleEditorKeyDown}
               placeholder={PLACEHOLDER}
               spellCheck={false}
               style={{
-                flex: 1,
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--fg)',
-                fontFamily: 'Courier Prime, Courier, monospace',
-                fontSize: 13,
-                lineHeight: 1.7,
-                resize: 'none',
-                outline: 'none',
-                letterSpacing: 0.3,
+                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', width: '100%', maxWidth: 900, margin: '0 auto',
+                background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
+                fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                resize: 'none', outline: 'none'
               }}
             />
-            <div style={{
-              marginTop: 16,
-              paddingTop: 12,
-              borderTop: '1px solid rgba(255,255,255,0.04)',
-              display: 'flex',
-              gap: 20,
-              fontFamily: 'var(--mono)',
-              fontSize: 9,
-              letterSpacing: 2,
-              color: 'var(--fg-subtle)',
-              flexWrap: 'wrap',
-            }}>
-              <span>{wordCount.toLocaleString()} words</span>
-              <span>{pageEst} est. page{pageEst !== 1 ? 's' : ''}</span>
-              <span>{scenes} scene{scenes !== 1 ? 's' : ''}</span>
-              <span style={{ marginLeft: 'auto', opacity: 0.5 }}>⌘S to save</span>
-            </div>
-          </div>
+          )}
 
-          {/* Preview / Stats pane */}
-          <div style={{
-            width: '42%',
-            background: '#0a0a0a',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}>
-            {/* Tab bar */}
-            <div style={{
-              display: 'flex',
-              borderBottom: '1px solid rgba(255,255,255,0.04)',
-              padding: '0 20px',
-            }}>
-              {(['preview', 'stats'] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: '14px 16px',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: `2px solid ${activeTab === tab ? 'var(--accent)' : 'transparent'}`,
-                    color: activeTab === tab ? 'var(--fg)' : 'var(--fg-muted)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 9,
-                    letterSpacing: 3,
-                    textTransform: 'uppercase',
-                    transition: 'color 0.2s, border-color 0.2s',
-                    marginRight: 4,
-                  }}
-                >
-                  {tab}
-                </button>
+          {activeView === 'preview' && (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: '#fff', color: '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4 }}>
+              {lines.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>Start writing to see preview</div>
+              ) : (
+                lines.map((line, i) => <LinePreview key={i} line={line} index={i} />)
+              )}
+            </div>
+          )}
+
+          {activeView === 'board' && (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
+              {scenesList.length === 0 ? (
+                 <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
+              ) : scenesList.map((scene, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} style={{
+                  width: 280, height: 180, background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column',
+                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, marginBottom: 12 }}>{scene.text}</div>
+                  <div style={{ flex: 1, fontSize: 12, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>
+                     {/* Show preview of action lines following this slug */}
+                     {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
+                  </div>
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+                    <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>Card</span>
+                  </div>
+                </motion.div>
               ))}
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', letterSpacing: 1 }}>
-                  {lines.length} lines
-                </span>
-              </div>
             </div>
-
-            {/* Preview tab */}
-            {activeTab === 'preview' && (
-              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
-                {lines.length === 0 ? (
-                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', color: 'var(--fg-subtle)', textAlign: 'center', marginTop: 40 }}>
-                    Start writing to see your screenplay parse in real time.
-                  </div>
-                ) : (
-                  lines.map((line, i) => <LinePreview key={i} line={line} index={i} />)
-                )}
-              </div>
-            )}
-
-            {/* Stats tab */}
-            {activeTab === 'stats' && (
-              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 24px' }}>
-                {/* Counts */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 28 }}>
-                  {[
-                    { label: 'Words', value: wordCount.toLocaleString() },
-                    { label: 'Est. Pages', value: pageEst },
-                    { label: 'Scenes', value: scenes },
-                    { label: 'Characters', value: chars.length },
-                  ].map(stat => (
-                    <div key={stat.label} style={{
-                      padding: '14px 16px',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.04)',
-                      borderRadius: 'var(--radius-sm)',
-                    }}>
-                      <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, color: 'var(--accent)', lineHeight: 1 }}>
-                        {stat.value}
-                      </div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginTop: 6 }}>
-                        {stat.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Characters */}
-                {chars.length > 0 && (
-                  <div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
-                      Characters
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {chars.map(c => (
-                        <span key={c} style={{
-                          fontFamily: 'var(--mono)',
-                          fontSize: 9,
-                          letterSpacing: 1,
-                          padding: '5px 10px',
-                          background: 'rgba(255,60,0,0.07)',
-                          border: '1px solid rgba(255,60,0,0.2)',
-                          borderRadius: 'var(--radius-sm)',
-                          color: 'var(--accent)',
-                          textTransform: 'uppercase',
-                        }}>
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Line breakdown */}
-                <div style={{ marginTop: 28 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
-                    Line Types
-                  </div>
-                  {Object.entries(TYPE_LABELS).map(([type, label]) => {
-                    const count = lines.filter(l => l.type === type).length;
-                    if (!count) return null;
-                    const pct = Math.round((count / lines.length) * 100);
-                    return (
-                      <div key={type} style={{ marginBottom: 10 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9, marginBottom: 4 }}>
-                          <span style={{ color: TYPE_COLORS[type] as string }}>{label}</span>
-                          <span style={{ color: 'var(--fg-muted)' }}>{count}</span>
-                        </div>
-                        <div style={{ height: 2, background: '#1a1a1a', borderRadius: 1, overflow: 'hidden' }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                            style={{ height: '100%', background: TYPE_COLORS[type] as string, borderRadius: 1 }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
+
+        {/* RIGHT SIDEBAR (Tabbed Panels) */}
+        <AnimatePresence>
+          {showRightSidebar && !focusMode && (
+            <motion.div
+              initial={{ x: 280, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 280, opacity: 0 }}
+              style={{ width: 280, background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}
+            >
+              {/* Panel Tabs */}
+              <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+                {([['tools', Wand2], ['characters', Users], ['revisions', History]] as const).map(([key, Icon]) => (
+                  <button key={key} onClick={() => setRightPanel(key as any)} style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent', color: rightPanel === key ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    <Icon size={12} /> {key}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 24, flex: 1, overflowY: 'auto' }}>
+                {/* TOOLS PANEL */}
+                {rightPanel === 'tools' && (
+                  <>
+                    {/* Quick Insert */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
+                        <Wand2 size={14} /> Quick Insert
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
+                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 11, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Sprint Timer */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
+                        <button onClick={() => setSprintActive(!sprintActive)} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#ff3c00' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
+                      </div>
+                      <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
+                    </div>
+                    {/* Goal Tracker */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}><span>Daily Goal</span><span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{wordCount} / {dailyGoal}</span></div>
+                      <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#0099ff', transition: 'width 0.5s' }} /></div>
+                    </div>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                    {/* Breakdown Analytics */}
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Breakdown</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Scenes</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{scenesList.length}</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Characters</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{chars.length}</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Est. Runtime</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>~{Math.ceil(pageEst * 0.8)} min</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Pages</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{pageEst}</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
+                      </div>
+                    </div>
+                    {/* Breakdown Tags */}
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Tags size={14} /> Elements</div>
+                      {Object.keys(elements).length === 0 ? (
+                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No elements detected yet.</div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          {Object.entries(elements).map(([category, items]) => (
+                            <div key={category}>
+                              <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{category}</div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                {items.map(item => (<span key={item} style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#fff' }}>{item}</span>))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* CHARACTER STATS PANEL */}
+                {rightPanel === 'characters' && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={14} /> Character Report</div>
+                    {charStats.length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No characters detected yet.</div>
+                    ) : (
+                      charStats.slice(0, 15).map((cs, i) => (
+                        <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
+                            <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
+                          </div>
+                          {/* Dialogue bar */}
+                          <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 8 }}>
+                            <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: TYPE_COLORS.character, borderRadius: 2 }} />
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 10, color: 'var(--fg-muted)' }}>
+                            <span>{cs.dialogueLines} lines</span>
+                            <span>{cs.dialogueWords} words</span>
+                            <span>{cs.scenesIn.length} scenes</span>
+                            <span>~{cs.avgWordsPerLine} w/line</span>
+                          </div>
+                          {/* Top relationships */}
+                          {Object.keys(cs.speaksTo).length > 0 && (
+                            <div style={{ marginTop: 8, fontSize: 10, color: '#666' }}>Shares scenes with: {Object.entries(cs.speaksTo).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name]) => name).join(', ')}</div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </>
+                )}
+
+                {/* REVISION HISTORY PANEL */}
+                {rightPanel === 'revisions' && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><History size={14} /> Revisions</div>
+                      <button onClick={handleLockRevision} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
+                    </div>
+                    {revisions.length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No revisions locked yet. Lock your first draft to start tracking changes.</div>
+                    ) : (
+                      revisions.map((rev, i) => {
+                        const revColor = REVISION_COLORS[rev.colorIndex];
+                        return (
+                          <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: revColor.color }}>{rev.label}</span>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
+                            </div>
+                            <div style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(rev.date).toLocaleString()}</div>
+                            <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
+
+      {/* Autocomplete Popover (Basic implementation) */}
+      {showAutocomplete && autocompleteItems.length > 0 && (
+        <div style={{
+          position: 'absolute', top: cursorPos.top, left: cursorPos.left,
+          background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 6, padding: 4, zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          maxHeight: 200, overflowY: 'auto'
+        }}>
+          {autocompleteItems.map((item, idx) => (
+            <div key={idx} style={{ padding: '6px 12px', fontSize: 12, color: 'var(--fg)', cursor: 'pointer' }}>
+              {item}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TITLE PAGE EDITOR MODAL */}
+      <AnimatePresence>
+        {showTitleEditor && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowTitleEditor(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 32, width: 480, maxHeight: '80vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Title Page</h2>
+                <button onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+              {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
+                <div key={field} style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{field.replace(/([A-Z])/g, ' $1').trim()}</label>
+                  <input value={titlePage[field]} onChange={e => handleTitlePageChange(field, e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Courier Prime, monospace' }} />
+                </div>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        textarea::placeholder { color: rgba(240,236,228,0.12); }
+        textarea::placeholder { color: rgba(240,236,228,0.15); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
       `}</style>
     </div>
   );

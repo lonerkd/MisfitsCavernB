@@ -78,6 +78,32 @@ const KNOWLEDGE = {
     'HISS', 'SIZZLE', 'POP', 'SNAP', 'CRACK', 'SPLAT', 'SQUISH', 'DRIP',
     'SPLASH', 'GURGLE', 'RUMBLE', 'THUNDER', 'SILENCE', 'QUIET', 'NOISE',
     'FOOTSTEPS', 'KNOCK', 'SLAM', 'SCREAM', 'EXPLOSION', 'GUNSHOT'
+  ]),
+
+  PROPS: new Set([
+    'GUN', 'PISTOL', 'KNIFE', 'SWORD', 'PHONE', 'CELLPHONE', 'SMARTPHONE', 'LAPTOP',
+    'COMPUTER', 'BRIEFCASE', 'SUITCASE', 'BAG', 'BACKPACK', 'WALLET', 'KEYS',
+    'CUP', 'MUG', 'GLASS', 'BOTTLE', 'CIGARETTE', 'CIGAR', 'LIGHTER', 'WATCH',
+    'RING', 'NECKLACE', 'PAPER', 'DOCUMENT', 'FILE', 'FOLDER', 'BOOK', 'MAGAZINE',
+    'NEWSPAPER', 'PEN', 'PENCIL', 'FLASHLIGHT', 'TORCH', 'WEAPON', 'RIFLE'
+  ]),
+
+  WARDROBE: new Set([
+    'SUIT', 'TUXEDO', 'DRESS', 'GOWN', 'SHIRT', 'T-SHIRT', 'JACKET', 'COAT',
+    'TRENCHCOAT', 'SWEATER', 'HOODIE', 'JEANS', 'PANTS', 'TROUSERS', 'SHORTS',
+    'SKIRT', 'HAT', 'CAP', 'HELMET', 'GLASSES', 'SUNGLASSES', 'SHOES', 'BOOTS',
+    'SNEAKERS', 'HEELS', 'GLOVES', 'MASK', 'UNIFORM', 'ARMOR'
+  ]),
+
+  VEHICLES: new Set([
+    'CAR', 'TRUCK', 'VAN', 'SUV', 'MOTORCYCLE', 'BIKE', 'BICYCLE', 'BUS',
+    'TRAIN', 'SUBWAY', 'PLANE', 'AIRPLANE', 'HELICOPTER', 'JET', 'BOAT',
+    'SHIP', 'YACHT', 'SPACESHIP', 'TAXI', 'CAB', 'AMBULANCE', 'POLICE CAR'
+  ]),
+
+  VFX: new Set([
+    'EXPLOSION', 'FIRE', 'BLAST', 'SPARKS', 'SMOKE', 'HOLOGRAM', 'LASER',
+    'BEAM', 'GLOW', 'MAGIC', 'BLOOD', 'WOUND', 'BULLET', 'SHATTER', 'CRASH'
   ])
 };
 
@@ -88,6 +114,7 @@ const KNOWLEDGE = {
 export class ScriptParser {
   private rawLines: string[];
   private characterStats: Map<string, number>;
+  private elements: Record<string, Set<string>>;
   private lines: ScriptLine[];
   
   // State Machine
@@ -98,6 +125,13 @@ export class ScriptParser {
   constructor(text: string) {
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.characterStats = new Map();
+    this.elements = {
+      'PROPS': new Set(),
+      'WARDROBE': new Set(),
+      'VEHICLES': new Set(),
+      'VFX': new Set(),
+      'SFX': new Set()
+    };
     this.lines = [];
   }
 
@@ -169,8 +203,16 @@ export class ScriptParser {
 
     const scenes = this.extractScenes(this.lines);
     const characters = this.getCharacters();
+    
+    // Convert sets to arrays for the result
+    const extractedElements: Record<string, string[]> = {};
+    for (const [key, set] of Object.entries(this.elements)) {
+      if (set.size > 0) {
+        extractedElements[key] = Array.from(set);
+      }
+    }
 
-    return { lines: this.lines, scenes, characters };
+    return { lines: this.lines, scenes, characters, elements: extractedElements };
   }
 
   // --- PASS 1: CHARACTER RECOGNITION ---
@@ -281,6 +323,17 @@ export class ScriptParser {
         reasoning.push('Contains capitalized sound cue');
       }
     }
+
+    // --- ELEMENT EXTRACTION ---
+    // If it's an action line, scan for elements regardless of capitalization
+    const upperWords = upper.split(/[^A-Z]+/);
+    upperWords.forEach(w => {
+      if (KNOWLEDGE.PROPS.has(w)) this.elements.PROPS.add(w);
+      if (KNOWLEDGE.WARDROBE.has(w)) this.elements.WARDROBE.add(w);
+      if (KNOWLEDGE.VEHICLES.has(w)) this.elements.VEHICLES.add(w);
+      if (KNOWLEDGE.VFX.has(w)) this.elements.VFX.add(w);
+      if (KNOWLEDGE.SOUNDS.has(w)) this.elements.SFX.add(w);
+    });
 
     scores.action = visualScore + 20;
 

@@ -98,18 +98,7 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Export script as text file
-export function exportScriptAsText(script: StoredScript): void {
-  const blob = new Blob([script.content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${script.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+
 
 // Import script from text
 export function importScriptFromText(text: string, title: string): StoredScript {

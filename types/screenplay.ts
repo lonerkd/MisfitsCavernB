@@ -82,4 +82,5 @@ export interface ParseResult {
   lines: ScriptLine[];
   scenes: Scene[];
   characters: Character[];
+  elements?: Record<string, string[]>;
 }
