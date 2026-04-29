@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowDown,
   Film,
@@ -19,6 +19,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import PhotoScatter from '@/components/PhotoScatter';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
+import { supabase } from '@/lib/supabase/client';
 
 // Dynamic import for particles
 const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
@@ -93,6 +94,20 @@ const HOW_IT_WORKS = [
 ];
 
 export default function Home() {
+  const [stats, setStats] = useState({ members: 0, jobs: 0, scripts: 0 });
+
+  useEffect(() => {
+    async function fetchStats() {
+      const [{ count: members }, { count: jobs }, { count: scripts }] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+        supabase.from('scripts').select('id', { count: 'exact', head: true }),
+      ]);
+      setStats({ members: members || 0, jobs: jobs || 0, scripts: scripts || 0 });
+    }
+    fetchStats();
+  }, []);
+
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', fontFamily: 'var(--mono)' }}>
       <GrainOverlay />
@@ -223,29 +238,26 @@ export default function Home() {
           }}
         >
           {[
-            '7 creative tools',
-            'Real-time collaboration',
-            'Professional-grade screenwriting',
+            { value: stats.members > 0 ? stats.members.toString() : '—', label: 'members' },
+            { value: stats.jobs > 0 ? stats.jobs.toString() : '—', label: 'open jobs' },
+            { value: stats.scripts > 0 ? stats.scripts.toString() : '—', label: 'scripts written' },
+            { value: '7', label: 'creative tools' },
           ].map((item, i, arr) => (
             <React.Fragment key={i}>
-              <span
-                style={{
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  textTransform: 'uppercase',
-                  color: 'rgba(240, 236, 228, 0.45)',
-                  padding: '0 32px',
-                  textAlign: 'center',
-                }}
-              >
-                {item}
-              </span>
+              <div style={{ textAlign: 'center', padding: '0 28px' }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2, color: 'var(--fg)', lineHeight: 1 }}>
+                  {item.value}
+                </div>
+                <div style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(240,236,228,0.35)', marginTop: 6 }}>
+                  {item.label}
+                </div>
+              </div>
               {i < arr.length - 1 && (
                 <span
                   style={{
                     width: 1,
-                    height: 18,
-                    background: 'rgba(255,255,255,0.12)',
+                    height: 28,
+                    background: 'rgba(255,255,255,0.08)',
                     flexShrink: 0,
                   }}
                 />
