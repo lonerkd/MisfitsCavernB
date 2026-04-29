@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, Download, FileText, Play, Navigation2, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Download, FileText, Play, Navigation2, Eye, Cloud } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, exportScriptAsText, type StoredScript } from '@/lib/scriptos/storage';
 import { getCharacterNames, ELEMENT_CYCLE, getCurrentLine } from '@/lib/scriptos/editor-utils';
@@ -20,6 +21,11 @@ export default function EditorPage() {
   const [showTableRead, setShowTableRead] = useState(false);
   const [cursorPos, setCursorPos] = useState(0);
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null);
+  const [authedUser, setAuthedUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setAuthedUser(user));
+  }, []);
 
   // Load scripts on mount
   useEffect(() => {
@@ -243,7 +249,13 @@ export default function EditorPage() {
           </h1>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {!authedUser && (
+            <Link href="/auth"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.6, textDecoration: 'none' }}>
+              <Cloud size={11} /> SIGN IN TO SYNC
+            </Link>
+          )}
           <button
             onClick={() => setShowScripts(!showScripts)}
             className="link-btn"
