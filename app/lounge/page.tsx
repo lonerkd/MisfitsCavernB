@@ -5,12 +5,15 @@ import { ArrowLeft, Send, Music, Users, Smile } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import { supabase } from '@/lib/supabase/client';
+import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 
 interface Message {
   id: string;
   user: string;
   text: string;
   timestamp: Date;
+  sender_id?: string;
   mine?: boolean;
 }
 
@@ -41,8 +44,8 @@ const CREW = [
   { name: 'Producer', role: 'Production', online: false },
 ];
 
-function MessageBubble({ msg }: { msg: Message }) {
-  const isMe = msg.mine;
+function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
+  const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -95,23 +98,56 @@ export default function LoungePage() {
   const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
   const [input, setInput] = useState('');
   const [nowPlaying] = useState('lofi hip hop radio — beats to relax/study to');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user && mounted) setCurrentUser(user);
+    });
+
+    const loadMessages = async () => {
+      try {
+        const data = await getChannelMessages('general');
+        if (!mounted) return;
+        const formatted = data.map((m: any) => ({
+          id: m.id,
+          user: m.profiles?.username || 'Unknown',
+          text: m.content,
+          timestamp: new Date(m.created_at),
+          sender_id: m.sender_id
+        }));
+        setMessages(formatted);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadMessages();
+
+    const channel = subscribeToChannel('general', () => {
+      loadMessages();
+    });
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      user: 'You',
-      text,
-      timestamp: new Date(),
-      mine: true,
-    }]);
+    if (!text || !currentUser) return;
     setInput('');
+    try {
+      await sendMessage(currentUser.id, text, 'general');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -173,7 +209,7 @@ export default function LoungePage() {
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
-              {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+              {messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />)}
               <div ref={bottomRef} />
             </div>
           </div>

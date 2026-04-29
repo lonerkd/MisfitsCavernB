@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
+import { signIn, signUp } from '@/lib/supabase/auth';
+import { supabase } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
 
@@ -129,28 +131,18 @@ export default function AuthPage() {
     setError('');
 
     try {
-      const endpoint = mode === 'signin' ? '/api/auth/signin' : '/api/auth/signup';
-      const body = mode === 'signin'
-        ? { email: form.email, password: form.password }
-        : form;
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Authentication failed');
+      if (mode === 'signin') {
+        const { user } = await signIn(form.email, form.password);
+        if (user) localStorage.setItem('user', JSON.stringify(user));
+      } else {
+        const { user } = await signUp(form.email, form.password, form.username);
+        if (user) localStorage.setItem('user', JSON.stringify(user));
       }
 
-      const user = await res.json();
-      localStorage.setItem('user', JSON.stringify(user));
       toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
       setTimeout(() => router.push('/'), 600);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -366,6 +358,21 @@ export default function AuthPage() {
             </span>
             <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
           </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signInWithOAuth({
+                provider: 'discord',
+                options: { redirectTo: `${window.location.origin}/auth/callback` }
+              });
+            }}
+            style={{ width: '100%', padding: '14px', background: 'rgba(88,101,242,0.12)', border: '1px solid rgba(88,101,242,0.4)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'all 0.2s', marginTop: 24, borderRadius: 'var(--radius-sm)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(88,101,242,0.22)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(88,101,242,0.12)'}>
+            <svg width="16" height="12" viewBox="0 0 71 55" fill="#5865f2"><path d="M60.1 4.9A58.5 58.5 0 0045.6 0a40 40 0 00-1.8 3.7 54.1 54.1 0 00-16.2 0A38.5 38.5 0 0025.9 0 58.3 58.3 0 0011.3 5C1.6 19.6-1 33.8.3 47.9a58.8 58.8 0 0017.9 9 44 44 0 003.8-6.2 38.3 38.3 0 01-6-2.9l1.5-1.2a41.9 41.9 0 0036.2 0l1.5 1.2a38.3 38.3 0 01-6 2.9 44 44 0 003.8 6.2 58.6 58.6 0 0017.9-9C72 31.6 68.3 17.5 60.1 4.9zM23.7 39.4c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.8 7.2-6.4 7.2zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.9 7.2-6.4 7.2z"/></svg>
+            CONTINUE WITH DISCORD
+          </button>
 
           <p style={{
             marginTop: 20,
