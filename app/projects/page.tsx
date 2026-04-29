@@ -129,15 +129,28 @@ export default function ProjectsPage() {
               {label} · {projects.filter(p => p.status === key).length}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {projects.filter(p => p.status === key).map(project => (
-                <div key={project.id} onClick={() => setSelected(project)}
-                  style={{ padding: 12, background: selected?.id === project.id ? 'rgba(255,60,0,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selected?.id === project.id ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
-                  onMouseLeave={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 4 }}>{project.title}</div>
-                  <div style={{ fontSize: 9, opacity: 0.4 }}>{project.project_tasks.length} tasks</div>
-                </div>
-              ))}
+              {projects.filter(p => p.status === key).map(project => {
+                const total = project.project_tasks.length;
+                const done = project.project_tasks.filter(t => t.completed).length;
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                return (
+                  <div key={project.id} onClick={() => setSelected(project)}
+                    style={{ padding: 12, background: selected?.id === project.id ? 'rgba(255,60,0,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selected?.id === project.id ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+                    onMouseLeave={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 8 }}>{project.title}</div>
+                    {total > 0 && (
+                      <>
+                        <div style={{ height: 2, background: 'rgba(255,255,255,0.08)', marginBottom: 6, borderRadius: 1, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#00ff00' : 'var(--accent)', transition: 'width 0.3s', borderRadius: 1 }} />
+                        </div>
+                        <div style={{ fontSize: 8, opacity: 0.4, fontFamily: 'var(--mono)' }}>{done}/{total} tasks · {pct}%</div>
+                      </>
+                    )}
+                    {total === 0 && <div style={{ fontSize: 9, opacity: 0.3, fontFamily: 'var(--mono)' }}>No tasks yet</div>}
+                  </div>
+                );
+              })}
               {key === 'concept' && (
                 <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12 }}>
                   <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)}
