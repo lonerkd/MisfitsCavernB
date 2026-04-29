@@ -183,7 +183,26 @@ export class ScriptParser {
         this.lastSpeaker = null;
         this.insideDialogueBlock = false;
       } else if (analysis.type === 'character') {
-        this.lastSpeaker = analysis.meta?.characterName || null;
+        const charName = analysis.meta?.characterName || trim;
+        // Detect Dual Dialogue: caret prefix (^CHARACTER)
+        const isDual = trim.startsWith('^');
+        // Detect CONT'D: same character speaking again after action
+        const isContinued = this.lastSpeaker !== null && 
+          this.clean(charName) === this.lastSpeaker && 
+          !this.insideDialogueBlock;
+        
+        analysis.meta = {
+          ...analysis.meta,
+          isDualDialogue: isDual,
+          characterName: isDual ? charName.replace(/^\^/, '').trim() : charName,
+        };
+        
+        // If CONT'D and name doesn't already have it, note it
+        if (isContinued && !charName.includes("CONT'D") && !charName.includes("(CONT'D)")) {
+          analysis.meta.isContinued = true;
+        }
+        
+        this.lastSpeaker = this.clean(analysis.meta.characterName || charName);
         this.insideDialogueBlock = true;
       } else if (analysis.type === 'action' || analysis.type === 'transition') {
         this.insideDialogueBlock = false;

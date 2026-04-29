@@ -30,6 +30,7 @@ export interface ScriptLine {
     sceneNumber?: string;
     timeOfDay?: string;
     isDualDialogue?: boolean;
+    isContinued?: boolean;
     visualDensity?: number; // 0-100 score
   };
 }

@@ -33,6 +33,67 @@ const TYPE_COLORS: Record<string, string> = {
   note: '#eab308'
 };
 
+const TEMPLATES: Record<string, string> = {
+  'blank': '',
+  'feature': `FADE IN:
+
+EXT. CITY SKYLINE - DAWN
+
+The sun barely crests the horizon. A new day. A new beginning.
+
+INT. APARTMENT - CONTINUOUS
+
+PROTAGONIST (30s, determined) sits at the edge of a bed.
+
+PROTAGONIST
+Today is the day.
+
+CUT TO:
+
+EXT. STREET - DAY
+
+Protagonist walks with purpose. The world moves around them.
+`,
+  'short': `FADE IN:
+
+INT. ROOM - NIGHT
+
+A single lamp illuminates a desk. Papers everywhere.
+
+CHARACTER sits, staring at something we can't see.
+
+CHARACTER
+(whispers)
+It was always going to end this way.
+
+FADE OUT.
+`,
+  'tv-cold-open': `COLD OPEN
+
+FADE IN:
+
+EXT. LOCATION - NIGHT
+
+Establishing shot. Tension in the air.
+
+INT. LOCATION - CONTINUOUS
+
+CHARACTER A enters. Stops dead.
+
+CHARACTER A
+What happened here?
+
+CHARACTER B (O.S.)
+You don't want to know.
+
+SMASH CUT TO:
+
+MAIN TITLES
+
+END COLD OPEN
+`,
+};
+
 const PLACEHOLDER = `FADE IN:
 
 INT. COFFEE SHOP - DAY
@@ -67,8 +128,9 @@ function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
     whiteSpace: 'pre-wrap',
   };
 
-  // Add notes syntax parsing [[Note]]
   let displayContent = line.text;
+  
+  // Notes syntax [[Note]]
   if (displayContent.includes('[[') && displayContent.includes(']]')) {
     style.color = TYPE_COLORS.note;
     style.background = 'rgba(234, 179, 8, 0.1)';
@@ -77,11 +139,15 @@ function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
     style.borderLeft = '2px solid #eab308';
   }
 
+  // CONT'D indicator
+  const contd = line.meta?.isContinued;
+  
   if (line.type === 'slug') {
     return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>{displayContent}</div>;
   }
   if (line.type === 'character') {
-    return <div style={{ ...style, textAlign: 'center', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{displayContent}</div>;
+    const name = line.meta?.isDualDialogue ? displayContent.replace(/^\^/, '') : displayContent;
+    return <div style={{ ...style, textAlign: 'center', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{name}{contd ? " (CONT'D)" : ''}</div>;
   }
   if (line.type === 'dialogue') {
     return <div style={{ ...style, paddingLeft: 80, paddingRight: 60, maxWidth: '100%', marginBottom: 12 }}>{displayContent}</div>;
@@ -114,8 +180,9 @@ export default function EditorPage() {
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board'>('write');
+  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline'>('write');
   const [focusMode, setFocusMode] = useState(false);
+  const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
   
   // Tools & Tracking
   const [dailyGoal, setDailyGoal] = useState(1000);
@@ -404,6 +471,17 @@ export default function EditorPage() {
 
   // Stats
   const scenesList = lines.filter(l => l.type === 'slug');
+  const filteredScenes = useMemo(() => {
+    if (sceneFilter === 'all') return scenesList;
+    return scenesList.filter(s => {
+      const upper = s.text.toUpperCase();
+      if (sceneFilter === 'int') return upper.includes('INT');
+      if (sceneFilter === 'ext') return upper.includes('EXT');
+      if (sceneFilter === 'day') return upper.includes('DAY');
+      if (sceneFilter === 'night') return upper.includes('NIGHT');
+      return true;
+    });
+  }, [scenesList, sceneFilter]);
   const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
@@ -478,6 +556,9 @@ export default function EditorPage() {
             </button>
             <button onClick={() => setActiveView('board')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'board' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'board' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
               <LayoutDashboard size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Board
+            </button>
+            <button onClick={() => setActiveView('outline')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'outline' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'outline' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
+              <List size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Outline
             </button>
             <button onClick={() => setActiveView('preview')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'preview' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'preview' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
               <FileText size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Preview
@@ -599,6 +680,19 @@ export default function EditorPage() {
                   </button>
                 </div>
                 <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx" onChange={handleImportFile} style={{ display: 'none' }} />
+                {/* Templates */}
+                <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 12, marginBottom: 6 }}>Templates</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {Object.keys(TEMPLATES).filter(k => k !== 'blank').map(key => (
+                    <button key={key} onClick={() => {
+                      const s = createNewScript(key.charAt(0).toUpperCase() + key.slice(1));
+                      setScripts(prev => [...prev, s]);
+                      setCurrentScript(s);
+                      setContent(TEMPLATES[key]);
+                      toast(`Created from "${key}" template`, 'success');
+                    }} style={{ fontSize: 9, padding: '4px 8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: 'var(--fg-muted)', cursor: 'pointer', textTransform: 'capitalize' }}>{key}</button>
+                  ))}
+                </div>
               </div>
 
               {/* Scene Navigator */}
@@ -729,6 +823,45 @@ export default function EditorPage() {
                   </motion.div>
                 );
               })}
+            </div>
+          )}
+
+          {activeView === 'outline' && (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+              {/* Scene Filter Bar */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+                {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
+                  <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: sceneFilter === f ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
+                ))}
+                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
+              </div>
+              {/* Outline List */}
+              {filteredScenes.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#666', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
+              ) : (
+                filteredScenes.map((scene, i) => {
+                  const globalIdx = scenesList.indexOf(scene);
+                  const startIdx = lines.findIndex(l => l.id === scene.id);
+                  const endIdx = globalIdx + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[globalIdx + 1].id) : lines.length;
+                  const sceneLines = lines.slice(startIdx, endIdx);
+                  const sceneChars = [...new Set(sceneLines.filter(l => l.type === 'character').map(l => l.text.trim()))];
+                  const wc = sceneLines.reduce((s, l) => s + l.text.split(/\\s+/).filter(Boolean).length, 0);
+                  const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
+                  return (
+                    <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', marginBottom: 4 }}>{scene.text}</div>
+                        {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
+                    </motion.div>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
