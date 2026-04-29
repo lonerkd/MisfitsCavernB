@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
+import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { useEffect } from 'react';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -289,8 +291,31 @@ function VideoModal({ video, onClose }: { video: Video | null; onClose: () => vo
 
 export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
-  const featured = VIDEOS.filter(v => v.featured);
-  const rest = VIDEOS.filter(v => !v.featured);
+  const [videosList, setVideosList] = useState<Video[]>(VIDEOS);
+
+  useEffect(() => {
+    getPortfolioProjects().then(data => {
+      if (data && data.length > 0) {
+        const fetchedVideos: Video[] = data.map((p: any) => {
+          const media = p.portfolio_media?.[0];
+          return {
+            id: p.id,
+            title: p.title,
+            category: p.category || 'Video',
+            role: p.role || 'Creator',
+            description: p.description || '',
+            driveId: media?.url?.split('id=')?.[1] || media?.url || '',
+            year: p.year?.toString() || new Date(p.created_at).getFullYear().toString(),
+            featured: true
+          };
+        });
+        setVideosList(fetchedVideos);
+      }
+    }).catch(console.error);
+  }, []);
+
+  const featured = videosList.filter(v => v.featured);
+  const rest = videosList.filter(v => !v.featured);
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
@@ -315,13 +340,13 @@ export default function PortfolioPage() {
           </div>
         </Link>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>
-          {VIDEOS.length} Projects
+          {videosList.length} Projects
         </span>
       </nav>
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '110px 20px 80px' }}>
         <AnimatedSection>
-          <SectionLabel text={`The Work — ${VIDEOS.length} Projects`} />
+          <SectionLabel text={`The Work — ${videosList.length} Projects`} />
         </AnimatedSection>
 
         {/* Featured — 2 col */}

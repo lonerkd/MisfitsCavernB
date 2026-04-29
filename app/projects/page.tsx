@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Users, Clock, Plus, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
+import { supabase } from '@/lib/supabase/client';
+import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 
 type Status = 'Pre-Production' | 'Production' | 'Post-Production' | 'Complete';
 
@@ -176,6 +178,49 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 }
 
 export default function ProjectsPage() {
+  const [projectsList, setProjectsList] = useState<Project[]>(PROJECTS);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setUser(user);
+      getUserProjects(user.id).then(async data => {
+        if (data && data.length > 0) {
+          const fetchedProjects: Project[] = data.map(p => ({
+            id: p.id,
+            title: p.title,
+            type: 'Feature',
+            status: p.status === 'completed' ? 'Complete' : p.status === 'in-production' ? 'Production' : p.status === 'post-production' ? 'Post-Production' : 'Pre-Production',
+            progress: 0,
+            deadline: p.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            team: ['Creator'],
+            description: p.description || 'No description provided.',
+            color: p.accent_color || '#ff3c00'
+          }));
+          setProjectsList(fetchedProjects);
+        }
+      });
+    });
+  }, []);
+
+  const handleNewProject = async () => {
+    if (!user) return alert('Must be signed in to create projects');
+    const title = prompt('Project Title:');
+    if (!title) return;
+    try {
+      const p = await createDBProject(user.id, title, 'A new cinematic vision.');
+      const newProj: Project = {
+        id: p.id, title: p.title, type: 'Feature', status: 'Pre-Production',
+        progress: 0, deadline: new Date().toISOString(), team: ['Creator'],
+        description: p.description, color: '#ff3c00'
+      };
+      setProjectsList([newProj, ...projectsList]);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
@@ -197,7 +242,7 @@ export default function ProjectsPage() {
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>PROJECTS</div>
         </Link>
 
-        <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="link-btn" onClick={handleNewProject} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Plus size={11} /> New Project
         </button>
       </nav>
@@ -205,12 +250,12 @@ export default function ProjectsPage() {
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '100px 20px 80px' }}>
 
         <AnimatedSection>
-          <SectionLabel text={`Production Pipeline — ${PROJECTS.length} Active`} />
+          <SectionLabel text={`Production Pipeline — ${projectsList.length} Active`} />
         </AnimatedSection>
 
         {/* Project cards */}
         <div style={{ display: 'grid', gap: 18, marginBottom: 90 }}>
-          {PROJECTS.map((p, i) => <ProjectCard key={p.id} project={p} index={i} />)}
+          {projectsList.map((p, i) => <ProjectCard key={p.id} project={p} index={i} />)}
         </div>
 
         {/* Timeline */}
@@ -227,14 +272,14 @@ export default function ProjectsPage() {
               background: 'linear-gradient(to bottom, var(--accent), rgba(255,60,0,0))',
             }} />
 
-            {PROJECTS.map((project, i) => (
+            {projectsList.map((project, i) => (
               <motion.div
                 key={project.id}
                 initial={{ opacity: 0, x: -16 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                style={{ position: 'relative', marginBottom: i < PROJECTS.length - 1 ? 32 : 0 }}
+                style={{ position: 'relative', marginBottom: i < projectsList.length - 1 ? 32 : 0 }}
               >
                 {/* Dot */}
                 <div style={{

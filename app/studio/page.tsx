@@ -7,6 +7,10 @@ import { motion } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
+import { supabase } from '@/lib/supabase/client';
+import { getUserProjects } from '@/lib/supabase/projects';
+import { getAllStudioAssets } from '@/lib/supabase/studio';
+import { useEffect } from 'react';
 
 interface Asset {
   id: string;
@@ -182,9 +186,46 @@ function ProjectCard({ project, index }: { project: typeof PROJECTS[0]; index: n
 
 export default function StudioPage() {
   const [filter, setFilter] = useState<string>('all');
+  const [user, setUser] = useState<any>(null);
+  const [assetsList, setAssetsList] = useState<Asset[]>(ASSETS);
+  const [projectsList, setProjectsList] = useState<typeof PROJECTS>(PROJECTS);
+
   const types = ['all', 'image', 'video', 'document', 'audio'];
 
-  const filtered = filter === 'all' ? ASSETS : ASSETS.filter(a => a.type === filter);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setUser(user);
+      
+      getAllStudioAssets(user.id).then(data => {
+        if (data && data.length > 0) {
+          setAssetsList(data.map(a => ({
+            id: a.id,
+            name: a.title || 'Untitled',
+            type: (a.asset_type as any) || 'document',
+            category: 'Studio',
+            size: 'Unknown',
+            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          })));
+        }
+      }).catch(console.error);
+
+      getUserProjects(user.id).then(data => {
+        if (data && data.length > 0) {
+          setProjectsList(data.map(p => ({
+            title: p.title,
+            type: 'Feature',
+            status: p.status === 'completed' ? 'Complete' : p.status === 'in-production' ? 'Production' : p.status === 'post-production' ? 'Post-Production' : 'Development',
+            statusColor: p.accent_color || '#ffaa00',
+            completion: p.status === 'completed' ? 100 : 50,
+            description: p.description || 'No description'
+          })));
+        }
+      }).catch(console.error);
+    });
+  }, []);
+
+  const filtered = filter === 'all' ? assetsList : assetsList.filter(a => a.type === filter);
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
@@ -258,7 +299,7 @@ export default function StudioPage() {
             <SectionLabel text="Active Projects" />
           </AnimatedSection>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {PROJECTS.map((p, i) => <ProjectCard key={p.title} project={p} index={i} />)}
+            {projectsList.map((p, i) => <ProjectCard key={p.title} project={p} index={i} />)}
           </div>
         </div>
       </section>

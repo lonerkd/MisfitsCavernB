@@ -99,12 +99,24 @@ export default function LoungePage() {
   const [input, setInput] = useState('');
   const [nowPlaying] = useState('lofi hip hop radio — beats to relax/study to');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [crewList, setCrewList] = useState<any[]>(CREW);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user && mounted) setCurrentUser(user);
+    });
+
+    supabase.from('profiles').select('*').limit(20).then(({ data }) => {
+      if (data && mounted) {
+        setCrewList(data.map(p => ({
+          id: p.id,
+          name: p.username || 'User',
+          role: p.role || 'Crew',
+          online: p.status === 'OPEN'
+        })));
+      }
     });
 
     const loadMessages = async () => {
@@ -196,7 +208,7 @@ export default function LoungePage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-muted)' }}>
             <Users size={13} />
-            {CREW.filter(c => c.online).length} online
+            {crewList.filter(c => c.online).length} online
           </div>
         </div>
       </nav>
@@ -294,7 +306,7 @@ export default function LoungePage() {
             Crew
           </div>
 
-          {CREW.map((member, i) => (
+          {crewList.map((member, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: 10 }}
