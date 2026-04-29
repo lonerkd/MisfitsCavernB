@@ -473,18 +473,29 @@ export default function EditorPage() {
         </div>
       )}
 
+      {/* Stats bar at bottom */}
+      {lines.length > 0 && !showScripts && !showVersionHistory && !showSceneNav && !showTableRead && (
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 32, background: 'rgba(8,8,8,0.9)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 24, padding: '0 40px', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.5, zIndex: 50 }}>
+          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{Math.max(1, Math.ceil(lines.length / 55))}</span> pages</span>
+          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{lines.filter(l => l.type === 'slug').length}</span> scenes</span>
+          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{getCharacterNames(lines).length}</span> characters</span>
+          <span><span style={{ color: 'var(--accent)', opacity: 1 }}>{lines.reduce((n, l) => n + (l.type === 'dialogue' || l.type === 'action' ? l.text.split(/\s+/).filter(Boolean).length : 0), 0)}</span> words</span>
+        </div>
+      )}
+
       <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
-        {/* Editor */}
-        <div style={{ flex: 1, padding: 40 }}>
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              setCursorPos(e.currentTarget.selectionStart);
-            }}
-            onClick={(e) => setCursorPos(e.currentTarget.selectionStart)}
-            placeholder="Start writing your screenplay here...
+        {/* Editor — full width */}
+        <div style={{ flex: 1, padding: '40px 40px 60px', overflowY: 'auto' }}>
+          <div style={{ maxWidth: 680, margin: '0 auto' }}>
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                setCursorPos(e.currentTarget.selectionStart);
+              }}
+              onClick={(e) => setCursorPos(e.currentTarget.selectionStart)}
+              placeholder="Start writing your screenplay here...
 
 INT. COFFEE SHOP - DAY
 
@@ -494,136 +505,85 @@ JANE
 I've got it. The perfect opening line.
 
 She leans back, satisfied."
+              style={{
+                width: '100%',
+                minHeight: 'calc(100vh - 140px)',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--fg)',
+                fontFamily: 'Courier Prime, Courier, monospace',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                padding: 0,
+                resize: 'none',
+                outline: 'none',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Table Read panel — slides in as right panel */}
+        {showTableRead && (
+          <div
             style={{
-              width: '100%',
-              height: '100%',
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--fg)',
-              fontFamily: 'Courier Prime, Courier, monospace',
-              fontSize: '12px',
-              lineHeight: '1.5',
-              padding: 20,
-              resize: 'none',
-              outline: 'none'
+              width: 480,
+              borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
+              padding: '32px 28px',
+              overflowY: 'auto',
+              background: '#0a0a0a',
+              flexShrink: 0,
             }}
-          />
-        </div>
-
-        {/* Preview / Table Read Mode */}
-        <div
-          style={{
-            width: '50%',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
-            padding: 40,
-            overflowY: 'auto',
-            background: '#0a0a0a'
-          }}
-        >
-          {showTableRead ? (
-            <div style={{ maxWidth: 650, margin: '0 auto' }}>
-              <h3
-                style={{
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  marginBottom: 20,
-                  opacity: 0.5
-                }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, margin: 0, opacity: 0.5 }}>TABLE READ</h3>
+              <button onClick={() => setShowTableRead(false)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4, fontSize: 16 }}>✕</button>
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <select
+                value={selectedCharacter || ''}
+                onChange={(e) => setSelectedCharacter(e.target.value || null)}
+                style={{ width: '100%', padding: 8, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}
               >
-                TABLE READ MODE
-              </h3>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 12, opacity: 0.7 }}>Select character:</label>
-                <select
-                  value={selectedCharacter || ''}
-                  onChange={(e) => setSelectedCharacter(e.target.value || null)}
-                  style={{
-                    width: '100%',
-                    padding: 8,
-                    marginTop: 8,
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: 'var(--fg)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 11,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="">All characters</option>
-                  {getCharacterNames(lines).map((char) => (
-                    <option key={char} value={char}>
-                      {char}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {lines.map((line, i) => {
-                const isCharacterLine = line.type === 'character';
-                const isDialogueLine = line.type === 'dialogue';
-                const characterName = line.meta?.characterName || '';
+                <option value="">All characters</option>
+                {getCharacterNames(lines).map((char) => (
+                  <option key={char} value={char}>{char}</option>
+                ))}
+              </select>
+            </div>
+            {lines.map((line, i) => {
+              const isCharacterLine = line.type === 'character';
+              const isDialogueLine = line.type === 'dialogue';
+              const characterName = line.meta?.characterName || '';
 
-                if (selectedCharacter && isCharacterLine && characterName === selectedCharacter) {
+              if (selectedCharacter && isCharacterLine && characterName === selectedCharacter) {
+                return (
+                  <div key={i} style={{ marginBottom: 8, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase' }}>{characterName}</div>
+                );
+              }
+
+              if (selectedCharacter && isDialogueLine) {
+                const prev = lines[i - 1];
+                if (prev?.meta?.characterName === selectedCharacter) {
                   return (
-                    <div key={i} style={{ marginBottom: 16, padding: 12, background: 'rgba(255, 100, 100, 0.1)', border: '2px solid var(--accent)' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: 8, color: 'var(--accent)' }}>{characterName}</div>
-                      {lines
-                        .slice(i + 1)
-                        .find((l) => l.type === 'character' || l.type === 'action' || l.type === 'slug')
-                        ?.index || lines.length}
+                    <div key={i} style={{ ...getLineStyle(line.type), background: 'rgba(255, 255, 255, 0.03)', padding: '8px 12px', marginBottom: 12 }}>
+                      {line.text}
                     </div>
                   );
                 }
+              }
 
-                if (selectedCharacter && isDialogueLine) {
-                  const prev = lines[i - 1];
-                  if (prev?.meta?.characterName === selectedCharacter) {
-                    return (
-                      <div key={i} style={{ ...getLineStyle(line.type), background: 'rgba(255, 255, 255, 0.05)', padding: 12 }}>
-                        {line.text}
-                      </div>
-                    );
-                  }
-                }
+              if (!selectedCharacter) {
+                return (
+                  <div key={i} style={getLineStyle(line.type)}>
+                    {line.text || <span style={{ opacity: 0.3 }}>[empty]</span>}
+                  </div>
+                );
+              }
 
-                if (!selectedCharacter) {
-                  return (
-                    <div key={i} style={getLineStyle(line.type)}>
-                      {line.text || <span style={{ opacity: 0.3 }}>[empty line]</span>}
-                    </div>
-                  );
-                }
-
-                return null;
-              })}
-            </div>
-          ) : (
-            <div style={{ maxWidth: 650, margin: '0 auto' }}>
-              <h3
-                style={{
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  marginBottom: 20,
-                  opacity: 0.5
-                }}
-              >
-                LIVE PREVIEW ({lines.length} lines)
-              </h3>
-              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 20, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                <div><span style={{ color: 'var(--accent)' }}>{Math.max(1, Math.ceil(lines.length / 55))}</span> pages</div>
-                <div><span style={{ color: 'var(--accent)' }}>{lines.filter(l => l.type === 'slug').length}</span> scenes</div>
-                <div><span style={{ color: 'var(--accent)' }}>{getCharacterNames(lines).length}</span> characters</div>
-                <div><span style={{ color: 'var(--accent)' }}>{lines.reduce((n, l) => n + (l.type === 'dialogue' || l.type === 'action' ? l.text.split(/\s+/).filter(Boolean).length : 0), 0)}</span> words</div>
-              </div>
-              {lines.map((line, i) => (
-                <div key={i} style={getLineStyle(line.type)}>
-                  {line.text || <span style={{ opacity: 0.3 }}>[empty line]</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+              return null;
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
