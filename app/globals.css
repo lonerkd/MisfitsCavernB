@@ -247,6 +247,23 @@ a:hover {
   pointer-events: none;
 }
 
+/* Input focus */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: rgba(255, 60, 0, 0.4) !important;
+}
+
+/* Scrollable filter row */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+
 /* Container */
 .container {
   width: 100%;

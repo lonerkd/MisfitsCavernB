@@ -76,7 +76,7 @@ export default function CrewPage() {
               style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }} />
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="filter-row">
             {ROLES.map(r => (
               <button key={r} onClick={() => { setRoleFilter(r); loadCrew(); }}
                 style={{
@@ -85,7 +85,7 @@ export default function CrewPage() {
                   color: roleFilter === r ? 'var(--bg)' : 'var(--fg)',
                   border: roleFilter === r ? 'none' : '1px solid rgba(255,255,255,0.1)',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap', flexShrink: 0,
                 }}>
                 {r}
               </button>
