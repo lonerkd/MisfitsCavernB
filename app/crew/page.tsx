@@ -23,10 +23,11 @@ export default function CrewPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
+  const [availFilter, setAvailFilter] = useState<'all' | 'OPEN' | 'BUSY'>('all');
 
   useEffect(() => {
     loadCrew();
-  }, []);
+  }, [roleFilter, availFilter]);
 
   const loadCrew = async () => {
     setLoading(true);
@@ -39,6 +40,10 @@ export default function CrewPage() {
 
       if (roleFilter && roleFilter !== 'All') {
         query = query.eq('role', roleFilter);
+      }
+
+      if (availFilter !== 'all') {
+        query = query.eq('status', availFilter);
       }
 
       const { data, error } = await query;
@@ -67,30 +72,38 @@ export default function CrewPage() {
       </header>
 
       <div style={{ marginTop: 60, padding: 24, maxWidth: 1100, margin: '60px auto 0' }}>
-        {/* Search + Role Filter */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-          <div style={{ flex: 1, position: 'relative' }}>
+        {/* Search + Filters */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
             <input type="text" placeholder="Search by name, skill, bio..." value={search}
               onChange={e => { setSearch(e.target.value); loadCrew(); }}
               style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }} />
+                border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box' }} />
           </div>
-          <div className="filter-row">
-            {ROLES.map(r => (
-              <button key={r} onClick={() => { setRoleFilter(r); loadCrew(); }}
-                style={{
-                  padding: '8px 14px',
-                  background: roleFilter === r ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                  color: roleFilter === r ? 'var(--bg)' : 'var(--fg)',
-                  border: roleFilter === r ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer',
-                  whiteSpace: 'nowrap', flexShrink: 0,
-                }}>
-                {r}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['all', 'OPEN', 'BUSY'] as const).map(a => (
+              <button key={a} onClick={() => { setAvailFilter(a); loadCrew(); }}
+                style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {a === 'all' ? 'ALL' : a}
               </button>
             ))}
           </div>
+        </div>
+        <div className="filter-row" style={{ marginBottom: 24 }}>
+          {ROLES.map(r => (
+            <button key={r} onClick={() => { setRoleFilter(r); loadCrew(); }}
+              style={{
+                padding: '8px 14px',
+                background: roleFilter === r ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                color: roleFilter === r ? 'var(--bg)' : 'var(--fg)',
+                border: roleFilter === r ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+              {r}
+            </button>
+          ))}
         </div>
 
         {loading ? (
