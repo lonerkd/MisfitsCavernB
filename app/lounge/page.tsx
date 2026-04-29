@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ArrowLeft, Send, Music, Users } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Send, Music, Users, Smile } from 'lucide-react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 
 interface Message {
@@ -10,212 +11,290 @@ interface Message {
   user: string;
   text: string;
   timestamp: Date;
+  mine?: boolean;
+}
+
+const SEED_MESSAGES: Message[] = [
+  {
+    id: '1',
+    user: 'Peter',
+    text: 'Working on the final edit for 10 Million. The timing is sitting perfectly.',
+    timestamp: new Date('2026-04-27T01:30:00'),
+  },
+  {
+    id: '2',
+    user: 'Creative',
+    text: "Can't wait to see it. The rough cut was incredible — every cut felt intentional.",
+    timestamp: new Date('2026-04-27T01:32:00'),
+  },
+  {
+    id: '3',
+    user: 'Peter',
+    text: 'Starting on the Femme Fatale pitch deck next. Need to get it submission-ready.',
+    timestamp: new Date('2026-04-27T01:35:00'),
+  },
+];
+
+const CREW = [
+  { name: 'Peter Olowude', role: 'Director / DP', online: true },
+  { name: 'Creative Director', role: 'Art Direction', online: true },
+  { name: 'Producer', role: 'Production', online: false },
+];
+
+function MessageBubble({ msg }: { msg: Message }) {
+  const isMe = msg.mine;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        marginBottom: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isMe ? 'flex-end' : 'flex-start',
+      }}
+    >
+      {!isMe && (
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
+          <span style={{ fontFamily: 'var(--display)', fontSize: 13, letterSpacing: 2, color: 'var(--accent)' }}>
+            {msg.user}
+          </span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)' }}>
+            {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
+      <div style={{
+        maxWidth: '75%',
+        padding: '12px 16px',
+        background: isMe ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${isMe ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
+        borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+      }}>
+        <p style={{
+          fontFamily: 'var(--serif)',
+          fontSize: 14,
+          lineHeight: 1.65,
+          color: 'rgba(240,236,228,0.85)',
+          margin: 0,
+        }}>
+          {msg.text}
+        </p>
+      </div>
+      {isMe && (
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)', marginTop: 4 }}>
+          {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      )}
+    </motion.div>
+  );
 }
 
 export default function LoungePage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      user: 'Peter',
-      text: 'Working on the final edit for 10 Million. The timing is perfect.',
-      timestamp: new Date('2026-04-27T01:30:00')
-    },
-    {
-      id: '2',
-      user: 'Creative',
-      text: 'Can\'t wait to see it! The rough cut was incredible.',
-      timestamp: new Date('2026-04-27T01:32:00')
-    }
-  ]);
-  const [newMessage, setNewMessage] = useState('');
+  const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
+  const [input, setInput] = useState('');
+  const [nowPlaying] = useState('lofi hip hop radio — beats to relax/study to');
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = () => {
-    if (newMessage.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: Date.now().toString(),
-          user: 'You',
-          text: newMessage,
-          timestamp: new Date()
-        }
-      ]);
-      setNewMessage('');
-    }
+    const text = input.trim();
+    if (!text) return;
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      user: 'You',
+      text,
+      timestamp: new Date(),
+      mine: true,
+    }]);
+    setInput('');
   };
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <GrainOverlay />
 
       {/* Header */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          padding: '18px 32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 100,
-          background: 'rgba(8, 8, 8, 0.95)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)'
-        }}
-      >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-          <ArrowLeft size={18} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 6, color: 'var(--fg)' }}>
-            LOUNGE
-          </div>
+      <nav style={{
+        position: 'sticky',
+        top: 0,
+        padding: '0 28px',
+        height: 62,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        zIndex: 100,
+        background: 'rgba(8,8,8,0.95)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        flexShrink: 0,
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+          <ArrowLeft size={17} color="var(--fg)" />
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>LOUNGE</div>
         </Link>
 
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, opacity: 0.5 }}>
-            <Users size={14} /> 3 Online
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          {/* Now playing */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 14px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 'var(--radius-full)',
+            maxWidth: 260,
+            overflow: 'hidden',
+          }}>
+            <Music size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            <span style={{
+              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
+              color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {nowPlaying}
+            </span>
           </div>
-          <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Music size={12} /> Now Playing
-          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-muted)' }}>
+            <Users size={13} />
+            {CREW.filter(c => c.online).length} online
+          </div>
         </div>
       </nav>
 
-      {/* Lounge Content */}
-      <div style={{ paddingTop: 80, display: 'flex', height: 'calc(100vh - 80px)' }}>
-        {/* Main Chat */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* Body */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+        {/* Chat */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Messages */}
-          <div style={{ flex: 1, padding: 32, overflowY: 'auto' }}>
-            <div style={{ maxWidth: 800, margin: '0 auto' }}>
-              {messages.map((msg) => (
-                <div key={msg.id} style={{ marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
-                    <span
-                      style={{
-                        fontFamily: 'var(--display)',
-                        fontSize: 14,
-                        letterSpacing: 2,
-                        color: 'var(--accent)'
-                      }}
-                    >
-                      {msg.user}
-                    </span>
-                    <span style={{ fontSize: 9, opacity: 0.3 }}>
-                      {msg.timestamp.toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <p
-                    style={{
-                      fontFamily: 'var(--serif)',
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      opacity: 0.8
-                    }}
-                  >
-                    {msg.text}
-                  </p>
-                </div>
-              ))}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
+            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+              {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+              <div ref={bottomRef} />
             </div>
           </div>
 
           {/* Input */}
-          <div
-            style={{
-              padding: 24,
-              borderTop: '1px solid rgba(255, 255, 255, 0.04)',
-              background: '#0a0a0a'
-            }}
-          >
-            <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 12 }}>
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          <div style={{
+            padding: '16px 28px',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            background: '#090909',
+            flexShrink: 0,
+          }}>
+            <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <button style={{
+                background: 'none', border: 'none', color: 'var(--fg-muted)',
+                padding: 10, alignSelf: 'center', transition: 'color 0.2s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+                <Smile size={16} />
+              </button>
+
+              <textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Share your thoughts..."
+                rows={1}
                 style={{
                   flex: 1,
                   padding: '12px 16px',
-                  background: 'transparent',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 'var(--radius-sm)',
                   color: 'var(--fg)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 12,
-                  outline: 'none'
+                  fontFamily: 'var(--serif)',
+                  fontSize: 14,
+                  resize: 'none',
+                  outline: 'none',
+                  transition: 'border-color 0.3s',
+                  lineHeight: 1.5,
                 }}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.35)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
-              <button
+
+              <motion.button
                 onClick={handleSend}
+                whileHover={input.trim() ? { scale: 1.05 } : {}}
+                whileTap={input.trim() ? { scale: 0.95 } : {}}
                 style={{
-                  padding: '12px 24px',
-                  background: 'var(--accent)',
+                  padding: '11px 18px',
+                  background: input.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
                   border: 'none',
-                  color: 'var(--bg)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6
+                  color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  transition: 'background 0.3s, color 0.3s',
+                  alignSelf: 'flex-end',
                 }}
               >
-                <Send size={12} /> SEND
-              </button>
+                <Send size={12} /> Send
+              </motion.button>
             </div>
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div
-          style={{
-            width: 300,
-            borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
-            background: '#0a0a0a',
-            padding: 24,
-            overflowY: 'auto'
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: 'var(--mono)',
-              fontSize: 10,
-              letterSpacing: 3,
-              marginBottom: 20,
-              opacity: 0.5
-            }}
-          >
-            CREW ONLINE
-          </h3>
+        {/* Crew sidebar */}
+        <div style={{
+          width: 240,
+          borderLeft: '1px solid rgba(255,255,255,0.04)',
+          background: '#090909',
+          padding: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          flexShrink: 0,
+          overflowY: 'auto',
+        }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
+            Crew
+          </div>
 
-          {['Peter Olowude', 'Creative Director', 'Producer'].map((name, i) => (
-            <div
+          {CREW.map((member, i) => (
+            <motion.div
               key={i}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.08 }}
               style={{
-                padding: 12,
-                marginBottom: 8,
-                border: '1px solid rgba(255, 255, 255, 0.04)',
+                padding: '10px 12px',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderRadius: 'var(--radius-sm)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 10
+                gap: 10,
+                background: member.online ? 'rgba(0,204,102,0.03)' : 'transparent',
               }}
             >
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: i === 0 ? 'var(--accent)' : '#666'
-                }}
-              />
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{name}</span>
-            </div>
+              <div style={{
+                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                background: member.online ? '#00cc66' : '#333',
+                boxShadow: member.online ? '0 0 6px rgba(0,204,102,0.5)' : 'none',
+              }} />
+              <div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: member.online ? 'var(--fg)' : 'var(--fg-muted)' }}>
+                  {member.name}
+                </div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                  {member.role}
+                </div>
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
+
+      <style>{`
+        textarea::placeholder { color: rgba(240,236,228,0.18); }
+      `}</style>
     </main>
   );
 }
