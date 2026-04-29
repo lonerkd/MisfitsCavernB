@@ -24,6 +24,8 @@ export default function ProjectsPage() {
   const [newTitle, setNewTitle] = useState('');
   const [newTask, setNewTask] = useState('');
   const [user, setUser] = useState<any>(null);
+  const [draggingProject, setDraggingProject] = useState<Project | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<StatusKey | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -95,6 +97,17 @@ export default function ProjectsPage() {
     if (selected?.id === projectId) setSelected({ ...selected, project_tasks: selected.project_tasks.map(t => t.id === taskId ? { ...t, completed: !completed } : t) });
   };
 
+  const handleColumnDrop = async (targetStatus: StatusKey) => {
+    if (!draggingProject || draggingProject.status === targetStatus) {
+      setDraggingProject(null);
+      setDragOverColumn(null);
+      return;
+    }
+    await updateStatus(draggingProject.id, targetStatus);
+    setDraggingProject(null);
+    setDragOverColumn(null);
+  };
+
   const deleteTask = async (projectId: string, taskId: string) => {
     await supabase.from('project_tasks').delete().eq('id', taskId);
     const update = (p: Project) => p.id === projectId
@@ -122,10 +135,14 @@ export default function ProjectsPage() {
         </Link>
       </header>
 
-      <div style={{ marginTop: 60, padding: 20, display: 'flex', gap: 20, overflowX: 'auto', paddingRight: selected ? 440 : 20 }}>
+      <div style={{ marginTop: 60, padding: 20, display: 'flex', gap: 20, overflowX: 'auto', paddingRight: selected ? 440 : 20, height: 'calc(100vh - 60px)', alignItems: 'flex-start' }}>
         {STATUSES.map(({ key, label }) => (
-          <div key={key} style={{ flex: '0 0 280px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: 16, borderRadius: 4 }}>
-            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, marginBottom: 16, opacity: 0.5 }}>
+          <div key={key}
+            style={{ flex: '0 0 280px', background: dragOverColumn === key ? 'rgba(255,60,0,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${dragOverColumn === key ? 'rgba(255,60,0,0.25)' : 'rgba(255,255,255,0.04)'}`, padding: 16, borderRadius: 4, transition: 'all 0.15s', minHeight: 200 }}
+            onDragOver={e => { e.preventDefault(); setDragOverColumn(key); }}
+            onDragLeave={() => setDragOverColumn(null)}
+            onDrop={() => handleColumnDrop(key)}>
+            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, marginBottom: 16, opacity: dragOverColumn === key ? 0.8 : 0.5 }}>
               {label} · {projects.filter(p => p.status === key).length}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -133,9 +150,14 @@ export default function ProjectsPage() {
                 const total = project.project_tasks.length;
                 const done = project.project_tasks.filter(t => t.completed).length;
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                const isDragging = draggingProject?.id === project.id;
                 return (
-                  <div key={project.id} onClick={() => setSelected(project)}
-                    style={{ padding: 12, background: selected?.id === project.id ? 'rgba(255,60,0,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selected?.id === project.id ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                  <div key={project.id}
+                    draggable
+                    onDragStart={() => setDraggingProject(project)}
+                    onDragEnd={() => { setDraggingProject(null); setDragOverColumn(null); }}
+                    onClick={() => setSelected(project)}
+                    style={{ padding: 12, background: selected?.id === project.id ? 'rgba(255,60,0,0.1)' : 'rgba(255,255,255,0.03)', border: `1px solid ${selected?.id === project.id ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`, cursor: 'grab', transition: 'all 0.2s', opacity: isDragging ? 0.4 : 1 }}
                     onMouseEnter={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
                     onMouseLeave={e => { if (selected?.id !== project.id) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 8 }}>{project.title}</div>
