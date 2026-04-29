@@ -408,6 +408,25 @@ export default function EditorPage() {
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
   const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
+  const dialogueLines = lines.filter(l => l.type === 'dialogue').length;
+  const actionLines = lines.filter(l => l.type === 'action').length;
+  const dialogueRatio = actionLines + dialogueLines > 0 ? Math.round((dialogueLines / (actionLines + dialogueLines)) * 100) : 0;
+
+  // Scene word counts (for board cards)
+  const sceneWordCounts = useMemo(() => {
+    const counts: number[] = [];
+    for (let s = 0; s < scenesList.length; s++) {
+      const startIdx = lines.findIndex(l => l.id === scenesList[s].id);
+      const endIdx = s + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[s + 1].id) : lines.length;
+      const sceneLines = lines.slice(startIdx, endIdx);
+      const wc = sceneLines.reduce((sum, l) => sum + l.text.split(/\s+/).filter(Boolean).length, 0);
+      counts.push(wc);
+    }
+    return counts;
+  }, [lines, scenesList]);
+
+  // Board card colors (cycle through a palette)
+  const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
 
   return (
     <div style={{ minHeight: '100vh', background: '#050505', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -639,11 +658,36 @@ export default function EditorPage() {
           )}
 
           {activeView === 'preview' && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: '#fff', color: '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: '#fff', color: '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
+              {/* Page number */}
+              <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace' }}>Page 1</div>
+              {/* Title block */}
+              {titlePage.title && (
+                <div style={{ textAlign: 'center', marginBottom: 48, paddingTop: 40 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, textTransform: 'uppercase', fontFamily: 'Courier Prime, monospace', marginBottom: 24 }}>{titlePage.title}</div>
+                  {titlePage.credit && <div style={{ fontSize: 12, fontFamily: 'Courier Prime, monospace', marginBottom: 4 }}>{titlePage.credit}</div>}
+                  {titlePage.author && <div style={{ fontSize: 12, fontFamily: 'Courier Prime, monospace', marginBottom: 16 }}>{titlePage.author}</div>}
+                  {titlePage.draftDate && <div style={{ fontSize: 10, fontFamily: 'Courier Prime, monospace', color: '#888' }}>{titlePage.draftDate}</div>}
+                  <hr style={{ margin: '32px auto', width: 120, border: 'none', borderTop: '1px solid #ccc' }} />
+                </div>
+              )}
               {lines.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>Start writing to see preview</div>
               ) : (
-                lines.map((line, i) => <LinePreview key={i} line={line} index={i} />)
+                lines.map((line, i) => {
+                  // Add page numbers every ~55 lines (approx 1 page)
+                  const pageBreak = i > 0 && i % 55 === 0;
+                  return (
+                    <React.Fragment key={i}>
+                      {pageBreak && (
+                        <div style={{ borderTop: '1px dashed #ccc', margin: '24px 0', position: 'relative' }}>
+                          <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
+                        </div>
+                      )}
+                      <LinePreview line={line} index={i} />
+                    </React.Fragment>
+                  );
+                })
               )}
             </div>
           )}
@@ -652,23 +696,39 @@ export default function EditorPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
               {scenesList.length === 0 ? (
                  <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
-              ) : scenesList.map((scene, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} style={{
-                  width: 280, height: 180, background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
-                }}>
-                  <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, marginBottom: 12 }}>{scene.text}</div>
-                  <div style={{ flex: 1, fontSize: 12, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>
-                     {/* Show preview of action lines following this slug */}
-                     {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
-                  </div>
-                  <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
-                    <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>Card</span>
-                  </div>
-                </motion.div>
-              ))}
+              ) : scenesList.map((scene, i) => {
+                const cardColor = CARD_COLORS[i % CARD_COLORS.length];
+                const wc = sceneWordCounts[i] || 0;
+                const estMins = Math.max(1, Math.round(wc / 185 * 0.8));
+                return (
+                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} style={{
+                    width: 280, minHeight: 180, background: '#111', borderLeft: `3px solid ${cardColor}`,
+                    border: '1px solid rgba(255,255,255,0.1)', borderLeftWidth: 3, borderLeftColor: cardColor,
+                    borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column',
+                    boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
+                      <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wc}w · ~{estMins}m</span>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
+                    <div style={{ flex: 1, fontSize: 12, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                       {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
+                    </div>
+                    <div style={{ marginTop: 'auto', display: 'flex', gap: 6, paddingTop: 8 }}>
+                      {/* Show characters in this scene */}
+                      {(() => {
+                        const startIdx = lines.findIndex(l => l.id === scene.id);
+                        const endIdx = i + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[i + 1].id) : lines.length;
+                        const sceneChars = [...new Set(lines.slice(startIdx, endIdx).filter(l => l.type === 'character').map(l => l.text.trim()))];
+                        return sceneChars.slice(0, 3).map(c => (
+                          <span key={c} style={{ fontSize: 8, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 5px', borderRadius: 3, fontWeight: 600 }}>{c}</span>
+                        ));
+                      })()}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -729,6 +789,7 @@ export default function EditorPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Est. Runtime</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>~{Math.ceil(pageEst * 0.8)} min</span></div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Pages</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{pageEst}</span></div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
                       </div>
                     </div>
                     {/* Breakdown Tags */}
