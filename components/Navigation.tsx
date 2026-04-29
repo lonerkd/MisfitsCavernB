@@ -21,10 +21,18 @@ export default function Navigation() {
   const [user, setUser] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendingApps, setPendingApps] = useState(0);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) fetchPendingApps(user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user || null);
+      if (session?.user) fetchPendingApps(session.user.id);
+      else setPendingApps(0);
+    });
 
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
@@ -33,6 +41,15 @@ export default function Navigation() {
       subscription.unsubscribe();
     };
   }, []);
+
+  const fetchPendingApps = async (userId: string) => {
+    const { data: jobs } = await supabase.from('jobs').select('id').eq('created_by', userId);
+    if (!jobs || jobs.length === 0) return;
+    const jobIds = jobs.map(j => j.id);
+    const { count } = await supabase.from('job_applications').select('id', { count: 'exact', head: true })
+      .in('job_id', jobIds).eq('status', 'pending');
+    setPendingApps(count || 0);
+  };
 
   useEffect(() => {
     setMobileOpen(false);
@@ -75,11 +92,19 @@ export default function Navigation() {
                 letterSpacing: 3,
                 textTransform: 'uppercase',
                 transition: 'color 0.3s',
+                position: 'relative',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
               onMouseLeave={(e) => (e.currentTarget.style.color = pathname === link.href ? 'var(--accent)' : 'var(--fg)')}
             >
               {link.label}
+              {link.href === '/jobs' && pendingApps > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -10,
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: 'var(--accent)', display: 'block',
+                }} />
+              )}
             </Link>
           ))}
 
