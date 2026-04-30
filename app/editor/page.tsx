@@ -149,13 +149,13 @@ function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
   }
   if (line.type === 'character') {
     const name = line.meta?.isDualDialogue ? displayContent.replace(/^\^/, '') : displayContent;
-    return <div style={{ ...style, textAlign: 'center', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{name}{contd ? " (CONT'D)" : ''}</div>;
+    return <div style={{ ...style, marginLeft: '22ch', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{name}{contd ? " (CONT'D)" : ''}</div>;
   }
   if (line.type === 'dialogue') {
-    return <div style={{ ...style, paddingLeft: 80, paddingRight: 60, maxWidth: '100%', marginBottom: 12 }}>{displayContent}</div>;
+    return <div style={{ ...style, marginLeft: '10ch', marginRight: '15ch', marginBottom: 12 }}>{displayContent}</div>;
   }
   if (line.type === 'parenthetical') {
-    return <div style={{ ...style, paddingLeft: 100, fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>{displayContent}</div>;
+    return <div style={{ ...style, marginLeft: '16ch', marginRight: '20ch', fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>{displayContent}</div>;
   }
   if (line.type === 'transition') {
     return <div style={{ ...style, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', marginTop: 16, marginBottom: 16 }}>{displayContent}</div>;
@@ -204,7 +204,7 @@ export default function EditorPage() {
   const [findCount, setFindCount] = useState(0);
 
   // Panels
-  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint'>('tools');
+  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash'>('tools');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
@@ -221,6 +221,13 @@ export default function EditorPage() {
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
+  const [typewriterMode, setTypewriterMode] = useState(false);
+  const [nightModePreview, setNightModePreview] = useState(false);
+  const [showStash, setShowStash] = useState(false);
+  const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
+  const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
+  const [showDiff, setShowDiff] = useState(false);
+  const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Init
@@ -506,7 +513,7 @@ export default function EditorPage() {
   };
 
   // Stats
-  const scenesList = lines.filter(l => l.type === 'slug');
+  const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
   const filteredScenes = useMemo(() => {
     if (sceneFilter === 'all') return scenesList;
     return scenesList.filter(s => {
@@ -815,7 +822,7 @@ export default function EditorPage() {
               placeholder={PLACEHOLDER}
               spellCheck={false}
               style={{
-                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', width: '100%', maxWidth: 900, margin: '0 auto',
+                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
                 background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
                 fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
                 resize: 'none', outline: 'none'
@@ -824,7 +831,7 @@ export default function EditorPage() {
           )}
 
           {activeView === 'preview' && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: '#fff', color: '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: nightModePreview ? '#111' : '#fff', color: nightModePreview ? '#ddd' : '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
               {/* Page number */}
               <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace' }}>Page 1</div>
               {/* Watermark */}
@@ -921,7 +928,7 @@ export default function EditorPage() {
                   const endIdx = globalIdx + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[globalIdx + 1].id) : lines.length;
                   const sceneLines = lines.slice(startIdx, endIdx);
                   const sceneChars = [...new Set(sceneLines.filter(l => l.type === 'character').map(l => l.text.trim()))];
-                  const wc = sceneLines.reduce((s, l) => s + l.text.split(/\\s+/).filter(Boolean).length, 0);
+                  const wc = sceneLines.reduce((s, l) => s + l.text.split(/\s+/).filter(Boolean).length, 0);
                   const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
                   return (
                     <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -1133,6 +1140,22 @@ export default function EditorPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
                       </div>
                     </div>
+                    {/* View Options */}
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                          <span>Typewriter Mode</span>
+                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                          <span>Dark Mode (Preview)</span>
+                          <input type="checkbox" checked={nightModePreview} onChange={e => setNightModePreview(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                        </label>
+                      </div>
+                    </div>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
                     {/* Breakdown Tags */}
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Tags size={14} /> Elements</div>
@@ -1248,6 +1271,52 @@ export default function EditorPage() {
                             </div>
                             <div style={{ fontSize: 11, color: '#ccc' }}>{issue.message}</div>
                             <div style={{ fontSize: 9, color: '#666', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* THE STASH PANEL */}
+                {rightPanel === 'stash' && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Bookmark size={14} /> The Stash</div>
+                      <button onClick={() => {
+                        const sel = textareaRef.current?.value.substring(textareaRef.current.selectionStart, textareaRef.current.selectionEnd);
+                        if (sel) {
+                          setStashItems(prev => [{ id: Math.random().toString(), text: sel, date: Date.now() }, ...prev]);
+                          toast('Added to stash', 'success');
+                        } else {
+                          toast('Select text to stash', 'error');
+                        }
+                      }} style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 12, lineHeight: 1.4 }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
+                    
+                    {stashItems.length === 0 ? (
+                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click "+ Add Selected" to save it here.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {stashItems.map(item => (
+                          <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
+                            <div style={{ fontSize: 11, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                              <span style={{ fontSize: 9, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button onClick={() => {
+                                  if (textareaRef.current) {
+                                    const val = textareaRef.current.value;
+                                    const start = textareaRef.current.selectionStart;
+                                    const end = textareaRef.current.selectionEnd;
+                                    setContent(val.substring(0, start) + item.text + val.substring(end));
+                                    toast('Inserted from stash', 'success');
+                                  }
+                                }} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
+                                <button onClick={() => setStashItems(prev => prev.filter(i => i.id !== item.id))} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1400,6 +1469,20 @@ export default function EditorPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* STATUS BAR */}
+      <div style={{ height: 28, background: '#000', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', zIndex: 50 }}>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <span>{currentScript?.title || 'Untitled'}</span>
+          <span>{revisionMode ? 'REVISION MODE' : 'DRAFT MODE'}</span>
+          {sprintActive && <span style={{ color: '#0099ff' }}>SPRINT: {Math.floor(sprintTime / 60)}:{(sprintTime % 60).toString().padStart(2, '0')}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <span>Pg: {pageEst}</span>
+          <span>Sc: {scenesList.length}</span>
+          <span>Wds: {wordCount.toLocaleString()}</span>
+        </div>
+      </div>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
