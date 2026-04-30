@@ -216,6 +216,11 @@ export default function EditorPage() {
   const [showSceneNumbers, setShowSceneNumbers] = useState(true);
   const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
+  const [showCharBible, setShowCharBible] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [sessionStartWords, setSessionStartWords] = useState(0);
+  const [showGoToScene, setShowGoToScene] = useState(false);
+  const [goToSceneNum, setGoToSceneNum] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Init
@@ -227,11 +232,14 @@ export default function EditorPage() {
       setCurrentScript(latest);
       setContent(latest.content || PLACEHOLDER);
       setTitlePage(loadTitlePage(latest.id));
+      setCharProfiles(loadCharacterProfiles(latest.id));
+      setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
     } else {
       const fresh = createNewScript('My First Screenplay');
       setCurrentScript(fresh);
       setScripts([fresh]);
       setContent(PLACEHOLDER);
+      setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
     }
   }, []);
 
@@ -360,10 +368,22 @@ export default function EditorPage() {
         e.preventDefault();
         setFocusMode(prev => !prev);
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        setShowGoToScene(prev => !prev);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
+      }
+      if (e.key === 'Escape') {
+        if (showGoToScene) setShowGoToScene(false);
+        if (showShortcuts) setShowShortcuts(false);
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, showFormatMenu]);
+  }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts]);
 
   // Import .fountain / .txt file
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -521,6 +541,18 @@ export default function EditorPage() {
 
   // Board card colors (cycle through a palette)
   const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
+  const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
+
+  // Unique locations for location manager
+  const uniqueLocations = useMemo(() => {
+    const locs = new Map<string, number>();
+    scenesList.forEach(s => {
+      const match = s.text.toUpperCase().match(/(?:INT\.|EXT\.|INT\/EXT\.)\s*(.+?)(?:\s*-\s*|$)/);
+      const loc = match ? match[1].trim() : s.text.trim();
+      locs.set(loc, (locs.get(loc) || 0) + 1);
+    });
+    return Array.from(locs.entries()).sort((a, b) => b[1] - a[1]);
+  }, [scenesList]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#050505', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -585,8 +617,19 @@ export default function EditorPage() {
           </div>
 
           {/* Right: Tools & Export */}
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             
+            {/* Session word count */}
+            <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: sessionWordsWritten > 0 ? '#00cc66' : 'var(--fg-muted)', padding: '4px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
+              +{sessionWordsWritten}w
+            </span>
+
+            <button onClick={() => setShowShortcuts(true)} className="link-btn" title="Keyboard Shortcuts (Ctrl+/)" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
+              <HelpCircle size={14} />
+            </button>
+            <button onClick={() => setShowCharBible(true)} className="link-btn" title="Character Bible" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
+              <Users size={14} />
+            </button>
             <button onClick={() => setFocusMode(true)} className="link-btn" title="Focus Mode" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
               <Maximize size={14} />
             </button>
@@ -734,6 +777,16 @@ export default function EditorPage() {
                       Scene {i + 1}
                     </div>
                   </button>
+                ))}
+
+                {/* Location Manager */}
+                <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8, marginTop: 16, marginLeft: 4 }}>Locations ({uniqueLocations.length})</div>
+                {uniqueLocations.length === 0 && <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', padding: 4 }}>No locations detected.</div>}
+                {uniqueLocations.slice(0, 20).map(([loc, count]) => (
+                  <div key={loc} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 12px', marginBottom: 2, borderRadius: 4, background: 'transparent', fontSize: 11, color: 'var(--fg-muted)' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{loc}</span>
+                    <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: '#666', flexShrink: 0, marginLeft: 8 }}>×{count}</span>
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -1240,6 +1293,110 @@ export default function EditorPage() {
                 </div>
               ))}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CHARACTER BIBLE MODAL */}
+      <AnimatePresence>
+        {showCharBible && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCharBible(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 32, width: 680, maxHeight: '85vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
+                <button onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+              {chars.length === 0 ? (
+                <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 40 }}>No characters detected yet. Start writing dialogue!</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {chars.map((name, i) => {
+                    const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
+                    const isSelected = selectedCharProfile === name;
+                    const stat = charStats.find(cs => cs.name === name);
+                    return (
+                      <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
+                        <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
+                            <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
+                          </div>
+                          <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} lines · ${stat.scenesIn.length} scenes` : ''}</span>
+                        </button>
+                        {isSelected && (
+                          <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
+                              <div key={field}>
+                                <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>
+                                <textarea value={profile?.[field] || ''} onChange={e => {
+                                  const updated = mergeProfiles(chars, charProfiles);
+                                  const idx = updated.findIndex(p => p.name.toUpperCase() === name.toUpperCase());
+                                  if (idx >= 0) updated[idx] = { ...updated[idx], [field]: e.target.value };
+                                  setCharProfiles(updated);
+                                  if (currentScript) saveCharacterProfiles(currentScript.id, updated);
+                                }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', minHeight: 40, fontFamily: 'inherit' }} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* KEYBOARD SHORTCUTS MODAL */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowShortcuts(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 32, width: 420 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Keyboard Shortcuts</h2>
+                <button onClick={() => setShowShortcuts(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  ['Ctrl + S', 'Save script'],
+                  ['Ctrl + F', 'Find & Replace'],
+                  ['Ctrl + E', 'Toggle Focus Mode'],
+                  ['Ctrl + G', 'Go to Scene'],
+                  ['Ctrl + /', 'Show Shortcuts'],
+                  ['Tab', 'Smart element insert'],
+                  ['Escape', 'Close panels / Exit focus'],
+                ].map(([key, desc]) => (
+                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: 12, color: '#ccc' }}>{desc}</span>
+                    <kbd style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 4, color: '#fff', fontWeight: 600 }}>{key}</kbd>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* GO TO SCENE DIALOG */}
+      <AnimatePresence>
+        {showGoToScene && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: '#111', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Go to Scene</div>
+            <input autoFocus type="number" min={1} max={scenesList.length} value={goToSceneNum} onChange={e => setGoToSceneNum(e.target.value)} onKeyDown={e => {
+              if (e.key === 'Enter') {
+                const num = parseInt(goToSceneNum);
+                if (num >= 1 && num <= scenesList.length) {
+                  setActiveView('write');
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  toast(`Jumped to Scene ${num}`, 'success');
+                }
+              }
+              if (e.key === 'Escape') setShowGoToScene(false);
+            }} placeholder={`1 - ${scenesList.length}`} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
+            <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{scenesList.length} scenes · Press Enter to jump</div>
           </motion.div>
         )}
       </AnimatePresence>
