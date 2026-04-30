@@ -16,6 +16,7 @@ import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 
@@ -202,9 +203,11 @@ export default function EditorPage() {
   const [findCount, setFindCount] = useState(0);
 
   // Panels
-  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions'>('tools');
+  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint'>('tools');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
+  const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
+  const [showWatermark, setShowWatermark] = useState(false);
 
   // Title Page & Settings
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
@@ -235,12 +238,13 @@ export default function EditorPage() {
       const result = parseScript(content);
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
-      // Compute character stats
       setCharStats(analyzeCharacters(result.lines, result.scenes));
+      setLintIssues(validateScript(result.lines, content));
     } else {
       setLines([]);
       setElements({});
       setCharStats([]);
+      setLintIssues([]);
     }
   }, [content]);
 
@@ -451,18 +455,27 @@ export default function EditorPage() {
     const val = e.target.value;
     setContent(val);
     
-    // Very basic Autocomplete Trigger (e.g. typing EXT.)
     const cursor = e.target.selectionStart;
     const currentLine = val.substring(0, cursor).split('\n').pop() || '';
+    const trimmed = currentLine.trim();
     
     if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
-      // Show location hints
+      // Location autocomplete
       const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()))];
       if (locations.length > 0 && currentLine.length < 15) {
         setAutocompleteItems(locations);
         setShowAutocomplete(true);
-        // Mock cursor position
-        setCursorPos({ top: 100, left: 200 }); // In a real app, use getCaretCoordinates
+        setCursorPos({ top: 100, left: 200 });
+      }
+    } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
+      // Character name autocomplete - suggest known characters matching prefix
+      const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
+      if (matchingChars.length > 0) {
+        setAutocompleteItems(matchingChars);
+        setShowAutocomplete(true);
+        setCursorPos({ top: 100, left: 200 });
+      } else {
+        setShowAutocomplete(false);
       }
     } else {
       setShowAutocomplete(false);
@@ -755,6 +768,10 @@ export default function EditorPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: '#fff', color: '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
               {/* Page number */}
               <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace' }}>Page 1</div>
+              {/* Watermark */}
+              {showWatermark && (
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-30deg)', fontSize: 80, fontWeight: 900, color: 'rgba(0,0,0,0.04)', textTransform: 'uppercase', fontFamily: 'Courier Prime, monospace', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0 }}>DRAFT</div>
+              )}
               {/* Title block */}
               {titlePage.title && (
                 <div style={{ textAlign: 'center', marginBottom: 48, paddingTop: 40 }}>
@@ -877,9 +894,9 @@ export default function EditorPage() {
             >
               {/* Panel Tabs */}
               <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-                {([['tools', Wand2], ['characters', Users], ['revisions', History]] as const).map(([key, Icon]) => (
+                {([['tools', Wand2], ['characters', Users], ['revisions', History], ['lint', AlertCircle]] as const).map(([key, Icon]) => (
                   <button key={key} onClick={() => setRightPanel(key as any)} style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent', color: rightPanel === key ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
-                    <Icon size={12} /> {key}
+                    <Icon size={12} /> {key}{key === 'lint' && lintIssues.length > 0 ? ` (${lintIssues.length})` : ''}
                   </button>
                 ))}
               </div>
@@ -1002,6 +1019,47 @@ export default function EditorPage() {
                           </div>
                         );
                       })
+                    )}
+                  </>
+                )}
+
+                {/* LINT / VALIDATION PANEL */}
+                {rightPanel === 'lint' && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><AlertCircle size={14} /> Script Validation</div>
+                    {/* Toggles */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                        <span>Scene Numbers</span>
+                        <input type="checkbox" checked={showSceneNumbers} onChange={e => setShowSceneNumbers(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                        <span>DRAFT Watermark</span>
+                        <input type="checkbox" checked={showWatermark} onChange={e => setShowWatermark(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                      </label>
+                    </div>
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                    {/* Issue summary */}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{lintIssues.filter(i => i.type === 'error').length} errors</span>
+                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>{lintIssues.filter(i => i.type === 'warning').length} warnings</span>
+                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
+                    </div>
+                    {lintIssues.length === 0 ? (
+                      <div style={{ fontSize: 11, color: '#00cc66', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {lintIssues.slice(0, 30).map((issue, idx) => (
+                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontSize: 9, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
+                              <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#ccc' }}>{issue.message}</div>
+                            <div style={{ fontSize: 9, color: '#666', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </>
                 )}
