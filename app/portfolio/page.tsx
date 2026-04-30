@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Play, X, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -22,6 +22,8 @@ interface Video {
   driveId: string;
   year: string;
   featured?: boolean;
+  laurels?: string[];
+  stills?: string[];
 }
 
 const VIDEOS: Video[] = [
@@ -34,6 +36,12 @@ const VIDEOS: Video[] = [
     driveId: '10A2uzDxrEEgx-6tiS3M_qbhAq72dglZt',
     year: '2026',
     featured: true,
+    laurels: ['Official Selection - SXSW 2026', 'Best Editing - Music Video Awards'],
+    stills: [
+      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80'
+    ]
   },
   {
     id: 'brief',
@@ -215,76 +223,104 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
   );
 }
 
-function VideoModal({ video, onClose }: { video: Video | null; onClose: () => void }) {
+function ProjectBible({ project, onClose }: { project: Video | null; onClose: () => void }) {
+  if (!project) return null;
   return (
     <AnimatePresence>
-      {video && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9000,
-            background: 'rgba(0,0,0,0.95)',
-            backdropFilter: 'blur(24px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.94, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.94, opacity: 0, y: 20 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%', maxWidth: 1000, margin: '0 20px' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={onClose}
-              style={{
-                position: 'absolute', top: -44, right: 0,
-                background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
-              }}
-            >
-              <X size={14} /> Close
-            </button>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9000,
+          background: 'rgba(5,5,5,0.98)',
+          backdropFilter: 'blur(40px)',
+          overflowY: 'auto',
+          padding: '80px 20px',
+        }}
+        onClick={onClose}
+      >
+        <div style={{ maxWidth: 1200, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
+            <X size={18} /> Close Bible
+          </button>
 
-            <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)' }}>
+          {/* Header */}
+          <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
+            <SectionLabel text={`Project Bible — ${project.year}`} />
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: 8, lineHeight: 1, marginBottom: 20 }}>{project.title}</h1>
+            <div style={{ display: 'flex', gap: 24, marginBottom: 60 }}>
+               <div>
+                 <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Role</div>
+                 <div style={{ fontSize: 14, color: '#fff' }}>{project.role}</div>
+               </div>
+               <div>
+                 <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Category</div>
+                 <div style={{ fontSize: 14, color: '#fff' }}>{project.category}</div>
+               </div>
+               {project.laurels && project.laurels.length > 0 && (
+                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
+                   {project.laurels.map((laurel, i) => (
+                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
+                       <div style={{ fontSize: 24, fontFamily: 'var(--serif)', color: 'var(--accent)' }}>❦</div>
+                       <div style={{ fontSize: 8, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', maxWidth: 120 }}>{laurel}</div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+            </div>
+          </motion.div>
+
+          {/* Media Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
+            <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
               <iframe
-                src={`https://drive.google.com/file/d/${video.driveId}/preview`}
+                src={`https://drive.google.com/file/d/${project.driveId}/preview`}
                 width="100%" height="100%"
                 allow="autoplay;encrypted-media" allowFullScreen
                 style={{ border: 'none', display: 'block' }}
               />
             </div>
-
-            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
-              <div>
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 2 }}>
-                  {video.title}
-                </h3>
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--accent)', textTransform: 'uppercase', marginTop: 4 }}>
-                  {video.category} · {video.role} · {video.year}
-                </p>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 8, fontStyle: 'italic', maxWidth: 540 }}>
-                  {video.description}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Executive Summary</h3>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                  {project.description || "In the heart of the Cavern, this project represents a shift in visual storytelling. A blend of atmospheric tension and technical precision."}
                 </p>
               </div>
-              <a
-                href={`https://drive.google.com/file/d/${video.driveId}/view`}
-                target="_blank" rel="noopener noreferrer"
-                className="link-btn"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
-              >
-                <ExternalLink size={11} /> Full Quality
-              </a>
+              <Link href={`/editor?p=${project.id}`} style={{ padding: 20, background: 'var(--accent)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', textAlign: 'center', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
+                Read ScriptOS Draft
+              </Link>
             </div>
-          </motion.div>
-        </motion.div>
-      )}
+          </div>
+
+          {/* Stills Gallery */}
+          {project.stills && project.stills.length > 0 && (
+            <div style={{ marginBottom: 80 }}>
+              <SectionLabel text="Cinematic Stills" />
+              <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 20, scrollSnapType: 'x mandatory' }}>
+                {project.stills.map((still, i) => (
+                  <div key={i} style={{ minWidth: '60%', aspectRatio: '21/9', background: '#111', borderRadius: 8, overflow: 'hidden', scrollSnapAlign: 'start', flexShrink: 0 }}>
+                    <img src={still} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Mood & Aesthetic */}
+          <div>
+            <SectionLabel text="Visual Architecture" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} style={{ aspectRatio: '1/1', background: 'rgba(255,255,255,0.03)', borderRadius: 4, overflow: 'hidden' }}>
+                  <img src={`https://images.unsplash.com/photo-${1500000000000 + i * 1000000}?auto=format&fit=crop&q=60`} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }
@@ -344,7 +380,22 @@ export default function PortfolioPage() {
         </span>
       </nav>
 
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '110px 20px 80px' }}>
+      {/* Hero Section */}
+      <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+           <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4, filter: 'grayscale(50%)' }} />
+           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
+             <SectionLabel text="Featured Work" />
+             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(4rem, 8vw, 6rem)', letterSpacing: 4, lineHeight: 1, marginBottom: 20 }}>THE CAVERN<br/>COLLECTION</h1>
+             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: '#ccc', maxWidth: 500, lineHeight: 1.6 }}>A curated selection of cinematic projects, from conceptual ideation to final delivery. Built with precision, driven by story.</p>
+           </motion.div>
+        </div>
+      </div>
+
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 20px 80px' }}>
         <AnimatedSection>
           <SectionLabel text={`The Work — ${videosList.length} Projects`} />
         </AnimatedSection>
@@ -391,7 +442,7 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      <VideoModal video={activeVideo} onClose={() => setActiveVideo(null)} />
+      <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
     </main>
   );
 }

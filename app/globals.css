@@ -14,8 +14,8 @@
   --bg-2: #0a0a0a;
   --bg-3: #0e0e0e;
   --fg: #f0ece4;
-  --fg-muted: rgba(240, 236, 228, 0.45);
-  --fg-subtle: rgba(240, 236, 228, 0.2);
+  --fg-muted: rgba(240, 236, 228, 0.65); /* Bumped from 0.45 for readability */
+  --fg-subtle: rgba(240, 236, 228, 0.35); /* Bumped from 0.2 */
   --accent: #ff3c00;
   --muted: rgba(255, 255, 255, 0.15);
   --border: rgba(255, 255, 255, 0.04);
@@ -51,11 +51,11 @@ body {
   color: var(--fg);
   font-family: var(--mono);
   line-height: 1.5;
-  cursor: none;
 }
 
-/* Hide cursor on all interactive elements — CustomCursor handles it */
-*, *::before, *::after {
+/* Custom cursor active state only */
+body.custom-cursor-active, 
+body.custom-cursor-active * {
   cursor: none !important;
 }
 

@@ -9,6 +9,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
+import { useToast } from '@/components/Toast';
 
 type Status = 'Pre-Production' | 'Production' | 'Post-Production' | 'Complete';
 
@@ -180,6 +181,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 export default function ProjectsPage() {
   const [projectsList, setProjectsList] = useState<Project[]>(PROJECTS);
   const [user, setUser] = useState<any>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -205,7 +207,10 @@ export default function ProjectsPage() {
   }, []);
 
   const handleNewProject = async () => {
-    if (!user) return alert('Must be signed in to create projects');
+    if (!user) {
+      toast('Please sign in to create projects', 'error');
+      return;
+    }
     const title = prompt('Project Title:');
     if (!title) return;
     try {
@@ -216,8 +221,10 @@ export default function ProjectsPage() {
         description: p.description, color: '#ff3c00'
       };
       setProjectsList([newProj, ...projectsList]);
+      toast('Project created!', 'success');
     } catch (e) {
       console.error(e);
+      toast('Failed to create project', 'error');
     }
   };
 

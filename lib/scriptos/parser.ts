@@ -294,11 +294,11 @@ export class ScriptParser {
 
     // 4. CHARACTER DETECTION
     if (this.isCaps(text) && text.length < 60) {
-      let charScore = 20;
+      let charScore = 30; // Base score for all-caps
       
-      if (this.characterStats.get(cleanName)! > 1) {
-        charScore += 40;
-        reasoning.push('Known recurring character');
+      if (this.characterStats.get(cleanName)! >= 1) {
+        charScore += 20;
+        reasoning.push('Found in cast pre-scan');
       }
       
       if ([...KNOWLEDGE.EXTENSIONS].some(e => upper.includes(e))) {
@@ -306,9 +306,14 @@ export class ScriptParser {
         reasoning.push('Contains character extension');
       }
 
-      if (context.prev?.type === 'action' || context.prev?.type === 'slug' || context.prev?.type === 'empty') {
-        charScore += 20;
-        reasoning.push('Follows action/slug/empty');
+      // Crucial: If next line is dialogue (lowercase or starts with paren), this is almost certainly a character
+      if (context.next && !this.isCaps(context.next)) {
+        charScore += 30;
+        reasoning.push('Followed by likely dialogue');
+      }
+
+      if (context.prev?.type === 'empty' || context.prev?.type === 'slug' || context.prev?.type === 'action') {
+        charScore += 10;
       }
 
       if (scores.transition > 50) charScore = 0;

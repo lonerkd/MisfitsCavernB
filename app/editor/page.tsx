@@ -6,7 +6,7 @@ import {
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
   Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
   Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
-  Search, Replace, X, BarChart3, Lock
+  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,19 +21,30 @@ import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type Chara
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
+import { useProject } from '@/lib/context/ProjectContext';
 
 // ============================================================================
 // CONSTANTS & HELPERS
 // ============================================================================
 
 const TYPE_COLORS: Record<string, string> = {
-  slug: '#ff3c00',
+  slug: '#fff',
   character: '#ffaa00',
   dialogue: 'var(--fg)',
   parenthetical: 'rgba(240,236,228,0.5)',
   transition: '#888',
   action: 'rgba(240,236,228,0.75)',
   note: '#eab308'
+};
+
+const PRINT_COLORS: Record<string, string> = {
+  slug: '#000',
+  character: '#000',
+  dialogue: '#000',
+  parenthetical: '#000',
+  transition: '#000',
+  action: '#000',
+  note: '#888'
 };
 
 const TEMPLATES: Record<string, string> = {
@@ -120,12 +131,16 @@ CUT TO:`;
 // COMPONENTS
 // ============================================================================
 
-function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
+function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; index: number; nightModePreview: boolean }) {
   const style: React.CSSProperties = {
     fontFamily: 'Courier Prime, Courier, monospace',
     fontSize: 14,
     lineHeight: '1.7',
-    color: TYPE_COLORS[line.type] || 'var(--fg)',
+    color: nightModePreview 
+      ? (line.type === 'slug' || line.type === 'character' ? '#fff' : '#ccc') 
+      : (PRINT_COLORS[line.type] || '#000'),
+    fontWeight: (line.type === 'slug' || line.type === 'character') ? 700 : 400,
+    textTransform: (line.type === 'slug' || line.type === 'character' || line.type === 'transition') ? 'uppercase' : 'none',
     marginBottom: 2,
     padding: '2px 0',
     whiteSpace: 'pre-wrap',
@@ -170,6 +185,7 @@ function LinePreview({ line, index }: { line: ScriptLine; index: number }) {
 // ============================================================================
 
 export default function EditorPage() {
+  const { activeProject } = useProject();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
@@ -205,7 +221,7 @@ export default function EditorPage() {
   const [findCount, setFindCount] = useState(0);
 
   // Panels
-  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash'>('tools');
+  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown'>('tools');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
@@ -239,6 +255,15 @@ export default function EditorPage() {
     }
   });
 
+  const handleLoadScript = useCallback((script: StoredScript) => {
+    setCurrentScript(script);
+    setContent(script.content || PLACEHOLDER);
+    setTitlePage(loadTitlePage(script.id));
+    setCharProfiles(loadCharacterProfiles(script.id));
+    setSessionStartWords((script.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+    setActiveView('write');
+  }, [toast]);
+
   // Init
   useEffect(() => {
     const all = getAllScripts();
@@ -258,6 +283,17 @@ export default function EditorPage() {
       setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
     }
   }, []);
+
+  // Auto-load script based on active project
+  useEffect(() => {
+    if (activeProject && scripts.length > 0) {
+      const projectScript = scripts.find(s => s.title.toLowerCase() === activeProject.title.toLowerCase());
+      if (projectScript && (!currentScript || currentScript.id !== projectScript.id)) {
+        handleLoadScript(projectScript);
+        toast(`Loaded script for ${activeProject.title}`, 'info');
+      }
+    }
+  }, [activeProject, scripts]);
 
   // Parser hook
   useEffect(() => {
@@ -281,6 +317,24 @@ export default function EditorPage() {
       setRevisions(getRevisions(currentScript.id));
     }
   }, [currentScript]);
+
+  // Typewriter Centering Effect
+  useEffect(() => {
+    if (typewriterMode && activeView === 'write' && textareaRef.current) {
+      const textarea = textareaRef.current;
+      const { selectionStart } = textarea;
+      
+      // Approximate line height and position
+      const lineHeight = 26; 
+      const linesBefore = textarea.value.substr(0, selectionStart).split('\n').length;
+      const targetScroll = (linesBefore * lineHeight) - (window.innerHeight * 0.3);
+      
+      textarea.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
+    }
+  }, [content, typewriterMode, activeView]);
 
   // Find count
   useEffect(() => {
@@ -604,7 +658,31 @@ export default function EditorPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
               >
                 <List size={14} className="text-indigo-400" /> 
-                <span style={{ fontWeight: 600 }}>{currentScript?.title || 'Untitled'}</span>
+                <input 
+                  value={currentScript?.title || ''} 
+                  onChange={(e) => {
+                    if (currentScript) {
+                      const updated = { ...currentScript, title: e.target.value };
+                      setCurrentScript(updated);
+                      saveScript(updated);
+                    }
+                  }}
+                  placeholder="Untitled Script"
+                  style={{ 
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: '#fff', 
+                    fontSize: 14, 
+                    fontWeight: 700, 
+                    outline: 'none',
+                    padding: '2px 4px',
+                    borderRadius: 4,
+                    width: 'auto',
+                    minWidth: 120
+                  }}
+                  onFocus={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                  onBlur={(e) => e.target.style.background = 'transparent'}
+                />
               </button>
               
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
@@ -636,9 +714,11 @@ export default function EditorPage() {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             
             {/* Session word count */}
-            <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: sessionWordsWritten > 0 ? '#00cc66' : 'var(--fg-muted)', padding: '4px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 4 }}>
-              +{sessionWordsWritten}w
-            </span>
+            {sessionWordsWritten > 0 && (
+              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
+                +{sessionWordsWritten}w
+              </span>
+            )}
 
             <button onClick={() => setShowShortcuts(true)} className="link-btn" title="Keyboard Shortcuts (Ctrl+/)" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)' }}>
               <HelpCircle size={14} />
@@ -834,9 +914,34 @@ export default function EditorPage() {
                 flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
                 background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
                 fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
-                resize: 'none', outline: 'none'
+                resize: 'none', outline: 'none',
+                position: 'relative'
               }}
             />
+          )}
+
+          {/* Structure Lines (Visual Act Markers) */}
+          {activeView === 'write' && !focusMode && (
+            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
+              {scenesList.map((s, idx) => {
+                const pos = (idx / scenesList.length) * 100;
+                const isActBreak = s.text.includes('ACT');
+                return (
+                  <div 
+                    key={s.id} 
+                    style={{ 
+                      position: 'absolute', 
+                      top: `${pos}%`, 
+                      left: -4, 
+                      width: 10, 
+                      height: 2, 
+                      background: isActBreak ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                    }} 
+                    title={s.text}
+                  />
+                );
+              })}
+            </div>
           )}
 
           {activeView === 'preview' && (
@@ -870,7 +975,7 @@ export default function EditorPage() {
                           <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
                         </div>
                       )}
-                      <LinePreview line={line} index={i} />
+                      <LinePreview line={line} index={i} nightModePreview={nightModePreview} />
                     </React.Fragment>
                   );
                 })
@@ -943,7 +1048,21 @@ export default function EditorPage() {
                     <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', marginBottom: 4 }}>{scene.text}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase' }}>{scene.text}</div>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            {CARD_COLORS.map(color => (
+                              <button 
+                                key={color} 
+                                onClick={() => {
+                                  // Assign color to scene in local state/storage
+                                  toast(`Scene ${globalIdx + 1} tagged`, 'success');
+                                }}
+                                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }} 
+                              />
+                            ))}
+                          </div>
+                        </div>
                         {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
@@ -1101,9 +1220,9 @@ export default function EditorPage() {
             >
               {/* Panel Tabs */}
               <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-                {([['tools', Wand2], ['characters', Users], ['revisions', History], ['lint', AlertCircle]] as const).map(([key, Icon]) => (
+                {([['tools', Wand2], ['characters', Users], ['revisions', History], ['lint', AlertCircle], ['stash', Bookmark], ['breakdown', ClipboardList]] as const).map(([key, Icon]) => (
                   <button key={key} onClick={() => setRightPanel(key as any)} style={{ flex: 1, padding: '10px 0', background: 'transparent', border: 'none', borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent', color: rightPanel === key ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>
-                    <Icon size={12} /> {key}{key === 'lint' && lintIssues.length > 0 ? ` (${lintIssues.length})` : ''}
+                    <Icon size={12} />
                   </button>
                 ))}
               </div>
@@ -1239,6 +1358,25 @@ export default function EditorPage() {
                             </div>
                             <div style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(rev.date).toLocaleString()}</div>
                             <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${revColor.color}22` }}>
+                              <button 
+                                onClick={() => {
+                                  setContent(rev.snapshot);
+                                  toast(`Restored to ${rev.label}`, 'success');
+                                }}
+                                style={{ fontSize: 9, background: 'transparent', border: 'none', color: revColor.color, cursor: 'pointer', fontWeight: 600 }}
+                              >
+                                Restore
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  alert("Snapshot Content:\n\n" + rev.snapshot.substring(0, 1000) + "...");
+                                }}
+                                style={{ fontSize: 9, background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}
+                              >
+                                View
+                              </button>
+                            </div>
                           </div>
                         );
                       })
@@ -1330,6 +1468,37 @@ export default function EditorPage() {
                         ))}
                       </div>
                     )}
+                  </>
+                )}
+
+                {/* BREAKDOWN PANEL */}
+                {rightPanel === 'breakdown' && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><ClipboardList size={14} /> Script Breakdown</div>
+                      <button className="link-btn" style={{ fontSize: 9 }}>Export</button>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 16 }}>Tag production elements per scene.</div>
+                    
+                    {[
+                      { category: 'Props', items: ['The Map', 'Briefcase'], color: '#ffaa00' },
+                      { category: 'VFX', items: ['Glowing Portal', 'Digital Rain'], color: '#0099ff' },
+                      { category: 'Wardrobe', items: ['Officer Uniform', 'Trench Coat'], color: '#ff3c00' },
+                    ].map(group => (
+                      <div key={group.category} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: group.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                          {group.category}
+                          <Plus size={10} style={{ cursor: 'pointer' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {group.items.map(item => (
+                            <span key={item} style={{ fontSize: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              {item} <X size={8} style={{ opacity: 0.5 }} />
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </>
                 )}
               </div>

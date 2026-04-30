@@ -203,11 +203,11 @@ export default function Home() {
               letterSpacing: -2,
             }}
           >
-            <span style={{ WebkitTextStroke: '2px rgba(240,236,228,0.9)', color: 'transparent' }}>
+            <span style={{ WebkitTextStroke: '2.5px rgba(240,236,228,1)', color: 'transparent', textShadow: '0 0 30px rgba(0,0,0,0.5)' }}>
               MISFITS
             </span>
             <br />
-            <span style={{ color: 'var(--accent)' }}>CAVERN</span>
+            <span style={{ color: 'var(--accent)', textShadow: '0 0 40px rgba(255,60,0,0.2)' }}>CAVERN</span>
           </motion.div>
 
           {/* Tagline */}
