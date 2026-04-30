@@ -20,6 +20,7 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
+import { useScriptSync } from '@/lib/scriptos/sync';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -229,6 +230,14 @@ export default function EditorPage() {
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Supabase Realtime Sync
+  const { isSyncing, lastSyncedAt } = useScriptSync(currentScript?.id || '', content, (newContent) => {
+    // Only update if it's different to avoid cursor jumping
+    if (newContent !== content) {
+      setContent(newContent);
+    }
+  });
 
   // Init
   useEffect(() => {
@@ -1481,6 +1490,7 @@ export default function EditorPage() {
           <span>Pg: {pageEst}</span>
           <span>Sc: {scenesList.length}</span>
           <span>Wds: {wordCount.toLocaleString()}</span>
+          <span style={{ color: isSyncing ? '#0099ff' : '#00cc66' }}>{isSyncing ? '☁ SYNCING...' : '☁ SYNCED'}</span>
         </div>
       </div>
 
