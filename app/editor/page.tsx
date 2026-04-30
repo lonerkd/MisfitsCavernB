@@ -17,6 +17,7 @@ import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
+import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 
@@ -181,7 +182,7 @@ export default function EditorPage() {
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline'>('write');
+  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
   
@@ -213,6 +214,8 @@ export default function EditorPage() {
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
   const [showTitleEditor, setShowTitleEditor] = useState(false);
   const [showSceneNumbers, setShowSceneNumbers] = useState(true);
+  const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
+  const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Init
@@ -576,6 +579,9 @@ export default function EditorPage() {
             <button onClick={() => setActiveView('preview')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'preview' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'preview' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
               <FileText size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Preview
             </button>
+            <button onClick={() => setActiveView('stats')} style={{ padding: '6px 16px', borderRadius: 16, fontSize: 11, fontWeight: 600, border: 'none', background: activeView === 'stats' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeView === 'stats' ? '#fff' : 'var(--fg-muted)', cursor: 'pointer' }}>
+              <BarChart3 size={12} style={{ display: 'inline', marginRight: 6, verticalAlign: -2 }} /> Stats
+            </button>
           </div>
 
           {/* Right: Tools & Export */}
@@ -879,6 +885,138 @@ export default function EditorPage() {
                   );
                 })
               )}
+            </div>
+          )}
+
+          {/* STATISTICS DASHBOARD */}
+          {activeView === 'stats' && (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 960, margin: '0 auto', width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8 }}><BarChart3 size={20} /> Script Analytics</div>
+              
+              {/* Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 32 }}>
+                {[
+                  { label: 'Words', value: wordCount.toLocaleString(), color: '#0099ff' },
+                  { label: 'Pages', value: `${pageEst}`, color: '#00cc66' },
+                  { label: 'Scenes', value: `${scenesList.length}`, color: '#ff6b9d' },
+                  { label: 'Characters', value: `${chars.length}`, color: '#ffd43b' },
+                  { label: 'Runtime', value: `~${Math.ceil(pageEst * 0.8)}m`, color: '#a855f7' },
+                ].map(stat => (
+                  <div key={stat.label} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 16, textAlign: 'center' }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: stat.color, fontFamily: 'var(--mono)' }}>{stat.value}</div>
+                    <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dialogue/Action Split */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Dialogue vs Action</div>
+                <div style={{ display: 'flex', gap: 2, borderRadius: 6, overflow: 'hidden', height: 24 }}>
+                  <div style={{ width: `${dialogueRatio}%`, background: '#0099ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', transition: 'width 0.5s' }}>{dialogueRatio > 10 ? `${dialogueRatio}% Dialogue` : ''}</div>
+                  <div style={{ width: `${100 - dialogueRatio}%`, background: '#ff3c00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', transition: 'width 0.5s' }}>{(100 - dialogueRatio) > 10 ? `${100 - dialogueRatio}% Action` : ''}</div>
+                </div>
+              </div>
+
+              {/* Scene Pacing Visualization */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Scene Pacing</div>
+                <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 100, background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '8px 4px' }}>
+                  {sceneWordCounts.map((wc, i) => {
+                    const maxWc = Math.max(...sceneWordCounts, 1);
+                    const height = Math.max(4, (wc / maxWc) * 80);
+                    const color = CARD_COLORS[i % CARD_COLORS.length];
+                    return (
+                      <div key={i} title={`Scene ${i + 1}: ${wc} words`} style={{ flex: 1, height, background: color, borderRadius: '2px 2px 0 0', minWidth: 3, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.8'} />
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--fg-muted)', marginTop: 4 }}>
+                  <span>Scene 1</span>
+                  <span>Scene {scenesList.length}</span>
+                </div>
+              </div>
+
+              {/* Act Structure Analysis */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Act Structure (Estimated)</div>
+                {(() => {
+                  const totalWc = sceneWordCounts.reduce((a, b) => a + b, 0) || 1;
+                  let runningWc = 0;
+                  const actBreaks = sceneWordCounts.map((wc, i) => {
+                    runningWc += wc;
+                    return { scene: i + 1, pct: (runningWc / totalWc) * 100 };
+                  });
+                  const act1End = actBreaks.findIndex(b => b.pct >= 25) + 1;
+                  const act2End = actBreaks.findIndex(b => b.pct >= 75) + 1;
+                  return (
+                    <div style={{ display: 'flex', gap: 2, borderRadius: 6, overflow: 'hidden', height: 32 }}>
+                      <div style={{ width: '25%', background: 'rgba(0,153,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#0099ff' }}>ACT I (Sc 1-{act1End})</div>
+                      <div style={{ width: '50%', background: 'rgba(255,60,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#ff3c00' }}>ACT II (Sc {act1End + 1}-{act2End})</div>
+                      <div style={{ width: '25%', background: 'rgba(0,204,102,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#00cc66' }}>ACT III (Sc {act2End + 1}-{scenesList.length})</div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Top Characters */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Top Characters by Dialogue</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {charStats.slice(0, 8).map((cs, i) => (
+                    <div key={cs.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 80, fontSize: 11, fontWeight: 700, color: TYPE_COLORS.character, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cs.name}</div>
+                      <div style={{ flex: 1, height: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: CARD_COLORS[i % CARD_COLORS.length], borderRadius: 3, transition: 'width 0.5s' }} />
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', width: 40, textAlign: 'right' }}>{cs.dialoguePercentage}%</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* INT/EXT & Day/Night Breakdown */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
+                <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Interior / Exterior</div>
+                  {(() => {
+                    const intCount = scenesList.filter(s => s.text.toUpperCase().includes('INT')).length;
+                    const extCount = scenesList.filter(s => s.text.toUpperCase().includes('EXT')).length;
+                    return (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ flex: intCount || 1, background: '#0099ff', borderRadius: 4, padding: '8px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>INT ({intCount})</div>
+                        <div style={{ flex: extCount || 1, background: '#ff6b9d', borderRadius: 4, padding: '8px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>EXT ({extCount})</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Day / Night</div>
+                  {(() => {
+                    const dayCount = scenesList.filter(s => s.text.toUpperCase().includes('DAY')).length;
+                    const nightCount = scenesList.filter(s => s.text.toUpperCase().includes('NIGHT')).length;
+                    return (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ flex: dayCount || 1, background: '#ffd43b', borderRadius: 4, padding: '8px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#000' }}>DAY ({dayCount})</div>
+                        <div style={{ flex: nightCount || 1, background: '#6366f1', borderRadius: 4, padding: '8px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>NIGHT ({nightCount})</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Lint Summary */}
+              <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Script Health</div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: lintIssues.filter(i => i.type === 'error').length === 0 ? '#00cc66' : '#ef4444' }}>{lintIssues.filter(i => i.type === 'error').length}</span>
+                  <span style={{ fontSize: 10, color: 'var(--fg-muted)', alignSelf: 'center' }}>errors</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#eab308' }}>{lintIssues.filter(i => i.type === 'warning').length}</span>
+                  <span style={{ fontSize: 10, color: 'var(--fg-muted)', alignSelf: 'center' }}>warnings</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length}</span>
+                  <span style={{ fontSize: 10, color: 'var(--fg-muted)', alignSelf: 'center' }}>info</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
