@@ -1,4 +1,4 @@
-const PORTFOLIO_KEY = 'misfits_cavern_portfolio';
+import { supabase } from '@/lib/supabase/client';
 
 export interface MediaItem {
   id: string;
@@ -7,7 +7,6 @@ export interface MediaItem {
   url: string;
   thumbnailUrl?: string;
   duration?: number;
-  chapters?: { timestamp: number; title: string }[];
 }
 
 export interface PortfolioProject {
@@ -24,108 +23,150 @@ export interface PortfolioProject {
   updatedAt: string;
 }
 
-export function getAllProjects(): PortfolioProject[] {
-  if (typeof window === 'undefined') return [];
+// Get all portfolio projects (from the 'projects' table)
+export async function getAllProjects(): Promise<PortfolioProject[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
 
-  try {
-    const stored = localStorage.getItem(PORTFOLIO_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*, project_assets(*)')
+    .eq('creator_id', user.id);
+
+  if (error) {
     console.error('Error loading portfolio:', error);
     return [];
   }
-}
 
-export function getProject(id: string): PortfolioProject | null {
-  const projects = getAllProjects();
-  return projects.find(p => p.id === id) || null;
-}
-
-export function createProject(title: string): PortfolioProject {
-  const newProject: PortfolioProject = {
-    id: generateId(),
-    title,
-    description: '',
-    category: 'Other',
-    year: new Date().getFullYear(),
+  return (data || []).map(p => ({
+    id: p.id,
+    title: p.title,
+    description: p.description || '',
+    category: p.genre || 'Other',
+    year: new Date(p.created_at).getFullYear(),
     role: 'Creator',
-    accentColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+    accentColor: p.accent_color || '#ff3c00',
+    media: (p.project_assets || []).map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      type: a.type as any,
+      url: a.url
+    })),
+    shareToken: p.id,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at
+  }));
+}
+
+// Get project by ID
+export async function getProject(id: string): Promise<PortfolioProject | null> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*, project_assets(*)')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description || '',
+    category: data.genre || 'Other',
+    year: new Date(data.created_at).getFullYear(),
+    role: 'Creator',
+    accentColor: data.accent_color || '#ff3c00',
+    media: (data.project_assets || []).map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      type: a.type as any,
+      url: a.url
+    })),
+    shareToken: data.id,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
+  };
+}
+
+// Create new project
+export async function createProject(title: string): Promise<PortfolioProject | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('projects')
+    .insert([{
+      title,
+      creator_id: user.id,
+      status: 'concept',
+      visibility: 'public'
+    }])
+    .select()
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description || '',
+    category: data.genre || 'Other',
+    year: new Date(data.created_at).getFullYear(),
+    role: 'Creator',
+    accentColor: data.accent_color || '#ff3c00',
     media: [],
-    shareToken: generateShareToken(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    shareToken: data.id,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
   };
-
-  const projects = getAllProjects();
-  projects.push(newProject);
-  localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(projects));
-
-  return newProject;
 }
 
-export function updateProject(id: string, updates: Partial<PortfolioProject>): PortfolioProject {
-  const projects = getAllProjects();
-  const index = projects.findIndex(p => p.id === id);
+// Update project
+export async function updateProject(id: string, updates: Partial<PortfolioProject>): Promise<boolean> {
+  const { error } = await supabase
+    .from('projects')
+    .update({
+      title: updates.title,
+      description: updates.description,
+      genre: updates.category,
+      accent_color: updates.accentColor
+    })
+    .eq('id', id);
 
-  if (index === -1) throw new Error('Project not found');
+  return !error;
+}
 
-  const updated = {
-    ...projects[index],
-    ...updates,
-    updatedAt: new Date().toISOString()
+// Delete project
+export async function deleteProject(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', id);
+
+  return !error;
+}
+
+// Media handling
+export async function addMedia(projectId: string, media: Omit<MediaItem, 'id'>): Promise<MediaItem | null> {
+  const { data, error } = await supabase
+    .from('project_assets')
+    .insert([{
+      project_id: projectId,
+      title: media.title,
+      type: media.type,
+      url: media.url
+    }])
+    .select()
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    title: data.title,
+    type: data.type as any,
+    url: data.url
   };
-
-  projects[index] = updated;
-  localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(projects));
-
-  return updated;
-}
-
-export function deleteProject(id: string): boolean {
-  const projects = getAllProjects();
-  const filtered = projects.filter(p => p.id !== id);
-
-  if (filtered.length === projects.length) return false;
-
-  localStorage.setItem(PORTFOLIO_KEY, JSON.stringify(filtered));
-  return true;
-}
-
-export function addMedia(projectId: string, media: Omit<MediaItem, 'id'>): MediaItem {
-  const project = getProject(projectId);
-  if (!project) throw new Error('Project not found');
-
-  const mediaItem: MediaItem = {
-    id: generateId(),
-    ...media
-  };
-
-  project.media.push(mediaItem);
-  updateProject(projectId, { media: project.media });
-
-  return mediaItem;
-}
-
-export function updateMedia(projectId: string, mediaId: string, updates: Partial<MediaItem>): MediaItem {
-  const project = getProject(projectId);
-  if (!project) throw new Error('Project not found');
-
-  const media = project.media.find(m => m.id === mediaId);
-  if (!media) throw new Error('Media not found');
-
-  const updated = { ...media, ...updates };
-  project.media = project.media.map(m => (m.id === mediaId ? updated : m));
-  updateProject(projectId, { media: project.media });
-
-  return updated;
-}
-
-export function deleteMedia(projectId: string, mediaId: string): void {
-  const project = getProject(projectId);
-  if (!project) throw new Error('Project not found');
-
-  project.media = project.media.filter(m => m.id !== mediaId);
-  updateProject(projectId, { media: project.media });
 }
 
 export function extractYouTubeId(url: string): string | null {
@@ -144,12 +185,4 @@ export function extractYouTubeId(url: string): string | null {
 
 export function getYouTubeThumbnail(videoId: string): string {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-function generateShareToken(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }

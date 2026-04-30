@@ -266,22 +266,27 @@ export default function EditorPage() {
 
   // Init
   useEffect(() => {
-    const all = getAllScripts();
-    setScripts(all);
-    if (all.length > 0) {
-      const latest = all[all.length - 1];
-      setCurrentScript(latest);
-      setContent(latest.content || PLACEHOLDER);
-      setTitlePage(loadTitlePage(latest.id));
-      setCharProfiles(loadCharacterProfiles(latest.id));
-      setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
-    } else {
-      const fresh = createNewScript('My First Screenplay');
-      setCurrentScript(fresh);
-      setScripts([fresh]);
-      setContent(PLACEHOLDER);
-      setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
-    }
+    const init = async () => {
+      const all = await getAllScripts();
+      setScripts(all);
+      if (all.length > 0) {
+        const latest = all[0];
+        setCurrentScript(latest);
+        setContent(latest.content || PLACEHOLDER);
+        setTitlePage(loadTitlePage(latest.id));
+        setCharProfiles(loadCharacterProfiles(latest.id));
+        setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+      } else {
+        const fresh = await createNewScript('My First Screenplay');
+        if (fresh) {
+          setCurrentScript(fresh);
+          setScripts([fresh]);
+          setContent(PLACEHOLDER);
+          setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+        }
+      }
+    };
+    init();
   }, []);
 
   // Auto-load script based on active project
@@ -351,8 +356,8 @@ export default function EditorPage() {
   // Auto-save
   useEffect(() => {
     if (!currentScript) return;
-    const timer = setTimeout(() => {
-      saveScript({ id: currentScript.id, title: currentScript.title, content });
+    const timer = setTimeout(async () => {
+      await saveScript({ id: currentScript.id, title: currentScript.title, content });
     }, 2000);
     return () => clearTimeout(timer);
   }, [content, currentScript]);
@@ -370,14 +375,15 @@ export default function EditorPage() {
   }, [sprintActive, sprintTime, toast]);
 
   // Actions
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!currentScript) return;
     setSaving(true);
-    saveScript({ id: currentScript.id, title: currentScript.title, content });
-    setTimeout(() => {
-      setSaving(false);
-      toast('Screenplay saved.', 'success');
-    }, 400);
+    const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
+    if (saved) {
+      setCurrentScript(saved);
+      toast('Screenplay saved to cloud.', 'success');
+    }
+    setSaving(false);
   }, [currentScript, content, toast]);
 
   const handleExport = useCallback((format: string) => {
@@ -460,14 +466,16 @@ export default function EditorPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
-      const imported = importScriptFromText(text, title);
-      setScripts(prev => [...prev, imported]);
-      setCurrentScript(imported);
-      setContent(text);
-      toast(`Imported "${title}"`, 'success');
+      const imported = await importScriptFromText(text, title);
+      if (imported) {
+        setScripts(prev => [...prev, imported]);
+        setCurrentScript(imported);
+        setContent(text);
+        toast(`Imported "${title}"`, 'success');
+      }
     };
     reader.readAsText(file);
     e.target.value = ''; // reset input
@@ -660,11 +668,11 @@ export default function EditorPage() {
                 <List size={14} className="text-indigo-400" /> 
                 <input 
                   value={currentScript?.title || ''} 
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     if (currentScript) {
                       const updated = { ...currentScript, title: e.target.value };
                       setCurrentScript(updated);
-                      saveScript(updated);
+                      await saveScript(updated);
                     }
                   }}
                   placeholder="Untitled Script"
@@ -817,11 +825,13 @@ export default function EditorPage() {
             >
               {/* Script Switcher */}
               <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                <button onClick={() => {
-                  const s = createNewScript('Untitled Script');
-                  setScripts([...scripts, s]);
-                  setCurrentScript(s);
-                  setContent('');
+                <button onClick={async () => {
+                  const s = await createNewScript('Untitled Script');
+                  if (s) {
+                    setScripts([...scripts, s]);
+                    setCurrentScript(s);
+                    setContent('');
+                  }
                 }} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
@@ -842,12 +852,14 @@ export default function EditorPage() {
                 <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 12, marginBottom: 6 }}>Templates</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {Object.keys(TEMPLATES).filter(k => k !== 'blank').map(key => (
-                    <button key={key} onClick={() => {
-                      const s = createNewScript(key.charAt(0).toUpperCase() + key.slice(1));
-                      setScripts(prev => [...prev, s]);
-                      setCurrentScript(s);
-                      setContent(TEMPLATES[key]);
-                      toast(`Created from "${key}" template`, 'success');
+                    <button key={key} onClick={async () => {
+                      const s = await createNewScript(key.charAt(0).toUpperCase() + key.slice(1));
+                      if (s) {
+                        setScripts(prev => [...prev, s]);
+                        setCurrentScript(s);
+                        setContent(TEMPLATES[key]);
+                        toast(`Created from "${key}" template`, 'success');
+                      }
                     }} style={{ fontSize: 9, padding: '4px 8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: 'var(--fg-muted)', cursor: 'pointer', textTransform: 'capitalize' }}>{key}</button>
                   ))}
                 </div>

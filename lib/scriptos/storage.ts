@@ -1,9 +1,6 @@
-// localStorage utilities for ScriptOS - Local-First Architecture
+// Supabase utilities for ScriptOS - Cloud Sync Architecture
 
-import type { ScreenplayDocument } from '@/types/screenplay';
-
-const STORAGE_KEY = 'misfits_cavern_scripts';
-const CURRENT_SCRIPT_KEY = 'misfits_cavern_current_script';
+import { supabase } from '@/lib/supabase/client';
 
 export interface StoredScript {
   id: string;
@@ -11,99 +8,141 @@ export interface StoredScript {
   content: string;
   createdAt: string;
   updatedAt: string;
+  user_id?: string;
+  project_id?: string;
 }
 
-// Get all scripts
-export function getAllScripts(): StoredScript[] {
-  if (typeof window === 'undefined') return [];
+// Get all scripts for the current user
+export async function getAllScripts(): Promise<StoredScript[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
   
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch (error) {
+  const { data, error } = await supabase
+    .from('scripts')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
     console.error('Error loading scripts:', error);
     return [];
   }
+
+  return (data || []).map(s => ({
+    id: s.id,
+    title: s.title,
+    content: s.content,
+    createdAt: s.created_at,
+    updatedAt: s.updated_at,
+    user_id: s.user_id,
+    project_id: s.project_id
+  }));
 }
 
 // Get script by ID
-export function getScript(id: string): StoredScript | null {
-  const scripts = getAllScripts();
-  return scripts.find(s => s.id === id) || null;
+export async function getScript(id: string): Promise<StoredScript | null> {
+  const { data, error } = await supabase
+    .from('scripts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    title: data.title,
+    content: data.content,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    user_id: data.user_id,
+    project_id: data.project_id
+  };
 }
 
-// Save script
-export function saveScript(script: Omit<StoredScript, 'createdAt' | 'updatedAt'>): StoredScript {
-  const scripts = getAllScripts();
-  const existingIndex = scripts.findIndex(s => s.id === script.id);
-  
-  const now = new Date().toISOString();
-  const savedScript: StoredScript = {
-    ...script,
-    createdAt: existingIndex >= 0 ? scripts[existingIndex].createdAt : now,
-    updatedAt: now
+// Save script (UPSERT)
+export async function saveScript(script: Partial<StoredScript>): Promise<StoredScript | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const scriptData = {
+    title: script.title || 'Untitled',
+    content: script.content || '',
+    user_id: user.id,
+    updated_at: new Date().toISOString(),
+    project_id: script.project_id
   };
-  
-  if (existingIndex >= 0) {
-    scripts[existingIndex] = savedScript;
+
+  if (script.id && !script.id.includes('-')) { // Not a temporary ID
+    const { data, error } = await supabase
+      .from('scripts')
+      .update(scriptData)
+      .eq('id', script.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating script:', error);
+      return null;
+    }
+    return {
+      id: data.id,
+      title: data.title,
+      content: data.content,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   } else {
-    scripts.push(savedScript);
+    const { data, error } = await supabase
+      .from('scripts')
+      .insert([scriptData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating script:', error);
+      return null;
+    }
+    return {
+      id: data.id,
+      title: data.title,
+      content: data.content,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   }
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(scripts));
-  return savedScript;
 }
 
 // Delete script
-export function deleteScript(id: string): boolean {
-  const scripts = getAllScripts();
-  const filtered = scripts.filter(s => s.id !== id);
+export async function deleteScript(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('scripts')
+    .delete()
+    .eq('id', id);
   
-  if (filtered.length === scripts.length) return false;
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  return true;
+  return !error;
 }
 
 // Create new script
-export function createNewScript(title: string = 'Untitled'): StoredScript {
-  const newScript: StoredScript = {
-    id: generateId(),
-    title,
-    content: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
-  const scripts = getAllScripts();
-  scripts.push(newScript);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(scripts));
-  
-  return newScript;
+export async function createNewScript(title: string = 'Untitled'): Promise<StoredScript | null> {
+  return saveScript({ title, content: '' });
 }
 
-// Get current script ID
+// Current Script ID management (Still local for UX state)
+const CURRENT_SCRIPT_KEY = 'misfits_cavern_current_script';
+
 export function getCurrentScriptId(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(CURRENT_SCRIPT_KEY);
 }
 
-// Set current script ID
 export function setCurrentScriptId(id: string): void {
   localStorage.setItem(CURRENT_SCRIPT_KEY, id);
 }
 
-// Generate unique ID
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-
-
 // Import script from text
-export function importScriptFromText(text: string, title: string): StoredScript {
+export async function importScriptFromText(text: string, title: string): Promise<StoredScript | null> {
   return saveScript({
-    id: generateId(),
     title,
     content: text
   });

@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
 import { useEffect } from 'react';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
@@ -330,10 +330,10 @@ export default function PortfolioPage() {
   const [videosList, setVideosList] = useState<Video[]>(VIDEOS);
 
   useEffect(() => {
-    getPortfolioProjects().then(data => {
+    getPortfolioData().then(data => {
       if (data && data.length > 0) {
         const fetchedVideos: Video[] = data.map((p: any) => {
-          const media = p.portfolio_media?.[0];
+          const media = p.media?.[0];
           return {
             id: p.id,
             title: p.title,
@@ -341,7 +341,7 @@ export default function PortfolioPage() {
             role: p.role || 'Creator',
             description: p.description || '',
             driveId: media?.url?.split('id=')?.[1] || media?.url || '',
-            year: p.year?.toString() || new Date(p.created_at).getFullYear().toString(),
+            year: p.year?.toString() || '2026',
             featured: true
           };
         });
