@@ -360,22 +360,25 @@ export default function PortfolioPage() {
       {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, width: '100%',
-        padding: '18px 32px',
+        padding: '0 32px', height: 62,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(8,8,8,0.85)',
-        backdropFilter: 'blur(16px)',
+        background: 'rgba(6,6,6,0.88)',
+        backdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
+        boxShadow: '0 1px 0 rgba(245,158,11,0.08) inset',
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
-          <ArrowLeft size={17} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6, color: 'var(--fg)' }}>
-            MISFITS CAVERN
-          </div>
-        </Link>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
+            >MC</div>
+          </Link>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
+        </div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
           {videosList.length} Projects
         </span>
       </nav>

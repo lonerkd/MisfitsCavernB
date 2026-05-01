@@ -495,15 +495,20 @@ export default function StudioPage() {
         padding: '0 28px', height: 62,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(8,8,8,0.92)',
-        backdropFilter: 'blur(16px)',
+        background: 'rgba(6,6,6,0.92)',
+        backdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
+        boxShadow: '0 1px 0 rgba(99,102,241,0.08) inset',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            <ArrowLeft size={17} color="var(--fg)" />
-            <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>STUDIO</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+              onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.opacity = '0.7')}
+            >MC</div>
           </Link>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#6366f1', textTransform: 'uppercase' }}>Studio</div>
 
           {/* Project Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -532,34 +537,56 @@ export default function StudioPage() {
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
 
       {/* TABS BAR */}
-      <div style={{ 
-        position: 'fixed', top: 62, left: 0, width: '100%', 
-        height: 48, background: 'rgba(8,8,8,0.8)', 
-        backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.04)',
-        display: 'flex', justifyContent: 'center', zIndex: 90
+      <div style={{
+        position: 'fixed', top: 62, left: 0, width: '100%',
+        height: 52, background: 'rgba(6,6,6,0.88)',
+        backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.04)',
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        zIndex: 90,
       }}>
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              style={{ 
-                height: '100%', padding: '0 24px', 
-                background: 'transparent', border: 'none',
-                display: 'flex', alignItems: 'center', gap: 8,
-                color: isActive ? '#fff' : 'var(--fg-muted)',
-                borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
-                cursor: 'pointer', transition: 'all 0.3s',
-                fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1
-              }}
-            >
-              <Icon size={12} />
-              {tab.name}
-            </button>
-          );
-        })}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 2,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 9999, padding: '4px 6px',
+        }}>
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                style={{
+                  position: 'relative',
+                  height: 32, padding: '0 16px',
+                  background: 'transparent', border: 'none', borderRadius: 9999,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  color: isActive ? 'var(--fg)' : 'var(--fg-dim)',
+                  cursor: 'pointer', transition: 'color 0.25s',
+                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  textTransform: 'uppercase',
+                }}
+                whileHover={{ color: 'var(--fg-muted)' } as any}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="studio-tab-pill"
+                    style={{
+                      position: 'absolute', inset: 0, borderRadius: 9999,
+                      background: 'rgba(99,102,241,0.14)',
+                      border: '1px solid rgba(99,102,241,0.2)',
+                      zIndex: -1,
+                    }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 36 }}
+                  />
+                )}
+                <Icon size={11} color={isActive ? '#6366f1' : undefined} />
+                {tab.name}
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '160px 20px 80px' }}>

@@ -178,17 +178,22 @@ export default function LoungePage() {
         height: 62,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(8,8,8,0.95)',
-        backdropFilter: 'blur(16px)',
+        background: 'rgba(6,6,6,0.95)',
+        backdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
+        boxShadow: '0 1px 0 rgba(16,185,129,0.08) inset',
         flexShrink: 0,
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '0.6')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
-          <ArrowLeft size={17} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 6 }}>LOUNGE</div>
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
+            >MC</div>
+          </Link>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#10b981', textTransform: 'uppercase' }}>Lounge</div>
+        </div>
 
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           {/* Project Selector */}

@@ -1,167 +1,422 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { ArrowDown, PenTool, Film, Layers, Users, ArrowRight } from 'lucide-react';
+import {
+  ArrowRight, PenTool, Layers, Users, Film,
+  Briefcase, ChevronRight,
+} from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
-import SectionLabel from '@/components/SectionLabel';
 
-const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
+/* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
+function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: number; color?: string }) {
+  const s = `${size}px`;
+  const corner = { width: s, height: s, position: 'absolute' as const, borderColor: color };
+  return (
+    <>
+      <div style={{ ...corner, top: 0, left: 0, borderTop: `1.5px solid`, borderLeft: `1.5px solid` }} />
+      <div style={{ ...corner, top: 0, right: 0, borderTop: `1.5px solid`, borderRight: `1.5px solid` }} />
+      <div style={{ ...corner, bottom: 0, left: 0, borderBottom: `1.5px solid`, borderLeft: `1.5px solid` }} />
+      <div style={{ ...corner, bottom: 0, right: 0, borderBottom: `1.5px solid`, borderRight: `1.5px solid` }} />
+    </>
+  );
+}
 
-const FEATURES = [
-  {
-    icon: <PenTool size={22} />,
-    title: 'ScriptOS',
-    subtitle: 'Intelligent Screenplay Editor',
-    description: 'Professional-grade writing with live parsing, character analytics, and scene intelligence. No fluff — pure craft.',
-    href: '/editor',
-    color: '#ff3c00',
-  },
-  {
-    icon: <Film size={22} />,
-    title: 'Portfolio',
-    subtitle: 'Cinematic Showcase',
-    description: 'Present your work the way it deserves. Bento grids, ambient color, video overlays — built for filmmakers.',
-    href: '/portfolio',
-    color: '#ff8800',
-  },
-  {
-    icon: <Layers size={22} />,
-    title: 'Studio',
-    subtitle: 'Asset & Project Hub',
-    description: 'Organize scripts, video, audio, and stills under one roof. Your entire production workspace.',
-    href: '/studio',
-    color: '#00cc66',
-  },
-  {
-    icon: <Users size={22} />,
-    title: 'Lounge',
-    subtitle: 'Crew Collaboration',
-    description: 'A digital hang. Live chat, music, presence — the creative ecosystem that bridges distance.',
-    href: '/lounge',
-    color: '#0099ff',
-  },
+/* ─── Workflow Pipeline ───────────────────────────────────────────────────── */
+const STAGES = [
+  { id: 'write',     label: 'Write',       icon: PenTool,   color: '#ff3c00', href: '/editor'    },
+  { id: 'organize',  label: 'Organize',    icon: Layers,    color: '#6366f1', href: '/studio'    },
+  { id: 'crew',      label: 'Crew',        icon: Users,     color: '#10b981', href: '/lounge'    },
+  { id: 'showcase',  label: 'Showcase',    icon: Film,      color: '#f59e0b', href: '/portfolio' },
+  { id: 'launch',    label: 'Launch',      icon: Briefcase, color: '#8b5cf6', href: '/jobs'      },
 ];
 
-function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: number }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const handleMove = (e: React.MouseEvent) => {
-    if (!cardRef.current) return;
-    const r = cardRef.current.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width - 0.5) * 12;
-    const y = ((e.clientY - r.top) / r.height - 0.5) * 8;
-    cardRef.current.style.transform = `perspective(800px) rotateX(${-y}deg) rotateY(${x}deg) translateY(-4px)`;
-  };
-  const handleLeave = () => {
-    if (cardRef.current) cardRef.current.style.transform = '';
-  };
-
+function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: number }) {
+  const [hovered, setHovered] = useState(false);
+  const Icon = stage.icon;
   return (
-    <AnimatedSection delay={index * 0.1}>
-      <Link href={feature.href} style={{ textDecoration: 'none', display: 'block' }}>
-        <div
-          ref={cardRef}
-          onMouseMove={handleMove}
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'default' }}
+    >
+      <Link href={stage.href} style={{ textDecoration: 'none' }}>
+        <motion.div
+          onHoverStart={() => setHovered(true)}
+          onHoverEnd={() => setHovered(false)}
+          whileHover={{ y: -5, scale: 1.08 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
           style={{
-            padding: '36px 28px',
-            background: 'var(--bg-2)',
-            border: '1px solid var(--border)',
-            height: '100%',
-            transition: 'border-color 0.4s, box-shadow 0.4s, transform 0.5s var(--ease-expo)',
+            width: 54,
+            height: 54,
+            borderRadius: 18,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: hovered ? `${stage.color}18` : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${hovered ? stage.color + '45' : 'rgba(255,255,255,0.07)'}`,
+            color: hovered ? stage.color : 'rgba(240,236,228,0.45)',
+            transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
+            boxShadow: hovered ? `0 8px 28px ${stage.color}22` : 'none',
             position: 'relative',
-            overflow: 'hidden',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.borderColor = `${feature.color}55`;
-            e.currentTarget.style.boxShadow = `0 20px 60px rgba(0,0,0,0.8), 0 0 40px ${feature.color}10`;
-          }}
-          onMouseLeave={e => {
-            handleLeave();
-            e.currentTarget.style.borderColor = 'var(--border)';
-            e.currentTarget.style.boxShadow = 'none';
           }}
         >
-          {/* Corner glow */}
+          <Icon size={20} strokeWidth={1.5} />
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              style={{
+                position: 'absolute',
+                inset: -1,
+                borderRadius: 18,
+                border: `1px solid ${stage.color}30`,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+        </motion.div>
+      </Link>
+      <span style={{
+        fontFamily: 'var(--mono)',
+        fontSize: 8,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        color: hovered ? stage.color : 'var(--fg-dim)',
+        transition: 'color 0.3s',
+      }}>
+        {stage.label}
+      </span>
+    </motion.div>
+  );
+}
+
+function PipelineConnector({ index }: { index: number }) {
+  return (
+    <motion.div
+      initial={{ scaleX: 0 }}
+      whileInView={{ scaleX: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 + 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)', transformOrigin: 'left', position: 'relative', top: -15, overflow: 'hidden' }}
+    >
+      <div style={{
+        position: 'absolute',
+        top: 0, left: '-60%',
+        width: '60%',
+        height: '100%',
+        background: 'linear-gradient(90deg, transparent, rgba(255,60,0,0.6), transparent)',
+        animation: `travel ${3 + index * 0.4}s ease-in-out ${index * 0.6}s infinite`,
+      }} />
+    </motion.div>
+  );
+}
+
+/* ─── Module Tile — screen-preview cards ─────────────────────────────────── */
+
+function ScriptOSPreview() {
+  return (
+    <div className="screenplay-preview" style={{ padding: '20px 16px' }}>
+      <div className="screenplay-scene-hdr">INT. UNDERGROUND STUDIO — NIGHT</div>
+      <br />
+      <div style={{ color: 'rgba(240,236,228,0.55)', fontSize: 11 }}>
+        The room hums with electricity. Monitors cast blue light across stacks of handwritten notes.
+      </div>
+      <br />
+      <div className="screenplay-char">DIRECTOR</div>
+      <div className="screenplay-dialog">Every frame is a decision. Every decision, a statement.</div>
+      <br />
+      <div className="screenplay-scene-hdr">EXT. CITY ROOFTOP — GOLDEN HOUR</div>
+      <br />
+      <div style={{ color: 'rgba(240,236,228,0.55)', fontSize: 11 }}>
+        A city that never stops moving. She lights a cigarette and stares at the horizon.
+      </div>
+      <br />
+      <div className="screenplay-char">MARA</div>
+      <div className="screenplay-dialog">You can't make art in a vacuum. You need friction.</div>
+    </div>
+  );
+}
+
+function StudioPreview() {
+  const items = [
+    { label: 'Opening_v3.mov', type: 'video', color: '#6366f1' },
+    { label: 'Score_Final.wav', type: 'audio', color: '#10b981' },
+    { label: 'Act1_Draft.fdx',  type: 'script', color: '#ff3c00' },
+    { label: 'Cast_Photos.zip', type: 'image', color: '#f59e0b' },
+    { label: 'Budget_R2.xlsx',  type: 'doc',   color: '#8b5cf6' },
+    { label: 'Storyboard.pdf',  type: 'doc',   color: '#06b6d4' },
+  ];
+  return (
+    <div style={{ padding: '16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      {items.map((item, i) => (
+        <div key={i} style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 8,
+          padding: '10px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
           <div style={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 120,
-            height: 120,
+            width: 6,
+            height: 6,
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${feature.color}18 0%, transparent 70%)`,
-            pointerEvents: 'none',
+            background: item.color,
+            flexShrink: 0,
+            boxShadow: `0 0 6px ${item.color}`,
           }} />
-
-          <div style={{ color: feature.color, marginBottom: 20 }}>{feature.icon}</div>
-
-          <div style={{
-            fontSize: 8,
-            letterSpacing: 4,
-            textTransform: 'uppercase',
-            color: feature.color,
+          <span style={{
             fontFamily: 'var(--mono)',
-            marginBottom: 6,
-            opacity: 0.8,
-          }}>
-            {feature.subtitle}
-          </div>
+            fontSize: 8.5,
+            color: 'rgba(240,236,228,0.5)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-          <h3 style={{
-            fontFamily: 'var(--display)',
-            fontSize: 'clamp(1.8rem, 3vw, 2.4rem)',
-            letterSpacing: 2,
-            marginBottom: 14,
-            color: 'var(--fg)',
-          }}>
-            {feature.title}
-          </h3>
-
-          <p style={{
-            fontFamily: 'var(--serif)',
-            fontSize: '0.95rem',
-            lineHeight: 1.75,
-            color: 'var(--fg-muted)',
-            marginBottom: 28,
-          }}>
-            {feature.description}
-          </p>
-
+function LoungePreview() {
+  const messages = [
+    { from: 'Maya',   text: 'Scene 14 is landing perfectly ✓',  mine: false },
+    { from: 'You',    text: 'Color grade on act 2 is insane',    mine: true  },
+    { from: 'Jordan', text: 'Music cue syncs at 2:34 exactly',   mine: false },
+    { from: 'You',    text: 'Ship it.',                          mine: true  },
+  ];
+  return (
+    <div style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {messages.map((m, i) => (
+        <div key={i} style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: m.mine ? 'flex-end' : 'flex-start',
+        }}>
+          {!m.mine && (
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: '#10b981', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
+          )}
           <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontFamily: 'var(--mono)',
-            fontSize: 9,
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            color: feature.color,
+            background: m.mine ? 'rgba(255,60,0,0.15)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${m.mine ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.07)'}`,
+            borderRadius: m.mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
+            padding: '7px 12px',
+            maxWidth: '80%',
           }}>
-            Enter <ArrowRight size={11} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(240,236,228,0.75)' }}>{m.text}</span>
           </div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function PortfolioPreview() {
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', minHeight: 140 }}>
+      {/* Simulated widescreen film frame */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(160deg, #0d0d0f 0%, #1a1008 40%, #0a0806 100%)',
+      }} />
+      {/* Horizontal bands — film grain aesthetic */}
+      {[0.15, 0.4, 0.65, 0.85].map((y, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          left: 0, right: 0,
+          top: `${y * 100}%`,
+          height: 1,
+          background: 'rgba(255,255,255,0.04)',
+        }} />
+      ))}
+      {/* Letterbox bars */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '14%', background: '#000', opacity: 0.6 }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '14%', background: '#000', opacity: 0.6 }} />
+      {/* Central light source */}
+      <div style={{
+        position: 'absolute',
+        top: '20%', left: '35%',
+        width: '40%', height: '60%',
+        background: 'radial-gradient(ellipse, rgba(245,158,11,0.12) 0%, transparent 70%)',
+        borderRadius: '50%',
+      }} />
+      {/* Frame label */}
+      <div style={{
+        position: 'absolute',
+        bottom: '18%', right: 16,
+        fontFamily: 'var(--mono)',
+        fontSize: 7,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        color: 'rgba(240,236,228,0.25)',
+      }}>
+        CAVERN · 2026
+      </div>
+    </div>
+  );
+}
+
+interface ModuleTileProps {
+  title: string;
+  tag: string;
+  color: string;
+  href: string;
+  preview: React.ReactNode;
+  style?: React.CSSProperties;
+  index?: number;
+}
+
+function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: ModuleTileProps) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <AnimatedSection delay={index * 0.08}>
+      <Link href={href} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+        <motion.div
+          onHoverStart={() => setHovered(true)}
+          onHoverEnd={() => setHovered(false)}
+          style={{
+            height: '100%',
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'var(--bg-2)',
+            border: `1px solid ${hovered ? color + '30' : 'rgba(255,255,255,0.05)'}`,
+            borderRadius: 16,
+            transition: 'border-color 0.45s var(--ease-expo)',
+            boxShadow: hovered ? `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px ${color}18` : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            ...style,
+          }}
+        >
+          {/* Corner accent glow */}
+          <div style={{
+            position: 'absolute',
+            top: -60, right: -60,
+            width: 180, height: 180,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${color}14 0%, transparent 65%)`,
+            pointerEvents: 'none',
+            transition: 'opacity 0.5s',
+            opacity: hovered ? 1 : 0.4,
+          }} />
+
+          {/* Preview area */}
+          <div style={{
+            flex: 1,
+            overflow: 'hidden',
+            borderBottom: `1px solid ${hovered ? color + '20' : 'rgba(255,255,255,0.04)'}`,
+            transition: 'border-color 0.4s',
+          }}>
+            {preview}
+          </div>
+
+          {/* Footer bar */}
+          <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 7.5,
+                letterSpacing: 3.5,
+                textTransform: 'uppercase',
+                color: color,
+                marginBottom: 4,
+                opacity: 0.85,
+              }}>
+                {tag}
+              </div>
+              <div style={{
+                fontFamily: 'var(--display)',
+                fontSize: '1.5rem',
+                letterSpacing: 3,
+                color: 'var(--fg)',
+                lineHeight: 1,
+              }}>
+                {title}
+              </div>
+            </div>
+            <motion.div
+              animate={{ x: hovered ? 0 : -4, opacity: hovered ? 1 : 0 }}
+              transition={{ duration: 0.25 }}
+              style={{ color: color }}
+            >
+              <ChevronRight size={18} />
+            </motion.div>
+          </div>
+        </motion.div>
       </Link>
     </AnimatedSection>
   );
 }
 
+/* ─── Stats ticker ────────────────────────────────────────────────────────── */
+const TICKER_ITEMS = [
+  'Industry-Format Screenplay',
+  'Real-Time Collaboration',
+  'Cloud-Sync + Offline-First',
+  'Character Analytics',
+  'Asset Management',
+  'Crew Scheduling',
+  'Portfolio Publishing',
+  'Film-Grade Typography',
+  'Live Presence',
+  'One Ecosystem',
+];
+
+function StatsTicker() {
+  const repeated = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="marquee-wrap" style={{
+      borderTop: '1px solid var(--border)',
+      borderBottom: '1px solid var(--border)',
+      padding: '14px 0',
+    }}>
+      <div className="marquee-track">
+        {repeated.map((item, i) => (
+          <span key={i} style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 9,
+            letterSpacing: 3.5,
+            textTransform: 'uppercase',
+            color: 'var(--fg-dim)',
+            padding: '0 36px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 36,
+          }}>
+            {item}
+            <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--accent)', opacity: 0.6, display: 'inline-block' }} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main page ───────────────────────────────────────────────────────────── */
 export default function Home() {
   const { scrollY } = useScroll();
-  const springY = useSpring(scrollY, { stiffness: 60, damping: 20 });
-  const heroOpacity = useTransform(springY, [0, 400], [1, 0]);
-  const heroY = useTransform(springY, [0, 400], [0, 80]);
+  const springY = useSpring(scrollY, { stiffness: 50, damping: 18 });
+  const heroOpacity = useTransform(springY, [0, 500], [1, 0]);
+  const heroY = useTransform(springY, [0, 500], [0, 100]);
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)' }}>
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', overflowX: 'hidden' }}>
       <GrainOverlay />
       <Navigation />
 
-      {/* ── HERO ── */}
+      {/* ══════════════════════════════════════════════
+          HERO — cinematic full-screen
+      ══════════════════════════════════════════════ */}
       <section style={{
         minHeight: '100svh',
         display: 'flex',
@@ -172,282 +427,288 @@ export default function Home() {
         overflow: 'hidden',
         padding: '0 24px',
       }}>
-        {/* Ambient orb */}
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.05, 0.12, 0.05] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            width: '80vw',
-            height: '80vw',
-            maxWidth: 900,
-            maxHeight: 900,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            background: 'radial-gradient(circle, rgba(255,60,0,0.18) 0%, transparent 65%)',
-          }}
-        />
+        {/* Ambient orbs */}
+        <div style={{
+          position: 'absolute',
+          width: '70vw',
+          height: '70vw',
+          maxWidth: 800,
+          maxHeight: 800,
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          background: 'radial-gradient(circle, rgba(255,60,0,0.10) 0%, transparent 65%)',
+          animation: 'orb-breathe 10s ease-in-out infinite',
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '10%', right: '5%',
+          width: '40vw', height: '40vw',
+          maxWidth: 500, maxHeight: 500,
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 65%)',
+          animation: 'orb-breathe 14s ease-in-out 3s infinite',
+        }} />
 
-        <motion.div
-          style={{ opacity: heroOpacity, y: heroY, position: 'relative', zIndex: 2, textAlign: 'center' }}
-        >
-          {/* Headline */}
-          <motion.div
-            initial={{ opacity: 0, y: 40, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{
-              fontFamily: 'var(--display)',
-              fontSize: 'clamp(3.5rem, 16vw, 11rem)',
-              lineHeight: 0.85,
-              letterSpacing: -2,
-            }}
-          >
-            <span style={{ WebkitTextStroke: '2.5px rgba(240,236,228,1)', color: 'transparent', textShadow: '0 0 30px rgba(0,0,0,0.5)' }}>
-              MISFITS
-            </span>
-            <br />
-            <span style={{ color: 'var(--accent)', textShadow: '0 0 40px rgba(255,60,0,0.2)' }}>CAVERN</span>
-          </motion.div>
+        <motion.div style={{ opacity: heroOpacity, y: heroY, position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
 
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
-            animate={{ opacity: 0.5, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 1, delay: 0.5 }}
-            style={{
-              fontFamily: 'var(--serif)',
-              fontSize: 'clamp(0.95rem, 2.5vw, 1.25rem)',
-              fontStyle: 'italic',
-              fontWeight: 300,
-              letterSpacing: 1,
-              marginTop: 24,
-              maxWidth: 560,
-              margin: '24px auto 0',
-            }}
-          >
-            The ultimate creative platform for storytellers who refuse to compromise.
-          </motion.p>
-
-          {/* Pill tags */}
+          {/* Status chip */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.75, duration: 0.8 }}
-            style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 24, flexWrap: 'wrap' }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            style={{ display: 'flex', justifyContent: 'center', marginBottom: 36 }}
           >
-            {['Screenwriting', 'Portfolio', 'Collaboration', 'Production'].map((t, i) => (
-              <span key={i} style={{
-                fontSize: 8,
-                letterSpacing: 4,
-                textTransform: 'uppercase',
-                color: 'rgba(240,236,228,0.22)',
-                fontFamily: 'var(--mono)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-              }}>
-                <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--accent)', opacity: 0.6, display: 'inline-block' }} />
-                {t}
-              </span>
-            ))}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '7px 16px',
+              background: 'rgba(255,60,0,0.08)',
+              border: '1px solid rgba(255,60,0,0.20)',
+              borderRadius: 9999,
+              fontFamily: 'var(--mono)',
+              fontSize: 8.5,
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+              color: 'rgba(255,60,0,0.85)',
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff3c00', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
+              Digital Film Studio
+            </div>
           </motion.div>
+
+          {/* Wordmark with viewfinder */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <motion.div
+              initial={{ opacity: 0, y: 50, filter: 'blur(16px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                fontFamily: 'var(--display)',
+                fontSize: 'clamp(4rem, 18vw, 13rem)',
+                lineHeight: 0.84,
+                letterSpacing: -2,
+                padding: '16px 8px',
+                position: 'relative',
+              }}
+            >
+              <span style={{
+                WebkitTextStroke: '2px rgba(240,236,228,0.85)',
+                color: 'transparent',
+                display: 'block',
+              }}>
+                MISFITS
+              </span>
+              <span style={{
+                color: 'var(--accent)',
+                display: 'block',
+                textShadow: '0 0 80px rgba(255,60,0,0.25)',
+              }}>
+                CAVERN
+              </span>
+
+              {/* Viewfinder corners */}
+              <Viewfinder size={22} color="rgba(255,60,0,0.45)" />
+            </motion.div>
+          </div>
+
+          {/* Sub-line */}
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 0.45, y: 0 }}
+            transition={{ duration: 1, delay: 0.55 }}
+            style={{
+              fontFamily: 'var(--serif)',
+              fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              letterSpacing: 1,
+              marginTop: 28,
+            }}
+          >
+            Script to Screen — one integrated studio.
+          </motion.p>
 
           {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.95, duration: 0.8 }}
-            style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 36, flexWrap: 'wrap' }}
+            transition={{ delay: 0.85, duration: 0.9 }}
+            style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}
           >
-            <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              <Link
-                href="/editor"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '13px 28px',
-                  background: 'var(--accent)',
-                  color: 'var(--bg)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  borderRadius: 'var(--radius-full)',
-                }}
-              >
-                Open ScriptOS <ArrowRight size={12} />
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-              <Link
-                href="/portfolio"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '13px 28px',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.02)',
-                  color: 'var(--fg)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  borderRadius: 'var(--radius-full)',
-                }}
-              >
-                The Work
-              </Link>
-            </motion.div>
+            <Link href="/editor" className="btn-primary">
+              Enter Studio <ArrowRight size={13} />
+            </Link>
+            <Link href="/portfolio" className="btn-ghost">
+              The Work
+            </Link>
           </motion.div>
         </motion.div>
 
         {/* Scroll cue */}
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.25 }}
-          transition={{ delay: 1.5 }}
-          style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)' }}
+          animate={{ opacity: 0.2 }}
+          transition={{ delay: 2 }}
+          style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)' }}
         >
           <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{ y: [0, 7, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
           >
-            <ArrowDown size={18} />
+            <div style={{ width: 1, height: 36, background: 'linear-gradient(180deg, transparent, rgba(240,236,228,0.4))' }} />
           </motion.div>
         </motion.div>
       </section>
 
-      {/* ── CONCEPT ── */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '100px 24px' }}>
-        <SectionLabel text="The Concept" />
-        <AnimatedSection>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: '1.08rem', lineHeight: 2, color: 'var(--fg-muted)' }}>
-            <p style={{ marginBottom: 22 }}>
-              Misfits Cavern isn't a tool. It's a digital sanctuary — built for storytellers, filmmakers,
-              and creative minds who operate at a different frequency.
-            </p>
-            <p style={{ marginBottom: 22 }}>
-              At the core is <span style={{ color: 'var(--accent)', fontStyle: 'italic' }}>ScriptOS</span> —
-              a screenplay editor with intelligent parsing, character analytics, and live preview.
-              Built offline-first. No subscriptions, no bloat.
-            </p>
-            <p style={{ color: 'var(--fg)', fontWeight: 400 }}>
-              Surrounding it is a full creative ecosystem: showcase your work, collaborate with your crew,
-              manage production, and build your brand — all in one place that looks the part.
-            </p>
-          </div>
-        </AnimatedSection>
+      {/* ══════════════════════════════════════════════
+          WORKFLOW PIPELINE
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '80px 40px', maxWidth: 900, margin: '0 auto' }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 0 }}
+        >
+          {STAGES.map((stage, i) => (
+            <React.Fragment key={stage.id}>
+              <PipelineStage stage={stage} index={i} />
+              {i < STAGES.length - 1 && <PipelineConnector index={i} />}
+            </React.Fragment>
+          ))}
+        </motion.div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section style={{ padding: '60px 24px 120px', position: 'relative' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.35, pointerEvents: 'none' }}>
-          <ParticleBackground />
-        </div>
+      {/* ══════════════════════════════════════════════
+          STATS TICKER
+      ══════════════════════════════════════════════ */}
+      <StatsTicker />
 
-        <div style={{ maxWidth: 1160, margin: '0 auto', position: 'relative', zIndex: 2 }}>
-          <SectionLabel text="The Platform" center />
+      {/* ══════════════════════════════════════════════
+          MODULE GRID — asymmetric layout
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '80px 24px 100px', maxWidth: 1200, margin: '0 auto' }}>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 16 }}>
-            {FEATURES.map((f, i) => (
-              <FeatureCard key={f.title} feature={f} index={i} />
-            ))}
+        {/* Top row — 2 columns: large left + right */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+
+          {/* ScriptOS — large left */}
+          <ModuleTile
+            title="ScriptOS"
+            tag="Screenplay Editor"
+            color="#ff3c00"
+            href="/editor"
+            index={0}
+            preview={
+              <div style={{ minHeight: 220 }}>
+                <div style={{
+                  padding: '10px 16px',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
+                    <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: c, opacity: 0.7 }} />
+                  ))}
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>untitled_script.fdx</span>
+                </div>
+                <ScriptOSPreview />
+              </div>
+            }
+          />
+
+          {/* Right column: Studio + Lounge stacked */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <ModuleTile
+              title="Studio"
+              tag="Asset Hub"
+              color="#6366f1"
+              href="/studio"
+              index={1}
+              preview={<StudioPreview />}
+            />
+            <ModuleTile
+              title="Lounge"
+              tag="Crew Collaboration"
+              color="#10b981"
+              href="/lounge"
+              index={2}
+              preview={<LoungePreview />}
+            />
           </div>
         </div>
+
+        {/* Bottom row — Portfolio, full width */}
+        <ModuleTile
+          title="Portfolio"
+          tag="Cinematic Showcase"
+          color="#f59e0b"
+          href="/portfolio"
+          index={3}
+          preview={<PortfolioPreview />}
+          style={{ minHeight: 0 }}
+        />
       </section>
 
-      {/* ── CTA ── */}
-      <section style={{ padding: '120px 24px 160px', textAlign: 'center', position: 'relative' }}>
+      {/* ══════════════════════════════════════════════
+          CLOSING CTA
+      ══════════════════════════════════════════════ */}
+      <section style={{ padding: '100px 24px 160px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        {/* Background glow */}
         <div style={{
           position: 'absolute',
           inset: 0,
+          background: 'radial-gradient(ellipse at 50% 60%, rgba(255,60,0,0.07) 0%, transparent 60%)',
           pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at 50% 50%, rgba(255,60,0,0.05) 0%, transparent 60%)',
         }} />
 
         <div style={{ position: 'relative', zIndex: 2 }}>
           <AnimatedSection>
-            <motion.div
-              style={{
-                fontFamily: 'var(--display)',
-                fontSize: 'clamp(3.5rem, 12vw, 8rem)',
-                lineHeight: 0.88,
-                letterSpacing: -1,
-                marginBottom: 40,
-              }}
-            >
-              LET'S<br />
-              <span style={{ color: 'var(--accent)' }}>BUILD</span><br />
-              SOMETHING
-            </motion.div>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+              <div style={{
+                width: 1,
+                height: 64,
+                background: 'linear-gradient(180deg, transparent, rgba(255,60,0,0.5))',
+              }} />
+            </div>
 
-            <p style={{
-              fontFamily: 'var(--serif)',
-              fontSize: '1rem',
-              fontStyle: 'italic',
-              color: 'var(--fg-muted)',
-              marginBottom: 36,
+            <div style={{
+              fontFamily: 'var(--display)',
+              fontSize: 'clamp(3rem, 14vw, 9rem)',
+              lineHeight: 0.88,
+              letterSpacing: -1,
+              marginBottom: 44,
             }}>
-              Creative vision meets technical precision.
-            </p>
+              BEGIN YOUR<br />
+              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(255,60,0,0.2)' }}>FILM</span>
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                <Link
-                  href="/auth"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '14px 32px',
-                    background: 'var(--accent)',
-                    color: 'var(--bg)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 10,
-                    letterSpacing: 4,
-                    textTransform: 'uppercase',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    borderRadius: 'var(--radius-full)',
-                  }}
-                >
-                  Join the Cavern
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                <a
-                  href="mailto:peterolowude@icloud.com"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '14px 32px',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    background: 'rgba(255,255,255,0.02)',
-                    color: 'var(--fg)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 10,
-                    letterSpacing: 4,
-                    textTransform: 'uppercase',
-                    textDecoration: 'none',
-                    borderRadius: 'var(--radius-full)',
-                  }}
-                >
-                  Say Hello
-                </a>
-              </motion.div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <Link href="/auth" className="btn-primary" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
+                Join The Cavern
+              </Link>
+              <a href="mailto:peterolowude@icloud.com" className="btn-ghost" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
+                Say Hello
+              </a>
             </div>
           </AnimatedSection>
         </div>
       </section>
 
-      <footer style={{ textAlign: 'center', padding: '20px 0 44px', fontSize: 8, letterSpacing: 4, textTransform: 'uppercase', opacity: 0.08, fontFamily: 'var(--mono)' }}>
+      <footer style={{
+        textAlign: 'center',
+        padding: '20px 0 44px',
+        fontSize: 7.5,
+        letterSpacing: 4,
+        textTransform: 'uppercase',
+        opacity: 0.07,
+        fontFamily: 'var(--mono)',
+      }}>
         © 2026 Peter Olowude · Misfits Cavern Productions
       </footer>
     </main>
