@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, Music, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
