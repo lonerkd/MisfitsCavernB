@@ -589,7 +589,7 @@ export default function StudioPage() {
         </div>
       </div>
 
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '160px 20px 80px' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 20px 80px' }}>
         
         {activeTab === 'overview' && activeProject && (
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
