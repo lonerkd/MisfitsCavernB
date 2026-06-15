@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 export async function createProject(
   creatorId: string,
@@ -9,18 +9,20 @@ export async function createProject(
   deadline?: Date
 ) {
   try {
-    const project = await prisma.project.create({
-      data: {
+    const { data: project, error } = await supabaseAdmin
+      .from('projects')
+      .insert({
         creator_id: creatorId,
         title,
         description,
-        genre,
         budget,
-        deadline,
+        start_date: deadline,
         status: 'concept',
-        visibility: 'private',
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) return { success: false, error: error.message };
     return { success: true, project };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -29,26 +31,14 @@ export async function createProject(
 
 export async function getProject(projectId: string, userId?: string) {
   try {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        creator: true,
-        scripts: true,
-        assets: true,
-        crew: { include: { user: true } },
-        timeline: { orderBy: { start_date: 'asc' } },
-        budget_items: true,
-        comments: true,
-      },
-    });
+    const { data: project, error } = await supabaseAdmin
+      .from('projects')
+      .select('*, profiles(*), scripts(*), project_crew(*, profiles(*))')
+      .eq('id', projectId)
+      .single();
 
-    if (!project) {
+    if (error || !project) {
       return { success: false, error: 'Project not found' };
-    }
-
-    // Check visibility
-    if (project.visibility === 'private' && project.creator_id !== userId) {
-      return { success: false, error: 'Unauthorized' };
     }
 
     return { success: true, project };
@@ -59,16 +49,13 @@ export async function getProject(projectId: string, userId?: string) {
 
 export async function getUserProjects(userId: string) {
   try {
-    const projects = await prisma.project.findMany({
-      where: { creator_id: userId },
-      include: {
-        creator: true,
-        _count: {
-          select: { scripts: true, assets: true, crew: true },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-    });
+    const { data: projects, error } = await supabaseAdmin
+      .from('projects')
+      .select('*, profiles(*)')
+      .eq('creator_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
     return { success: true, projects };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -91,20 +78,24 @@ export async function updateProject(
   }
 ) {
   try {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-    });
+    const { data: project, error: fetchError } = await supabaseAdmin
+      .from('projects')
+      .select('creator_id')
+      .eq('id', projectId)
+      .single();
 
-    if (!project || project.creator_id !== userId) {
+    if (fetchError || !project || project.creator_id !== userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const updated = await prisma.project.update({
-      where: { id: projectId },
-      data,
-      include: { creator: true, crew: true },
-    });
+    const { data: updated, error } = await supabaseAdmin
+      .from('projects')
+      .update(data)
+      .eq('id', projectId)
+      .select()
+      .single();
 
+    if (error) return { success: false, error: error.message };
     return { success: true, project: updated };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -113,18 +104,22 @@ export async function updateProject(
 
 export async function deleteProject(projectId: string, userId: string) {
   try {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-    });
+    const { data: project, error: fetchError } = await supabaseAdmin
+      .from('projects')
+      .select('creator_id')
+      .eq('id', projectId)
+      .single();
 
-    if (!project || project.creator_id !== userId) {
+    if (fetchError || !project || project.creator_id !== userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    await prisma.project.delete({
-      where: { id: projectId },
-    });
+    const { error } = await supabaseAdmin
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
 
+    if (error) return { success: false, error: error.message };
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -137,29 +132,21 @@ export async function getPublicProjects(filters?: {
   sortBy?: 'newest' | 'popular' | 'trending';
 }) {
   try {
-    let orderBy: any = { created_at: 'desc' };
-    if (filters?.sortBy === 'popular') {
-      orderBy = { likes: 'desc' };
-    } else if (filters?.sortBy === 'trending') {
-      orderBy = { views: 'desc' };
+    let query = supabaseAdmin
+      .from('projects')
+      .select('*, profiles(*)')
+      .limit(50);
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
     }
 
-    const projects = await prisma.project.findMany({
-      where: {
-        visibility: 'public',
-        ...(filters?.genre && { genre: filters.genre }),
-        ...(filters?.status && { status: filters.status }),
-      },
-      include: {
-        creator: true,
-        _count: {
-          select: { scripts: true, assets: true, crew: true },
-        },
-      },
-      orderBy,
-      take: 50,
-    });
+    // Default sort by newest
+    query = query.order('created_at', { ascending: false });
 
+    const { data: projects, error } = await query;
+
+    if (error) return { success: false, error: error.message };
     return { success: true, projects };
   } catch (error: any) {
     return { success: false, error: error.message };

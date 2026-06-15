@@ -31,14 +31,41 @@ export async function createProject(userId: string, title: string, description =
 }
 
 export async function getUserProjects(userId: string) {
-  const { data, error } = await supabase
+  // Get projects user created
+  const { data: owned, error: ownedErr } = await supabase
     .from('projects')
     .select('*')
-    .or(`creator_id.eq.${userId},id.in.(SELECT project_id FROM project_crew WHERE user_id = '${userId}')`)
+    .eq('creator_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+  if (ownedErr) throw ownedErr;
+
+  // Get projects user is a crew member of
+  const { data: crewRows, error: crewErr } = await supabase
+    .from('project_crew')
+    .select('project_id')
+    .eq('user_id', userId);
+
+  if (crewErr) throw crewErr;
+
+  const crewProjectIds = (crewRows || []).map((r: any) => r.project_id);
+  let crewProjects: any[] = [];
+
+  if (crewProjectIds.length > 0) {
+    const { data: cp, error: cpErr } = await supabase
+      .from('projects')
+      .select('*')
+      .in('id', crewProjectIds)
+      .order('created_at', { ascending: false });
+
+    if (cpErr) throw cpErr;
+    crewProjects = cp || [];
+  }
+
+  // Merge, deduplicate by id
+  const all = [...(owned || []), ...crewProjects];
+  const seen = new Set<string>();
+  return all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
 }
 
 export async function updateProject(projectId: string, updates: Partial<DBProject>) {

@@ -1,4 +1,7 @@
-import { prisma } from './prisma';
+import { supabaseAdmin } from '@/lib/supabase/server';
+
+// Notifications are stored in the messages table using sender_id as user_id
+// and a JSON-encoded content field. The receiver_id is set to the same user.
 
 export async function createNotification(
   userId: string,
@@ -8,10 +11,11 @@ export async function createNotification(
   relatedId?: string
 ) {
   try {
-    // Store notification as message for now (Phase 4 enhancement)
-    const notification = await prisma.message.create({
-      data: {
-        user_id: userId,
+    const { data: notification, error } = await supabaseAdmin
+      .from('messages')
+      .insert({
+        sender_id: userId,
+        receiver_id: userId,
         content: JSON.stringify({
           type,
           title,
@@ -19,9 +23,11 @@ export async function createNotification(
           relatedId,
           timestamp: new Date(),
         }),
-      },
-    });
+      })
+      .select()
+      .single();
 
+    if (error) return { success: false, error: error.message };
     return { success: true, notification };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -30,13 +36,17 @@ export async function createNotification(
 
 export async function getUserNotifications(userId: string) {
   try {
-    const messages = await prisma.message.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: 'desc' },
-      take: 50,
-    });
+    const { data: messages, error } = await supabaseAdmin
+      .from('messages')
+      .select('*')
+      .eq('sender_id', userId)
+      .eq('receiver_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-    const notifications = messages.map((msg) => {
+    if (error) return { success: false, error: error.message };
+
+    const notifications = (messages ?? []).map((msg) => {
       try {
         return JSON.parse(msg.content);
       } catch {

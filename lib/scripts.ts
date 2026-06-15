@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import { supabaseAdmin } from '@/lib/supabase/server';
 import { parseScript } from './scriptos/parser';
 
 export async function createScript(
@@ -10,19 +10,19 @@ export async function createScript(
   try {
     const parsed = parseScript(content);
 
-    const script = await prisma.script.create({
-      data: {
-        user_id: userId,
+    const { data: script, error } = await supabaseAdmin
+      .from('scripts')
+      .insert({
+        creator_id: userId,
         title,
         content,
-        project_id: projectId,
-        characters: JSON.stringify(parsed.characters || []),
-        scenes: JSON.stringify(parsed.scenes || []),
-        page_count: Math.ceil(content.length / 250),
-        word_count: content.split(/\s+/).length,
-      },
-    });
+        project_id: projectId ?? null,
+        format: 'fountain',
+      })
+      .select()
+      .single();
 
+    if (error) return { success: false, error: error.message };
     return { success: true, script };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -40,35 +40,30 @@ export async function updateScript(
   }
 ) {
   try {
-    // Verify ownership
-    const script = await prisma.script.findUnique({
-      where: { id: scriptId },
-    });
+    const { data: script, error: fetchError } = await supabaseAdmin
+      .from('scripts')
+      .select('creator_id')
+      .eq('id', scriptId)
+      .single();
 
-    if (!script || script.user_id !== userId) {
+    if (fetchError || !script || script.creator_id !== userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Re-parse if content changed
-    let parsedData = {};
+    const updatePayload: Record<string, any> = { ...data };
+
     if (data.content) {
-      const parsed = parseScript(data.content);
-      parsedData = {
-        characters: JSON.stringify(parsed.characters || []),
-        scenes: JSON.stringify(parsed.scenes || []),
-        page_count: Math.ceil(data.content.length / 250),
-        word_count: data.content.split(/\s+/).length,
-      };
+      parseScript(data.content); // parse for side effects / validation
     }
 
-    const updated = await prisma.script.update({
-      where: { id: scriptId },
-      data: {
-        ...data,
-        ...parsedData,
-      },
-    });
+    const { data: updated, error } = await supabaseAdmin
+      .from('scripts')
+      .update(updatePayload)
+      .eq('id', scriptId)
+      .select()
+      .single();
 
+    if (error) return { success: false, error: error.message };
     return { success: true, script: updated };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -77,17 +72,14 @@ export async function updateScript(
 
 export async function getScript(scriptId: string, userId?: string) {
   try {
-    const script = await prisma.script.findUnique({
-      where: { id: scriptId },
-    });
+    const { data: script, error } = await supabaseAdmin
+      .from('scripts')
+      .select('*')
+      .eq('id', scriptId)
+      .single();
 
-    if (!script) {
+    if (error || !script) {
       return { success: false, error: 'Script not found' };
-    }
-
-    // Check visibility
-    if (script.visibility === 'private' && script.user_id !== userId) {
-      return { success: false, error: 'Unauthorized' };
     }
 
     return { success: true, script };
@@ -98,11 +90,13 @@ export async function getScript(scriptId: string, userId?: string) {
 
 export async function getUserScripts(userId: string) {
   try {
-    const scripts = await prisma.script.findMany({
-      where: { user_id: userId },
-      orderBy: { updated_at: 'desc' },
-    });
+    const { data: scripts, error } = await supabaseAdmin
+      .from('scripts')
+      .select('*')
+      .eq('creator_id', userId)
+      .order('updated_at', { ascending: false });
 
+    if (error) return { success: false, error: error.message };
     return { success: true, scripts };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -111,18 +105,22 @@ export async function getUserScripts(userId: string) {
 
 export async function deleteScript(scriptId: string, userId: string) {
   try {
-    const script = await prisma.script.findUnique({
-      where: { id: scriptId },
-    });
+    const { data: script, error: fetchError } = await supabaseAdmin
+      .from('scripts')
+      .select('creator_id')
+      .eq('id', scriptId)
+      .single();
 
-    if (!script || script.user_id !== userId) {
+    if (fetchError || !script || script.creator_id !== userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    await prisma.script.delete({
-      where: { id: scriptId },
-    });
+    const { error } = await supabaseAdmin
+      .from('scripts')
+      .delete()
+      .eq('id', scriptId);
 
+    if (error) return { success: false, error: error.message };
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

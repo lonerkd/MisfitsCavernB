@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signIn } from '@/lib/auth';
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
-    // Validation
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Missing email or password' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing email or password' }, { status: 400 });
     }
 
-    const result = await signIn(email, password);
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 401 });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    // Return user data (without password)
-    const { password_hash, ...userWithoutPassword } = result.user;
-    return NextResponse.json(userWithoutPassword, { status: 200 });
+    return NextResponse.json({ user: data.user, session: data.session }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
