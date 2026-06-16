@@ -10,6 +10,8 @@ import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
 import { getAllStudioAssets, getOrCreateBoardForProject, getStudioAssets, addStudioAsset, deleteStudioAsset } from '@/lib/supabase/studio';
+import { searchReferences, type ReferenceResult } from '@/lib/references/search';
+import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
@@ -452,6 +454,126 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
   );
 }
 
+// Pinterest/ShotDeck-style reference search → pin straight to the project moodboard.
+function ReferenceSearchModal({
+  isOpen, onClose, projectTitle, addedUrls, onAdd,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  projectTitle?: string;
+  addedUrls: Set<string>;
+  onAdd: (ref: ReferenceResult) => Promise<void>;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ReferenceResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  const runSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!query.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    try {
+      const res = await searchReferences(query, 1);
+      setResults(res.results);
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async (ref: ReferenceResult) => {
+    setPending(prev => new Set(prev).add(ref.id));
+    try { await onAdd(ref); } finally {
+      setPending(prev => { const n = new Set(prev); n.delete(ref.id); return n; });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 1500, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+          onClick={e => e.stopPropagation()}
+          style={{ width: '100%', maxWidth: 900, maxHeight: '85vh', background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Reference Search</div>
+              <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><XIcon size={18} /></button>
+          </div>
+
+          <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '0 12px' }}>
+              <Search size={15} color="#888" />
+              <input
+                autoFocus value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="e.g. neon noir, blade runner, golden hour rooftop…"
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 13, padding: '12px 0' }}
+              />
+            </div>
+            <button type="submit" disabled={loading || !query.trim()}
+              style={{ padding: '0 20px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, cursor: loading ? 'default' : 'pointer', opacity: loading || !query.trim() ? 0.5 : 1 }}>
+              {loading ? 'Searching…' : 'Search'}
+            </button>
+          </form>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            {!searched ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>
+                Search a mood, film, location, or look to find references.
+              </div>
+            ) : loading ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>Searching…</div>
+            ) : results.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>No references found. Try a different term.</div>
+            ) : (
+              <div style={{ columnCount: 3, columnGap: 12 }}>
+                {results.map(ref => {
+                  const added = addedUrls.has(ref.url);
+                  const isPending = pending.has(ref.id);
+                  return (
+                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: '#0a0a0a' }}>
+                      <img src={ref.thumbnail} alt={ref.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
+                      <div
+                        style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                      >
+                        <div style={{ fontSize: 9, color: '#ccc', fontFamily: 'var(--mono)' }}>{ref.creator ? `${ref.creator} · ` : ''}{ref.source}</div>
+                        <button
+                          disabled={added || isPending}
+                          onClick={() => handleAdd(ref)}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', background: added ? 'rgba(0,204,102,0.2)' : 'var(--accent)', color: added ? '#00cc66' : '#000', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: added || isPending ? 'default' : 'pointer' }}
+                        >
+                          {added ? 'Added ✓' : isPending ? 'Adding…' : <><PlusIcon size={12} /> Add to Board</>}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function StudioPage() {
   const { activeProject, setActiveProject, projects } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
@@ -464,6 +586,7 @@ export default function StudioPage() {
   const [boardId, setBoardId] = useState<string | null>(null);
   const [conceptImages, setConceptImages] = useState<{ id: string; url: string; title: string }[]>([]);
   const [conceptLoading, setConceptLoading] = useState(false);
+  const [showRefSearch, setShowRefSearch] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -527,6 +650,17 @@ export default function StudioPage() {
     try { await deleteStudioAsset(id); } catch { /* already optimistically removed */ }
   };
 
+  const addReferenceToBoard = async (ref: ReferenceResult) => {
+    if (!user || !boardId) return;
+    if (conceptImages.some(c => c.url === ref.url)) return;
+    try {
+      const created = await addStudioAsset({ board_id: boardId, user_id: user.id, title: ref.title, asset_url: ref.url, asset_type: 'image' });
+      setConceptImages(prev => [{ id: created.id, url: created.asset_url, title: created.title }, ...prev]);
+    } catch { /* keep board state unchanged on failure */ }
+  };
+
+  const addedUrls = useMemo(() => new Set(conceptImages.map(c => c.url)), [conceptImages]);
+
   const filtered = filter === 'all' ? assetsList : assetsList.filter(a => a.type === filter);
 
   return (
@@ -579,6 +713,13 @@ export default function StudioPage() {
 
       <IntakeModal isOpen={showIntake} onClose={() => setShowIntake(false)} />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
+      <ReferenceSearchModal
+        isOpen={showRefSearch}
+        onClose={() => setShowRefSearch(false)}
+        projectTitle={activeProject?.title}
+        addedUrls={addedUrls}
+        onAdd={addReferenceToBoard}
+      />
 
       {/* TABS BAR */}
       <div style={{
@@ -760,7 +901,17 @@ export default function StudioPage() {
                   <p style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 8 }}>Sign in to save references to this project's moodboard.</p>
                 )}
               </div>
-              <button className="link-btn" onClick={handleAddConceptRef} disabled={!user}>+ New Ref</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="link-btn"
+                  onClick={() => setShowRefSearch(true)}
+                  disabled={!user || !boardId}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Search size={12} /> Search References
+                </button>
+                <button className="link-btn" onClick={handleAddConceptRef} disabled={!user}>+ Add URL</button>
+              </div>
             </div>
             {conceptLoading ? (
               <div style={{ color: 'var(--fg-subtle)', fontSize: 12 }}>Loading moodboard…</div>
