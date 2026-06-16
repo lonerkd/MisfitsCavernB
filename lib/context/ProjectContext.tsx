@@ -67,24 +67,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProjectDetails = async (projectId: string) => {
-    const [projectRes, budgetRes, timelineRes, crewRes] = await Promise.all([
+    // Schema reality: crew lives in `project_crew` joined to `profiles`.
+    // There are no budget_items / timeline_items tables yet — leave those empty.
+    const [projectRes, crewRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
-      supabase.from('budget_items').select('*').eq('project_id', projectId),
-      supabase.from('timeline_items').select('*').eq('project_id', projectId),
-      supabase.from('project_crews').select('*, users(username, avatar)').eq('project_id', projectId)
+      supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId)
     ]);
 
     if (projectRes.data) {
       const p = projectRes.data;
       return {
         ...p,
-        budget_items: budgetRes.data || [],
-        timeline_items: timelineRes.data || [],
+        budget_items: [],
+        timeline_items: [],
         crew: (crewRes.data || []).map((c: any) => ({
           id: c.id,
-          name: c.users?.username || 'Unknown',
+          name: c.profiles?.username || 'Unknown',
           role: c.role,
-          avatar: c.users?.avatar,
+          avatar: c.profiles?.avatar_url,
           status: 'confirmed'
         }))
       };
@@ -134,18 +134,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             if (activeProject?.id === updated.id) {
               setActiveProject(prev => prev ? { ...prev, ...updated } : null);
             }
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
-          const item = (payload.new || payload.old) as any;
-          if (activeProject?.id === item.project_id) {
-            refreshProject(item.project_id);
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'timeline_items' }, (payload) => {
-          const item = (payload.new || payload.old) as any;
-          if (activeProject?.id === item.project_id) {
-            refreshProject(item.project_id);
           }
         })
         .subscribe();
