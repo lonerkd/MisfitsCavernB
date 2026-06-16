@@ -9,7 +9,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
-import { getAllStudioAssets } from '@/lib/supabase/studio';
+import { getAllStudioAssets, getOrCreateBoardForProject, getStudioAssets, addStudioAsset, deleteStudioAsset } from '@/lib/supabase/studio';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
@@ -351,15 +351,15 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ image, index }: { image: typeof CONCEPT_IMAGES[0]; index: number }) {
+function ConceptCard({ image, index, onDelete }: { image: { id: string; url: string; title: string }; index: number; onDelete?: (id: string) => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.05 }}
-      style={{ 
-        marginBottom: 16, 
-        breakInside: 'avoid', 
+      style={{
+        marginBottom: 16,
+        breakInside: 'avoid',
         position: 'relative',
         borderRadius: 8,
         overflow: 'hidden',
@@ -368,18 +368,28 @@ function ConceptCard({ image, index }: { image: typeof CONCEPT_IMAGES[0]; index:
       }}
     >
       <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.8 }} />
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))', 
-        padding: 16, 
-        display: 'flex', 
-        flexDirection: 'column', 
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))',
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'flex-end',
         opacity: 0,
         transition: 'opacity 0.3s'
       }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
-        <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1 }}>{image.title}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1 }}>{image.title}</span>
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(image.id); }}
+              style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
+            >
+              Remove
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -451,6 +461,9 @@ export default function StudioPage() {
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
+  const [boardId, setBoardId] = useState<string | null>(null);
+  const [conceptImages, setConceptImages] = useState<{ id: string; url: string; title: string }[]>([]);
+  const [conceptLoading, setConceptLoading] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -482,6 +495,37 @@ export default function StudioPage() {
       });
     });
   }, []);
+
+  useEffect(() => {
+    if (!user || !activeProject) { setBoardId(null); setConceptImages([]); return; }
+    setConceptLoading(true);
+    getOrCreateBoardForProject(user.id, activeProject.id)
+      .then(board => {
+        setBoardId(board.id);
+        return getStudioAssets(board.id);
+      })
+      .then(rows => {
+        setConceptImages((rows || []).map((r: any) => ({ id: r.id, url: r.asset_url, title: r.title || 'Untitled' })));
+      })
+      .catch(() => setConceptImages([]))
+      .finally(() => setConceptLoading(false));
+  }, [user, activeProject?.id]);
+
+  const handleAddConceptRef = async () => {
+    if (!user || !boardId) return;
+    const url = window.prompt('Image URL for this reference:');
+    if (!url) return;
+    const title = window.prompt('Label (optional):') || 'Reference';
+    try {
+      const created = await addStudioAsset({ board_id: boardId, user_id: user.id, title, asset_url: url, asset_type: 'image' });
+      setConceptImages(prev => [{ id: created.id, url: created.asset_url, title: created.title }, ...prev]);
+    } catch { /* ignore — keep board state unchanged */ }
+  };
+
+  const handleDeleteConceptRef = async (id: string) => {
+    setConceptImages(prev => prev.filter(c => c.id !== id));
+    try { await deleteStudioAsset(id); } catch { /* already optimistically removed */ }
+  };
 
   const filtered = filter === 'all' ? assetsList : assetsList.filter(a => a.type === filter);
 
@@ -712,12 +756,23 @@ export default function StudioPage() {
               <div>
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
+                {!user && (
+                  <p style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 8 }}>Sign in to save references to this project's moodboard.</p>
+                )}
               </div>
-              <button className="link-btn">+ New Ref</button>
+              <button className="link-btn" onClick={handleAddConceptRef} disabled={!user}>+ New Ref</button>
             </div>
-            <div style={{ columnCount: 3, columnGap: 16 }}>
-              {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
-            </div>
+            {conceptLoading ? (
+              <div style={{ color: 'var(--fg-subtle)', fontSize: 12 }}>Loading moodboard…</div>
+            ) : conceptImages.length === 0 ? (
+              <div style={{ padding: 60, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, color: 'var(--fg-subtle)', fontSize: 12 }}>
+                No references yet. {user ? 'Click "+ New Ref" to pin your first image.' : 'Sign in to start building this project\'s moodboard.'}
+              </div>
+            ) : (
+              <div style={{ columnCount: 3, columnGap: 16 }}>
+                {conceptImages.map((img, i) => <ConceptCard key={img.id} image={img} index={i} onDelete={handleDeleteConceptRef} />)}
+              </div>
+            )}
           </motion.div>
         )}
 

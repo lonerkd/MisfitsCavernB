@@ -41,3 +41,16 @@ export async function getAllStudioAssets(userId: string) {
   if (error) throw error;
   return data;
 }
+
+// Each project gets exactly one moodboard, keyed by storing the project id in the board's `name`.
+export async function getOrCreateBoardForProject(userId: string, projectId: string) {
+  const { data: existing, error: findErr } = await supabase
+    .from('studio_boards').select('*').eq('user_id', userId).eq('name', projectId).maybeSingle();
+  if (findErr) throw findErr;
+  if (existing) return existing;
+
+  const { data: created, error: createErr } = await supabase
+    .from('studio_boards').insert({ user_id: userId, name: projectId, description: 'Concept board' }).select().single();
+  if (createErr) throw createErr;
+  return created;
+}
