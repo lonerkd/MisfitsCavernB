@@ -71,15 +71,19 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
   const isExisting = !!script.id && UUID_RE.test(script.id);
 
   if (isExisting) {
+    // Only touch project_id when the caller explicitly provides it, otherwise an
+    // autosave (which omits it) would silently unlink the script from its project.
+    const patch: Record<string, any> = {
+      title: script.title || 'Untitled',
+      content: script.content ?? '',
+      last_edited_by: user.id,
+      updated_at: new Date().toISOString(),
+    };
+    if ('project_id' in script) patch.project_id = script.project_id ?? null;
+
     const { data, error } = await supabase
       .from('scripts')
-      .update({
-        title: script.title || 'Untitled',
-        content: script.content ?? '',
-        last_edited_by: user.id,
-        project_id: script.project_id ?? null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(patch)
       .eq('id', script.id)
       .select()
       .single();
@@ -107,6 +111,19 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
     return null;
   }
   return mapRow(data);
+}
+
+// Attach (or detach) a script to a project. Pass null to unlink.
+export async function linkScriptToProject(scriptId: string, projectId: string | null): Promise<boolean> {
+  const { error } = await supabase
+    .from('scripts')
+    .update({ project_id: projectId, updated_at: new Date().toISOString() })
+    .eq('id', scriptId);
+  if (error) {
+    console.error('Error linking script to project:', error);
+    return false;
+  }
+  return true;
 }
 
 // Delete script

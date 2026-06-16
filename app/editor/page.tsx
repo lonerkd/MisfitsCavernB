@@ -11,7 +11,7 @@ import {
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
+import { saveScript, getAllScripts, createNewScript, importScriptFromText, linkScriptToProject, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
@@ -313,14 +313,15 @@ export default function EditorPage() {
     init();
   }, [authLoading, user]);
 
-  // Auto-load script based on active project
+  // Auto-load script for the active project: prefer a real project_id link,
+  // and fall back to a title match (legacy scripts created before linking existed).
   useEffect(() => {
-    if (activeProject && scripts.length > 0) {
-      const projectScript = scripts.find(s => s.title.toLowerCase() === activeProject.title.toLowerCase());
-      if (projectScript && (!currentScript || currentScript.id !== projectScript.id)) {
-        handleLoadScript(projectScript);
-        toast(`Loaded script for ${activeProject.title}`, 'info');
-      }
+    if (!activeProject || scripts.length === 0) return;
+    const linked = scripts.find(s => s.project_id === activeProject.id);
+    const projectScript = linked || scripts.find(s => s.title.toLowerCase() === activeProject.title.toLowerCase());
+    if (projectScript && (!currentScript || currentScript.id !== projectScript.id)) {
+      handleLoadScript(projectScript);
+      toast(`Loaded script for ${activeProject.title}`, 'info');
     }
   }, [activeProject, scripts]);
 
@@ -414,6 +415,28 @@ export default function EditorPage() {
     }
     setSaving(false);
   }, [currentScript, content, toast, user]);
+
+  // Attach the current script to the active project (or detach if already linked).
+  const handleToggleProjectLink = useCallback(async () => {
+    if (!currentScript) return;
+    if (!user) {
+      toast('Sign in to link scripts to a project.', 'info');
+      return;
+    }
+    if (!activeProject) {
+      toast('Select a project first (in Studio).', 'info');
+      return;
+    }
+    const isLinked = currentScript.project_id === activeProject.id;
+    const next = isLinked ? null : activeProject.id;
+    const ok = await linkScriptToProject(currentScript.id, next);
+    if (ok) {
+      const updated = { ...currentScript, project_id: next ?? undefined };
+      setCurrentScript(updated);
+      setScripts(prev => prev.map(s => s.id === updated.id ? updated : s));
+      toast(isLinked ? 'Unlinked from project.' : `Linked to ${activeProject.title}.`, 'success');
+    }
+  }, [currentScript, activeProject, user, toast]);
 
   const handleExport = useCallback((format: string) => {
     if (!currentScript) return;
@@ -819,6 +842,29 @@ export default function EditorPage() {
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </span>
+
+              {user && currentScript && (() => {
+                const linked = !!activeProject && currentScript.project_id === activeProject.id;
+                const label = linked
+                  ? `● ${activeProject!.title}`
+                  : activeProject ? `+ Link to ${activeProject.title}` : 'No project';
+                return (
+                  <span
+                    onClick={handleToggleProjectLink}
+                    title={linked ? 'Click to unlink from project' : 'Click to link this script to the active project'}
+                    style={{
+                      fontSize: 10, fontFamily: 'var(--mono)', letterSpacing: 1,
+                      background: linked ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.05)',
+                      color: linked ? '#818cf8' : 'var(--fg-subtle)',
+                      padding: '4px 8px', borderRadius: 4,
+                      cursor: activeProject ? 'pointer' : 'default',
+                      border: linked ? '1px solid rgba(99,102,241,0.25)' : '1px solid transparent',
+                    }}
+                  >
+                    {label}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 
