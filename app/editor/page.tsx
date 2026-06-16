@@ -267,9 +267,29 @@ export default function EditorPage() {
     setActiveView('write');
   }, [toast]);
 
-  // Init — only load/create scripts once we know the user is authenticated
+  // Init — load cloud scripts when signed in; otherwise run an in-memory demo
+  // so first-time visitors can experience ScriptOS before creating an account.
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading) return;
+
+    // Guest / demo mode: no cloud, ephemeral script held in memory.
+    if (!user) {
+      if (!currentScript) {
+        const demo = {
+          id: 'demo',
+          title: 'Untitled Screenplay',
+          content: PLACEHOLDER,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setCurrentScript(demo);
+        setScripts([demo]);
+        setContent(PLACEHOLDER);
+        setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+      }
+      return;
+    }
+
     const init = async () => {
       const all = await getAllScripts();
       setScripts(all);
@@ -357,14 +377,14 @@ export default function EditorPage() {
   }, [findText, content]);
 
 
-  // Auto-save
+  // Auto-save (cloud) — only for signed-in users; guests stay in-memory.
   useEffect(() => {
-    if (!currentScript) return;
+    if (!currentScript || !user) return;
     const timer = setTimeout(async () => {
       await saveScript({ id: currentScript.id, title: currentScript.title, content });
     }, 2000);
     return () => clearTimeout(timer);
-  }, [content, currentScript]);
+  }, [content, currentScript, user]);
 
   // Sprint Timer Hook
   useEffect(() => {
@@ -381,6 +401,11 @@ export default function EditorPage() {
   // Actions
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
+    if (!user) {
+      toast('Sign in to save your work to the cloud.', 'info');
+      setTimeout(() => { window.location.href = '/auth'; }, 900);
+      return;
+    }
     setSaving(true);
     const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
     if (saved) {
@@ -388,7 +413,7 @@ export default function EditorPage() {
       toast('Screenplay saved to cloud.', 'success');
     }
     setSaving(false);
-  }, [currentScript, content, toast]);
+  }, [currentScript, content, toast, user]);
 
   const handleExport = useCallback((format: string) => {
     if (!currentScript) return;
@@ -706,35 +731,30 @@ export default function EditorPage() {
     return Array.from(locs.entries()).sort((a, b) => b[1] - a[1]);
   }, [scenesList]);
 
-  // Auth gate — the editor writes to the cloud, so require a session.
-  if (!authLoading && !user) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ textAlign: 'center', maxWidth: 420 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 4, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 18 }}>
-            ScriptOS
-          </div>
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '2.4rem', letterSpacing: 2, marginBottom: 16 }}>
-            Sign in to write
-          </h1>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--fg-muted)', marginBottom: 30 }}>
-            Your screenplays sync to the cloud and persist across devices.
-            Sign in to start a new script or open your existing work.
-          </p>
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Demo-mode banner for guests — full editor, sign in to keep your work */}
+      {!authLoading && !user && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
+          padding: '8px 16px', background: 'rgba(255,60,0,0.10)',
+          borderBottom: '1px solid rgba(255,60,0,0.25)',
+          fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, color: 'var(--fg)',
+          flexWrap: 'wrap', textAlign: 'center',
+        }}>
+          <span style={{ opacity: 0.85 }}>
+            <strong style={{ color: 'var(--accent)' }}>Demo mode</strong> — try everything. Sign in to save your screenplay to the cloud.
+          </span>
           <a href="/auth" style={{
-            display: 'inline-block', padding: '14px 32px', background: 'var(--accent)', color: '#060606',
-            fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
-            fontWeight: 600, borderRadius: 9999, textDecoration: 'none',
+            padding: '5px 14px', background: 'var(--accent)', color: '#060606',
+            borderRadius: 9999, textDecoration: 'none', fontWeight: 600,
+            letterSpacing: 2, textTransform: 'uppercase', fontSize: 9,
           }}>
             Sign In
           </a>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+      )}
 
       {/* TOOLBAR */}
       {!focusMode && (
