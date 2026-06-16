@@ -1,38 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-export interface User {
-  id: string;
-  email: string;
-  username: string;
-  avatar?: string;
-  bio?: string;
-  location?: string;
-  tier: string;
-}
-
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Load user from localStorage
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch (error) {
-        console.error('Failed to parse stored user:', error);
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-  };
-
-  return { user, loading, logout };
-}
+// Unified auth: re-export the real Supabase-backed auth context.
+// (Previously this read a `user` blob from localStorage that nothing wrote,
+// so it always reported logged-out. Kept as a thin re-export for compatibility.)
+export { useAuth, AuthProvider } from '@/lib/context/AuthContext';
+export type { Profile } from '@/lib/context/AuthContext';

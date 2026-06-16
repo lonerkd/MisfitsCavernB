@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import dynamic from 'next/dynamic';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
+import { AuthProvider } from '@/lib/context/AuthContext';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
@@ -27,11 +28,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <ToastProvider>
-          <ProjectProvider>
-            <CustomCursor />
-            <EcosystemTaskbar />
-            {children}
-          </ProjectProvider>
+          <AuthProvider>
+            <ProjectProvider>
+              <CustomCursor />
+              <EcosystemTaskbar />
+              {children}
+            </ProjectProvider>
+          </AuthProvider>
         </ToastProvider>
       </body>
     </html>

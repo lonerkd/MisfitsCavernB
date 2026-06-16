@@ -22,6 +22,7 @@ import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
+import { useAuth } from '@/lib/context/AuthContext';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -186,6 +187,7 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 
 export default function EditorPage() {
   const { activeProject } = useProject();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
@@ -265,8 +267,9 @@ export default function EditorPage() {
     setActiveView('write');
   }, [toast]);
 
-  // Init
+  // Init — only load/create scripts once we know the user is authenticated
   useEffect(() => {
+    if (authLoading || !user) return;
     const init = async () => {
       const all = await getAllScripts();
       setScripts(all);
@@ -288,7 +291,7 @@ export default function EditorPage() {
       }
     };
     init();
-  }, []);
+  }, [authLoading, user]);
 
   // Auto-load script based on active project
   useEffect(() => {
@@ -702,6 +705,33 @@ export default function EditorPage() {
     });
     return Array.from(locs.entries()).sort((a, b) => b[1] - a[1]);
   }, [scenesList]);
+
+  // Auth gate — the editor writes to the cloud, so require a session.
+  if (!authLoading && !user) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ textAlign: 'center', maxWidth: 420 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 4, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 18 }}>
+            ScriptOS
+          </div>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '2.4rem', letterSpacing: 2, marginBottom: 16 }}>
+            Sign in to write
+          </h1>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--fg-muted)', marginBottom: 30 }}>
+            Your screenplays sync to the cloud and persist across devices.
+            Sign in to start a new script or open your existing work.
+          </p>
+          <a href="/auth" style={{
+            display: 'inline-block', padding: '14px 32px', background: 'var(--accent)', color: '#060606',
+            fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
+            fontWeight: 600, borderRadius: 9999, textDecoration: 'none',
+          }}>
+            Sign In
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>

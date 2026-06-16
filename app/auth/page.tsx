@@ -117,6 +117,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState<Mode>('signin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmSent, setConfirmSent] = useState(false);
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
 
@@ -132,15 +133,23 @@ export default function AuthPage() {
 
     try {
       if (mode === 'signin') {
-        const { user } = await signIn(form.email, form.password);
-        if (user) localStorage.setItem('user', JSON.stringify(user));
+        // Supabase client persists the session; AuthProvider picks it up via
+        // onAuthStateChange and the whole app reflects the logged-in state.
+        await signIn(form.email, form.password);
+        toast('Welcome back.', 'success');
+        setTimeout(() => router.push('/'), 500);
       } else {
-        const { user } = await signUp(form.email, form.password, form.username);
-        if (user) localStorage.setItem('user', JSON.stringify(user));
+        const data = await signUp(form.email, form.password, form.username);
+        if (data?.session) {
+          // Email confirmation is disabled → already logged in.
+          toast('Account created.', 'success');
+          setTimeout(() => router.push('/'), 500);
+        } else {
+          // Email confirmation required → no session yet.
+          setConfirmSent(true);
+          toast('Check your email to confirm your account.', 'success');
+        }
       }
-
-      toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
-      setTimeout(() => router.push('/'), 600);
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
     } finally {
@@ -228,6 +237,36 @@ export default function AuthPage() {
           }}
         >
           {/* Mode toggle */}
+          {confirmSent ? (
+            <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
+              <div style={{
+                width: 56, height: 56, margin: '0 auto 22px', borderRadius: '50%',
+                background: 'rgba(255,60,0,0.12)', border: '1px solid rgba(255,60,0,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 24,
+              }}>✉️</div>
+              <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2, marginBottom: 12 }}>
+                Confirm your email
+              </h2>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.7, color: 'var(--fg-muted)', marginBottom: 28 }}>
+                We sent a confirmation link to<br />
+                <span style={{ color: 'var(--fg)' }}>{form.email}</span>.<br />
+                Click it, then sign in.
+              </p>
+              <button
+                onClick={() => { setConfirmSent(false); setMode('signin'); }}
+                style={{
+                  width: '100%', padding: '14px', background: 'var(--accent)', color: '#060606',
+                  border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
+                  textTransform: 'uppercase', fontWeight: 600, borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                }}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          ) : (
+          <>
           <div style={{
             display: 'flex',
             marginBottom: 32,
@@ -373,6 +412,8 @@ export default function AuthPage() {
             <svg width="16" height="12" viewBox="0 0 71 55" fill="#5865f2"><path d="M60.1 4.9A58.5 58.5 0 0045.6 0a40 40 0 00-1.8 3.7 54.1 54.1 0 00-16.2 0A38.5 38.5 0 0025.9 0 58.3 58.3 0 0011.3 5C1.6 19.6-1 33.8.3 47.9a58.8 58.8 0 0017.9 9 44 44 0 003.8-6.2 38.3 38.3 0 01-6-2.9l1.5-1.2a41.9 41.9 0 0036.2 0l1.5 1.2a38.3 38.3 0 01-6 2.9 44 44 0 003.8 6.2 58.6 58.6 0 0017.9-9C72 31.6 68.3 17.5 60.1 4.9zM23.7 39.4c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.8 7.2-6.4 7.2zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.9 7.2-6.4 7.2z"/></svg>
             CONTINUE WITH DISCORD
           </button>
+          </>
+          )}
 
           <p style={{
             marginTop: 20,
