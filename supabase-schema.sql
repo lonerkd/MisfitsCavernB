@@ -97,6 +97,23 @@ CREATE TABLE IF NOT EXISTS script_characters (
   UNIQUE(script_id, name)
 );
 
+-- Project Beats (Beat Board / Outline — real, replaces hardcoded placeholder
+-- beats; optionally anchored to a scene in one of the project's scripts so
+-- the outline and the screenplay stay connected).
+CREATE TABLE IF NOT EXISTS project_beats (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  script_id UUID REFERENCES scripts(id) ON DELETE SET NULL,
+  scene_number TEXT,
+  title TEXT NOT NULL,
+  content TEXT DEFAULT '',
+  color TEXT DEFAULT '#ff3c00',
+  order_index INT DEFAULT 0,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Jobs board
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -247,6 +264,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_feed(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_feed(created_at);
 CREATE INDEX IF NOT EXISTS idx_script_characters_script ON script_characters(script_id);
+CREATE INDEX IF NOT EXISTS idx_project_beats_project ON project_beats(project_id);
 
 -- Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -256,6 +274,7 @@ ALTER TABLE scripts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_collaborators ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_beats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -320,6 +339,15 @@ CREATE POLICY "Script members can manage characters" ON script_characters FOR AL
         UNION
         SELECT project_id FROM project_crew WHERE user_id = auth.uid()
       )
+  )
+);
+
+-- RLS Policies: Project Beats
+CREATE POLICY "Project members can manage beats" ON project_beats FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
   )
 );
 

@@ -18,7 +18,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useProject, type ScriptSummary } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
 import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2 } from 'lucide-react';
+import { createBeat, deleteBeat } from '@/lib/supabase/beats';
+import { getScript } from '@/lib/supabase/scripts';
+import { parseScript } from '@/lib/scriptos/parser';
 
 interface Asset {
   id: string;
@@ -593,7 +596,7 @@ function ConceptCard({ image, index, onDelete, onLinkToScene, scripts }: {
   );
 }
 
-function BeatCard({ beat, index }: { beat: any; index: number }) {
+function BeatCard({ beat, index, onDelete }: { beat: any; index: number; onDelete?: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -612,10 +615,13 @@ function BeatCard({ beat, index }: { beat: any; index: number }) {
       }}
     >
       <div>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: beat.color }}>{beat.title}</div>
+          {onDelete && <button onClick={onDelete} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', padding: 0 }}><Trash2 size={12} /></button>}
+        </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
       </div>
-      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>ID: {beat.id}</div>
+      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>{beat.scene_number ? `Scene: ${beat.scene_number}` : 'Unanchored'}</div>
     </motion.div>
   );
 }
@@ -784,6 +790,12 @@ export default function StudioPage() {
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
   const [conceptLoading, setConceptLoading] = useState(false);
   const [showRefSearch, setShowRefSearch] = useState(false);
+  const [showBeatModal, setShowBeatModal] = useState(false);
+  const [beatTitle, setBeatTitle] = useState('');
+  const [beatContent, setBeatContent] = useState('');
+  const [beatScene, setBeatScene] = useState('');
+  const [scriptScenes, setScriptScenes] = useState<string[]>([]);
+  const [savingBeat, setSavingBeat] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -892,6 +904,44 @@ export default function StudioPage() {
     setEditingBudget(false);
   };
 
+  const handleOpenBeatModal = async () => {
+    setBeatTitle('');
+    setBeatContent('');
+    setBeatScene('');
+    setScriptScenes([]);
+    setShowBeatModal(true);
+    const scriptId = activeProject?.scripts?.[0]?.id;
+    if (!scriptId) return;
+    try {
+      const script = await getScript(scriptId);
+      const { lines } = parseScript(script.content || '', script.format || 'screenplay');
+      setScriptScenes(lines.filter(l => l.type === 'slug').map(l => l.text.trim()));
+    } catch { /* no script content to pull scenes from — picker stays empty */ }
+  };
+
+  const handleCreateBeat = async () => {
+    if (!activeProject || !beatTitle.trim()) return;
+    setSavingBeat(true);
+    try {
+      await createBeat(activeProject.id, {
+        title: beatTitle.trim(),
+        content: beatContent.trim(),
+        scriptId: activeProject.scripts?.[0]?.id ?? null,
+        sceneNumber: beatScene || null,
+      });
+      await refreshProject(activeProject.id);
+      setShowBeatModal(false);
+    } finally {
+      setSavingBeat(false);
+    }
+  };
+
+  const handleDeleteBeat = async (id: string) => {
+    if (!activeProject) return;
+    await deleteBeat(id);
+    await refreshProject(activeProject.id);
+  };
+
   const addReferenceToBoard = async (ref: ReferenceResult) => {
     if (!user || !boardId || !activeProject) return;
     if (conceptImages.some(c => c.url === ref.url)) return;
@@ -976,6 +1026,39 @@ export default function StudioPage() {
         addedUrls={addedUrls}
         onAdd={addReferenceToBoard}
       />
+
+      <AnimatePresence>
+        {showBeatModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowBeatModal(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><BookOpen size={20} /> New Beat</h2>
+                <button onClick={() => setShowBeatModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Title</label>
+                  <input value={beatTitle} onChange={e => setBeatTitle(e.target.value)} placeholder="The Inciting Incident" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Content</label>
+                  <textarea value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Anchor to Scene {scriptScenes.length === 0 && '(no linked script scenes found)'}</label>
+                  <select value={beatScene} onChange={e => setBeatScene(e.target.value)} disabled={scriptScenes.length === 0} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}>
+                    <option value="" style={{ background: '#111' }}>None</option>
+                    {scriptScenes.map((s, i) => <option key={i} value={s} style={{ background: '#111' }}>{s}</option>)}
+                  </select>
+                </div>
+                <button onClick={handleCreateBeat} disabled={!beatTitle.trim() || savingBeat} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !beatTitle.trim() || savingBeat ? 0.5 : 1 }}>
+                  {savingBeat ? 'Saving…' : 'Add Beat'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* TABS BAR */}
       <div style={{
@@ -1203,27 +1286,25 @@ export default function StudioPage() {
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="link-btn">Export Schedule</button>
-                <button className="link-btn">+ New Beat</button>
+                {activeProject && <button className="link-btn" onClick={handleOpenBeatModal}>+ New Beat</button>}
               </div>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
                {/* Beat Board */}
                <div>
                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                    <BookOpen size={16} /> Beat Board / Outline
                  </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                   {(activeProject?.beats || [
-                     { id: 'B1', title: 'The Inciting Incident', content: 'Our protagonist finds the map in the attic. The adventure begins.', color: '#0099ff' },
-                     { id: 'B2', title: 'The First Threshold', content: 'Escaping the city through the underground tunnels. No turning back.', color: '#ffaa00' },
-                     { id: 'B3', title: 'The Midpoint', content: 'Discovery of the true nature of the artifact. High stakes.', color: '#ff3c00' },
-                     { id: 'B4', title: 'All Is Lost', content: 'The antagonist takes everything. Darkness falls.', color: '#a855f7' },
-                   ]).map((beat, i) => (
-                     <BeatCard key={beat.id} beat={beat} index={i} />
-                   ))}
-                 </div>
+                 {(activeProject?.beats || []).length === 0 ? (
+                   <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No beats yet — outline the story with "+ New Beat".</div>
+                 ) : (
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                     {(activeProject?.beats || []).map((beat, i) => (
+                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={() => handleDeleteBeat(beat.id)} />
+                     ))}
+                   </div>
+                 )}
                </div>
 
                {/* Staffing & Casting */}
