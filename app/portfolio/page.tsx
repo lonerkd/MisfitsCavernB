@@ -1,98 +1,61 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Play, X, ExternalLink, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, X, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
-import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia } from '@/lib/supabase/portfolio';
+import { logActivity } from '@/lib/supabase/activity';
 
-const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
-const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+type MediaType = 'youtube' | 'gdrive' | 'image';
 
-interface Video {
+interface MediaItem {
+  id: string;
+  title?: string;
+  media_type: MediaType;
+  url: string;
+  thumbnail_url?: string;
+}
+
+interface Project {
   id: string;
   title: string;
   category: string;
   role: string;
   description: string;
-  driveId: string;
   year: string;
-  featured?: boolean;
-  laurels?: string[];
-  stills?: string[];
+  media: MediaItem[];
 }
 
-const VIDEOS: Video[] = [
-  {
-    id: '10m',
-    title: '10 Million',
-    category: 'Music Video',
-    role: 'Director of Photography / Editor',
-    description: 'High-energy visual rhythm. Every cut lands on the beat, every frame tells a story of ambition.',
-    driveId: '10A2uzDxrEEgx-6tiS3M_qbhAq72dglZt',
-    year: '2026',
-    featured: true,
-    laurels: ['Official Selection - SXSW 2026', 'Best Editing - Music Video Awards'],
-    stills: [
-      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80'
-    ]
-  },
-  {
-    id: 'brief',
-    title: 'The Briefcase',
-    category: 'Short Film',
-    role: 'Writer / Cinematographer',
-    description: 'A crime thriller about two couriers, a mysterious briefcase, and a deal that has to go right.',
-    driveId: '1EM1AVe-50e6IMKL2m8teeakg6aSL3ctr',
-    year: '2024',
-    featured: true,
-  },
-  {
-    id: 'audio',
-    title: 'The Audio Blueprint',
-    category: 'Documentary Teaser',
-    role: 'Director / Writer / Editor',
-    description: 'The invisible art of sound design — why audio is the secret weapon behind iconic movie moments.',
-    driveId: '1hpS5fIfDRthOgzCD0jda5IcuHiverR8n',
-    year: '2025',
-  },
-  {
-    id: 'psa',
-    title: 'The Grand PSA',
-    category: 'Commercial / PSA',
-    role: 'Writer / Director / DP / Editor',
-    description: 'A love letter to The Grand Theatre. Wrote the script, directed the shoot, graded the final cut.',
-    driveId: '1Mmk_nM_WXCskja0NEIa6PlM51cul-z00',
-    year: '2025',
-  },
-  {
-    id: 'altitude',
-    title: 'The Pursuit of Altitude',
-    category: 'Documentary',
-    role: 'Cinematographer / Editor',
-    description: 'Chasing elevation, both literal and metaphorical. Visual storytelling through landscape.',
-    driveId: '1-bPAYnQROhT9awRMEBWuDCGSw04CtBgE',
-    year: '2024',
-  },
-  {
-    id: 'cook',
-    title: 'Live Cooking Demo',
-    category: 'Live Multi-Cam',
-    role: 'Camera Operator / Switcher',
-    description: 'Live multi-camera production. Real-time switching, no second takes, all precision.',
-    driveId: '13fmSRFNiGZl2b57-cd0qVnjcPx9IDUUZ',
-    year: '2025',
-  },
-];
+function getThumbnailUrl(media?: MediaItem): string | null {
+  if (!media) return null;
+  if (media.thumbnail_url) return media.thumbnail_url;
+  if (media.media_type === 'image') return media.url;
+  if (media.media_type === 'youtube') return `https://img.youtube.com/vi/${media.url}/hqdefault.jpg`;
+  if (media.media_type === 'gdrive') return `https://lh3.googleusercontent.com/d/${media.url}=w800`;
+  return null;
+}
 
-function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video) => void; span?: 'wide' | 'tall' }) {
+function getThumbnailFallback(media?: MediaItem): string | null {
+  if (media?.media_type === 'gdrive') return `https://drive.google.com/thumbnail?id=${media.url}&sz=w800`;
+  return null;
+}
+
+function getEmbedUrl(media?: MediaItem): string | null {
+  if (!media) return null;
+  if (media.media_type === 'youtube') return `https://www.youtube.com/embed/${media.url}`;
+  if (media.media_type === 'gdrive') return `https://drive.google.com/file/d/${media.url}/preview`;
+  return null;
+}
+
+function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: Project) => void; span?: 'wide' | 'tall' }) {
   const [hover, setHover] = useState(false);
+  const primary = project.media[0];
+  const thumb = getThumbnailUrl(primary);
 
   const aspectRatio = span === 'wide' ? '21/9' : span === 'tall' ? '9/14' : '16/9';
 
@@ -112,19 +75,26 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={() => onClick(video)}
+      onClick={() => onClick(project)}
     >
       {/* Thumbnail */}
-      <img
-        src={IMG(video.driveId)}
-        alt={video.title}
-        loading="lazy"
-        style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
-        onError={e => {
-          const t = e.target as HTMLImageElement;
-          if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = IMG_FB(video.driveId); }
-        }}
-      />
+      {thumb ? (
+        <img
+          src={thumb}
+          alt={project.title}
+          loading="lazy"
+          style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
+          onError={e => {
+            const t = e.target as HTMLImageElement;
+            const fb = getThumbnailFallback(primary);
+            if (!t.dataset.fb && fb) { t.dataset.fb = '1'; t.src = fb; }
+          }}
+        />
+      ) : (
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase' }}>
+          No Media
+        </div>
+      )}
 
       {/* Gradient */}
       <div style={{
@@ -150,7 +120,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         background: 'rgba(0,0,0,0.6)',
         backdropFilter: 'blur(6px)',
       }}>
-        {video.category}
+        {project.category}
       </div>
 
       {/* Play button */}
@@ -196,12 +166,12 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           lineHeight: 1,
           marginBottom: 4,
         }}>
-          {video.title}
+          {project.title}
         </h3>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
-          {video.role} · {video.year}
+          {project.role} · {project.year}
         </div>
-        {hover && (
+        {hover && project.description && (
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -215,7 +185,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
               maxWidth: 380,
             }}
           >
-            {video.description}
+            {project.description}
           </motion.p>
         )}
       </motion.div>
@@ -223,8 +193,18 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
   );
 }
 
-function ProjectBible({ project, onClose }: { project: Video | null; onClose: () => void }) {
+function ProjectBible({ project, onClose }: { project: Project | null; onClose: () => void }) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [project?.id]);
+
   if (!project) return null;
+
+  const media = project.media[selectedIndex];
+  const embedUrl = getEmbedUrl(media);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -252,40 +232,38 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             <div style={{ display: 'flex', gap: 24, marginBottom: 60 }}>
                <div>
                  <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Role</div>
-                 <div style={{ fontSize: 14, color: '#fff' }}>{project.role}</div>
+                 <div style={{ fontSize: 14, color: '#fff' }}>{project.role || '—'}</div>
                </div>
                <div>
                  <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Category</div>
                  <div style={{ fontSize: 14, color: '#fff' }}>{project.category}</div>
                </div>
-               {project.laurels && project.laurels.length > 0 && (
-                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
-                   {project.laurels.map((laurel, i) => (
-                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
-                       <div style={{ fontSize: 24, fontFamily: 'var(--serif)', color: 'var(--accent)' }}>❦</div>
-                       <div style={{ fontSize: 8, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', maxWidth: 120 }}>{laurel}</div>
-                     </div>
-                   ))}
-                 </div>
-               )}
             </div>
           </motion.div>
 
           {/* Media Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
             <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
-              <iframe
-                src={`https://drive.google.com/file/d/${project.driveId}/preview`}
-                width="100%" height="100%"
-                allow="autoplay;encrypted-media" allowFullScreen
-                style={{ border: 'none', display: 'block' }}
-              />
+              {media?.media_type === 'image' ? (
+                <img src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  width="100%" height="100%"
+                  allow="autoplay;encrypted-media" allowFullScreen
+                  style={{ border: 'none', display: 'block' }}
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' }}>
+                  No Media Attached
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
                 <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Executive Summary</h3>
                 <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                  {project.description || "In the heart of the Cavern, this project represents a shift in visual storytelling. A blend of atmospheric tension and technical precision."}
+                  {project.description || 'No description added yet.'}
                 </p>
               </div>
               <Link href={`/editor?p=${project.id}`} style={{ padding: 20, background: 'var(--accent)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', textAlign: 'center', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
@@ -294,64 +272,240 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             </div>
           </div>
 
-          {/* Stills Gallery */}
-          {project.stills && project.stills.length > 0 && (
+          {/* Additional Media */}
+          {project.media.length > 1 && (
             <div style={{ marginBottom: 80 }}>
-              <SectionLabel text="Cinematic Stills" />
-              <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 20, scrollSnapType: 'x mandatory' }}>
-                {project.stills.map((still, i) => (
-                  <div key={i} style={{ minWidth: '60%', aspectRatio: '21/9', background: '#111', borderRadius: 8, overflow: 'hidden', scrollSnapAlign: 'start', flexShrink: 0 }}>
-                    <img src={still} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ))}
+              <SectionLabel text="Additional Media" />
+              <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 20 }}>
+                {project.media.map((m, i) => {
+                  const thumb = getThumbnailUrl(m);
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => setSelectedIndex(i)}
+                      style={{
+                        minWidth: 220, aspectRatio: '16/9', borderRadius: 8, overflow: 'hidden',
+                        background: '#111', cursor: 'pointer', padding: 0, flexShrink: 0,
+                        border: i === selectedIndex ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      {thumb ? (
+                        <img src={thumb} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 9, fontFamily: 'var(--mono)' }}>
+                          {m.title || m.media_type}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
-
-          {/* Mood & Aesthetic */}
-          <div>
-            <SectionLabel text="Visual Architecture" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{ aspectRatio: '1/1', background: 'rgba(255,255,255,0.03)', borderRadius: 4, overflow: 'hidden' }}>
-                  <img src={`https://images.unsplash.com/photo-${1500000000000 + i * 1000000}?auto=format&fit=crop&q=60`} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </motion.div>
     </AnimatePresence>
   );
 }
 
+function AddProjectModal({ isOpen, onClose, userId, onCreated }: {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string | null;
+  onCreated: (project: Project) => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [role, setRole] = useState('');
+  const [year, setYear] = useState('');
+  const [description, setDescription] = useState('');
+  const [mediaType, setMediaType] = useState<MediaType>('youtube');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => {
+    setTitle(''); setCategory(''); setRole(''); setYear(''); setDescription('');
+    setMediaType('youtube'); setMediaUrl(''); setError(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!userId || !title.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const created = await createPortfolioProject({
+        user_id: userId,
+        title: title.trim(),
+        description: description.trim() || null,
+        category: category.trim() || null,
+        role: role.trim() || null,
+        year: year ? parseInt(year, 10) : null,
+      });
+
+      let media: MediaItem[] = [];
+      if (mediaUrl.trim()) {
+        const createdMedia = await addPortfolioMedia({
+          project_id: created.id,
+          title: title.trim(),
+          media_type: mediaType,
+          url: mediaUrl.trim(),
+        });
+        media = [createdMedia as MediaItem];
+      }
+
+      await logActivity(userId, 'created_portfolio_project', 'portfolio_project', created.id, { title: title.trim() });
+
+      onCreated({
+        id: created.id,
+        title: created.title,
+        category: created.category || 'Project',
+        role: created.role || '',
+        description: created.description || '',
+        year: created.year?.toString() || '',
+        media,
+      });
+      reset();
+      onClose();
+    } catch {
+      setError('Could not save project — please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => { reset(); onClose(); }}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={e => e.stopPropagation()}
+            style={{ width: 520, maxHeight: '85vh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
+          >
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Add Project</h2>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Add a finished project to your public portfolio.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
+                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Project title"
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
+                  <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Short Film, Music Video…"
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                </div>
+                <div style={{ width: 100 }}>
+                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Year</label>
+                  <input value={year} onChange={e => setYear(e.target.value)} placeholder="2026" inputMode="numeric"
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Role</label>
+                <input value={role} onChange={e => setRole(e.target.value)} placeholder="Director / Editor / DP…"
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Description</label>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="What's this project about?"
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12, fontFamily: 'inherit', resize: 'vertical' }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ width: 140 }}>
+                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Media Type</label>
+                  <select value={mediaType} onChange={e => setMediaType(e.target.value as MediaType)}
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
+                    <option value="youtube">YouTube</option>
+                    <option value="gdrive">Google Drive</option>
+                    <option value="image">Image</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>
+                    {mediaType === 'youtube' ? 'YouTube Video ID' : mediaType === 'gdrive' ? 'Google Drive File ID' : 'Image URL'}
+                  </label>
+                  <input value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder={mediaType === 'image' ? 'https://…' : 'e.g. dQw4w9WgXcQ'}
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                </div>
+              </div>
+
+              {error && <div style={{ fontSize: 11, color: '#ff5555' }}>{error}</div>}
+
+              <button
+                onClick={handleSubmit}
+                disabled={!title.trim() || saving}
+                style={{
+                  marginTop: 12, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8,
+                  fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2,
+                  cursor: !title.trim() || saving ? 'default' : 'pointer',
+                  opacity: !title.trim() || saving ? 0.5 : 1,
+                }}
+              >
+                {saving ? 'Saving…' : 'Add to Portfolio'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function PortfolioPage() {
-  const [activeVideo, setActiveVideo] = useState<Video | null>(null);
-  const [videosList, setVideosList] = useState<Video[]>(VIDEOS);
+  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [projectsList, setProjectsList] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    getPortfolioData().then(data => {
-      if (data && data.length > 0) {
-        const fetchedVideos: Video[] = data.map((p: any) => {
-          const media = p.media?.[0];
-          return {
-            id: p.id,
-            title: p.title,
-            category: p.category || 'Video',
-            role: p.role || 'Creator',
-            description: p.description || '',
-            driveId: media?.url?.split('id=')?.[1] || media?.url || '',
-            year: p.year?.toString() || '2026',
-            featured: true
-          };
-        });
-        setVideosList(fetchedVideos);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    }).catch(console.error);
+      setUserId(user.id);
+      getPortfolioProjects(user.id).then(data => {
+        const mapped: Project[] = (data || []).map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          category: p.category || 'Project',
+          role: p.role || '',
+          description: p.description || '',
+          year: p.year?.toString() || '',
+          media: (p.portfolio_media || []) as MediaItem[],
+        }));
+        setProjectsList(mapped);
+        setLoading(false);
+      }).catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+    });
   }, []);
 
-  const featured = videosList.filter(v => v.featured);
-  const rest = videosList.filter(v => !v.featured);
+  const handleCreated = (project: Project) => {
+    setProjectsList(prev => [project, ...prev]);
+  };
+
+  const featured = projectsList.slice(0, 2);
+  const rest = projectsList.slice(2);
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
@@ -378,9 +532,24 @@ export default function PortfolioPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
-          {videosList.length} Projects
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
+            {projectsList.length} Projects
+          </span>
+          {userId && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.3)', color: 'var(--accent)', borderRadius: 6,
+                padding: '6px 12px', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                fontFamily: 'var(--mono)', cursor: 'pointer',
+              }}
+            >
+              <Plus size={12} /> Add Project
+            </button>
+          )}
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -400,24 +569,36 @@ export default function PortfolioPage() {
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 20px 80px' }}>
         <AnimatedSection>
-          <SectionLabel text={`The Work — ${videosList.length} Projects`} />
+          <SectionLabel text={`The Work — ${projectsList.length} Projects`} />
         </AnimatedSection>
 
-        {/* Featured — 2 col */}
-        <AnimatedSection>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
-            {featured.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
+        {loading ? (
+          <div style={{ padding: '80px 0', textAlign: 'center', color: '#444', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2 }}>
+            LOADING PORTFOLIO…
           </div>
-        </AnimatedSection>
-
-        {/* Rest — 3 col */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-          {rest.map((v, i) => (
-            <AnimatedSection key={v.id} delay={i * 0.08}>
-              <VideoCard video={v} onClick={setActiveVideo} />
+        ) : projectsList.length === 0 ? (
+          <div style={{ padding: '80px 0', textAlign: 'center', color: '#444', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2 }}>
+            NO PROJECTS YET — ADD YOUR FIRST PROJECT TO BUILD YOUR PORTFOLIO
+          </div>
+        ) : (
+          <>
+            {/* Featured — 2 col */}
+            <AnimatedSection>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
+                {featured.map(p => <VideoCard key={p.id} project={p} onClick={setActiveProject} />)}
+              </div>
             </AnimatedSection>
-          ))}
-        </div>
+
+            {/* Rest — 3 col */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+              {rest.map((p, i) => (
+                <AnimatedSection key={p.id} delay={i * 0.08}>
+                  <VideoCard project={p} onClick={setActiveProject} />
+                </AnimatedSection>
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* Marquee */}
@@ -445,7 +626,8 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
+      <ProjectBible project={activeProject} onClose={() => setActiveProject(null)} />
+      <AddProjectModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} userId={userId} onCreated={handleCreated} />
     </main>
   );
 }

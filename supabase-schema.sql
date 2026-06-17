@@ -316,6 +316,9 @@ CREATE POLICY "Asset owner can comment" ON asset_comments FOR INSERT WITH CHECK 
 CREATE POLICY "Portfolio publicly readable" ON portfolio_projects FOR SELECT USING (true);
 CREATE POLICY "Portfolio owner only write" ON portfolio_projects FOR ALL USING (user_id = auth.uid());
 CREATE POLICY "Portfolio media readable" ON portfolio_media FOR SELECT USING (true);
+CREATE POLICY "Portfolio owner can manage media" ON portfolio_media FOR ALL USING (
+  project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
 
 -- RLS Policies: Project Tasks
 CREATE POLICY "Project task members can view" ON project_tasks FOR SELECT USING (

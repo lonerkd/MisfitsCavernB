@@ -20,33 +20,6 @@ interface Message {
   mine?: boolean;
 }
 
-const SEED_MESSAGES: Message[] = [
-  {
-    id: '1',
-    user: 'Peter',
-    text: 'Working on the final edit for 10 Million. The timing is sitting perfectly.',
-    timestamp: new Date('2026-04-27T01:30:00'),
-  },
-  {
-    id: '2',
-    user: 'Creative',
-    text: "Can't wait to see it. The rough cut was incredible — every cut felt intentional.",
-    timestamp: new Date('2026-04-27T01:32:00'),
-  },
-  {
-    id: '3',
-    user: 'Peter',
-    text: 'Starting on the Femme Fatale pitch deck next. Need to get it submission-ready.',
-    timestamp: new Date('2026-04-27T01:35:00'),
-  },
-];
-
-const CREW = [
-  { name: 'Peter Olowude', role: 'Director / DP', online: true, activity: 'Writing ScriptOS' },
-  { name: 'Creative Director', role: 'Art Direction', online: true, activity: 'Building Moodboard' },
-  { name: 'Producer', role: 'Production', online: false, activity: 'Idle' },
-];
-
 function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
   return (
@@ -100,11 +73,11 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
 export default function LoungePage() {
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
-  const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProfile, setCurrentProfile] = useState<{ username: string; role?: string } | null>(null);
-  const [crewList, setCrewList] = useState<any[]>(CREW);
+  const [crewList, setCrewList] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -389,6 +362,9 @@ export default function LoungePage() {
             Crew
           </div>
 
+          {crewList.length === 0 && (
+            <div style={{ color: '#444', fontFamily: 'var(--mono)', fontSize: 9, marginTop: 8 }}>NO CREW YET</div>
+          )}
           {crewList.map((member, i) => (
             <motion.div
               key={i}
