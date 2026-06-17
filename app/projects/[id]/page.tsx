@@ -10,102 +10,21 @@ import {
   Music, Plus, ExternalLink, Circle,
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
+import { useProject, type Project as DBProject } from '@/lib/context/ProjectContext';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── Production phases — mirrors the `projects.status` check constraint ──────
 
-type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
-
-interface Project {
-  id: string;
-  title: string;
-  type: string;
-  phase: Phase;
-  progress: number;
-  deadline: string;
-  team: { name: string; role: string; online?: boolean }[];
-  description: string;
-  color: string;
-  scriptPages?: number;
-  scriptDraft?: number;
-  assetCount?: number;
-  assetGB?: number;
-  publishedWork?: number;
-}
-
-// ─── Project data (mirrors /projects/page.tsx — in production this would come from Supabase) ──
-
-const PROJECTS: Project[] = [
-  {
-    id: '1',
-    title: 'Femme Fatale',
-    type: 'Limited Series',
-    phase: 'pre-production',
-    progress: 85,
-    deadline: '2026-06-30',
-    description: 'Political noir limited series. 133-page screenplay submitted to A24 and Proximity Media.',
-    color: '#ff3c00',
-    scriptPages: 133,
-    scriptDraft: 9,
-    assetCount: 24,
-    assetGB: 4.8,
-    publishedWork: 1,
-    team: [
-      { name: 'Peter Olowude', role: 'Director/Writer', online: true },
-      { name: 'Creative Team', role: 'Development', online: true },
-      { name: 'Production', role: 'Logistics' },
-    ],
-  },
-  {
-    id: '2',
-    title: '10 Million',
-    type: 'Music Video',
-    phase: 'post-production',
-    progress: 95,
-    deadline: '2026-05-15',
-    description: 'High-energy visual rhythm. Final color grade and mix in progress.',
-    color: '#f59e0b',
-    scriptPages: 12,
-    scriptDraft: 3,
-    assetCount: 18,
-    assetGB: 11.3,
-    publishedWork: 0,
-    team: [
-      { name: 'Peter Olowude', role: 'Director', online: true },
-      { name: 'Editor', role: 'Post-Production' },
-    ],
-  },
-  {
-    id: '3',
-    title: 'The Briefcase',
-    type: 'Short Film',
-    phase: 'delivery',
-    progress: 100,
-    deadline: '2024-12-01',
-    description: 'Crime thriller about two couriers and a deal that has to go right.',
-    color: '#10b981',
-    scriptPages: 18,
-    scriptDraft: 5,
-    assetCount: 31,
-    assetGB: 22.6,
-    publishedWork: 3,
-    team: [
-      { name: 'Peter Olowude', role: 'Director/Writer' },
-      { name: 'Cast & Crew', role: 'Full Production' },
-    ],
-  },
-];
-
-// ─── Production phases ───────────────────────────────────────────────────────
+type Phase = 'concept' | 'pre-production' | 'in-production' | 'post-production' | 'completed';
 
 const PHASES: { id: Phase; label: string; short: string }[] = [
-  { id: 'development',     label: 'Development',     short: 'DEV'  },
-  { id: 'pre-production',  label: 'Pre-Production',  short: 'PRE'  },
-  { id: 'production',      label: 'Production',      short: 'PROD' },
-  { id: 'post-production', label: 'Post-Production', short: 'POST' },
-  { id: 'delivery',        label: 'Delivery',        short: 'DEL'  },
+  { id: 'concept',          label: 'Concept',          short: 'DEV'  },
+  { id: 'pre-production',   label: 'Pre-Production',   short: 'PRE'  },
+  { id: 'in-production',    label: 'Production',       short: 'PROD' },
+  { id: 'post-production',  label: 'Post-Production',  short: 'POST' },
+  { id: 'completed',        label: 'Completed',        short: 'DONE' },
 ];
 
-const phaseIndex = (p: Phase) => PHASES.findIndex(ph => ph.id === p);
+const phaseIndex = (p?: string) => Math.max(0, PHASES.findIndex(ph => ph.id === p));
 
 // ─── Department window ───────────────────────────────────────────────────────
 
@@ -206,54 +125,40 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
   );
 }
 
-// ─── Script preview ──────────────────────────────────────────────────────────
+// ─── Script preview — real scripts attached to this project ──────────────────
 
-function ScriptPreview({ pages, draft }: { pages: number; draft: number }) {
-  const lines = [
-    { type: 'slug',     text: 'INT. MINISTER\'S OFFICE — NIGHT' },
-    { type: 'action',   text: 'Power hasn\'t changed hands here in thirty years. The furniture knows it.' },
-    { type: 'char',     text: 'SENATOR VALE' },
-    { type: 'dialogue', text: 'This isn\'t about loyalty. This is about survival.' },
-    { type: 'action',   text: 'She turns away. Looks out at the city.' },
-    { type: 'char',     text: 'MARA' },
-    { type: 'dialogue', text: 'Those stopped being different things for me a long time ago.' },
-  ];
+function ScriptPreview({ scripts }: { scripts: DBProject['scripts'] }) {
+  if (!scripts || scripts.length === 0) {
+    return <div style={{ padding: '14px 16px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', fontStyle: 'italic' }}>No scripts yet.</div>;
+  }
   return (
-    <div style={{ padding: '14px 16px', fontFamily: 'Courier New, monospace', fontSize: 10, lineHeight: 1.75 }}>
-      {lines.map((l, i) => (
-        <div key={i} style={{
-          color: l.type === 'slug' ? 'rgba(240,236,228,0.9)' : l.type === 'char' ? '#ffaa00' : 'rgba(240,236,228,0.5)',
-          fontWeight: l.type === 'slug' || l.type === 'char' ? 700 : 400,
-          textTransform: l.type === 'slug' || l.type === 'char' ? 'uppercase' : 'none',
-          paddingLeft: l.type === 'dialogue' ? '28%' : l.type === 'char' ? '38%' : 0,
-          marginTop: (l.type === 'slug' && i > 0) ? 12 : 0,
-        }}>{l.text}</div>
+    <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {scripts.slice(0, 5).map(s => (
+        <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'rgba(240,236,228,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#ffaa00', textTransform: 'uppercase', letterSpacing: 1, flexShrink: 0 }}>{s.status}</span>
+        </div>
       ))}
     </div>
   );
 }
 
-// ─── Asset preview ───────────────────────────────────────────────────────────
+// ─── Asset preview — real references on the project's moodboard ──────────────
 
-function AssetPreview({ count, gb }: { count: number; gb: number }) {
-  const items = [
-    { name: 'Draft 9.fdx',         type: 'document', color: '#f59e0b' },
-    { name: 'Final Cut v3.mov',     type: 'video',    color: '#ff3c00' },
-    { name: 'Score_Final.wav',      type: 'audio',    color: '#10b981' },
-    { name: 'Poster_Concept.png',   type: 'image',    color: '#6366f1' },
-    { name: 'Grade_LUT.cube',       type: 'document', color: '#8b5cf6' },
-    { name: 'BRoll_EXT_NIGHT.mp4',  type: 'video',    color: '#ff3c00' },
-  ];
+function AssetPreview({ references }: { references: DBProject['references'] }) {
+  if (!references || references.length === 0) {
+    return <div style={{ padding: '14px 16px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', fontStyle: 'italic' }}>No references yet.</div>;
+  }
   return (
     <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-      {items.map((item, i) => (
-        <div key={i} style={{
+      {references.slice(0, 6).map(item => (
+        <div key={item.id} style={{
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: 8, padding: '8px 10px',
           display: 'flex', alignItems: 'center', gap: 7,
         }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(240,236,228,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+          <img src={item.url} alt={item.title} style={{ width: 14, height: 14, objectFit: 'cover', borderRadius: 3, flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(240,236,228,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
         </div>
       ))}
     </div>
@@ -262,11 +167,14 @@ function AssetPreview({ count, gb }: { count: number; gb: number }) {
 
 // ─── Crew preview ─────────────────────────────────────────────────────────────
 
-function CrewPreview({ team }: { team: Project['team'] }) {
+function CrewPreview({ team }: { team: DBProject['crew'] }) {
+  if (!team || team.length === 0) {
+    return <div style={{ padding: '14px 16px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', fontStyle: 'italic' }}>No crew assigned yet.</div>;
+  }
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {team.map((member, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
             background: `hsl(${(i * 97) % 360}, 40%, 30%)`,
@@ -280,9 +188,6 @@ function CrewPreview({ team }: { team: Project['team'] }) {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
           </div>
-          {member.online && (
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
-          )}
         </div>
       ))}
     </div>
@@ -291,21 +196,29 @@ function CrewPreview({ team }: { team: Project['team'] }) {
 
 // ─── Timeline preview ────────────────────────────────────────────────────────
 
-function TimelinePreview({ deadline, progress, phase }: { deadline: string; progress: number; phase: Phase }) {
-  const daysLeft = Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000));
+function TimelinePreview({ endDate, phase }: { endDate?: string; phase?: string }) {
+  const daysLeft = endDate ? Math.max(0, Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000)) : null;
+  const idx = phaseIndex(phase);
+  const progress = (idx / (PHASES.length - 1)) * 100;
   const milestones = [
-    { label: 'Script Lock',     done: true  },
-    { label: 'Cast Confirmed',  done: phaseIndex(phase) >= 1 },
-    { label: 'Principal Shoot', done: phaseIndex(phase) >= 2 },
-    { label: 'Picture Lock',    done: phaseIndex(phase) >= 3 },
-    { label: 'Delivery',        done: phaseIndex(phase) >= 4 },
+    { label: 'Concept Locked',  done: idx >= 0 },
+    { label: 'Pre-Production',  done: idx >= 1 },
+    { label: 'Production',      done: idx >= 2 },
+    { label: 'Post-Production', done: idx >= 3 },
+    { label: 'Completed',       done: idx >= 4 },
   ];
 
   return (
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#ff3c00' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
+        {daysLeft !== null ? (
+          <>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#ff3c00' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to end date</span>
+          </>
+        ) : (
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', fontStyle: 'italic' }}>No end date set.</span>
+        )}
       </div>
 
       {/* Progress rail */}
@@ -334,52 +247,32 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
   );
 }
 
-// ─── Portfolio preview ───────────────────────────────────────────────────────
-
-function PortfolioPreview({ published }: { published: number }) {
-  return (
-    <div style={{ padding: '10px 12px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 6, height: 100 }}>
-        <div style={{
-          borderRadius: 8, overflow: 'hidden', position: 'relative',
-          background: 'linear-gradient(135deg, #1a0f00, #0d0d14)',
-        }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 60%, rgba(245,158,11,0.18) 0%, transparent 60%)' }} />
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', bottom: 6, right: 8, fontFamily: 'var(--mono)', fontSize: 6.5, color: 'rgba(240,236,228,0.3)', letterSpacing: 2 }}>2.35:1</div>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[0, 1].map(i => (
-            <div key={i} style={{ flex: 1, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {published > i ? (
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
-              ) : (
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)' }}>DRAFT</div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ProjectHubPage() {
   const params = useParams();
   const router = useRouter();
-  const project = PROJECTS.find(p => p.id === params.id);
+  const { activeProject, setActiveProject, projects, refreshProject, loading } = useProject();
+  const id = params.id as string;
 
+  // The list only carries summary rows — make sure the full aggregate
+  // (crew/scripts/references) is loaded for whichever project the URL names.
   useEffect(() => {
-    if (!project) router.push('/projects');
-  }, [project, router]);
+    if (loading) return;
+    const found = projects.find(p => p.id === id);
+    if (!found) { router.push('/projects'); return; }
+    if (activeProject?.id !== id) {
+      setActiveProject(found);
+      refreshProject(id);
+    }
+  }, [id, projects, loading, activeProject?.id]);
+
+  const project = activeProject?.id === id ? activeProject : null;
 
   if (!project) return null;
 
-  const currentPhaseIdx = phaseIndex(project.phase);
-  const onlineCount = project.team.filter(m => m.online).length;
+  const color = project.accent_color || '#ff3c00';
+  const currentPhaseIdx = phaseIndex(project.status);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -388,7 +281,7 @@ export default function ProjectHubPage() {
       {/* Ambient project glow */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '50vh', pointerEvents: 'none', zIndex: 0,
-        background: `radial-gradient(ellipse at 50% -20%, ${project.color}0a 0%, transparent 65%)`,
+        background: `radial-gradient(ellipse at 50% -20%, ${color}0a 0%, transparent 65%)`,
       }} />
 
       {/* ── Header ── */}
@@ -414,7 +307,7 @@ export default function ProjectHubPage() {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>{project.title}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.color, opacity: 0.8 }}>{project.type}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: color, opacity: 0.8 }}>{project.status}</span>
           </div>
         </div>
 
@@ -429,9 +322,9 @@ export default function ProjectHubPage() {
                 <div style={{
                   padding: '5px 12px', borderRadius: 9999,
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5, textTransform: 'uppercase',
-                  background: isActive ? `${project.color}18` : 'transparent',
-                  color: isActive ? project.color : isDone ? 'rgba(240,236,228,0.4)' : 'rgba(240,236,228,0.2)',
-                  border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
+                  background: isActive ? `${color}18` : 'transparent',
+                  color: isActive ? color : isDone ? 'rgba(240,236,228,0.4)' : 'rgba(240,236,228,0.2)',
+                  border: isActive ? `1px solid ${color}35` : '1px solid transparent',
                   transition: 'all 0.3s', whiteSpace: 'nowrap',
                 }}>
                   {isDone && <span style={{ marginRight: 4 }}>✓</span>}
@@ -440,7 +333,7 @@ export default function ProjectHubPage() {
                 {i < PHASES.length - 1 && (
                   <div style={{
                     width: 16, height: 1,
-                    background: isDone ? `${project.color}60` : 'rgba(255,255,255,0.08)',
+                    background: isDone ? `${color}60` : 'rgba(255,255,255,0.08)',
                     transition: 'background 0.4s',
                   }} />
                 )}
@@ -450,17 +343,11 @@ export default function ProjectHubPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {onlineCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 8, color: '#10b981', letterSpacing: 1.5 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
-              {onlineCount} online
-            </div>
-          )}
           <div style={{
             fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5,
-            padding: '5px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)',
+            padding: '5px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', textTransform: 'uppercase',
           }}>
-            {project.progress}% complete
+            {project.status}
           </div>
         </div>
       </motion.header>
@@ -477,7 +364,7 @@ export default function ProjectHubPage() {
         >
           <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
           <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 0.9 }}>{project.title}</div>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', color: 'var(--fg-dim)', marginTop: 10, maxWidth: 560 }}>{project.description}</p>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', color: 'var(--fg-dim)', marginTop: 10, maxWidth: 560 }}>{project.description || 'No description yet.'}</p>
         </motion.div>
 
         {/*
@@ -502,10 +389,10 @@ export default function ProjectHubPage() {
             href="/editor"
             delay={0.05}
             stats={[
-              { label: 'Pages', value: project.scriptPages ?? 0 },
-              { label: `Draft`, value: `#${project.scriptDraft ?? 1}` },
+              { label: 'Scripts', value: project.scripts?.length ?? 0 },
+              { label: 'Latest',  value: project.scripts?.[0]?.status ?? '—' },
             ]}
-            preview={<ScriptPreview pages={project.scriptPages ?? 0} draft={project.scriptDraft ?? 1} />}
+            preview={<ScriptPreview scripts={project.scripts} />}
           />
 
           {/* ─ Studio ─ */}
@@ -516,10 +403,9 @@ export default function ProjectHubPage() {
             href="/studio"
             delay={0.1}
             stats={[
-              { label: 'Files',  value: project.assetCount ?? 0 },
-              { label: 'GB',     value: project.assetGB ?? 0 },
+              { label: 'References', value: project.references?.length ?? 0 },
             ]}
-            preview={<AssetPreview count={project.assetCount ?? 0} gb={project.assetGB ?? 0} />}
+            preview={<AssetPreview references={project.references} />}
           />
 
           {/* ─ Lounge / Crew ─ */}
@@ -530,10 +416,9 @@ export default function ProjectHubPage() {
             href="/lounge"
             delay={0.15}
             stats={[
-              { label: 'Members', value: project.team.length },
-              { label: 'Online',  value: onlineCount },
+              { label: 'Members', value: project.crew?.length ?? 0 },
             ]}
-            preview={<CrewPreview team={project.team} />}
+            preview={<CrewPreview team={project.crew} />}
           />
 
           {/* ─ Timeline ─ */}
@@ -544,52 +429,9 @@ export default function ProjectHubPage() {
             href="/projects"
             delay={0.2}
             stats={[
-              { label: 'Progress', value: `${project.progress}%` },
-              { label: 'Deadline', value: new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
+              { label: 'Phase', value: PHASES[currentPhaseIdx].short },
             ]}
-            preview={<TimelinePreview deadline={project.deadline} progress={project.progress} phase={project.phase} />}
-          />
-
-          {/* ─ Portfolio ─ */}
-          <DeptWindow
-            title="Portfolio"
-            tag="Showcase"
-            color="#8b5cf6"
-            href="/portfolio"
-            delay={0.25}
-            stats={[
-              { label: 'Published', value: project.publishedWork ?? 0 },
-              { label: 'Type',      value: project.type },
-            ]}
-            preview={<PortfolioPreview published={project.publishedWork ?? 0} />}
-          />
-
-          {/* ─ Jobs / Distribution ─ */}
-          <DeptWindow
-            title="Distribution"
-            tag="Launch"
-            color="#ec4899"
-            href="/jobs"
-            delay={0.3}
-            stats={[
-              { label: 'Phase',  value: PHASES[currentPhaseIdx].short },
-              { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
-            ]}
-            preview={
-              <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {[
-                  { label: 'Festival Submissions', value: '3 pending', color: '#ec4899' },
-                  { label: 'Press Kit',            value: 'Draft',     color: '#f59e0b' },
-                  { label: 'Trailer Cut',          value: currentPhaseIdx >= 3 ? 'Ready' : 'Not yet', color: currentPhaseIdx >= 3 ? '#10b981' : '#4b5563' },
-                  { label: 'Streaming Pitch',      value: 'In prep',   color: '#6366f1' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            }
+            preview={<TimelinePreview endDate={(project as any).end_date} phase={project.status} />}
           />
 
         </div>
