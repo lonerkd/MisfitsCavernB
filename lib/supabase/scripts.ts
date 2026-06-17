@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { logActivity } from './activity';
 
 export interface DBScript {
   id: string;
@@ -13,7 +14,7 @@ export interface DBScript {
   updated_at: string;
 }
 
-export async function createScript(projectId: string, title: string, format: 'screenplay' | 'teleplay' | 'stage-play' = 'screenplay') {
+export async function createScript(projectId: string, title: string, format: 'screenplay' | 'teleplay' | 'stage-play' = 'screenplay', userId?: string) {
   const { data, error } = await supabase
     .from('scripts')
     .insert({
@@ -27,6 +28,7 @@ export async function createScript(projectId: string, title: string, format: 'sc
     .single();
 
   if (error) throw error;
+  if (userId) await logActivity(userId, 'created_script', 'script', data.id, { project_id: projectId, title });
   return data;
 }
 
@@ -79,6 +81,7 @@ export async function updateScript(scriptId: string, content: string, userId: st
     .single();
 
   if (error) throw error;
+  await logActivity(userId, 'updated_script', 'script', scriptId, { project_id: data.project_id, title: data.title });
   return data;
 }
 

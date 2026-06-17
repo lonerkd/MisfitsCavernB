@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { logActivity } from './activity';
 
 export interface DBProject {
   id: string;
@@ -27,6 +28,7 @@ export async function createProject(userId: string, title: string, description =
     .single();
 
   if (error) throw error;
+  await logActivity(userId, 'created_project', 'project', data.id, { project_id: data.id, title });
   return data;
 }
 
@@ -114,6 +116,7 @@ export async function addProjectMember(projectId: string, userId: string, role =
     .select();
 
   if (error) throw error;
+  await logActivity(userId, 'joined_crew', 'project_crew', data?.[0]?.id, { project_id: projectId, role });
   return data;
 }
 

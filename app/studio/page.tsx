@@ -10,6 +10,7 @@ import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
 import { getAllStudioAssets, getOrCreateBoardForProject, addStudioAsset, deleteStudioAsset } from '@/lib/supabase/studio';
+import { logActivity } from '@/lib/supabase/activity';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
@@ -641,7 +642,8 @@ export default function StudioPage() {
     if (!url) return;
     const title = window.prompt('Label (optional):') || 'Reference';
     try {
-      await addStudioAsset({ board_id: boardId, user_id: user.id, title, asset_url: url, asset_type: 'image' });
+      const asset = await addStudioAsset({ board_id: boardId, user_id: user.id, title, asset_url: url, asset_type: 'image' });
+      await logActivity(user.id, 'added_reference', 'studio_asset', asset.id, { project_id: activeProject.id, title });
       await refreshProject(activeProject.id);
     } catch { /* ignore — board state unchanged on failure */ }
   };
@@ -655,7 +657,8 @@ export default function StudioPage() {
     if (!user || !boardId || !activeProject) return;
     if (conceptImages.some(c => c.url === ref.url)) return;
     try {
-      await addStudioAsset({ board_id: boardId, user_id: user.id, title: ref.title, asset_url: ref.url, asset_type: 'image' });
+      const asset = await addStudioAsset({ board_id: boardId, user_id: user.id, title: ref.title, asset_url: ref.url, asset_type: 'image' });
+      await logActivity(user.id, 'added_reference', 'studio_asset', asset.id, { project_id: activeProject.id, title: ref.title });
       await refreshProject(activeProject.id);
     } catch { /* keep board state unchanged on failure */ }
   };

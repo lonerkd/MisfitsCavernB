@@ -281,6 +281,20 @@ CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
   )
 );
 
+-- RLS Policies: Activity Feed
+-- metadata->>'project_id' carries the owning project for ripple events (no
+-- dedicated column — the table also logs non-project-scoped actions).
+CREATE POLICY "Activity readable by project members" ON activity_feed FOR SELECT USING (
+  user_id = auth.uid() OR
+  (metadata->>'project_id') IS NULL OR
+  (metadata->>'project_id')::uuid IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Authenticated users log activity" ON activity_feed FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+
 -- Trigger: auto-update profiles.updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$

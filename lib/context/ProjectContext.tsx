@@ -50,6 +50,16 @@ export interface ReferenceAsset {
   url: string;
 }
 
+export interface ActivityEvent {
+  id: string;
+  user_id: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  metadata: Record<string, any> | null;
+  created_at: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -66,6 +76,7 @@ export interface Project {
   scripts?: ScriptSummary[];
   boardId?: string | null;
   references?: ReferenceAsset[];
+  activity?: ActivityEvent[];
 }
 
 interface ProjectContextType {
@@ -91,11 +102,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // There are no budget_items / timeline_items tables yet — leave those empty.
     // The project's moodboard is keyed by storing the project id in studio_boards.name
     // (see lib/supabase/studio.ts getOrCreateBoardForProject) — same convention here.
-    const [projectRes, crewRes, scriptsRes, boardRes] = await Promise.all([
+    const [projectRes, crewRes, scriptsRes, boardRes, activityRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId),
       supabase.from('scripts').select('id, title, status, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
       supabase.from('studio_boards').select('id').eq('name', projectId).maybeSingle(),
+      supabase.from('activity_feed').select('*').contains('metadata', { project_id: projectId }).order('created_at', { ascending: false }).limit(30),
     ]);
 
     if (!projectRes.data) return null;
@@ -124,6 +136,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })),
       boardId,
       references,
+      activity: activityRes.data || [],
     };
   };
 
@@ -199,6 +212,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             if (prev?.boardId && prev.boardId === row?.board_id) refreshProject(prev.id);
             return prev;
           });
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_feed' }, (payload) => {
+          // The event backbone: every mutation across the suite lands here.
+          // Prepend straight onto the matching project's feed — no refetch needed.
+          const event = payload.new as ActivityEvent;
+          const eventProjectId = event.metadata?.project_id;
+          if (!eventProjectId) return;
+          setActiveProjectState(prev => (prev?.id === eventProjectId
+            ? { ...prev, activity: [event, ...(prev.activity || [])].slice(0, 30) }
+            : prev));
+          setProjects(prev => prev.map(p => p.id === eventProjectId
+            ? { ...p, activity: [event, ...(p.activity || [])].slice(0, 30) }
+            : p));
         })
         .subscribe();
     }
