@@ -37,6 +37,19 @@ export interface TimelineItem {
   completion: number;
 }
 
+export interface ScriptSummary {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+}
+
+export interface ReferenceAsset {
+  id: string;
+  title: string;
+  url: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -48,6 +61,11 @@ export interface Project {
   crew?: CrewMember[];
   budget_items?: BudgetItem[];
   timeline_items?: TimelineItem[];
+  // The project as the real aggregate — every module reads these off the
+  // same object instead of fetching its own disconnected copy.
+  scripts?: ScriptSummary[];
+  boardId?: string | null;
+  references?: ReferenceAsset[];
 }
 
 interface ProjectContextType {
@@ -71,27 +89,42 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const fetchProjectDetails = async (projectId: string) => {
     // Schema reality: crew lives in `project_crew` joined to `profiles`.
     // There are no budget_items / timeline_items tables yet — leave those empty.
-    const [projectRes, crewRes] = await Promise.all([
+    // The project's moodboard is keyed by storing the project id in studio_boards.name
+    // (see lib/supabase/studio.ts getOrCreateBoardForProject) — same convention here.
+    const [projectRes, crewRes, scriptsRes, boardRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
-      supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId)
+      supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId),
+      supabase.from('scripts').select('id, title, status, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
+      supabase.from('studio_boards').select('id').eq('name', projectId).maybeSingle(),
     ]);
 
-    if (projectRes.data) {
-      const p = projectRes.data;
-      return {
-        ...p,
-        budget_items: [],
-        timeline_items: [],
-        crew: (crewRes.data || []).map((c: any) => ({
-          id: c.id,
-          name: c.profiles?.username || 'Unknown',
-          role: c.role,
-          avatar: c.profiles?.avatar_url,
-          status: 'confirmed'
-        }))
-      };
+    if (!projectRes.data) return null;
+
+    let references: ReferenceAsset[] = [];
+    const boardId = boardRes.data?.id ?? null;
+    if (boardId) {
+      const { data: assets } = await supabase.from('studio_assets').select('id, title, asset_url').eq('board_id', boardId);
+      references = (assets || []).map((a: any) => ({ id: a.id, title: a.title || 'Untitled', url: a.asset_url }));
     }
-    return null;
+
+    const p = projectRes.data;
+    return {
+      ...p,
+      budget_items: [],
+      timeline_items: [],
+      crew: (crewRes.data || []).map((c: any) => ({
+        id: c.id,
+        name: c.profiles?.username || 'Unknown',
+        role: c.role,
+        avatar: c.profiles?.avatar_url,
+        status: 'confirmed'
+      })),
+      scripts: (scriptsRes.data || []).map((s: any) => ({
+        id: s.id, title: s.title, status: s.status, updatedAt: s.updated_at,
+      })),
+      boardId,
+      references,
+    };
   };
 
   // Single source of truth for "what am I working on" — persisted so every
@@ -153,6 +186,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'project_crew' }, (payload) => {
           const row = (payload.new || payload.old) as any;
           if (row?.project_id) refreshProject(row.project_id);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'scripts' }, (payload) => {
+          const row = (payload.new || payload.old) as any;
+          if (row?.project_id) refreshProject(row.project_id);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'studio_assets' }, (payload) => {
+          // studio_assets is keyed by board_id, not project_id — ripple to
+          // whichever project currently has that board open.
+          const row = (payload.new || payload.old) as any;
+          setActiveProjectState(prev => {
+            if (prev?.boardId && prev.boardId === row?.board_id) refreshProject(prev.id);
+            return prev;
+          });
         })
         .subscribe();
     }

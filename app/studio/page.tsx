@@ -9,7 +9,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
-import { getAllStudioAssets, getOrCreateBoardForProject, getStudioAssets, addStudioAsset, deleteStudioAsset } from '@/lib/supabase/studio';
+import { getAllStudioAssets, getOrCreateBoardForProject, addStudioAsset, deleteStudioAsset } from '@/lib/supabase/studio';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
@@ -575,7 +575,7 @@ function ReferenceSearchModal({
 }
 
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects } = useProject();
+  const { activeProject, setActiveProject, projects, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -583,8 +583,6 @@ export default function StudioPage() {
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
-  const [boardId, setBoardId] = useState<string | null>(null);
-  const [conceptImages, setConceptImages] = useState<{ id: string; url: string; title: string }[]>([]);
   const [conceptLoading, setConceptLoading] = useState(false);
   const [showRefSearch, setShowRefSearch] = useState(false);
 
@@ -619,43 +617,46 @@ export default function StudioPage() {
     });
   }, []);
 
+  // The project aggregate (activeProject.boardId / .references) is the single
+  // source of truth, shared with every other module via ProjectContext. This
+  // effect only ensures a board exists the first time a project is opened —
+  // it never holds its own copy of the moodboard data.
   useEffect(() => {
-    if (!user || !activeProject) { setBoardId(null); setConceptImages([]); return; }
+    if (!user || !activeProject || activeProject.boardId) return;
     setConceptLoading(true);
     getOrCreateBoardForProject(user.id, activeProject.id)
-      .then(board => {
-        setBoardId(board.id);
-        return getStudioAssets(board.id);
-      })
-      .then(rows => {
-        setConceptImages((rows || []).map((r: any) => ({ id: r.id, url: r.asset_url, title: r.title || 'Untitled' })));
-      })
-      .catch(() => setConceptImages([]))
+      .then(() => refreshProject(activeProject.id))
       .finally(() => setConceptLoading(false));
-  }, [user, activeProject?.id]);
+  }, [user, activeProject?.id, activeProject?.boardId]);
+
+  const boardId = activeProject?.boardId ?? null;
+  const conceptImages = useMemo(
+    () => (activeProject?.references || []).map(r => ({ id: r.id, url: r.url, title: r.title })),
+    [activeProject?.references]
+  );
 
   const handleAddConceptRef = async () => {
-    if (!user || !boardId) return;
+    if (!user || !boardId || !activeProject) return;
     const url = window.prompt('Image URL for this reference:');
     if (!url) return;
     const title = window.prompt('Label (optional):') || 'Reference';
     try {
-      const created = await addStudioAsset({ board_id: boardId, user_id: user.id, title, asset_url: url, asset_type: 'image' });
-      setConceptImages(prev => [{ id: created.id, url: created.asset_url, title: created.title }, ...prev]);
-    } catch { /* ignore — keep board state unchanged */ }
+      await addStudioAsset({ board_id: boardId, user_id: user.id, title, asset_url: url, asset_type: 'image' });
+      await refreshProject(activeProject.id);
+    } catch { /* ignore — board state unchanged on failure */ }
   };
 
   const handleDeleteConceptRef = async (id: string) => {
-    setConceptImages(prev => prev.filter(c => c.id !== id));
-    try { await deleteStudioAsset(id); } catch { /* already optimistically removed */ }
+    if (!activeProject) return;
+    try { await deleteStudioAsset(id); } finally { await refreshProject(activeProject.id); }
   };
 
   const addReferenceToBoard = async (ref: ReferenceResult) => {
-    if (!user || !boardId) return;
+    if (!user || !boardId || !activeProject) return;
     if (conceptImages.some(c => c.url === ref.url)) return;
     try {
-      const created = await addStudioAsset({ board_id: boardId, user_id: user.id, title: ref.title, asset_url: ref.url, asset_type: 'image' });
-      setConceptImages(prev => [{ id: created.id, url: created.asset_url, title: created.title }, ...prev]);
+      await addStudioAsset({ board_id: boardId, user_id: user.id, title: ref.title, asset_url: ref.url, asset_type: 'image' });
+      await refreshProject(activeProject.id);
     } catch { /* keep board state unchanged on failure */ }
   };
 
