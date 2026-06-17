@@ -4,6 +4,7 @@
 // Ownership/visibility is enforced by RLS using last_edited_by + project membership.
 
 import { supabase } from '@/lib/supabase/client';
+import type { ScriptFormat } from '@/lib/scriptos/parser';
 
 export interface StoredScript {
   id: string;
@@ -13,6 +14,7 @@ export interface StoredScript {
   updatedAt: string;
   user_id?: string;       // mapped from last_edited_by for app convenience
   project_id?: string;
+  format?: ScriptFormat;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,6 +28,7 @@ function mapRow(s: any): StoredScript {
     updatedAt: s.updated_at,
     user_id: s.last_edited_by,
     project_id: s.project_id,
+    format: s.format,
   };
 }
 
@@ -80,6 +83,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       updated_at: new Date().toISOString(),
     };
     if ('project_id' in script) patch.project_id = script.project_id ?? null;
+    if ('format' in script) patch.format = script.format;
 
     const { data, error } = await supabase
       .from('scripts')
@@ -102,6 +106,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       content: script.content ?? '',
       last_edited_by: user.id,
       project_id: script.project_id ?? null,
+      format: script.format ?? 'screenplay',
     }])
     .select()
     .single();
@@ -137,8 +142,8 @@ export async function deleteScript(id: string): Promise<boolean> {
 }
 
 // Create new script
-export async function createNewScript(title: string = 'Untitled'): Promise<StoredScript | null> {
-  return saveScript({ title, content: '' });
+export async function createNewScript(title: string = 'Untitled', format: ScriptFormat = 'screenplay'): Promise<StoredScript | null> {
+  return saveScript({ title, content: '', format });
 }
 
 // Current Script ID management (Still local for UX state)

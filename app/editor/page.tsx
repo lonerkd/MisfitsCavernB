@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { parseScript } from '@/lib/scriptos/parser';
+import { parseScript, type ScriptFormat } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, linkScriptToProject, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
@@ -22,6 +22,7 @@ import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
+import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { useAuth } from '@/lib/context/AuthContext';
 import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLinks';
 
@@ -337,7 +338,7 @@ export default function EditorPage() {
   // Parser hook
   useEffect(() => {
     if (content) {
-      const result = parseScript(content);
+      const result = parseScript(content, currentScript?.format || 'screenplay');
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
@@ -348,7 +349,7 @@ export default function EditorPage() {
       setCharStats([]);
       setLintIssues([]);
     }
-  }, [content]);
+  }, [content, currentScript?.format]);
 
   // Load revisions when script changes
   useEffect(() => {
@@ -446,6 +447,17 @@ export default function EditorPage() {
       toast(isLinked ? 'Unlinked from project.' : `Linked to ${activeProject.title}.`, 'success');
     }
   }, [currentScript, activeProject, user, toast]);
+
+  const handleFormatChange = useCallback(async (format: ScriptFormat) => {
+    if (!currentScript) return;
+    const updated = { ...currentScript, format };
+    setCurrentScript(updated);
+    setScripts(prev => prev.map(s => s.id === updated.id ? updated : s));
+    if (user) {
+      await saveScript({ id: currentScript.id, title: currentScript.title, content, format });
+      toast(`Format set to ${format}.`, 'success');
+    }
+  }, [currentScript, content, user, toast]);
 
   const handleExport = useCallback((format: string) => {
     if (!currentScript) return;
@@ -1065,7 +1077,7 @@ export default function EditorPage() {
               {/* Script Controls */}
               <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <button onClick={async () => {
-                  const s = await createNewScript('Untitled Script');
+                  const s = await createNewScript('Untitled Script', getDefaultScriptFormat(activeProject?.project_type) as ScriptFormat);
                   if (s) {
                     setScripts([...scripts, s]);
                     setCurrentScript(s);
@@ -2095,6 +2107,21 @@ export default function EditorPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Title Page</h2>
                 <button onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Document Format</label>
+                <select
+                  value={currentScript?.format || 'screenplay'}
+                  onChange={e => handleFormatChange(e.target.value as ScriptFormat)}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Courier Prime, monospace' }}
+                >
+                  <option value="screenplay">Screenplay</option>
+                  <option value="teleplay">Teleplay</option>
+                  <option value="stage-play">Stage Play</option>
+                  <option value="treatment">Treatment</option>
+                  <option value="podcast">Podcast Script</option>
+                  <option value="doc-outline">Documentary Outline</option>
+                </select>
               </div>
               {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
                 <div key={field} style={{ marginBottom: 16 }}>

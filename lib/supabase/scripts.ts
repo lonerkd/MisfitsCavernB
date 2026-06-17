@@ -1,12 +1,14 @@
 import { supabase } from './client';
 import { logActivity } from './activity';
 
+import type { ScriptFormat } from '@/lib/scriptos/parser';
+
 export interface DBScript {
   id: string;
   project_id: string;
   title: string;
   content: string;
-  format: 'screenplay' | 'teleplay' | 'stage-play';
+  format: ScriptFormat;
   version: number;
   last_edited_by?: string;
   status: string;
@@ -14,7 +16,7 @@ export interface DBScript {
   updated_at: string;
 }
 
-export async function createScript(projectId: string, title: string, format: 'screenplay' | 'teleplay' | 'stage-play' = 'screenplay', userId?: string) {
+export async function createScript(projectId: string, title: string, format: ScriptFormat = 'screenplay', userId?: string) {
   const { data, error } = await supabase
     .from('scripts')
     .insert({

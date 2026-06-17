@@ -11,20 +11,7 @@ import {
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useProject, type Project as DBProject } from '@/lib/context/ProjectContext';
-
-// ─── Production phases — mirrors the `projects.status` check constraint ──────
-
-type Phase = 'concept' | 'pre-production' | 'in-production' | 'post-production' | 'completed';
-
-const PHASES: { id: Phase; label: string; short: string }[] = [
-  { id: 'concept',          label: 'Concept',          short: 'DEV'  },
-  { id: 'pre-production',   label: 'Pre-Production',   short: 'PRE'  },
-  { id: 'in-production',    label: 'Production',       short: 'PROD' },
-  { id: 'post-production',  label: 'Post-Production',  short: 'POST' },
-  { id: 'completed',        label: 'Completed',        short: 'DONE' },
-];
-
-const phaseIndex = (p?: string) => Math.max(0, PHASES.findIndex(ph => ph.id === p));
+import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
 
 // ─── Department window ───────────────────────────────────────────────────────
 
@@ -136,7 +123,10 @@ function ScriptPreview({ scripts }: { scripts: DBProject['scripts'] }) {
       {scripts.slice(0, 5).map(s => (
         <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'rgba(240,236,228,0.7)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#ffaa00', textTransform: 'uppercase', letterSpacing: 1, flexShrink: 0 }}>{s.status}</span>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'rgba(240,236,228,0.35)', textTransform: 'uppercase', letterSpacing: 1 }}>{s.format}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#ffaa00', textTransform: 'uppercase', letterSpacing: 1 }}>{s.status}</span>
+          </span>
         </div>
       ))}
     </div>
@@ -196,17 +186,12 @@ function CrewPreview({ team }: { team: DBProject['crew'] }) {
 
 // ─── Timeline preview ────────────────────────────────────────────────────────
 
-function TimelinePreview({ endDate, phase }: { endDate?: string; phase?: string }) {
+function TimelinePreview({ endDate, phase, projectType }: { endDate?: string; phase?: string; projectType?: string }) {
   const daysLeft = endDate ? Math.max(0, Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000)) : null;
-  const idx = phaseIndex(phase);
-  const progress = (idx / (PHASES.length - 1)) * 100;
-  const milestones = [
-    { label: 'Concept Locked',  done: idx >= 0 },
-    { label: 'Pre-Production',  done: idx >= 1 },
-    { label: 'Production',      done: idx >= 2 },
-    { label: 'Post-Production', done: idx >= 3 },
-    { label: 'Completed',       done: idx >= 4 },
-  ];
+  const phases = getPhaseTemplate(projectType);
+  const idx = getPhaseIndex(projectType, phase);
+  const progress = (idx / (phases.length - 1)) * 100;
+  const milestones = phases.map((p, i) => ({ label: p.label, done: idx >= i }));
 
   return (
     <div style={{ padding: '14px 16px' }}>
@@ -272,7 +257,8 @@ export default function ProjectHubPage() {
   if (!project) return null;
 
   const color = project.accent_color || '#ff3c00';
-  const currentPhaseIdx = phaseIndex(project.status);
+  const phases = getPhaseTemplate(project.project_type);
+  const currentPhaseIdx = getPhaseIndex(project.project_type, project.status);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -307,16 +293,17 @@ export default function ProjectHubPage() {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>{project.title}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: color, opacity: 0.8 }}>{project.status}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: color, opacity: 0.8 }}>
+              {project.project_type || 'Feature'} · {project.status}
+            </span>
           </div>
         </div>
 
         {/* Phase rail */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          {PHASES.map((phase, i) => {
+          {phases.map((phase, i) => {
             const isDone   = i < currentPhaseIdx;
             const isActive = i === currentPhaseIdx;
-            const isFuture = i > currentPhaseIdx;
             return (
               <React.Fragment key={phase.id}>
                 <div style={{
@@ -328,9 +315,9 @@ export default function ProjectHubPage() {
                   transition: 'all 0.3s', whiteSpace: 'nowrap',
                 }}>
                   {isDone && <span style={{ marginRight: 4 }}>✓</span>}
-                  {phase.short}
+                  {phase.abbr}
                 </div>
-                {i < PHASES.length - 1 && (
+                {i < phases.length - 1 && (
                   <div style={{
                     width: 16, height: 1,
                     background: isDone ? `${color}60` : 'rgba(255,255,255,0.08)',
@@ -429,9 +416,9 @@ export default function ProjectHubPage() {
             href="/projects"
             delay={0.2}
             stats={[
-              { label: 'Phase', value: PHASES[currentPhaseIdx].short },
+              { label: 'Phase', value: phases[currentPhaseIdx].abbr },
             ]}
-            preview={<TimelinePreview endDate={(project as any).end_date} phase={project.status} />}
+            preview={<TimelinePreview endDate={(project as any).end_date} phase={project.status} projectType={project.project_type} />}
           />
 
         </div>

@@ -1,12 +1,14 @@
 import { supabase } from './client';
 import { logActivity } from './activity';
+import { getPhaseTemplate } from '@/lib/projectTypes';
 
 export interface DBProject {
   id: string;
   title: string;
   description?: string;
   creator_id: string;
-  status: 'concept' | 'pre-production' | 'in-production' | 'post-production' | 'completed';
+  project_type: string;
+  status: string;
   accent_color?: string;
   budget?: number;
   start_date?: string;
@@ -15,20 +17,22 @@ export interface DBProject {
   updated_at: string;
 }
 
-export async function createProject(userId: string, title: string, description = '') {
+export async function createProject(userId: string, title: string, description = '', projectType = 'Feature') {
+  const firstPhase = getPhaseTemplate(projectType)[0]?.id || 'concept';
   const { data, error } = await supabase
     .from('projects')
     .insert({
       title,
       description,
       creator_id: userId,
-      status: 'concept'
+      project_type: projectType,
+      status: firstPhase
     })
     .select()
     .single();
 
   if (error) throw error;
-  await logActivity(userId, 'created_project', 'project', data.id, { project_id: data.id, title });
+  await logActivity(userId, 'created_project', 'project', data.id, { project_id: data.id, title, project_type: projectType });
   return data;
 }
 

@@ -41,6 +41,7 @@ export interface ScriptSummary {
   id: string;
   title: string;
   status: string;
+  format: string;
   updatedAt: string;
 }
 
@@ -67,6 +68,7 @@ export interface Project {
   description?: string;
   status: string;
   accent_color?: string;
+  project_type?: string;
   type?: string;
   beats?: Beat[];
   crew?: CrewMember[];
@@ -106,7 +108,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const [projectRes, crewRes, scriptsRes, boardRes, activityRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId),
-      supabase.from('scripts').select('id, title, status, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
+      supabase.from('scripts').select('id, title, status, format, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
       supabase.from('studio_boards').select('id').eq('name', projectId).maybeSingle(),
       supabase.from('activity_feed').select('*').contains('metadata', { project_id: projectId }).order('created_at', { ascending: false }).limit(30),
     ]);
@@ -144,7 +146,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         status: 'confirmed'
       })),
       scripts: (scriptsRes.data || []).map((s: any) => ({
-        id: s.id, title: s.title, status: s.status, updatedAt: s.updated_at,
+        id: s.id, title: s.title, status: s.status, format: s.format, updatedAt: s.updated_at,
       })),
       boardId,
       references,
@@ -206,6 +208,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const updated = payload.new as Project;
             setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
             setActiveProjectState(prev => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
+          } else if (payload.eventType === 'INSERT') {
+            const created = payload.new as Project;
+            setProjects(prev => prev.some(p => p.id === created.id) ? prev : [created, ...prev]);
           }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'project_crew' }, (payload) => {

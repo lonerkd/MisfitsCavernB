@@ -111,19 +111,23 @@ const KNOWLEDGE = {
 // PARSER CLASS
 // =========================================================================
 
+export type ScriptFormat = 'screenplay' | 'teleplay' | 'stage-play' | 'treatment' | 'podcast' | 'doc-outline';
+
 export class ScriptParser {
   private rawLines: string[];
   private characterStats: Map<string, number>;
   private elements: Record<string, Set<string>>;
   private lines: ScriptLine[];
-  
+  private format: ScriptFormat;
+
   // State Machine
   private sceneIndex: number = -1;
   private lastSpeaker: string | null = null;
   private insideDialogueBlock: boolean = false;
 
-  constructor(text: string) {
+  constructor(text: string, format: ScriptFormat = 'screenplay') {
     this.rawLines = text ? text.split(/\r?\n/) : [];
+    this.format = format;
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -133,6 +137,10 @@ export class ScriptParser {
       'SFX': new Set()
     };
     this.lines = [];
+  }
+
+  private usesScreenplayGrammar(): boolean {
+    return this.format === 'screenplay' || this.format === 'teleplay' || this.format === 'stage-play';
   }
 
   // --- UTILS ---
@@ -148,7 +156,11 @@ export class ScriptParser {
   // --- MAIN PARSE LOOP ---
   public parse(): ParseResult {
     this.lines = [];
-    this.preScanCharacters(); // Pass 1: Build the Cast List
+    if (this.usesScreenplayGrammar()) {
+      this.preScanCharacters(); // Pass 1: Build the Cast List
+    } else if (this.format === 'podcast') {
+      this.preScanSpeakers();
+    }
 
     for (let i = 0; i < this.rawLines.length; i++) {
       const raw = this.rawLines[i];
@@ -175,7 +187,9 @@ export class ScriptParser {
       };
 
       // Classification
-      const analysis = this.analyzeLine(trim, context);
+      const analysis = this.usesScreenplayGrammar()
+        ? this.analyzeLine(trim, context)
+        : this.analyzeNonScreenplayLine(trim, context);
       
       // State Updates
       if (analysis.type === 'slug') {
@@ -401,6 +415,98 @@ export class ScriptParser {
     };
   }
 
+  // --- PASS 1 (PODCAST): SPEAKER RECOGNITION ---
+  // Podcast scripts tag speakers as "Name:" rather than screenplay's ALL-CAPS
+  // convention, so they need their own pre-scan to build a cast list.
+  private preScanSpeakers() {
+    const speakerLine = /^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*\S/;
+    this.rawLines.forEach(line => {
+      const match = line.trim().match(speakerLine);
+      if (match) {
+        const name = match[1].trim().toUpperCase();
+        this.characterStats.set(name, (this.characterStats.get(name) || 0) + 1);
+      }
+    });
+  }
+
+  // --- NON-SCREENPLAY GRAMMARS: treatment / podcast / doc-outline ---
+  // These formats don't follow screenplay slug-line convention, so rather than
+  // force them through the screenplay state machine, each gets its own
+  // lightweight classifier that still emits the same ScriptLine vocabulary
+  // (slug = segment/section header, dialogue = a speaker's words, etc.) so
+  // the rest of ScriptOS (scene board, character list, beat sheet) keeps working.
+  private analyzeNonScreenplayLine(text: string, context: any): {
+    type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any
+  } {
+    const reasoning: string[] = [];
+    const scores: Record<LineType, number> = {
+      slug: 0, action: 0, character: 0, dialogue: 0,
+      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0
+    };
+
+    if (this.format === 'podcast') {
+      // Bracketed/parenthetical production cues: [INTRO MUSIC], (SFX: door)
+      if (/^[\[(].*[\])]$/.test(text)) {
+        reasoning.push('Bracketed production cue');
+        return { type: 'parenthetical', confidence: 90, scores, reasoning, meta: {} };
+      }
+      // "Speaker Name: their words"
+      const speakerMatch = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
+      if (speakerMatch) {
+        reasoning.push('Speaker-tagged line');
+        return {
+          type: 'dialogue', confidence: 95, scores, reasoning,
+          meta: { characterName: speakerMatch[1].trim().toUpperCase() }
+        };
+      }
+      // Segment headers: "EPISODE 4", "SEGMENT 2 — INTERVIEW", numbered/all-caps short lines
+      if (/^(EPISODE|SEGMENT|INTRO|OUTRO|BREAK|COLD OPEN)\b/i.test(text) || (this.isCaps(text) && text.length < 60)) {
+        reasoning.push('Segment header');
+        return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      reasoning.push('Show-note / aside');
+      return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
+    }
+
+    if (this.format === 'doc-outline') {
+      // Timecode ranges: "00:00–00:30 — Cold open"
+      if (/^\d{1,2}:\d{2}(:\d{2})?\s*[-–—]/.test(text)) {
+        reasoning.push('Timecoded segment marker');
+        return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      // Labeled segment markers
+      if (/^(B-ROLL|INTERVIEW|ARCHIVAL|VO|VOICEOVER|TALKING HEAD|SEGMENT|SCENE)\s*[:.\-]/i.test(text)) {
+        reasoning.push('Labeled segment marker');
+        return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      // Quoted soundbite, optionally attributed: SUBJECT: "quote"
+      const quoteMatch = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*["“](.+)["”]$/);
+      if (quoteMatch) {
+        reasoning.push('Attributed soundbite');
+        return { type: 'dialogue', confidence: 90, scores, reasoning, meta: { characterName: quoteMatch[1].trim().toUpperCase() } };
+      }
+      if (/^["“].+["”]$/.test(text)) {
+        reasoning.push('Soundbite');
+        return { type: 'dialogue', confidence: 70, scores, reasoning, meta: {} };
+      }
+      reasoning.push('Beat description');
+      return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
+    }
+
+    // 'treatment' (and any other free-prose format)
+    // Headers: short ALL-CAPS lines, markdown-style "#", or "SCENE/SHOT N"
+    if ((this.isCaps(text) && text.length < 60) || /^#{1,3}\s/.test(text) || /^(SCENE|SHOT|BEAT)\s*\d*/i.test(text)) {
+      reasoning.push('Treatment section header');
+      return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+    }
+    if (/^["“].+["”]$/.test(text)) {
+      reasoning.push('Suggested line of dialogue');
+      return { type: 'dialogue', confidence: 65, scores, reasoning, meta: {} };
+    }
+    reasoning.push('Treatment prose');
+    return { type: 'action', confidence: 60, scores, reasoning, meta: {} };
+  }
+
   // --- HELPERS ---
   private matchesSetStart(text: string, set: Set<string>): boolean {
     for (const item of set) if (text.startsWith(item)) return true;
@@ -495,7 +601,7 @@ export class ScriptParser {
 // EXPORT FUNCTION
 // =========================================================================
 
-export function parseScript(text: string): ParseResult {
-  const parser = new ScriptParser(text);
+export function parseScript(text: string, format: ScriptFormat = 'screenplay'): ParseResult {
+  const parser = new ScriptParser(text, format);
   return parser.parse();
 }
