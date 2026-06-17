@@ -114,6 +114,31 @@ CREATE TABLE IF NOT EXISTS project_beats (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Shooting Schedule (real — replaces hardcoded Gantt placeholder rows)
+CREATE TABLE IF NOT EXISTS shoot_days (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  day_number INT NOT NULL,
+  shoot_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, day_number)
+);
+
+CREATE TABLE IF NOT EXISTS scene_schedule (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  script_id UUID REFERENCES scripts(id) ON DELETE SET NULL,
+  scene_number TEXT NOT NULL,
+  scene_heading TEXT DEFAULT '',
+  shoot_day_id UUID REFERENCES shoot_days(id) ON DELETE SET NULL,
+  location TEXT DEFAULT '',
+  estimated_hours DECIMAL DEFAULT 0,
+  order_index INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, scene_number)
+);
+
 -- Jobs board
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -265,6 +290,8 @@ CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_feed(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_feed(created_at);
 CREATE INDEX IF NOT EXISTS idx_script_characters_script ON script_characters(script_id);
 CREATE INDEX IF NOT EXISTS idx_project_beats_project ON project_beats(project_id);
+CREATE INDEX IF NOT EXISTS idx_shoot_days_project ON shoot_days(project_id);
+CREATE INDEX IF NOT EXISTS idx_scene_schedule_project ON scene_schedule(project_id);
 
 -- Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -275,6 +302,8 @@ ALTER TABLE script_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_collaborators ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_beats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shoot_days ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scene_schedule ENABLE ROW LEVEL SECURITY;
 ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -344,6 +373,22 @@ CREATE POLICY "Script members can manage characters" ON script_characters FOR AL
 
 -- RLS Policies: Project Beats
 CREATE POLICY "Project members can manage beats" ON project_beats FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+
+-- RLS Policies: Shooting Schedule
+CREATE POLICY "Project members can manage shoot days" ON shoot_days FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Project members can manage scene schedule" ON scene_schedule FOR ALL USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
     UNION

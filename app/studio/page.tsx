@@ -22,6 +22,7 @@ import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Max
 import { createBeat, deleteBeat } from '@/lib/supabase/beats';
 import { getScript } from '@/lib/supabase/scripts';
 import { parseScript } from '@/lib/scriptos/parser';
+import { getShootDays, addShootDay, getSceneSchedule, ensureSceneSchedule, updateSceneSchedule, subscribeToSchedule, type ShootDay, type SceneSchedule } from '@/lib/supabase/schedule';
 
 interface Asset {
   id: string;
@@ -796,6 +797,9 @@ export default function StudioPage() {
   const [beatScene, setBeatScene] = useState('');
   const [scriptScenes, setScriptScenes] = useState<string[]>([]);
   const [savingBeat, setSavingBeat] = useState(false);
+  const [shootDays, setShootDays] = useState<ShootDay[]>([]);
+  const [sceneSchedule, setSceneSchedule] = useState<SceneSchedule[]>([]);
+  const [sceneCast, setSceneCast] = useState<Record<string, string[]>>({});
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -940,6 +944,63 @@ export default function StudioPage() {
     if (!activeProject) return;
     await deleteBeat(id);
     await refreshProject(activeProject.id);
+  };
+
+  // Shooting Schedule — scenes come from the project's linked script (parsed
+  // live, same as the editor), so the schedule never drifts from the actual
+  // screenplay structure.
+  useEffect(() => {
+    if (!activeProject) { setShootDays([]); setSceneSchedule([]); setSceneCast({}); return; }
+    let active = true;
+    const projectId = activeProject.id;
+    const scriptId = activeProject.scripts?.[0]?.id;
+
+    const load = async () => {
+      try {
+        if (scriptId) {
+          const script = await getScript(scriptId);
+          const { lines } = parseScript(script.content || '', script.format || 'screenplay');
+          const slugs = lines.filter(l => l.type === 'slug');
+          const scenes = slugs.map((s, i) => {
+            const sceneNumber = (s as any).meta?.sceneNumber || String(i + 1);
+            const startIdx = lines.findIndex(l => l.id === s.id);
+            const endIdx = i + 1 < slugs.length ? lines.findIndex(l => l.id === slugs[i + 1].id) : lines.length;
+            const cast = [...new Set(lines.slice(startIdx, endIdx).filter(l => l.type === 'character').map(l => l.text.trim()))];
+            return { sceneNumber, heading: s.text.trim(), cast };
+          });
+          if (!active) return;
+          setSceneCast(Object.fromEntries(scenes.map(s => [s.sceneNumber, s.cast])));
+          const schedule = await ensureSceneSchedule(projectId, scriptId, scenes.map(s => ({ sceneNumber: s.sceneNumber, heading: s.heading })));
+          if (active) setSceneSchedule(schedule);
+        } else {
+          const schedule = await getSceneSchedule(projectId);
+          if (active) { setSceneSchedule(schedule); setSceneCast({}); }
+        }
+        const days = await getShootDays(projectId);
+        if (active) setShootDays(days);
+      } catch { /* schedule stays empty on failure */ }
+    };
+
+    load();
+    const channel = subscribeToSchedule(projectId, load);
+    return () => { active = false; supabase.removeChannel(channel); };
+  }, [activeProject?.id, activeProject?.scripts]);
+
+  const handleAddShootDay = async () => {
+    if (!activeProject) return;
+    await addShootDay(activeProject.id);
+    setShootDays(await getShootDays(activeProject.id));
+  };
+
+  const handleAssignDay = async (sceneId: string, shootDayId: string) => {
+    const updated = await updateSceneSchedule(sceneId, { shoot_day_id: shootDayId || null });
+    setSceneSchedule(prev => prev.map(s => s.id === sceneId ? updated : s));
+  };
+
+  const handleSceneFieldBlur = async (sceneId: string, field: 'location' | 'estimated_hours', value: string) => {
+    const patch = field === 'estimated_hours' ? { estimated_hours: parseFloat(value) || 0 } : { location: value };
+    const updated = await updateSceneSchedule(sceneId, patch);
+    setSceneSchedule(prev => prev.map(s => s.id === sceneId ? updated : s));
   };
 
   const addReferenceToBoard = async (ref: ReferenceResult) => {
@@ -1328,54 +1389,60 @@ export default function StudioPage() {
                    </div>
                  </div>
 
-                 {/* Scene Gantt Timeline (StudioBinder style) */}
+                 {/* Shooting Schedule — scenes parsed live from the linked script */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule (Gantt)</div>
-                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> View Call Sheets</button>
-                   </div>
-                   
-                   {/* Gantt Header */}
-                   <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
-                     <div style={{ width: 60 }}>Scene</div>
-                     <div style={{ flex: 1, minWidth: 200 }}>Location</div>
-                     <div style={{ width: 100 }}>Cast</div>
-                     <div style={{ width: 60 }}>Est. Time</div>
-                     <div style={{ width: 140, display: 'flex', justifyContent: 'space-between' }}>
-                       <span>Day 1</span><span>Day 2</span><span>Day 3</span>
-                     </div>
+                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
+                     {activeProject && <button className="link-btn" onClick={handleAddShootDay} style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> + Add Shoot Day</button>}
                    </div>
 
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                     {[
-                       { id: 1, title: 'EXT. ABANDONED PIER', time: 'NIGHT', dur: '4h', cast: '1, 3', day: 1, span: 1.5, color: '#003366' },
-                       { id: 2, title: 'INT. JANE\'S APARTMENT', time: 'DAY', dur: '6h', cast: '3', day: 2, span: 2, color: '#ffcc00' },
-                       { id: 3, title: 'EXT. CITY STREETS', time: 'DAWN', dur: '2h', cast: '1, 2, 3', day: 3, span: 0.8, color: '#ff6600' },
-                     ].map(s => (
-                       <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                         <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.id}</div>
-                         <div style={{ flex: 1, minWidth: 200 }}>
-                           <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
-                           <div style={{ fontSize: 9, color: s.time === 'DAY' ? '#ffcc00' : s.time === 'NIGHT' ? '#0099ff' : '#ff6600', fontFamily: 'var(--mono)' }}>{s.time}</div>
-                         </div>
-                         <div style={{ width: 100, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{s.cast}</div>
-                         <div style={{ width: 60, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{s.dur}</div>
-                         
-                         {/* Gantt Bar */}
-                         <div style={{ width: 140, position: 'relative', height: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{ 
-                              position: 'absolute', 
-                              left: `${(s.day - 1) * 33}%`, 
-                              width: `${s.span * 33}%`, 
-                              height: '100%', 
-                              background: s.color, 
-                              opacity: 0.8,
-                              borderRadius: 4
-                            }} />
-                         </div>
+                   {sceneSchedule.length === 0 ? (
+                     <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>
+                       {activeProject?.scripts?.length ? 'No scenes detected in the linked script yet.' : 'Link a script to this project to build the shooting schedule from its scenes.'}
+                     </div>
+                   ) : (
+                     <>
+                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
+                         <div style={{ width: 50 }}>Scene</div>
+                         <div style={{ flex: 1, minWidth: 160 }}>Heading / Location</div>
+                         <div style={{ width: 110 }}>Cast</div>
+                         <div style={{ width: 70 }}>Est. Hrs</div>
+                         <div style={{ width: 130 }}>Shoot Day</div>
                        </div>
-                     ))}
-                   </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                         {sceneSchedule.map(s => (
+                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                             <div style={{ width: 50, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
+                             <div style={{ flex: 1, minWidth: 160 }}>
+                               <div style={{ fontSize: 11, fontWeight: 600 }}>{s.scene_heading}</div>
+                               <input
+                                 defaultValue={s.location}
+                                 placeholder="Location…"
+                                 onBlur={e => handleSceneFieldBlur(s.id, 'location', e.target.value)}
+                                 style={{ width: '90%', marginTop: 4, background: 'transparent', border: 'none', borderBottom: '1px dashed rgba(255,255,255,0.1)', color: '#aaa', fontSize: 9, fontFamily: 'var(--mono)', outline: 'none', padding: '2px 0' }}
+                               />
+                             </div>
+                             <div style={{ width: 110, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{(sceneCast[s.scene_number] || []).join(', ') || '—'}</div>
+                             <input
+                               type="number"
+                               defaultValue={s.estimated_hours || ''}
+                               placeholder="0"
+                               onBlur={e => handleSceneFieldBlur(s.id, 'estimated_hours', e.target.value)}
+                               style={{ width: 70, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none', padding: '4px 6px' }}
+                             />
+                             <select
+                               value={s.shoot_day_id || ''}
+                               onChange={e => handleAssignDay(s.id, e.target.value)}
+                               style={{ width: 130, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc', fontSize: 10, outline: 'none', padding: '4px 6px' }}
+                             >
+                               <option value="" style={{ background: '#111' }}>Unscheduled</option>
+                               {shootDays.map(d => <option key={d.id} value={d.id} style={{ background: '#111' }}>Day {d.day_number}</option>)}
+                             </select>
+                           </div>
+                         ))}
+                       </div>
+                     </>
+                   )}
                  </div>
                </div>
             </div>
