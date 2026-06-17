@@ -8,7 +8,8 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
-import { Headphones, Disc, Radio, ExternalLink } from 'lucide-react';
+import { Headphones, Radio, ExternalLink } from 'lucide-react';
+import SpotifyPlayer from '@/components/SpotifyPlayer';
 
 interface Message {
   id: string;
@@ -101,15 +102,19 @@ export default function LoungePage() {
   const [activeChannel, setActiveChannel] = useState('general');
   const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
   const [input, setInput] = useState('');
-  const [nowPlaying, setNowPlaying] = useState({ title: 'Resonance', artist: 'HOME', album: 'Odyssey' });
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentProfile, setCurrentProfile] = useState<{ username: string; role?: string } | null>(null);
   const [crewList, setCrewList] = useState<any[]>(CREW);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user && mounted) setCurrentUser(user);
+      if (!user || !mounted) return;
+      setCurrentUser(user);
+      supabase.from('profiles').select('username, role').eq('id', user.id).single().then(({ data }) => {
+        if (data && mounted) setCurrentProfile(data);
+      });
     });
 
     supabase.from('profiles').select('*').limit(20).then(({ data }) => {
@@ -118,7 +123,8 @@ export default function LoungePage() {
           id: p.id,
           name: p.username || 'User',
           role: p.role || 'Crew',
-          online: p.status === 'OPEN'
+          online: p.status === 'OPEN',
+          activity: p.status === 'OPEN' ? 'Active' : 'Idle',
         })));
       }
     });
@@ -211,26 +217,8 @@ export default function LoungePage() {
             </select>
           </div>
 
-          {/* Now playing */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 14px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 'var(--radius-full)',
-            maxWidth: 300,
-            overflow: 'hidden',
-          }}>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
-              <Disc size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-            </motion.div>
-            <span style={{
-              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-              color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {nowPlaying.title} · {nowPlaying.artist}
-            </span>
-          </div>
+          {/* Music player */}
+          <SpotifyPlayer />
         </div>
       </nav>
 
@@ -281,10 +269,12 @@ export default function LoungePage() {
           
           <div style={{ marginTop: 'auto', padding: 20, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>P</div>
+                <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                  {(currentProfile?.username || 'U')[0].toUpperCase()}
+                </div>
                 <div style={{ flex: 1 }}>
-                   <div style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>Peter O.</div>
-                   <div style={{ fontSize: 9, color: '#00cc66' }}>● Online</div>
+                   <div style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{currentProfile?.username || 'Guest'}</div>
+                   <div style={{ fontSize: 9, color: currentUser ? '#00cc66' : '#666' }}>{currentUser ? '● Online' : 'Not signed in'}</div>
                 </div>
                 <SettingsIcon size={14} color="#666" style={{ cursor: 'pointer' }} />
              </div>
@@ -298,7 +288,7 @@ export default function LoungePage() {
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>#{activeChannel}</span>
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>4 members</span>
+               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{crewList.length} member{crewList.length !== 1 ? 's' : ''}</span>
              </div>
              <div style={{ display: 'flex', gap: 16 }}>
                 <Search size={14} color="#666" />
