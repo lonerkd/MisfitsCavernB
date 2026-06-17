@@ -23,6 +23,7 @@ import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useAuth } from '@/lib/context/AuthContext';
+import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLinks';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -195,7 +196,8 @@ export default function EditorPage() {
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
-  
+  const [sceneLinks, setSceneLinks] = useState<SceneLink[]>([]);
+
   // UI States
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
@@ -324,6 +326,13 @@ export default function EditorPage() {
       toast(`Loaded script for ${activeProject.title}`, 'info');
     }
   }, [activeProject, scripts]);
+
+  // Scene ↔ reference links are the other half of Studio's "Link to Scene" —
+  // load them here so the connection is visible from the script side too.
+  useEffect(() => {
+    if (!currentScript) { setSceneLinks([]); return; }
+    getSceneLinksForScript(currentScript.id).then(setSceneLinks).catch(() => setSceneLinks([]));
+  }, [currentScript?.id]);
 
   // Parser hook
   useEffect(() => {
@@ -635,6 +644,30 @@ export default function EditorPage() {
       setShowAutocomplete(false);
     }
   };
+
+  // Map each scene's display number — matching Studio's "Scene N" convention
+  // when the script has no explicit numbering — to its linked references.
+  const referencesByAssetId = useMemo(() => {
+    const map = new Map<string, { id: string; url: string; title: string }>();
+    (activeProject?.references || []).forEach(r => map.set(r.id, r));
+    return map;
+  }, [activeProject?.references]);
+
+  const sceneLinksByNumber = useMemo(() => {
+    const map = new Map<string, SceneLink[]>();
+    sceneLinks.forEach(link => {
+      const arr = map.get(link.scene_number) || [];
+      arr.push(link);
+      map.set(link.scene_number, arr);
+    });
+    return map;
+  }, [sceneLinks]);
+
+  const getSceneReferences = useCallback((scene: ScriptLine, displayIndex: number) => {
+    const sceneNumber = scene.meta.sceneNumber || String(displayIndex + 1);
+    const links = sceneLinksByNumber.get(sceneNumber) || [];
+    return links.map(l => referencesByAssetId.get(l.asset_id)).filter(Boolean) as { id: string; url: string; title: string }[];
+  }, [sceneLinksByNumber, referencesByAssetId]);
 
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
@@ -1350,7 +1383,7 @@ export default function EditorPage() {
                     <div style={{ flex: 1, fontSize: 12, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                        {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
                     </div>
-                    <div style={{ marginTop: 'auto', display: 'flex', gap: 6, paddingTop: 8 }}>
+                    <div style={{ display: 'flex', gap: 6, paddingTop: 8 }}>
                       {/* Show characters in this scene */}
                       {(() => {
                         const startIdx = lines.findIndex(l => l.id === scene.id);
@@ -1361,6 +1394,21 @@ export default function EditorPage() {
                         ));
                       })()}
                     </div>
+                    {(() => {
+                      const refs = getSceneReferences(scene, i);
+                      if (refs.length === 0) return null;
+                      return (
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6 }}>
+                          {refs.slice(0, 4).map(r => (
+                            <img key={r.id} src={r.url} title={r.title} alt={r.title}
+                              style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.1)' }} />
+                          ))}
+                          {refs.length > 4 && (
+                            <span style={{ fontSize: 9, color: 'var(--fg-muted)', alignSelf: 'center' }}>+{refs.length - 4}</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </motion.div>
                 );
               })}
