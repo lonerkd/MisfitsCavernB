@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS studio_boards (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Studio assets (mood board pins)
+-- Studio assets (mood board pins + library uploads)
 CREATE TABLE IF NOT EXISTS studio_assets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   board_id UUID NOT NULL REFERENCES studio_boards(id) ON DELETE CASCADE,
@@ -144,10 +144,22 @@ CREATE TABLE IF NOT EXISTS studio_assets (
   title TEXT,
   asset_url TEXT NOT NULL,
   asset_type TEXT DEFAULT 'image',
+  category TEXT,
+  file_size BIGINT,
   position_x INT DEFAULT 0,
   position_y INT DEFAULT 0,
   width INT DEFAULT 300,
   height INT DEFAULT 300,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Asset review comments (Frame.io-style timecoded feedback)
+CREATE TABLE IF NOT EXISTS asset_comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  asset_id UUID NOT NULL REFERENCES studio_assets(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  timecode TEXT,
+  content TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -228,6 +240,7 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_feed ENABLE ROW LEVEL SECURITY;
 ALTER TABLE studio_boards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE studio_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE asset_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_tasks ENABLE ROW LEVEL SECURITY;
@@ -291,6 +304,13 @@ CREATE POLICY "Authenticated users send messages" ON messages FOR INSERT WITH CH
 -- RLS Policies: Studio
 CREATE POLICY "Studio boards owner only" ON studio_boards FOR ALL USING (user_id = auth.uid());
 CREATE POLICY "Studio assets owner only" ON studio_assets FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "Asset owner can view comments" ON asset_comments FOR SELECT USING (
+  asset_id IN (SELECT id FROM studio_assets WHERE user_id = auth.uid())
+);
+CREATE POLICY "Asset owner can comment" ON asset_comments FOR INSERT WITH CHECK (
+  auth.uid() IS NOT NULL AND user_id = auth.uid() AND
+  asset_id IN (SELECT id FROM studio_assets WHERE user_id = auth.uid())
+);
 
 -- RLS Policies: Portfolio
 CREATE POLICY "Portfolio publicly readable" ON portfolio_projects FOR SELECT USING (true);
@@ -392,3 +412,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Storage: real file uploads for the Studio asset library/review system
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('studio-assets', 'studio-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Studio assets are publicly readable" ON storage.objects FOR SELECT USING (bucket_id = 'studio-assets');
+CREATE POLICY "Users upload their own studio assets" ON storage.objects FOR INSERT WITH CHECK (
+  bucket_id = 'studio-assets' AND (storage.foldername(name))[1] = auth.uid()::text
+);
+CREATE POLICY "Users delete their own studio assets" ON storage.objects FOR DELETE USING (
+  bucket_id = 'studio-assets' AND (storage.foldername(name))[1] = auth.uid()::text
+);

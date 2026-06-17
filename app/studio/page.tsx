@@ -9,11 +9,12 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
-import { getAllStudioAssets, getOrCreateBoardForProject, addStudioAsset, deleteStudioAsset } from '@/lib/supabase/studio';
+import { getAllStudioAssets, getOrCreateBoardForProject, addStudioAsset, deleteStudioAsset, getAssetComments, addAssetComment, getAssetCommentCounts } from '@/lib/supabase/studio';
+import { uploadAssetFile, detectAssetType, formatFileSize } from '@/lib/supabase/storage';
 import { logActivity } from '@/lib/supabase/activity';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useProject, type ScriptSummary } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
@@ -25,16 +26,9 @@ interface Asset {
   category: string;
   size: string;
   dateAdded: string;
+  url: string;
+  commentCount: number;
 }
-
-const ASSETS: Asset[] = [
-  { id: '1', name: 'Femme Fatale — Draft 9', type: 'document', category: 'Screenplays', size: '248 KB', dateAdded: '2026-04-15' },
-  { id: '2', name: '10 Million — Final Cut', type: 'video', category: 'Music Videos', size: '4.2 GB', dateAdded: '2026-04-20' },
-  { id: '3', name: 'The Briefcase — Poster Concept', type: 'image', category: 'Marketing', size: '3.8 MB', dateAdded: '2026-04-10' },
-  { id: '4', name: 'Production Score — V1', type: 'audio', category: 'Audio', size: '68 MB', dateAdded: '2026-03-28' },
-  { id: '5', name: 'Grand PSA — Grade LUT', type: 'document', category: 'Color', size: '12 KB', dateAdded: '2026-03-15' },
-  { id: '6', name: 'Altitude — Raw Footage B-Roll', type: 'video', category: 'Documentaries', size: '11.3 GB', dateAdded: '2026-02-20' },
-];
 
 const CONCEPT_IMAGES = [
   { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
@@ -96,8 +90,10 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
             {asset.category}
           </span>
         </div>
-        {asset.type === 'video' && (
-           <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#ccc' }}>3 Notes</span>
+        {asset.commentCount > 0 && (
+           <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#ccc' }}>
+             {asset.commentCount} {asset.commentCount === 1 ? 'Note' : 'Notes'}
+           </span>
         )}
       </div>
 
@@ -113,10 +109,59 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
   );
 }
 
-// Frame.io style Asset Review Modal
-function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isOpen: boolean; onClose: () => void }) {
+interface AssetComment {
+  id: string;
+  content: string;
+  timecode: string | null;
+  created_at: string;
+  profiles?: { username?: string; avatar_url?: string };
+}
+
+function formatTimecode(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Frame.io style Asset Review Modal — real video playback, real persisted comments
+function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
+  asset: Asset | null;
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string | null;
+  onCommentPosted: (assetId: string) => void;
+}) {
+  const [comments, setComments] = useState<AssetComment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [posting, setPosting] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    if (!asset || !isOpen) return;
+    setLoadingComments(true);
+    getAssetComments(asset.id)
+      .then(data => setComments(data || []))
+      .catch(() => setComments([]))
+      .finally(() => setLoadingComments(false));
+  }, [asset?.id, isOpen]);
+
   if (!asset || !isOpen) return null;
-  
+
+  const handleSend = async () => {
+    if (!userId || !draft.trim()) return;
+    setPosting(true);
+    try {
+      const timecode = asset.type === 'video' ? formatTimecode(currentTime) : null;
+      const created = await addAssetComment(asset.id, userId, draft.trim(), timecode || undefined);
+      setComments(prev => [...prev, created]);
+      setDraft('');
+      onCommentPosted(asset.id);
+    } catch { /* leave draft intact on failure */ }
+    setPosting(false);
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -129,12 +174,17 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
         <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
-             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name} <span style={{ color: '#666', marginLeft: 8 }}>V2</span></div>
-             <div style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(0,204,102,0.1)', color: '#00cc66', borderRadius: 4, textTransform: 'uppercase' }}>Approved</div>
+             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name}</div>
            </div>
            <div style={{ display: 'flex', gap: 12 }}>
-             <button className="link-btn"><Download size={12} /> Download</button>
-             <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Share Link</button>
+             <a href={asset.url} download className="link-btn" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Download size={12} /> Download</a>
+             <button
+               className="link-btn"
+               style={{ background: 'var(--accent)', color: 'var(--bg)' }}
+               onClick={() => { navigator.clipboard.writeText(asset.url); }}
+             >
+               Copy Link
+             </button>
            </div>
         </div>
 
@@ -143,41 +193,69 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
           {/* Main Viewer */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, background: '#000', position: 'relative' }}>
              {asset.type === 'video' ? (
-               <div style={{ width: '100%', maxWidth: 1000, aspectRatio: '16/9', background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-                 <Video size={48} color="#333" style={{ marginBottom: 16 }} />
-                 <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>VIDEO PLAYER MOCKUP</div>
+               <video
+                 ref={videoRef}
+                 src={asset.url}
+                 controls
+                 onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime)}
+                 style={{ width: '100%', maxWidth: 1000, maxHeight: '100%', borderRadius: 8, background: '#111' }}
+               />
+             ) : asset.type === 'image' ? (
+               <img src={asset.url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+             ) : asset.type === 'audio' ? (
+               <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+                 <Music size={48} color="#555" />
+                 <audio src={asset.url} controls style={{ width: '100%' }} />
                </div>
              ) : (
-               <img src={CONCEPT_IMAGES[1].url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                 <FileText size={48} color="#555" />
+                 <a href={asset.url} target="_blank" rel="noreferrer" className="link-btn" style={{ textDecoration: 'none' }}>Open Document</a>
+               </div>
              )}
           </div>
 
           {/* Comments Sidebar (Frame.io style) */}
           <div style={{ width: 340, background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
-            
+
             <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {[
-                { time: '00:12:04', user: 'Director', text: 'Color grade looks a bit too magenta here. Let\'s pull it back toward teal.' },
-                { time: '00:15:22', user: 'Client', text: 'Can we cut this shot earlier? The pacing drags.' },
-                { time: 'Global', user: 'Sound Mixer', text: 'Stems are uploaded, ready for final layback.' }
-              ].map((comment, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{comment.user.charAt(0)}</div>
+              {loadingComments && <div style={{ fontSize: 11, color: '#666' }}>Loading feedback…</div>}
+              {!loadingComments && comments.length === 0 && (
+                <div style={{ fontSize: 11, color: '#666' }}>No feedback yet — be the first to leave a note.</div>
+              )}
+              {comments.map((comment) => (
+                <div key={comment.id} style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                    {(comment.profiles?.username || '?').charAt(0).toUpperCase()}
+                  </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{comment.user}</span>
-                      <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.time}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{comment.profiles?.username || 'Unknown'}</span>
+                      {comment.timecode && (
+                        <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>
+                      )}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.text}</div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.content}</div>
                   </div>
                 </div>
               ))}
             </div>
 
             <div style={{ padding: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-               <textarea placeholder="Leave a comment at current timecode..." style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }} />
-               <button style={{ width: '100%', padding: 10, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer' }}>Send Feedback</button>
+               <textarea
+                 value={draft}
+                 onChange={e => setDraft(e.target.value)}
+                 placeholder={asset.type === 'video' ? `Leave a comment at ${formatTimecode(currentTime)}...` : 'Leave a comment...'}
+                 style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }}
+               />
+               <button
+                 onClick={handleSend}
+                 disabled={posting || !draft.trim()}
+                 style={{ width: '100%', padding: 10, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: posting || !draft.trim() ? 'default' : 'pointer', opacity: posting || !draft.trim() ? 0.5 : 1 }}
+               >
+                 {posting ? 'Sending…' : 'Send Feedback'}
+               </button>
             </div>
           </div>
         </div>
@@ -186,7 +264,59 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
   );
 }
 
-function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function IntakeModal({ isOpen, onClose, userId, boardId, projectId, onUploaded }: {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string | null;
+  boardId: string | null;
+  projectId: string | null;
+  onUploaded: (asset: Asset) => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [category, setCategory] = useState('Asset');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => { setFile(null); setCategory('Asset'); setError(null); };
+
+  const handleSubmit = async () => {
+    if (!file || !userId || !boardId) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const { url } = await uploadAssetFile(userId, file);
+      const assetType = detectAssetType(file);
+      const dbAsset = await addStudioAsset({
+        board_id: boardId,
+        user_id: userId,
+        title: file.name,
+        asset_url: url,
+        asset_type: assetType,
+        category,
+        file_size: file.size,
+      });
+      if (projectId) await logActivity(userId, 'uploaded_asset', 'studio_asset', dbAsset.id, { project_id: projectId, title: file.name });
+      onUploaded({
+        id: dbAsset.id,
+        name: file.name,
+        type: assetType,
+        category,
+        size: formatFileSize(file.size),
+        dateAdded: new Date(dbAsset.created_at).toISOString().split('T')[0],
+        url,
+        commentCount: 0,
+      });
+      reset();
+      onClose();
+    } catch {
+      setError('Upload failed — please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -195,7 +325,7 @@ function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={onClose}
+          onClick={() => { reset(); onClose(); }}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -206,37 +336,63 @@ function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Upload raw footage, references, or documents to the project vault.</p>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ padding: 40, border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', cursor: 'pointer' }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={e => setFile(e.target.files?.[0] || null)}
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const dropped = e.dataTransfer.files?.[0];
+                  if (dropped) setFile(dropped);
+                }}
+                style={{
+                  padding: 40, border: `2px dashed ${dragOver ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 12, textAlign: 'center', cursor: 'pointer',
+                  background: dragOver ? 'rgba(255,60,0,0.04)' : 'transparent', transition: 'all 0.2s',
+                }}
+              >
                 <Upload size={32} color="var(--accent)" style={{ marginBottom: 12 }} />
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Drop files here or click to browse</div>
-                <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 4 }}>Maximum file size: 10GB</div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{file ? file.name : 'Drop a file here or click to browse'}</div>
+                <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 4 }}>{file ? formatFileSize(file.size) : 'Any file type'}</div>
               </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
-                  <select style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
-                    <option>Raw Footage</option>
-                    <option>Reference</option>
-                    <option>Production Doc</option>
-                    <option>Asset</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
-                   <select style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
-                    <option>Video</option>
-                    <option>Image</option>
-                    <option>PDF</option>
-                    <option>Audio</option>
-                  </select>
-                </div>
+
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                >
+                  <option>Raw Footage</option>
+                  <option>Reference</option>
+                  <option>Production Doc</option>
+                  <option>Asset</option>
+                </select>
               </div>
-              
-              <button style={{ marginTop: 12, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: 'pointer' }}>
-                Start Intake Process
+
+              {error && <div style={{ fontSize: 11, color: '#ff5555' }}>{error}</div>}
+              {!boardId && <div style={{ fontSize: 11, color: '#ffaa00' }}>No active project board yet — open a project first.</div>}
+
+              <button
+                onClick={handleSubmit}
+                disabled={!file || !boardId || uploading}
+                style={{
+                  marginTop: 12, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8,
+                  fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2,
+                  cursor: !file || !boardId || uploading ? 'default' : 'pointer',
+                  opacity: !file || !boardId || uploading ? 0.5 : 1,
+                }}
+              >
+                {uploading ? 'Uploading…' : 'Start Intake Process'}
               </button>
             </div>
           </motion.div>
@@ -610,7 +766,8 @@ export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
-  const [assetsList, setAssetsList] = useState<Asset[]>(ASSETS);
+  const [assetsList, setAssetsList] = useState<Asset[]>([]);
+  const [assetsLoading, setAssetsLoading] = useState(true);
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
@@ -632,19 +789,22 @@ export default function StudioPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       setUser(user);
-      
-      getAllStudioAssets(user.id).then(data => {
-        if (data && data.length > 0) {
-          setAssetsList(data.map(a => ({
-            id: a.id,
-            name: a.title || 'Untitled',
-            type: (a.asset_type as any) || 'document',
-            category: 'Studio',
-            size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
-          })));
-        }
-      });
+
+      getAllStudioAssets(user.id).then(async data => {
+        const rows = data || [];
+        const counts = await getAssetCommentCounts(rows.map((a: any) => a.id)).catch(() => ({}));
+        setAssetsList(rows.map((a: any) => ({
+          id: a.id,
+          name: a.title || 'Untitled',
+          type: (a.asset_type as any) || 'document',
+          category: a.category || 'Studio',
+          size: formatFileSize(a.file_size),
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+          url: a.asset_url,
+          commentCount: counts[a.id] || 0,
+        })));
+        setAssetsLoading(false);
+      }).catch(() => setAssetsLoading(false));
     });
   }, []);
 
@@ -770,8 +930,21 @@ export default function StudioPage() {
         </div>
       </nav>
 
-      <IntakeModal isOpen={showIntake} onClose={() => setShowIntake(false)} />
-      <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
+      <IntakeModal
+        isOpen={showIntake}
+        onClose={() => setShowIntake(false)}
+        userId={user?.id || null}
+        boardId={boardId}
+        projectId={activeProject?.id || null}
+        onUploaded={asset => setAssetsList(prev => [asset, ...prev])}
+      />
+      <AssetReviewModal
+        asset={reviewAsset}
+        isOpen={!!reviewAsset}
+        onClose={() => setReviewAsset(null)}
+        userId={user?.id || null}
+        onCommentPosted={assetId => setAssetsList(prev => prev.map(a => a.id === assetId ? { ...a, commentCount: a.commentCount + 1 } : a))}
+      />
       <ReferenceSearchModal
         isOpen={showRefSearch}
         onClose={() => setShowRefSearch(false)}
@@ -1125,9 +1298,19 @@ export default function StudioPage() {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-              {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
-            </div>
+            {assetsLoading ? (
+              <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, fontFamily: 'var(--mono)' }}>Loading library…</div>
+            ) : filtered.length === 0 ? (
+              <div style={{ padding: '60px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12 }}>
+                <Archive size={28} color="#444" style={{ marginBottom: 12 }} />
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 4 }}>No assets in your library yet.</div>
+                <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Use Intake above to upload raw footage, references, or documents.</div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
+              </div>
+            )}
           </AnimatedSection>
         )}
 
