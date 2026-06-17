@@ -17,6 +17,8 @@ import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { useProject, type ScriptSummary } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
+import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
+import { loadCharacterProfiles } from '@/lib/scriptos/bible';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
 
 interface Asset {
@@ -30,14 +32,22 @@ interface Asset {
   commentCount: number;
 }
 
-const CONCEPT_IMAGES = [
-  { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
-  { id: 'c2', url: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80', title: 'Cinematic Framing', aspect: 'wide' },
-  { id: 'c3', url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80', title: 'Low Key Lighting', aspect: 'square' },
-  { id: 'c4', url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80', title: 'Urban Gritty Texture', aspect: 'tall' },
-  { id: 'c5', url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80', title: 'Vintage Lens Flare', aspect: 'wide' },
-  { id: 'c6', url: 'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&q=80', title: 'Dramatic Shadows', aspect: 'square' },
-];
+function humanizeActivity(action: string, metadata: Record<string, any> | null): string {
+  const verb = action.replace(/_/g, ' ');
+  const title = metadata?.title;
+  return title ? `${verb} — ${title}` : verb;
+}
+
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
 
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
@@ -762,10 +772,12 @@ function ReferenceSearchModal({
 }
 
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects, refreshProject } = useProject();
+  const { activeProject, setActiveProject, projects, refreshProject, updateProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
   const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [assetsLoading, setAssetsLoading] = useState(true);
   const [showIntake, setShowIntake] = useState(false);
@@ -826,6 +838,12 @@ export default function StudioPage() {
     [activeProject?.references]
   );
 
+  const characterNames = useMemo(() => {
+    const scriptId = activeProject?.scripts?.[0]?.id;
+    if (!scriptId) return [];
+    return loadCharacterProfiles(scriptId).map(p => p.name);
+  }, [activeProject?.scripts]);
+
   const handleLinkToScene = async (assetId: string) => {
     if (!user || !activeProject) return;
     const scripts = activeProject.scripts || [];
@@ -866,6 +884,14 @@ export default function StudioPage() {
   const handleDeleteConceptRef = async (id: string) => {
     if (!activeProject) return;
     try { await deleteStudioAsset(id); } finally { await refreshProject(activeProject.id); }
+  };
+
+  const handleSaveBudget = async () => {
+    if (!activeProject) return;
+    const value = budgetInput.trim() ? parseFloat(budgetInput) : null;
+    await updateProject(activeProject.id, { budget: value });
+    await refreshProject(activeProject.id);
+    setEditingBudget(false);
   };
 
   const addReferenceToBoard = async (ref: ReferenceResult) => {
@@ -1029,21 +1055,34 @@ export default function StudioPage() {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
                         <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Completion</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>85%</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                          {Math.round((getPhaseIndex(activeProject.project_type, activeProject.status) / (getPhaseTemplate(activeProject.project_type).length - 1)) * 100)}%
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div>
                     <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Active Leads</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ff3c00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>JD</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#0099ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>SK</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+4</div>
-                    </div>
+                    {(activeProject.crew || []).length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No crew assigned yet.</div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {(activeProject.crew || []).slice(0, 3).map(c => (
+                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                            {c.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        ))}
+                        {(activeProject.crew || []).length > 3 && (
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                            +{(activeProject.crew || []).length - 3}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Real Production Budget Module */}
+                {/* Production Budget */}
                 <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -1051,74 +1090,73 @@ export default function StudioPage() {
                     </div>
                     <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
-                    <div>
+                  {editingBudget ? (
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={budgetInput}
+                        onChange={e => setBudgetInput(e.target.value)}
+                        autoFocus
+                        placeholder="0"
+                        style={{ fontSize: '1.6rem', fontFamily: 'var(--display)', background: 'transparent', border: '1px solid #333', borderRadius: 8, padding: '8px 12px', color: '#fff', width: 220 }}
+                      />
+                      <button onClick={handleSaveBudget} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Save</button>
+                      <button onClick={() => setEditingBudget(false)} className="link-btn">Cancel</button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => { setBudgetInput(activeProject.budget != null ? String(activeProject.budget) : ''); setEditingBudget(true); }}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
-                      <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>$1.25M</div>
-                      <div style={{ width: '100%', height: 4, background: '#333', borderRadius: 2, marginTop: 12, overflow: 'hidden', display: 'flex' }}>
-                         <div style={{ width: '30%', background: '#ffaa00' }} title="Above the Line" />
-                         <div style={{ width: '50%', background: '#0099ff' }} title="Below the Line" />
-                         <div style={{ width: '20%', background: '#00cc66' }} title="Post Production" />
+                      <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: activeProject.budget != null ? '#fff' : '#555', letterSpacing: 2 }}>
+                        {activeProject.budget != null ? `$${Number(activeProject.budget).toLocaleString()}` : 'Click to set budget'}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#ffaa00' }}>Above the Line</span>
-                         <span>$375,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#0099ff' }}>Below the Line</span>
-                         <span>$625,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#00cc66' }}>Post-Production</span>
-                         <span>$250,000</span>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Project Milestone Timeline */}
                 <div style={{ marginTop: 40 }}>
                    <SectionLabel text="Project Milestones" />
                    <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      {[
-                        { label: 'Script Finalized', date: 'April 10', completed: true },
-                        { label: 'Casting Call', date: 'April 20', completed: true },
-                        { label: 'Principle Photography', date: 'May 15', completed: false },
-                        { label: 'VFX & Post', date: 'June 30', completed: false },
-                        { label: 'World Premiere', date: 'August 12', completed: false },
-                      ].map((m, i) => (
-                        <div key={i} style={{ position: 'relative' }}>
-                           <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completed ? 'var(--accent)' : '#222', border: m.completed ? 'none' : '1px solid #444' }} />
-                           <div style={{ fontSize: 12, fontWeight: 700, color: m.completed ? '#fff' : '#666' }}>{m.label}</div>
-                           <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{m.date}</div>
-                        </div>
-                      ))}
+                      {getPhaseTemplate(activeProject.project_type).map((phase, i) => {
+                        const completed = getPhaseIndex(activeProject.project_type, activeProject.status) >= i;
+                        return (
+                          <div key={phase.id} style={{ position: 'relative' }}>
+                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: completed ? 'var(--accent)' : '#222', border: completed ? 'none' : '1px solid #444' }} />
+                             <div style={{ fontSize: 12, fontWeight: 700, color: completed ? '#fff' : '#666' }}>{phase.label}</div>
+                          </div>
+                        );
+                      })}
                    </div>
                 </div>
               </motion.div>
             </div>
-            
+
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ClipboardList size={16} /> Recent Activity
               </div>
+              {(activeProject.activity || []).length === 0 ? (
+                <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No activity yet.</div>
+              ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {[
-                  { user: 'JD', action: 'uploaded 12 raw files', time: '2h ago' },
-                  { user: 'SK', action: 'updated Scene 14 in ScriptOS', time: '5h ago' },
-                  { user: 'JD', action: 'tagged moodboard references', time: '1d ago' },
-                ].map((act, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>{act.user}</div>
+                {(activeProject.activity || []).slice(0, 6).map((act) => (
+                  <div key={act.id} style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>
+                      {(act.profiles?.username || '?').slice(0, 2).toUpperCase()}
+                    </div>
                     <div>
-                      <div style={{ fontSize: 11, color: '#eee' }}><span style={{ fontWeight: 700 }}>{act.user}</span> {act.action}</div>
-                      <div style={{ fontSize: 9, color: 'var(--fg-subtle)' }}>{act.time}</div>
+                      <div style={{ fontSize: 11, color: '#eee' }}>
+                        <span style={{ fontWeight: 700 }}>{act.profiles?.username || 'Someone'}</span> {humanizeActivity(act.action, act.metadata)}
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--fg-subtle)' }}>{timeAgo(act.created_at)}</div>
                     </div>
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}
@@ -1197,17 +1235,17 @@ export default function StudioPage() {
                      <Users size={16} /> Cast & Crew Hub
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                     {(activeProject?.crew || [
-                       { id: 'C1', name: 'James Miller', role: 'Director', status: 'confirmed' },
-                       { id: 'C2', name: 'Sarah Vance', role: 'DP / Cinematographer', status: 'confirmed' },
-                       { id: 'C3', name: 'Elena Kross', role: 'Lead Actress (Jane)', status: 'confirmed' },
-                       { id: 'C4', name: 'Marcus Thorne', role: 'Lead Actor (Detective)', status: 'pending' },
-                     ]).map((member, i) => (
+                     {(activeProject?.crew || []).length === 0 && (
+                       <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No crew assigned yet.</div>
+                     )}
+                     {(activeProject?.crew || []).map((member, i) => (
                        <CrewMemberCard key={member.id} member={member} index={i} />
                      ))}
-                     <button style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>
-                       + Recruit Crew / Invite Talent
-                     </button>
+                     {activeProject && (
+                       <Link href={`/projects/${activeProject.id}`} style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>
+                         + Recruit Crew / Invite Talent
+                       </Link>
+                     )}
                    </div>
                  </div>
 
@@ -1331,24 +1369,30 @@ export default function StudioPage() {
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
               </div>
               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
-                <img src={CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
+                {conceptImages[0] && (
+                  <img src={conceptImages[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
+                )}
                 <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                   <SectionLabel text="Slide 02" />
                   <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
-                  <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Cinematography & Mood</div>
+                  <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>
+                    {conceptImages.length > 0 ? 'Cinematography & Mood' : 'No Concept Board references yet'}
+                  </div>
                 </div>
               </div>
               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 03" />
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE CHARACTERS</h3>
-                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Casting & Archetypes</div>
+                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>
+                  {characterNames.length > 0 ? characterNames.slice(0, 4).join(' · ') : 'No Character Bible entries yet'}
+                </div>
               </div>
             </div>
-            
+
             <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
               <Info size={20} color="var(--accent)" />
               <div style={{ fontSize: 12, color: '#ccc' }}>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Pro Tip:</span> This deck is automatically generated using your Concept Board and ScriptOS Character Bible. Update them to see changes here.
+                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Pro Tip:</span> This deck pulls its visuals from your Concept Board and its cast list from your ScriptOS Character Bible. Update either to see changes here.
               </div>
             </div>
           </motion.div>

@@ -60,6 +60,7 @@ export interface ActivityEvent {
   target_id: string;
   metadata: Record<string, any> | null;
   created_at: string;
+  profiles?: { username: string; avatar_url?: string };
 }
 
 export interface Project {
@@ -70,6 +71,7 @@ export interface Project {
   accent_color?: string;
   project_type?: string;
   type?: string;
+  budget?: number | null;
   beats?: Beat[];
   crew?: CrewMember[];
   budget_items?: BudgetItem[];
@@ -111,7 +113,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId),
       supabase.from('scripts').select('id, title, status, format, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
       supabase.from('studio_boards').select('id').eq('name', projectId).maybeSingle(),
-      supabase.from('activity_feed').select('*').contains('metadata', { project_id: projectId }).order('created_at', { ascending: false }).limit(30),
+      supabase.from('activity_feed').select('*, profiles(username, avatar_url)').contains('metadata', { project_id: projectId }).order('created_at', { ascending: false }).limit(30),
     ]);
 
     if (!projectRes.data) return null;
