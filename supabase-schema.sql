@@ -77,6 +77,26 @@ CREATE TABLE IF NOT EXISTS script_collaborators (
   UNIQUE(script_id, user_id)
 );
 
+-- ScriptOS Character Bible (real, persisted, collaborative — replaces localStorage)
+CREATE TABLE IF NOT EXISTS script_characters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  full_name TEXT DEFAULT '',
+  age TEXT DEFAULT '',
+  description TEXT DEFAULT '',
+  backstory TEXT DEFAULT '',
+  motivation TEXT DEFAULT '',
+  arc TEXT DEFAULT '',
+  relationships TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  color TEXT DEFAULT '#ff3c00',
+  updated_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(script_id, name)
+);
+
 -- Jobs board
 CREATE TABLE IF NOT EXISTS jobs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -226,6 +246,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id);
 CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_feed(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_feed(created_at);
+CREATE INDEX IF NOT EXISTS idx_script_characters_script ON script_characters(script_id);
 
 -- Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -234,6 +255,7 @@ ALTER TABLE project_crew ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scripts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE script_collaborators ENABLE ROW LEVEL SECURITY;
+ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -286,6 +308,19 @@ CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CH
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
   last_edited_by = auth.uid() OR
   project_id IN (SELECT id FROM projects WHERE creator_id = auth.uid())
+);
+
+-- RLS Policies: Script Characters (Character Bible)
+CREATE POLICY "Script members can manage characters" ON script_characters FOR ALL USING (
+  script_id IN (
+    SELECT id FROM scripts WHERE
+      project_id IS NULL OR
+      project_id IN (
+        SELECT id FROM projects WHERE creator_id = auth.uid()
+        UNION
+        SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+      )
+  )
 );
 
 -- RLS Policies: Jobs

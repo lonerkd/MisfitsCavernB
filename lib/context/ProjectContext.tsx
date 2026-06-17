@@ -45,6 +45,21 @@ export interface ScriptSummary {
   updatedAt: string;
 }
 
+export interface CharacterProfile {
+  id: string;
+  script_id: string;
+  name: string;
+  full_name: string;
+  age: string;
+  description: string;
+  backstory: string;
+  motivation: string;
+  arc: string;
+  relationships: string;
+  notes: string;
+  color: string;
+}
+
 export interface ReferenceAsset {
   id: string;
   title: string;
@@ -82,6 +97,9 @@ export interface Project {
   boardId?: string | null;
   references?: ReferenceAsset[];
   activity?: ActivityEvent[];
+  // Character Bible, aggregated across every script in the project — so any
+  // module (Pitch Deck, casting, etc.) reads the same cast list as ScriptOS.
+  characters?: CharacterProfile[];
 }
 
 interface ProjectContextType {
@@ -136,6 +154,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }));
     }
 
+    const scriptIds = (scriptsRes.data || []).map((s: any) => s.id);
+    const { data: charactersData } = scriptIds.length
+      ? await supabase.from('script_characters').select('*').in('script_id', scriptIds)
+      : { data: [] as any[] };
+
     const p = projectRes.data;
     return {
       ...p,
@@ -154,6 +177,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       boardId,
       references,
       activity: activityRes.data || [],
+      characters: charactersData || [],
     };
   };
 
@@ -230,6 +254,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'scripts' }, (payload) => {
           const row = (payload.new || payload.old) as any;
           if (row?.project_id) refreshProject(row.project_id);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'script_characters' }, (payload) => {
+          // script_characters is keyed by script_id — ripple to whichever
+          // project currently has that script open.
+          const row = (payload.new || payload.old) as any;
+          setActiveProjectState(prev => {
+            if (prev?.scripts?.some(s => s.id === row?.script_id)) refreshProject(prev.id);
+            return prev;
+          });
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'studio_assets' }, (payload) => {
           // studio_assets is keyed by board_id, not project_id — ripple to

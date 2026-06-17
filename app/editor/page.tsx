@@ -17,7 +17,7 @@ import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
+import { getScriptCharacters, ensureScriptCharacters, updateScriptCharacter, subscribeToScriptCharacters, type DBCharacterProfile } from '@/lib/supabase/characters';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
@@ -25,6 +25,7 @@ import { useProject } from '@/lib/context/ProjectContext';
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { useAuth } from '@/lib/context/AuthContext';
 import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLinks';
+import { supabase } from '@/lib/supabase/client';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -236,8 +237,9 @@ export default function EditorPage() {
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
   const [showTitleEditor, setShowTitleEditor] = useState(false);
   const [showSceneNumbers, setShowSceneNumbers] = useState(true);
-  const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
+  const [charProfiles, setCharProfiles] = useState<DBCharacterProfile[]>([]);
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
+  const charSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [showCharBible, setShowCharBible] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sessionStartWords, setSessionStartWords] = useState(0);
@@ -265,7 +267,6 @@ export default function EditorPage() {
     setCurrentScript(script);
     setContent(script.content || PLACEHOLDER);
     setTitlePage(loadTitlePage(script.id));
-    setCharProfiles(loadCharacterProfiles(script.id));
     setSessionStartWords((script.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
@@ -301,7 +302,6 @@ export default function EditorPage() {
         setCurrentScript(latest);
         setContent(latest.content || PLACEHOLDER);
         setTitlePage(loadTitlePage(latest.id));
-        setCharProfiles(loadCharacterProfiles(latest.id));
         setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
       } else {
         const fresh = await createNewScript('My First Screenplay');
@@ -334,6 +334,39 @@ export default function EditorPage() {
     if (!currentScript) { setSceneLinks([]); return; }
     getSceneLinksForScript(currentScript.id).then(setSceneLinks).catch(() => setSceneLinks([]));
   }, [currentScript?.id]);
+
+  // Character Bible — real, persisted, collaborative: load from Supabase and
+  // ripple in any edits a collaborator makes elsewhere in real time.
+  useEffect(() => {
+    if (!currentScript || currentScript.id === 'demo') { setCharProfiles([]); return; }
+    let active = true;
+    getScriptCharacters(currentScript.id).then(profiles => { if (active) setCharProfiles(profiles); }).catch(() => {});
+
+    const channel = subscribeToScriptCharacters(currentScript.id, (payload) => {
+      setCharProfiles(prev => {
+        if (payload.eventType === 'INSERT') {
+          return prev.some(p => p.id === payload.new.id) ? prev : [...prev, payload.new];
+        }
+        if (payload.eventType === 'UPDATE') {
+          return prev.map(p => p.id === payload.new.id ? payload.new : p);
+        }
+        if (payload.eventType === 'DELETE') {
+          return prev.filter(p => p.id !== payload.old.id);
+        }
+        return prev;
+      });
+    });
+
+    return () => { active = false; supabase.removeChannel(channel); };
+  }, [currentScript?.id]);
+
+  const queueCharacterFieldSave = useCallback((id: string, field: keyof DBCharacterProfile, value: string) => {
+    const key = `${id}:${field}`;
+    if (charSaveTimers.current[key]) clearTimeout(charSaveTimers.current[key]);
+    charSaveTimers.current[key] = setTimeout(() => {
+      updateScriptCharacter(id, { [field]: value }).catch(() => {});
+    }, 700);
+  }, []);
 
   // Parser hook
   useEffect(() => {
@@ -694,13 +727,24 @@ export default function EditorPage() {
       return true;
     });
   }, [scenesList, sceneFilter]);
-  const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
+  const chars = useMemo(() => [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))], [lines]);
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
   const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
   const dialogueLines = lines.filter(l => l.type === 'dialogue').length;
   const actionLines = lines.filter(l => l.type === 'action').length;
   const dialogueRatio = actionLines + dialogueLines > 0 ? Math.round((dialogueLines / (actionLines + dialogueLines)) * 100) : 0;
+
+  // Newly-detected character names get a real Character Bible row so the
+  // cast list is queryable (by Studio, the Pitch Deck, etc.) without
+  // re-parsing script content elsewhere.
+  useEffect(() => {
+    if (!currentScript || currentScript.id === 'demo' || chars.length === 0) return;
+    const timer = setTimeout(() => {
+      ensureScriptCharacters(currentScript.id, chars).then(setCharProfiles).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [chars, currentScript?.id]);
 
   // Scene word counts (for board cards)
   const sceneWordCounts = useMemo(() => {
@@ -2153,7 +2197,14 @@ export default function EditorPage() {
                     const stat = charStats.find(cs => cs.name === name);
                     return (
                       <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
-                        <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
+                        <button onClick={async () => {
+                          const next = isSelected ? null : name;
+                          setSelectedCharProfile(next);
+                          if (next && currentScript && currentScript.id !== 'demo' && !profile) {
+                            const updated = await ensureScriptCharacters(currentScript.id, [name]);
+                            setCharProfiles(updated);
+                          }
+                        }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
@@ -2166,11 +2217,10 @@ export default function EditorPage() {
                               <div key={field}>
                                 <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>
                                 <textarea value={profile?.[field] || ''} onChange={e => {
-                                  const updated = mergeProfiles(chars, charProfiles);
-                                  const idx = updated.findIndex(p => p.name.toUpperCase() === name.toUpperCase());
-                                  if (idx >= 0) updated[idx] = { ...updated[idx], [field]: e.target.value };
-                                  setCharProfiles(updated);
-                                  if (currentScript) saveCharacterProfiles(currentScript.id, updated);
+                                  const value = e.target.value;
+                                  if (!profile) return;
+                                  setCharProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, [field]: value } : p));
+                                  queueCharacterFieldSave(profile.id, field, value);
                                 }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', minHeight: 40, fontFamily: 'inherit' }} />
                               </div>
                             ))}

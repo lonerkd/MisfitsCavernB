@@ -18,7 +18,6 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useProject, type ScriptSummary } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
 import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
-import { loadCharacterProfiles } from '@/lib/scriptos/bible';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
 
 interface Asset {
@@ -838,11 +837,10 @@ export default function StudioPage() {
     [activeProject?.references]
   );
 
-  const characterNames = useMemo(() => {
-    const scriptId = activeProject?.scripts?.[0]?.id;
-    if (!scriptId) return [];
-    return loadCharacterProfiles(scriptId).map(p => p.name);
-  }, [activeProject?.scripts]);
+  const characterNames = useMemo(
+    () => (activeProject?.characters || []).map(c => c.name),
+    [activeProject?.characters]
+  );
 
   const handleLinkToScene = async (assetId: string) => {
     if (!user || !activeProject) return;
