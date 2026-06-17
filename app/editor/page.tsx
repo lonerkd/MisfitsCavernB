@@ -2213,6 +2213,22 @@ export default function EditorPage() {
                         </button>
                         {isSelected && (
                           <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {(activeProject?.crew?.length ?? 0) > 0 && (
+                              <div>
+                                <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Played By</label>
+                                <select value={profile?.played_by_crew_id || ''} onChange={e => {
+                                  const value = e.target.value;
+                                  if (!profile) return;
+                                  setCharProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, played_by_crew_id: value || null } : p));
+                                  updateScriptCharacter(profile.id, { played_by_crew_id: value || null });
+                                }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}>
+                                  <option value="" style={{ background: '#111' }}>Unassigned</option>
+                                  {activeProject!.crew!.map(c => (
+                                    <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.name} ({c.role})</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                             {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
                               <div key={field}>
                                 <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>

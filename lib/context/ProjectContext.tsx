@@ -61,6 +61,7 @@ export interface CharacterProfile {
   relationships: string;
   notes: string;
   color: string;
+  played_by_crew_id?: string | null;
 }
 
 export interface ReferenceAsset {

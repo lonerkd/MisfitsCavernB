@@ -627,7 +627,7 @@ function BeatCard({ beat, index, onDelete }: { beat: any; index: number; onDelet
   );
 }
 
-function CrewMemberCard({ member, index }: { member: any; index: number }) {
+function CrewMemberCard({ member, index, castAs }: { member: any; index: number; castAs?: string[] }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -649,6 +649,9 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
         <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+        {castAs && castAs.length > 0 && (
+          <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>as {castAs.join(', ')}</div>
+        )}
       </div>
       <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
         {member.status || 'pending'}
@@ -1379,7 +1382,12 @@ export default function StudioPage() {
                        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No crew assigned yet.</div>
                      )}
                      {(activeProject?.crew || []).map((member, i) => (
-                       <CrewMemberCard key={member.id} member={member} index={i} />
+                       <CrewMemberCard
+                         key={member.id}
+                         member={member}
+                         index={i}
+                         castAs={(activeProject?.characters || []).filter(c => c.played_by_crew_id === member.id).map(c => c.name)}
+                       />
                      ))}
                      {activeProject && (
                        <Link href={`/projects/${activeProject.id}`} style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>

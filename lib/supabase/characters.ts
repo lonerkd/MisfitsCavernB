@@ -14,6 +14,7 @@ export interface DBCharacterProfile {
   relationships: string;
   notes: string;
   color: string;
+  played_by_crew_id?: string | null;
   updated_by?: string;
   created_at: string;
   updated_at: string;
