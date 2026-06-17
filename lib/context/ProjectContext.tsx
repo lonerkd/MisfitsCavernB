@@ -48,6 +48,7 @@ export interface ReferenceAsset {
   id: string;
   title: string;
   url: string;
+  sceneLinks?: { id: string; scriptId: string; sceneNumber: string }[];
 }
 
 export interface ActivityEvent {
@@ -116,7 +117,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const boardId = boardRes.data?.id ?? null;
     if (boardId) {
       const { data: assets } = await supabase.from('studio_assets').select('id, title, asset_url').eq('board_id', boardId);
-      references = (assets || []).map((a: any) => ({ id: a.id, title: a.title || 'Untitled', url: a.asset_url }));
+      const assetIds = (assets || []).map((a: any) => a.id);
+      const { data: links } = assetIds.length
+        ? await supabase.from('scene_links').select('*').in('asset_id', assetIds)
+        : { data: [] as any[] };
+      references = (assets || []).map((a: any) => ({
+        id: a.id,
+        title: a.title || 'Untitled',
+        url: a.asset_url,
+        sceneLinks: (links || [])
+          .filter((l: any) => l.asset_id === a.id)
+          .map((l: any) => ({ id: l.id, scriptId: l.script_id, sceneNumber: l.scene_number })),
+      }));
     }
 
     const p = projectRes.data;

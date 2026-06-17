@@ -14,7 +14,8 @@ import { logActivity } from '@/lib/supabase/activity';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject, type ScriptSummary } from '@/lib/context/ProjectContext';
+import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
 
 interface Asset {
@@ -354,7 +355,17 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ image, index, onDelete }: { image: { id: string; url: string; title: string }; index: number; onDelete?: (id: string) => void }) {
+function ConceptCard({ image, index, onDelete, onLinkToScene, scripts }: {
+  image: { id: string; url: string; title: string; sceneLinks?: { id: string; scriptId: string; sceneNumber: string }[] };
+  index: number;
+  onDelete?: (id: string) => void;
+  onLinkToScene?: (assetId: string) => void;
+  scripts?: ScriptSummary[];
+}) {
+  const linkLabels = (image.sceneLinks || []).map(l => {
+    const script = scripts?.find(s => s.id === l.scriptId);
+    return `${script ? script.title : 'Script'} · Scene ${l.sceneNumber}`;
+  });
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -371,6 +382,15 @@ function ConceptCard({ image, index, onDelete }: { image: { id: string; url: str
       }}
     >
       <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.8 }} />
+      {linkLabels.length > 0 && (
+        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {linkLabels.map((label, i) => (
+            <span key={i} style={{ fontSize: 9, fontFamily: 'var(--mono)', color: '#fff', background: 'rgba(255,60,0,0.85)', borderRadius: 4, padding: '3px 6px', letterSpacing: 0.5 }}>
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -382,16 +402,26 @@ function ConceptCard({ image, index, onDelete }: { image: { id: string; url: str
         opacity: 0,
         transition: 'opacity 0.3s'
       }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 6 }}>
           <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1 }}>{image.title}</span>
-          {onDelete && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(image.id); }}
-              style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
-            >
-              Remove
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {onLinkToScene && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onLinkToScene(image.id); }}
+                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
+              >
+                Link to Scene
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(image.id); }}
+                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
+              >
+                Remove
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -632,9 +662,34 @@ export default function StudioPage() {
 
   const boardId = activeProject?.boardId ?? null;
   const conceptImages = useMemo(
-    () => (activeProject?.references || []).map(r => ({ id: r.id, url: r.url, title: r.title })),
+    () => (activeProject?.references || []).map(r => ({ id: r.id, url: r.url, title: r.title, sceneLinks: r.sceneLinks })),
     [activeProject?.references]
   );
+
+  const handleLinkToScene = async (assetId: string) => {
+    if (!user || !activeProject) return;
+    const scripts = activeProject.scripts || [];
+    if (scripts.length === 0) {
+      window.alert('This project has no scripts yet — create one before linking references to scenes.');
+      return;
+    }
+    let scriptId = scripts[0].id;
+    if (scripts.length > 1) {
+      const choice = window.prompt(
+        `Which script?\n${scripts.map((s, i) => `${i + 1}. ${s.title}`).join('\n')}`,
+        '1'
+      );
+      const idx = Number(choice) - 1;
+      if (!choice || idx < 0 || idx >= scripts.length) return;
+      scriptId = scripts[idx].id;
+    }
+    const sceneNumber = window.prompt('Scene number (e.g. 4, 4A):');
+    if (!sceneNumber) return;
+    try {
+      await linkAssetToScene(scriptId, sceneNumber.trim(), assetId, user.id, activeProject.id);
+      await refreshProject(activeProject.id);
+    } catch { window.alert('Could not link reference to that scene.'); }
+  };
 
   const handleAddConceptRef = async () => {
     if (!user || !boardId || !activeProject) return;
@@ -925,7 +980,7 @@ export default function StudioPage() {
               </div>
             ) : (
               <div style={{ columnCount: 3, columnGap: 16 }}>
-                {conceptImages.map((img, i) => <ConceptCard key={img.id} image={img} index={i} onDelete={handleDeleteConceptRef} />)}
+                {conceptImages.map((img, i) => <ConceptCard key={img.id} image={img} index={i} onDelete={handleDeleteConceptRef} onLinkToScene={handleLinkToScene} scripts={activeProject?.scripts} />)}
               </div>
             )}
           </motion.div>

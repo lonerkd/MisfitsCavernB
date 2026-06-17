@@ -187,7 +187,24 @@ CREATE TABLE IF NOT EXISTS project_tasks (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Scene links: ties a studio_asset (reference/moodboard image) to a specific
+-- scene inside a script. Scenes aren't a stored entity — ScriptOS reparses
+-- the script's content into scenes on every load — so scene_number (the
+-- screenwriting industry's own stable identity for a scene) is the key,
+-- not a synthetic scene id that would change across reparses.
+CREATE TABLE IF NOT EXISTS scene_links (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  scene_number TEXT NOT NULL,
+  asset_id UUID NOT NULL REFERENCES studio_assets(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(script_id, scene_number, asset_id)
+);
+
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_scene_links_script ON scene_links(script_id, scene_number);
+CREATE INDEX IF NOT EXISTS idx_scene_links_asset ON scene_links(asset_id);
 CREATE INDEX IF NOT EXISTS idx_projects_creator ON projects(creator_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_scripts_project ON scripts(project_id);
@@ -213,6 +230,7 @@ ALTER TABLE studio_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scene_links ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Profiles
 CREATE POLICY "Profiles readable by all" ON profiles FOR SELECT USING (true);
@@ -278,6 +296,36 @@ CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
     SELECT id FROM projects WHERE creator_id = auth.uid()
     UNION
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+
+-- RLS Policies: Scene Links
+CREATE POLICY "Scene links readable by project members" ON scene_links FOR SELECT USING (
+  script_id IN (
+    SELECT id FROM scripts WHERE project_id IN (
+      SELECT id FROM projects WHERE creator_id = auth.uid()
+      UNION
+      SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+    )
+  )
+);
+CREATE POLICY "Project members can link scenes" ON scene_links FOR INSERT WITH CHECK (
+  auth.uid() IS NOT NULL AND created_by = auth.uid() AND
+  script_id IN (
+    SELECT id FROM scripts WHERE project_id IN (
+      SELECT id FROM projects WHERE creator_id = auth.uid()
+      UNION
+      SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+    )
+  )
+);
+CREATE POLICY "Project members can unlink scenes" ON scene_links FOR DELETE USING (
+  script_id IN (
+    SELECT id FROM scripts WHERE project_id IN (
+      SELECT id FROM projects WHERE creator_id = auth.uid()
+      UNION
+      SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+    )
   )
 );
 
