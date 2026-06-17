@@ -61,8 +61,10 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
+const ACTIVE_PROJECT_KEY = 'misfits_cavern_active_project';
+
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [activeProject, setActiveProjectState] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,16 +94,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return null;
   };
 
+  // Single source of truth for "what am I working on" — persisted so every
+  // module (and a page reload) sees the same active project, not its own copy.
+  const setActiveProject = useCallback((project: Project | null) => {
+    setActiveProjectState(project);
+    if (typeof window !== 'undefined') {
+      if (project) localStorage.setItem(ACTIVE_PROJECT_KEY, project.id);
+      else localStorage.removeItem(ACTIVE_PROJECT_KEY);
+    }
+  }, []);
+
   const refreshProject = useCallback(async (id: string) => {
     const fullProject = await fetchProjectDetails(id);
     if (fullProject) {
-      setActiveProject(fullProject);
       setProjects(prev => prev.map(p => p.id === id ? fullProject : p));
+      setActiveProjectState(prev => (prev?.id === id ? fullProject : prev));
     }
   }, []);
 
   useEffect(() => {
-    let projectSubscription: RealtimeChannel;
+    let channel: RealtimeChannel;
 
     async function loadProjects() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -117,24 +129,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
       if (!error && data) {
         setProjects(data);
-        if (data.length > 0 && !activeProject) {
-          const full = await fetchProjectDetails(data[0].id);
-          setActiveProject(full || data[0]);
+        const savedId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_PROJECT_KEY) : null;
+        const restored = savedId ? data.find((p: Project) => p.id === savedId) : null;
+        const initial = restored || data[0];
+        if (initial) {
+          const full = await fetchProjectDetails(initial.id);
+          setActiveProjectState(full || initial);
         }
       }
       setLoading(false);
 
-      // Realtime Sync
-      projectSubscription = supabase
-        .channel('project-changes')
+      // Realtime ripple: any change to a project, its crew, or a script/board
+      // attached to it pushes through to whoever has it open — no reload.
+      channel = supabase
+        .channel('project-ecosystem')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as Project;
             setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
-            if (activeProject?.id === updated.id) {
-              setActiveProject(prev => prev ? { ...prev, ...updated } : null);
-            }
+            setActiveProjectState(prev => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
           }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'project_crew' }, (payload) => {
+          const row = (payload.new || payload.old) as any;
+          if (row?.project_id) refreshProject(row.project_id);
         })
         .subscribe();
     }
@@ -142,16 +160,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     loadProjects();
 
     return () => {
-      if (projectSubscription) projectSubscription.unsubscribe();
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [activeProject?.id, refreshProject]);
+  }, [refreshProject]);
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const { error } = await supabase
       .from('projects')
       .update(updates)
       .eq('id', id);
-    
+
     if (error) console.error('Error updating project:', error);
   };
 
