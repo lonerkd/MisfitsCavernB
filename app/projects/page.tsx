@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, ArrowUpRight, Clock, Film, Tv, Video, Music, Mic, Megaphone, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
@@ -298,7 +299,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
 }
 
 export default function ProjectsPage() {
-  const { projects, loading, setActiveProject } = useProject();
+  const { projects, loading, setActiveProject, addProject } = useProject();
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>('');
@@ -452,7 +454,7 @@ export default function ProjectsPage() {
         {showNew && user && (
           <NewProjectModal
             onClose={() => setShowNew(false)}
-            onCreated={(p) => setActiveProject(p)}
+            onCreated={(p) => { addProject(p); setActiveProject(p); router.push(`/projects/${p.id}`); }}
             userId={user.id}
           />
         )}

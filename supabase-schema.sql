@@ -247,6 +247,19 @@ CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH 
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
 CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_id = auth.uid());
 
+-- RLS Policies: Project Crew
+CREATE POLICY "Project members can view crew" ON project_crew FOR SELECT USING (
+  user_id = auth.uid() OR
+  project_id IN (SELECT id FROM projects WHERE creator_id = auth.uid())
+);
+CREATE POLICY "Creators add crew" ON project_crew FOR INSERT WITH CHECK (
+  auth.uid() IS NOT NULL AND
+  project_id IN (SELECT id FROM projects WHERE creator_id = auth.uid())
+);
+CREATE POLICY "Creators remove crew" ON project_crew FOR DELETE USING (
+  project_id IN (SELECT id FROM projects WHERE creator_id = auth.uid())
+);
+
 -- RLS Policies: Scripts
 CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (
   project_id IS NULL OR

@@ -89,6 +89,7 @@ interface ProjectContextType {
   loading: boolean;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   refreshProject: (id: string) => Promise<void>;
+  addProject: (project: Project) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -170,6 +171,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       setProjects(prev => prev.map(p => p.id === id ? fullProject : p));
       setActiveProjectState(prev => (prev?.id === id ? fullProject : prev));
     }
+  }, []);
+
+  // Optimistic insert for a just-created project — covers the gap before the
+  // realtime INSERT event arrives, so a redirect into /projects/[id] doesn't
+  // race the "project not found" fallback there.
+  const addProject = useCallback((project: Project) => {
+    setProjects(prev => prev.some(p => p.id === project.id) ? prev : [project, ...prev]);
   }, []);
 
   useEffect(() => {
@@ -263,7 +271,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ProjectContext.Provider value={{ activeProject, setActiveProject, projects, loading, updateProject, refreshProject }}>
+    <ProjectContext.Provider value={{ activeProject, setActiveProject, projects, loading, updateProject, refreshProject, addProject }}>
       {children}
     </ProjectContext.Provider>
   );

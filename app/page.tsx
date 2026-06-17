@@ -10,6 +10,8 @@ import {
 import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
+import { useAuth } from '@/lib/context/AuthContext';
+import { useProject } from '@/lib/context/ProjectContext';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
 function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: number; color?: string }) {
@@ -408,6 +410,8 @@ export default function Home() {
   const springY = useSpring(scrollY, { stiffness: 50, damping: 18 });
   const heroOpacity = useTransform(springY, [0, 500], [1, 0]);
   const heroY = useTransform(springY, [0, 500], [0, 100]);
+  const { user } = useAuth();
+  const { activeProject, projects } = useProject();
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', overflowX: 'hidden' }}>
@@ -684,17 +688,36 @@ export default function Home() {
               letterSpacing: -1,
               marginBottom: 44,
             }}>
-              BEGIN YOUR<br />
-              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(255,60,0,0.2)' }}>FILM</span>
+              {user ? (activeProject ? <>BACK TO<br /></> : <>BEGIN YOUR<br /></>) : <>BEGIN YOUR<br /></>}
+              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(255,60,0,0.2)' }}>
+                {user ? (activeProject ? activeProject.title.toUpperCase() : 'FILM') : 'FILM'}
+              </span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/auth" className="btn-primary" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
-                Join The Cavern
-              </Link>
-              <a href="mailto:peterolowude@icloud.com" className="btn-ghost" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
-                Say Hello
-              </a>
+              {user ? (
+                <>
+                  <Link
+                    href={activeProject ? `/projects/${activeProject.id}` : '/projects'}
+                    className="btn-primary"
+                    style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}
+                  >
+                    {activeProject ? 'Continue Project' : projects.length > 0 ? 'Open Projects' : 'Start Your First Project'} <ArrowRight size={13} />
+                  </Link>
+                  <Link href="/projects" className="btn-ghost" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
+                    All Projects
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth" className="btn-primary" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
+                    Join The Cavern
+                  </Link>
+                  <a href="mailto:peterolowude@icloud.com" className="btn-ghost" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
+                    Say Hello
+                  </a>
+                </>
+              )}
             </div>
           </AnimatedSection>
         </div>

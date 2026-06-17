@@ -7,11 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, PenTool, Layers, Users, Film, Briefcase,
   ChevronRight, Clock, Calendar, FileText, Image, Video,
-  Music, Plus, ExternalLink, Circle,
+  Music, Plus, ExternalLink, Circle, Pencil, Check, X, UserPlus,
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useProject, type Project as DBProject } from '@/lib/context/ProjectContext';
 import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
+import { supabase } from '@/lib/supabase/client';
+import { addProjectMember } from '@/lib/supabase/projects';
+import { useToast } from '@/components/Toast';
 
 // ─── Department window ───────────────────────────────────────────────────────
 
@@ -157,9 +160,24 @@ function AssetPreview({ references }: { references: DBProject['references'] }) {
 
 // ─── Crew preview ─────────────────────────────────────────────────────────────
 
-function CrewPreview({ team }: { team: DBProject['crew'] }) {
+function CrewPreview({ team, onAdd }: { team: DBProject['crew']; onAdd: () => void }) {
   if (!team || team.length === 0) {
-    return <div style={{ padding: '14px 16px', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', fontStyle: 'italic' }}>No crew assigned yet.</div>;
+    return (
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', fontStyle: 'italic' }}>No crew assigned yet.</div>
+        <button
+          onClick={e => { e.stopPropagation(); e.preventDefault(); onAdd(); }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
+            padding: '5px 11px', borderRadius: 9999, background: 'rgba(16,185,129,0.1)',
+            border: '1px solid rgba(16,185,129,0.3)', color: '#10b981',
+            fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer',
+          }}
+        >
+          <UserPlus size={10} /> Add Crew
+        </button>
+      </div>
+    );
   }
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -180,6 +198,17 @@ function CrewPreview({ team }: { team: DBProject['crew'] }) {
           </div>
         </div>
       ))}
+      <button
+        onClick={e => { e.stopPropagation(); e.preventDefault(); onAdd(); }}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: 2,
+          padding: '4px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-dim)',
+          fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer',
+        }}
+      >
+        <UserPlus size={9} /> Add
+      </button>
     </div>
   );
 }
@@ -232,13 +261,268 @@ function TimelinePreview({ endDate, phase, projectType }: { endDate?: string; ph
   );
 }
 
+// ─── Editable brief — the only place a project's description can be set after creation ──
+
+function BriefBlock({ project, color, editing, onStartEdit, onCancelEdit, onSave }: {
+  project: DBProject; color: string; editing: boolean;
+  onStartEdit: () => void; onCancelEdit: () => void; onSave: (text: string) => Promise<void>;
+}) {
+  const [text, setText] = useState(project.description || '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setText(project.description || ''); }, [project.description, editing]);
+
+  if (editing) {
+    return (
+      <div style={{ marginTop: 10, maxWidth: 560 }}>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          autoFocus
+          rows={3}
+          placeholder="What's the vision?"
+          style={{
+            width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)',
+            border: `1px solid ${color}40`, borderRadius: 10, color: 'var(--fg)',
+            fontFamily: 'var(--serif)', fontSize: '0.95rem', outline: 'none', resize: 'none',
+            boxSizing: 'border-box', lineHeight: 1.6,
+          }}
+        />
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            disabled={saving}
+            onClick={async () => { setSaving(true); await onSave(text.trim()); setSaving(false); }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8,
+              background: `${color}18`, border: `1px solid ${color}40`, color,
+              fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
+            }}
+          >
+            <Check size={11} /> {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            onClick={onCancelEdit}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-dim)',
+              fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
+            }}
+          >
+            <X size={11} /> Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div onClick={onStartEdit} style={{ marginTop: 10, maxWidth: 560, cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 8 }} className="brief-block">
+      <p style={{
+        fontFamily: 'var(--serif)', fontSize: '0.95rem',
+        color: project.description ? 'var(--fg-dim)' : 'rgba(240,236,228,0.25)',
+        fontStyle: project.description ? 'normal' : 'italic', margin: 0,
+      }}>
+        {project.description || 'No brief yet — click to add one.'}
+      </p>
+      <Pencil size={11} style={{ color: 'rgba(240,236,228,0.2)', flexShrink: 0, marginTop: 4 }} />
+    </div>
+  );
+}
+
+// ─── Add crew modal — searches real profiles, assigns via project_crew ───────
+
+function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClose: () => void; onAdded: () => void }) {
+  const [search, setSearch] = useState('');
+  const [results, setResults] = useState<{ id: string; username: string; avatar_url?: string }[]>([]);
+  const [selected, setSelected] = useState<{ id: string; username: string } | null>(null);
+  const [role, setRole] = useState('team member');
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const existingIds = new Set((project.crew || []).map(c => c.id));
+    const t = setTimeout(async () => {
+      let query = supabase.from('profiles').select('id, username, avatar_url').limit(8);
+      if (search.trim()) query = query.ilike('username', `%${search.trim()}%`);
+      const { data } = await query;
+      setResults((data || []).filter((p: any) => !existingIds.has(p.id)));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [search, project.crew]);
+
+  const handleAdd = async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    try {
+      await addProjectMember(project.id, selected.id, role.trim() || 'team member');
+      toast(`${selected.username} added to crew`, 'success');
+      onAdded();
+      onClose();
+    } catch {
+      toast('Failed to add crew member', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+    >
+      <motion.div
+        initial={{ scale: 0.94, y: 16, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.94, y: 16, opacity: 0 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
+        style={{ width: '100%', maxWidth: 440, background: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 28, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2 }}>Add Crew</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(240,236,228,0.3)' }}><X size={16} /></button>
+        </div>
+
+        <input
+          type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search by username…"
+          autoFocus
+          style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+        />
+
+        <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+          {results.length === 0 && (
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'rgba(240,236,228,0.25)', padding: '8px 4px', fontStyle: 'italic' }}>
+              {search.trim() ? 'No matching crew found.' : 'Type to search the crew directory.'}
+            </div>
+          )}
+          {results.map(p => {
+            const active = selected?.id === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setSelected({ id: p.id, username: p.username })}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8,
+                  background: active ? 'rgba(255,60,0,0.1)' : 'transparent',
+                  border: active ? '1px solid rgba(255,60,0,0.3)' : '1px solid transparent',
+                  cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', flexShrink: 0 }}>
+                  {p.username.charAt(0).toUpperCase()}
+                </div>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: active ? 'var(--accent)' : 'var(--fg-muted)' }}>{p.username}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {selected && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
+            <input
+              type="text" value={role} onChange={e => setRole(e.target.value)}
+              placeholder="e.g. Director of Photography"
+              style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+        )}
+
+        <button
+          onClick={handleAdd}
+          disabled={!selected || submitting}
+          style={{
+            width: '100%', padding: '12px', borderRadius: 12,
+            background: selected ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+            color: selected ? '#060606' : 'rgba(240,236,228,0.3)',
+            border: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5, fontWeight: 600,
+            textTransform: 'uppercase', cursor: selected ? 'pointer' : 'default',
+          }}
+        >
+          {submitting ? 'Adding…' : 'Add to Crew'}
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Setup checklist — real, data-driven guidance for a project still missing the basics ──
+
+function setupDismissKey(projectId: string) { return `misfits_cavern_setup_dismissed_${projectId}`; }
+
+function SetupChecklist({ project, color, onEditBrief, onAddCrew }: {
+  project: DBProject; color: string; onEditBrief: () => void; onAddCrew: () => void;
+}) {
+  const router = useRouter();
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    setDismissed(typeof window !== 'undefined' && localStorage.getItem(setupDismissKey(project.id)) === '1');
+  }, [project.id]);
+
+  const items = [
+    { label: 'Add a brief', done: !!project.description?.trim(), run: onEditBrief },
+    { label: 'Invite crew', done: (project.crew?.length ?? 0) > 0, run: onAddCrew },
+    { label: 'Attach a script', done: (project.scripts?.length ?? 0) > 0, run: () => router.push('/editor') },
+    { label: 'Pin a reference', done: (project.references?.length ?? 0) > 0, run: () => router.push('/studio') },
+  ];
+  const allDone = items.every(i => i.done);
+
+  if (allDone || dismissed) return null;
+
+  const dismiss = () => {
+    if (typeof window !== 'undefined') localStorage.setItem(setupDismissKey(project.id), '1');
+    setDismissed(true);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        marginBottom: 24, padding: '14px 18px', borderRadius: 14,
+        background: `${color}0a`, border: `1px solid ${color}25`,
+        display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
+      }}
+    >
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color, flexShrink: 0 }}>
+        Get this project moving
+      </span>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flex: 1 }}>
+        {items.map(item => (
+          <button
+            key={item.label}
+            onClick={item.run}
+            disabled={item.done}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 9999,
+              background: item.done ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+              border: item.done ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+              color: item.done ? '#10b981' : 'var(--fg-muted)',
+              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, textTransform: 'uppercase',
+              cursor: item.done ? 'default' : 'pointer',
+            }}
+          >
+            {item.done && <Check size={10} />} {item.label}
+          </button>
+        ))}
+      </div>
+      <button onClick={dismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(240,236,228,0.25)', flexShrink: 0 }}>
+        <X size={14} />
+      </button>
+    </motion.div>
+  );
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ProjectHubPage() {
   const params = useParams();
   const router = useRouter();
-  const { activeProject, setActiveProject, projects, refreshProject, loading } = useProject();
+  const { activeProject, setActiveProject, projects, refreshProject, updateProject, loading } = useProject();
   const id = params.id as string;
+  const [editingBrief, setEditingBrief] = useState(false);
+  const [showAddCrew, setShowAddCrew] = useState(false);
 
   // The list only carries summary rows — make sure the full aggregate
   // (crew/scripts/references) is loaded for whichever project the URL names.
@@ -351,8 +635,26 @@ export default function ProjectHubPage() {
         >
           <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
           <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 0.9 }}>{project.title}</div>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', color: 'var(--fg-dim)', marginTop: 10, maxWidth: 560 }}>{project.description || 'No description yet.'}</p>
+          <BriefBlock
+            project={project}
+            color={color}
+            editing={editingBrief}
+            onStartEdit={() => setEditingBrief(true)}
+            onCancelEdit={() => setEditingBrief(false)}
+            onSave={async (text) => {
+              await updateProject(project.id, { description: text });
+              await refreshProject(project.id);
+              setEditingBrief(false);
+            }}
+          />
         </motion.div>
+
+        <SetupChecklist
+          project={project}
+          color={color}
+          onEditBrief={() => setEditingBrief(true)}
+          onAddCrew={() => setShowAddCrew(true)}
+        />
 
         {/*
           Grid layout — control room:
@@ -405,7 +707,7 @@ export default function ProjectHubPage() {
             stats={[
               { label: 'Members', value: project.crew?.length ?? 0 },
             ]}
-            preview={<CrewPreview team={project.crew} />}
+            preview={<CrewPreview team={project.crew} onAdd={() => setShowAddCrew(true)} />}
           />
 
           {/* ─ Timeline ─ */}
@@ -423,6 +725,16 @@ export default function ProjectHubPage() {
 
         </div>
       </div>
+
+      <AnimatePresence>
+        {showAddCrew && (
+          <AddCrewModal
+            project={project}
+            onClose={() => setShowAddCrew(false)}
+            onAdded={() => refreshProject(project.id)}
+          />
+        )}
+      </AnimatePresence>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </main>
