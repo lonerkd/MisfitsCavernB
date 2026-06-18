@@ -7,13 +7,14 @@ export interface DBJob {
   description?: string;
   role: string;
   rate?: number;
+  rate_type?: 'hourly' | 'fixed';
   status: 'open' | 'in-progress' | 'closed';
   created_by: string;
   created_at: string;
   updated_at: string;
 }
 
-export async function createJob(projectId: string, userId: string, title: string, role: string, description = '', rate?: number) {
+export async function createJob(projectId: string, userId: string, title: string, role: string, description = '', rate?: number, rateType: 'hourly' | 'fixed' = 'hourly') {
   const { data, error } = await supabase
     .from('jobs')
     .insert({
@@ -22,6 +23,7 @@ export async function createJob(projectId: string, userId: string, title: string
       description,
       role,
       rate,
+      rate_type: rateType,
       created_by: userId,
       status: 'open'
     })

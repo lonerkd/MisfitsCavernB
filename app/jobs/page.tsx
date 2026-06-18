@@ -14,6 +14,7 @@ interface Job {
   description: string;
   role: string;
   rate?: number;
+  rate_type?: 'hourly' | 'fixed';
   status: 'open' | 'in-progress' | 'closed';
   created_by: string;
   created_at: string;
@@ -298,7 +299,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {job.rate && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 10, color }}>
-                <DollarSign size={10} /> {job.rate}/hr
+                <DollarSign size={10} /> {job.rate}{job.rate_type === 'fixed' ? ' (fixed)' : '/hr'}
               </div>
             )}
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(240,236,228,0.25)' }}>

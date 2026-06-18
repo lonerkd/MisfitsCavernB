@@ -66,6 +66,7 @@ export async function createJobFromBudgetItem(item: DBBudgetItem, projectId: str
       description: `Budgeted at $${Number(item.amount).toLocaleString()} for "${item.category}".`,
       role: item.category,
       rate: item.amount,
+      rate_type: 'fixed',
       created_by: user.id,
       status: 'open',
     })

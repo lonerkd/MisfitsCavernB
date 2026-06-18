@@ -636,3 +636,11 @@ CREATE POLICY "Project members can manage campaigns" ON campaigns FOR ALL USING 
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
   )
 );
+
+-- A job's rate can be an hourly rate (manual postings) or a fixed total
+-- (jobs spawned from a budget line item, where the amount is the whole
+-- budgeted figure, not per-hour). Without this the card always said "/hr"
+-- and misrepresented a $4,500 budget total as a $4,500 hourly rate.
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS rate_type TEXT NOT NULL DEFAULT 'hourly'
+  CHECK (rate_type IN ('hourly', 'fixed'));
