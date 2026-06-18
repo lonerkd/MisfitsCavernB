@@ -24,6 +24,7 @@ import { getScript } from '@/lib/supabase/scripts';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getShootDays, addShootDay, getSceneSchedule, ensureSceneSchedule, updateSceneSchedule, subscribeToSchedule, type ShootDay, type SceneSchedule } from '@/lib/supabase/schedule';
 import { createBudgetItem, deleteBudgetItem, createJobFromBudgetItem } from '@/lib/supabase/budget';
+import { getPortfolioProjectBySource, publishProjectToPortfolio } from '@/lib/supabase/portfolio';
 
 interface Asset {
   id: string;
@@ -810,6 +811,8 @@ export default function StudioPage() {
   const [budgetAmount, setBudgetAmount] = useState('');
   const [savingBudgetItem, setSavingBudgetItem] = useState(false);
   const [hiringForItem, setHiringForItem] = useState<string | null>(null);
+  const [portfolioEntry, setPortfolioEntry] = useState<any>(null);
+  const [publishingPortfolio, setPublishingPortfolio] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -862,6 +865,38 @@ export default function StudioPage() {
     () => (activeProject?.references || []).map(r => ({ id: r.id, url: r.url, title: r.title, sceneLinks: r.sceneLinks })),
     [activeProject?.references]
   );
+
+  const isProjectCompleted = useMemo(() => {
+    if (!activeProject) return false;
+    const phases = getPhaseTemplate(activeProject.project_type);
+    return getPhaseIndex(activeProject.project_type, activeProject.status) === phases.length - 1;
+  }, [activeProject?.project_type, activeProject?.status]);
+
+  useEffect(() => {
+    if (!user || !activeProject?.id || !isProjectCompleted) { setPortfolioEntry(null); return; }
+    getPortfolioProjectBySource(user.id, activeProject.id).then(setPortfolioEntry).catch(() => setPortfolioEntry(null));
+  }, [user, activeProject?.id, isProjectCompleted]);
+
+  const handlePublishToPortfolio = async () => {
+    if (!user || !activeProject) return;
+    setPublishingPortfolio(true);
+    try {
+      const mediaItems = (activeProject.references || []).map(r => ({
+        title: r.title,
+        url: r.url,
+        media_type: 'image' as const,
+      }));
+      const entry = await publishProjectToPortfolio(user.id, {
+        id: activeProject.id,
+        title: activeProject.title,
+        description: activeProject.description,
+        project_type: activeProject.project_type,
+      }, mediaItems);
+      setPortfolioEntry(entry);
+    } finally {
+      setPublishingPortfolio(false);
+    }
+  };
 
   const characterNames = useMemo(
     () => (activeProject?.characters || []).map(c => c.name),
@@ -1267,7 +1302,25 @@ export default function StudioPage() {
                 <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
                   {activeProject.description || "No project description provided. Update your script metadata to populate this field."}
                 </p>
-                
+
+                {isProjectCompleted && (
+                  <div style={{ marginTop: 24, padding: 20, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 600 }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Project Complete</div>
+                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                        {portfolioEntry ? 'Published to your portfolio.' : 'Publish this project to your public portfolio with its real title, description and references.'}
+                      </div>
+                    </div>
+                    {portfolioEntry ? (
+                      <Link href="/portfolio" className="link-btn" style={{ background: 'rgba(0,204,102,0.1)', color: '#00cc66', whiteSpace: 'nowrap' }}>View in Portfolio</Link>
+                    ) : (
+                      <button onClick={handlePublishToPortfolio} disabled={publishingPortfolio} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', whiteSpace: 'nowrap', opacity: publishingPortfolio ? 0.6 : 1 }}>
+                        {publishingPortfolio ? 'Publishing…' : 'Publish to Portfolio'}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 60 }}>
                   <div>
                     <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Production Stats</div>

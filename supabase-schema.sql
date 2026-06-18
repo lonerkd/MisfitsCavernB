@@ -564,3 +564,12 @@ CREATE POLICY "Project members can manage budget items" ON budget_items FOR ALL 
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
   )
 );
+
+-- Portfolio <-> Studio interconnection: a completed project can publish a
+-- real portfolio entry, remembering which project it came from so
+-- "Publish to Portfolio" only ever creates one entry per project.
+ALTER TABLE portfolio_projects
+  ADD COLUMN IF NOT EXISTS source_project_id UUID REFERENCES projects(id) ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolio_projects_source_unique
+  ON portfolio_projects(user_id, source_project_id) WHERE source_project_id IS NOT NULL;
