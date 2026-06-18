@@ -11,7 +11,8 @@ import { useProject } from '@/lib/context/ProjectContext';
 import { Headphones, Radio, ExternalLink } from 'lucide-react';
 import SpotifyPlayer from '@/components/SpotifyPlayer';
 import NotificationBell from '@/components/NotificationBell';
-import { usePillStage } from '@/lib/context/PillContext';
+import { usePillStage, usePillZone } from '@/lib/context/PillContext';
+import { useRouter } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -68,6 +69,63 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
           {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
         </span>
       )}
+    </motion.div>
+  );
+}
+
+// A crew row is its own Pill zone: hovering a member sharpens the satellite
+// onto them — role + live/offline status — with a jump to their profile.
+function CrewMemberRow({ member, online, delay }: { member: any; online: boolean; delay: number }) {
+  const router = useRouter();
+  const zone = useMemo(() => ({
+    module: 'lounge',
+    accent: '#10b981',
+    title: member.name,
+    fields: [
+      { label: 'Role', value: member.role || 'Crew' },
+      { label: 'Status', value: online ? 'Online' : 'Offline', color: online ? '#00cc66' : undefined },
+    ],
+    actions: member.id ? [
+      { id: 'profile', label: '→ Profile', onClick: () => router.push(`/crew/${member.id}`) },
+    ] : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [member.id, member.name, member.role, online]);
+  const zoneHandlers = usePillZone(zone, 1);
+
+  return (
+    <motion.div
+      {...zoneHandlers}
+      initial={{ opacity: 0, x: 10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay }}
+      style={{
+        padding: '10px 12px',
+        border: '1px solid rgba(255,255,255,0.04)',
+        borderRadius: 'var(--radius-sm)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        background: online ? 'rgba(0,204,102,0.03)' : 'transparent',
+      }}
+    >
+      <div style={{
+        width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+        background: online ? '#00cc66' : '#333',
+        boxShadow: online ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
+      }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: online ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
+            {member.name}
+          </div>
+          {online && (
+            <div style={{ fontSize: 7, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
+          )}
+        </div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
+          <span>{member.role}</span>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -426,45 +484,9 @@ export default function LoungePage() {
           {crewList.length === 0 && (
             <div style={{ color: '#444', fontFamily: 'var(--mono)', fontSize: 9, marginTop: 8 }}>NO CREW YET</div>
           )}
-          {crewList.map((member, i) => {
-            const online = onlineIds.has(member.id);
-            return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.08 }}
-              style={{
-                padding: '10px 12px',
-                border: '1px solid rgba(255,255,255,0.04)',
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                background: online ? 'rgba(0,204,102,0.03)' : 'transparent',
-              }}
-            >
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: online ? '#00cc66' : '#333',
-                boxShadow: online ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
-              }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: online ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
-                    {member.name}
-                  </div>
-                  {online && (
-                    <div style={{ fontSize: 7, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
-                  )}
-                </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
-                  <span>{member.role}</span>
-                </div>
-              </div>
-            </motion.div>
-            );
-          })}
+          {crewList.map((member, i) => (
+            <CrewMemberRow key={member.id ?? i} member={member} online={onlineIds.has(member.id)} delay={i * 0.08} />
+          ))}
         </div>
       </div>
 

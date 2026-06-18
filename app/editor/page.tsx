@@ -189,6 +189,26 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
   return <div style={style}>{displayContent || <span style={{ opacity: 0.2 }}>—</span>}</div>;
 }
 
+// A character chip is the deepest layer — a *depth-3* zone nested inside the
+// scene row. Hovering one sharpens the Pill past the scene onto the single
+// character: who they are and which scene you're pointing at.
+function CharChip({ name, sceneNum }: { name: string; sceneNum: number }) {
+  const zone = useMemo(() => ({
+    module: 'editor',
+    accent: '#f59e0b',
+    title: name,
+    fields: [
+      { label: 'In', value: `Scene ${sceneNum}`, color: '#ff3c00' },
+    ],
+  }), [name, sceneNum]);
+  const zoneHandlers = usePillZone(zone, 3);
+  return (
+    <span {...zoneHandlers} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600, cursor: 'default' }}>
+      {name}
+    </span>
+  );
+}
+
 // A single outline row registers itself as a *depth-2* Pill zone: hovering it
 // (inside the depth-1 script surface) sharpens the Pill onto this exact scene —
 // its number, length, cast — with a one-tap jump. This is the "deeper than page
@@ -243,7 +263,7 @@ function OutlineSceneRow({
         </div>
         {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
+          {sceneChars.map(c => (<CharChip key={c} name={c} sceneNum={globalIdx + 1} />))}
         </div>
       </div>
       <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>

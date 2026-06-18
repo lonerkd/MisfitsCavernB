@@ -10,6 +10,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase/client';
 import { createProject as createDBProject } from '@/lib/supabase/projects';
 import { useProject, type Project as DBProject } from '@/lib/context/ProjectContext';
+import { usePillZone } from '@/lib/context/PillContext';
 import { useToast } from '@/components/Toast';
 import { CURATED_PROJECT_TYPES, getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
 
@@ -44,6 +45,7 @@ function daysUntil(dateStr?: string): number | null {
 
 function ProjectCard({ project }: { project: DBProject }) {
   const [hovered, setHovered] = useState(false);
+  const { setActiveProject } = useProject();
   const color = project.accent_color || typeColor(project.project_type);
   const Icon = TYPE_ICONS[project.project_type || ''] ?? Film;
   const phases = getPhaseTemplate(project.project_type);
@@ -51,8 +53,27 @@ function ProjectCard({ project }: { project: DBProject }) {
   const progress = (idx / Math.max(1, phases.length - 1)) * 100;
   const days = daysUntil((project as any).end_date);
 
+  // Per-card Pill zone: hovering a card sharpens the satellite onto that
+  // project — its phase + progress — with a one-tap "Set Active" that's the
+  // same act the rest of the app keys off.
+  const zone = useMemo(() => ({
+    module: 'studio',
+    accent: color,
+    title: project.title,
+    fields: [
+      { label: 'Phase', value: phases[idx]?.abbr || '—', color },
+      { label: 'Progress', value: `${Math.round(progress)}%`, color: progress === 100 ? '#10b981' : color },
+      ...(days !== null ? [{ label: 'Due', value: days < 0 ? `${Math.abs(days)}d over` : days === 0 ? 'Today' : `${days}d` }] : []),
+    ],
+    actions: [
+      { id: 'activate', label: '◆ Set Active', onClick: () => setActiveProject(project) },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [project.id, project.title, color, phases, idx, progress, days]);
+  const zoneHandlers = usePillZone(zone, 1);
+
   return (
-    <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }} {...zoneHandlers}>
       <motion.div
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
