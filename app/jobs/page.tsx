@@ -229,7 +229,7 @@ function PostModal({ onClose, onCreated, userId }: {
   );
 }
 
-function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => void; index: number }) {
+function JobCard({ job, index }: { job: Job; index: number }) {
   const [hovered, setHovered] = useState(false);
   const color = roleColor(job.role);
   const daysAgo = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 86400000);
@@ -308,23 +308,25 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           </div>
         </div>
 
-        {/* Apply CTA */}
-        <motion.button
-          onClick={() => onApply(job.id)}
-          animate={{ opacity: hovered ? 1 : 0.5, scale: hovered ? 1 : 0.97 }}
-          transition={{ duration: 0.2 }}
-          style={{
-            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-            padding: '10px 18px', borderRadius: 9999,
-            background: `${color}18`,
-            border: `1px solid ${color}44`,
-            color, cursor: 'pointer',
-            fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
-            textTransform: 'uppercase',
-          }}
-        >
-          Apply <ChevronRight size={10} />
-        </motion.button>
+        {/* Apply CTA — routes to the job detail page, which is the single
+            real application flow (cover note + notification to the poster). */}
+        <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+          <motion.div
+            animate={{ opacity: hovered ? 1 : 0.5, scale: hovered ? 1 : 0.97 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 18px', borderRadius: 9999,
+              background: `${color}18`,
+              border: `1px solid ${color}44`,
+              color, cursor: 'pointer',
+              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+              textTransform: 'uppercase',
+            }}
+          >
+            Apply <ChevronRight size={10} style={{ display: 'inline' }} />
+          </motion.div>
+        </Link>
       </div>
     </motion.div>
   );
@@ -453,14 +455,6 @@ export default function JobsPage() {
       return { ...job, application_count: count || 0 };
     }));
     setMyJobs(withCounts);
-  };
-
-  const handleApply = async (jobId: string) => {
-    if (!user) { window.location.href = '/auth'; return; }
-    const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id });
-    if (error?.code === '23505') {
-      // already applied — silently ignore
-    }
   };
 
   const handleCloseJob = async (jobId: string) => {
@@ -687,7 +681,7 @@ export default function JobsPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {filtered.map((job, i) => (
-                    <JobCard key={job.id} job={job} onApply={handleApply} index={i} />
+                    <JobCard key={job.id} job={job} index={i} />
                   ))}
                 </div>
               )}

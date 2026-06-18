@@ -15,6 +15,7 @@ interface Job {
   description: string;
   role: string;
   rate?: number;
+  rate_type?: 'hourly' | 'fixed';
   status: 'open' | 'in-progress' | 'closed';
   created_by: string;
   created_at: string;
@@ -300,7 +301,7 @@ export default function JobDetailPage() {
             {job.rate && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>
                 <DollarSign size={12} />
-                <span>${job.rate}/hr</span>
+                <span>${job.rate}{job.rate_type === 'fixed' ? ' (fixed)' : '/hr'}</span>
               </div>
             )}
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1 }}>
