@@ -79,15 +79,33 @@ export default function LoungePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProfile, setCurrentProfile] = useState<{ username: string; role?: string } | null>(null);
   const [crewList, setCrewList] = useState<any[]>([]);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
+    let presenceChannel: ReturnType<typeof supabase.channel> | null = null;
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user || !mounted) return;
       setCurrentUser(user);
       supabase.from('profiles').select('username, role').eq('id', user.id).single().then(({ data }) => {
-        if (data && mounted) setCurrentProfile(data);
+        if (!data || !mounted) return;
+        setCurrentProfile(data);
+
+        presenceChannel = supabase.channel('lounge-presence', {
+          config: { presence: { key: user.id } },
+        });
+        presenceChannel
+          .on('presence', { event: 'sync' }, () => {
+            const state = presenceChannel!.presenceState();
+            setOnlineIds(new Set(Object.keys(state)));
+          })
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              presenceChannel!.track({ username: data.username, online_at: new Date().toISOString() });
+            }
+          });
       });
     });
 
@@ -97,11 +115,18 @@ export default function LoungePage() {
           id: p.id,
           name: p.username || 'User',
           role: p.role || 'Crew',
-          online: p.status === 'OPEN',
-          activity: p.status === 'OPEN' ? 'Active' : 'Idle',
         })));
       }
     });
+
+    return () => {
+      mounted = false;
+      if (presenceChannel) supabase.removeChannel(presenceChannel);
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
 
     const loadMessages = async () => {
       try {
@@ -367,7 +392,9 @@ export default function LoungePage() {
           {crewList.length === 0 && (
             <div style={{ color: '#444', fontFamily: 'var(--mono)', fontSize: 9, marginTop: 8 }}>NO CREW YET</div>
           )}
-          {crewList.map((member, i) => (
+          {crewList.map((member, i) => {
+            const online = onlineIds.has(member.id);
+            return (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: 10 }}
@@ -380,30 +407,30 @@ export default function LoungePage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                background: member.online ? 'rgba(0,204,102,0.03)' : 'transparent',
+                background: online ? 'rgba(0,204,102,0.03)' : 'transparent',
               }}
             >
               <div style={{
                 width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: member.online ? '#00cc66' : '#333',
-                boxShadow: member.online ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
+                background: online ? '#00cc66' : '#333',
+                boxShadow: online ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
               }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: member.online ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: online ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
                     {member.name}
                   </div>
-                  {member.online && (
+                  {online && (
                     <div style={{ fontSize: 7, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
                   <span>{member.role}</span>
-                  {member.online && <span style={{ fontStyle: 'italic', color: '#888' }}>{member.activity}</span>}
                 </div>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
