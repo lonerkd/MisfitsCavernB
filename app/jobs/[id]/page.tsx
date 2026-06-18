@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import NotificationBell from '@/components/NotificationBell';
 import { createNotification } from '@/lib/supabase/notifications';
+import { addProjectMember } from '@/lib/supabase/projects';
 
 interface Job {
   id: string;
@@ -197,6 +198,16 @@ export default function JobDetailPage() {
             `/jobs/${job.id}`
           );
         } catch (err) { console.error('Error creating notification:', err); }
+
+        // Accepting an applicant makes them real crew on the job's project —
+        // the job board and crew system ripple together like everything else.
+        if (newStatus === 'accepted' && job.project_id) {
+          try {
+            await addProjectMember(job.project_id, app.applicant_id, job.role);
+          } catch (err) {
+            console.error('Error adding accepted applicant to crew (may already be a member):', err);
+          }
+        }
       }
     }
   };
