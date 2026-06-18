@@ -27,7 +27,7 @@ import { getShootDays, addShootDay, getSceneSchedule, ensureSceneSchedule, updat
 import { createBudgetItem, deleteBudgetItem, createJobFromBudgetItem } from '@/lib/supabase/budget';
 import { createCampaign, deleteCampaign } from '@/lib/supabase/campaigns';
 import { getPortfolioProjectBySource, publishProjectToPortfolio } from '@/lib/supabase/portfolio';
-import { usePillStage, usePillEmit } from '@/lib/context/PillContext';
+import { usePillStage, usePillEmit, usePillZone } from '@/lib/context/PillContext';
 
 interface Asset {
   id: string;
@@ -1050,6 +1050,30 @@ export default function StudioPage() {
     setShowBudgetModal(true);
   };
 
+  // Deeper than the page: hovering the budget card sharpens the Pill onto the
+  // money — live total + line-item count, with the same "Add Line Item" the
+  // card's own button fires.
+  const budgetZone = useMemo(() => {
+    if (!activeProject) return null;
+    const items = activeProject.budget_items || [];
+    const itemsTotal = items.reduce((sum, it) => sum + Number(it.amount || 0), 0);
+    const total = activeProject.budget != null ? Number(activeProject.budget) : itemsTotal;
+    return {
+      module: 'studio',
+      accent: '#f59e0b',
+      title: 'Production Budget',
+      fields: [
+        { label: 'Total', value: total > 0 ? `$${total.toLocaleString()}` : '—', color: '#f59e0b' },
+        { label: 'Items', value: `${items.length}` },
+      ],
+      actions: [
+        { id: 'add-line', label: '+ Add Line Item', onClick: handleOpenBudgetModal },
+      ],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProject?.id, activeProject?.budget, activeProject?.budget_items]);
+  const budgetZoneHandlers = usePillZone(budgetZone, 1);
+
   const handleCreateBudgetItem = async () => {
     if (!activeProject || !budgetCategory.trim() || !budgetAmount.trim()) return;
     setSavingBudgetItem(true);
@@ -1602,7 +1626,7 @@ export default function StudioPage() {
                 </div>
 
                 {/* Production Budget */}
-                <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                <div {...budgetZoneHandlers} style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
                       <DollarSign size={16} color="var(--accent)" /> Production Budget
