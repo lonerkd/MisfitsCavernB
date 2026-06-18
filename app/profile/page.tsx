@@ -26,10 +26,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [stats, setStats] = useState({ scripts: 0, projects: 0, jobs: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
       setUser(user);
 
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -42,6 +43,7 @@ export default function ProfilePage() {
         supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
       ]);
       setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
+      setLoading(false);
     });
   }, []);
 
@@ -64,6 +66,14 @@ export default function ProfilePage() {
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5 }}>Loading…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
