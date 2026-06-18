@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ArrowLeft, Send, Music, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ import { useProject } from '@/lib/context/ProjectContext';
 import { Headphones, Radio, ExternalLink } from 'lucide-react';
 import SpotifyPlayer from '@/components/SpotifyPlayer';
 import NotificationBell from '@/components/NotificationBell';
+import { usePillStage } from '@/lib/context/PillContext';
 
 interface Message {
   id: string;
@@ -178,6 +179,29 @@ export default function LoungePage() {
       console.error(e);
     }
   };
+
+  // Lounge's contextual strip: which channel you're in, who's actually
+  // online (real presence, not a count), and a one-tap jump to switch
+  // channels — the same state the sidebar already drives.
+  const channels = ['general', 'script-notes', 'production', 'dailies', 'legal'];
+  const loungePill = useMemo(() => {
+    const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
+    const nextChannel = channels[(channels.indexOf(activeChannel) + 1) % channels.length];
+    return {
+      module: 'lounge',
+      title: `#${activeChannel}`,
+      fields: [
+        { label: 'Online', value: `${onlineCrew}/${crewList.length}`, color: onlineCrew > 0 ? '#00cc66' : undefined },
+        { label: 'Msgs', value: `${messages.length}` },
+      ],
+      actions: [
+        { id: 'next-channel', label: `→ #${nextChannel}`, onClick: () => setActiveChannel(nextChannel) },
+      ],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChannel, crewList, onlineIds, messages.length]);
+
+  usePillStage(loungePill, [loungePill]);
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

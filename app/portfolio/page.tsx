@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Play, X, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia } from '@/lib/supabase/portfolio';
 import { logActivity } from '@/lib/supabase/activity';
+import { usePillStage } from '@/lib/context/PillContext';
 
 type MediaType = 'youtube' | 'gdrive' | 'image';
 
@@ -507,6 +508,27 @@ export default function PortfolioPage() {
 
   const featured = projectsList.slice(0, 2);
   const rest = projectsList.slice(2);
+
+  // Portfolio's contextual strip: real project/media counts, plus the same
+  // "Add Project" handler the header button uses.
+  const portfolioPill = useMemo(() => {
+    if (!userId) return null;
+    const mediaCount = projectsList.reduce((sum, p) => sum + p.media.length, 0);
+    return {
+      module: 'portfolio',
+      title: 'The Cavern Collection',
+      fields: [
+        { label: 'Projects', value: `${projectsList.length}`, color: '#f59e0b' },
+        { label: 'Media', value: `${mediaCount}` },
+      ],
+      actions: [
+        { id: 'add-project', label: '+ Add Project', onClick: () => setShowAddModal(true) },
+      ],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, projectsList]);
+
+  usePillStage(portfolioPill, [portfolioPill]);
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>

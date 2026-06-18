@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
   ArrowRight, PenTool, Layers, Users, Film,
@@ -12,6 +13,7 @@ import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePillStage } from '@/lib/context/PillContext';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
 function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: number; color?: string }) {
@@ -412,6 +414,31 @@ export default function Home() {
   const heroY = useTransform(springY, [0, 500], [0, 100]);
   const { user } = useAuth();
   const { activeProject, projects } = useProject();
+  const router = useRouter();
+
+  // Hub's contextual strip: where you actually stand in the pipeline — your
+  // active project (or project count) — with a jump straight into it, the
+  // same destination the closing CTA already resolves to.
+  const hubPill = useMemo(() => {
+    if (!user) return null;
+    return {
+      module: 'hub',
+      title: activeProject ? activeProject.title : 'Misfits Cavern',
+      fields: [
+        { label: 'Projects', value: `${projects.length}`, color: '#ff3c00' },
+      ],
+      actions: [
+        {
+          id: 'continue',
+          label: activeProject ? 'Continue Project' : projects.length > 0 ? 'Open Projects' : 'Start Project',
+          onClick: () => router.push(activeProject ? `/projects/${activeProject.id}` : '/projects'),
+        },
+      ],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, activeProject, projects.length]);
+
+  usePillStage(hubPill, [hubPill]);
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', overflowX: 'hidden' }}>
