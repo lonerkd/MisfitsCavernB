@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { AuthProvider } from '@/lib/context/AuthContext';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
+import { PillProvider } from '@/lib/context/PillContext';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
@@ -30,9 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastProvider>
           <AuthProvider>
             <ProjectProvider>
-              <CustomCursor />
-              <EcosystemTaskbar />
-              {children}
+              <PillProvider>
+                <CustomCursor />
+                <EcosystemTaskbar />
+                {children}
+              </PillProvider>
             </ProjectProvider>
           </AuthProvider>
         </ToastProvider>

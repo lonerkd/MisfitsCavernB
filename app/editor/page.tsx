@@ -27,6 +27,7 @@ import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { useAuth } from '@/lib/context/AuthContext';
 import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLinks';
 import { supabase } from '@/lib/supabase/client';
+import { usePillStage, usePillEmit } from '@/lib/context/PillContext';
 import ScreenplayEditor, { type ScreenplayEditorHandle } from '@/components/editor/ScreenplayEditor';
 import type { BlockType } from '@/lib/scriptos/blocks';
 import { importToContent } from '@/lib/scriptos/import';
@@ -431,6 +432,7 @@ export default function EditorPage() {
   }, [sprintActive, sprintTime, toast]);
 
   // Actions
+  const emitPill = usePillEmit();
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
     if (!user) {
@@ -443,9 +445,10 @@ export default function EditorPage() {
     if (saved) {
       setCurrentScript(saved);
       toast('Screenplay saved to cloud.', 'success');
+      emitPill('Saved to cloud', 'success');
     }
     setSaving(false);
-  }, [currentScript, content, toast, user]);
+  }, [currentScript, content, toast, user, emitPill]);
 
   // Attach the current script to the active project (or detach if already linked).
   const handleToggleProjectLink = useCallback(async () => {
@@ -715,6 +718,27 @@ export default function EditorPage() {
     }
     return lastScene;
   }, [lines, scenesList, cursorLine]);
+
+  // Publish the editor's live state into the Pill. Every value here is real
+  // (cursor-tracked scene position, live word/page count, the actual autosave
+  // flag) and the Focus toggle flips genuine editor state — the chrome morphs,
+  // the data does not lie.
+  usePillStage(
+    {
+      module: 'editor',
+      title: currentScript?.title || 'Untitled',
+      fields: [
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#ff3c00' },
+        { label: 'Words', value: `${wordCount.toLocaleString()}`, color: '#6366f1' },
+        { label: 'Pages', value: `${pageEst}` },
+        { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
+      ],
+      toggles: [
+        { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
+      ],
+    },
+    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
+  );
 
   // Act structure — properly clamped so it never produces "Sc 4-3" nonsense
   const actStructure = useMemo(() => {
