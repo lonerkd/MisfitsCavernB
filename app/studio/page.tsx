@@ -9,7 +9,7 @@ import NotificationBell from '@/components/NotificationBell';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
-import { getUserProjects } from '@/lib/supabase/projects';
+import { getUserProjects, createProject } from '@/lib/supabase/projects';
 import { getAllStudioAssets, getOrCreateBoardForProject, addStudioAsset, deleteStudioAsset, getAssetComments, addAssetComment, getAssetCommentCounts } from '@/lib/supabase/studio';
 import { uploadAssetFile, detectAssetType, formatFileSize } from '@/lib/supabase/storage';
 import { logActivity } from '@/lib/supabase/activity';
@@ -18,7 +18,7 @@ import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { useProject, type ScriptSummary, type BudgetItem } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
-import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
+import { getPhaseTemplate, phaseIndex as getPhaseIndex, CURATED_PROJECT_TYPES } from '@/lib/projectTypes';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2 } from 'lucide-react';
 import { createBeat, deleteBeat } from '@/lib/supabase/beats';
 import { getScript } from '@/lib/supabase/scripts';
@@ -784,8 +784,12 @@ function ReferenceSearchModal({
 }
 
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects, refreshProject, updateProject } = useProject();
+  const { activeProject, setActiveProject, projects, refreshProject, updateProject, addProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [npTitle, setNpTitle] = useState('');
+  const [npType, setNpType] = useState('Feature');
+  const [npCreating, setNpCreating] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
   const [editingBudget, setEditingBudget] = useState(false);
@@ -825,6 +829,27 @@ export default function StudioPage() {
   ];
 
   const types = ['all', 'image', 'video', 'document', 'audio'];
+
+  // Create a project without leaving the Studio — the entry point a filmmaker
+  // hits on their very first visit (previously there was none here).
+  const handleCreateProject = async () => {
+    if (!user) { window.alert('Sign in to create a project.'); return; }
+    const title = npTitle.trim();
+    if (!title || npCreating) return;
+    setNpCreating(true);
+    try {
+      const created = await createProject(user.id, title, '', npType);
+      addProject(created as any);
+      setActiveProject(created as any);
+      setShowNewProject(false);
+      setNpTitle('');
+      setActiveTab('overview');
+    } catch {
+      window.alert('Could not create the project. Please try again.');
+    } finally {
+      setNpCreating(false);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -1140,8 +1165,16 @@ export default function StudioPage() {
               }}
               style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 11, fontWeight: 600, outline: 'none', cursor: 'pointer' }}
             >
+              {projects.length === 0 && <option value="" style={{ background: '#111' }}>No projects yet</option>}
               {projects.map(p => <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.title}</option>)}
             </select>
+            <button
+              onClick={() => setShowNewProject(true)}
+              title="New project"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(99,102,241,0.16)', border: '1px solid rgba(99,102,241,0.3)', color: '#c7c9ff', borderRadius: 14, padding: '3px 9px', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer' }}
+            >
+              <PlusIcon size={10} /> New
+            </button>
           </div>
         </div>
 
@@ -1175,6 +1208,43 @@ export default function StudioPage() {
         addedUrls={addedUrls}
         onAdd={addReferenceToBoard}
       />
+
+      {/* New Project modal */}
+      <AnimatePresence>
+        {showNewProject && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowNewProject(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><LayoutGrid size={18} /> New Project</h2>
+                <button onClick={() => setShowNewProject(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
+              </div>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Title</label>
+              <input
+                autoFocus value={npTitle} onChange={e => setNpTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleCreateProject(); }}
+                placeholder="e.g. Femme Fatale"
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '11px 14px', color: '#fff', fontSize: 14, outline: 'none', marginBottom: 18 }}
+              />
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Type</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 26 }}>
+                {CURATED_PROJECT_TYPES.map(t => (
+                  <button key={t} onClick={() => setNpType(t)}
+                    style={{ padding: '7px 14px', borderRadius: 9999, fontSize: 11, cursor: 'pointer',
+                      background: npType === t ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${npType === t ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                      color: npType === t ? '#fff' : 'var(--fg-dim)' }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <button onClick={handleCreateProject} disabled={!npTitle.trim() || npCreating}
+                style={{ width: '100%', background: npTitle.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.08)', color: npTitle.trim() ? '#060606' : 'var(--fg-dim)', border: 'none', borderRadius: 10, padding: '13px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: npTitle.trim() ? 'pointer' : 'default' }}>
+                {npCreating ? 'Creating…' : 'Create Project'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showBeatModal && (
@@ -1293,7 +1363,41 @@ export default function StudioPage() {
       </div>
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '160px 20px 80px' }}>
-        
+
+        {/* First-click empty state — no project open yet. */}
+        {!activeProject && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+            style={{ maxWidth: 560, margin: '40px auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}
+          >
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LayoutGrid size={26} color="#6366f1" />
+            </div>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: '2.4rem', letterSpacing: 3, margin: 0 }}>
+              {projects.length > 0 ? 'Open a project' : 'Start your first project'}
+            </h1>
+            <p style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 440 }}>
+              {projects.length > 0
+                ? 'Choose a project from the selector above, or create a new one. The Studio is your production command center — concept boards, schedule, budget, and the pitch all live here.'
+                : 'A project is the living center of your film — script, concept art, crew, schedule and budget all ripple from it. Name it and the Studio comes alive.'}
+            </p>
+            {projects.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 480 }}>
+                {projects.map(p => (
+                  <button key={p.id} onClick={() => setActiveProject(p)}
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', borderRadius: 9999, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>
+                    {p.title}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setShowNewProject(true)}
+              style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#060606', border: 'none', borderRadius: 9999, padding: '12px 24px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer' }}>
+              <PlusIcon size={14} /> New Project
+            </button>
+          </motion.div>
+        )}
+
         {activeTab === 'overview' && activeProject && (
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
             <div>
@@ -1474,7 +1578,7 @@ export default function StudioPage() {
           </div>
         )}
 
-        {activeTab === 'concept' && (
+        {activeTab === 'concept' && activeProject && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
               <div>
@@ -1510,7 +1614,7 @@ export default function StudioPage() {
           </motion.div>
         )}
 
-        {activeTab === 'production' && (
+        {activeTab === 'production' && activeProject && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
               <div>
@@ -1625,7 +1729,7 @@ export default function StudioPage() {
           </motion.div>
         )}
 
-        {activeTab === 'assets' && (
+        {activeTab === 'assets' && activeProject && (
           <AnimatedSection>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
               <div>
@@ -1720,7 +1824,7 @@ export default function StudioPage() {
           </motion.div>
         )}
 
-        {activeTab === 'marketing' && (
+        {activeTab === 'marketing' && activeProject && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
               <div>
