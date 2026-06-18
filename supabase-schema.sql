@@ -536,3 +536,31 @@ CREATE POLICY "Users upload their own studio assets" ON storage.objects FOR INSE
 CREATE POLICY "Users delete their own studio assets" ON storage.objects FOR DELETE USING (
   bucket_id = 'studio-assets' AND (storage.foldername(name))[1] = auth.uid()::text
 );
+
+-- Budget Items (real line-item budget — replaces the stubbed-out
+-- lib/budget.ts that never touched the database; job_id lets a line
+-- remember the real job posting it spawned via "Hire for this").
+CREATE TABLE IF NOT EXISTS budget_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+  actual_cost DECIMAL(12, 2),
+  job_id UUID REFERENCES jobs(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_budget_items_project ON budget_items(project_id);
+
+ALTER TABLE budget_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Project members can manage budget items" ON budget_items FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);

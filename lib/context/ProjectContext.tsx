@@ -27,7 +27,8 @@ export interface BudgetItem {
   category: string;
   description: string;
   amount: number;
-  actual_cost?: number;
+  actual_cost?: number | null;
+  job_id?: string | null;
 }
 
 export interface TimelineItem {
@@ -127,16 +128,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProjectDetails = async (projectId: string) => {
     // Schema reality: crew lives in `project_crew` joined to `profiles`.
-    // There are no budget_items / timeline_items tables yet — leave those empty.
+    // There is no timeline_items table yet — leave that empty.
     // The project's moodboard is keyed by storing the project id in studio_boards.name
     // (see lib/supabase/studio.ts getOrCreateBoardForProject) — same convention here.
-    const [projectRes, crewRes, scriptsRes, boardRes, activityRes, beatsRes] = await Promise.all([
+    const [projectRes, crewRes, scriptsRes, boardRes, activityRes, beatsRes, budgetRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId),
       supabase.from('scripts').select('id, title, status, format, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
       supabase.from('studio_boards').select('id').eq('name', projectId).maybeSingle(),
       supabase.from('activity_feed').select('*, profiles(username, avatar_url)').contains('metadata', { project_id: projectId }).order('created_at', { ascending: false }).limit(30),
       supabase.from('project_beats').select('*').eq('project_id', projectId).order('order_index', { ascending: true }),
+      supabase.from('budget_items').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
     ]);
 
     if (!projectRes.data) return null;
@@ -167,7 +169,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const p = projectRes.data;
     return {
       ...p,
-      budget_items: [],
+      budget_items: budgetRes.data || [],
       timeline_items: [],
       crew: (crewRes.data || []).map((c: any) => ({
         id: c.id,
@@ -265,6 +267,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           if (row?.project_id) refreshProject(row.project_id);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'project_beats' }, (payload) => {
+          const row = (payload.new || payload.old) as any;
+          if (row?.project_id) refreshProject(row.project_id);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
           const row = (payload.new || payload.old) as any;
           if (row?.project_id) refreshProject(row.project_id);
         })

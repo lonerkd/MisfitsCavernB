@@ -15,7 +15,7 @@ import { logActivity } from '@/lib/supabase/activity';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-import { useProject, type ScriptSummary } from '@/lib/context/ProjectContext';
+import { useProject, type ScriptSummary, type BudgetItem } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
 import { getPhaseTemplate, phaseIndex as getPhaseIndex } from '@/lib/projectTypes';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2 } from 'lucide-react';
@@ -23,6 +23,7 @@ import { createBeat, deleteBeat } from '@/lib/supabase/beats';
 import { getScript } from '@/lib/supabase/scripts';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getShootDays, addShootDay, getSceneSchedule, ensureSceneSchedule, updateSceneSchedule, subscribeToSchedule, type ShootDay, type SceneSchedule } from '@/lib/supabase/schedule';
+import { createBudgetItem, deleteBudgetItem, createJobFromBudgetItem } from '@/lib/supabase/budget';
 
 interface Asset {
   id: string;
@@ -803,6 +804,12 @@ export default function StudioPage() {
   const [shootDays, setShootDays] = useState<ShootDay[]>([]);
   const [sceneSchedule, setSceneSchedule] = useState<SceneSchedule[]>([]);
   const [sceneCast, setSceneCast] = useState<Record<string, string[]>>({});
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetCategory, setBudgetCategory] = useState('');
+  const [budgetDescription, setBudgetDescription] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState('');
+  const [savingBudgetItem, setSavingBudgetItem] = useState(false);
+  const [hiringForItem, setHiringForItem] = useState<string | null>(null);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -909,6 +916,47 @@ export default function StudioPage() {
     await updateProject(activeProject.id, { budget: value });
     await refreshProject(activeProject.id);
     setEditingBudget(false);
+  };
+
+  const handleOpenBudgetModal = () => {
+    setBudgetCategory('');
+    setBudgetDescription('');
+    setBudgetAmount('');
+    setShowBudgetModal(true);
+  };
+
+  const handleCreateBudgetItem = async () => {
+    if (!activeProject || !budgetCategory.trim() || !budgetAmount.trim()) return;
+    setSavingBudgetItem(true);
+    try {
+      await createBudgetItem(activeProject.id, {
+        category: budgetCategory.trim(),
+        description: budgetDescription.trim(),
+        amount: parseFloat(budgetAmount) || 0,
+      });
+      await refreshProject(activeProject.id);
+      setShowBudgetModal(false);
+    } finally {
+      setSavingBudgetItem(false);
+    }
+  };
+
+  const handleDeleteBudgetItem = async (id: string) => {
+    if (!activeProject) return;
+    await deleteBudgetItem(id);
+    await refreshProject(activeProject.id);
+  };
+
+  const handleHireForBudgetItem = async (item: BudgetItem) => {
+    if (!activeProject) return;
+    setHiringForItem(item.id);
+    try {
+      const jobId = await createJobFromBudgetItem(item as any, activeProject.id);
+      await refreshProject(activeProject.id);
+      window.open(`/jobs/${jobId}`, '_blank');
+    } finally {
+      setHiringForItem(null);
+    }
   };
 
   const handleOpenBeatModal = async () => {
@@ -1124,6 +1172,36 @@ export default function StudioPage() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showBudgetModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowBudgetModal(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={20} /> New Budget Line Item</h2>
+                <button onClick={() => setShowBudgetModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Category</label>
+                  <input value={budgetCategory} onChange={e => setBudgetCategory(e.target.value)} placeholder="e.g. Sound Designer" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Description</label>
+                  <textarea value={budgetDescription} onChange={e => setBudgetDescription(e.target.value)} style={{ width: '100%', minHeight: 60, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Amount (USD)</label>
+                  <input type="number" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} placeholder="0" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                </div>
+                <button onClick={handleCreateBudgetItem} disabled={!budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem ? 0.5 : 1 }}>
+                  {savingBudgetItem ? 'Saving…' : 'Add Line Item'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* TABS BAR */}
       <div style={{
         position: 'fixed', top: 62, left: 0, width: '100%',
@@ -1259,6 +1337,41 @@ export default function StudioPage() {
                       </div>
                     </div>
                   )}
+
+                  <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>Line Items</div>
+                      <button className="link-btn" onClick={handleOpenBudgetModal} style={{ fontSize: 9, padding: '4px 10px' }}>+ Add Line Item</button>
+                    </div>
+                    {(activeProject.budget_items || []).length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', fontStyle: 'italic' }}>No budget line items yet.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(activeProject.budget_items || []).map(item => (
+                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700 }}>{item.category}</div>
+                              {item.description && <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{item.description}</div>}
+                            </div>
+                            <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: '#fff' }}>${Number(item.amount).toLocaleString()}</div>
+                            {item.job_id ? (
+                              <Link href={`/jobs/${item.job_id}`} target="_blank" style={{ fontSize: 9, padding: '4px 10px', borderRadius: 4, background: 'rgba(0,204,102,0.1)', color: '#00cc66', textDecoration: 'none', whiteSpace: 'nowrap' }}>Job Posted</Link>
+                            ) : (
+                              <button
+                                className="link-btn"
+                                disabled={hiringForItem === item.id}
+                                onClick={() => handleHireForBudgetItem(item)}
+                                style={{ fontSize: 9, padding: '4px 10px', whiteSpace: 'nowrap' }}
+                              >
+                                {hiringForItem === item.id ? 'Posting…' : 'Hire for this'}
+                              </button>
+                            )}
+                            <button onClick={() => handleDeleteBudgetItem(item.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: 4 }}><Trash2 size={13} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Project Milestone Timeline */}

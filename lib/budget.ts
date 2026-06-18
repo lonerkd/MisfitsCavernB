@@ -1,8 +1,11 @@
 import { supabaseAdmin } from '@/lib/supabase/server';
 
-// The 'budget_items' table does not exist in the deployed Supabase schema.
-// Functions that need project ownership checks still validate against `projects`.
-// Budget mutation functions return graceful stubs to avoid crashes.
+async function isProjectMember(projectId: string, userId: string): Promise<boolean> {
+  const { data: project } = await supabaseAdmin.from('projects').select('creator_id').eq('id', projectId).single();
+  if (project?.creator_id === userId) return true;
+  const { data: crew } = await supabaseAdmin.from('project_crew').select('id').eq('project_id', projectId).eq('user_id', userId).maybeSingle();
+  return !!crew;
+}
 
 export async function createBudgetItem(
   projectId: string,
@@ -12,26 +15,16 @@ export async function createBudgetItem(
   amount: number
 ) {
   try {
-    const { data: project, error: fetchError } = await supabaseAdmin
-      .from('projects')
-      .select('creator_id')
-      .eq('id', projectId)
-      .single();
-
-    if (fetchError || !project || project.creator_id !== userId) {
+    if (!(await isProjectMember(projectId, userId))) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Table not yet in schema — return stub
-    const item = {
-      id: crypto.randomUUID(),
-      project_id: projectId,
-      category,
-      description,
-      amount,
-      actual_cost: null,
-      created_at: new Date().toISOString(),
-    };
+    const { data: item, error } = await supabaseAdmin
+      .from('budget_items')
+      .insert({ project_id: projectId, category, description, amount, created_by: userId })
+      .select()
+      .single();
+    if (error) return { success: false, error: error.message };
     return { success: true, item };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -40,15 +33,24 @@ export async function createBudgetItem(
 
 export async function getProjectBudget(projectId: string) {
   try {
-    // Table not yet in schema — return empty summary
+    const { data: items, error } = await supabaseAdmin
+      .from('budget_items')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+    if (error) return { success: false, error: error.message };
+
+    const totalBudgeted = (items || []).reduce((sum, i) => sum + Number(i.amount || 0), 0);
+    const totalActual = (items || []).reduce((sum, i) => sum + Number(i.actual_cost || 0), 0);
+
     return {
       success: true,
-      items: [],
+      items: items || [],
       summary: {
-        totalBudgeted: 0,
-        totalActual: 0,
-        remaining: 0,
-        percentUsed: 0,
+        totalBudgeted,
+        totalActual,
+        remaining: totalBudgeted - totalActual,
+        percentUsed: totalBudgeted > 0 ? Math.round((totalActual / totalBudgeted) * 100) : 0,
       },
     };
   } catch (error: any) {
@@ -68,18 +70,18 @@ export async function updateBudgetItem(
   }
 ) {
   try {
-    const { data: project, error: fetchError } = await supabaseAdmin
-      .from('projects')
-      .select('creator_id')
-      .eq('id', projectId)
-      .single();
-
-    if (fetchError || !project || project.creator_id !== userId) {
+    if (!(await isProjectMember(projectId, userId))) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Table not yet in schema — return stub
-    const item = { id: itemId, project_id: projectId, ...data };
+    const { data: item, error } = await supabaseAdmin
+      .from('budget_items')
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', itemId)
+      .eq('project_id', projectId)
+      .select()
+      .single();
+    if (error) return { success: false, error: error.message };
     return { success: true, item };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -92,17 +94,12 @@ export async function deleteBudgetItem(
   projectId: string
 ) {
   try {
-    const { data: project, error: fetchError } = await supabaseAdmin
-      .from('projects')
-      .select('creator_id')
-      .eq('id', projectId)
-      .single();
-
-    if (fetchError || !project || project.creator_id !== userId) {
+    if (!(await isProjectMember(projectId, userId))) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Table not yet in schema — return success stub
+    const { error } = await supabaseAdmin.from('budget_items').delete().eq('id', itemId).eq('project_id', projectId);
+    if (error) return { success: false, error: error.message };
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
