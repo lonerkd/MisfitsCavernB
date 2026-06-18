@@ -5,19 +5,19 @@ import { NextRequest, NextResponse } from 'next/server';
 // a single seam to swap in ShotDeck/EyeCandy/Pinterest later.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get('q') || '').trim();
-  const page = searchParams.get('page') || '1';
+  const q = (searchParams.get('q') || '').trim().slice(0, 200);
+  const pageNum = Math.min(Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1), 50);
 
   if (!q) return NextResponse.json({ results: [], totalPages: 0, page: 1 });
 
   try {
     const upstream = await fetch(
-      `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page=${page}&page_size=24&mature=false`,
+      `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page=${pageNum}&page_size=24&mature=false`,
       { headers: { 'User-Agent': 'MisfitsCavern/1.0 (reference-search)' }, next: { revalidate: 60 } }
     );
 
     if (!upstream.ok) {
-      return NextResponse.json({ results: [], totalPages: 0, page: Number(page) }, { status: 200 });
+      return NextResponse.json({ results: [], totalPages: 0, page: pageNum }, { status: 200 });
     }
 
     const data = await upstream.json();
@@ -36,9 +36,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       results,
       totalPages: data.page_count || 1,
-      page: Number(page),
+      page: pageNum,
     });
   } catch {
-    return NextResponse.json({ results: [], totalPages: 0, page: Number(page) }, { status: 200 });
+    return NextResponse.json({ results: [], totalPages: 0, page: pageNum }, { status: 200 });
   }
 }
