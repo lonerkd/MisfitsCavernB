@@ -644,3 +644,47 @@ CREATE POLICY "Project members can manage campaigns" ON campaigns FOR ALL USING 
 ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS rate_type TEXT NOT NULL DEFAULT 'hourly'
   CHECK (rate_type IN ('hourly', 'fixed'));
+
+-- ScriptOS: real revision history (colored revision pages, Final Draft
+-- workflow) — replaces the localStorage-only `scriptos_revisions_<id>` list,
+-- which lost a writer's locked drafts on a new device or cleared storage.
+CREATE TABLE IF NOT EXISTS script_revisions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  color_index INT NOT NULL DEFAULT 0,
+  label TEXT NOT NULL,
+  snapshot TEXT NOT NULL DEFAULT '',
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_script_revisions_script ON script_revisions(script_id, created_at);
+
+ALTER TABLE script_revisions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Script members can manage revisions" ON script_revisions FOR ALL USING (
+  script_id IN (
+    SELECT id FROM scripts WHERE
+      project_id IS NULL OR
+      project_id IN (
+        SELECT id FROM projects WHERE creator_id = auth.uid()
+        UNION
+        SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+      )
+  )
+);
+
+-- ScriptOS: title page fields — replaces the localStorage-only
+-- `scriptos_title_page_<id>` blob, which never followed the script to
+-- another device or collaborator.
+ALTER TABLE scripts
+  ADD COLUMN IF NOT EXISTS title_page JSONB DEFAULT '{}'::jsonb;
+
+-- ScriptOS: per-script writer session state (Stash snippets, sprint timer,
+-- daily word-count goal) — durable across reloads/devices, but not
+-- realtime/collaborative. Lives alongside the script row since none of this
+-- is meaningfully shared between collaborators the way content/characters are.
+ALTER TABLE scripts
+  ADD COLUMN IF NOT EXISTS stash_items JSONB DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS daily_goal INT DEFAULT 1000,
+  ADD COLUMN IF NOT EXISTS sprint_minutes INT DEFAULT 15;

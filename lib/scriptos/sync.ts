@@ -1,90 +1,89 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentUser } from '@/lib/supabase/auth';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Single source of truth for autosaving a script's content to Supabase.
+// Debounces on `localContent` changes, broadcasts to collaborators in real
+// time, and exposes `flushSave` so a manual "Save" button can funnel through
+// the exact same write path (guarded by `inFlight`) instead of racing it.
 export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string) => void) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
-  const [channel, setChannel] = useState<any>(null);
+  const channelRef = useRef<any>(null);
+  const inFlight = useRef(false);
+  const latestContent = useRef(localContent);
+  latestContent.current = localContent;
 
-  // Initialize sync
+  // Initialize the realtime broadcast channel for this script.
   useEffect(() => {
     if (!scriptId) return;
+    let active = true;
+    let localChannel: any = null;
 
     const setupSync = async () => {
       const user = await getCurrentUser();
-      if (!user) return; // Only sync if logged in
+      if (!user || !active) return; // Only sync if logged in
 
-      // 1. Fetch initial remote state
-      const { data, error } = await supabase
-        .from('scripts')
-        .select('content, updated_at')
-        .eq('id', scriptId)
-        .single();
-
-      if (data && data.content) {
-        // If remote has data and we just loaded, we should maybe prefer remote or prompt
-        // For now, let's just use it if local is empty or we force it.
-        // Actually, if we just landed on the page, we should load from local storage FIRST,
-        // then if remote is newer, replace local. (Conflict resolution is tricky, keeping simple)
-      }
-
-      // 2. Setup Realtime Channel for Broadcast
-      const newChannel = supabase.channel(`script_${scriptId}:${Math.random().toString(36).slice(2)}`, {
+      localChannel = supabase.channel(`script_${scriptId}:${Math.random().toString(36).slice(2)}`, {
         config: { broadcast: { self: false } }
       });
 
-      newChannel.on('broadcast', { event: 'content_update' }, (payload) => {
+      localChannel.on('broadcast', { event: 'content_update' }, (payload: any) => {
         if (payload.payload.content !== undefined) {
           onRemoteChange(payload.payload.content);
         }
-      }).subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime sync established for script:', scriptId);
-        }
-      });
+      }).subscribe();
 
-      setChannel(newChannel);
+      channelRef.current = localChannel;
     };
 
     setupSync();
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      active = false;
+      if (localChannel) supabase.removeChannel(localChannel);
+      channelRef.current = null;
     };
   }, [scriptId]);
 
-  // Push local changes
-  useEffect(() => {
-    if (!scriptId || !channel) return;
-
-    const pushChanges = async () => {
-      setIsSyncing(true);
-      
-      // Broadcast to other clients immediately
-      channel.send({
+  // The single write path: broadcasts to collaborators, then persists to
+  // Supabase. Guarded by `inFlight` so the debounced autosave and a manual
+  // save can never both be mid-write at once and clobber each other.
+  const flushSave = useCallback(async () => {
+    if (!scriptId || !UUID_RE.test(scriptId) || inFlight.current) return;
+    inFlight.current = true;
+    setIsSyncing(true);
+    try {
+      channelRef.current?.send({
         type: 'broadcast',
         event: 'content_update',
-        payload: { content: localContent, timestamp: Date.now() }
+        payload: { content: latestContent.current, timestamp: Date.now() }
       });
 
-      // Debounce saving to DB (handled by storage.ts or we can do it here)
-      // Let's do DB save here so storage.ts can remain local-first
       const user = await getCurrentUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from('scripts')
-          .update({ content: localContent, updated_at: new Date().toISOString() })
+          .update({ content: latestContent.current, updated_at: new Date().toISOString() })
           .eq('id', scriptId);
+        if (error) console.error('Error syncing script content:', error);
       }
 
       setLastSyncedAt(new Date());
+    } finally {
       setIsSyncing(false);
-    };
+      inFlight.current = false;
+    }
+  }, [scriptId]);
 
-    const timer = setTimeout(pushChanges, 1500); // Debounce push
+  // Debounce the push whenever local content changes.
+  useEffect(() => {
+    if (!scriptId) return;
+    const timer = setTimeout(flushSave, 1500);
     return () => clearTimeout(timer);
-  }, [localContent, scriptId, channel]);
+  }, [localContent, scriptId, flushSave]);
 
-  return { isSyncing, lastSyncedAt };
+  return { isSyncing, lastSyncedAt, flushSave };
 }

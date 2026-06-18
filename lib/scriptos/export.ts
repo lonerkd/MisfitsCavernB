@@ -1,5 +1,6 @@
 import { StoredScript } from './storage';
 import { parseScript } from './parser';
+import { jsPDF } from 'jspdf';
 
 export function exportScriptAsText(script: StoredScript, format: 'txt' | 'fountain' = 'txt'): void {
   const blob = new Blob([script.content], { type: 'text/plain' });
@@ -62,75 +63,108 @@ ${paragraphs}
   URL.revokeObjectURL(url);
 }
 
-export function exportScriptAsPdf(script: StoredScript): void {
+// Real, paginated, industry-formatted screenplay PDF — Courier 12pt on US
+// Letter, 1" margins (1.5" left for binding), correct per-element indents.
+// Generates an actual file download; no print dialog involved.
+export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): void {
   const result = parseScript(script.content);
-  
-  // Build standard screenplay HTML
-  const htmlContent = result.lines.map(line => {
-    let style = 'margin-bottom: 0; white-space: pre-wrap; break-inside: avoid; ';
-    
-    if (line.type === 'slug') style += 'font-weight: bold; text-transform: uppercase; margin-top: 24px; margin-bottom: 8px;';
-    else if (line.type === 'character') style += 'margin-left: 20%; margin-right: 20%; margin-top: 16px; text-align: center; text-transform: uppercase;';
-    else if (line.type === 'dialogue') style += 'margin-left: 15%; margin-right: 15%; margin-bottom: 12px;';
-    else if (line.type === 'parenthetical') style += 'margin-left: 20%; margin-right: 20%; text-align: center; font-style: italic;';
-    else if (line.type === 'transition') style += 'text-align: right; text-transform: uppercase; margin-top: 16px; margin-bottom: 16px; font-weight: bold;';
-    else if (line.type === 'empty') return '<br/>';
-    else style += 'margin-bottom: 12px;'; // action
-    
-    return `<div style="${style}">${line.text}</div>`;
-  }).join('\\n');
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups to print PDF.');
-    return;
+  const doc = new jsPDF({ unit: 'in', format: 'letter' });
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(12);
+
+  const PAGE_HEIGHT = 11;
+  const TOP_MARGIN = 1;
+  const BOTTOM_MARGIN = 1;
+  const LEFT_MARGIN = 1.5; // standard screenplay binding margin
+  const LINE_HEIGHT = 12 / 72 * 1.2; // 12pt line, single-spaced screenplay leading
+  const CONTENT_BOTTOM = PAGE_HEIGHT - BOTTOM_MARGIN;
+  const CHAR_WIDTH = 12 / 72 * 0.6; // approx Courier monospace advance width at 12pt
+
+  // Per-element left offset (inches, relative to the page, not the 1.5" margin)
+  // and the usable text width for wrapping, matching standard screenplay format.
+  const ELEMENT_LEFT: Record<string, number> = {
+    slug: LEFT_MARGIN,
+    action: LEFT_MARGIN,
+    character: LEFT_MARGIN + 2.2,
+    dialogue: LEFT_MARGIN + 1.0,
+    parenthetical: LEFT_MARGIN + 1.6,
+    transition: 5.5,
+    note: LEFT_MARGIN,
+  };
+  const ELEMENT_WIDTH: Record<string, number> = {
+    slug: 6,
+    action: 6,
+    character: 3,
+    dialogue: 3.5,
+    parenthetical: 2.5,
+    transition: 2,
+    note: 6,
+  };
+
+  let y = TOP_MARGIN;
+  let pageNum = 1;
+
+  const newPage = () => {
+    doc.addPage();
+    pageNum += 1;
+    doc.setFontSize(10);
+    doc.text(`${pageNum}.`, 7.5, 0.6, { align: 'right' });
+    doc.setFontSize(12);
+    y = TOP_MARGIN;
+  };
+
+  const ensureSpace = (linesNeeded: number) => {
+    if (y + linesNeeded * LINE_HEIGHT > CONTENT_BOTTOM) newPage();
+  };
+
+  // ---- Title page ----
+  if (titlePage?.title || script.title) {
+    doc.setFontSize(14);
+    const title = (titlePage?.title || script.title || 'Untitled').toUpperCase();
+    doc.text(title, 4.25, 4.5, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(titlePage?.credit || 'Written by', 4.25, 5, { align: 'center' });
+    if (titlePage?.author) doc.text(titlePage.author, 4.25, 5.3, { align: 'center' });
+    if (titlePage?.draftDate) doc.text(titlePage.draftDate, 4.25, 10, { align: 'center' });
+    doc.addPage();
+    doc.setFontSize(10);
+    doc.text('1.', 7.5, 0.6, { align: 'right' });
+    doc.setFontSize(12);
+  } else {
+    doc.setFontSize(10);
+    doc.text('1.', 7.5, 0.6, { align: 'right' });
+    doc.setFontSize(12);
   }
 
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>${script.title}</title>
-        <style>
-          @page { size: letter; margin: 1in 1in 1in 1.5in; }
-          body { 
-            font-family: "Courier Prime", Courier, monospace; 
-            font-size: 12pt; 
-            line-height: 1.2;
-            color: black;
-            background: white;
-            padding: 0;
-            margin: 0;
-          }
-          .title-page {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            page-break-after: always;
-          }
-          .title { font-size: 24pt; font-weight: bold; margin-bottom: 24px; text-transform: uppercase; }
-          .author { font-size: 12pt; }
-          @media print {
-            body { -webkit-print-color-adjust: exact; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="title-page">
-          <div class="title">${script.title}</div>
-          <div class="author">Written by<br/>Author</div>
-        </div>
-        ${htmlContent}
-      </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-  printWindow.focus();
-  setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
-  }, 250);
+  for (const line of result.lines) {
+    const type = line.type === 'empty' ? 'empty' : line.type;
+    if (type === 'empty') {
+      y += LINE_HEIGHT;
+      continue;
+    }
+
+    const x = ELEMENT_LEFT[type] ?? LEFT_MARGIN;
+    const width = ELEMENT_WIDTH[type] ?? 6;
+    const maxCharsPerLine = Math.max(10, Math.floor(width / CHAR_WIDTH));
+
+    let text = line.text;
+    if (type === 'slug' || type === 'character' || type === 'transition') text = text.toUpperCase();
+
+    const wrapped: string[] = doc.splitTextToSize(text, width) as string[];
+
+    // Extra leading before scene headings and character cues, matching screen convention.
+    if (type === 'slug') { ensureSpace(2); y += LINE_HEIGHT; }
+    if (type === 'character') { ensureSpace(wrapped.length + 1); y += LINE_HEIGHT; }
+
+    ensureSpace(wrapped.length);
+    for (const wl of wrapped) {
+      doc.text(wl, x, y);
+      y += LINE_HEIGHT;
+    }
+
+    if (type === 'slug' || type === 'dialogue' || type === 'transition') y += LINE_HEIGHT * 0.5;
+  }
+
+  doc.save(`${script.title.replace(/[^a-z0-9]/gi, '_')}.pdf`);
 }

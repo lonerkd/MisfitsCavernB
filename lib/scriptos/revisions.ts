@@ -1,7 +1,11 @@
 // ============================================================================
 // SCRIPTOS REVISION TRACKING SYSTEM
 // Industry-standard colored revision pages (Final Draft workflow)
+// Backed by Supabase (script_revisions table) — real, persisted, durable
+// across devices, replacing the old localStorage-only history.
 // ============================================================================
+
+import { getScriptRevisions, createScriptRevision, type DBScriptRevision } from '@/lib/supabase/scriptRevisions';
 
 export const REVISION_COLORS = [
   { name: 'White',     color: '#ffffff', bg: 'rgba(255,255,255,0.05)' },
@@ -31,34 +35,38 @@ export interface RevisionMark {
   type: 'added' | 'modified' | 'deleted';
 }
 
-const REVISIONS_KEY = 'scriptos_revisions';
-
-export function getRevisions(scriptId: string): Revision[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem(`${REVISIONS_KEY}_${scriptId}`);
-    return stored ? JSON.parse(stored) : [];
-  } catch { return []; }
-}
-
-export function saveRevision(scriptId: string, revision: Revision): void {
-  const revisions = getRevisions(scriptId);
-  revisions.push(revision);
-  localStorage.setItem(`${REVISIONS_KEY}_${scriptId}`, JSON.stringify(revisions));
-}
-
-export function createRevision(scriptId: string, content: string, label?: string): Revision {
-  const revisions = getRevisions(scriptId);
-  const colorIndex = revisions.length % REVISION_COLORS.length;
-  const revision: Revision = {
-    id: `rev-${Date.now()}`,
-    colorIndex,
-    date: new Date().toISOString(),
-    label: label || `${REVISION_COLORS[colorIndex].name} Revision`,
-    snapshot: content,
+function mapRow(r: DBScriptRevision): Revision {
+  return {
+    id: r.id,
+    colorIndex: r.color_index,
+    date: r.created_at,
+    label: r.label,
+    snapshot: r.snapshot,
   };
-  saveRevision(scriptId, revision);
-  return revision;
+}
+
+export async function getRevisions(scriptId: string): Promise<Revision[]> {
+  if (!scriptId || scriptId === 'demo') return [];
+  try {
+    const rows = await getScriptRevisions(scriptId);
+    return rows.map(mapRow);
+  } catch (error) {
+    console.error('Error loading revisions:', error);
+    return [];
+  }
+}
+
+export async function createRevision(scriptId: string, content: string, label?: string): Promise<Revision | null> {
+  try {
+    const existing = await getRevisions(scriptId);
+    const colorIndex = existing.length % REVISION_COLORS.length;
+    const finalLabel = label || `${REVISION_COLORS[colorIndex].name} Revision`;
+    const row = await createScriptRevision(scriptId, colorIndex, finalLabel, content);
+    return mapRow(row);
+  } catch (error) {
+    console.error('Error creating revision:', error);
+    return null;
+  }
 }
 
 // Compare two text snapshots and return changed line indices

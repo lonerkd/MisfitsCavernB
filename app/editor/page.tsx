@@ -16,6 +16,7 @@ import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { loadWriterSession, saveWriterSession } from '@/lib/scriptos/writerSession';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { getScriptCharacters, ensureScriptCharacters, updateScriptCharacter, subscribeToScriptCharacters, type DBCharacterProfile } from '@/lib/supabase/characters';
 import type { ScriptLine } from '@/types/screenplay';
@@ -337,8 +338,10 @@ export default function EditorPage() {
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supabase Realtime Sync
-  const { isSyncing, lastSyncedAt } = useScriptSync(currentScript?.id || '', content, (newContent) => {
+  // Supabase Realtime Sync — the single write path for autosave; `flushSave`
+  // lets the manual Save button funnel through the same debounced/guarded
+  // writer instead of racing it with a second write.
+  const { isSyncing, lastSyncedAt, flushSave } = useScriptSync(currentScript?.id || '', content, (newContent) => {
     // Only update if it's different to avoid cursor jumping
     if (newContent !== content) {
       setContent(newContent);
@@ -348,7 +351,7 @@ export default function EditorPage() {
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content || PLACEHOLDER);
-    setTitlePage(loadTitlePage(script.id));
+    loadTitlePage(script.id).then(setTitlePage);
     setSessionStartWords((script.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
@@ -383,7 +386,7 @@ export default function EditorPage() {
         const latest = all[0];
         setCurrentScript(latest);
         setContent(latest.content || PLACEHOLDER);
-        setTitlePage(loadTitlePage(latest.id));
+        loadTitlePage(latest.id).then(setTitlePage);
         setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
       } else {
         const fresh = await createNewScript('My First Screenplay');
@@ -475,10 +478,28 @@ export default function EditorPage() {
 
   // Load revisions when script changes
   useEffect(() => {
-    if (currentScript) {
-      setRevisions(getRevisions(currentScript.id));
-    }
+    if (!currentScript) { setRevisions([]); return; }
+    let active = true;
+    getRevisions(currentScript.id).then(revs => { if (active) setRevisions(revs); });
+    return () => { active = false; };
   }, [currentScript]);
+
+  // Load durable writer session state (Stash, sprint length, daily goal) —
+  // per-script, persisted on the scripts row, restored on mount/script switch.
+  useEffect(() => {
+    if (!currentScript || currentScript.id === 'demo') {
+      setStashItems([]);
+      return;
+    }
+    let active = true;
+    loadWriterSession(currentScript.id).then(state => {
+      if (!active) return;
+      setStashItems(state.stashItems);
+      setDailyGoal(state.dailyGoal);
+      setSprintTime(state.sprintMinutes * 60);
+    });
+    return () => { active = false; };
+  }, [currentScript?.id]);
 
   // Find count
   useEffect(() => {
@@ -492,14 +513,20 @@ export default function EditorPage() {
   }, [findText, content]);
 
 
-  // Auto-save (cloud) — only for signed-in users; guests stay in-memory.
+  // Durable writer session state — Stash, daily goal, sprint length.
+  // Debounced save so rapid stash add/remove or goal slider drags don't
+  // hammer the scripts row; loaded once on script switch (above).
   useEffect(() => {
-    if (!currentScript || !user) return;
-    const timer = setTimeout(async () => {
-      await saveScript({ id: currentScript.id, title: currentScript.title, content });
-    }, 2000);
+    if (!currentScript || currentScript.id === 'demo') return;
+    const timer = setTimeout(() => {
+      saveWriterSession(currentScript.id, {
+        stashItems,
+        dailyGoal,
+        sprintMinutes: Math.round(sprintTime / 60) || 15,
+      }).catch(() => {});
+    }, 1000);
     return () => clearTimeout(timer);
-  }, [content, currentScript, user]);
+  }, [stashItems, dailyGoal, currentScript?.id]);
 
   // Sprint Timer Hook
   useEffect(() => {
@@ -515,6 +542,9 @@ export default function EditorPage() {
 
   // Actions
   const emitPill = usePillEmit();
+  // Manual save funnels through the SAME write path as the debounced
+  // autosave (useScriptSync's flushSave, guarded by an in-flight flag) so
+  // the two can never race and double-write the script row.
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
     if (!user) {
@@ -523,14 +553,11 @@ export default function EditorPage() {
       return;
     }
     setSaving(true);
-    const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
-    if (saved) {
-      setCurrentScript(saved);
-      toast('Screenplay saved to cloud.', 'success');
-      emitPill('Saved to cloud', 'success');
-    }
+    await flushSave();
+    toast('Screenplay saved to cloud.', 'success');
+    emitPill('Saved to cloud', 'success');
     setSaving(false);
-  }, [currentScript, content, toast, user, emitPill]);
+  }, [currentScript, toast, user, emitPill, flushSave]);
 
   // Attach the current script to the active project (or detach if already linked).
   const handleToggleProjectLink = useCallback(async () => {
@@ -574,13 +601,11 @@ export default function EditorPage() {
       exportScriptAsFdx({ ...currentScript, content });
       toast('Exported as .fdx (Final Draft)', 'success');
     } else if (format === 'pdf') {
-      exportScriptAsPdf({ ...currentScript, content });
-      toast('Generating PDF...', 'success');
-    } else {
-      toast(`Exporting as ${format.toUpperCase()} (Pro Feature)`, 'info');
+      exportScriptAsPdf({ ...currentScript, content }, titlePage);
+      toast('PDF downloaded.', 'success');
     }
     setShowFormatMenu(false);
-  }, [currentScript, content, toast]);
+  }, [currentScript, content, titlePage, toast]);
 
   const handleFindReplace = useCallback(() => {
     if (!findText) return;
@@ -596,9 +621,10 @@ export default function EditorPage() {
     toast('Replaced 1 occurrence', 'success');
   }, [findText, replaceText, toast]);
 
-  const handleLockRevision = useCallback(() => {
+  const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
-    const rev = createRevision(currentScript.id, content);
+    const rev = await createRevision(currentScript.id, content);
+    if (!rev) { toast('Failed to lock revision.', 'error'); return; }
     setRevisions(prev => [...prev, rev]);
     toast(`Locked as ${rev.label}`, 'success');
   }, [currentScript, content, toast]);
@@ -665,10 +691,16 @@ export default function EditorPage() {
   }, [toast]);
 
   // Title page save
+  const titlePageSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
     setTitlePage(prev => {
       const updated = { ...prev, [field]: value };
-      if (currentScript) saveTitlePage(currentScript.id, updated);
+      if (currentScript) {
+        if (titlePageSaveTimer.current) clearTimeout(titlePageSaveTimer.current);
+        titlePageSaveTimer.current = setTimeout(() => {
+          saveTitlePage(currentScript.id, updated).catch(() => {});
+        }, 600);
+      }
       return updated;
     });
   }, [currentScript]);

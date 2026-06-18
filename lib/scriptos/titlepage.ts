@@ -1,20 +1,22 @@
 // ============================================================================
 // SCRIPTOS TITLE PAGE
 // Standard screenplay title page fields
+// Backed by Supabase (`scripts.title_page` jsonb column) — real, persisted,
+// follows the script across devices, replacing the old localStorage blob.
 // ============================================================================
+
+import { supabase } from '@/lib/supabase/client';
 
 export interface TitlePage {
   title: string;
   credit: string;      // "Written by", "Screenplay by", etc.
   author: string;
-  source: string;       // "Based on..." 
+  source: string;       // "Based on..."
   draftDate: string;
   contact: string;
   copyright: string;
   notes: string;
 }
-
-const TITLE_KEY = 'scriptos_title_page';
 
 export function getDefaultTitlePage(): TitlePage {
   return {
@@ -29,17 +31,28 @@ export function getDefaultTitlePage(): TitlePage {
   };
 }
 
-export function saveTitlePage(scriptId: string, titlePage: TitlePage): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(`${TITLE_KEY}_${scriptId}`, JSON.stringify(titlePage));
+export async function saveTitlePage(scriptId: string, titlePage: TitlePage): Promise<void> {
+  if (!scriptId || scriptId === 'demo') return;
+  const { error } = await supabase
+    .from('scripts')
+    .update({ title_page: titlePage })
+    .eq('id', scriptId);
+  if (error) console.error('Error saving title page:', error);
 }
 
-export function loadTitlePage(scriptId: string): TitlePage {
-  if (typeof window === 'undefined') return getDefaultTitlePage();
+export async function loadTitlePage(scriptId: string): Promise<TitlePage> {
+  if (!scriptId || scriptId === 'demo') return getDefaultTitlePage();
   try {
-    const stored = localStorage.getItem(`${TITLE_KEY}_${scriptId}`);
-    return stored ? { ...getDefaultTitlePage(), ...JSON.parse(stored) } : getDefaultTitlePage();
-  } catch { return getDefaultTitlePage(); }
+    const { data, error } = await supabase
+      .from('scripts')
+      .select('title_page')
+      .eq('id', scriptId)
+      .single();
+    if (error || !data?.title_page) return getDefaultTitlePage();
+    return { ...getDefaultTitlePage(), ...data.title_page };
+  } catch {
+    return getDefaultTitlePage();
+  }
 }
 
 // Generate Fountain title page block from TitlePage object
