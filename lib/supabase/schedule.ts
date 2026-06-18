@@ -101,7 +101,7 @@ export async function updateSceneSchedule(id: string, updates: Partial<Pick<Scen
 
 export function subscribeToSchedule(projectId: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`schedule:${projectId}`)
+    .channel(`schedule:${projectId}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'shoot_days', filter: `project_id=eq.${projectId}` }, callback)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'scene_schedule', filter: `project_id=eq.${projectId}` }, callback)
     .subscribe();

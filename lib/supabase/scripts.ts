@@ -112,7 +112,7 @@ export async function restoreScriptVersion(scriptId: string, versionId: string, 
 
 export function subscribeToScript(scriptId: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`script:${scriptId}`)
+    .channel(`script:${scriptId}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'scripts', filter: `id=eq.${scriptId}` },
       callback

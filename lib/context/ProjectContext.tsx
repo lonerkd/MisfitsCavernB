@@ -246,8 +246,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
       // Realtime ripple: any change to a project, its crew, or a script/board
       // attached to it pushes through to whoever has it open — no reload.
+      // Unique per mount: removeChannel() on the previous instance (e.g. the
+      // mount->cleanup->mount React Strict Mode does in dev) doesn't always
+      // finish before this runs again, so a fixed topic can collide with a
+      // not-yet-torn-down channel and throw on the first .on() call.
       channel = supabase
-        .channel('project-ecosystem')
+        .channel(`project-ecosystem:${Math.random().toString(36).slice(2)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as Project;

@@ -81,7 +81,7 @@ export async function updateScriptCharacter(id: string, updates: Partial<DBChara
 
 export function subscribeToScriptCharacters(scriptId: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`script_characters:${scriptId}`)
+    .channel(`script_characters:${scriptId}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'script_characters', filter: `script_id=eq.${scriptId}` }, callback)
     .subscribe();
 }

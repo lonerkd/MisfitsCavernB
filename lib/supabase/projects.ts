@@ -139,7 +139,7 @@ export async function addProjectMember(projectId: string, userId: string, role =
 
 export function subscribeToProject(projectId: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`project:${projectId}`)
+    .channel(`project:${projectId}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', 
       { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` },
       callback

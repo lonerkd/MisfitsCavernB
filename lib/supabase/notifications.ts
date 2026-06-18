@@ -59,8 +59,12 @@ export async function markAllNotificationsRead(userId: string) {
 }
 
 export function subscribeToNotifications(userId: string, onInsert: (n: DBNotification) => void) {
+  // Unique per call so multiple components mounted at once (e.g. desktop +
+  // mobile nav) each get their own realtime channel instead of colliding on
+  // a shared topic, which throws once the first subscriber's .subscribe()
+  // has already fired.
   const channel = supabase
-    .channel(`notifications:${userId}`)
+    .channel(`notifications:${userId}:${Math.random().toString(36).slice(2)}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },

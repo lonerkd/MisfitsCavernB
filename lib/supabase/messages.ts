@@ -82,7 +82,7 @@ export async function addReaction(messageId: string, emoji: string, userId: stri
 
 export function subscribeToChannel(channelId: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`channel:${channelId}`)
+    .channel(`channel:${channelId}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
       callback

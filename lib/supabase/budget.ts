@@ -80,7 +80,7 @@ export async function createJobFromBudgetItem(item: DBBudgetItem, projectId: str
 
 export function subscribeToBudgetItems(projectId: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`budget_items:${projectId}`)
+    .channel(`budget_items:${projectId}:${Math.random().toString(36).slice(2)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items', filter: `project_id=eq.${projectId}` }, callback)
     .subscribe();
 }

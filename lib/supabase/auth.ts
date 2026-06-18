@@ -18,15 +18,8 @@ export async function signUp(email: string, password: string, username: string) 
 
   if (error) throw error;
 
-  // Create profile
-  if (data.user) {
-    await supabase.from('profiles').insert({
-      id: data.user.id,
-      username,
-      status: 'OPEN'
-    });
-  }
-
+  // The on_auth_user_created trigger creates the profiles row from
+  // raw_user_meta_data.username - no manual insert needed here.
   return data;
 }
 

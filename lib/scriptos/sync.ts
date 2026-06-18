@@ -30,7 +30,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       }
 
       // 2. Setup Realtime Channel for Broadcast
-      const newChannel = supabase.channel(`script_${scriptId}`, {
+      const newChannel = supabase.channel(`script_${scriptId}:${Math.random().toString(36).slice(2)}`, {
         config: { broadcast: { self: false } }
       });
 
