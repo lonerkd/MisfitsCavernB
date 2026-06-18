@@ -165,7 +165,15 @@ export default function LoungePage() {
     if (!text || !currentUser) return;
     setInput('');
     try {
-      await sendMessage(currentUser.id, text, activeChannel);
+      const saved = await sendMessage(currentUser.id, text, activeChannel);
+      // Optimistically render our own message immediately. The realtime
+      // subscription only fires when Supabase replication is enabled, and even
+      // then not for the sender's own client reliably — without this the sender
+      // types, hits send, and sees nothing until a manual reload.
+      setMessages(prev => prev.some(m => m.id === saved.id) ? prev : [
+        ...prev,
+        { id: saved.id, user: currentProfile?.username || 'You', text: saved.content, timestamp: new Date(saved.created_at), sender_id: saved.sender_id },
+      ]);
     } catch (e) {
       console.error(e);
     }
@@ -309,9 +317,11 @@ export default function LoungePage() {
             </div>
           </div>
 
-          {/* Input */}
+          {/* Input — extra bottom padding clears the floating EcosystemTaskbar
+              (fixed, bottom:28, ~64px tall, centered) which otherwise sits on
+              top of the composer and blocks clicking into the message field. */}
           <div style={{
-            padding: '16px 28px',
+            padding: '16px 28px 108px',
             borderTop: '1px solid rgba(255,255,255,0.04)',
             background: '#090909',
             flexShrink: 0,

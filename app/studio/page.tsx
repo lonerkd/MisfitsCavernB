@@ -48,8 +48,8 @@ const PLATFORM_COLORS: Record<string, string> = {
 
 function humanizeActivity(action: string, metadata: Record<string, any> | null): string {
   const verb = action.replace(/_/g, ' ');
-  const title = metadata?.title;
-  return title ? `${verb} — ${title}` : verb;
+  const detail = metadata?.title || metadata?.phase;
+  return detail ? `${verb} — ${detail}` : verb;
 }
 
 function timeAgo(iso: string): string {
@@ -993,6 +993,20 @@ export default function StudioPage() {
     setEditingBudget(false);
   };
 
+  // The project is the living aggregate center: advancing its phase here is the
+  // single act that ripples everywhere (completion %, milestones, and the
+  // "Publish to Portfolio" gate). Without this the phase track was display-only
+  // and a project could never reach "Completed" — leaving portfolio publishing
+  // permanently unreachable.
+  const handleSetPhase = async (phaseId: string) => {
+    if (!activeProject || phaseId === activeProject.status) return;
+    const phases = getPhaseTemplate(activeProject.project_type);
+    const label = phases.find(p => p.id === phaseId)?.label || phaseId;
+    await updateProject(activeProject.id, { status: phaseId });
+    if (user) await logActivity(user.id, 'advanced_phase', 'project', activeProject.id, { project_id: activeProject.id, phase: label });
+    await refreshProject(activeProject.id);
+  };
+
   const handleOpenBudgetModal = () => {
     setBudgetCategory('');
     setBudgetDescription('');
@@ -1620,17 +1634,36 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* Project Milestone Timeline */}
+                {/* Project Milestone Timeline — click any phase to advance the
+                    project there. This is the one control that drives the whole
+                    aggregate forward (completion %, portfolio-publish gate). */}
                 <div style={{ marginTop: 40 }}>
-                   <SectionLabel text="Project Milestones" />
-                   <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     <SectionLabel text="Project Milestones" />
+                     {(() => {
+                       const phases = getPhaseTemplate(activeProject.project_type);
+                       const idx = getPhaseIndex(activeProject.project_type, activeProject.status);
+                       const next = phases[idx + 1];
+                       return next ? (
+                         <button onClick={() => handleSetPhase(next.id)} className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                           <CheckCircle2 size={12} /> Advance to {next.label}
+                         </button>
+                       ) : null;
+                     })()}
+                   </div>
+                   <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24, marginTop: 12 }}>
                       {getPhaseTemplate(activeProject.project_type).map((phase, i) => {
-                        const completed = getPhaseIndex(activeProject.project_type, activeProject.status) >= i;
+                        const currentIdx = getPhaseIndex(activeProject.project_type, activeProject.status);
+                        const completed = currentIdx >= i;
+                        const isCurrent = currentIdx === i;
                         return (
-                          <div key={phase.id} style={{ position: 'relative' }}>
-                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: completed ? 'var(--accent)' : '#222', border: completed ? 'none' : '1px solid #444' }} />
-                             <div style={{ fontSize: 12, fontWeight: 700, color: completed ? '#fff' : '#666' }}>{phase.label}</div>
-                          </div>
+                          <button key={phase.id} onClick={() => handleSetPhase(phase.id)} title={`Set phase to ${phase.label}`} style={{ position: 'relative', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
+                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: completed ? 'var(--accent)' : '#222', border: completed ? 'none' : '1px solid #444', boxShadow: isCurrent ? '0 0 0 3px rgba(255,60,0,0.2)' : 'none' }} />
+                             <div style={{ fontSize: 12, fontWeight: 700, color: completed ? '#fff' : '#666', display: 'flex', alignItems: 'center', gap: 8 }}>
+                               {phase.label}
+                               {isCurrent && <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--accent)', border: '1px solid rgba(255,60,0,0.3)', borderRadius: 4, padding: '1px 5px', textTransform: 'uppercase', letterSpacing: 1 }}>Current</span>}
+                             </div>
+                          </button>
                         );
                       })}
                    </div>
