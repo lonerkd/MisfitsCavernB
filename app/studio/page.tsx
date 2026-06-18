@@ -27,6 +27,7 @@ import { getShootDays, addShootDay, getSceneSchedule, ensureSceneSchedule, updat
 import { createBudgetItem, deleteBudgetItem, createJobFromBudgetItem } from '@/lib/supabase/budget';
 import { createCampaign, deleteCampaign } from '@/lib/supabase/campaigns';
 import { getPortfolioProjectBySource, publishProjectToPortfolio } from '@/lib/supabase/portfolio';
+import { usePillStage, usePillEmit } from '@/lib/context/PillContext';
 
 interface Asset {
   id: string;
@@ -793,6 +794,7 @@ function ReferenceSearchModal({
 
 export default function StudioPage() {
   const { activeProject, setActiveProject, projects, refreshProject, updateProject, addProject } = useProject();
+  const emitPill = usePillEmit();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [showNewProject, setShowNewProject] = useState(false);
   const [npTitle, setNpTitle] = useState('');
@@ -933,6 +935,7 @@ export default function StudioPage() {
         project_type: activeProject.project_type,
       }, mediaItems);
       setPortfolioEntry(entry);
+      emitPill('Published to Portfolio', 'success');
     } finally {
       setPublishingPortfolio(false);
     }
@@ -1005,7 +1008,40 @@ export default function StudioPage() {
     await updateProject(activeProject.id, { status: phaseId });
     if (user) await logActivity(user.id, 'advanced_phase', 'project', activeProject.id, { project_id: activeProject.id, phase: label });
     await refreshProject(activeProject.id);
+    emitPill(`Advanced to ${label}`, 'accent');
   };
+
+  // Studio's contextual strip: the project command center. Phase position,
+  // completion %, and live budget total are read straight off the aggregate;
+  // "Advance" and "Publish" are the same real handlers the page uses — so the
+  // Pill drives the project forward exactly as the in-page controls do.
+  const studioPill = useMemo(() => {
+    if (!activeProject) return null;
+    const phases = getPhaseTemplate(activeProject.project_type);
+    const idx = getPhaseIndex(activeProject.project_type, activeProject.status);
+    const current = phases[idx];
+    const next = phases[idx + 1];
+    const completion = phases.length > 1 ? Math.round((idx / (phases.length - 1)) * 100) : 0;
+    const budgetTotal = (activeProject.budget_items || []).reduce((sum, it) => sum + Number(it.amount || 0), 0);
+
+    const actions = [] as { id: string; label: string; onClick: () => void }[];
+    if (next) actions.push({ id: 'advance', label: `→ ${next.label}`, onClick: () => handleSetPhase(next.id) });
+    if (isProjectCompleted && !portfolioEntry) actions.push({ id: 'publish', label: 'Publish', onClick: handlePublishToPortfolio });
+
+    return {
+      module: 'studio',
+      title: activeProject.title,
+      fields: [
+        { label: 'Phase', value: current?.label || '—', color: '#6366f1' },
+        { label: 'Progress', value: `${completion}%`, color: completion === 100 ? '#10b981' : '#6366f1' },
+        ...(budgetTotal > 0 ? [{ label: 'Budget', value: `$${budgetTotal.toLocaleString()}`, color: '#f59e0b' }] : []),
+      ],
+      actions,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProject?.id, activeProject?.title, activeProject?.project_type, activeProject?.status, activeProject?.budget_items, isProjectCompleted, portfolioEntry]);
+
+  usePillStage(studioPill, [studioPill]);
 
   const handleOpenBudgetModal = () => {
     setBudgetCategory('');
