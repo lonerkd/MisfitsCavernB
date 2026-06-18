@@ -339,7 +339,7 @@ function ProjectSwitcher({
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
   const { activeProject, setActiveProject, projects } = useProject();
-  const { descriptor, transient } = usePill();
+  const { activeDescriptor, zoneActive, transient } = usePill();
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -360,8 +360,13 @@ export default function EcosystemTaskbar() {
   if (pathname === '/login' || pathname === '/auth') return null;
 
   const activeApp = APPS.find(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
-  const moduleColor = activeApp?.color ?? '#ff3c00';
-  const showContext = !!descriptor && !transient;
+  // A hovered zone may override the accent (e.g. a scene cue tints differently
+  // from the page); otherwise we use the active module's color.
+  const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#ff3c00';
+  const showContext = !!activeDescriptor && !transient;
+  // The Pill morphs open when the cursor engages it OR when an in-page zone is
+  // hovered — so hovering the script itself reveals its tools, no aim required.
+  const contextOpen = expanded || zoneActive;
 
   return (
     <div
@@ -423,7 +428,7 @@ export default function EcosystemTaskbar() {
               {showContext && (
                 <>
                   <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.08)', margin: '0 8px', flexShrink: 0 }} />
-                  <ContextSegment descriptor={descriptor!} accent={moduleColor} expanded={expanded} />
+                  <ContextSegment descriptor={activeDescriptor!} accent={moduleColor} expanded={contextOpen} />
                 </>
               )}
 

@@ -27,7 +27,7 @@ import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { useAuth } from '@/lib/context/AuthContext';
 import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLinks';
 import { supabase } from '@/lib/supabase/client';
-import { usePillStage, usePillEmit } from '@/lib/context/PillContext';
+import { usePillStage, usePillEmit, usePillZone } from '@/lib/context/PillContext';
 import ScreenplayEditor, { type ScreenplayEditorHandle } from '@/components/editor/ScreenplayEditor';
 import type { BlockType } from '@/lib/scriptos/blocks';
 import { importToContent } from '@/lib/scriptos/import';
@@ -187,6 +187,68 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
   }
 
   return <div style={style}>{displayContent || <span style={{ opacity: 0.2 }}>—</span>}</div>;
+}
+
+// A single outline row registers itself as a *depth-2* Pill zone: hovering it
+// (inside the depth-1 script surface) sharpens the Pill onto this exact scene —
+// its number, length, cast — with a one-tap jump. This is the "deeper than page
+// zones" layer: the Pill targets the precise thing under the cursor.
+function OutlineSceneRow({
+  scene, globalIdx, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag,
+}: {
+  scene: ScriptLine;
+  globalIdx: number;
+  wc: number;
+  sceneChars: string[];
+  actionPreview: string;
+  cardColors: string[];
+  delay: number;
+  onJump: (sceneNum: number) => void;
+  onTag: (sceneNum: number) => void;
+}) {
+  const zone = useMemo(() => ({
+    module: 'editor',
+    accent: '#ff3c00',
+    title: `Scene ${globalIdx + 1}`,
+    fields: [
+      { label: 'Length', value: `${wc}w`, color: '#6366f1' },
+      { label: 'Cast', value: `${sceneChars.length}`, color: '#f59e0b' },
+    ],
+    actions: [
+      { id: 'jump', label: '→ Jump to Scene', onClick: () => onJump(globalIdx + 1) },
+    ],
+  }), [globalIdx, wc, sceneChars.length, onJump]);
+  const zoneHandlers = usePillZone(zone, 2);
+
+  return (
+    <motion.div
+      {...zoneHandlers}
+      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }}
+      onClick={() => onJump(globalIdx + 1)}
+      style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+    >
+      <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase' }}>{scene.text}</div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {cardColors.map(color => (
+              <button
+                key={color}
+                onClick={(e) => { e.stopPropagation(); onTag(globalIdx + 1); }}
+                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }}
+              />
+            ))}
+          </div>
+        </div>
+        {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
+    </motion.div>
+  );
 }
 
 // ============================================================================
@@ -740,6 +802,36 @@ export default function EditorPage() {
     [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
   );
 
+  // Jump straight to a scene (1-based), switching back to the writing surface
+  // first if we're in another view — the same path the Go-to-Scene modal takes.
+  const goToScene = useCallback((sceneNum: number) => {
+    const n = Math.min(Math.max(1, sceneNum), Math.max(1, scenesList.length));
+    setActiveView('write');
+    requestAnimationFrame(() => spEditorRef.current?.scrollToScene(n));
+  }, [scenesList.length]);
+
+  // ── Deeper than page-level: the writing surface itself is a Pill zone ──────
+  // Hovering the script (not the chrome) morphs the Pill into the writer's
+  // quick-access: structure jump, prev/next scene, focus — all real handlers.
+  const scriptZone = useMemo(() => ({
+    module: 'editor',
+    title: currentScript?.title || 'Script',
+    fields: [
+      { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#ff3c00' },
+      { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
+    ],
+    toggles: [
+      { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
+    ],
+    actions: [
+      { id: 'structure', label: '⌘ Go to Scene', onClick: () => setShowGoToScene(true) },
+      { id: 'prev', label: '◀ Prev', onClick: () => goToScene(currentSceneIdx) },
+      { id: 'next', label: 'Next ▶', onClick: () => goToScene(currentSceneIdx + 2) },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, focusMode, goToScene]);
+  const scriptZoneHandlers = usePillZone(scriptZone, 1);
+
   // Act structure — properly clamped so it never produces "Sc 4-3" nonsense
   const actStructure = useMemo(() => {
     const n = scenesList.length;
@@ -1254,7 +1346,7 @@ export default function EditorPage() {
           )}
 
           {activeView === 'write' && (
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }} {...scriptZoneHandlers}>
               <ScreenplayEditor
                 ref={spEditorRef}
                 content={content}
@@ -1411,31 +1503,18 @@ export default function EditorPage() {
                   const wc = sceneLines.reduce((s, l) => s + l.text.split(/\s+/).filter(Boolean).length, 0);
                   const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
                   return (
-                    <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase' }}>{scene.text}</div>
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            {CARD_COLORS.map(color => (
-                              <button 
-                                key={color} 
-                                onClick={() => {
-                                  // Assign color to scene in local state/storage
-                                  toast(`Scene ${globalIdx + 1} tagged`, 'success');
-                                }}
-                                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }} 
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
-                    </motion.div>
+                    <OutlineSceneRow
+                      key={scene.id}
+                      scene={scene}
+                      globalIdx={globalIdx}
+                      wc={wc}
+                      sceneChars={sceneChars}
+                      actionPreview={actionPreview}
+                      cardColors={CARD_COLORS}
+                      delay={i * 0.03}
+                      onJump={goToScene}
+                      onTag={(n) => toast(`Scene ${n} tagged`, 'success')}
+                    />
                   );
                 })
               )}
