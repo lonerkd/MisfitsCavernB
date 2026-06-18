@@ -73,6 +73,9 @@ export default function Navigation() {
           MC
         </Link>
 
+        {/* Notification bell — mounted once, visible at every breakpoint */}
+        {!loading && user && <NotificationBell />}
+
         {/* Desktop — pill nav group */}
         <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {/* Pill container */}
@@ -141,7 +144,6 @@ export default function Navigation() {
           {/* Auth — reflects real session state */}
           {!loading && user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
-              <NotificationBell />
               <Link
                 href="/profile"
                 style={{
@@ -208,7 +210,6 @@ export default function Navigation() {
 
         {/* Mobile hamburger */}
         <div className="show-mobile" style={{ display: 'none', alignItems: 'center', gap: 6 }}>
-          {!loading && user && <NotificationBell />}
           <button
             onClick={() => setOpen(!open)}
             style={{ background: 'none', border: 'none', color: 'var(--fg)', padding: 4, cursor: 'pointer' }}
