@@ -87,8 +87,19 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onClick?: (asset: Asset) => void }) {
+  const zone = useMemo(() => ({
+    module: 'studio', accent: TYPE_COLORS[asset.type], title: asset.name,
+    fields: [
+      { label: 'Type', value: asset.category },
+      { label: 'Size', value: asset.size },
+    ],
+    actions: [{ id: 'review', label: '→ Review', onClick: () => onClick && onClick(asset) }],
+  }), [asset.type, asset.name, asset.category, asset.size, onClick, asset]);
+  const zoneHandlers = usePillZone(zone, 1);
+
   return (
     <motion.div
+      {...zoneHandlers}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -640,8 +651,18 @@ function BeatCard({ beat, index, onDelete }: { beat: any; index: number; onDelet
 }
 
 function CrewMemberCard({ member, index, castAs }: { member: any; index: number; castAs?: string[] }) {
+  const zone = useMemo(() => ({
+    module: 'studio', accent: '#ffaa00', title: member.name,
+    fields: [
+      { label: 'Role', value: member.role || 'Crew' },
+      { label: 'Status', value: member.status || 'Pending', color: member.status === 'confirmed' ? '#00cc66' : undefined },
+    ],
+  }), [member.name, member.role, member.status]);
+  const zoneHandlers = usePillZone(zone, 1);
+
   return (
     <motion.div
+      {...zoneHandlers}
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
@@ -789,6 +810,46 @@ function ReferenceSearchModal({
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function BudgetLineItem({ item, hiring, onHire, onDelete }: {
+  item: BudgetItem;
+  hiring: boolean;
+  onHire: () => void;
+  onDelete: () => void;
+}) {
+  const zone = useMemo(() => ({
+    module: 'studio', accent: '#f59e0b', title: item.category,
+    fields: [
+      { label: 'Amount', value: `$${Number(item.amount).toLocaleString()}` },
+      { label: 'Status', value: item.job_id ? 'Job Posted' : 'Open', color: item.job_id ? '#00cc66' : undefined },
+    ],
+    actions: item.job_id ? [] : [{ id: 'hire', label: hiring ? 'Posting…' : 'Hire for this', onClick: onHire }],
+  }), [item.category, item.amount, item.job_id, hiring, onHire]);
+  const zoneHandlers = usePillZone(zone, 2);
+
+  return (
+    <div {...zoneHandlers} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700 }}>{item.category}</div>
+        {item.description && <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{item.description}</div>}
+      </div>
+      <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: '#fff' }}>${Number(item.amount).toLocaleString()}</div>
+      {item.job_id ? (
+        <Link href={`/jobs/${item.job_id}`} target="_blank" style={{ fontSize: 9, padding: '4px 10px', borderRadius: 4, background: 'rgba(0,204,102,0.1)', color: '#00cc66', textDecoration: 'none', whiteSpace: 'nowrap' }}>Job Posted</Link>
+      ) : (
+        <button
+          className="link-btn"
+          disabled={hiring}
+          onClick={onHire}
+          style={{ fontSize: 9, padding: '4px 10px', whiteSpace: 'nowrap' }}
+        >
+          {hiring ? 'Posting…' : 'Hire for this'}
+        </button>
+      )}
+      <button onClick={onDelete} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: 4 }}><Trash2 size={13} /></button>
+    </div>
   );
 }
 
@@ -1668,26 +1729,13 @@ export default function StudioPage() {
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {(activeProject.budget_items || []).map(item => (
-                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700 }}>{item.category}</div>
-                              {item.description && <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{item.description}</div>}
-                            </div>
-                            <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: '#fff' }}>${Number(item.amount).toLocaleString()}</div>
-                            {item.job_id ? (
-                              <Link href={`/jobs/${item.job_id}`} target="_blank" style={{ fontSize: 9, padding: '4px 10px', borderRadius: 4, background: 'rgba(0,204,102,0.1)', color: '#00cc66', textDecoration: 'none', whiteSpace: 'nowrap' }}>Job Posted</Link>
-                            ) : (
-                              <button
-                                className="link-btn"
-                                disabled={hiringForItem === item.id}
-                                onClick={() => handleHireForBudgetItem(item)}
-                                style={{ fontSize: 9, padding: '4px 10px', whiteSpace: 'nowrap' }}
-                              >
-                                {hiringForItem === item.id ? 'Posting…' : 'Hire for this'}
-                              </button>
-                            )}
-                            <button onClick={() => handleDeleteBudgetItem(item.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: 4 }}><Trash2 size={13} /></button>
-                          </div>
+                          <BudgetLineItem
+                            key={item.id}
+                            item={item}
+                            hiring={hiringForItem === item.id}
+                            onHire={() => handleHireForBudgetItem(item)}
+                            onDelete={() => handleDeleteBudgetItem(item.id)}
+                          />
                         ))}
                       </div>
                     )}
