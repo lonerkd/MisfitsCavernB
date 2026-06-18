@@ -120,43 +120,76 @@ function DockIcon({
 // strip of fields, toggles and actions the moment you engage or hover a zone.
 // The dock keeps everything it had; the context just relocates and adapts.
 function ContextSatellite({
-  descriptor, accent, expanded,
+  descriptor, accent, expanded, zoneChain,
 }: {
   descriptor: PillDescriptor;
   accent: string;
   expanded: boolean;
+  zoneChain: { depth: number; title: string }[];
 }) {
   const { title, fields = [], toggles = [], actions = [] } = descriptor;
   const lead = fields[0];
   const hasStrip = fields.length > 0 || toggles.length > 0 || actions.length > 0;
+  const showBreadcrumb = expanded && zoneChain.length > 1;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8, x: -10 }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
-      exit={{ opacity: 0, scale: 0.8, x: -10 }}
-      transition={MORPH}
-      style={{
-        pointerEvents: 'auto',
-        display: 'flex', alignItems: 'center', gap: expanded ? 12 : 8,
-        height: 52, padding: expanded ? '0 16px 0 13px' : '0 13px',
-        borderRadius: 26, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
-        // Same Liquid-Glass material as the dock, tinted to the active accent.
-        background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(8,8,8,0.9) 100%)',
-        backdropFilter: 'blur(30px) saturate(1.8)',
-        WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
-        border: `1px solid ${accent}40`,
-        boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 24px ${accent}24, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${accent}33`,
-      }}
-    >
-      {/* Specular sheen — matches the dock's glass highlight */}
-      <div style={{
-        position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 40%)',
-      }} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+      {/* Depth cues — the full hovered nesting path, shallow → deep, so you
+          can see how far you've drilled in, not just the deepest result. */}
+      <AnimatePresence>
+        {showBreadcrumb && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.18 }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 14,
+              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 0.8,
+              color: 'rgba(240,236,228,0.35)', whiteSpace: 'nowrap', pointerEvents: 'none',
+            }}
+          >
+            {zoneChain.map((z, i) => {
+              const isLast = i === zoneChain.length - 1;
+              return (
+                <React.Fragment key={`${z.depth}-${z.title}`}>
+                  <span style={{ color: isLast ? accent : 'rgba(240,236,228,0.35)' }}>
+                    {z.title}
+                  </span>
+                  {!isLast && <span style={{ color: 'rgba(240,236,228,0.18)' }}>›</span>}
+                </React.Fragment>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Live beacon — the "active" pulse, the heart of the satellite */}
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
+        exit={{ opacity: 0, scale: 0.8, x: -10 }}
+        transition={MORPH}
+        style={{
+          pointerEvents: 'auto',
+          display: 'flex', alignItems: 'center', gap: expanded ? 12 : 8,
+          height: 52, padding: expanded ? '0 16px 0 13px' : '0 13px',
+          borderRadius: 26, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
+          // Same Liquid-Glass material as the dock, tinted to the active accent.
+          background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(8,8,8,0.9) 100%)',
+          backdropFilter: 'blur(30px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
+          border: `1px solid ${accent}40`,
+          boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 24px ${accent}24, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${accent}33`,
+        }}
+      >
+        {/* Specular sheen — matches the dock's glass highlight */}
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 40%)',
+        }} />
+
+        {/* Live beacon — the "active" pulse, the heart of the satellite */}
       <motion.span
         layout
         animate={{ scale: [1, 1.35, 1], opacity: [0.65, 1, 0.65] }}
@@ -274,7 +307,8 @@ function ContextSatellite({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -378,7 +412,7 @@ function ProjectSwitcher({
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
   const { activeProject, setActiveProject, projects } = useProject();
-  const { activeDescriptor, zoneActive, transient } = usePill();
+  const { activeDescriptor, zoneActive, zoneChain, transient } = usePill();
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -519,6 +553,7 @@ export default function EcosystemTaskbar() {
               descriptor={activeDescriptor!}
               accent={moduleColor}
               expanded={contextOpen}
+              zoneChain={zoneChain}
             />
           )}
         </AnimatePresence>

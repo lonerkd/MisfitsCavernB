@@ -67,6 +67,10 @@ interface PillContextValue {
   /** The descriptor the Pill should actually show right now: the deepest
    *  hovered zone, falling back to the page descriptor. */
   activeDescriptor: PillDescriptor | null;
+  /** The full active path, shallow → deep (page descriptor first, if any),
+   *  so the satellite can render a breadcrumb of exactly how far you've
+   *  drilled in — e.g. "ScriptOS › Scene 4 › MARA". */
+  zoneChain: { depth: number; title: string }[];
   /** True while any in-page zone is being hovered — the Pill morphs open. */
   zoneActive: boolean;
   pushZone: (z: PillZone) => void;
@@ -111,10 +115,19 @@ export function PillProvider({ children }: { children: React.ReactNode }) {
     : null;
   const activeDescriptor = topZone?.descriptor ?? descriptor;
 
+  const zoneChain: { depth: number; title: string }[] = [];
+  if (descriptor?.title) zoneChain.push({ depth: 0, title: descriptor.title });
+  [...zones]
+    .sort((a, b) => a.depth - b.depth)
+    .forEach(z => {
+      const title = z.descriptor.title || z.descriptor.module;
+      if (title) zoneChain.push({ depth: z.depth, title });
+    });
+
   return (
     <Ctx.Provider value={{
       descriptor, setDescriptor,
-      activeDescriptor, zoneActive: zones.length > 0,
+      activeDescriptor, zoneChain, zoneActive: zones.length > 0,
       pushZone, updateZone, popZone,
       transient, emit,
     }}>

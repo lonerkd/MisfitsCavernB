@@ -11,7 +11,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia } from '@/lib/supabase/portfolio';
 import { logActivity } from '@/lib/supabase/activity';
-import { usePillStage } from '@/lib/context/PillContext';
+import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 
 type MediaType = 'youtube' | 'gdrive' | 'image';
 
@@ -61,8 +61,26 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
 
   const aspectRatio = span === 'wide' ? '21/9' : span === 'tall' ? '9/14' : '16/9';
 
+  // Per-tile Pill zone: hovering a tile sharpens the satellite onto that
+  // project — role/category, media count — with a jump to its full Bible.
+  const zone = useMemo(() => ({
+    module: 'portfolio',
+    accent: '#f59e0b',
+    title: project.title,
+    fields: [
+      { label: 'Role', value: project.role || '—' },
+      { label: 'Media', value: `${project.media.length}` },
+    ],
+    actions: [
+      { id: 'open-bible', label: '→ Open Bible', onClick: () => onClick(project) },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [project.id, project.title, project.role, project.media.length, onClick]);
+  const zoneHandlers = usePillZone(zone, 1);
+
   return (
     <motion.div
+      {...zoneHandlers}
       whileHover={{ scale: 1.008 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       style={{

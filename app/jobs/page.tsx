@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import NotificationBell from '@/components/NotificationBell';
+import { usePillZone } from '@/lib/context/PillContext';
 import { supabase } from '@/lib/supabase/client';
 
 interface Job {
@@ -231,11 +233,32 @@ function PostModal({ onClose, onCreated, userId }: {
 
 function JobCard({ job, index }: { job: Job; index: number }) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
   const color = roleColor(job.role);
   const daysAgo = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 86400000);
 
+  // Per-card Pill zone: hovering a listing sharpens the satellite onto the
+  // role, rate, and posting age, with the same Apply destination the card's
+  // own button routes to.
+  const zone = useMemo(() => ({
+    module: 'jobs',
+    accent: color,
+    title: job.title,
+    fields: [
+      { label: 'Role', value: job.role, color },
+      ...(job.rate ? [{ label: 'Rate', value: `${job.rate}${job.rate_type === 'fixed' ? ' fixed' : '/hr'}` }] : []),
+      { label: 'Posted', value: daysAgo === 0 ? 'Today' : `${daysAgo}d ago` },
+    ],
+    actions: [
+      { id: 'apply', label: '→ Apply', onClick: () => router.push(`/jobs/${job.id}`) },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [job.id, job.title, job.role, job.rate, job.rate_type, color, daysAgo]);
+  const zoneHandlers = usePillZone(zone, 1);
+
   return (
     <motion.div
+      {...zoneHandlers}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
