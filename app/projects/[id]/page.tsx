@@ -715,7 +715,7 @@ export default function ProjectHubPage() {
             title="Timeline"
             tag="Schedule"
             color="#f59e0b"
-            href="/projects"
+            href="/studio"
             delay={0.2}
             stats={[
               { label: 'Phase', value: phases[currentPhaseIdx].abbr },

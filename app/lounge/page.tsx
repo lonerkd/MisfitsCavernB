@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ArrowLeft, Send, Music, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Send, Music, Users, Hash, Lock, Settings as SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -380,11 +380,7 @@ export default function LoungePage() {
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
                <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{crewList.length} member{crewList.length !== 1 ? 's' : ''}</span>
              </div>
-             <div style={{ display: 'flex', gap: 16 }}>
-                <Search size={14} color="#666" />
-                <Bell size={14} color="#666" />
-                <Users size={14} color="#666" />
-             </div>
+             <Users size={14} color="#666" />
           </div>
 
           {/* Messages */}
@@ -409,15 +405,6 @@ export default function LoungePage() {
             flexShrink: 0,
           }}>
             <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-              <button style={{
-                background: 'none', border: 'none', color: 'var(--fg-muted)',
-                padding: 10, alignSelf: 'center', transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
-                <Smile size={16} />
-              </button>
-
               <textarea
                 value={input}
                 onChange={e => setInput(e.target.value)}

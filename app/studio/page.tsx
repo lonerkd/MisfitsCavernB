@@ -813,6 +813,92 @@ function ReferenceSearchModal({
   );
 }
 
+// Fullscreen pitch presentation — cycles the same three slides shown inline,
+// with keyboard (arrow/escape) and click navigation so a filmmaker can actually
+// present this to investors instead of just eyeballing a static grid.
+function PitchPresentationModal({ isOpen, onClose, project, conceptImages, characterNames }: {
+  isOpen: boolean;
+  onClose: () => void;
+  project: any;
+  conceptImages: { id: string; url: string; title: string }[];
+  characterNames: string[];
+}) {
+  const [slide, setSlide] = useState(0);
+  const slideCount = 3;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSlide(0);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight' || e.key === ' ') setSlide(s => Math.min(s + 1, slideCount - 1));
+      else if (e.key === 'ArrowLeft') setSlide(s => Math.max(s - 1, 0));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#000', display: 'flex', flexDirection: 'column' }}
+      >
+        <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#666', letterSpacing: 2, textTransform: 'uppercase' }}>
+            Slide {slide + 1} / {slideCount}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><XIcon size={20} /></button>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 40 }}>
+          {slide === 1 && conceptImages[0] && (
+            <img src={conceptImages[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} />
+          )}
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 800 }}>
+            <SectionLabel text={`Slide 0${slide + 1}`} />
+            {slide === 0 && (
+              <>
+                <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: 4, margin: '24px 0' }}>{project.title}</h1>
+                <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2 }}>Logline & Title</div>
+                {project.description && <p style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', color: '#aaa', marginTop: 24 }}>{project.description}</p>}
+              </>
+            )}
+            {slide === 1 && (
+              <>
+                <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: 4, margin: '24px 0' }}>THE VISUAL WORLD</h1>
+                <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2 }}>
+                  {conceptImages.length > 0 ? 'Cinematography & Mood' : 'No Concept Board references yet'}
+                </div>
+              </>
+            )}
+            {slide === 2 && (
+              <>
+                <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 5rem)', letterSpacing: 4, margin: '24px 0' }}>THE CHARACTERS</h1>
+                <div style={{ fontSize: 13, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2 }}>
+                  {characterNames.length > 0 ? characterNames.join(' · ') : 'No Character Bible entries yet'}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 24 }}>
+          <button onClick={() => setSlide(s => Math.max(s - 1, 0))} disabled={slide === 0} className="link-btn" style={{ opacity: slide === 0 ? 0.3 : 1 }}>← Prev</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {Array.from({ length: slideCount }).map((_, i) => (
+              <button key={i} onClick={() => setSlide(i)} style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === slide ? 'var(--accent)' : 'rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+          <button onClick={() => setSlide(s => Math.min(s + 1, slideCount - 1))} disabled={slide === slideCount - 1} className="link-btn" style={{ opacity: slide === slideCount - 1 ? 0.3 : 1 }}>Next →</button>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 function BudgetLineItem({ item, hiring, onHire, onDelete }: {
   item: BudgetItem;
   hiring: boolean;
@@ -895,6 +981,7 @@ export default function StudioPage() {
   const [campaignStatus, setCampaignStatus] = useState('Drafting');
   const [campaignReach, setCampaignReach] = useState('');
   const [savingCampaign, setSavingCampaign] = useState(false);
+  const [showPresentation, setShowPresentation] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -1388,6 +1475,15 @@ export default function StudioPage() {
         addedUrls={addedUrls}
         onAdd={addReferenceToBoard}
       />
+      {activeProject && (
+        <PitchPresentationModal
+          isOpen={showPresentation}
+          onClose={() => setShowPresentation(false)}
+          project={activeProject}
+          conceptImages={conceptImages}
+          characterNames={characterNames}
+        />
+      )}
 
       {/* New Project modal */}
       <AnimatePresence>
@@ -2013,7 +2109,7 @@ export default function StudioPage() {
                 <SectionLabel text="Investor Relations" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck Mode</h2>
               </div>
-              <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Enter Presentation View</button>
+              <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => setShowPresentation(true)}>Enter Presentation View</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
