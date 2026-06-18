@@ -27,6 +27,8 @@ import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { useAuth } from '@/lib/context/AuthContext';
 import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLinks';
 import { supabase } from '@/lib/supabase/client';
+import ScreenplayEditor, { type ScreenplayEditorHandle } from '@/components/editor/ScreenplayEditor';
+import type { BlockType } from '@/lib/scriptos/blocks';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -194,6 +196,7 @@ export default function EditorPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const spEditorRef = useRef<ScreenplayEditorHandle>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
@@ -633,30 +636,10 @@ export default function EditorPage() {
     }
   }, [content]);
 
+  // Quick Insert drops a fresh, correctly-typed element at the caret in the
+  // live editor (re-typing the current line if it's still empty).
   const insertElement = (type: string) => {
-    const editor = textareaRef.current;
-    if (!editor) return;
-
-    const snippets: Record<string, string> = {
-      'scene': '\n\nINT. LOCATION - DAY\n\n',
-      'action': '\n\nAction description here.\n\n',
-      'character': '\n\nCHARACTER NAME\n',
-      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
-      'transition': '\n\nCUT TO:\n\n',
-      'note': '\n\n[[Note: ]]'
-    };
-
-    const snippet = snippets[type] || '';
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const before = content.substring(0, start);
-    const after = content.substring(end);
-
-    setContent(before + snippet + after);
-    setTimeout(() => {
-      editor.focus();
-      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
-    }, 0);
+    spEditorRef.current?.insertElement(type as BlockType);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1243,16 +1226,8 @@ export default function EditorPage() {
 
                         <button
                           onClick={() => {
-                            const textarea = textareaRef.current;
-                            if (!textarea) return;
-                            const sceneText = scene.text;
-                            const idx = content.toUpperCase().indexOf(sceneText.toUpperCase());
-                            if (idx >= 0) {
-                              textarea.focus();
-                              textarea.setSelectionRange(idx, idx);
-                              const linesBefore = content.substring(0, idx).split('\n').length;
-                              setCursorLine(linesBefore);
-                            }
+                            if (activeView !== 'write') setActiveView('write');
+                            spEditorRef.current?.scrollToScene(i + 1);
                           }}
                           style={{
                             width: '100%', textAlign: 'left', padding: '8px 4px 8px 8px',
@@ -1335,21 +1310,17 @@ export default function EditorPage() {
           )}
 
           {activeView === 'write' && (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleEditorChange}
-              onKeyDown={handleEditorKeyDown}
-              placeholder={PLACEHOLDER}
-              spellCheck={false}
-              style={{
-                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
-                background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
-                fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
-                resize: 'none', outline: 'none',
-                position: 'relative'
-              }}
-            />
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <ScreenplayEditor
+                ref={spEditorRef}
+                content={content}
+                onChange={setContent}
+                format={(currentScript?.format as ScriptFormat) || 'screenplay'}
+                typewriter={typewriterMode}
+                focusMode={focusMode}
+                revisionColor={revisionMode ? '#0099ff' : undefined}
+              />
+            </div>
           )}
 
           {/* Structure Lines (Visual Act Markers) */}
@@ -2053,7 +2024,7 @@ export default function EditorPage() {
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Bookmark size={14} /> The Stash</div>
                       <button onClick={() => {
-                        const sel = textareaRef.current?.value.substring(textareaRef.current.selectionStart, textareaRef.current.selectionEnd);
+                        const sel = spEditorRef.current?.getSelectionText();
                         if (sel) {
                           setStashItems(prev => [{ id: Math.random().toString(), text: sel, date: Date.now() }, ...prev]);
                           toast('Added to stash', 'success');
@@ -2075,13 +2046,8 @@ export default function EditorPage() {
                               <span style={{ fontSize: 9, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
                               <div style={{ display: 'flex', gap: 8 }}>
                                 <button onClick={() => {
-                                  if (textareaRef.current) {
-                                    const val = textareaRef.current.value;
-                                    const start = textareaRef.current.selectionStart;
-                                    const end = textareaRef.current.selectionEnd;
-                                    setContent(val.substring(0, start) + item.text + val.substring(end));
-                                    toast('Inserted from stash', 'success');
-                                  }
+                                  spEditorRef.current?.insertText(item.text);
+                                  toast('Inserted from stash', 'success');
                                 }} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
                                 <button onClick={() => setStashItems(prev => prev.filter(i => i.id !== item.id))} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
                               </div>
