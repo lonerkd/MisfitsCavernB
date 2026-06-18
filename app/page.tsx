@@ -13,7 +13,7 @@ import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useProject } from '@/lib/context/ProjectContext';
-import { usePillStage } from '@/lib/context/PillContext';
+import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
 function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: number; color?: string }) {
@@ -40,7 +40,14 @@ const STAGES = [
 
 function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: number }) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
   const Icon = stage.icon;
+  const zone = useMemo(() => ({
+    module: 'hub', accent: stage.color, title: stage.label,
+    fields: [{ label: 'Stage', value: `${index + 1} / ${STAGES.length}` }],
+    actions: [{ id: 'open', label: `→ Open ${stage.label}`, onClick: () => router.push(stage.href) }],
+  }), [stage.color, stage.label, index, stage.href, router]);
+  const zoneHandlers = usePillZone(zone, 1);
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -48,6 +55,7 @@ function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: numbe
       viewport={{ once: true }}
       transition={{ delay: index * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'default' }}
+      {...zoneHandlers}
     >
       <Link href={stage.href} style={{ textDecoration: 'none' }}>
         <motion.div
@@ -281,6 +289,13 @@ interface ModuleTileProps {
 
 function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: ModuleTileProps) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+  const zone = useMemo(() => ({
+    module: 'hub', accent: color, title,
+    fields: [{ label: 'Module', value: tag }],
+    actions: [{ id: 'open', label: `→ Open ${title}`, onClick: () => router.push(href) }],
+  }), [color, title, tag, href, router]);
+  const zoneHandlers = usePillZone(zone, 1);
 
   return (
     <AnimatedSection delay={index * 0.08}>
@@ -288,6 +303,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
         <motion.div
           onHoverStart={() => setHovered(true)}
           onHoverEnd={() => setHovered(false)}
+          {...zoneHandlers}
           style={{
             height: '100%',
             position: 'relative',
