@@ -16,7 +16,7 @@ import { logActivity } from '@/lib/supabase/activity';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import { Search, X as XIcon, Plus as PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-import { useProject, type ScriptSummary, type BudgetItem } from '@/lib/context/ProjectContext';
+import { useProject, type ScriptSummary, type BudgetItem, type Campaign } from '@/lib/context/ProjectContext';
 import { linkAssetToScene } from '@/lib/supabase/sceneLinks';
 import { getPhaseTemplate, phaseIndex as getPhaseIndex, CURATED_PROJECT_TYPES } from '@/lib/projectTypes';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2 } from 'lucide-react';
@@ -25,6 +25,7 @@ import { getScript } from '@/lib/supabase/scripts';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getShootDays, addShootDay, getSceneSchedule, ensureSceneSchedule, updateSceneSchedule, subscribeToSchedule, type ShootDay, type SceneSchedule } from '@/lib/supabase/schedule';
 import { createBudgetItem, deleteBudgetItem, createJobFromBudgetItem } from '@/lib/supabase/budget';
+import { createCampaign, deleteCampaign } from '@/lib/supabase/campaigns';
 import { getPortfolioProjectBySource, publishProjectToPortfolio } from '@/lib/supabase/portfolio';
 
 interface Asset {
@@ -37,6 +38,13 @@ interface Asset {
   url: string;
   commentCount: number;
 }
+
+const CAMPAIGN_PLATFORMS = ['Instagram', 'X / Twitter', 'YouTube', 'TikTok', 'Facebook', 'Other'];
+const CAMPAIGN_STATUSES = ['Drafting', 'In Review', 'Scheduled', 'Live', 'Completed'];
+const PLATFORM_COLORS: Record<string, string> = {
+  'Instagram': '#E1306C', 'X / Twitter': '#fff', 'YouTube': '#FF0000',
+  'TikTok': '#00f2ea', 'Facebook': '#1877F2', 'Other': '#888',
+};
 
 function humanizeActivity(action: string, metadata: Record<string, any> | null): string {
   const verb = action.replace(/_/g, ' ');
@@ -818,6 +826,12 @@ export default function StudioPage() {
   const [hiringForItem, setHiringForItem] = useState<string | null>(null);
   const [portfolioEntry, setPortfolioEntry] = useState<any>(null);
   const [publishingPortfolio, setPublishingPortfolio] = useState(false);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
+  const [campaignStatus, setCampaignStatus] = useState('Drafting');
+  const [campaignReach, setCampaignReach] = useState('');
+  const [savingCampaign, setSavingCampaign] = useState(false);
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -1018,6 +1032,37 @@ export default function StudioPage() {
     } finally {
       setHiringForItem(null);
     }
+  };
+
+  const handleOpenCampaignModal = () => {
+    setCampaignTitle('');
+    setCampaignPlatform('Instagram');
+    setCampaignStatus('Drafting');
+    setCampaignReach('');
+    setShowCampaignModal(true);
+  };
+
+  const handleCreateCampaign = async () => {
+    if (!activeProject || !campaignTitle.trim()) return;
+    setSavingCampaign(true);
+    try {
+      await createCampaign(activeProject.id, {
+        title: campaignTitle.trim(),
+        platform: campaignPlatform,
+        status: campaignStatus,
+        target_reach: campaignReach.trim(),
+      });
+      await refreshProject(activeProject.id);
+      setShowCampaignModal(false);
+    } finally {
+      setSavingCampaign(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (!activeProject) return;
+    await deleteCampaign(id);
+    await refreshProject(activeProject.id);
   };
 
   const handleOpenBeatModal = async () => {
@@ -1302,6 +1347,48 @@ export default function StudioPage() {
                 </div>
                 <button onClick={handleCreateBudgetItem} disabled={!budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem ? 0.5 : 1 }}>
                   {savingBudgetItem ? 'Saving…' : 'Add Line Item'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCampaignModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCampaignModal(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Megaphone size={20} /> New Campaign</h2>
+                <button onClick={() => setShowCampaignModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Title</label>
+                  <input autoFocus value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleCreateCampaign(); }} placeholder="e.g. Official Trailer Premiere" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Platform</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {CAMPAIGN_PLATFORMS.map(p => (
+                      <button key={p} onClick={() => setCampaignPlatform(p)} style={{ background: campaignPlatform === p ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', border: campaignPlatform === p ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', color: campaignPlatform === p ? '#fff' : '#999', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>{p}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Status</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {CAMPAIGN_STATUSES.map(s => (
+                      <button key={s} onClick={() => setCampaignStatus(s)} style={{ background: campaignStatus === s ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', border: campaignStatus === s ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', color: campaignStatus === s ? '#fff' : '#999', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Target Reach (optional)</label>
+                  <input value={campaignReach} onChange={e => setCampaignReach(e.target.value)} placeholder="e.g. 25k impressions" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                </div>
+                <button onClick={handleCreateCampaign} disabled={!campaignTitle.trim() || savingCampaign} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !campaignTitle.trim() || savingCampaign ? 0.5 : 1 }}>
+                  {savingCampaign ? 'Saving…' : 'Create Campaign'}
                 </button>
               </div>
             </motion.div>
@@ -1831,61 +1918,40 @@ export default function StudioPage() {
                 <SectionLabel text="Delivery & Promotion" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Marketing Hub</h2>
               </div>
-              <button className="link-btn">+ New Campaign</button>
+              <button className="link-btn" onClick={handleOpenCampaignModal}>+ New Campaign</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 40 }}>
-               {/* Campaign Planner */}
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  {[
-                    { title: 'Instagram Teaser Series', platform: 'Instagram', status: 'Scheduled', reach: 'Estimated 25k', color: '#E1306C' },
-                    { title: 'Behind the Scenes (BTS) Thread', platform: 'X / Twitter', status: 'In Review', reach: 'Estimated 10k', color: '#000' },
-                    { title: 'Official Trailer Premiere', platform: 'YouTube', status: 'Drafting', reach: 'Target 100k', color: '#FF0000' },
-                  ].map((campaign, i) => (
-                    <div key={i} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 720 }}>
+               {(activeProject.campaigns || []).map((campaign) => {
+                 const color = PLATFORM_COLORS[campaign.platform] || '#888';
+                 return (
+                    <div key={campaign.id} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                        <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                             <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: `${campaign.color}22`, color: campaign.color, borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
+                             <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: `${color}22`, color, borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
                              <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
                           </div>
                           <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
                        </div>
-                       <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 4 }}>Reach Potential</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp size={12}/> {campaign.reach}</div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          {campaign.target_reach && (
+                            <div style={{ textAlign: 'right' }}>
+                               <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 4 }}>Target Reach</div>
+                               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp size={12}/> {campaign.target_reach}</div>
+                            </div>
+                          )}
+                          <button onClick={() => handleDeleteCampaign(campaign.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: 4 }}><Trash2 size={13} /></button>
                        </div>
                     </div>
-                  ))}
-                  
-                  <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
-                     <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
-                     Plan your global promotion strategy here.
-                  </div>
-               </div>
+                 );
+               })}
 
-               {/* Analytics Preview */}
-               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Interest Score</span><span>78%</span></div>
-                        <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: '78%', height: '100%', background: 'var(--accent)', borderRadius: 2 }} /></div>
-                     </div>
-                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Audience Retention</span><span>64%</span></div>
-                        <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: '64%', height: '100%', background: '#0099ff', borderRadius: 2 }} /></div>
-                     </div>
-                  </div>
-
-                  <div style={{ marginTop: 32, padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
-                     <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 8 }}>Top Performing Asset</div>
-                     <div style={{ fontSize: 12, fontWeight: 600 }}>Neon Noir Poster Concept</div>
-                     <div style={{ fontSize: 10, color: '#00cc66', marginTop: 4 }}>+12% Engagement</div>
-                  </div>
-
-                  <button style={{ width: '100%', marginTop: 24, padding: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#fff', borderRadius: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer' }}>View Detailed Analytics</button>
-               </div>
+               {(activeProject.campaigns || []).length === 0 && (
+                 <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
+                    <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
+                    No campaigns yet. Click "+ New Campaign" to plan your first promotion.
+                 </div>
+               )}
             </div>
           </motion.div>
         )}

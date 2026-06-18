@@ -608,3 +608,31 @@ CREATE POLICY "Users can update their own notifications" ON notifications FOR UP
 CREATE POLICY "Authenticated users can create notifications" ON notifications FOR INSERT WITH CHECK (
   auth.uid() IS NOT NULL
 );
+
+-- Real marketing campaign planner (replaces the hardcoded sample cards on
+-- the Studio Promos tab — every campaign here is one a filmmaker actually
+-- created for their own project).
+CREATE TABLE IF NOT EXISTS campaigns (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  platform TEXT NOT NULL DEFAULT 'Instagram',
+  status TEXT NOT NULL DEFAULT 'Drafting',
+  target_reach TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaigns_project ON campaigns(project_id);
+
+ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Project members can manage campaigns" ON campaigns FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);

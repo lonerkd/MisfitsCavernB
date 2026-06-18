@@ -31,6 +31,15 @@ export interface BudgetItem {
   job_id?: string | null;
 }
 
+export interface Campaign {
+  id: string;
+  title: string;
+  platform: string;
+  status: string;
+  target_reach?: string;
+  notes?: string;
+}
+
 export interface TimelineItem {
   id: string;
   phase: string;
@@ -95,6 +104,7 @@ export interface Project {
   beats?: Beat[];
   crew?: CrewMember[];
   budget_items?: BudgetItem[];
+  campaigns?: Campaign[];
   timeline_items?: TimelineItem[];
   // The project as the real aggregate — every module reads these off the
   // same object instead of fetching its own disconnected copy.
@@ -131,7 +141,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // There is no timeline_items table yet — leave that empty.
     // The project's moodboard is keyed by storing the project id in studio_boards.name
     // (see lib/supabase/studio.ts getOrCreateBoardForProject) — same convention here.
-    const [projectRes, crewRes, scriptsRes, boardRes, activityRes, beatsRes, budgetRes] = await Promise.all([
+    const [projectRes, crewRes, scriptsRes, boardRes, activityRes, beatsRes, budgetRes, campaignsRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId),
       supabase.from('scripts').select('id, title, status, format, updated_at').eq('project_id', projectId).order('updated_at', { ascending: false }),
@@ -139,6 +149,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('activity_feed').select('*, profiles(username, avatar_url)').contains('metadata', { project_id: projectId }).order('created_at', { ascending: false }).limit(30),
       supabase.from('project_beats').select('*').eq('project_id', projectId).order('order_index', { ascending: true }),
       supabase.from('budget_items').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
+      supabase.from('campaigns').select('*').eq('project_id', projectId).order('created_at', { ascending: true }),
     ]);
 
     if (!projectRes.data) return null;
@@ -170,6 +181,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return {
       ...p,
       budget_items: budgetRes.data || [],
+      campaigns: campaignsRes.data || [],
       timeline_items: [],
       crew: (crewRes.data || []).map((c: any) => ({
         id: c.id,
@@ -275,6 +287,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           if (row?.project_id) refreshProject(row.project_id);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
+          const row = (payload.new || payload.old) as any;
+          if (row?.project_id) refreshProject(row.project_id);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, (payload) => {
           const row = (payload.new || payload.old) as any;
           if (row?.project_id) refreshProject(row.project_id);
         })
