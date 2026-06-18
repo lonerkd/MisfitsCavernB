@@ -196,7 +196,6 @@ export default function EditorPage() {
   const { activeProject } = useProject();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const spEditorRef = useRef<ScreenplayEditorHandle>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
@@ -219,11 +218,6 @@ export default function EditorPage() {
   const [sprintActive, setSprintActive] = useState(false);
   const [sprintTime, setSprintTime] = useState(15 * 60); // 15 mins
   const [revisionMode, setRevisionMode] = useState(false);
-  
-  // Autocomplete state
-  const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 });
-  const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const [autocompleteItems, setAutocompleteItems] = useState<string[]>([]);
 
   // Find & Replace
   const [showFindReplace, setShowFindReplace] = useState(false);
@@ -402,24 +396,6 @@ export default function EditorPage() {
       setRevisions(getRevisions(currentScript.id));
     }
   }, [currentScript]);
-
-  // Typewriter Centering Effect
-  useEffect(() => {
-    if (typewriterMode && activeView === 'write' && textareaRef.current) {
-      const textarea = textareaRef.current;
-      const { selectionStart } = textarea;
-      
-      // Approximate line height and position
-      const lineHeight = 26; 
-      const linesBefore = textarea.value.substr(0, selectionStart).split('\n').length;
-      const targetScroll = (linesBefore * lineHeight) - (window.innerHeight * 0.3);
-      
-      textarea.scrollTo({
-        top: targetScroll,
-        behavior: 'smooth'
-      });
-    }
-  }, [content, typewriterMode, activeView]);
 
   // Find count
   useEffect(() => {
@@ -612,78 +588,10 @@ export default function EditorPage() {
     });
   }, [currentScript]);
 
-  // Tab key cycling (in the textarea: Tab inserts element type based on context)
-  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const editor = textareaRef.current;
-      if (!editor) return;
-      const cursor = editor.selectionStart;
-      const currentLine = content.substring(0, cursor).split('\n').pop() || '';
-      const trimmed = currentLine.trim();
-
-      // If empty line, insert a scene heading template
-      if (!trimmed) {
-        insertElement('scene');
-        return;
-      }
-      // If uppercase short text (likely a character), insert dialogue below
-      if (trimmed === trimmed.toUpperCase() && trimmed.length > 1 && trimmed.length < 40) {
-        const after = content.substring(cursor);
-        setContent(content.substring(0, cursor) + '\n' + after);
-        setTimeout(() => {
-          editor.focus();
-          editor.setSelectionRange(cursor + 1, cursor + 1);
-        }, 0);
-        return;
-      }
-      // Default: insert 4 spaces (standard tab)
-      const before = content.substring(0, cursor);
-      const after = content.substring(editor.selectionEnd);
-      setContent(before + '    ' + after);
-      setTimeout(() => {
-        editor.focus();
-        editor.setSelectionRange(cursor + 4, cursor + 4);
-      }, 0);
-    }
-  }, [content]);
-
   // Quick Insert drops a fresh, correctly-typed element at the caret in the
   // live editor (re-typing the current line if it's still empty).
   const insertElement = (type: string) => {
     spEditorRef.current?.insertElement(type as BlockType);
-  };
-
-  const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setContent(val);
-    setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
-
-    const cursor = e.target.selectionStart;
-    const currentLine = val.substring(0, cursor).split('\n').pop() || '';
-    const trimmed = currentLine.trim();
-    
-    if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
-      // Location autocomplete
-      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()))];
-      if (locations.length > 0 && currentLine.length < 15) {
-        setAutocompleteItems(locations);
-        setShowAutocomplete(true);
-        setCursorPos({ top: 100, left: 200 });
-      }
-    } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
-      // Character name autocomplete - suggest known characters matching prefix
-      const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
-      if (matchingChars.length > 0) {
-        setAutocompleteItems(matchingChars);
-        setShowAutocomplete(true);
-        setCursorPos({ top: 100, left: 200 });
-      } else {
-        setShowAutocomplete(false);
-      }
-    } else {
-      setShowAutocomplete(false);
-    }
   };
 
   // Map each scene's display number — matching Studio's "Scene N" convention
@@ -2107,22 +2015,6 @@ export default function EditorPage() {
         </AnimatePresence>
 
       </div>
-
-      {/* Autocomplete Popover (Basic implementation) */}
-      {showAutocomplete && autocompleteItems.length > 0 && (
-        <div style={{
-          position: 'absolute', top: cursorPos.top, left: cursorPos.left,
-          background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 6, padding: 4, zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          maxHeight: 200, overflowY: 'auto'
-        }}>
-          {autocompleteItems.map((item, idx) => (
-            <div key={idx} style={{ padding: '6px 12px', fontSize: 12, color: 'var(--fg)', cursor: 'pointer' }}>
-              {item}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* TITLE PAGE EDITOR MODAL */}
       <AnimatePresence>
