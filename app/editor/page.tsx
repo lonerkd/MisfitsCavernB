@@ -29,6 +29,7 @@ import { getSceneLinksForScript, type SceneLink } from '@/lib/supabase/sceneLink
 import { supabase } from '@/lib/supabase/client';
 import ScreenplayEditor, { type ScreenplayEditorHandle } from '@/components/editor/ScreenplayEditor';
 import type { BlockType } from '@/lib/scriptos/blocks';
+import { importToContent } from '@/lib/scriptos/import';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -372,20 +373,27 @@ export default function EditorPage() {
     }, 700);
   }, []);
 
-  // Parser hook
+  // Parser hook — debounced so a full feature script (5,000+ lines) re-parses
+  // shortly after you stop typing rather than on every keystroke. The live
+  // editor manages its own DOM, so this only gates the derived views
+  // (Board / Outline / Stats / Story Map / breakdown), keeping typing smooth.
   useEffect(() => {
-    if (content) {
-      const result = parseScript(content, currentScript?.format || 'screenplay');
+    if (!content) {
+      setLines([]); setElements({}); setCharStats([]); setLintIssues([]);
+      return;
+    }
+    const fmt = currentScript?.format || 'screenplay';
+    const run = () => {
+      const result = parseScript(content, fmt);
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
       setLintIssues(validateScript(result.lines, content));
-    } else {
-      setLines([]);
-      setElements({});
-      setCharStats([]);
-      setLintIssues([]);
-    }
+    };
+    // Parse immediately for small docs; debounce heavier ones.
+    if (content.length < 6000) { run(); return; }
+    const t = setTimeout(run, 300);
+    return () => clearTimeout(t);
   }, [content, currentScript?.format]);
 
   // Load revisions when script changes
@@ -577,13 +585,17 @@ export default function EditorPage() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async (ev) => {
-      const text = ev.target?.result as string;
+      const raw = ev.target?.result as string;
       const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
-      const imported = await importScriptFromText(text, title);
+      // FDX is parsed losslessly; .txt/.fountain are smart-cleaned. Either way
+      // we store the formatted screenplay text, not the raw dump.
+      const { content: cleaned, format: detectedFormat } = importToContent(raw, file.name);
+      const imported = await importScriptFromText(cleaned, title);
       if (imported) {
-        setScripts(prev => [...prev, imported]);
-        setCurrentScript(imported);
-        setContent(text);
+        const withFormat = { ...imported, format: detectedFormat };
+        setScripts(prev => [...prev, withFormat]);
+        setCurrentScript(withFormat);
+        setContent(cleaned);
         toast(`Imported "${title}"`, 'success');
       }
     };
