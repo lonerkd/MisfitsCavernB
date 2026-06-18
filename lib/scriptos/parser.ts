@@ -150,7 +150,15 @@ export class ScriptParser {
   }
 
   private clean(text: string): string {
-    return text.replace(/\s*\(.*?\)\s*/g, '').replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    // Drop extensions like "(V.O.)"/"(CONT'D)", strip the caret dual-dialogue
+    // marker, but PRESERVE the characters real names use — accents, hyphens and
+    // apostrophes — so "KI-WOO", "CÉCILE", "MÈRE", "O'BRIEN" survive intact.
+    return text
+      .replace(/\s*\(.*?\)\s*/g, '')
+      .replace(/^\^/, '')
+      .replace(/[^\p{L}\p{N}\s'’-]/gu, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
   }
 
   // --- MAIN PARSE LOOP ---
@@ -276,10 +284,10 @@ export class ScriptParser {
     const cleanName = this.clean(text);
 
     // 1. SLUG DETECTION
-    if (this.matchesSetStart(upper, KNOWLEDGE.SCENE_PREFIXES)) {
+    if (this.isSceneHeading(upper)) {
       scores.slug = 100;
       reasoning.push('Starts with known scene prefix');
-    } else if (upper.startsWith('.') && this.isCaps(text)) {
+    } else if (upper.startsWith('.') && this.isCaps(text) && !upper.startsWith('..')) {
       scores.slug = 90;
       reasoning.push('Starts with dot (shorthand slug)');
     }
@@ -510,6 +518,17 @@ export class ScriptParser {
   // --- HELPERS ---
   private matchesSetStart(text: string, set: Set<string>): boolean {
     for (const item of set) if (text.startsWith(item)) return true;
+    return false;
+  }
+
+  // A scene heading must start with a known prefix AND have a real boundary
+  // after it — otherwise "INTERVIEWER", "ESTATE", "EXTRA" get mis-flagged as
+  // slugs because they merely *begin* with "INT"/"EST"/"EXT".
+  private isSceneHeading(upper: string): boolean {
+    if (/^(INT|EXT|EST)\.?[\s/\-]/.test(upper)) return true;          // INT.  EXT  EST-
+    if (/^(INT|EXT)\.?\/(INT|EXT)\b/.test(upper)) return true;        // INT/EXT
+    if (/^(I\/E|E\/I)\b/.test(upper)) return true;                    // I/E
+    if (/^(INTERIOR|EXTERIOR|ESTABLISHING|UNDERWATER|AERIAL|ON SCREEN)\b/.test(upper)) return true;
     return false;
   }
 
