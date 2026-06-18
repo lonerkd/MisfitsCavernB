@@ -113,8 +113,13 @@ function DockIcon({
   );
 }
 
-// ── Contextual segment: the module's live controls, revealed on engage ────
-function ContextSegment({
+// ── Context Satellite: a detached companion bubble beside the dock ─────────
+// Like the way a live Spotify activity buds off the Dynamic Island, the active
+// context lives in its own capsule next to the main Pill — a glanceable circle
+// (a pulsing module beacon + lead read-out) when idle, blooming into the full
+// strip of fields, toggles and actions the moment you engage or hover a zone.
+// The dock keeps everything it had; the context just relocates and adapts.
+function ContextSatellite({
   descriptor, accent, expanded,
 }: {
   descriptor: PillDescriptor;
@@ -122,45 +127,79 @@ function ContextSegment({
   expanded: boolean;
 }) {
   const { title, fields = [], toggles = [], actions = [] } = descriptor;
-  // Compact: a single live chip (title + the lead read-out). Expanded: the
-  // full strip animates open with a staggered reveal.
   const lead = fields[0];
+  const hasStrip = fields.length > 0 || toggles.length > 0 || actions.length > 0;
 
   return (
     <motion.div
       layout
-      style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}
+      initial={{ opacity: 0, scale: 0.8, x: -10 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.8, x: -10 }}
+      transition={MORPH}
+      style={{
+        pointerEvents: 'auto',
+        display: 'flex', alignItems: 'center', gap: expanded ? 12 : 8,
+        height: 52, padding: expanded ? '0 16px 0 13px' : '0 13px',
+        borderRadius: 26, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
+        // Same Liquid-Glass material as the dock, tinted to the active accent.
+        background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(8,8,8,0.9) 100%)',
+        backdropFilter: 'blur(30px) saturate(1.8)',
+        WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
+        border: `1px solid ${accent}40`,
+        boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 24px ${accent}24, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${accent}33`,
+      }}
     >
-      {/* Always-visible compact summary */}
-      <motion.div layout style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 4, whiteSpace: 'nowrap' }}>
-        {title && (
-          <span style={{
-            fontFamily: 'var(--display)', fontSize: '0.8rem', letterSpacing: 1,
-            color: 'var(--fg)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis',
-          }}>
-            {title}
-          </span>
-        )}
-        {lead && !expanded && (
-          <span style={{
-            fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1,
-            color: lead.color || accent, textTransform: 'uppercase',
-          }}>
-            {lead.value}
-          </span>
-        )}
-      </motion.div>
+      {/* Specular sheen — matches the dock's glass highlight */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 40%)',
+      }} />
 
-      {/* Expanded reveal */}
+      {/* Live beacon — the "active" pulse, the heart of the satellite */}
+      <motion.span
+        layout
+        animate={{ scale: [1, 1.35, 1], opacity: [0.65, 1, 0.65] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          width: 8, height: 8, borderRadius: '50%', background: accent,
+          boxShadow: `0 0 10px ${accent}`, flexShrink: 0, position: 'relative', zIndex: 1,
+        }}
+      />
+
+      {/* Collapsed: a single glanceable read-out keeps the bubble tight */}
+      {!expanded && lead && (
+        <motion.span layout style={{
+          fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, position: 'relative', zIndex: 1,
+          color: lead.color || accent, textTransform: 'uppercase',
+        }}>
+          {lead.value}
+        </motion.span>
+      )}
+
+      {/* Expanded: title + the full strip blooms open */}
       <AnimatePresence>
-        {expanded && (fields.length > 0 || toggles.length > 0 || actions.length > 0) && (
+        {expanded && (
           <motion.div
             initial={{ opacity: 0, width: 0 }}
             animate={{ opacity: 1, width: 'auto' }}
             exit={{ opacity: 0, width: 0 }}
             transition={MORPH}
-            style={{ display: 'flex', alignItems: 'center', gap: 14, overflow: 'hidden' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 14, overflow: 'hidden', position: 'relative', zIndex: 1 }}
           >
+            {title && (
+              <span style={{
+                fontFamily: 'var(--display)', fontSize: '0.8rem', letterSpacing: 1,
+                color: 'var(--fg)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {title}
+              </span>
+            )}
+
+            {title && hasStrip && (
+              <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+            )}
+
             {fields.map((f, i) => (
               <motion.div
                 key={f.label}
@@ -376,6 +415,8 @@ export default function EcosystemTaskbar() {
         zIndex: 9999, pointerEvents: 'none',
       }}
     >
+      {/* The row binds the dock and its companion satellite into one hover
+          region — crossing the gap between them never collapses the context. */}
       <motion.div
         layout
         initial={{ y: 100, opacity: 0 }}
@@ -384,92 +425,101 @@ export default function EcosystemTaskbar() {
         onMouseMove={(e) => mouseX.set(e.clientX)}
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => { mouseX.set(Infinity); setExpanded(false); }}
-        style={{
-          position: 'relative',
-          display: 'flex', alignItems: 'center', gap: 2,
-          padding: '8px 12px',
-          borderRadius: 26,
-          pointerEvents: 'auto',
-          // Liquid-Glass material — translucency + saturation + a contextual
-          // under-glow tinted to the active module.
-          background: 'linear-gradient(180deg, rgba(22,22,22,0.78) 0%, rgba(8,8,8,0.88) 100%)',
-          backdropFilter: 'blur(30px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: `0 24px 70px rgba(0,0,0,0.65), 0 0 36px ${moduleColor}14, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${moduleColor}26`,
-          overflow: 'hidden',
-        }}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}
       >
-        {/* Specular sheen — the glass highlight along the top edge */}
-        <div style={{
-          position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%)',
-        }} />
+        {/* ── Main Pill: the dock + project switcher, unchanged ── */}
+        <motion.div
+          layout
+          style={{
+            position: 'relative',
+            display: 'flex', alignItems: 'center', gap: 2,
+            padding: '8px 12px',
+            borderRadius: 26,
+            // Liquid-Glass material — translucency + saturation + a contextual
+            // under-glow tinted to the active module.
+            background: 'linear-gradient(180deg, rgba(22,22,22,0.78) 0%, rgba(8,8,8,0.88) 100%)',
+            backdropFilter: 'blur(30px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: `0 24px 70px rgba(0,0,0,0.65), 0 0 36px ${moduleColor}14, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${moduleColor}26`,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Specular sheen — the glass highlight along the top edge */}
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%)',
+          }} />
 
-        <AnimatePresence mode="popLayout" initial={false}>
-          {transient ? (
-            <TransientView key={`t-${transient.id}`} label={transient.label} tone={transient.tone} />
-          ) : (
-            <motion.div
-              key="dock"
-              layout
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}
-            >
-              {APPS.map((app) => {
-                const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
-                return <DockIcon key={app.id} app={app} isActive={isActive} mouseX={mouseX} />;
-              })}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {transient ? (
+              <TransientView key={`t-${transient.id}`} label={transient.label} tone={transient.tone} />
+            ) : (
+              <motion.div
+                key="dock"
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 2, position: 'relative', zIndex: 1 }}
+              >
+                {APPS.map((app) => {
+                  const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
+                  return <DockIcon key={app.id} app={app} isActive={isActive} mouseX={mouseX} />;
+                })}
 
-              {/* Contextual segment */}
-              {showContext && (
-                <>
-                  <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.08)', margin: '0 8px', flexShrink: 0 }} />
-                  <ContextSegment descriptor={activeDescriptor!} accent={moduleColor} expanded={contextOpen} />
-                </>
-              )}
+                {/* Divider + project switcher */}
+                <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 6px', flexShrink: 0 }} />
+                <div style={{ position: 'relative' }}>
+                  <motion.button
+                    onClick={() => setProjectsOpen(v => !v)}
+                    whileHover={{ scale: 1.08, y: -3 }}
+                    whileTap={{ scale: 0.93 }}
+                    transition={SPRING}
+                    style={{
+                      width: 46, height: 46, borderRadius: 15,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                      background: projectsOpen ? `${activeProject?.accent_color ?? '#ff3c00'}1f` : 'transparent',
+                      border: 'none', cursor: 'pointer', position: 'relative',
+                    }}
+                  >
+                    {activeProject && (
+                      <div style={{
+                        position: 'absolute', top: 8, right: 8, width: 5, height: 5, borderRadius: '50%',
+                        background: activeProject.accent_color || '#ff3c00',
+                        boxShadow: `0 0 6px ${activeProject.accent_color || '#ff3c00'}`,
+                      }} />
+                    )}
+                    <FolderOpen
+                      size={18} strokeWidth={1.6}
+                      color={projectsOpen ? (activeProject?.accent_color ?? '#ff3c00') : 'rgba(240,236,228,0.4)'}
+                    />
+                    <motion.div animate={{ rotate: projectsOpen ? 0 : 180 }} transition={{ duration: 0.2 }} style={{ lineHeight: 0 }}>
+                      <ChevronUp size={8} color={projectsOpen ? (activeProject?.accent_color ?? '#ff3c00') : 'rgba(240,236,228,0.25)'} />
+                    </motion.div>
+                  </motion.button>
 
-              {/* Divider + project switcher */}
-              <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 6px', flexShrink: 0 }} />
-              <div style={{ position: 'relative' }}>
-                <motion.button
-                  onClick={() => setProjectsOpen(v => !v)}
-                  whileHover={{ scale: 1.08, y: -3 }}
-                  whileTap={{ scale: 0.93 }}
-                  transition={SPRING}
-                  style={{
-                    width: 46, height: 46, borderRadius: 15,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                    background: projectsOpen ? `${activeProject?.accent_color ?? '#ff3c00'}1f` : 'transparent',
-                    border: 'none', cursor: 'pointer', position: 'relative',
-                  }}
-                >
-                  {activeProject && (
-                    <div style={{
-                      position: 'absolute', top: 8, right: 8, width: 5, height: 5, borderRadius: '50%',
-                      background: activeProject.accent_color || '#ff3c00',
-                      boxShadow: `0 0 6px ${activeProject.accent_color || '#ff3c00'}`,
-                    }} />
-                  )}
-                  <FolderOpen
-                    size={18} strokeWidth={1.6}
-                    color={projectsOpen ? (activeProject?.accent_color ?? '#ff3c00') : 'rgba(240,236,228,0.4)'}
-                  />
-                  <motion.div animate={{ rotate: projectsOpen ? 0 : 180 }} transition={{ duration: 0.2 }} style={{ lineHeight: 0 }}>
-                    <ChevronUp size={8} color={projectsOpen ? (activeProject?.accent_color ?? '#ff3c00') : 'rgba(240,236,228,0.25)'} />
-                  </motion.div>
-                </motion.button>
+                  <AnimatePresence>
+                    {projectsOpen && (
+                      <ProjectSwitcher projects={projects} activeProject={activeProject} onSelect={setActiveProject} onClose={() => setProjectsOpen(false)} />
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-                <AnimatePresence>
-                  {projectsOpen && (
-                    <ProjectSwitcher projects={projects} activeProject={activeProject} onSelect={setActiveProject} onClose={() => setProjectsOpen(false)} />
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
+        {/* ── Companion satellite: the live context, budded off the dock ── */}
+        <AnimatePresence>
+          {showContext && (
+            <ContextSatellite
+              key="satellite"
+              descriptor={activeDescriptor!}
+              accent={moduleColor}
+              expanded={contextOpen}
+            />
           )}
         </AnimatePresence>
       </motion.div>
