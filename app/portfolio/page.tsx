@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
+import NotificationBell from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia } from '@/lib/supabase/portfolio';
 import { logActivity } from '@/lib/supabase/activity';
@@ -549,6 +550,7 @@ export default function PortfolioPage() {
               <Plus size={12} /> Add Project
             </button>
           )}
+          {userId && <NotificationBell />}
         </div>
       </nav>
 

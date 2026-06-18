@@ -5,6 +5,7 @@ import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-rea
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import NotificationBell from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase/client';
 
 interface Job {
@@ -566,6 +567,7 @@ export default function JobsPage() {
               <Plus size={11} strokeWidth={2.5} /> Post Job
             </button>
           )}
+          {user && <NotificationBell />}
         </div>
       </nav>
 

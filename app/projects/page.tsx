@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import NotificationBell from '@/components/NotificationBell';
 import { supabase } from '@/lib/supabase/client';
 import { createProject as createDBProject } from '@/lib/supabase/projects';
 import { useProject, type Project as DBProject } from '@/lib/context/ProjectContext';
@@ -363,6 +364,7 @@ export default function ProjectsPage() {
           >
             <Plus size={11} strokeWidth={2.5} /> New Project
           </button>
+          {user && <NotificationBell />}
         </div>
       </div>
 

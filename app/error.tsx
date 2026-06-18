@@ -1,0 +1,49 @@
+'use client';
+
+import { useEffect } from 'react';
+import Link from 'next/link';
+
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    console.error('Unhandled page error:', error);
+  }, [error]);
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg)', color: 'var(--fg)', padding: 24, textAlign: 'center', gap: 18,
+    }}>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, color: 'var(--accent)', textTransform: 'uppercase' }}>
+        Something broke
+      </span>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2, margin: 0, maxWidth: 480 }}>
+        This page hit an unexpected error.
+      </h1>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 440 }}>
+        Nothing else on the site is affected. Try again, or head back home.
+      </p>
+      <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+        <button
+          onClick={reset}
+          style={{
+            padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#060606',
+            border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2,
+            textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          Try Again
+        </button>
+        <Link
+          href="/"
+          style={{
+            padding: '10px 22px', borderRadius: 9999, background: 'transparent', color: 'var(--fg)',
+            border: '1px solid rgba(255,255,255,0.15)', fontFamily: 'var(--mono)', fontSize: 10,
+            letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, textDecoration: 'none',
+          }}
+        >
+          Go Home
+        </Link>
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import NotificationBell from '@/components/NotificationBell';
 
 interface Profile {
   id: string;
@@ -142,6 +143,7 @@ export default function CrewMemberPage() {
         }}>
           {profile.status}
         </span>
+        <NotificationBell />
       </header>
 
       {/* ── Page Body ──────────────────────────────────────────────────────────── */}

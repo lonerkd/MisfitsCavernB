@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import NotificationBell from '@/components/NotificationBell';
 
 const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
@@ -90,6 +91,7 @@ export default function ProfilePage() {
         </Link>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {message && <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)' }}>{message}</span>}
+          <NotificationBell />
           <button onClick={handleSave} disabled={saving}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
               background: 'var(--accent)', color: 'var(--bg)', border: 'none',

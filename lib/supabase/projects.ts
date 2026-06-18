@@ -1,6 +1,7 @@
 import { supabase } from './client';
 import { logActivity } from './activity';
 import { getPhaseTemplate } from '@/lib/projectTypes';
+import { createNotification } from './notifications';
 
 export interface DBProject {
   id: string;
@@ -121,6 +122,18 @@ export async function addProjectMember(projectId: string, userId: string, role =
 
   if (error) throw error;
   await logActivity(userId, 'joined_crew', 'project_crew', data?.[0]?.id, { project_id: projectId, role });
+
+  const { data: project } = await supabase.from('projects').select('title').eq('id', projectId).maybeSingle();
+  try {
+    await createNotification(
+      userId,
+      'crew_assigned',
+      `You were added to "${project?.title || 'a project'}"`,
+      `Role: ${role}`,
+      `/projects/${projectId}`
+    );
+  } catch (err) { console.error('Error creating notification:', err); }
+
   return data;
 }
 

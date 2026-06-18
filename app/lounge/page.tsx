@@ -10,6 +10,7 @@ import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supab
 import { useProject } from '@/lib/context/ProjectContext';
 import { Headphones, Radio, ExternalLink } from 'lucide-react';
 import SpotifyPlayer from '@/components/SpotifyPlayer';
+import NotificationBell from '@/components/NotificationBell';
 
 interface Message {
   id: string;
@@ -192,6 +193,7 @@ export default function LoungePage() {
 
           {/* Music player */}
           <SpotifyPlayer />
+          <NotificationBell />
         </div>
       </nav>
 

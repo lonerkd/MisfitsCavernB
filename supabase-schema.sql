@@ -573,3 +573,38 @@ ALTER TABLE portfolio_projects
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolio_projects_source_unique
   ON portfolio_projects(user_id, source_project_id) WHERE source_project_id IS NOT NULL;
+
+-- Real cross-cutting notifications: job applications, application status
+-- changes, crew assignment, etc. Replaces the old hacky messages-table-abuse
+-- stub (deleted) with a real table + RLS + realtime.
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT,
+  link TEXT,
+  read BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Users can read/update only their own notifications.
+CREATE POLICY "Users can view their own notifications" ON notifications FOR SELECT USING (
+  auth.uid() = user_id
+);
+
+CREATE POLICY "Users can update their own notifications" ON notifications FOR UPDATE USING (
+  auth.uid() = user_id
+);
+
+-- Any authenticated user can create a notification for another user
+-- (e.g. notifying a job poster about a new application, or a crew member
+-- about being assigned) — this is a deliberately permissive insert policy,
+-- mirroring how the rest of the app treats system-triggered cross-user writes.
+CREATE POLICY "Authenticated users can create notifications" ON notifications FOR INSERT WITH CHECK (
+  auth.uid() IS NOT NULL
+);

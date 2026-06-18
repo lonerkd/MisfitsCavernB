@@ -5,6 +5,8 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import NotificationBell from '@/components/NotificationBell';
+import { createNotification } from '@/lib/supabase/notifications';
 
 interface Job {
   id: string;
@@ -160,6 +162,15 @@ export default function JobDetailPage() {
       } else {
         setAlreadyApplied(true);
         setCoverNote('');
+        try {
+          await createNotification(
+            job.created_by,
+            'job_application',
+            `New application for "${job.title}"`,
+            null,
+            `/jobs/${job.id}`
+          );
+        } catch (err) { console.error('Error creating notification:', err); }
       }
     } finally {
       setApplying(false);
@@ -175,6 +186,18 @@ export default function JobDetailPage() {
       setApplications(prev =>
         prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );
+      const app = applications.find(a => a.id === appId);
+      if (app && job) {
+        try {
+          await createNotification(
+            app.applicant_id,
+            'application_status',
+            newStatus === 'accepted' ? `You were accepted for "${job.title}"` : `Your application for "${job.title}" was not accepted`,
+            null,
+            `/jobs/${job.id}`
+          );
+        } catch (err) { console.error('Error creating notification:', err); }
+      }
     }
   };
 
@@ -227,6 +250,7 @@ export default function JobDetailPage() {
           </span>
           <span style={statusBadgeStyle(job.status)}>{job.status}</span>
         </div>
+        {user && <NotificationBell />}
 
         <div style={{ width: 80 }} />
       </header>

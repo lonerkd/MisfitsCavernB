@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [
   { label: 'Editor',    href: '/editor'    },
@@ -140,6 +141,7 @@ export default function Navigation() {
           {/* Auth — reflects real session state */}
           {!loading && user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
+              <NotificationBell />
               <Link
                 href="/profile"
                 style={{
@@ -205,13 +207,15 @@ export default function Navigation() {
         </div>
 
         {/* Mobile hamburger */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="show-mobile"
-          style={{ background: 'none', border: 'none', color: 'var(--fg)', padding: 4, cursor: 'pointer' }}
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="show-mobile" style={{ display: 'none', alignItems: 'center', gap: 6 }}>
+          {!loading && user && <NotificationBell />}
+          <button
+            onClick={() => setOpen(!open)}
+            style={{ background: 'none', border: 'none', color: 'var(--fg)', padding: 4, cursor: 'pointer' }}
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </motion.nav>
 
       {/* Mobile slide-in menu */}

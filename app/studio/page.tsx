@@ -5,6 +5,7 @@ import { ArrowLeft, FolderOpen, Image, Video, FileText, Music, Upload, Plus } fr
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import NotificationBell from '@/components/NotificationBell';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
@@ -1148,6 +1149,7 @@ export default function StudioPage() {
           <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowIntake(true)}>
             <Upload size={11} /> Intake
           </button>
+          <NotificationBell />
         </div>
       </nav>
 

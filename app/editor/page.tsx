@@ -20,6 +20,7 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { getScriptCharacters, ensureScriptCharacters, updateScriptCharacter, subscribeToScriptCharacters, type DBCharacterProfile } from '@/lib/supabase/characters';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
+import NotificationBell from '@/components/NotificationBell';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
@@ -986,7 +987,9 @@ export default function EditorPage() {
 
           {/* Right: Tools & Export */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            
+
+            {user && <NotificationBell />}
+
             {/* Session word count */}
             {sessionWordsWritten > 0 && (
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
