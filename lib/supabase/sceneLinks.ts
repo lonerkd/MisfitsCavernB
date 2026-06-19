@@ -39,6 +39,7 @@ export async function unlinkAssetFromScene(linkId: string) {
 }
 
 export async function getSceneLinksForScript(scriptId: string) {
+  if (!scriptId || scriptId === 'demo') return [];
   const { data, error } = await supabase.from('scene_links').select('*').eq('script_id', scriptId);
   if (error) throw error;
   return (data || []) as SceneLink[];

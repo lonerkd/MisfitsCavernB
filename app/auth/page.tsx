@@ -61,7 +61,7 @@ function FloatingInput({
 
       <input
         name={name}
-        type={isPassword && !showPw ? 'password' : 'text'}
+        type={isPassword ? (showPw ? 'text' : 'password') : type}
         value={value}
         onChange={onChange}
         onFocus={() => setFocused(true)}
