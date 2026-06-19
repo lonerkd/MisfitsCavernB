@@ -433,7 +433,21 @@ export default function EditorPage() {
           return prev.some(p => p.id === payload.new.id) ? prev : [...prev, payload.new];
         }
         if (payload.eventType === 'UPDATE') {
-          return prev.map(p => p.id === payload.new.id ? payload.new : p);
+          // Don't let an incoming row clobber a field the user is actively
+          // mid-keystroke on — its debounced save hasn't landed yet, so the
+          // incoming row is stale for that field specifically (it can still
+          // be fresher for every other field, e.g. a collaborator's edit).
+          return prev.map(p => {
+            if (p.id !== payload.new.id) return p;
+            const merged = { ...payload.new };
+            for (const key of Object.keys(charSaveTimers.current)) {
+              const [pendingId, pendingField] = key.split(':');
+              if (pendingId === p.id && charSaveTimers.current[key]) {
+                (merged as any)[pendingField] = (p as any)[pendingField];
+              }
+            }
+            return merged;
+          });
         }
         if (payload.eventType === 'DELETE') {
           return prev.filter(p => p.id !== payload.old.id);
