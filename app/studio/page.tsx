@@ -368,7 +368,7 @@ function IntakeModal({ isOpen, onClose, userId, boardId, projectId, onUploaded }
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
+            style={{ width: 500, maxWidth: 'calc(100vw - 40px)', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Upload raw footage, references, or documents to the project vault.</p>
@@ -1138,7 +1138,8 @@ export default function StudioPage() {
 
   const handleSaveBudget = async () => {
     if (!activeProject) return;
-    const value = budgetInput.trim() ? parseFloat(budgetInput) : null;
+    const parsed = budgetInput.trim() ? parseFloat(budgetInput) : null;
+    const value = parsed != null && Number.isFinite(parsed) ? Math.max(0, parsed) : null;
     await updateProject(activeProject.id, { budget: value });
     await refreshProject(activeProject.id);
     setEditingBudget(false);
@@ -1229,7 +1230,7 @@ export default function StudioPage() {
       await createBudgetItem(activeProject.id, {
         category: budgetCategory.trim(),
         description: budgetDescription.trim(),
-        amount: parseFloat(budgetAmount) || 0,
+        amount: Math.max(0, parseFloat(budgetAmount) || 0),
       });
       await refreshProject(activeProject.id);
       setShowBudgetModal(false);
@@ -1377,7 +1378,7 @@ export default function StudioPage() {
   };
 
   const handleSceneFieldBlur = async (sceneId: string, field: 'location' | 'estimated_hours', value: string) => {
-    const patch = field === 'estimated_hours' ? { estimated_hours: parseFloat(value) || 0 } : { location: value };
+    const patch = field === 'estimated_hours' ? { estimated_hours: Math.max(0, parseFloat(value) || 0) } : { location: value };
     const updated = await updateSceneSchedule(sceneId, patch);
     setSceneSchedule(prev => prev.map(s => s.id === sceneId ? updated : s));
   };
@@ -1489,7 +1490,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showNewProject && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowNewProject(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><LayoutGrid size={18} /> New Project</h2>
                 <button onClick={() => setShowNewProject(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1525,7 +1526,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showBeatModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowBeatModal(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><BookOpen size={20} /> New Beat</h2>
                 <button onClick={() => setShowBeatModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1558,7 +1559,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showBudgetModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowBudgetModal(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={20} /> New Budget Line Item</h2>
                 <button onClick={() => setShowBudgetModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1574,7 +1575,7 @@ export default function StudioPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Amount (USD)</label>
-                  <input type="number" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} placeholder="0" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                  <input type="number" min="0" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} placeholder="0" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
                 </div>
                 <button onClick={handleCreateBudgetItem} disabled={!budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem ? 0.5 : 1 }}>
                   {savingBudgetItem ? 'Saving…' : 'Add Line Item'}
@@ -1588,7 +1589,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showCampaignModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCampaignModal(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Megaphone size={20} /> New Campaign</h2>
                 <button onClick={() => setShowCampaignModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1794,6 +1795,7 @@ export default function StudioPage() {
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                       <input
                         type="number"
+                        min="0"
                         value={budgetInput}
                         onChange={e => setBudgetInput(e.target.value)}
                         autoFocus
@@ -2029,6 +2031,7 @@ export default function StudioPage() {
                              <div style={{ width: 110, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{(sceneCast[s.scene_number] || []).join(', ') || '—'}</div>
                              <input
                                type="number"
+                               min="0"
                                defaultValue={s.estimated_hours || ''}
                                placeholder="0"
                                onBlur={e => handleSceneFieldBlur(s.id, 'estimated_hours', e.target.value)}

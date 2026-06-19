@@ -63,7 +63,7 @@ function PostModal({ onClose, onCreated, userId }: {
       title: form.title,
       description: form.description,
       role: form.role,
-      rate: form.rate ? parseFloat(form.rate) : null,
+      rate: form.rate ? Math.max(0, parseFloat(form.rate) || 0) : null,
       created_by: userId,
       status: 'open',
     });
@@ -194,6 +194,7 @@ function PostModal({ onClose, onCreated, userId }: {
               <DollarSign size={12} color="rgba(240,236,228,0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="number"
+                min="0"
                 value={form.rate}
                 onChange={e => setForm(f => ({ ...f, rate: e.target.value }))}
                 placeholder="0.00"
