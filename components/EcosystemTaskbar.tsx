@@ -6,7 +6,7 @@ import {
 } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen, Check } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useProject, type Project } from '@/lib/context/ProjectContext';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 
@@ -120,12 +120,17 @@ function DockIcon({
 // strip of fields, toggles and actions the moment you engage or hover a zone.
 // The dock keeps everything it had; the context just relocates and adapts.
 function ContextSatellite({
-  descriptor, accent, expanded, zoneChain,
+  descriptor, accent, expanded, zoneChain, kbActive, keycaps, focusedId,
 }: {
   descriptor: PillDescriptor;
   accent: string;
   expanded: boolean;
   zoneChain: { depth: number; title: string }[];
+  kbActive: boolean;
+  /** id (toggle/action) → the single hotkey character that triggers it. */
+  keycaps: Map<string, string>;
+  /** id of the item currently focused via Tab, while the hotkey layer is armed. */
+  focusedId: string | null;
 }) {
   const { title, fields = [], toggles = [], actions = [] } = descriptor;
   const lead = fields[0];
@@ -265,9 +270,15 @@ function ContextSatellite({
                 transition={{ delay: 0.04 * (fields.length + i), duration: 0.2 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-                  background: 'transparent', border: 'none', padding: 0, whiteSpace: 'nowrap',
+                  background: 'transparent', border: 'none', padding: 2, whiteSpace: 'nowrap',
+                  borderRadius: 6,
+                  outline: kbActive && focusedId === t.id ? `1.5px solid ${accent}` : 'none',
+                  outlineOffset: 2,
                 }}
               >
+                {kbActive && keycaps.has(t.id) && (
+                  <Keycap char={keycaps.get(t.id)!} accent={accent} active={focusedId === t.id} />
+                )}
                 <span style={{
                   width: 15, height: 15, borderRadius: 5,
                   border: `1px solid ${t.active ? accent : 'rgba(255,255,255,0.18)'}`,
@@ -295,12 +306,18 @@ function ContextSatellite({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.04 * (fields.length + toggles.length + i), duration: 0.2 }}
                 style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                   textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap',
                   color: accent, background: `${accent}1a`, border: `1px solid ${accent}40`,
                   borderRadius: 9999, padding: '6px 12px',
+                  outline: kbActive && focusedId === a.id ? `1.5px solid ${accent}` : 'none',
+                  outlineOffset: 2,
                 }}
               >
+                {kbActive && keycaps.has(a.id) && (
+                  <Keycap char={keycaps.get(a.id)!} accent={accent} active={focusedId === a.id} />
+                )}
                 {a.label}
               </motion.button>
             ))}
@@ -309,6 +326,23 @@ function ContextSatellite({
       </AnimatePresence>
       </motion.div>
     </div>
+  );
+}
+
+// ── Keycap badge — shown beside a toggle/action while Caps Lock arms the
+// hotkey layer, so the mapped key is always visible, never guessed.
+function Keycap({ char, accent, active }: { char: string; accent: string; active: boolean }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 13, height: 13, borderRadius: 4, flexShrink: 0,
+      fontFamily: 'var(--mono)', fontSize: 7, fontWeight: 700, textTransform: 'uppercase',
+      color: active ? '#0a0a0a' : accent,
+      background: active ? accent : `${accent}1f`,
+      border: `1px solid ${accent}55`,
+    }}>
+      {char}
+    </span>
   );
 }
 
@@ -409,16 +443,91 @@ function ProjectSwitcher({
   );
 }
 
+// Caps-Lock hotkey layer: the number row, then the QWERTY row, map in order
+// onto whatever toggles/actions the Pill is currently showing — so "123456"
+// and "qwertyuiop" become direct triggers, no mouse, no tabbing required.
+const HOTKEYS = ['1', '2', '3', '4', '5', '6', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'];
+
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { activeProject, setActiveProject, projects } = useProject();
-  const { activeDescriptor, zoneActive, zoneChain, transient } = usePill();
+  const { activeDescriptor, zoneActive, zoneChain, transient, kbActive } = usePill();
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
   const mouseX = useMotionValue(Infinity);
 
   useEffect(() => { setProjectsOpen(false); }, [pathname]);
+
+  // Flatten the active descriptor's toggles + actions into one orderable list
+  // — this order is what the hotkeys and Tab-focus walk through.
+  const hotkeyItems = React.useMemo(() => {
+    const toggles = activeDescriptor?.toggles ?? [];
+    const actions = activeDescriptor?.actions ?? [];
+    return [
+      ...toggles.map(t => ({ id: t.id, run: t.onToggle })),
+      ...actions.map(a => ({ id: a.id, run: a.onClick })),
+    ];
+  }, [activeDescriptor]);
+
+  const keycaps = React.useMemo(() => {
+    const m = new Map<string, string>();
+    hotkeyItems.forEach((item, i) => { if (HOTKEYS[i]) m.set(item.id, HOTKEYS[i]); });
+    return m;
+  }, [hotkeyItems]);
+
+  useEffect(() => { if (!kbActive) setKbFocusIndex(-1); }, [kbActive]);
+  useEffect(() => { setKbFocusIndex(-1); }, [hotkeyItems.length]);
+
+  // While Caps Lock is held: digits/QWERTY fire the matching toggle or action
+  // directly; Tab/Shift+Tab walk a focus ring through them (Enter activates);
+  // arrow keys switch app (left/right) or open/close the Pill (up/down).
+  useEffect(() => {
+    if (!kbActive) return;
+    const handler = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const idx = APPS.findIndex(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
+        const base = idx === -1 ? 0 : idx;
+        const next = e.key === 'ArrowRight' ? (base + 1) % APPS.length : (base - 1 + APPS.length) % APPS.length;
+        router.push(APPS[next].path);
+        return;
+      }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setExpanded(true); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setExpanded(false); return; }
+      if (e.key === 'Tab') {
+        if (!hotkeyItems.length) return;
+        e.preventDefault();
+        setKbFocusIndex(i => {
+          const n = hotkeyItems.length;
+          return e.shiftKey ? (i - 1 + n) % n : (i + 1) % n;
+        });
+        return;
+      }
+      if (e.key === 'Enter') {
+        if (kbFocusIndex >= 0 && hotkeyItems[kbFocusIndex]) {
+          e.preventDefault();
+          hotkeyItems[kbFocusIndex].run();
+        }
+        return;
+      }
+
+      const k = e.key.toLowerCase();
+      const hIdx = HOTKEYS.indexOf(k);
+      if (hIdx >= 0 && hotkeyItems[hIdx]) {
+        e.preventDefault();
+        hotkeyItems[hIdx].run();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
 
   useEffect(() => {
     if (!projectsOpen) return;
@@ -437,9 +546,10 @@ export default function EcosystemTaskbar() {
   // from the page); otherwise we use the active module's color.
   const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#ff3c00';
   const showContext = !!activeDescriptor && !transient;
-  // The Pill morphs open when the cursor engages it OR when an in-page zone is
-  // hovered — so hovering the script itself reveals its tools, no aim required.
-  const contextOpen = expanded || zoneActive;
+  // The Pill morphs open when the cursor engages it, an in-page zone is
+  // hovered, or the keyboard-hotkey layer is armed — Caps Lock needs the
+  // controls visible to be usable without a mouse at all.
+  const contextOpen = expanded || zoneActive || kbActive;
 
   return (
     <div
@@ -554,6 +664,9 @@ export default function EcosystemTaskbar() {
               accent={moduleColor}
               expanded={contextOpen}
               zoneChain={zoneChain}
+              kbActive={kbActive}
+              keycaps={keycaps}
+              focusedId={kbFocusIndex >= 0 ? hotkeyItems[kbFocusIndex]?.id ?? null : null}
             />
           )}
         </AnimatePresence>

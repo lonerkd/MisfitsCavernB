@@ -61,6 +61,10 @@ export interface PillTransient {
 }
 
 interface PillContextValue {
+  /** True while Caps Lock is held active — the keyboard-hotkey layer arms:
+   *  the number row and QWERTY row become direct triggers for whatever
+   *  toggles/actions the Pill is currently showing, no mouse required. */
+  kbActive: boolean;
   /** The page-level descriptor — the fallback when no finer zone is hovered. */
   descriptor: PillDescriptor | null;
   setDescriptor: (d: PillDescriptor | null) => void;
@@ -97,6 +101,23 @@ export function PillProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
+  // Caps Lock arms the keyboard-hotkey layer. There's no native "capslock"
+  // change event, so we read getModifierState off any key event — held or
+  // tapped, on any key — and keep the flag in sync with the OS-level state.
+  const [kbActive, setKbActive] = useState(false);
+  useEffect(() => {
+    const sync = (e: KeyboardEvent) => {
+      if (typeof e.getModifierState !== 'function') return;
+      setKbActive(e.getModifierState('CapsLock'));
+    };
+    window.addEventListener('keydown', sync);
+    window.addEventListener('keyup', sync);
+    return () => {
+      window.removeEventListener('keydown', sync);
+      window.removeEventListener('keyup', sync);
+    };
+  }, []);
+
   // Zone stack — multiple zones can be hovered at once when they're nested
   // (script surface → scene → cue). We keep them all and surface the deepest.
   const pushZone = useCallback((z: PillZone) => {
@@ -126,6 +147,7 @@ export function PillProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{
+      kbActive,
       descriptor, setDescriptor,
       activeDescriptor, zoneChain, zoneActive: zones.length > 0,
       pushZone, updateZone, popZone,
