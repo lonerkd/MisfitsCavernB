@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import NotificationBell from '@/components/NotificationBell';
 import { usePillZone } from '@/lib/context/PillContext';
 import { supabase } from '@/lib/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Job {
   id: string;
@@ -434,6 +435,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
 }
 
 export default function JobsPage() {
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -441,7 +443,8 @@ export default function JobsPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [showPost, setShowPost] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [tab, setTab] = useState<'open' | 'mine'>('open');
+  // Deep-linkable so Profile's "My Jobs" link (?tab=mine) actually lands there.
+  const [tab, setTab] = useState<'open' | 'mine'>(searchParams?.get('tab') === 'mine' ? 'mine' : 'open');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -449,6 +452,21 @@ export default function JobsPage() {
       if (user) loadMyJobs(user.id);
     });
     loadJobs();
+
+    // Live board: any job posted, closed, or otherwise changed by another
+    // user ripples in immediately — a marketplace where listings vanish
+    // when filled is only useful if "closed" actually disappears live.
+    const channel: RealtimeChannel = supabase
+      .channel(`jobs-board:${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => {
+        loadJobs();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user) loadMyJobs(user.id);
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const loadJobs = async () => {

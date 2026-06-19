@@ -5,6 +5,7 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import NotificationBell from '@/components/NotificationBell';
 import { createNotification } from '@/lib/supabase/notifications';
 import { addProjectMember } from '@/lib/supabase/projects';
@@ -143,6 +144,19 @@ export default function JobDetailPage() {
   useEffect(() => {
     if (isCreator) loadApplications();
   }, [isCreator, loadApplications]);
+
+  // Live applications: a creator reviewing this job sees new applicants
+  // land in real time, the same way every other collaborative surface ripples.
+  useEffect(() => {
+    if (!isCreator || !jobId) return;
+    const channel: RealtimeChannel = supabase
+      .channel(`job-applications:${jobId}:${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'job_applications', filter: `job_id=eq.${jobId}` }, () => {
+        loadApplications();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isCreator, jobId, loadApplications]);
 
   const handleApply = async () => {
     if (!user || !job) return;
