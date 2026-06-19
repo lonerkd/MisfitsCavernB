@@ -32,6 +32,7 @@ import { usePillStage, usePillEmit, usePillZone } from '@/lib/context/PillContex
 import ScreenplayEditor, { type ScreenplayEditorHandle } from '@/components/editor/ScreenplayEditor';
 import type { BlockType } from '@/lib/scriptos/blocks';
 import { importToContent } from '@/lib/scriptos/import';
+import { extractTextFromPdf } from '@/lib/scriptos/pdfImport';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -336,6 +337,7 @@ export default function EditorPage() {
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
+  const [importingFile, setImportingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Supabase Realtime Sync — the single write path for autosave; `flushSave`
@@ -680,17 +682,23 @@ export default function EditorPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts]);
 
-  // Import .fountain / .txt file
-  const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Import .fountain / .txt / .fdx / .pdf file
+  const handleImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // reset input
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const raw = ev.target?.result as string;
-      const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
-      // FDX is parsed losslessly; .txt/.fountain are smart-cleaned. Either way
-      // we store the formatted screenplay text, not the raw dump.
-      const { content: cleaned, format: detectedFormat } = importToContent(raw, file.name);
+
+    const isPdf = /\.pdf$/i.test(file.name);
+    const title = file.name.replace(/\.(fountain|txt|fdx|pdf)$/i, '');
+
+    setImportingFile(true);
+    try {
+      // PDFs carry no element types, just positioned text runs — extract and
+      // reconstruct reading order first. FDX is parsed losslessly; .txt and
+      // .fountain go straight through. Either way we end up with raw text
+      // that importToContent classifies and re-serializes, never a raw dump.
+      const raw = isPdf ? await extractTextFromPdf(file) : await file.text();
+      const { content: cleaned, format: detectedFormat } = importToContent(raw, isPdf ? `${title}.txt` : file.name);
       const imported = await importScriptFromText(cleaned, title);
       if (imported) {
         const withFormat = { ...imported, format: detectedFormat };
@@ -699,9 +707,11 @@ export default function EditorPage() {
         setContent(cleaned);
         toast(`Imported "${title}"`, 'success');
       }
-    };
-    reader.readAsText(file);
-    e.target.value = ''; // reset input
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Failed to import file', 'error');
+    } finally {
+      setImportingFile(false);
+    }
   }, [toast]);
 
   // Title page save
@@ -1230,7 +1240,7 @@ export default function EditorPage() {
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
                   {[
-                    { icon: FileUp, label: 'Import', onClick: () => fileInputRef.current?.click() },
+                    { icon: importingFile ? Loader : FileUp, label: importingFile ? 'Importing…' : 'Import', onClick: () => !importingFile && fileInputRef.current?.click() },
                     { icon: Book,   label: 'Title',  onClick: () => setShowTitleEditor(!showTitleEditor) },
                   ].map(({ icon: Icon, label, onClick }) => (
                     <button key={label} onClick={onClick} style={{
@@ -1249,7 +1259,7 @@ export default function EditorPage() {
                   ))}
                 </div>
 
-                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx" onChange={handleImportFile} style={{ display: 'none' }} />
+                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx,.pdf" onChange={handleImportFile} style={{ display: 'none' }} />
 
                 {/* Templates */}
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 3, marginTop: 14, marginBottom: 7 }}>Templates</div>
