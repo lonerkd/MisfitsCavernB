@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide-react';
+import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User, Film } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -78,6 +78,7 @@ export default function JobDetailPage() {
   // Creator view
   const [applications, setApplications] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
+  const [portfolioCounts, setPortfolioCounts] = useState<Record<string, number>>({});
 
   // Applicant view
   const [coverNote, setCoverNote] = useState('');
@@ -116,6 +117,19 @@ export default function JobDetailPage() {
         .order('applied_at', { ascending: false });
       if (error) throw error;
       setApplications(data || []);
+
+      const applicantIds = [...new Set((data || []).map((a: Application) => a.applicant_id))];
+      if (applicantIds.length > 0) {
+        const { data: portfolioRows } = await supabase
+          .from('portfolio_projects')
+          .select('user_id')
+          .in('user_id', applicantIds);
+        const counts: Record<string, number> = {};
+        for (const row of portfolioRows || []) {
+          counts[row.user_id] = (counts[row.user_id] || 0) + 1;
+        }
+        setPortfolioCounts(counts);
+      }
     } catch (err) {
       console.error('Error loading applications:', err);
     } finally {
@@ -458,6 +472,21 @@ export default function JobDetailPage() {
                           {app.cover_note}
                         </p>
                       </div>
+                    )}
+
+                    {/* Portfolio — surfaces the applicant's existing Portfolio module
+                        work instead of asking for a separate resume upload. */}
+                    {portfolioCounts[app.applicant_id] > 0 && (
+                      <Link
+                        href={`/crew/${app.applicant_id}`}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          marginTop: 12, fontFamily: 'var(--mono)', fontSize: 9,
+                          letterSpacing: 1, color: 'var(--accent)', textDecoration: 'none',
+                        }}
+                      >
+                        <Film size={11} /> View Portfolio ({portfolioCounts[app.applicant_id]} project{portfolioCounts[app.applicant_id] !== 1 ? 's' : ''})
+                      </Link>
                     )}
 
                     {/* Action buttons */}
