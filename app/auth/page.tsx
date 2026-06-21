@@ -8,7 +8,32 @@ import { ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
 import { signIn, signUp } from '@/lib/supabase/auth';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+
+// Map raw Supabase/PostgREST errors to copy that won't leak backend
+// implementation details (API keys, table names, etc.) to end users.
+function friendlyAuthError(raw: string): string {
+  const msg = raw.toLowerCase();
+  if (msg.includes('invalid api key') || msg.includes('invalid_api_key')) {
+    return 'Sign-in is temporarily unavailable. Please try again shortly.';
+  }
+  if (msg.includes('invalid login credentials')) {
+    return 'Incorrect email or password.';
+  }
+  if (msg.includes('user already registered') || msg.includes('already registered')) {
+    return 'An account with that email already exists. Try signing in instead.';
+  }
+  if (msg.includes('password') && msg.includes('6 characters')) {
+    return 'Password must be at least 6 characters.';
+  }
+  if (msg.includes('rate limit')) {
+    return 'Too many attempts. Please wait a moment and try again.';
+  }
+  if (msg.includes('network') || msg.includes('fetch')) {
+    return 'Connection issue — check your internet and try again.';
+  }
+  return 'Something went wrong. Please try again.';
+}
 
 type Mode = 'signin' | 'signup';
 
@@ -128,9 +153,26 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
+    if (!form.email.trim() || !form.password.trim()) {
+      setError('Please enter your email and password.');
+      return;
+    }
+    if (mode === 'signup' && !form.username.trim()) {
+      setError('Please choose a username.');
+      return;
+    }
+    if (mode === 'signup' && form.password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (!isSupabaseConfigured) {
+      setError('Sign-in is not configured for this environment yet.');
+      return;
+    }
+
+    setLoading(true);
     try {
       if (mode === 'signin') {
         // Supabase client persists the session; AuthProvider picks it up via
@@ -151,7 +193,7 @@ export default function AuthPage() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      setError(friendlyAuthError(err?.message || ''));
     } finally {
       setLoading(false);
     }
