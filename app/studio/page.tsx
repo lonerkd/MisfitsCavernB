@@ -28,6 +28,7 @@ import { createBudgetItem, deleteBudgetItem, createJobFromBudgetItem } from '@/l
 import { createCampaign, deleteCampaign } from '@/lib/supabase/campaigns';
 import { getPortfolioProjectBySource, publishProjectToPortfolio } from '@/lib/supabase/portfolio';
 import { usePillStage, usePillEmit, usePillZone } from '@/lib/context/PillContext';
+import { jsPDF } from 'jspdf';
 
 interface Asset {
   id: string;
@@ -1377,6 +1378,89 @@ export default function StudioPage() {
     setSceneSchedule(prev => prev.map(s => s.id === sceneId ? updated : s));
   };
 
+  // Industry-standard call sheet: one shoot day, its scenes/locations/cast, and
+  // the full crew roster with contact/status, generated straight from the
+  // shooting schedule and Cast & Crew Hub data already on this page.
+  const handleGenerateCallSheet = (day: ShootDay) => {
+    if (!activeProject) return;
+    const daysScenes = sceneSchedule
+      .filter(s => s.shoot_day_id === day.id)
+      .sort((a, b) => a.order_index - b.order_index);
+    const totalHours = daysScenes.reduce((sum, s) => sum + (s.estimated_hours || 0), 0);
+    const castOnDay = [...new Set(daysScenes.flatMap(s => sceneCast[s.scene_number] || []))];
+
+    const doc = new jsPDF({ unit: 'in', format: 'letter' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(`CALL SHEET — DAY ${day.day_number}`, 0.75, 0.8);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(activeProject.title || 'Untitled Project', 0.75, 1.05);
+    doc.text(day.shoot_date ? new Date(day.shoot_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Date TBD', 0.75, 1.25);
+
+    let y = 1.65;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('SCENES', 0.75, y);
+    y += 0.25;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    if (daysScenes.length === 0) {
+      doc.text('No scenes scheduled for this day.', 0.75, y);
+      y += 0.2;
+    } else {
+      for (const s of daysScenes) {
+        doc.text(`SC ${s.scene_number}  ${s.scene_heading}`, 0.75, y);
+        y += 0.18;
+        doc.setTextColor(90);
+        doc.text(`Location: ${s.location || 'TBD'}   Est. ${s.estimated_hours || 0} hrs   Cast: ${(sceneCast[s.scene_number] || []).join(', ') || '—'}`, 0.95, y);
+        doc.setTextColor(0);
+        y += 0.26;
+      }
+      y += 0.05;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Total estimated: ${totalHours} hrs`, 0.75, y);
+      y += 0.3;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('CAST CALLED TODAY', 0.75, y);
+    y += 0.25;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    if (castOnDay.length === 0) {
+      doc.text('No cast assigned to today\'s scenes.', 0.75, y);
+      y += 0.2;
+    } else {
+      for (const name of castOnDay) {
+        doc.text(`${name}`, 0.75, y);
+        y += 0.18;
+      }
+      y += 0.1;
+    }
+    y += 0.15;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('CREW', 0.75, y);
+    y += 0.25;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const crew = activeProject.crew || [];
+    if (crew.length === 0) {
+      doc.text('No crew assigned yet.', 0.75, y);
+    } else {
+      for (const member of crew) {
+        if (y > 10) { doc.addPage(); y = 0.8; }
+        doc.text(`${member.name}  —  ${member.role || 'Crew'}  [${member.status || 'pending'}]`, 0.75, y);
+        y += 0.2;
+      }
+    }
+
+    doc.save(`CallSheet_Day${day.day_number}_${(activeProject.title || 'project').replace(/[^a-z0-9]/gi, '_')}.pdf`);
+  };
+
   const handleSceneFieldBlur = async (sceneId: string, field: 'location' | 'estimated_hours', value: string) => {
     const patch = field === 'estimated_hours' ? { estimated_hours: Math.max(0, parseFloat(value) || 0) } : { location: value };
     const updated = await updateSceneSchedule(sceneId, patch);
@@ -2049,6 +2133,25 @@ export default function StudioPage() {
                          ))}
                        </div>
                      </>
+                   )}
+
+                   {shootDays.length > 0 && (
+                     <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(224,221,174,0.06)' }}>
+                       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Call Sheets</div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                         {shootDays.map(day => {
+                           const count = sceneSchedule.filter(s => s.shoot_day_id === day.id).length;
+                           return (
+                             <div key={day.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                               <span>Day {day.day_number} — {count} scene{count !== 1 ? 's' : ''}{day.shoot_date ? ` · ${new Date(day.shoot_date).toLocaleDateString()}` : ''}</span>
+                               <button className="link-btn" onClick={() => handleGenerateCallSheet(day)} style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                 <FileText size={11} /> Generate Call Sheet
+                               </button>
+                             </div>
+                           );
+                         })}
+                       </div>
+                     </div>
                    )}
                  </div>
                </div>
