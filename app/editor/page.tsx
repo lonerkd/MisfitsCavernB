@@ -885,6 +885,20 @@ export default function EditorPage() {
         toast(`"${file.name}" came through empty — the file may be image-only, encrypted, or corrupted.`, 'error');
         return;
       }
+
+      if (!user) {
+        // Guest/demo mode: importScriptFromText needs a cloud script row to
+        // write to and would otherwise silently no-op (saveScript logs and
+        // returns null with zero user-facing feedback). Load the imported
+        // text straight into the in-memory demo script instead.
+        const demo = { id: 'demo', title, content: cleaned, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), format: detectedFormat };
+        setScripts([demo]);
+        setCurrentScript(demo);
+        setContent(cleaned);
+        toast(`Imported "${title}". Sign in to save it to the cloud.`, 'success');
+        return;
+      }
+
       const imported = await importScriptFromText(cleaned, title);
       if (imported) {
         const withFormat = { ...imported, format: detectedFormat };
@@ -892,13 +906,15 @@ export default function EditorPage() {
         setCurrentScript(withFormat);
         setContent(cleaned);
         toast(`Imported "${title}"`, 'success');
+      } else {
+        toast('Could not import the script. Please try again.', 'error');
       }
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Failed to import file', 'error');
     } finally {
       setImportingFile(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   // Title page save
   const titlePageSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
