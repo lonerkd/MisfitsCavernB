@@ -303,9 +303,9 @@ export function EditorSidePanels({
                         <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: typeColors.character, borderRadius: 2 }} />
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 10, color: 'var(--fg-muted)' }}>
-                        <span>{cs.dialogueLines} lines</span>
-                        <span>{cs.dialogueWords} words</span>
-                        <span>{cs.scenesIn.length} scenes</span>
+                        <span>{cs.dialogueLines} line{cs.dialogueLines === 1 ? '' : 's'}</span>
+                        <span>{cs.dialogueWords} word{cs.dialogueWords === 1 ? '' : 's'}</span>
+                        <span>{cs.scenesIn.length} scene{cs.scenesIn.length === 1 ? '' : 's'}</span>
                         <span>~{cs.avgWordsPerLine} w/line</span>
                       </div>
                       {/* Top relationships — proportional co-occurrence bars */}
@@ -354,7 +354,7 @@ export function EditorSidePanels({
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
                         </div>
                         <div style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(rev.date).toLocaleString()}</div>
-                        <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
+                        <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>{(() => { const l = rev.snapshot.split('\n').length; const w = rev.snapshot.split(/\s+/).filter(Boolean).length; return `${l} line${l === 1 ? '' : 's'} · ${w} word${w === 1 ? '' : 's'}`; })()}</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${revColor.color}22` }}>
                           <button
                             onClick={() => onRestoreRevision(rev.snapshot, rev.label)}

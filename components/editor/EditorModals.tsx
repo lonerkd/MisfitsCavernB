@@ -122,7 +122,7 @@ export function CharacterBibleModal({
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: cardColors[i % cardColors.length] }} />
                           <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
                         </div>
-                        <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} lines · ${stat.scenesIn.length} scenes` : ''}</span>
+                        <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} line${stat.dialogueLines === 1 ? '' : 's'} · ${stat.scenesIn.length} scene${stat.scenesIn.length === 1 ? '' : 's'}` : ''}</span>
                       </button>
                       {isSelected && (
                         <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -214,7 +214,7 @@ export function GoToSceneModal({
             }
             if (e.key === 'Escape') onClose();
           }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
-          <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{sceneCount} scenes · Press Enter to jump</div>
+          <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{sceneCount} scene{sceneCount === 1 ? '' : 's'} · Press Enter to jump</div>
         </motion.div>
       )}
     </AnimatePresence>

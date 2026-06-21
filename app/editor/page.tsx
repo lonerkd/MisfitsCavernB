@@ -34,6 +34,7 @@ import type { BlockType } from '@/lib/scriptos/blocks';
 import { importToContent } from '@/lib/scriptos/import';
 import { extractTextFromPdf } from '@/lib/scriptos/pdfImport';
 import { TitlePageModal, CharacterBibleModal, ShortcutsModal, GoToSceneModal, RevisionDiffModal } from '@/components/editor/EditorModals';
+import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorSidePanels } from '@/components/editor/EditorSidePanels';
 
 // ============================================================================
@@ -821,11 +822,27 @@ export default function EditorPage() {
 
   const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
+    // Guest/demo scripts have no cloud row to attach a revision to — keep
+    // the lock in-memory so the feature still works, but nudge the writer
+    // to sign in if they want it to survive a refresh.
+    if (!user || currentScript.id === 'demo') {
+      const colorIndex = revisions.length % REVISION_COLORS.length;
+      const rev: Revision = {
+        id: `local-${Date.now()}`,
+        colorIndex,
+        date: new Date().toISOString(),
+        label: `${REVISION_COLORS[colorIndex].name} Revision`,
+        snapshot: content,
+      };
+      setRevisions(prev => [...prev, rev]);
+      toast(`Locked as ${rev.label} (sign in to save permanently)`, 'success');
+      return;
+    }
     const rev = await createRevision(currentScript.id, content);
     if (!rev) { toast('Failed to lock revision.', 'error'); return; }
     setRevisions(prev => [...prev, rev]);
     toast(`Locked as ${rev.label}`, 'success');
-  }, [currentScript, content, toast]);
+  }, [currentScript, content, toast, user, revisions]);
 
   // Color-tag a scene for quick visual grouping (track A vs track B, "needs
   // rewrite", etc.) — toggles off if the same color is clicked again.
@@ -932,6 +949,7 @@ export default function EditorPage() {
   const titlePageSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
     setTitlePage(prev => {
+      if (prev[field] === value) return prev; // no-op: skip the redundant render/save cascade
       const updated = { ...prev, [field]: value };
       if (currentScript) {
         if (titlePageSaveTimer.current) clearTimeout(titlePageSaveTimer.current);
@@ -2285,43 +2303,45 @@ export default function EditorPage() {
 
       </div>
 
-      <TitlePageModal
-        show={showTitleEditor}
-        onClose={() => setShowTitleEditor(false)}
-        format={currentScript?.format || 'screenplay'}
-        onFormatChange={handleFormatChange}
-        titlePage={titlePage}
-        onTitlePageChange={handleTitlePageChange}
-      />
+      <EditorErrorBoundary onCrash={() => { try { localStorage.setItem('scriptos:demo:content', content); } catch {} }}>
+        <TitlePageModal
+          show={showTitleEditor}
+          onClose={() => setShowTitleEditor(false)}
+          format={currentScript?.format || 'screenplay'}
+          onFormatChange={handleFormatChange}
+          titlePage={titlePage}
+          onTitlePageChange={handleTitlePageChange}
+        />
 
-      <CharacterBibleModal
-        show={showCharBible}
-        onClose={() => setShowCharBible(false)}
-        chars={chars}
-        charProfiles={charProfiles}
-        selectedCharProfile={selectedCharProfile}
-        onSelectCharProfile={async (name) => {
-          const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
-          const isSelected = selectedCharProfile === name;
-          const next = isSelected ? null : name;
-          setSelectedCharProfile(next);
-          if (next && currentScript && currentScript.id !== 'demo' && !profile) {
-            const updated = await ensureScriptCharacters(currentScript.id, [name]);
-            setCharProfiles(updated);
-          }
-        }}
-        charStats={charStats}
-        cardColors={CARD_COLORS}
-        crew={activeProject?.crew}
-        onPlayedByChange={(profileId, crewId) => {
-          setCharProfiles(prev => prev.map(p => p.id === profileId ? { ...p, played_by_crew_id: crewId } : p));
-          updateScriptCharacter(profileId, { played_by_crew_id: crewId });
-        }}
-        onFieldChange={(profileId, field, value) => {
-          setCharProfiles(prev => prev.map(p => p.id === profileId ? { ...p, [field]: value } : p));
-          queueCharacterFieldSave(profileId, field, value);
-        }}
-      />
+        <CharacterBibleModal
+          show={showCharBible}
+          onClose={() => setShowCharBible(false)}
+          chars={chars}
+          charProfiles={charProfiles}
+          selectedCharProfile={selectedCharProfile}
+          onSelectCharProfile={async (name) => {
+            const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
+            const isSelected = selectedCharProfile === name;
+            const next = isSelected ? null : name;
+            setSelectedCharProfile(next);
+            if (next && currentScript && currentScript.id !== 'demo' && !profile) {
+              const updated = await ensureScriptCharacters(currentScript.id, [name]);
+              setCharProfiles(updated);
+            }
+          }}
+          charStats={charStats}
+          cardColors={CARD_COLORS}
+          crew={activeProject?.crew}
+          onPlayedByChange={(profileId, crewId) => {
+            setCharProfiles(prev => prev.map(p => p.id === profileId ? { ...p, played_by_crew_id: crewId } : p));
+            updateScriptCharacter(profileId, { played_by_crew_id: crewId });
+          }}
+          onFieldChange={(profileId, field, value) => {
+            setCharProfiles(prev => prev.map(p => p.id === profileId ? { ...p, [field]: value } : p));
+            queueCharacterFieldSave(profileId, field, value);
+          }}
+        />
+      </EditorErrorBoundary>
 
       <ShortcutsModal show={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
