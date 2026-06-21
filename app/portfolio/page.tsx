@@ -8,6 +8,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
 import NotificationBell from '@/components/NotificationBell';
+import MobileNavMenu from '@/components/MobileNavMenu';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia } from '@/lib/supabase/portfolio';
 import { logActivity } from '@/lib/supabase/activity';
@@ -602,12 +603,13 @@ export default function PortfolioPage() {
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
+          <span className="mobile-nav-hide" style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
             {projectsList.length} Projects
           </span>
           {userId && (
             <button
               onClick={() => setShowAddModal(true)}
+              className="mobile-nav-hide"
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(245,158,11,0.1)',
                 border: '1px solid rgba(245,158,11,0.3)', color: 'var(--accent)', borderRadius: 6,
@@ -619,6 +621,7 @@ export default function PortfolioPage() {
             </button>
           )}
           {userId && <NotificationBell />}
+          <MobileNavMenu />
         </div>
       </nav>
 

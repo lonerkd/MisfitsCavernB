@@ -5,6 +5,7 @@ import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import NotificationBell from '@/components/NotificationBell';
+import MobileNavMenu from '@/components/MobileNavMenu';
 
 interface Profile {
   id: string;
@@ -70,7 +71,10 @@ export default function CrewPage() {
           <ArrowLeft size={20} />
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>CREW DIRECTORY</h1>
         </Link>
-        <NotificationBell />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationBell />
+          <MobileNavMenu />
+        </div>
       </header>
 
       <div style={{ marginTop: 60, padding: 24, maxWidth: 1100, margin: '60px auto 0' }}>

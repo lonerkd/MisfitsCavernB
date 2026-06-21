@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import NotificationBell from '@/components/NotificationBell';
+import MobileNavMenu from '@/components/MobileNavMenu';
 import { usePillZone } from '@/lib/context/PillContext';
 import { supabase } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -613,6 +614,7 @@ function JobsPageInner() {
             </button>
           )}
           {user && <NotificationBell />}
+          <MobileNavMenu />
         </div>
       </nav>
 

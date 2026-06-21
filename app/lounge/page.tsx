@@ -11,6 +11,7 @@ import { useProject } from '@/lib/context/ProjectContext';
 import { Headphones, Radio, ExternalLink } from 'lucide-react';
 import SpotifyPlayer from '@/components/SpotifyPlayer';
 import NotificationBell from '@/components/NotificationBell';
+import MobileNavMenu from '@/components/MobileNavMenu';
 import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -377,12 +378,12 @@ function LoungePageInner() {
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#10b981', textTransform: 'uppercase' }}>Lounge</div>
         </div>
 
-        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+        <div className="mobile-nav-hide" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           {/* Project Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeProject?.accent_color || 'var(--accent)' }} />
-            <select 
-              value={activeProject?.id || ''} 
+            <select
+              value={activeProject?.id || ''}
               onChange={(e) => {
                 const p = projects.find(p => p.id === e.target.value);
                 if (p) setActiveProject(p);
@@ -397,6 +398,7 @@ function LoungePageInner() {
           <SpotifyPlayer />
           <NotificationBell />
         </div>
+        <MobileNavMenu />
       </nav>
 
       {/* Body */}

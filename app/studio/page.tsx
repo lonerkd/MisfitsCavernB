@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import NotificationBell from '@/components/NotificationBell';
+import MobileNavMenu from '@/components/MobileNavMenu';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
@@ -1507,7 +1508,7 @@ export default function StudioPage() {
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#6366f1', textTransform: 'uppercase' }}>Studio</div>
 
           {/* Project Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(224,221,174,0.06)' }}>
+          <div className="mobile-nav-hide" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(224,221,174,0.06)' }}>
             <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Project:</span>
             <select 
               value={activeProject?.id || ''} 
@@ -1530,12 +1531,13 @@ export default function StudioPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="mobile-nav-hide" style={{ display: 'flex', gap: 10 }}>
           <button className="link-btn" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowIntake(true)}>
             <Upload size={11} /> Intake
           </button>
           <NotificationBell />
         </div>
+        <MobileNavMenu />
       </nav>
 
       <IntakeModal
