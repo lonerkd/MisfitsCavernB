@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript, type ScriptFormat } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, linkScriptToProject, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
-import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
+import { REVISION_COLORS, getRevisions, createRevision, diffSnapshots, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { loadWriterSession, saveWriterSession } from '@/lib/scriptos/writerSession';
@@ -216,7 +216,7 @@ function CharChip({ name, sceneNum }: { name: string; sceneNum: number }) {
 // its number, length, cast — with a one-tap jump. This is the "deeper than page
 // zones" layer: the Pill targets the precise thing under the cursor.
 function OutlineSceneRow({
-  scene, globalIdx, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag,
+  scene, globalIdx, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag, taggedColor,
 }: {
   scene: ScriptLine;
   globalIdx: number;
@@ -226,7 +226,8 @@ function OutlineSceneRow({
   cardColors: string[];
   delay: number;
   onJump: (sceneNum: number) => void;
-  onTag: (sceneNum: number) => void;
+  onTag: (sceneId: string, color: string) => void;
+  taggedColor?: string;
 }) {
   const zone = useMemo(() => ({
     module: 'editor',
@@ -247,7 +248,7 @@ function OutlineSceneRow({
       {...zoneHandlers}
       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }}
       onClick={() => onJump(globalIdx + 1)}
-      style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+      style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', borderLeft: `2px solid ${taggedColor || 'transparent'}`, paddingLeft: taggedColor ? 8 : 0, cursor: 'pointer' }}
     >
       <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -257,8 +258,9 @@ function OutlineSceneRow({
             {cardColors.map(color => (
               <button
                 key={color}
-                onClick={(e) => { e.stopPropagation(); onTag(globalIdx + 1); }}
-                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }}
+                title={taggedColor === color ? 'Click to untag' : `Tag scene ${color}`}
+                onClick={(e) => { e.stopPropagation(); onTag(scene.id, color); }}
+                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: taggedColor === color ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }}
               />
             ))}
           </div>
@@ -645,6 +647,18 @@ export default function EditorPage() {
     toast(`Locked as ${rev.label}`, 'success');
   }, [currentScript, content, toast]);
 
+  // Color-tag a scene for quick visual grouping (track A vs track B, "needs
+  // rewrite", etc.) — toggles off if the same color is clicked again.
+  const handleTagScene = useCallback((sceneId: string, color: string) => {
+    setSceneColors(prev => {
+      const next = { ...prev };
+      if (next[sceneId] === color) delete next[sceneId];
+      else next[sceneId] = color;
+      return next;
+    });
+    toast('Scene tag updated', 'success');
+  }, [toast]);
+
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -938,6 +952,22 @@ export default function EditorPage() {
     });
     return Array.from(locs.entries()).sort((a, b) => b[1] - a[1]);
   }, [scenesList]);
+
+  // Real-element production breakdown (Props/Wardrobe/Vehicles/VFX/SFX) —
+  // sourced straight from the parser's dictionary-driven extraction, not
+  // placeholder data.
+  const breakdownGroups = useMemo(() => {
+    const colors: Record<string, string> = { PROPS: '#ffaa00', WARDROBE: '#ff3c00', VEHICLES: '#0099ff', VFX: '#a855f7', SFX: '#06b6d4' };
+    return Object.entries(elements)
+      .filter(([, items]) => items.length > 0)
+      .map(([category, items]) => ({ category, items, color: colors[category] || '#888' }));
+  }, [elements]);
+
+  const diffRevision = useMemo(() => revisions.find(r => r.id === diffRevisionId) || null, [revisions, diffRevisionId]);
+  const revisionDiff = useMemo(() => {
+    if (!diffRevision) return [];
+    return diffSnapshots(diffRevision.snapshot, content);
+  }, [diffRevision, content]);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -1589,7 +1619,8 @@ export default function EditorPage() {
                       cardColors={CARD_COLORS}
                       delay={i * 0.03}
                       onJump={goToScene}
-                      onTag={(n) => toast(`Scene ${n} tagged`, 'success')}
+                      onTag={handleTagScene}
+                      taggedColor={sceneColors[scene.id]}
                     />
                   );
                 })
@@ -2060,13 +2091,11 @@ export default function EditorPage() {
                               >
                                 Restore
                               </button>
-                              <button 
-                                onClick={() => {
-                                  alert("Snapshot Content:\n\n" + rev.snapshot.substring(0, 1000) + "...");
-                                }}
+                              <button
+                                onClick={() => { setDiffRevisionId(rev.id); setShowDiff(true); }}
                                 style={{ fontSize: 9, background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}
                               >
-                                View
+                                Diff vs Current
                               </button>
                             </div>
                           </div>
@@ -2158,34 +2187,51 @@ export default function EditorPage() {
                   </>
                 )}
 
-                {/* BREAKDOWN PANEL */}
+                {/* BREAKDOWN PANEL — real elements detected by the parser, not placeholder data */}
                 {rightPanel === 'breakdown' && (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><ClipboardList size={14} /> Script Breakdown</div>
-                      <button className="link-btn" style={{ fontSize: 9 }}>Export</button>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 16 }}>Tag production elements per scene.</div>
-                    
-                    {[
-                      { category: 'Props', items: ['The Map', 'Briefcase'], color: '#ffaa00' },
-                      { category: 'VFX', items: ['Glowing Portal', 'Digital Rain'], color: '#0099ff' },
-                      { category: 'Wardrobe', items: ['Officer Uniform', 'Trench Coat'], color: '#ff3c00' },
-                    ].map(group => (
-                      <div key={group.category} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: group.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                          {group.category}
-                          <Plus size={10} style={{ cursor: 'pointer' }} />
+                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 4 }}>Auto-detected from your script text.</div>
+
+                    {breakdownGroups.length === 0 ? (
+                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No props, wardrobe, vehicles, VFX or SFX detected yet.</div>
+                    ) : (
+                      breakdownGroups.map(group => (
+                        <div key={group.category} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: group.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                            {group.category}
+                            <span style={{ opacity: 0.6, fontWeight: 500 }}>{group.items.length}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {group.items.map(item => (
+                              <span key={item} style={{ fontSize: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff' }}>
+                                {item}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {group.items.map(item => (
-                            <span key={item} style={{ fontSize: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              {item} <X size={8} style={{ opacity: 0.5 }} />
-                            </span>
+                      ))
+                    )}
+
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 10 }}>Locations ({uniqueLocations.length})</div>
+                      {uniqueLocations.length === 0 ? (
+                        <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic' }}>No scene headings yet.</div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {uniqueLocations.slice(0, 12).map(([loc, count]) => (
+                            <div key={loc} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--fg-muted)' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{loc}</span>
+                              <span style={{ fontFamily: 'var(--mono)', color: '#fff', flexShrink: 0 }}>{count}×</span>
+                            </div>
                           ))}
                         </div>
-                      </div>
-                    ))}
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -2352,6 +2398,55 @@ export default function EditorPage() {
               if (e.key === 'Escape') setShowGoToScene(false);
             }} placeholder={`1 - ${scenesList.length}`} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
             <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{scenesList.length} scenes · Press Enter to jump</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* REVISION DIFF MODAL */}
+      <AnimatePresence>
+        {showDiff && diffRevision && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowDiff(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 720, maxWidth: 'calc(100vw - 40px)', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <SplitSquareHorizontal size={18} /> {diffRevision.label} → Current
+                </h2>
+                <button onClick={() => setShowDiff(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+              <div style={{ display: 'flex', gap: 14, marginBottom: 18, fontSize: 10, fontFamily: 'var(--mono)' }}>
+                <span style={{ color: '#51cf66' }}>+ {revisionDiff.filter(m => m.type === 'added').length} added</span>
+                <span style={{ color: '#ffd43b' }}>~ {revisionDiff.filter(m => m.type === 'modified').length} modified</span>
+                <span style={{ color: '#ff6b6b' }}>− {revisionDiff.filter(m => m.type === 'deleted').length} removed</span>
+              </div>
+              {(() => {
+                const oldLines = diffRevision.snapshot.split('\n');
+                const newLines = content.split('\n');
+                const markByIndex = new Map(revisionDiff.map(m => [m.lineIndex, m.type]));
+                const maxLen = Math.max(oldLines.length, newLines.length);
+                const rows = Array.from({ length: maxLen }, (_, i) => ({ i, mark: markByIndex.get(i), text: newLines[i] ?? oldLines[i] ?? '' }));
+                const changed = rows.filter(r => r.mark);
+                if (changed.length === 0) {
+                  return <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 30 }}>No differences — current draft matches this revision.</div>;
+                }
+                return (
+                  <div style={{ fontFamily: 'Courier Prime, monospace', fontSize: 12 }}>
+                    {changed.map(({ i, mark, text }) => (
+                      <div key={i} style={{
+                        display: 'flex', gap: 10, padding: '4px 8px', borderRadius: 4, marginBottom: 2,
+                        background: mark === 'added' ? 'rgba(81,207,102,0.08)' : mark === 'deleted' ? 'rgba(255,107,107,0.08)' : 'rgba(255,212,59,0.08)',
+                        borderLeft: `2px solid ${mark === 'added' ? '#51cf66' : mark === 'deleted' ? '#ff6b6b' : '#ffd43b'}`,
+                      }}>
+                        <span style={{ color: 'var(--fg-dim)', flexShrink: 0, width: 36, textAlign: 'right' }}>{i + 1}</span>
+                        <span style={{ color: mark === 'deleted' ? '#ff9b9b' : '#ddd', whiteSpace: 'pre-wrap', textDecoration: mark === 'deleted' ? 'line-through' : 'none' }}>{text || ' '}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <button onClick={() => { setContent(diffRevision.snapshot); setShowDiff(false); toast(`Restored to ${diffRevision.label}`, 'success'); }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '7px 14px', color: '#fff', cursor: 'pointer' }}>Restore This Revision</button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
