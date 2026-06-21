@@ -2248,6 +2248,7 @@ export default function EditorPage() {
           showWatermark={showWatermark}
           onShowWatermarkChange={setShowWatermark}
           lintIssues={lintIssues}
+          onJumpToLine={(line) => spEditorRef.current?.scrollToLine(line)}
           stashItems={stashItems}
           onAddStashFromSelection={() => {
             const sel = spEditorRef.current?.getSelectionText();

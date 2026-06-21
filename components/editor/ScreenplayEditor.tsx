@@ -32,6 +32,7 @@ export interface ScreenplayEditorHandle {
   insertText: (text: string) => void;
   getSelectionText: () => string;
   scrollToScene: (sceneNumber: number) => void;
+  scrollToLine: (lineIndex: number) => void;
   focus: () => void;
 }
 
@@ -388,6 +389,23 @@ const ScreenplayEditor = forwardRef<ScreenplayEditorHandle, Props>(function Scre
         const el = nodeRefs.current[target.id];
         el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (el) placeCaret(el, 'end');
+      }
+    },
+    scrollToLine(lineIndex: number) {
+      // Blocks are 1:1 with raw content lines, so the lint issue's line
+      // index maps directly to a block position — lets the validator panel
+      // jump straight to (and flash) the offending line instead of leaving
+      // the writer to hunt for "L42" by hand.
+      const target = blocksRef.current[lineIndex];
+      if (target) {
+        const el = nodeRefs.current[target.id];
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          placeCaret(el, 'end');
+          el.style.transition = 'background-color 0.3s';
+          el.style.backgroundColor = 'rgba(239,68,68,0.18)';
+          setTimeout(() => { el.style.backgroundColor = ''; }, 1200);
+        }
       }
     },
     focus() {

@@ -38,7 +38,7 @@ export function EditorSidePanels({
   elements, typeColors,
   charStats, onRenameCharacter,
   revisions, onLockRevision, onRestoreRevision, onViewDiff,
-  showSceneNumbers, onShowSceneNumbersChange, showWatermark, onShowWatermarkChange, lintIssues,
+  showSceneNumbers, onShowSceneNumbersChange, showWatermark, onShowWatermarkChange, lintIssues, onJumpToLine,
   stashItems, onAddStashFromSelection, onInsertStash, onDeleteStash,
   breakdownGroups, manualBreakdown, onAddBreakdownItem, onRemoveBreakdownItem, uniqueLocations,
 }: {
@@ -80,6 +80,7 @@ export function EditorSidePanels({
   showWatermark: boolean;
   onShowWatermarkChange: (v: boolean) => void;
   lintIssues: LintIssue[];
+  onJumpToLine: (lineIndex: number) => void;
   stashItems: StashItem[];
   onAddStashFromSelection: () => void;
   onInsertStash: (text: string) => void;
@@ -402,10 +403,17 @@ export function EditorSidePanels({
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {lintIssues.slice(0, 30).map((issue, idx) => (
-                      <div key={idx} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                      <div
+                        key={idx}
+                        onClick={() => onJumpToLine(issue.line)}
+                        title="Click to jump to this line in the script"
+                        style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}`, cursor: 'pointer', transition: 'background 0.15s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(224,221,174,0.07)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(224,221,174,0.02)'; }}
+                      >
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                           <span style={{ fontSize: 9, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
-                          <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
+                          <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line} →</span>
                         </div>
                         <div style={{ fontSize: 11, color: '#ccc' }}>{issue.message}</div>
                         <div style={{ fontSize: 9, color: '#666', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
