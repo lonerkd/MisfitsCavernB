@@ -137,16 +137,19 @@ export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: st
     doc.setFontSize(12);
   }
 
+  let currentSpeaker: string | null = null;
+
   for (const line of result.lines) {
     const type = line.type === 'empty' ? 'empty' : line.type;
     if (type === 'empty') {
       y += LINE_HEIGHT;
       continue;
     }
+    if (type === 'slug') currentSpeaker = null;
+    if (type === 'character') currentSpeaker = line.text.trim().toUpperCase();
 
     const x = ELEMENT_LEFT[type] ?? LEFT_MARGIN;
     const width = ELEMENT_WIDTH[type] ?? 6;
-    const maxCharsPerLine = Math.max(10, Math.floor(width / CHAR_WIDTH));
 
     let text = line.text;
     if (type === 'slug' || type === 'character' || type === 'transition') text = text.toUpperCase();
@@ -157,7 +160,17 @@ export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: st
     if (type === 'slug') { ensureSpace(2); y += LINE_HEIGHT; }
     if (type === 'character') { ensureSpace(wrapped.length + 1); y += LINE_HEIGHT; }
 
-    ensureSpace(wrapped.length);
+    // A dialogue/parenthetical block that won't fit before the page bottom
+    // gets a "(MORE)" cue and the page break carries a "(CONT'D)" cue for
+    // the same speaker — standard screenplay pagination, not a plain cut.
+    if ((type === 'dialogue' || type === 'parenthetical') && y + wrapped.length * LINE_HEIGHT > CONTENT_BOTTOM && currentSpeaker) {
+      doc.text('(MORE)', ELEMENT_LEFT.dialogue, y, { align: 'left' });
+      newPage();
+      doc.text(`${currentSpeaker} (CONT'D)`, ELEMENT_LEFT.character, y);
+      y += LINE_HEIGHT * 1.5;
+    } else {
+      ensureSpace(wrapped.length);
+    }
     for (const wl of wrapped) {
       doc.text(wl, x, y);
       y += LINE_HEIGHT;

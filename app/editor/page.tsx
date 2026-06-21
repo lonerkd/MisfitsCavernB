@@ -218,7 +218,7 @@ function CharChip({ name, sceneNum }: { name: string; sceneNum: number }) {
 // its number, length, cast — with a one-tap jump. This is the "deeper than page
 // zones" layer: the Pill targets the precise thing under the cursor.
 function OutlineSceneRow({
-  scene, globalIdx, sceneCount, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag, taggedColor, onMove,
+  scene, globalIdx, sceneCount, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag, taggedColor, onMove, onReorder, dragState, setDragState,
 }: {
   scene: ScriptLine;
   globalIdx: number;
@@ -232,6 +232,9 @@ function OutlineSceneRow({
   onTag: (sceneId: string, color: string) => void;
   taggedColor?: string;
   onMove: (globalIdx: number, direction: -1 | 1) => void;
+  onReorder: (fromIdx: number, toIdx: number) => void;
+  dragState: { from: number; over: number } | null;
+  setDragState: (s: { from: number; over: number } | null) => void;
 }) {
   const zone = useMemo(() => ({
     module: 'editor',
@@ -247,12 +250,34 @@ function OutlineSceneRow({
   }), [globalIdx, wc, sceneChars.length, onJump]);
   const zoneHandlers = usePillZone(zone, 2);
 
+  const isDragOver = dragState?.over === globalIdx && dragState.from !== globalIdx;
+
   return (
+    <div
+      draggable
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragState({ from: globalIdx, over: globalIdx }); }}
+      onDragOver={(e) => { e.preventDefault(); if (dragState) setDragState({ ...dragState, over: globalIdx }); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        if (dragState && dragState.from !== globalIdx) onReorder(dragState.from, globalIdx);
+        setDragState(null);
+      }}
+      onDragEnd={() => setDragState(null)}
+      style={{
+        borderLeft: `2px solid ${isDragOver ? 'var(--accent)' : (taggedColor || 'transparent')}`,
+        opacity: dragState?.from === globalIdx ? 0.4 : 1,
+        transition: 'background 0.15s, border-color 0.15s',
+        background: isDragOver ? 'rgba(215,52,11,0.06)' : 'transparent',
+      }}
+    >
     <motion.div
       {...zoneHandlers}
       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }}
       onClick={() => onJump(globalIdx + 1)}
-      style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(224,221,174,0.05)', borderLeft: `2px solid ${taggedColor || 'transparent'}`, paddingLeft: taggedColor ? 8 : 0, cursor: 'pointer' }}
+      style={{
+        display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(224,221,174,0.05)',
+        paddingLeft: (taggedColor || isDragOver) ? 8 : 0, cursor: 'grab',
+      }}
     >
       <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -292,6 +317,7 @@ function OutlineSceneRow({
       </div>
       <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
     </motion.div>
+    </div>
   );
 }
 
@@ -321,6 +347,7 @@ export default function EditorPage() {
   const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
+  const [sceneDragState, setSceneDragState] = useState<{ from: number; over: number } | null>(null);
   
   // Tools & Tracking
   const [dailyGoal, setDailyGoal] = useState(1000);
@@ -333,6 +360,10 @@ export default function EditorPage() {
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
   const [findCount, setFindCount] = useState(0);
+  const [findUseRegex, setFindUseRegex] = useState(false);
+  const [findCaseSensitive, setFindCaseSensitive] = useState(false);
+  const [findMatchIndex, setFindMatchIndex] = useState(0);
+  const [findError, setFindError] = useState<string | null>(null);
 
   // Panels
   const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown'>('tools');
@@ -358,6 +389,7 @@ export default function EditorPage() {
   const [showStash, setShowStash] = useState(false);
   const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
+  const [manualBreakdown, setManualBreakdown] = useState<Record<string, string[]>>({});
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
@@ -569,16 +601,74 @@ export default function EditorPage() {
     } catch {}
   }, [sceneColors, currentScript?.id]);
 
-  // Find count
+  // Manually-tagged breakdown items — same localStorage-per-script pattern as scene tag colors.
   useEffect(() => {
-    if (findText && content) {
-      const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    if (!currentScript?.id) { setManualBreakdown({}); return; }
+    try {
+      const raw = localStorage.getItem(`scriptos:breakdown:${currentScript.id}`);
+      setManualBreakdown(raw ? JSON.parse(raw) : {});
+    } catch {
+      setManualBreakdown({});
+    }
+  }, [currentScript?.id]);
+
+  useEffect(() => {
+    if (!currentScript?.id) return;
+    try {
+      localStorage.setItem(`scriptos:breakdown:${currentScript.id}`, JSON.stringify(manualBreakdown));
+    } catch {}
+  }, [manualBreakdown, currentScript?.id]);
+
+  // Builds the active find regex from the literal/regex + case-sensitivity
+  // toggles. Returns null (and surfaces an error) for invalid user regex
+  // instead of throwing mid-render.
+  const buildFindRegex = useCallback((global: boolean): RegExp | null => {
+    if (!findText) return null;
+    const flags = (global ? 'g' : '') + (findCaseSensitive ? '' : 'i');
+    const pattern = findUseRegex ? findText : findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      const re = new RegExp(pattern, flags);
+      setFindError(null);
+      return re;
+    } catch (e) {
+      setFindError(e instanceof Error ? e.message : 'Invalid regex');
+      return null;
+    }
+  }, [findText, findUseRegex, findCaseSensitive]);
+
+  // Find count + reset the active match pointer whenever the query/content changes
+  useEffect(() => {
+    const regex = buildFindRegex(true);
+    if (regex && content) {
       const matches = content.match(regex);
       setFindCount(matches ? matches.length : 0);
     } else {
       setFindCount(0);
     }
-  }, [findText, content]);
+    setFindMatchIndex(0);
+  }, [findText, findUseRegex, findCaseSensitive, content, buildFindRegex]);
+
+  // Rename-everywhere / merge — swaps every whole-word occurrence of a
+  // character's name in the script (cue lines, parentheticals, action
+  // mentions) for the new name. Used for both renaming a single character
+  // and merging one into another (rename source -> target's exact name).
+  const handleRenameCharacter = useCallback((oldName: string, newName: string) => {
+    if (!oldName || !newName || oldName === newName) return;
+    const escaped = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escaped}\\b`, 'g');
+    setContent(prev => prev.replace(regex, newName));
+    toast(`Renamed "${oldName}" to "${newName}" everywhere.`, 'success');
+  }, [toast]);
+
+  const handleFindNext = useCallback(() => {
+    if (findCount === 0) return;
+    setFindMatchIndex(i => (i + 1) % findCount);
+  }, [findCount]);
+
+  const handleFindPrev = useCallback(() => {
+    if (findCount === 0) return;
+    setFindMatchIndex(i => (i - 1 + findCount) % findCount);
+  }, [findCount]);
 
 
   // Durable writer session state — Stash, daily goal, sprint length.
@@ -688,17 +778,20 @@ export default function EditorPage() {
 
   const handleFindReplace = useCallback(() => {
     if (!findText) return;
-    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const regex = buildFindRegex(true);
+    if (!regex) { toast(findError || 'Invalid find pattern', 'error'); return; }
+    const count = findCount;
     setContent(prev => prev.replace(regex, replaceText));
-    toast(`Replaced ${findCount} occurrences`, 'success');
-  }, [findText, replaceText, findCount, toast]);
+    toast(`Replaced ${count} occurrence${count === 1 ? '' : 's'}`, 'success');
+  }, [findText, replaceText, findCount, findError, buildFindRegex, toast]);
 
   const handleFindReplaceOne = useCallback(() => {
     if (!findText) return;
-    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = buildFindRegex(false);
+    if (!regex) { toast(findError || 'Invalid find pattern', 'error'); return; }
     setContent(prev => prev.replace(regex, replaceText));
     toast('Replaced 1 occurrence', 'success');
-  }, [findText, replaceText, toast]);
+  }, [findText, replaceText, findError, buildFindRegex, toast]);
 
   const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
@@ -841,31 +934,30 @@ export default function EditorPage() {
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
-  // Reorder scenes from the outline — swaps the full text block of a scene
-  // (its slug line through to the line before the next slug) with its
-  // neighbor in that direction. Operates on raw line text since ScriptLine.index
-  // maps 1:1 to content.split(/\r?\n/) lines.
-  const moveScene = useCallback((globalIdx: number, direction: -1 | 1) => {
-    const targetIdx = globalIdx + direction;
-    if (globalIdx < 0 || targetIdx < 0 || globalIdx >= scenesList.length || targetIdx >= scenesList.length) return;
+  // Reorder scenes from the outline/board — moves the full text block of a
+  // scene (its slug line through to the line before the next slug) to a new
+  // position via standard array splice semantics. Operates on raw line text
+  // since ScriptLine.index maps 1:1 to content.split(/\r?\n/) lines. Backs
+  // both the up/down arrow buttons (adjacent move) and drag-and-drop
+  // (arbitrary move).
+  const reorderScene = useCallback((fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= scenesList.length || toIdx >= scenesList.length) return;
     const rawLines = content.split(/\r?\n/);
-    const boundary = (idx: number) => {
-      const start = scenesList[idx].index;
-      const end = idx + 1 < scenesList.length ? scenesList[idx + 1].index : rawLines.length;
-      return [start, end] as const;
-    };
-    const [aIdx, bIdx] = globalIdx < targetIdx ? [globalIdx, targetIdx] : [targetIdx, globalIdx];
-    const [aStart, aEnd] = boundary(aIdx);
-    const [bStart, bEnd] = boundary(bIdx);
-    const before = rawLines.slice(0, aStart);
-    const blockA = rawLines.slice(aStart, aEnd);
-    const blockB = rawLines.slice(bStart, bEnd);
-    const between = rawLines.slice(aEnd, bStart);
-    const after = rawLines.slice(bEnd);
-    const reordered = [...before, ...blockB, ...between, ...blockA, ...after];
-    setContent(reordered.join('\n'));
-    toast(`Moved scene ${globalIdx + 1} ${direction === -1 ? 'up' : 'down'}`, 'success');
+    const preamble = rawLines.slice(0, scenesList[0].index);
+    const blocks = scenesList.map((s, i) => {
+      const start = s.index;
+      const end = i + 1 < scenesList.length ? scenesList[i + 1].index : rawLines.length;
+      return rawLines.slice(start, end);
+    });
+    const [moved] = blocks.splice(fromIdx, 1);
+    blocks.splice(toIdx, 0, moved);
+    setContent([...preamble, ...blocks.flat()].join('\n'));
+    toast(`Moved scene ${fromIdx + 1} to position ${toIdx + 1}`, 'success');
   }, [content, scenesList, toast]);
+
+  const moveScene = useCallback((globalIdx: number, direction: -1 | 1) => {
+    reorderScene(globalIdx, globalIdx + direction);
+  }, [reorderScene]);
 
   const filteredScenes = useMemo(() => {
     if (sceneFilter === 'all') return scenesList;
@@ -1046,14 +1138,37 @@ export default function EditorPage() {
   }, [scenesList]);
 
   // Real-element production breakdown (Props/Wardrobe/Vehicles/VFX/SFX) —
-  // sourced straight from the parser's dictionary-driven extraction, not
-  // placeholder data.
+  // auto-detected items come straight from the parser's dictionary-driven
+  // extraction; manualBreakdown layers on items the writer tags by hand
+  // (the parser can't catch everything — e.g. a one-off prop mentioned in
+  // dialogue rather than action), persisted in localStorage per script like
+  // scene tag colors, since there's no DB column for this yet.
+  const breakdownColors: Record<string, string> = { PROPS: '#ffaa00', WARDROBE: '#d7340b', VEHICLES: '#336467', VFX: '#a855f7', SFX: '#06b6d4' };
   const breakdownGroups = useMemo(() => {
-    const colors: Record<string, string> = { PROPS: '#ffaa00', WARDROBE: '#d7340b', VEHICLES: '#336467', VFX: '#a855f7', SFX: '#06b6d4' };
-    return Object.entries(elements)
-      .filter(([, items]) => items.length > 0)
-      .map(([category, items]) => ({ category, items, color: colors[category] || '#888' }));
-  }, [elements]);
+    const categories = new Set([...Object.keys(elements), ...Object.keys(manualBreakdown)]);
+    return Array.from(categories)
+      .map(category => {
+        const auto = elements[category] || [];
+        const manual = manualBreakdown[category] || [];
+        const items = [...new Set([...auto, ...manual])];
+        return { category, items, color: breakdownColors[category] || '#888' };
+      })
+      .filter(g => g.items.length > 0);
+  }, [elements, manualBreakdown]);
+
+  const handleAddBreakdownItem = useCallback((category: string, item: string) => {
+    const trimmed = item.trim();
+    if (!trimmed) return;
+    setManualBreakdown(prev => {
+      const existing = prev[category] || [];
+      if (existing.some(i => i.toLowerCase() === trimmed.toLowerCase())) return prev;
+      return { ...prev, [category]: [...existing, trimmed] };
+    });
+  }, []);
+
+  const handleRemoveBreakdownItem = useCallback((category: string, item: string) => {
+    setManualBreakdown(prev => ({ ...prev, [category]: (prev[category] || []).filter(i => i !== item) }));
+  }, []);
 
   const diffRevision = useMemo(() => revisions.find(r => r.id === diffRevisionId) || null, [revisions, diffRevisionId]);
   const revisionDiff = useMemo(() => {
@@ -1346,9 +1461,33 @@ export default function EditorPage() {
         {showFindReplace && (
           <motion.div initial={{ y: -32, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -32, opacity: 0 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ background: 'rgba(4,7,13,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(224,221,174,0.05)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <Search size={14} style={{ color: 'var(--fg-muted)' }} />
-            <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{findCount} found</span>
+            <input
+              value={findText}
+              onChange={e => setFindText(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? handleFindPrev() : handleFindNext(); }
+              }}
+              placeholder={findUseRegex ? 'Find (regex)...' : 'Find...'}
+              style={{ flex: 1, maxWidth: 220, background: 'rgba(224,221,174,0.05)', border: findError ? '1px solid var(--accent)' : '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }}
+            />
+            <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 220, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
+
+            <button
+              onClick={() => setFindCaseSensitive(v => !v)}
+              title="Case sensitive"
+              style={{ background: findCaseSensitive ? 'var(--accent-dim)' : 'rgba(224,221,174,0.05)', border: findCaseSensitive ? '1px solid var(--accent)' : '1px solid transparent', borderRadius: 4, padding: '5px 8px', color: findCaseSensitive ? 'var(--accent)' : 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 700, cursor: 'pointer' }}
+            >Aa</button>
+            <button
+              onClick={() => setFindUseRegex(v => !v)}
+              title="Use regex"
+              style={{ background: findUseRegex ? 'var(--accent-dim)' : 'rgba(224,221,174,0.05)', border: findUseRegex ? '1px solid var(--accent)' : '1px solid transparent', borderRadius: 4, padding: '5px 8px', color: findUseRegex ? 'var(--accent)' : 'var(--fg-muted)', fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 700, cursor: 'pointer' }}
+            >.*</button>
+
+            <span style={{ fontSize: 11, color: findError ? 'var(--accent)' : 'var(--fg-muted)', fontFamily: 'var(--mono)', minWidth: 70 }}>
+              {findError ? 'invalid' : findCount > 0 ? `${findMatchIndex + 1}/${findCount}` : '0 found'}
+            </span>
+            <button onClick={handleFindPrev} disabled={findCount === 0} title="Previous match" style={{ background: 'rgba(224,221,174,0.05)', border: 'none', borderRadius: 4, padding: '5px 8px', color: findCount === 0 ? 'var(--fg-dim)' : '#fff', fontSize: 11, cursor: findCount === 0 ? 'default' : 'pointer' }}>↑</button>
+            <button onClick={handleFindNext} disabled={findCount === 0} title="Next match" style={{ background: 'rgba(224,221,174,0.05)', border: 'none', borderRadius: 4, padding: '5px 8px', color: findCount === 0 ? 'var(--fg-dim)' : '#fff', fontSize: 11, cursor: findCount === 0 ? 'default' : 'pointer' }}>↓</button>
             <button onClick={handleFindReplaceOne} style={{ background: 'rgba(224,221,174,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Replace</button>
             <button onClick={handleFindReplace} style={{ background: 'rgba(224,221,174,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>All</button>
             <button onClick={() => setShowFindReplace(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={14} /></button>
@@ -1641,11 +1780,35 @@ export default function EditorPage() {
                 lines.map((line, i) => {
                   // Add page numbers every ~55 lines (approx 1 page)
                   const pageBreak = i > 0 && i % 55 === 0;
+                  // A dialogue block split across a page boundary needs a
+                  // "(MORE)" cue before the break and the speaker's name
+                  // with "(CONT'D)" repeated after it — standard screenplay
+                  // pagination, otherwise the dialogue reads as orphaned text.
+                  let splitCharacter: string | null = null;
+                  if (pageBreak) {
+                    const prev = lines[i - 1];
+                    const isDialogueSplit = prev && (prev.type === 'dialogue' || prev.type === 'parenthetical')
+                      && (line.type === 'dialogue' || line.type === 'parenthetical');
+                    if (isDialogueSplit) {
+                      for (let j = i - 1; j >= 0; j--) {
+                        if (lines[j].type === 'character') { splitCharacter = lines[j].text.trim(); break; }
+                        if (lines[j].type === 'slug') break;
+                      }
+                    }
+                  }
                   return (
                     <React.Fragment key={i}>
+                      {pageBreak && splitCharacter && (
+                        <div style={{ textAlign: 'center', fontSize: 12, fontFamily: 'Courier Prime, monospace', marginBottom: 4 }}>(MORE)</div>
+                      )}
                       {pageBreak && (
                         <div style={{ borderTop: '1px dashed #ccc', margin: '24px 0', position: 'relative' }}>
                           <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
+                        </div>
+                      )}
+                      {pageBreak && splitCharacter && (
+                        <div style={{ marginLeft: '22ch', textTransform: 'uppercase', fontWeight: 600, fontFamily: 'Courier Prime, monospace', fontSize: 12, marginBottom: 8 }}>
+                          {splitCharacter} (CONT'D)
                         </div>
                       )}
                       <LinePreview line={line} index={i} nightModePreview={nightModePreview} />
@@ -1751,6 +1914,9 @@ export default function EditorPage() {
                       onTag={handleTagScene}
                       taggedColor={sceneColors[scene.id]}
                       onMove={moveScene}
+                      onReorder={reorderScene}
+                      dragState={sceneDragState}
+                      setDragState={setSceneDragState}
                     />
                   );
                 })
@@ -2039,6 +2205,7 @@ export default function EditorPage() {
           elements={elements}
           typeColors={TYPE_COLORS}
           charStats={charStats}
+          onRenameCharacter={handleRenameCharacter}
           revisions={revisions}
           onLockRevision={handleLockRevision}
           onRestoreRevision={(snapshot, label) => { setContent(snapshot); toast(`Restored to ${label}`, 'success'); }}
@@ -2064,6 +2231,9 @@ export default function EditorPage() {
           }}
           onDeleteStash={(id) => setStashItems(prev => prev.filter(i => i.id !== id))}
           breakdownGroups={breakdownGroups}
+          manualBreakdown={manualBreakdown}
+          onAddBreakdownItem={handleAddBreakdownItem}
+          onRemoveBreakdownItem={handleRemoveBreakdownItem}
           uniqueLocations={uniqueLocations}
         />
 

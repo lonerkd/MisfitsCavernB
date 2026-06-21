@@ -11,7 +11,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wand2, Users, History, AlertCircle, Bookmark, ClipboardList,
-  Target, Play, Pause, Settings, Tags, BarChart3,
+  Target, Play, Pause, Settings, Tags, BarChart3, Pencil, Merge, Check, X as XIcon,
 } from 'lucide-react';
 import type { ScriptLine } from '@/types/screenplay';
 import type { CharacterStats } from '@/lib/scriptos/characters';
@@ -36,11 +36,11 @@ export function EditorSidePanels({
   wordCount, dailyGoal, goalProgress, chars, dialogueRatio, pageEst,
   typewriterMode, onTypewriterModeChange, nightModePreview, onNightModePreviewChange,
   elements, typeColors,
-  charStats,
+  charStats, onRenameCharacter,
   revisions, onLockRevision, onRestoreRevision, onViewDiff,
   showSceneNumbers, onShowSceneNumbersChange, showWatermark, onShowWatermarkChange, lintIssues,
   stashItems, onAddStashFromSelection, onInsertStash, onDeleteStash,
-  breakdownGroups, uniqueLocations,
+  breakdownGroups, manualBreakdown, onAddBreakdownItem, onRemoveBreakdownItem, uniqueLocations,
 }: {
   show: boolean;
   focusMode: boolean;
@@ -70,6 +70,7 @@ export function EditorSidePanels({
   elements: Record<string, string[]>;
   typeColors: Record<string, string>;
   charStats: CharacterStats[];
+  onRenameCharacter: (oldName: string, newName: string) => void;
   revisions: Revision[];
   onLockRevision: () => void;
   onRestoreRevision: (snapshot: string, label: string) => void;
@@ -84,8 +85,17 @@ export function EditorSidePanels({
   onInsertStash: (text: string) => void;
   onDeleteStash: (id: string) => void;
   breakdownGroups: BreakdownGroup[];
+  manualBreakdown: Record<string, string[]>;
+  onAddBreakdownItem: (category: string, item: string) => void;
+  onRemoveBreakdownItem: (category: string, item: string) => void;
   uniqueLocations: [string, number][];
 }) {
+  const [editingChar, setEditingChar] = React.useState<string | null>(null);
+  const [editingValue, setEditingValue] = React.useState('');
+  const [mergingChar, setMergingChar] = React.useState<string | null>(null);
+  const [newBreakdownItem, setNewBreakdownItem] = React.useState('');
+  const [newBreakdownCategory, setNewBreakdownCategory] = React.useState('PROPS');
+
   return (
     <AnimatePresence>
       {show && !focusMode && (
@@ -243,9 +253,49 @@ export function EditorSidePanels({
                 ) : (
                   charStats.slice(0, 15).map((cs) => (
                     <div key={cs.name} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 8, padding: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: typeColors.character }}>{cs.name}</span>
-                        <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 6 }}>
+                        {editingChar === cs.name ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                            <input
+                              autoFocus
+                              value={editingValue}
+                              onChange={e => setEditingValue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') { onRenameCharacter(cs.name, editingValue.trim()); setEditingChar(null); }
+                                if (e.key === 'Escape') setEditingChar(null);
+                              }}
+                              style={{ flex: 1, background: 'rgba(224,221,174,0.06)', border: '1px solid var(--accent)', borderRadius: 4, padding: '3px 6px', color: '#fff', fontSize: 11, outline: 'none' }}
+                            />
+                            <button onClick={() => { onRenameCharacter(cs.name, editingValue.trim()); setEditingChar(null); }} style={{ background: 'transparent', border: 'none', color: 'var(--secondary)', cursor: 'pointer', padding: 2 }}><Check size={12} /></button>
+                            <button onClick={() => setEditingChar(null)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 2 }}><XIcon size={12} /></button>
+                          </div>
+                        ) : mergingChar === cs.name ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                            <select
+                              autoFocus
+                              defaultValue=""
+                              onChange={e => { if (e.target.value) { onRenameCharacter(cs.name, e.target.value); setMergingChar(null); } }}
+                              style={{ flex: 1, background: 'rgba(224,221,174,0.06)', border: '1px solid var(--secondary)', borderRadius: 4, padding: '3px 6px', color: '#fff', fontSize: 11, outline: 'none' }}
+                            >
+                              <option value="" disabled>Merge into…</option>
+                              {charStats.filter(o => o.name !== cs.name).map(o => (
+                                <option key={o.name} value={o.name}>{o.name}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => setMergingChar(null)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 2 }}><XIcon size={12} /></button>
+                          </div>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: typeColors.character, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cs.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                              <button onClick={() => { setEditingChar(cs.name); setEditingValue(cs.name); }} title="Rename everywhere" style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 2, display: 'flex' }}><Pencil size={11} /></button>
+                              {charStats.length > 1 && (
+                                <button onClick={() => setMergingChar(cs.name)} title="Merge into another character" style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 2, display: 'flex' }}><Merge size={11} /></button>
+                              )}
+                              <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                       {/* Dialogue bar */}
                       <div style={{ height: 3, background: 'rgba(224,221,174,0.1)', borderRadius: 2, marginBottom: 8 }}>
@@ -402,10 +452,38 @@ export function EditorSidePanels({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><ClipboardList size={14} /> Script Breakdown</div>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 4 }}>Auto-detected from your script text.</div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 4 }}>Auto-detected, plus anything you tag by hand.</div>
+
+                {/* Manual tag form — covers what the auto-detector misses (a one-off prop
+                    only mentioned in dialogue, etc.) */}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <select
+                    value={newBreakdownCategory}
+                    onChange={e => setNewBreakdownCategory(e.target.value)}
+                    style={{ background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 6px', color: '#fff', fontSize: 10, outline: 'none' }}
+                  >
+                    {['PROPS', 'WARDROBE', 'VEHICLES', 'VFX', 'SFX'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <input
+                    value={newBreakdownItem}
+                    onChange={e => setNewBreakdownItem(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newBreakdownItem.trim()) {
+                        onAddBreakdownItem(newBreakdownCategory, newBreakdownItem.trim());
+                        setNewBreakdownItem('');
+                      }
+                    }}
+                    placeholder="Tag an item…"
+                    style={{ flex: 1, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 8px', color: '#fff', fontSize: 11, outline: 'none' }}
+                  />
+                  <button
+                    onClick={() => { if (newBreakdownItem.trim()) { onAddBreakdownItem(newBreakdownCategory, newBreakdownItem.trim()); setNewBreakdownItem(''); } }}
+                    style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)', borderRadius: 4, padding: '6px 10px', color: 'var(--accent)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                  >+</button>
+                </div>
 
                 {breakdownGroups.length === 0 ? (
-                  <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No props, wardrobe, vehicles, VFX or SFX detected yet.</div>
+                  <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No props, wardrobe, vehicles, VFX or SFX tagged yet.</div>
                 ) : (
                   breakdownGroups.map(group => (
                     <div key={group.category} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 8, padding: 12 }}>
@@ -414,11 +492,17 @@ export function EditorSidePanels({
                         <span style={{ opacity: 0.6, fontWeight: 500 }}>{group.items.length}</span>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {group.items.map(item => (
-                          <span key={item} style={{ fontSize: 10, background: 'rgba(224,221,174,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff' }}>
-                            {item}
-                          </span>
-                        ))}
+                        {group.items.map(item => {
+                          const isManual = (manualBreakdown[group.category] || []).includes(item);
+                          return (
+                            <span key={item} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10, background: 'rgba(224,221,174,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff' }}>
+                              {item}
+                              {isManual && (
+                                <button onClick={() => onRemoveBreakdownItem(group.category, item)} title="Remove" style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 0, display: 'flex' }}><XIcon size={9} /></button>
+                              )}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   ))
