@@ -125,9 +125,18 @@ export class ScriptParser {
   private lastSpeaker: string | null = null;
   private insideDialogueBlock: boolean = false;
 
-  constructor(text: string, format: ScriptFormat = 'screenplay') {
+  // Names the writer has already established as real characters, carried
+  // over from previous parses of this same script (see learnedNames below).
+  // Seeding the cast list with these before the pre-scan means a character
+  // who only appears once this pass — too rare to self-confirm — still gets
+  // recognized, instead of the parser "forgetting" who they are every time
+  // a draft is re-parsed.
+  private learnedNames: Set<string>;
+
+  constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set()) {
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
+    this.learnedNames = learnedNames;
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -258,11 +267,16 @@ export class ScriptParser {
 
   // --- PASS 1: CHARACTER RECOGNITION ---
   private preScanCharacters() {
+    // Seed with names confirmed in earlier parses so a character who appears
+    // only once in *this* pass (too rare to self-confirm) is still recognized.
+    this.learnedNames.forEach(name => {
+      if (!this.characterStats.has(name)) this.characterStats.set(name, 1);
+    });
     this.rawLines.forEach(line => {
       const trim = line.trim();
       if (this.isCaps(trim) && trim.length > 1 && trim.length < 50) {
         const cleanName = this.clean(trim);
-        if (!KNOWLEDGE.SCENE_PREFIXES.has(cleanName) && 
+        if (!KNOWLEDGE.SCENE_PREFIXES.has(cleanName) &&
             !KNOWLEDGE.TRANSITIONS.has(cleanName) &&
             !KNOWLEDGE.CAMERA_ANGLES.has(cleanName)) {
           this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
@@ -620,7 +634,7 @@ export class ScriptParser {
 // EXPORT FUNCTION
 // =========================================================================
 
-export function parseScript(text: string, format: ScriptFormat = 'screenplay'): ParseResult {
-  const parser = new ScriptParser(text, format);
+export function parseScript(text: string, format: ScriptFormat = 'screenplay', learnedNames?: Set<string>): ParseResult {
+  const parser = new ScriptParser(text, format, learnedNames);
   return parser.parse();
 }

@@ -548,12 +548,24 @@ export default function EditorPage() {
       return;
     }
     const fmt = currentScript?.format || 'screenplay';
+    // Adaptive recognition: once a character has been confidently identified
+    // in this script, remember their name across re-parses (and reloads) so
+    // a later scene where they appear only once — too rare to self-confirm —
+    // still gets recognized instead of silently dropping back to "action".
+    const learnKey = `scriptos:learned-chars:${currentScript?.id || 'demo'}`;
     const run = () => {
-      const result = parseScript(content, fmt);
+      let learned = new Set<string>();
+      try { learned = new Set(JSON.parse(localStorage.getItem(learnKey) || '[]')); } catch {}
+      const result = parseScript(content, fmt, learned);
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
       setLintIssues(validateScript(result.lines, content));
+      const confident = result.characters.filter(c => c.lines >= 2).map(c => c.name);
+      if (confident.length) {
+        confident.forEach(n => learned.add(n));
+        try { localStorage.setItem(learnKey, JSON.stringify([...learned].slice(0, 200))); } catch {}
+      }
     };
     // Parse immediately for small docs; debounce heavier ones.
     if (content.length < 6000) { run(); return; }
