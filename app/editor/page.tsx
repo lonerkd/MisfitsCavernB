@@ -306,6 +306,8 @@ export default function EditorPage() {
   const spEditorRef = useRef<ScreenplayEditorHandle>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [initRetryTick, setInitRetryTick] = useState(0);
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
@@ -404,26 +406,33 @@ export default function EditorPage() {
     }
 
     const init = async () => {
-      const all = await getAllScripts();
-      setScripts(all);
-      if (all.length > 0) {
-        const latest = all[0];
-        setCurrentScript(latest);
-        setContent(latest.content || PLACEHOLDER);
-        loadTitlePage(latest.id).then(setTitlePage);
-        setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
-      } else {
-        const fresh = await createNewScript('My First Screenplay');
-        if (fresh) {
-          setCurrentScript(fresh);
-          setScripts([fresh]);
-          setContent(PLACEHOLDER);
-          setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+      setInitError(null);
+      try {
+        const all = await getAllScripts();
+        setScripts(all);
+        if (all.length > 0) {
+          const latest = all[0];
+          setCurrentScript(latest);
+          setContent(latest.content || PLACEHOLDER);
+          loadTitlePage(latest.id).then(setTitlePage);
+          setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+        } else {
+          const fresh = await createNewScript('My First Screenplay');
+          if (fresh) {
+            setCurrentScript(fresh);
+            setScripts([fresh]);
+            setContent(PLACEHOLDER);
+            setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+          } else {
+            setInitError('Could not create your first screenplay. Check your connection and retry.');
+          }
         }
+      } catch {
+        setInitError('Could not load your screenplays. Check your connection and retry.');
       }
     };
     init();
-  }, [authLoading, user]);
+  }, [authLoading, user, initRetryTick]);
 
   // Auto-load script for the active project: prefer a real project_id link,
   // and fall back to a title match (legacy scripts created before linking existed).
@@ -487,9 +496,11 @@ export default function EditorPage() {
     const key = `${id}:${field}`;
     if (charSaveTimers.current[key]) clearTimeout(charSaveTimers.current[key]);
     charSaveTimers.current[key] = setTimeout(() => {
-      updateScriptCharacter(id, { [field]: value }).catch(() => {});
+      updateScriptCharacter(id, { [field]: value }).catch(() => {
+        toast('Failed to save character bible edit — try again.', 'error');
+      });
     }, 700);
-  }, []);
+  }, [toast]);
 
   // Parser hook — debounced so a full feature script (5,000+ lines) re-parses
   // shortly after you stop typing rather than on every keystroke. The live
@@ -610,10 +621,15 @@ export default function EditorPage() {
       return;
     }
     setSaving(true);
-    await flushSave();
-    toast('Screenplay saved to cloud.', 'success');
-    emitPill('Saved to cloud', 'success');
-    setSaving(false);
+    try {
+      await flushSave();
+      toast('Screenplay saved to cloud.', 'success');
+      emitPill('Saved to cloud', 'success');
+    } catch {
+      toast('Failed to save — check your connection and try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
   }, [currentScript, toast, user, emitPill, flushSave]);
 
   // Attach the current script to the active project (or detach if already linked).
@@ -635,6 +651,8 @@ export default function EditorPage() {
       setCurrentScript(updated);
       setScripts(prev => prev.map(s => s.id === updated.id ? updated : s));
       toast(isLinked ? 'Unlinked from project.' : `Linked to ${activeProject.title}.`, 'success');
+    } else {
+      toast('Failed to update project link — try again.', 'error');
     }
   }, [currentScript, activeProject, user, toast]);
 
@@ -644,8 +662,12 @@ export default function EditorPage() {
     setCurrentScript(updated);
     setScripts(prev => prev.map(s => s.id === updated.id ? updated : s));
     if (user) {
-      await saveScript({ id: currentScript.id, title: currentScript.title, content, format });
-      toast(`Format set to ${format}.`, 'success');
+      try {
+        await saveScript({ id: currentScript.id, title: currentScript.title, content, format });
+        toast(`Format set to ${format}.`, 'success');
+      } catch {
+        toast('Failed to save format change — try again.', 'error');
+      }
     }
   }, [currentScript, content, user, toast]);
 
@@ -752,6 +774,10 @@ export default function EditorPage() {
       // that importToContent classifies and re-serializes, never a raw dump.
       const raw = isPdf ? await extractTextFromPdf(file) : await file.text();
       const { content: cleaned, format: detectedFormat } = importToContent(raw, isPdf ? `${title}.txt` : file.name);
+      if (cleaned.trim().length === 0) {
+        toast(`"${file.name}" came through empty — the file may be image-only, encrypted, or corrupted.`, 'error');
+        return;
+      }
       const imported = await importScriptFromText(cleaned, title);
       if (imported) {
         const withFormat = { ...imported, format: detectedFormat };
@@ -855,7 +881,7 @@ export default function EditorPage() {
   const chars = useMemo(() => [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))], [lines]);
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
-  const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
+  const goalProgress = dailyGoal > 0 ? Math.min(100, Math.round((wordCount / dailyGoal) * 100)) : 0;
   const dialogueLines = lines.filter(l => l.type === 'dialogue').length;
   const actionLines = lines.filter(l => l.type === 'action').length;
   const dialogueRatio = actionLines + dialogueLines > 0 ? Math.round((dialogueLines / (actionLines + dialogueLines)) * 100) : 0;
@@ -1043,10 +1069,30 @@ export default function EditorPage() {
         minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14,
       }}>
-        <Loader size={22} className="animate-spin" style={{ color: 'var(--accent)' }} />
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
-          Loading ScriptOS…
-        </span>
+        {initError ? (
+          <>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--accent)' }}>
+              {initError}
+            </span>
+            <button
+              onClick={() => setInitRetryTick(t => t + 1)}
+              style={{
+                padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#040710',
+                border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2,
+                textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+          </>
+        ) : (
+          <>
+            <Loader size={22} className="animate-spin" style={{ color: 'var(--accent)' }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              Loading ScriptOS…
+            </span>
+          </>
+        )}
       </div>
     );
   }
