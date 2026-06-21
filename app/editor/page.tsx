@@ -970,7 +970,10 @@ export default function EditorPage() {
       return true;
     });
   }, [scenesList, sceneFilter]);
-  const chars = useMemo(() => [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))], [lines]);
+  // Strip parentheticals like "(V.O.)"/"(CONT'D)" the same way analyzeCharacters
+  // does, so a cue like "JOHN (V.O.)" is grouped with plain "JOHN" instead of
+  // showing up as a separate entry with no matching dialogue-line count.
+  const chars = useMemo(() => [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim().replace(/\s*\(.*?\)\s*/g, '').trim()).filter(Boolean))], [lines]);
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
   const goalProgress = dailyGoal > 0 ? Math.min(100, Math.round((wordCount / dailyGoal) * 100)) : 0;
