@@ -690,12 +690,15 @@ export default function EditorPage() {
 
   // Mirror the guest/demo draft to localStorage so it survives a refresh —
   // there's no cloud script row to autosave to without a signed-in user.
+  // Save immediately for guests since they have no other persistence layer
+  // and this is their only way to retain work across browser refresh.
   useEffect(() => {
     if (user || !currentScript || currentScript.id !== 'demo') return;
-    const timer = setTimeout(() => {
+    try {
       localStorage.setItem('scriptos:demo:content', content);
-    }, 500);
-    return () => clearTimeout(timer);
+    } catch (e) {
+      console.warn('Failed to persist guest draft to localStorage:', e);
+    }
   }, [content, user, currentScript?.id]);
 
   // Durable writer session state — Stash, daily goal, sprint length.
