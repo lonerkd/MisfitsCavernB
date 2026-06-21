@@ -218,10 +218,11 @@ function CharChip({ name, sceneNum }: { name: string; sceneNum: number }) {
 // its number, length, cast — with a one-tap jump. This is the "deeper than page
 // zones" layer: the Pill targets the precise thing under the cursor.
 function OutlineSceneRow({
-  scene, globalIdx, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag, taggedColor,
+  scene, globalIdx, sceneCount, wc, sceneChars, actionPreview, cardColors, delay, onJump, onTag, taggedColor, onMove,
 }: {
   scene: ScriptLine;
   globalIdx: number;
+  sceneCount: number;
   wc: number;
   sceneChars: string[];
   actionPreview: string;
@@ -230,6 +231,7 @@ function OutlineSceneRow({
   onJump: (sceneNum: number) => void;
   onTag: (sceneId: string, color: string) => void;
   taggedColor?: string;
+  onMove: (globalIdx: number, direction: -1 | 1) => void;
 }) {
   const zone = useMemo(() => ({
     module: 'editor',
@@ -256,15 +258,31 @@ function OutlineSceneRow({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase' }}>{scene.text}</div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {cardColors.map(color => (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 2 }}>
               <button
-                key={color}
-                title={taggedColor === color ? 'Click to untag' : `Tag scene ${color}`}
-                onClick={(e) => { e.stopPropagation(); onTag(scene.id, color); }}
-                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: taggedColor === color ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }}
-              />
-            ))}
+                title="Move scene up"
+                disabled={globalIdx === 0}
+                onClick={(e) => { e.stopPropagation(); onMove(globalIdx, -1); }}
+                style={{ background: 'transparent', border: 'none', color: globalIdx === 0 ? '#444' : 'var(--fg-muted)', cursor: globalIdx === 0 ? 'default' : 'pointer', padding: 2, fontSize: 11, lineHeight: 1 }}
+              >▲</button>
+              <button
+                title="Move scene down"
+                disabled={globalIdx === sceneCount - 1}
+                onClick={(e) => { e.stopPropagation(); onMove(globalIdx, 1); }}
+                style={{ background: 'transparent', border: 'none', color: globalIdx === sceneCount - 1 ? '#444' : 'var(--fg-muted)', cursor: globalIdx === sceneCount - 1 ? 'default' : 'pointer', padding: 2, fontSize: 11, lineHeight: 1 }}
+              >▼</button>
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {cardColors.map(color => (
+                <button
+                  key={color}
+                  title={taggedColor === color ? 'Click to untag' : `Tag scene ${color}`}
+                  onClick={(e) => { e.stopPropagation(); onTag(scene.id, color); }}
+                  style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: taggedColor === color ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }}
+                />
+              ))}
+            </div>
           </div>
         </div>
         {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
@@ -796,6 +814,33 @@ export default function EditorPage() {
 
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
+
+  // Reorder scenes from the outline — swaps the full text block of a scene
+  // (its slug line through to the line before the next slug) with its
+  // neighbor in that direction. Operates on raw line text since ScriptLine.index
+  // maps 1:1 to content.split(/\r?\n/) lines.
+  const moveScene = useCallback((globalIdx: number, direction: -1 | 1) => {
+    const targetIdx = globalIdx + direction;
+    if (globalIdx < 0 || targetIdx < 0 || globalIdx >= scenesList.length || targetIdx >= scenesList.length) return;
+    const rawLines = content.split(/\r?\n/);
+    const boundary = (idx: number) => {
+      const start = scenesList[idx].index;
+      const end = idx + 1 < scenesList.length ? scenesList[idx + 1].index : rawLines.length;
+      return [start, end] as const;
+    };
+    const [aIdx, bIdx] = globalIdx < targetIdx ? [globalIdx, targetIdx] : [targetIdx, globalIdx];
+    const [aStart, aEnd] = boundary(aIdx);
+    const [bStart, bEnd] = boundary(bIdx);
+    const before = rawLines.slice(0, aStart);
+    const blockA = rawLines.slice(aStart, aEnd);
+    const blockB = rawLines.slice(bStart, bEnd);
+    const between = rawLines.slice(aEnd, bStart);
+    const after = rawLines.slice(bEnd);
+    const reordered = [...before, ...blockB, ...between, ...blockA, ...after];
+    setContent(reordered.join('\n'));
+    toast(`Moved scene ${globalIdx + 1} ${direction === -1 ? 'up' : 'down'}`, 'success');
+  }, [content, scenesList, toast]);
+
   const filteredScenes = useMemo(() => {
     if (sceneFilter === 'all') return scenesList;
     return scenesList.filter(s => {
@@ -1634,6 +1679,7 @@ export default function EditorPage() {
                       key={scene.id}
                       scene={scene}
                       globalIdx={globalIdx}
+                      sceneCount={scenesList.length}
                       wc={wc}
                       sceneChars={sceneChars}
                       actionPreview={actionPreview}
@@ -1642,6 +1688,7 @@ export default function EditorPage() {
                       onJump={goToScene}
                       onTag={handleTagScene}
                       taggedColor={sceneColors[scene.id]}
+                      onMove={moveScene}
                     />
                   );
                 })
