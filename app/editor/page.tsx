@@ -419,20 +419,24 @@ export default function EditorPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    // Guest / demo mode: no cloud, ephemeral script held in memory.
+    // Guest / demo mode: no cloud. The draft is held in memory but mirrored
+    // to localStorage so a refresh (the status bar says "Not saved" for this
+    // exact reason) doesn't silently wipe out everything the guest wrote.
     if (!user) {
       if (!currentScript) {
+        const savedDraft = localStorage.getItem('scriptos:demo:content');
+        const initialContent = savedDraft || PLACEHOLDER;
         const demo = {
           id: 'demo',
           title: 'Untitled Screenplay',
-          content: PLACEHOLDER,
+          content: initialContent,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
         setCurrentScript(demo);
         setScripts([demo]);
-        setContent(PLACEHOLDER);
-        setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+        setContent(initialContent);
+        setSessionStartWords(initialContent.split(/\s+/).filter(Boolean).length);
       }
       return;
     }
@@ -670,6 +674,16 @@ export default function EditorPage() {
     setFindMatchIndex(i => (i - 1 + findCount) % findCount);
   }, [findCount]);
 
+
+  // Mirror the guest/demo draft to localStorage so it survives a refresh —
+  // there's no cloud script row to autosave to without a signed-in user.
+  useEffect(() => {
+    if (user || !currentScript || currentScript.id !== 'demo') return;
+    const timer = setTimeout(() => {
+      localStorage.setItem('scriptos:demo:content', content);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [content, user, currentScript?.id]);
 
   // Durable writer session state — Stash, daily goal, sprint length.
   // Debounced save so rapid stash add/remove or goal slider drags don't
@@ -1070,13 +1084,13 @@ export default function EditorPage() {
         { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
         { label: 'Words', value: `${wordCount.toLocaleString()}`, color: '#6366f1' },
         { label: 'Pages', value: `${pageEst}` },
-        { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
+        { label: 'Save', value: !user ? 'Not saved' : saving ? 'Saving…' : 'Saved', color: !user ? '#ef4444' : saving ? '#f59e0b' : '#10b981' },
       ],
       toggles: [
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
       ],
     },
-    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
+    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode, user],
   );
 
   // Jump straight to a scene (1-based), switching back to the writing surface
