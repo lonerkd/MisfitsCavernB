@@ -6,13 +6,13 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
+import { getChannelMessages, sendMessage, subscribeToChannel, getDMThread, subscribeToDMs, listDMConversations } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
 import { Headphones, Radio, ExternalLink } from 'lucide-react';
 import SpotifyPlayer from '@/components/SpotifyPlayer';
 import NotificationBell from '@/components/NotificationBell';
 import { usePillStage, usePillZone } from '@/lib/context/PillContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -75,7 +75,7 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
 
 // A crew row is its own Pill zone: hovering a member sharpens the satellite
 // onto them — role + live/offline status — with a jump to their profile.
-function CrewMemberRow({ member, online, delay }: { member: any; online: boolean; delay: number }) {
+function CrewMemberRow({ member, online, delay, onMessage }: { member: any; online: boolean; delay: number; onMessage: (member: any) => void }) {
   const router = useRouter();
   const zone = useMemo(() => ({
     module: 'lounge',
@@ -86,6 +86,7 @@ function CrewMemberRow({ member, online, delay }: { member: any; online: boolean
       { label: 'Status', value: online ? 'Online' : 'Offline', color: online ? '#00cc66' : undefined },
     ],
     actions: member.id ? [
+      { id: 'message', label: '→ Message', onClick: () => onMessage(member) },
       { id: 'profile', label: '→ Profile', onClick: () => router.push(`/crew/${member.id}`) },
     ] : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +96,7 @@ function CrewMemberRow({ member, online, delay }: { member: any; online: boolean
   return (
     <motion.div
       {...zoneHandlers}
+      onClick={() => onMessage(member)}
       initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay }}
@@ -106,6 +108,7 @@ function CrewMemberRow({ member, online, delay }: { member: any; online: boolean
         alignItems: 'center',
         gap: 10,
         background: online ? 'rgba(0,204,102,0.03)' : 'transparent',
+        cursor: 'pointer',
       }}
     >
       <div style={{
@@ -130,9 +133,27 @@ function CrewMemberRow({ member, online, delay }: { member: any; online: boolean
   );
 }
 
+interface DMConversation {
+  id: string;
+  username: string;
+  avatar_url?: string;
+  lastMessage: string;
+  lastAt: string;
+}
+
 export default function LoungePage() {
+  return (
+    <React.Suspense fallback={null}>
+      <LoungePageInner />
+    </React.Suspense>
+  );
+}
+
+function LoungePageInner() {
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
+  const [activeDM, setActiveDM] = useState<{ id: string; username: string } | null>(null);
+  const [dmConversations, setDmConversations] = useState<DMConversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -140,6 +161,12 @@ export default function LoungePage() {
   const [crewList, setCrewList] = useState<any[]>([]);
   const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+
+  const openDM = (member: { id: string; name: string }) => {
+    if (!member.id) return;
+    setActiveDM({ id: member.id, username: member.name });
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -184,7 +211,32 @@ export default function LoungePage() {
     };
   }, []);
 
+  // Deep-link support: /lounge?dm=<userId> opens a DM thread directly (used
+  // by the "Message" button on Crew profiles).
   useEffect(() => {
+    const dmId = searchParams?.get('dm');
+    if (!dmId) return;
+    supabase.from('profiles').select('id, username').eq('id', dmId).single().then(({ data }) => {
+      if (data) setActiveDM({ id: data.id, username: data.username || 'User' });
+    });
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    let mounted = true;
+    const loadConversations = () => {
+      listDMConversations(currentUser.id).then(convos => { if (mounted) setDmConversations(convos); }).catch(console.error);
+    };
+    loadConversations();
+    const channel = subscribeToDMs(currentUser.id, loadConversations);
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (activeDM) return; // DM thread loading handled separately below
     let mounted = true;
 
     const loadMessages = async () => {
@@ -213,7 +265,40 @@ export default function LoungePage() {
       mounted = false;
       supabase.removeChannel(channel);
     };
-  }, [activeChannel]);
+  }, [activeChannel, activeDM]);
+
+  useEffect(() => {
+    if (!activeDM || !currentUser) return;
+    let mounted = true;
+
+    const loadThread = async () => {
+      try {
+        const data = await getDMThread(currentUser.id, activeDM.id);
+        if (!mounted) return;
+        const formatted = data.map((m: any) => ({
+          id: m.id,
+          user: m.sender_id === currentUser.id ? (currentProfile?.username || 'You') : activeDM.username,
+          text: m.content,
+          timestamp: new Date(m.created_at),
+          sender_id: m.sender_id,
+        }));
+        setMessages(formatted);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadThread();
+
+    const channel = subscribeToDMs(currentUser.id, (payload: any) => {
+      const row = payload?.new;
+      if (row && (row.sender_id === activeDM.id || row.receiver_id === activeDM.id)) loadThread();
+    });
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [activeDM, currentUser, currentProfile]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -224,7 +309,9 @@ export default function LoungePage() {
     if (!text || !currentUser) return;
     setInput('');
     try {
-      const saved = await sendMessage(currentUser.id, text, activeChannel);
+      const saved = activeDM
+        ? await sendMessage(currentUser.id, text, undefined, activeDM.id)
+        : await sendMessage(currentUser.id, text, activeChannel);
       // Optimistically render our own message immediately. The realtime
       // subscription only fires when Supabase replication is enabled, and even
       // then not for the sender's own client reliably — without this the sender
@@ -337,26 +424,56 @@ export default function LoungePage() {
                  const Icon = ch.icon;
                  const isActive = activeChannel === ch.id;
                  return (
-                   <button 
+                   <button
                      key={ch.id}
-                     onClick={() => setActiveChannel(ch.id)}
+                     onClick={() => { setActiveChannel(ch.id); setActiveDM(null); }}
                      style={{
                        display: 'flex', alignItems: 'center', gap: 8,
                        padding: '6px 10px', borderRadius: 4,
-                       background: isActive ? 'rgba(215,52,11,0.1)' : 'transparent',
-                       border: 'none', color: isActive ? '#fff' : '#888',
+                       background: (isActive && !activeDM) ? 'rgba(215,52,11,0.1)' : 'transparent',
+                       border: 'none', color: (isActive && !activeDM) ? '#fff' : '#888',
                        cursor: 'pointer', transition: 'all 0.2s',
                        fontFamily: 'var(--mono)', fontSize: 11
                      }}
                    >
-                     <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} />
+                     <Icon size={12} color={(isActive && !activeDM) ? 'var(--accent)' : '#666'} />
                      {ch.name}
                    </button>
                  );
                })}
              </div>
           </div>
-          
+
+          <div style={{ padding: '0 16px 20px' }}>
+            <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Direct Messages</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {dmConversations.length === 0 && (
+                <div style={{ color: '#444', fontFamily: 'var(--mono)', fontSize: 9 }}>NO DMS YET</div>
+              )}
+              {dmConversations.map(convo => {
+                const isActive = activeDM?.id === convo.id;
+                return (
+                  <button
+                    key={convo.id}
+                    onClick={() => setActiveDM({ id: convo.id, username: convo.username })}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '6px 10px', borderRadius: 4,
+                      background: isActive ? 'rgba(215,52,11,0.1)' : 'transparent',
+                      border: 'none', color: isActive ? '#fff' : '#888',
+                      cursor: 'pointer', transition: 'all 0.2s',
+                      fontFamily: 'var(--mono)', fontSize: 11,
+                      textAlign: 'left', overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: isActive ? 'var(--accent)' : '#555' }} />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{convo.username}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div style={{ marginTop: 'auto', padding: 20, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
@@ -376,9 +493,13 @@ export default function LoungePage() {
           {/* Channel Header */}
           <div style={{ padding: '12px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>#{activeChannel}</span>
-               <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{crewList.length} member{crewList.length !== 1 ? 's' : ''}</span>
+               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{activeDM ? activeDM.username : `#${activeChannel}`}</span>
+               {!activeDM && (
+                 <>
+                   <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+                   <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{crewList.length} member{crewList.length !== 1 ? 's' : ''}</span>
+                 </>
+               )}
              </div>
              <Users size={14} color="#666" />
           </div>
@@ -388,7 +509,7 @@ export default function LoungePage() {
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
               {messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
-                  NO MESSAGES IN #{activeChannel.toUpperCase()} YET
+                  {activeDM ? `NO MESSAGES WITH ${activeDM.username.toUpperCase()} YET` : `NO MESSAGES IN #${activeChannel.toUpperCase()} YET`}
                 </div>
               ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />)}
               <div ref={bottomRef} />
@@ -409,7 +530,7 @@ export default function LoungePage() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder={`Message #${activeChannel}...`}
+                placeholder={activeDM ? `Message ${activeDM.username}...` : `Message #${activeChannel}...`}
                 rows={1}
                 style={{
                   flex: 1,
@@ -472,7 +593,7 @@ export default function LoungePage() {
             <div style={{ color: '#444', fontFamily: 'var(--mono)', fontSize: 9, marginTop: 8 }}>NO CREW YET</div>
           )}
           {crewList.map((member, i) => (
-            <CrewMemberRow key={member.id ?? i} member={member} online={onlineIds.has(member.id)} delay={i * 0.08} />
+            <CrewMemberRow key={member.id ?? i} member={member} online={onlineIds.has(member.id)} delay={i * 0.08} onMessage={openDM} />
           ))}
         </div>
       </div>

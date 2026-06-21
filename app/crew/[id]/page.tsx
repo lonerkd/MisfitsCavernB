@@ -223,6 +223,22 @@ export default function CrewMemberPage() {
                 </div>
               )}
             </div>
+
+            <Link
+              href={`/lounge?dm=${profile.id}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                marginTop: 20, padding: '9px 18px',
+                border: '1px solid var(--accent)', color: 'var(--accent)',
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2,
+                textTransform: 'uppercase', textDecoration: 'none',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(215,52,11,0.08)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <MessageSquare size={12} /> Message
+            </Link>
           </div>
         </div>
 
