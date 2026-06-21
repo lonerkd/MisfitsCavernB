@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useProject, Project } from '@/lib/context/ProjectContext';
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#ff3c00' },
@@ -14,20 +15,7 @@ const APPS = [
   { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b' },
 ];
 
-interface RecentProject {
-  id: string;
-  title: string;
-  color: string;
-  phase: string;
-}
-
-const SAMPLE_PROJECTS: RecentProject[] = [
-  { id: '1', title: 'Femme Fatale', color: '#ff3c00', phase: 'pre-production' },
-  { id: '2', title: '10 Million',   color: '#f59e0b', phase: 'post-production' },
-  { id: '3', title: 'The Briefcase',color: '#10b981', phase: 'delivery' },
-];
-
-function ProjectSwitcher({ onClose }: { onClose: () => void }) {
+function ProjectSwitcher({ projects, onClose }: { projects: Project[]; onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -73,51 +61,62 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Project list */}
-      {SAMPLE_PROJECTS.map((proj, i) => (
-        <Link
-          key={proj.id}
-          href={`/projects/${proj.id}`}
-          onClick={onClose}
-          style={{ textDecoration: 'none', display: 'block' }}
-        >
-          <motion.div
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 8px',
-              borderRadius: 10,
-              cursor: 'pointer',
-              transition: 'background 0.2s',
-            }}
-            whileHover={{ background: 'rgba(255,255,255,0.05)' } as any}
+      {projects.length === 0 ? (
+        <div style={{
+          padding: '14px 8px',
+          fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1,
+          color: 'rgba(240,236,228,0.3)', textAlign: 'center',
+        }}>
+          No projects yet
+        </div>
+      ) : projects.slice(0, 5).map((proj, i) => {
+        const color = proj.accent_color || '#ff3c00';
+        return (
+          <Link
+            key={proj.id}
+            href={`/projects/${proj.id}`}
+            onClick={onClose}
+            style={{ textDecoration: 'none', display: 'block' }}
           >
-            {/* Color dot */}
-            <div style={{
-              width: 7, height: 7, borderRadius: '50%',
-              background: proj.color,
-              boxShadow: `0 0 8px ${proj.color}`,
-              flexShrink: 0,
-            }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 8px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+              whileHover={{ background: 'rgba(255,255,255,0.05)' } as any}
+            >
+              {/* Color dot */}
               <div style={{
-                fontFamily: 'var(--display)', fontSize: '0.78rem',
-                letterSpacing: 1, color: 'var(--fg)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {proj.title}
+                width: 7, height: 7, borderRadius: '50%',
+                background: color,
+                boxShadow: `0 0 8px ${color}`,
+                flexShrink: 0,
+              }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontFamily: 'var(--display)', fontSize: '0.78rem',
+                  letterSpacing: 1, color: 'var(--fg)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {proj.title}
+                </div>
+                <div style={{
+                  fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5,
+                  color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase',
+                }}>
+                  {proj.status}
+                </div>
               </div>
-              <div style={{
-                fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5,
-                color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase',
-              }}>
-                {proj.phase}
-              </div>
-            </div>
-          </motion.div>
-        </Link>
-      ))}
+            </motion.div>
+          </Link>
+        );
+      })}
     </motion.div>
   );
 }
@@ -126,7 +125,7 @@ export default function EcosystemTaskbar() {
   const pathname = usePathname();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [projectsOpen, setProjectsOpen] = useState(false);
-  const [activeProject, setActiveProject] = useState<RecentProject | null>(SAMPLE_PROJECTS[0]);
+  const { activeProject, projects } = useProject();
 
   // Close switcher on route change
   useEffect(() => { setProjectsOpen(false); }, [pathname]);
@@ -147,6 +146,7 @@ export default function EcosystemTaskbar() {
   // Determine active module color for contextual glow
   const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
   const moduleColor = activeApp?.color ?? '#ff3c00';
+  const activeColor = activeProject?.accent_color ?? '#ff3c00';
 
   return (
     <div
@@ -299,7 +299,7 @@ export default function EcosystemTaskbar() {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 2,
               background: projectsOpen
-                ? `${activeProject?.color ?? '#ff3c00'}18`
+                ? `${activeColor}18`
                 : hoveredId === 'projects'
                 ? 'rgba(255,255,255,0.06)'
                 : 'transparent',
@@ -314,15 +314,15 @@ export default function EcosystemTaskbar() {
                 position: 'absolute',
                 top: 8, right: 8,
                 width: 5, height: 5, borderRadius: '50%',
-                background: activeProject.color,
-                boxShadow: `0 0 6px ${activeProject.color}`,
+                background: activeColor,
+                boxShadow: `0 0 6px ${activeColor}`,
               }} />
             )}
             <FolderOpen
               size={18}
               strokeWidth={1.5}
               color={projectsOpen
-                ? (activeProject?.color ?? '#ff3c00')
+                ? activeColor
                 : hoveredId === 'projects'
                 ? 'rgba(240,236,228,0.7)'
                 : 'rgba(240,236,228,0.3)'}
@@ -334,7 +334,7 @@ export default function EcosystemTaskbar() {
             >
               <ChevronUp
                 size={8}
-                color={projectsOpen ? (activeProject?.color ?? '#ff3c00') : 'rgba(240,236,228,0.25)'}
+                color={projectsOpen ? activeColor : 'rgba(240,236,228,0.25)'}
               />
             </motion.div>
           </motion.button>
@@ -383,7 +383,7 @@ export default function EcosystemTaskbar() {
           {/* Project switcher panel */}
           <AnimatePresence>
             {projectsOpen && (
-              <ProjectSwitcher onClose={() => setProjectsOpen(false)} />
+              <ProjectSwitcher projects={projects} onClose={() => setProjectsOpen(false)} />
             )}
           </AnimatePresence>
         </div>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
+import { useToast } from '@/components/Toast';
 
 interface Job {
   id: string;
@@ -407,6 +408,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
 }
 
 export default function JobsPage() {
+  const { toast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -456,8 +458,14 @@ export default function JobsPage() {
   const handleApply = async (jobId: string) => {
     if (!user) { window.location.href = '/auth'; return; }
     const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id });
-    if (error?.code === '23505') {
-      // already applied — silently ignore
+    if (error) {
+      if (error.code === '23505') {
+        toast('You already applied to this job.', 'info');
+      } else {
+        toast('Failed to submit application.', 'error');
+      }
+    } else {
+      toast('Application submitted.', 'success');
     }
   };
 
