@@ -740,6 +740,26 @@ function JobsPageInner() {
             </>
           )}
 
+          {tab === 'mine' && !user && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{ padding: '80px 0', textAlign: 'center' }}
+            >
+              <Briefcase size={28} color="rgba(240,236,228,0.1)" style={{ margin: '0 auto 16px', display: 'block' }} />
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.2)', textTransform: 'uppercase', marginBottom: 20 }}>
+                Sign in to see jobs you've posted
+              </div>
+              <Link href="/auth" style={{
+                display: 'inline-block', padding: '10px 22px', borderRadius: 9999,
+                background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+                color: '#8b5cf6', textDecoration: 'none',
+                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
+              }}>
+                Sign In
+              </Link>
+            </motion.div>
+          )}
+
           {tab === 'mine' && user && (
             <>
               {myJobs.length === 0 ? (
