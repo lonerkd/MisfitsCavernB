@@ -24,6 +24,10 @@ interface Message {
   mine?: boolean;
 }
 
+// #production and #legal carry a lock icon — gate them behind sign-in so a
+// guest can't read or post in channels the UI visibly marks as restricted.
+const LOCKED_CHANNELS = ['production', 'legal'];
+
 function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
   return (
@@ -238,6 +242,7 @@ function LoungePageInner() {
 
   useEffect(() => {
     if (activeDM) return; // DM thread loading handled separately below
+    if (LOCKED_CHANNELS.includes(activeChannel) && !currentUser) { setMessages([]); return; }
     let mounted = true;
 
     const loadMessages = async () => {
@@ -266,7 +271,7 @@ function LoungePageInner() {
       mounted = false;
       supabase.removeChannel(channel);
     };
-  }, [activeChannel, activeDM]);
+  }, [activeChannel, activeDM, currentUser]);
 
   useEffect(() => {
     if (!activeDM || !currentUser) return;
@@ -509,7 +514,22 @@ function LoungePageInner() {
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
-              {messages.length === 0 ? (
+              {!activeDM && LOCKED_CHANNELS.includes(activeChannel) && !currentUser ? (
+                <div style={{ textAlign: 'center', marginTop: 100 }}>
+                  <Lock size={24} color="#444" style={{ margin: '0 auto 16px', display: 'block' }} />
+                  <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>
+                    #{activeChannel} is restricted. Sign in to view this channel.
+                  </div>
+                  <Link href="/auth" style={{
+                    display: 'inline-block', padding: '10px 22px', borderRadius: 9999,
+                    background: 'rgba(215,52,11,0.12)', border: '1px solid rgba(215,52,11,0.3)',
+                    color: 'var(--accent)', textDecoration: 'none',
+                    fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                  }}>
+                    Sign In
+                  </Link>
+                </div>
+              ) : messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
                   {activeDM ? `NO MESSAGES WITH ${activeDM.username.toUpperCase()} YET` : `NO MESSAGES IN #${activeChannel.toUpperCase()} YET`}
                 </div>
@@ -521,6 +541,7 @@ function LoungePageInner() {
           {/* Input — extra bottom padding clears the floating EcosystemTaskbar
               (fixed, bottom:28, ~64px tall, centered) which otherwise sits on
               top of the composer and blocks clicking into the message field. */}
+          {!(!activeDM && LOCKED_CHANNELS.includes(activeChannel) && !currentUser) && (
           <div style={{
             padding: '16px 28px 108px',
             borderTop: '1px solid rgba(255,255,255,0.04)',
@@ -573,6 +594,7 @@ function LoungePageInner() {
               </motion.button>
             </div>
           </div>
+          )}
         </div>
 
         {/* Crew sidebar */}
