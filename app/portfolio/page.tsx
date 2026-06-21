@@ -159,7 +159,7 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: hover ? 'rgba(255,60,0,0.12)' : 'rgba(0,0,0,0.3)',
+          background: hover ? 'rgba(215,52,11,0.12)' : 'rgba(0,0,0,0.3)',
           backdropFilter: 'blur(6px)',
           transition: 'border-color 0.4s, background 0.4s',
         }}
@@ -418,39 +418,39 @@ function AddProjectModal({ isOpen, onClose, userId, onCreated }: {
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
                 <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Project title"
-                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                  style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
               </div>
 
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
                   <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Short Film, Music Video…"
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                    style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
                 </div>
                 <div style={{ width: 100 }}>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Year</label>
                   <input value={year} onChange={e => setYear(e.target.value)} placeholder="2026" inputMode="numeric"
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                    style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
                 </div>
               </div>
 
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Role</label>
                 <input value={role} onChange={e => setRole(e.target.value)} placeholder="Director / Editor / DP…"
-                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                  style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
               </div>
 
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Description</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="What's this project about?"
-                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12, fontFamily: 'inherit', resize: 'vertical' }} />
+                  style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12, fontFamily: 'inherit', resize: 'vertical' }} />
               </div>
 
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ width: 140 }}>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Media Type</label>
                   <select value={mediaType} onChange={e => setMediaType(e.target.value as MediaType)}
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
+                    style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
                     <option value="youtube">YouTube</option>
                     <option value="gdrive">Google Drive</option>
                     <option value="image">Image</option>
@@ -461,7 +461,7 @@ function AddProjectModal({ isOpen, onClose, userId, onCreated }: {
                     {mediaType === 'youtube' ? 'YouTube Video ID' : mediaType === 'gdrive' ? 'Google Drive File ID' : 'Image URL'}
                   </label>
                   <input value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder={mediaType === 'image' ? 'https://…' : 'e.g. dQw4w9WgXcQ'}
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
+                    style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }} />
                 </div>
               </div>
 

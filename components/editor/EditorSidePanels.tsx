@@ -94,7 +94,7 @@ export function EditorSidePanels({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 272, opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          style={{ width: 272, background: 'rgba(8,12,20,0.96)', borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}
+          style={{ width: 272, background: 'rgba(4,7,13,0.96)', borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}
         >
           {/* Panel Tabs — pill group */}
           <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(224,221,174,0.05)' }}>

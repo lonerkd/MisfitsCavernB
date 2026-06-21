@@ -26,7 +26,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <button
           onClick={reset}
           style={{
-            padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#060606',
+            padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#040710',
             border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2,
             textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
           }}
@@ -37,7 +37,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           href="/"
           style={{
             padding: '10px 22px', borderRadius: 9999, background: 'transparent', color: 'var(--fg)',
-            border: '1px solid rgba(255,255,255,0.15)', fontFamily: 'var(--mono)', fontSize: 10,
+            border: '1px solid rgba(224,221,174,0.15)', fontFamily: 'var(--mono)', fontSize: 10,
             letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, textDecoration: 'none',
           }}
         >

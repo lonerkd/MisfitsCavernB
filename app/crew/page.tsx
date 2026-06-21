@@ -86,7 +86,7 @@ export default function CrewPage() {
           <div style={{ display: 'flex', gap: 8 }}>
             {(['all', 'OPEN', 'BUSY'] as const).map(a => (
               <button key={a} onClick={() => { setAvailFilter(a); loadCrew(); }}
-                style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(215,52,11,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 {a === 'all' ? 'ALL' : a}
               </button>
             ))}
@@ -120,10 +120,10 @@ export default function CrewPage() {
             {crew.map(member => (
               <Link key={member.id} href={`/crew/${member.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
               <div style={{
-                padding: 24, background: '#0a0a0a',
+                padding: 24, background: '#050a14',
                 border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.2s', height: '100%'
               }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(215,52,11,0.3)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
                   {member.avatar_url ? (

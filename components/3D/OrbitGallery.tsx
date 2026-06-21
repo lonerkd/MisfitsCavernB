@@ -36,7 +36,7 @@ function PhotoFrame({ position, imageUrl, rotation }: { position: [number, numbe
       {/* Frame border */}
       <lineSegments>
         <edgesGeometry args={[new THREE.BoxGeometry(2, 1.4, 0.05)]} />
-        <lineBasicMaterial color="#f0ece4" opacity={0.3} transparent />
+        <lineBasicMaterial color="#e0ddae" opacity={0.3} transparent />
       </lineSegments>
     </mesh>
   );

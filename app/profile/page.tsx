@@ -125,7 +125,7 @@ export default function ProfilePage() {
           <div>
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt={profile.username}
-                style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,60,0,0.3)' }} />
+                style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(215,52,11,0.3)' }} />
             ) : (
               <div style={{
                 width: 72, height: 72, borderRadius: '50%',
@@ -164,9 +164,9 @@ export default function ProfilePage() {
             { icon: <Briefcase size={14} />, count: stats.jobs, label: 'Jobs Posted', href: '/jobs' },
           ].map(({ icon, count, label, href }) => (
             <Link key={label} href={href} style={{ textDecoration: 'none' }}>
-              <div style={{ padding: 16, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center',
+              <div style={{ padding: 16, background: '#050a14', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center',
                 transition: 'border-color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(215,52,11,0.3)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
@@ -226,7 +226,7 @@ export default function ProfilePage() {
                 <button key={s} onClick={() => setProfile({ ...profile, status: s })}
                   style={{
                     flex: 1, padding: 12,
-                    background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(255,60,0,0.08)') : 'transparent',
+                    background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(215,52,11,0.08)') : 'transparent',
                     border: `1px solid ${profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(255,255,255,0.1)'}`,
                     color: profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(255,255,255,0.4)',
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer',

@@ -381,7 +381,7 @@ export default function JobDetailPage() {
                 {applications.map(app => (
                   <div key={app.id} style={{
                     padding: 24,
-                    background: '#0a0a0a',
+                    background: '#050a14',
                     ...appStatusStyle(app.status),
                     transition: 'border-color 0.2s',
                     textDecoration: app.status === 'rejected' ? 'none' : 'none',
@@ -391,8 +391,8 @@ export default function JobDetailPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                           width: 32, height: 32,
-                          background: 'rgba(255,60,0,0.15)',
-                          border: '1px solid rgba(255,60,0,0.3)',
+                          background: 'rgba(215,52,11,0.15)',
+                          border: '1px solid rgba(215,52,11,0.3)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0,
                         }}>
@@ -448,7 +448,7 @@ export default function JobDetailPage() {
                       <div style={{
                         marginTop: 12, padding: '12px 16px',
                         background: 'rgba(255,255,255,0.03)',
-                        borderLeft: '2px solid rgba(255,60,0,0.3)',
+                        borderLeft: '2px solid rgba(215,52,11,0.3)',
                       }}>
                         <p style={{
                           fontFamily: 'var(--serif)', fontSize: '1rem', lineHeight: 1.65,
@@ -485,8 +485,8 @@ export default function JobDetailPage() {
                             letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = 'rgba(255,60,0,0.5)';
-                            e.currentTarget.style.color = 'rgba(255,60,0,0.8)';
+                            e.currentTarget.style.borderColor = 'rgba(215,52,11,0.5)';
+                            e.currentTarget.style.color = 'rgba(215,52,11,0.8)';
                           }}
                           onMouseLeave={e => {
                             e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
@@ -595,7 +595,7 @@ export default function JobDetailPage() {
                       lineHeight: 1.65, resize: 'vertical', outline: 'none',
                       transition: 'border-color 0.15s', boxSizing: 'border-box',
                     }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.4)')}
+                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(215,52,11,0.4)')}
                     onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
                   />
                 </div>
@@ -612,7 +612,7 @@ export default function JobDetailPage() {
                   style={{
                     alignSelf: 'flex-start',
                     padding: '12px 36px',
-                    background: applying ? 'rgba(255,60,0,0.3)' : 'var(--accent)',
+                    background: applying ? 'rgba(215,52,11,0.3)' : 'var(--accent)',
                     color: 'var(--bg)', border: 'none',
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
                     cursor: applying ? 'not-allowed' : 'pointer',

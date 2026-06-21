@@ -207,7 +207,7 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
         style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#050505', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(224,221,174,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(224,221,174,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#050a14' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name}</div>
@@ -252,7 +252,7 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
           </div>
 
           {/* Comments Sidebar (Frame.io style) */}
-          <div style={{ width: 340, background: '#0a0a0a', borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ width: 340, background: '#050a14', borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(224,221,174,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -269,7 +269,7 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{comment.profiles?.username || 'Unknown'}</span>
                       {comment.timecode && (
-                        <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>
+                        <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(215,52,11,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>
                       )}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.content}</div>
@@ -393,7 +393,7 @@ function IntakeModal({ isOpen, onClose, userId, boardId, projectId, onUploaded }
                 style={{
                   padding: 40, border: `2px dashed ${dragOver ? 'var(--accent)' : 'rgba(224,221,174,0.1)'}`,
                   borderRadius: 12, textAlign: 'center', cursor: 'pointer',
-                  background: dragOver ? 'rgba(255,60,0,0.04)' : 'transparent', transition: 'all 0.2s',
+                  background: dragOver ? 'rgba(215,52,11,0.04)' : 'transparent', transition: 'all 0.2s',
                 }}
               >
                 <Upload size={32} color="var(--accent)" style={{ marginBottom: 12 }} />
@@ -406,7 +406,7 @@ function IntakeModal({ isOpen, onClose, userId, boardId, projectId, onUploaded }
                 <select
                   value={category}
                   onChange={e => setCategory(e.target.value)}
-                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                  style={{ width: '100%', background: '#050a14', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
                 >
                   <option>Raw Footage</option>
                   <option>Reference</option>
@@ -570,14 +570,14 @@ function ConceptCard({ image, index, onDelete, onLinkToScene, scripts }: {
         borderRadius: 8,
         overflow: 'hidden',
         border: '1px solid rgba(224,221,174,0.05)',
-        background: '#0a0a0a'
+        background: '#050a14'
       }}
     >
       <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.8 }} />
       {linkLabels.length > 0 && (
         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {linkLabels.map((label, i) => (
-            <span key={i} style={{ fontSize: 9, fontFamily: 'var(--mono)', color: '#fff', background: 'rgba(255,60,0,0.85)', borderRadius: 4, padding: '3px 6px', letterSpacing: 0.5 }}>
+            <span key={i} style={{ fontSize: 9, fontFamily: 'var(--mono)', color: '#fff', background: 'rgba(215,52,11,0.85)', borderRadius: 4, padding: '3px 6px', letterSpacing: 0.5 }}>
               {label}
             </span>
           ))}
@@ -785,7 +785,7 @@ function ReferenceSearchModal({
                   const added = addedUrls.has(ref.url);
                   const isPending = pending.has(ref.id);
                   return (
-                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#0a0a0a' }}>
+                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#050a14' }}>
                       <img src={ref.thumbnail} alt={ref.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
                       <div
                         style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
@@ -1515,7 +1515,7 @@ export default function StudioPage() {
                 ))}
               </div>
               <button onClick={handleCreateProject} disabled={!npTitle.trim() || npCreating}
-                style={{ width: '100%', background: npTitle.trim() ? 'var(--accent)' : 'rgba(224,221,174,0.08)', color: npTitle.trim() ? '#060606' : 'var(--fg-dim)', border: 'none', borderRadius: 10, padding: '13px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: npTitle.trim() ? 'pointer' : 'default' }}>
+                style={{ width: '100%', background: npTitle.trim() ? 'var(--accent)' : 'rgba(224,221,174,0.08)', color: npTitle.trim() ? '#040710' : 'var(--fg-dim)', border: 'none', borderRadius: 10, padding: '13px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: npTitle.trim() ? 'pointer' : 'default' }}>
                 {npCreating ? 'Creating…' : 'Create Project'}
               </button>
             </motion.div>
@@ -1711,7 +1711,7 @@ export default function StudioPage() {
               </div>
             )}
             <button onClick={() => setShowNewProject(true)}
-              style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#060606', border: 'none', borderRadius: 9999, padding: '12px 24px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer' }}>
+              style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#040710', border: 'none', borderRadius: 9999, padding: '12px 24px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: 'pointer' }}>
               <PlusIcon size={14} /> New Project
             </button>
           </motion.div>
@@ -1864,10 +1864,10 @@ export default function StudioPage() {
                         const isCurrent = currentIdx === i;
                         return (
                           <button key={phase.id} onClick={() => handleSetPhase(phase.id)} title={`Set phase to ${phase.label}`} style={{ position: 'relative', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0 }}>
-                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: completed ? 'var(--accent)' : '#222', border: completed ? 'none' : '1px solid #444', boxShadow: isCurrent ? '0 0 0 3px rgba(255,60,0,0.2)' : 'none' }} />
+                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: completed ? 'var(--accent)' : '#222', border: completed ? 'none' : '1px solid #444', boxShadow: isCurrent ? '0 0 0 3px rgba(215,52,11,0.2)' : 'none' }} />
                              <div style={{ fontSize: 12, fontWeight: 700, color: completed ? '#fff' : '#666', display: 'flex', alignItems: 'center', gap: 8 }}>
                                {phase.label}
-                               {isCurrent && <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--accent)', border: '1px solid rgba(255,60,0,0.3)', borderRadius: 4, padding: '1px 5px', textTransform: 'uppercase', letterSpacing: 1 }}>Current</span>}
+                               {isCurrent && <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--accent)', border: '1px solid rgba(215,52,11,0.3)', borderRadius: 4, padding: '1px 5px', textTransform: 'uppercase', letterSpacing: 1 }}>Current</span>}
                              </div>
                           </button>
                         );
@@ -2116,12 +2116,12 @@ export default function StudioPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ background: '#050a14', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 01" />
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>{activeProject.title}</h3>
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
               </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ background: '#050a14', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
                 {conceptImages[0] && (
                   <img src={conceptImages[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
                 )}
@@ -2133,7 +2133,7 @@ export default function StudioPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ background: '#050a14', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 03" />
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE CHARACTERS</h3>
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>
@@ -2142,7 +2142,7 @@ export default function StudioPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ marginTop: 40, padding: 24, background: 'rgba(215,52,11,0.05)', border: '1px solid rgba(215,52,11,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
               <Info size={20} color="var(--accent)" />
               <div style={{ fontSize: 12, color: '#ccc' }}>
                 <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Pro Tip:</span> This deck pulls its visuals from your Concept Board and its cast list from your ScriptOS Character Bible. Update either to see changes here.

@@ -56,7 +56,7 @@ export default function PhotoScatter({ opacity = 0.08, count = 22 }: PhotoScatte
             style={{
               width: '100%',
               height: '100%',
-              background: '#141414',
+              background: '#0a131e',
               border: '3px solid rgba(240, 236, 228, 0.22)',
               boxShadow: '3px 5px 16px rgba(0, 0, 0, 0.8)',
               padding: 3,
@@ -68,7 +68,7 @@ export default function PhotoScatter({ opacity = 0.08, count = 22 }: PhotoScatte
               style={{
                 width: '100%',
                 height: '100%',
-                background: `linear-gradient(135deg, rgba(255, 60, 0, 0.1) 0%, rgba(240, 236, 228, 0.05) 100%)`,
+                background: `linear-gradient(135deg, rgba(215, 52, 11, 0.1) 0%, rgba(240, 236, 228, 0.05) 100%)`,
                 display: 'block',
               }}
             />

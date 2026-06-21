@@ -50,8 +50,8 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
       <div style={{
         maxWidth: '75%',
         padding: '12px 16px',
-        background: isMe ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${isMe ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
+        background: isMe ? 'rgba(215,52,11,0.12)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${isMe ? 'rgba(215,52,11,0.2)' : 'rgba(255,255,255,0.06)'}`,
         borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
       }}>
         <p style={{
@@ -318,7 +318,7 @@ export default function LoungePage() {
         {/* Channel Sidebar (Slack-style) */}
         <div style={{
           width: 220,
-          background: '#0a0a0a',
+          background: '#050a14',
           borderRight: '1px solid rgba(255,255,255,0.04)',
           display: 'flex',
           flexDirection: 'column',
@@ -343,7 +343,7 @@ export default function LoungePage() {
                      style={{
                        display: 'flex', alignItems: 'center', gap: 8,
                        padding: '6px 10px', borderRadius: 4,
-                       background: isActive ? 'rgba(255,60,0,0.1)' : 'transparent',
+                       background: isActive ? 'rgba(215,52,11,0.1)' : 'transparent',
                        border: 'none', color: isActive ? '#fff' : '#888',
                        cursor: 'pointer', transition: 'all 0.2s',
                        fontFamily: 'var(--mono)', fontSize: 11
@@ -425,7 +425,7 @@ export default function LoungePage() {
                   transition: 'border-color 0.3s',
                   lineHeight: 1.5,
                 }}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.35)')}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(215,52,11,0.35)')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
 

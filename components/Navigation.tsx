@@ -157,7 +157,7 @@ export default function Navigation() {
               >
                 <span style={{
                   width: 20, height: 20, borderRadius: '50%',
-                  background: 'var(--accent)', color: '#060606',
+                  background: 'var(--accent)', color: '#040710',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 9, fontWeight: 700,
                 }}>
@@ -188,7 +188,7 @@ export default function Navigation() {
                 textTransform: 'uppercase',
                 padding: '9px 18px',
                 background: 'var(--accent)',
-                color: '#060606',
+                color: '#040710',
                 textDecoration: 'none',
                 borderRadius: 9999,
                 fontWeight: 600,
@@ -196,7 +196,7 @@ export default function Navigation() {
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,60,0,0.3)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(215,52,11,0.3)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = '';
@@ -309,7 +309,7 @@ export default function Navigation() {
                     textAlign: 'center',
                     padding: '14px',
                     background: 'var(--accent)',
-                    color: '#060606',
+                    color: '#040710',
                     fontFamily: 'var(--mono)',
                     fontSize: 10,
                     letterSpacing: 3,

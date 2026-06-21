@@ -74,7 +74,7 @@ function FloatingInput({
           paddingLeft: 16,
           paddingRight: isPassword ? 48 : 16,
           background: 'rgba(255,255,255,0.02)',
-          border: `1px solid ${focused ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.08)'}`,
+          border: `1px solid ${focused ? 'rgba(215,52,11,0.5)' : 'rgba(255,255,255,0.08)'}`,
           borderRadius: 'var(--radius-sm)',
           color: 'var(--fg)',
           fontFamily: 'var(--mono)',
@@ -82,7 +82,7 @@ function FloatingInput({
           letterSpacing: 0.5,
           outline: 'none',
           transition: 'border-color 0.3s, box-shadow 0.3s',
-          boxShadow: focused ? '0 0 0 3px rgba(255,60,0,0.05)' : 'none',
+          boxShadow: focused ? '0 0 0 3px rgba(215,52,11,0.05)' : 'none',
         }}
       />
 
@@ -171,7 +171,7 @@ export default function AuthPage() {
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 40%, rgba(255,60,0,0.05) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(215,52,11,0.05) 0%, transparent 60%)',
       }} />
 
       {/* Back to home */}
@@ -241,7 +241,7 @@ export default function AuthPage() {
             <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
               <div style={{
                 width: 56, height: 56, margin: '0 auto 22px', borderRadius: '50%',
-                background: 'rgba(255,60,0,0.12)', border: '1px solid rgba(255,60,0,0.4)',
+                background: 'rgba(215,52,11,0.12)', border: '1px solid rgba(215,52,11,0.4)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 24,
               }}>✉️</div>
@@ -256,7 +256,7 @@ export default function AuthPage() {
               <button
                 onClick={() => { setConfirmSent(false); setMode('signin'); }}
                 style={{
-                  width: '100%', padding: '14px', background: 'var(--accent)', color: '#060606',
+                  width: '100%', padding: '14px', background: 'var(--accent)', color: '#040710',
                   border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
                   textTransform: 'uppercase', fontWeight: 600, borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
@@ -344,8 +344,8 @@ export default function AuthPage() {
                   exit={{ opacity: 0, y: -8 }}
                   style={{
                     padding: '10px 14px',
-                    background: 'rgba(255,60,0,0.08)',
-                    border: '1px solid rgba(255,60,0,0.2)',
+                    background: 'rgba(215,52,11,0.08)',
+                    border: '1px solid rgba(215,52,11,0.2)',
                     borderRadius: 'var(--radius-sm)',
                     fontFamily: 'var(--mono)',
                     fontSize: 11,
@@ -368,7 +368,7 @@ export default function AuthPage() {
               style={{
                 width: '100%',
                 padding: '15px',
-                background: loading ? 'rgba(255,60,0,0.6)' : 'var(--accent)',
+                background: loading ? 'rgba(215,52,11,0.6)' : 'var(--accent)',
                 border: 'none',
                 color: 'var(--bg)',
                 fontFamily: 'var(--mono)',

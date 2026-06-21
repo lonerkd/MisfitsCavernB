@@ -115,7 +115,7 @@ export default function ShowcasePage() {
       </section>
 
       {/* Visual Effects Demo */}
-      <section style={{ padding: '90px 18px', background: '#0a0a0a' }}>
+      <section style={{ padding: '90px 18px', background: '#050a14' }}>
         <AnimatedSection delay={0.2}>
           <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>

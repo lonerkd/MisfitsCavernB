@@ -257,8 +257,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
                 onClick={() => setUsingCustom(true)}
                 style={{
                   padding: '6px 12px', borderRadius: 9999,
-                  background: usingCustom ? 'rgba(255,60,0,0.12)' : 'rgba(224,221,174,0.03)',
-                  border: `1px solid ${usingCustom ? 'rgba(255,60,0,0.4)' : 'rgba(224,221,174,0.06)'}`,
+                  background: usingCustom ? 'rgba(215,52,11,0.12)' : 'rgba(224,221,174,0.03)',
+                  border: `1px solid ${usingCustom ? 'rgba(215,52,11,0.4)' : 'rgba(224,221,174,0.06)'}`,
                   color: usingCustom ? 'var(--accent)' : 'rgba(240,236,228,0.4)',
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                   textTransform: 'uppercase', cursor: 'pointer',
@@ -304,12 +304,12 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
             style={{
               marginTop: 6, padding: '14px',
               background: title.trim() && effectiveType ? 'var(--accent)' : 'rgba(224,221,174,0.05)',
-              color: title.trim() && effectiveType ? '#060606' : 'rgba(240,236,228,0.3)',
+              color: title.trim() && effectiveType ? '#040710' : 'rgba(240,236,228,0.3)',
               border: 'none', borderRadius: 12,
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
               cursor: title.trim() && effectiveType ? 'pointer' : 'default',
-              boxShadow: title.trim() && effectiveType ? '0 6px 20px rgba(255,60,0,0.3)' : 'none',
+              boxShadow: title.trim() && effectiveType ? '0 6px 20px rgba(215,52,11,0.3)' : 'none',
             }}
           >
             {submitting ? 'Creating…' : 'Create Project'}
@@ -378,7 +378,7 @@ export default function ProjectsPage() {
             onClick={() => { if (!user) { toast('Sign in to create projects', 'error'); return; } setShowNew(true); }}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'var(--accent)', color: '#060606', border: 'none', borderRadius: 9999,
+              background: 'var(--accent)', color: '#040710', border: 'none', borderRadius: 9999,
               fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
               fontWeight: 600, padding: '8px 16px', cursor: 'pointer',
             }}
@@ -394,7 +394,7 @@ export default function ProjectsPage() {
         <div style={{
           position: 'fixed', top: 58, left: 0, width: '100%', height: 40,
           display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(12px)',
+          background: 'rgba(4,7,13,0.85)', backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(224,221,174,0.03)', zIndex: 199, padding: '0 24px',
           overflowX: 'auto',
         }}>
@@ -449,7 +449,7 @@ export default function ProjectsPage() {
                 onClick={() => { if (!user) { toast('Sign in to create projects', 'error'); return; } setShowNew(true); }}
                 style={{
                   padding: '10px 22px', borderRadius: 9999,
-                  background: 'rgba(255,60,0,0.12)', border: '1px solid rgba(255,60,0,0.3)',
+                  background: 'rgba(215,52,11,0.12)', border: '1px solid rgba(215,52,11,0.3)',
                   color: 'var(--accent)', cursor: 'pointer',
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
                 }}

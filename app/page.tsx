@@ -122,7 +122,7 @@ function PipelineConnector({ index }: { index: number }) {
         top: 0, left: '-60%',
         width: '60%',
         height: '100%',
-        background: 'linear-gradient(90deg, transparent, rgba(255,60,0,0.6), transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(215,52,11,0.6), transparent)',
         animation: `travel ${3 + index * 0.4}s ease-in-out ${index * 0.6}s infinite`,
       }} />
     </motion.div>
@@ -217,8 +217,8 @@ function LoungePreview() {
             <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: '#10b981', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
-            background: m.mine ? 'rgba(255,60,0,0.15)' : 'rgba(224,221,174,0.05)',
-            border: `1px solid ${m.mine ? 'rgba(255,60,0,0.2)' : 'rgba(224,221,174,0.07)'}`,
+            background: m.mine ? 'rgba(215,52,11,0.15)' : 'rgba(224,221,174,0.05)',
+            border: `1px solid ${m.mine ? 'rgba(215,52,11,0.2)' : 'rgba(224,221,174,0.07)'}`,
             borderRadius: m.mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
             padding: '7px 12px',
             maxWidth: '80%',
@@ -483,7 +483,7 @@ export default function Home() {
           maxHeight: 800,
           borderRadius: '50%',
           pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(255,60,0,0.10) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(215,52,11,0.10) 0%, transparent 65%)',
           animation: 'orb-breathe 10s ease-in-out infinite',
         }} />
         <div style={{
@@ -511,14 +511,14 @@ export default function Home() {
               alignItems: 'center',
               gap: 8,
               padding: '7px 16px',
-              background: 'rgba(255,60,0,0.08)',
-              border: '1px solid rgba(255,60,0,0.20)',
+              background: 'rgba(215,52,11,0.08)',
+              border: '1px solid rgba(215,52,11,0.20)',
               borderRadius: 9999,
               fontFamily: 'var(--mono)',
               fontSize: 8.5,
               letterSpacing: 3,
               textTransform: 'uppercase',
-              color: 'rgba(255,60,0,0.85)',
+              color: 'rgba(215,52,11,0.85)',
             }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#d7340b', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
               Digital Film Studio
@@ -550,13 +550,13 @@ export default function Home() {
               <span style={{
                 color: 'var(--accent)',
                 display: 'block',
-                textShadow: '0 0 80px rgba(255,60,0,0.25)',
+                textShadow: '0 0 80px rgba(215,52,11,0.25)',
               }}>
                 CAVERN
               </span>
 
               {/* Viewfinder corners */}
-              <Viewfinder size={22} color="rgba(255,60,0,0.45)" />
+              <Viewfinder size={22} color="rgba(215,52,11,0.45)" />
             </motion.div>
           </div>
 
@@ -710,7 +710,7 @@ export default function Home() {
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 60%, rgba(255,60,0,0.07) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse at 50% 60%, rgba(215,52,11,0.07) 0%, transparent 60%)',
           pointerEvents: 'none',
         }} />
 
@@ -720,7 +720,7 @@ export default function Home() {
               <div style={{
                 width: 1,
                 height: 64,
-                background: 'linear-gradient(180deg, transparent, rgba(255,60,0,0.5))',
+                background: 'linear-gradient(180deg, transparent, rgba(215,52,11,0.5))',
               }} />
             </div>
 
@@ -732,7 +732,7 @@ export default function Home() {
               marginBottom: 44,
             }}>
               {user ? (activeProject ? <>BACK TO<br /></> : <>BEGIN YOUR<br /></>) : <>BEGIN YOUR<br /></>}
-              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(255,60,0,0.2)' }}>
+              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(215,52,11,0.2)' }}>
                 {user ? (activeProject ? activeProject.title.toUpperCase() : 'FILM') : 'FILM'}
               </span>
             </div>

@@ -403,8 +403,8 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
                 onClick={() => setSelected({ id: p.id, username: p.username })}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8,
-                  background: active ? 'rgba(255,60,0,0.1)' : 'transparent',
-                  border: active ? '1px solid rgba(255,60,0,0.3)' : '1px solid transparent',
+                  background: active ? 'rgba(215,52,11,0.1)' : 'transparent',
+                  border: active ? '1px solid rgba(215,52,11,0.3)' : '1px solid transparent',
                   cursor: 'pointer', textAlign: 'left',
                 }}
               >
@@ -434,7 +434,7 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
           style={{
             width: '100%', padding: '12px', borderRadius: 12,
             background: selected ? 'var(--accent)' : 'rgba(224,221,174,0.05)',
-            color: selected ? '#060606' : 'rgba(240,236,228,0.3)',
+            color: selected ? '#040710' : 'rgba(240,236,228,0.3)',
             border: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5, fontWeight: 600,
             textTransform: 'uppercase', cursor: selected ? 'pointer' : 'default',
           }}

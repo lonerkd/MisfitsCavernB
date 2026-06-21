@@ -1035,6 +1035,22 @@ export default function EditorPage() {
     return diffSnapshots(diffRevision.snapshot, content);
   }, [diffRevision, content]);
 
+  // Loading state — auth check in flight, or a signed-in user's scripts are
+  // still being fetched. Avoids a flash of an empty/blank editor shell.
+  if (authLoading || (user && !currentScript)) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14,
+      }}>
+        <Loader size={22} className="animate-spin" style={{ color: 'var(--accent)' }} />
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+          Loading ScriptOS…
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
 
@@ -1042,8 +1058,8 @@ export default function EditorPage() {
       {!authLoading && !user && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-          padding: '8px 16px', background: 'rgba(255,60,0,0.10)',
-          borderBottom: '1px solid rgba(255,60,0,0.25)',
+          padding: '8px 16px', background: 'rgba(215,52,11,0.10)',
+          borderBottom: '1px solid rgba(215,52,11,0.25)',
           fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, color: 'var(--fg)',
           flexWrap: 'wrap', textAlign: 'center',
         }}>
@@ -1051,7 +1067,7 @@ export default function EditorPage() {
             <strong style={{ color: 'var(--accent)' }}>Demo mode</strong> — try everything. Sign in to save your screenplay to the cloud.
           </span>
           <a href="/auth" style={{
-            padding: '5px 14px', background: 'var(--accent)', color: '#060606',
+            padding: '5px 14px', background: 'var(--accent)', color: '#040710',
             borderRadius: 9999, textDecoration: 'none', fontWeight: 600,
             letterSpacing: 2, textTransform: 'uppercase', fontSize: 9,
           }}>
@@ -1228,7 +1244,7 @@ export default function EditorPage() {
                   border: 'none', cursor: 'pointer',
                   transition: 'box-shadow 0.25s, transform 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,60,0,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(215,52,11,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
               >
                 <Download size={12} /> Export <ChevronDown size={11} />
@@ -1282,7 +1298,7 @@ export default function EditorPage() {
       {/* FIND & REPLACE BAR */}
       <AnimatePresence>
         {showFindReplace && (
-          <motion.div initial={{ y: -32, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -32, opacity: 0 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ background: 'rgba(8,12,20,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(224,221,174,0.05)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <motion.div initial={{ y: -32, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -32, opacity: 0 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ background: 'rgba(4,7,13,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(224,221,174,0.05)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <Search size={14} style={{ color: 'var(--fg-muted)' }} />
             <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
             <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
@@ -1307,7 +1323,7 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: 248,
-                background: 'rgba(8,12,20,0.96)',
+                background: 'rgba(4,7,13,0.96)',
                 borderRight: '1px solid rgba(224,221,174,0.05)',
                 display: 'flex', flexDirection: 'column', flexShrink: 0,
               }}
@@ -1378,7 +1394,7 @@ export default function EditorPage() {
                       fontFamily: 'var(--mono)', letterSpacing: 1,
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215,52,11,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(224,221,174,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >{key}</button>
                   ))}

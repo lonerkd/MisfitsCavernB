@@ -181,7 +181,7 @@ function ContextSatellite({
           height: 52, padding: expanded ? '0 16px 0 13px' : '0 13px',
           borderRadius: 26, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
           // Same Liquid-Glass material as the dock, tinted to the active accent.
-          background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(8,12,20,0.9) 100%)',
+          background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(4,7,13,0.9) 100%)',
           backdropFilter: 'blur(30px) saturate(1.8)',
           WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
           border: `1px solid ${accent}40`,
@@ -286,7 +286,7 @@ function ContextSatellite({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
                 }}>
-                  {t.active && <Check size={10} strokeWidth={3} color="#0a0a0a" />}
+                  {t.active && <Check size={10} strokeWidth={3} color="#050a14" />}
                 </span>
                 <span style={{
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1,
@@ -337,7 +337,7 @@ function Keycap({ char, accent, active }: { char: string; accent: string; active
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       width: 13, height: 13, borderRadius: 4, flexShrink: 0,
       fontFamily: 'var(--mono)', fontSize: 7, fontWeight: 700, textTransform: 'uppercase',
-      color: active ? '#0a0a0a' : accent,
+      color: active ? '#050a14' : accent,
       background: active ? accent : `${accent}1f`,
       border: `1px solid ${accent}55`,
     }}>
@@ -400,7 +400,7 @@ function ProjectSwitcher({
         marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         Projects
-        <Link href="/projects" onClick={onClose} style={{ color: 'rgba(255,60,0,0.7)', textDecoration: 'none', fontSize: 7, letterSpacing: 1.5 }}>
+        <Link href="/projects" onClick={onClose} style={{ color: 'rgba(215,52,11,0.7)', textDecoration: 'none', fontSize: 7, letterSpacing: 1.5 }}>
           All →
         </Link>
       </div>
@@ -581,7 +581,7 @@ export default function EcosystemTaskbar() {
             borderRadius: 26,
             // Liquid-Glass material — translucency + saturation + a contextual
             // under-glow tinted to the active module.
-            background: 'linear-gradient(180deg, rgba(22,22,22,0.78) 0%, rgba(8,12,20,0.88) 100%)',
+            background: 'linear-gradient(180deg, rgba(22,22,22,0.78) 0%, rgba(4,7,13,0.88) 100%)',
             backdropFilter: 'blur(30px) saturate(1.8)',
             WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
             border: '1px solid rgba(224,221,174,0.08)',

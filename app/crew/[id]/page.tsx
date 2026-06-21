@@ -276,8 +276,8 @@ export default function CrewMemberPage() {
                   <div
                     style={{
                       padding: '20px 22px',
-                      background: '#0a0a0a',
-                      border: `1px solid ${hoveredCard === project.id ? 'rgba(255,60,0,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      background: '#050a14',
+                      border: `1px solid ${hoveredCard === project.id ? 'rgba(215,52,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
                       transition: 'border-color 0.2s',
                       cursor: 'pointer'
                     }}
