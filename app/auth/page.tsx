@@ -159,6 +159,10 @@ export default function AuthPage() {
       setError('Please enter your email and password.');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     if (mode === 'signup' && !form.username.trim()) {
       setError('Please choose a username.');
       return;
