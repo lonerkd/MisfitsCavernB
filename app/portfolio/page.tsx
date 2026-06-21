@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Play, X, Plus } from 'lucide-react';
+import { Play, X, Plus, Share2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -31,6 +31,7 @@ interface Project {
   description: string;
   year: string;
   media: MediaItem[];
+  shareToken?: string;
 }
 
 function getThumbnailUrl(media?: MediaItem): string | null {
@@ -215,12 +216,23 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
 
 function ProjectBible({ project, onClose }: { project: Project | null; onClose: () => void }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setSelectedIndex(0);
+    setCopied(false);
   }, [project?.id]);
 
   if (!project) return null;
+
+  const handleCopyShareLink = () => {
+    if (!project.shareToken || typeof window === 'undefined') return;
+    const url = `${window.location.origin}/p/${project.shareToken}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const media = project.media[selectedIndex];
   const embedUrl = getEmbedUrl(media);
@@ -244,6 +256,21 @@ function ProjectBible({ project, onClose }: { project: Project | null; onClose: 
           <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
             <X size={18} /> Close Bible
           </button>
+
+          {project.shareToken && (
+            <button
+              onClick={handleCopyShareLink}
+              style={{
+                position: 'fixed', top: 32, right: 160, background: 'none',
+                border: '1px solid rgba(224,221,174,0.15)', borderRadius: 6, padding: '6px 12px',
+                color: copied ? '#00cc66' : '#888', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8, fontSize: 10,
+                textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--mono)',
+              }}
+            >
+              {copied ? <><Check size={14} /> Link Copied</> : <><Share2 size={14} /> Copy Public Link</>}
+            </button>
+          )}
 
           {/* Header */}
           <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
@@ -510,6 +537,7 @@ export default function PortfolioPage() {
           description: p.description || '',
           year: p.year?.toString() || '',
           media: (p.portfolio_media || []) as MediaItem[],
+          shareToken: p.share_token,
         }));
         setProjectsList(mapped);
         setLoading(false);
