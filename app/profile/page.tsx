@@ -5,6 +5,7 @@ import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase } from
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import NotificationBell from '@/components/NotificationBell';
+import GrainOverlay from '@/components/GrainOverlay';
 
 const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
@@ -77,10 +78,39 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, marginBottom: 16 }}>Not signed in.</p>
-          <Link href="/auth" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11 }}>Sign in →</Link>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+        <GrainOverlay />
+        <header style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
+          background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          padding: '0 24px', display: 'flex', alignItems: 'center', zIndex: 100,
+        }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
+            <ArrowLeft size={20} />
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>PROFILE</h1>
+          </Link>
+        </header>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 320 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', margin: '0 auto 20px',
+              background: 'rgba(215,52,11,0.1)', border: '1px solid rgba(215,52,11,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--display)', fontSize: '1.4rem', color: 'var(--accent)',
+            }}>?</div>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 2, margin: '0 0 10px' }}>You're not signed in</h2>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, lineHeight: 1.6, marginBottom: 24 }}>
+              Sign in to view and edit your crew profile, track your scripts, projects, and posted jobs.
+            </p>
+            <Link href="/auth" style={{
+              display: 'inline-block', padding: '12px 28px', background: 'var(--accent)',
+              color: 'var(--bg)', textDecoration: 'none', fontFamily: 'var(--mono)',
+              fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
+            }}>
+              Sign In →
+            </Link>
+          </div>
         </div>
       </div>
     );
