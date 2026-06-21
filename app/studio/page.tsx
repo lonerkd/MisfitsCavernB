@@ -949,6 +949,7 @@ export default function StudioPage() {
   const [npTitle, setNpTitle] = useState('');
   const [npType, setNpType] = useState('Feature');
   const [npCreating, setNpCreating] = useState(false);
+  const [npTitleError, setNpTitleError] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
   const [editingBudget, setEditingBudget] = useState(false);
@@ -1001,7 +1002,9 @@ export default function StudioPage() {
   const handleCreateProject = async () => {
     if (!user) { window.alert('Sign in to create a project.'); return; }
     const title = npTitle.trim();
-    if (!title || npCreating) return;
+    if (!title) { setNpTitleError(true); return; }
+    if (npCreating) return;
+    setNpTitleError(false);
     setNpCreating(true);
     try {
       const created = await createProject(user.id, title, '', npType);
@@ -1583,11 +1586,14 @@ export default function StudioPage() {
               </div>
               <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Title</label>
               <input
-                autoFocus value={npTitle} onChange={e => setNpTitle(e.target.value)}
+                autoFocus value={npTitle} onChange={e => { setNpTitle(e.target.value); if (npTitleError) setNpTitleError(false); }}
                 onKeyDown={e => { if (e.key === 'Enter') handleCreateProject(); }}
                 placeholder="e.g. Femme Fatale"
-                style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 8, padding: '11px 14px', color: '#fff', fontSize: 14, outline: 'none', marginBottom: 18 }}
+                style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: `1px solid ${npTitleError ? '#ef4444' : 'rgba(224,221,174,0.1)'}`, borderRadius: 8, padding: '11px 14px', color: '#fff', fontSize: 14, outline: 'none', marginBottom: npTitleError ? 6 : 18 }}
               />
+              {npTitleError && (
+                <div style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>Please enter a title.</div>
+              )}
               <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Type</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 26 }}>
                 {CURATED_PROJECT_TYPES.map(t => (
