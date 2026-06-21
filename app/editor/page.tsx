@@ -521,6 +521,25 @@ export default function EditorPage() {
     return () => { active = false; };
   }, [currentScript?.id]);
 
+  // Scene tag colors — persisted in localStorage per script (no DB column
+  // for this yet), so tags survive reloads without needing a migration.
+  useEffect(() => {
+    if (!currentScript?.id) { setSceneColors({}); return; }
+    try {
+      const raw = localStorage.getItem(`scriptos:sceneColors:${currentScript.id}`);
+      setSceneColors(raw ? JSON.parse(raw) : {});
+    } catch {
+      setSceneColors({});
+    }
+  }, [currentScript?.id]);
+
+  useEffect(() => {
+    if (!currentScript?.id) return;
+    try {
+      localStorage.setItem(`scriptos:sceneColors:${currentScript.id}`, JSON.stringify(sceneColors));
+    } catch {}
+  }, [sceneColors, currentScript?.id]);
+
   // Find count
   useEffect(() => {
     if (findText && content) {
