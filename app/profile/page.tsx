@@ -66,10 +66,65 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, marginBottom: 16 }}>Not signed in.</p>
-          <Link href="/auth" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11 }}>Sign in →</Link>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {/* Background orb */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at 50% 40%, rgba(255,60,0,0.06) 0%, transparent 60%)',
+        }} />
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
+          <div style={{
+            fontFamily: 'var(--display)',
+            fontSize: 'clamp(2rem, 6vw, 3rem)',
+            letterSpacing: 6,
+            lineHeight: 1.1,
+            marginBottom: 16,
+          }}>
+            MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
+          </div>
+          <p style={{
+            fontFamily: 'var(--serif)',
+            fontSize: '1rem',
+            fontStyle: 'italic',
+            color: 'var(--fg-muted)',
+            marginBottom: 32,
+          }}>Sign in to access your profile</p>
+          <Link href="/auth" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '14px 32px',
+            background: 'var(--accent)',
+            color: 'var(--bg)',
+            textDecoration: 'none',
+            fontFamily: 'var(--mono)',
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: 3,
+            textTransform: 'uppercase',
+            borderRadius: 'var(--radius-sm)',
+            transition: 'transform 0.2s, box-shadow 0.3s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,60,0,0.3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            Sign In
+          </Link>
+          <div style={{ marginTop: 20 }}>
+            <Link href="/" style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 9,
+              letterSpacing: 2,
+              color: 'var(--fg-muted)',
+              textDecoration: 'none',
+              transition: 'color 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
+            >
+              ← BACK TO HOME
+            </Link>
+          </div>
         </div>
       </div>
     );

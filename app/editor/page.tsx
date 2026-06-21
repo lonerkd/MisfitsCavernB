@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { parseScript } from '@/lib/scriptos/parser';
+import { parseScript, type LearnedRules } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
@@ -22,6 +22,7 @@ import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
+import { logActivity } from '@/lib/supabase/activity';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -190,9 +191,19 @@ export default function EditorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+
+  // Load demo content from localStorage
+  useEffect(() => {
+    if (!currentScript) {
+      const saved = localStorage.getItem('mc_demo_script');
+      if (saved) setContent(saved);
+    }
+  }, []);
   const [lines, setLines] = useState<ScriptLine[]>([]);
+  const [learnedRules, setLearnedRules] = useState<LearnedRules>({ characters: [], slugs: [], transitions: [] });
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
+  const [pendingImport, setPendingImport] = useState<{ text: string, title: string, unknowns: string[] } | null>(null);
   
   // UI States
   const [showSidebar, setShowSidebar] = useState(true);
@@ -260,10 +271,25 @@ export default function EditorPage() {
     setCurrentScript(script);
     setContent(script.content || PLACEHOLDER);
     setTitlePage(loadTitlePage(script.id));
+    setLearnedRules(script.learned_rules || { characters: [], slugs: [], transitions: [] });
     setCharProfiles(loadCharacterProfiles(script.id));
     setSessionStartWords((script.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
+
+  const learnRule = useCallback((type: 'characters' | 'slugs' | 'transitions', text: string) => {
+    const cleanText = text.replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase();
+    setLearnedRules(prev => {
+      const current = prev[type] || [];
+      if (current.includes(cleanText)) return prev;
+      const next = { ...prev, [type]: [...current, cleanText] };
+      if (currentScript) {
+        saveScript({ ...currentScript, learned_rules: next });
+      }
+      return next;
+    });
+    toast(`Learned new ${type.slice(0, -1)}: ${cleanText}`, 'success');
+  }, [currentScript, toast]);
 
   // Init
   useEffect(() => {
@@ -275,6 +301,7 @@ export default function EditorPage() {
         setCurrentScript(latest);
         setContent(latest.content || PLACEHOLDER);
         setTitlePage(loadTitlePage(latest.id));
+        setLearnedRules(latest.learned_rules || { characters: [], slugs: [], transitions: [] });
         setCharProfiles(loadCharacterProfiles(latest.id));
         setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
       } else {
@@ -282,6 +309,7 @@ export default function EditorPage() {
         if (fresh) {
           setCurrentScript(fresh);
           setScripts([fresh]);
+          setLearnedRules({ characters: [], slugs: [], transitions: [] });
           setContent(PLACEHOLDER);
           setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
         }
@@ -304,7 +332,7 @@ export default function EditorPage() {
   // Parser hook
   useEffect(() => {
     if (content) {
-      const result = parseScript(content);
+      const result = parseScript(content, learnedRules);
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
@@ -315,7 +343,7 @@ export default function EditorPage() {
       setCharStats([]);
       setLintIssues([]);
     }
-  }, [content]);
+  }, [content, learnedRules]);
 
   // Load revisions when script changes
   useEffect(() => {
@@ -383,6 +411,9 @@ export default function EditorPage() {
     if (saved) {
       setCurrentScript(saved);
       toast('Screenplay saved to cloud.', 'success');
+      
+      // Log ecosystem activity
+      logActivity('updated the script', 'script', saved.id, { title: saved.title });
     }
     setSaving(false);
   }, [currentScript, content, toast]);
@@ -462,6 +493,40 @@ export default function EditorPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts]);
 
+  const finalizeImport = async (text: string, title: string, newRules: LearnedRules) => {
+    setPendingImport(null);
+    try {
+      const imported = await importScriptFromText(text, title);
+      if (imported) {
+        imported.learned_rules = newRules;
+        await saveScript(imported);
+        setScripts(prev => [...prev, imported]);
+        setCurrentScript(imported);
+        setLearnedRules(newRules);
+        setContent(text);
+        toast(`Imported "${title}"`, 'success');
+        return;
+      }
+    } catch (err) {
+      console.warn('Cloud import failed, using local mode:', err);
+    }
+    
+    const localScript: StoredScript = {
+      id: `local-${Date.now()}`,
+      title,
+      content: text,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      learned_rules: newRules
+    };
+    setScripts(prev => [...prev, localScript]);
+    setCurrentScript(localScript);
+    setLearnedRules(newRules);
+    setContent(text);
+    localStorage.setItem('mc_demo_script', text);
+    toast(`Imported "${title}" (local)`, 'success');
+  };
+
   // Import .fountain / .txt file
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -470,16 +535,19 @@ export default function EditorPage() {
     reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
-      const imported = await importScriptFromText(text, title);
-      if (imported) {
-        setScripts(prev => [...prev, imported]);
-        setCurrentScript(imported);
-        setContent(text);
-        toast(`Imported "${title}"`, 'success');
+      
+      const preParse = parseScript(text);
+      const issues = validateScript(preParse.lines, text);
+      const unknowns = [...new Set(issues.filter(i => i.rule === 'unknown-caps').map(i => i.message.match(/"([^"]+)"/)?.[1] || '').filter(Boolean))];
+      
+      if (unknowns.length > 0) {
+        setPendingImport({ text, title, unknowns: unknowns.slice(0, 5) });
+      } else {
+        finalizeImport(text, title, { characters: [], slugs: [], transitions: [] });
       }
     };
     reader.readAsText(file);
-    e.target.value = ''; // reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }, [toast]);
 
   // Title page save
@@ -556,6 +624,9 @@ export default function EditorPage() {
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
+    if (!currentScript) {
+      localStorage.setItem('mc_demo_script', val);
+    }
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
 
     const cursor = e.target.selectionStart;
@@ -598,7 +669,7 @@ export default function EditorPage() {
       return true;
     });
   }, [scenesList, sceneFilter]);
-  const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
+  const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim().replace(/\s*\(.*?\)\s*/g, '').trim()))];
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(wordCount / 185));
   const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
@@ -1338,7 +1409,7 @@ export default function EditorPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
                 {[
                   { label: 'Words',   value: wordCount.toLocaleString(), color: '#6366f1', sub: `${pageEst} pages` },
-                  { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
+                  { label: 'Runtime', value: `${Math.max(1, Math.ceil(pageEst * 0.8))}m`, color: '#10b981', sub: `approx ${Math.max(1, Math.round(pageEst * 0.8 * 60))}s total` },
                   { label: 'Scenes',  value: `${scenesList.length}`, color: '#ff3c00', sub: `${uniqueLocations.length} locations` },
                   { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
                   { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
@@ -1837,6 +1908,43 @@ export default function EditorPage() {
                             </div>
                             <div style={{ fontSize: 11, color: '#ccc' }}>{issue.message}</div>
                             <div style={{ fontSize: 9, color: '#666', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
+                            {(issue.rule === 'slug-case' || issue.rule === 'char-case' || issue.rule === 'transition-case') && (
+                              <button
+                                onClick={() => {
+                                  const rawLines = content.split('\n');
+                                  const lineIdx = issue.line - 1;
+                                  if (rawLines[lineIdx]) {
+                                    rawLines[lineIdx] = rawLines[lineIdx].toUpperCase();
+                                    setContent(rawLines.join('\n'));
+                                    toast(`Fixed: ${issue.message}`, 'success');
+                                  }
+                                }}
+                                style={{ fontSize: 8, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '3px 8px', color: '#10b981', cursor: 'pointer', marginTop: 6, fontFamily: 'var(--mono)', letterSpacing: 1, textTransform: 'uppercase' }}
+                              >Fix</button>
+                            )}
+                            {issue.rule === 'unknown-caps' && (
+                              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                                <button
+                                  onClick={() => {
+                                    const rawLines = content.split('\n');
+                                    const text = rawLines[issue.line - 1];
+                                    if (text) learnRule('characters', text);
+                                  }}
+                                  style={{ fontSize: 8, background: 'rgba(255,170,0,0.15)', border: '1px solid rgba(255,170,0,0.3)', borderRadius: 4, padding: '3px 8px', color: '#ffaa00', cursor: 'pointer', fontFamily: 'var(--mono)', letterSpacing: 1, textTransform: 'uppercase' }}
+                                >Mark as Character</button>
+                                <button
+                                  onClick={() => {
+                                    const rawLines = content.split('\n');
+                                    const text = rawLines[issue.line - 1];
+                                    if (text) {
+                                      const prefix = text.split('-')[0].trim().toUpperCase();
+                                      learnRule('slugs', prefix);
+                                    }
+                                  }}
+                                  style={{ fontSize: 8, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 4, padding: '3px 8px', color: '#fff', cursor: 'pointer', fontFamily: 'var(--mono)', letterSpacing: 1, textTransform: 'uppercase' }}
+                                >Mark as Scene</button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -2122,6 +2230,49 @@ export default function EditorPage() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
       `}</style>
+      {/* Smart Import Modal */}
+      <AnimatePresence>
+        {pendingImport && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} style={{ background: '#111', width: 500, borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)' }}>
+                <h2 style={{ fontSize: 20, fontFamily: 'var(--display)', margin: 0, letterSpacing: 1 }}>Smart Import</h2>
+                <p style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 8, marginBottom: 0 }}>We noticed some non-standard formatting in "{pendingImport.title}". Help ScriptOS learn by classifying these.</p>
+              </div>
+              <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {pendingImport.unknowns.map((unknown, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: 8 }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: '#fff' }}>{unknown}</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={(e) => { e.currentTarget.style.background = '#ffaa00'; e.currentTarget.style.color = '#000'; e.currentTarget.dataset.choice = 'character'; }} data-unknown={unknown} className="import-choice-btn" style={{ background: 'rgba(255,170,0,0.1)', color: '#ffaa00', border: '1px solid rgba(255,170,0,0.3)', padding: '6px 12px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}>Character</button>
+                      <button onClick={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.dataset.choice = 'slug'; }} data-unknown={unknown} className="import-choice-btn" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '6px 12px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}>Scene</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '16px 32px', background: 'var(--bg-3)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button onClick={() => setPendingImport(null)} style={{ padding: '8px 16px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--mono)' }}>Cancel</button>
+                <button 
+                  onClick={() => {
+                    const newRules: LearnedRules = { characters: [], slugs: [], transitions: [] };
+                    document.querySelectorAll('.import-choice-btn[data-choice]').forEach((btn) => {
+                      const choice = (btn as HTMLElement).dataset.choice;
+                      const unknown = (btn as HTMLElement).dataset.unknown;
+                      if (choice === 'character' && unknown) newRules.characters?.push(unknown.replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase());
+                      if (choice === 'slug' && unknown) newRules.slugs?.push(unknown.split('-')[0].trim().toUpperCase());
+                    });
+                    finalizeImport(pendingImport.text, pendingImport.title, newRules);
+                  }}
+                  style={{ padding: '8px 24px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}
+                >
+                  Import Script
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

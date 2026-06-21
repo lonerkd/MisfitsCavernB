@@ -691,6 +691,15 @@ export default function JobsPage() {
             </>
           )}
 
+          {tab === 'mine' && !user && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
+              <Briefcase size={40} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 20 }} />
+              <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
+              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#060606', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
+            </div>
+          )}
+
           {tab === 'mine' && user && (
             <>
               {myJobs.length === 0 ? (

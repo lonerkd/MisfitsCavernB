@@ -8,6 +8,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
+import { useProject } from '@/lib/context/ProjectContext';
 
 type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
 
@@ -300,7 +301,8 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
 }
 
 export default function ProjectsPage() {
-  const [projectsList, setProjectsList] = useState<Project[]>(SEED_PROJECTS);
+  const { projects: contextProjects, createProject, activeProject, setActiveProject } = useProject();
+  const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
 
@@ -308,50 +310,58 @@ export default function ProjectsPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       setUser(user);
-      getUserProjects(user.id).then(data => {
-        if (data && data.length > 0) {
-          const fetched: Project[] = data.map(p => ({
-            id: p.id,
-            title: p.title,
-            type: 'Feature',
-            phase: (p.status === 'completed' ? 'delivery' :
-                    p.status === 'in-production' ? 'production' :
-                    p.status === 'post-production' ? 'post-production' :
-                    'development') as Phase,
-            progress: 0,
-            deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
-            team: ['CR'],
-            description: p.description || 'No description.',
-            color: p.accent_color || '#ff3c00',
-          }));
-          setProjectsList(fetched);
-        }
-      });
     });
   }, []);
+
+  useEffect(() => {
+    if (contextProjects) {
+      const formatted: Project[] = contextProjects.map(p => ({
+        id: p.id,
+        title: p.title,
+        type: p.type || 'Feature',
+        phase: (p.status === 'completed' ? 'delivery' :
+                p.status === 'in-production' ? 'production' :
+                p.status === 'post-production' ? 'post-production' :
+                'development') as Phase,
+        progress: (p as any).completion || 0,
+        deadline: (p as any).end_date || new Date().toISOString(),
+        team: ['Creator'],
+        description: p.description || 'No description provided.',
+        color: p.accent_color || '#ff3c00'
+      }));
+      setProjectsList(formatted);
+    }
+  }, [contextProjects]);
 
   const byPhase = useMemo(() => {
     const map: Record<Phase, Project[]> = {
       development: [], 'pre-production': [], production: [], 'post-production': [], delivery: [],
     };
-    projectsList.forEach(p => map[p.phase].push(p));
+    projectsList.forEach(p => {
+      if (map[p.phase]) {
+        map[p.phase].push(p);
+      } else {
+        map['development'].push(p); // fallback
+      }
+    });
     return map;
   }, [projectsList]);
 
   const handleNewProject = async () => {
     if (!user) { toast('Sign in to create projects', 'error'); return; }
     const title = prompt('Project title:');
-    if (!title) return;
+    if (!title || !title.trim()) {
+      toast('Please enter a project title', 'error');
+      return;
+    }
+    
     try {
-      const p = await createDBProject(user.id, title, 'A new cinematic vision.');
-      const newP: Project = {
-        id: p.id, title: p.title, type: 'Feature', phase: 'development',
-        progress: 0, deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
-        team: ['CR'], description: p.description, color: '#6366f1',
-      };
-      setProjectsList(prev => [newP, ...prev]);
-      toast('Project created', 'success');
-    } catch {
+      const p = await createProject(title.trim(), 'A new cinematic vision.');
+      if (p) {
+        toast('Project created and activated!', 'success');
+      }
+    } catch (e) {
+      console.error(e);
       toast('Failed to create project', 'error');
     }
   };

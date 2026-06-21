@@ -111,18 +111,30 @@ const KNOWLEDGE = {
 // PARSER CLASS
 // =========================================================================
 
+export interface LearnedRules {
+  characters?: string[];
+  slugs?: string[];
+  transitions?: string[];
+}
+
+export function parseScript(content: string, learnedRules?: LearnedRules) {
+  const parser = new ScriptParser(content, learnedRules);
+  return parser.parse();
+}
+
 export class ScriptParser {
   private rawLines: string[];
   private characterStats: Map<string, number>;
   private elements: Record<string, Set<string>>;
   private lines: ScriptLine[];
+  private learnedRules: LearnedRules;
   
   // State Machine
   private sceneIndex: number = -1;
   private lastSpeaker: string | null = null;
   private insideDialogueBlock: boolean = false;
 
-  constructor(text: string) {
+  constructor(text: string, learnedRules?: LearnedRules) {
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.characterStats = new Map();
     this.elements = {
@@ -133,6 +145,7 @@ export class ScriptParser {
       'SFX': new Set()
     };
     this.lines = [];
+    this.learnedRules = learnedRules || {};
   }
 
   // --- UTILS ---
@@ -262,7 +275,10 @@ export class ScriptParser {
     const cleanName = this.clean(text);
 
     // 1. SLUG DETECTION
-    if (this.matchesSetStart(upper, KNOWLEDGE.SCENE_PREFIXES)) {
+    if (this.learnedRules.slugs && this.matchesSetStart(upper, new Set(this.learnedRules.slugs))) {
+      scores.slug = 100;
+      reasoning.push('Learned scene prefix match');
+    } else if (this.matchesSetStart(upper, KNOWLEDGE.SCENE_PREFIXES)) {
       scores.slug = 100;
       reasoning.push('Starts with known scene prefix');
     } else if (upper.startsWith('.') && this.isCaps(text)) {
@@ -271,7 +287,10 @@ export class ScriptParser {
     }
 
     // 2. TRANSITION DETECTION
-    if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, ''))) {
+    if (this.learnedRules.transitions && (this.learnedRules.transitions.includes(upper) || this.learnedRules.transitions.includes(upper.replace(/:$/, '')))) {
+      scores.transition = 100;
+      reasoning.push('Learned transition match');
+    } else if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, ''))) {
       scores.transition = 100;
       reasoning.push('Exact transition match');
     } else if (upper.endsWith(' TO:') && this.isCaps(text) && text.length < 40) {
@@ -295,8 +314,11 @@ export class ScriptParser {
     // 4. CHARACTER DETECTION
     if (this.isCaps(text) && text.length < 60) {
       let charScore = 30; // Base score for all-caps
-      
-      if (this.characterStats.get(cleanName)! >= 1) {
+
+      if (this.learnedRules.characters && this.learnedRules.characters.includes(cleanName)) {
+        charScore = 100;
+        reasoning.push('Learned character match');
+      } else if (this.characterStats.get(cleanName)! >= 1) {
         charScore += 20;
         reasoning.push('Found in cast pre-scan');
       }
@@ -491,11 +513,4 @@ export class ScriptParser {
   }
 }
 
-// =========================================================================
-// EXPORT FUNCTION
-// =========================================================================
 
-export function parseScript(text: string): ParseResult {
-  const parser = new ScriptParser(text);
-  return parser.parse();
-}

@@ -41,6 +41,12 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
       issues.push({ line: i + 1, type: 'info', message: 'Action block is very long (>500 chars). Consider breaking it up.', rule: 'action-length' });
     }
 
+    // Rule: Unknown caps format
+    const trimText = line.text.trim();
+    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
+      issues.push({ line: i + 1, type: 'warning', message: `Unrecognized uppercase format: "${trimText}". Is this a Character or Scene Heading?`, rule: 'unknown-caps' });
+    }
+
     // Rule: Parenthetical without preceding character
     if (line.type === 'parenthetical') {
       const prev = lines[i - 1];

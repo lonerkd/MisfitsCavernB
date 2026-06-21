@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS projects (
   budget DECIMAL(12, 2),
   start_date DATE,
   end_date DATE,
+  is_public BOOLEAN DEFAULT false,
+  featured BOOLEAN DEFAULT false,
+  cover_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -38,6 +41,8 @@ CREATE TABLE IF NOT EXISTS project_crew (
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   role TEXT DEFAULT 'team member',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'declined')),
+  avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(project_id, user_id)
 );
@@ -45,9 +50,11 @@ CREATE TABLE IF NOT EXISTS project_crew (
 -- Scripts table
 CREATE TABLE IF NOT EXISTS scripts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   content TEXT DEFAULT '',
+  learned_rules JSONB,
   format TEXT DEFAULT 'screenplay' CHECK (format IN ('screenplay', 'teleplay', 'stage-play')),
   version INT DEFAULT 1,
   last_edited_by UUID REFERENCES profiles(id),
@@ -128,6 +135,7 @@ CREATE TABLE IF NOT EXISTS activity_feed (
 CREATE TABLE IF NOT EXISTS studio_boards (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   background_color TEXT DEFAULT '#0a0a0a',
@@ -187,6 +195,18 @@ CREATE TABLE IF NOT EXISTS project_tasks (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Project beats (for outlining)
+CREATE TABLE IF NOT EXISTS project_beats (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT,
+  order_index INT DEFAULT 0,
+  color TEXT DEFAULT '#0099ff',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_projects_creator ON projects(creator_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
@@ -213,6 +233,7 @@ ALTER TABLE studio_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE portfolio_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_beats ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: Profiles
 CREATE POLICY "Profiles readable by all" ON profiles FOR SELECT USING (true);
@@ -281,6 +302,22 @@ CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
   )
 );
 
+-- RLS Policies: Project Beats
+CREATE POLICY "Project beats members can view" ON project_beats FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Project beats members can manage" ON project_beats FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+
 -- Trigger: auto-update profiles.updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -316,3 +353,56 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Marketing campaigns
+CREATE TABLE IF NOT EXISTS marketing_campaigns (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  platform TEXT,
+  status TEXT DEFAULT 'draft',
+  reach_estimate TEXT,
+  accent_color TEXT DEFAULT '#ffffff',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE marketing_campaigns ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Project marketing members can manage" ON marketing_campaigns FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+
+-- Storage Buckets Setup
+-- Note: This requires the storage schema to be active (standard in Supabase)
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('studio-assets', 'studio-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- RLS Policies for storage.objects (studio-assets bucket)
+-- We use DO blocks to avoid errors if policies already exist in some environments
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE policyname = 'Public Access' AND tablename = 'objects' AND schemaname = 'storage'
+    ) THEN
+        CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'studio-assets');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE policyname = 'Authenticated users can upload' AND tablename = 'objects' AND schemaname = 'storage'
+    ) THEN
+        CREATE POLICY "Authenticated users can upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'studio-assets' AND auth.role() = 'authenticated');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE policyname = 'Users can delete their own assets' AND tablename = 'objects' AND schemaname = 'storage'
+    ) THEN
+        CREATE POLICY "Users can delete their own assets" ON storage.objects FOR DELETE USING (bucket_id = 'studio-assets' AND auth.uid() = owner);
+    END IF;
+END
+$$;

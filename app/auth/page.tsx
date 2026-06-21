@@ -127,8 +127,32 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    // Client-side validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!emailRegex.test(form.email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (mode === 'signup' && !form.username.trim()) {
+      setError('Please choose a username.');
+      return;
+    }
+    if (!form.password) {
+      setError('Please enter your password.');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       if (mode === 'signin') {
@@ -140,9 +164,20 @@ export default function AuthPage() {
       }
 
       toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
-      setTimeout(() => router.push('/'), 600);
+      setTimeout(() => router.push('/profile'), 600);
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      const msg = err.message || '';
+      if (msg.includes('Invalid API key')) {
+        setError('Unable to connect. Please try again later.');
+      } else if (msg.includes('Invalid login credentials')) {
+        setError('Incorrect email or password.');
+      } else if (msg.includes('User already registered')) {
+        setError('An account with this email already exists.');
+      } else if (msg.includes('Email not confirmed')) {
+        setError('Please check your email to confirm your account.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

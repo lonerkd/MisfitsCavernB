@@ -57,6 +57,7 @@ interface ProjectContextType {
   loading: boolean;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   refreshProject: (id: string) => Promise<void>;
+  createProject: (title: string, description?: string) => Promise<Project | null>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -167,8 +168,34 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (error) console.error('Error updating project:', error);
   };
 
+  const createProject = async (title: string, description: string = '') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
+        title,
+        description,
+        creator_id: user.id,
+        status: 'concept'
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating project:', error);
+      return null;
+    }
+
+    const newProject = data as Project;
+    setProjects(prev => [newProject, ...prev]);
+    setActiveProject(newProject);
+    return newProject;
+  };
+
   return (
-    <ProjectContext.Provider value={{ activeProject, setActiveProject, projects, loading, updateProject, refreshProject }}>
+    <ProjectContext.Provider value={{ activeProject, setActiveProject, projects, loading, updateProject, refreshProject, createProject }}>
       {children}
     </ProjectContext.Provider>
   );

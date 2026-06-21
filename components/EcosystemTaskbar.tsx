@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useProject } from '@/lib/context/ProjectContext';
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#ff3c00' },
@@ -124,23 +125,20 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
 
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
+  const { activeProject, projects, setActiveProject } = useProject();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [projectsOpen, setProjectsOpen] = useState(false);
-  const [activeProject, setActiveProject] = useState<RecentProject | null>(SAMPLE_PROJECTS[0]);
-
-  // Close switcher on route change
-  useEffect(() => { setProjectsOpen(false); }, [pathname]);
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
 
   // Close on outside click
   useEffect(() => {
-    if (!projectsOpen) return;
+    if (!showProjectMenu) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('[data-taskbar]')) setProjectsOpen(false);
+      if (!target.closest('[data-taskbar]')) setShowProjectMenu(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [projectsOpen]);
+  }, [showProjectMenu]);
 
   if (pathname === '/login' || pathname === '/auth') return null;
 
@@ -278,112 +276,97 @@ export default function EcosystemTaskbar() {
             </Link>
           );
         })}
-
-        {/* Divider */}
-        <div style={{
-          width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
-          margin: '0 4px', flexShrink: 0,
-        }} />
-
-        {/* Project switcher button */}
+        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', alignSelf: 'center', margin: '0 4px' }} />
+        
+        {/* Project Selector */}
         <div style={{ position: 'relative' }}>
-          <motion.button
-            onClick={() => setProjectsOpen(v => !v)}
-            onHoverStart={() => setHoveredId('projects')}
-            onHoverEnd={() => setHoveredId(null)}
-            whileHover={{ scale: 1.08, y: -3 }}
-            whileTap={{ scale: 0.93 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowProjectMenu(!showProjectMenu)}
             style={{
-              width: 46, height: 46, borderRadius: 16,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 2,
-              background: projectsOpen
-                ? `${activeProject?.color ?? '#ff3c00'}18`
-                : hoveredId === 'projects'
-                ? 'rgba(255,255,255,0.06)'
-                : 'transparent',
-              border: 'none', cursor: 'pointer',
-              position: 'relative',
-              transition: 'background 0.25s',
+              height: 44,
+              padding: '0 16px',
+              borderRadius: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              cursor: 'pointer',
+              color: activeProject ? '#fff' : '#666',
+              fontSize: 10,
+              fontWeight: 700,
+              fontFamily: 'var(--mono)',
+              textTransform: 'uppercase',
+              letterSpacing: 1
             }}
           >
-            {/* Active project color swatch */}
-            {activeProject && (
-              <div style={{
-                position: 'absolute',
-                top: 8, right: 8,
-                width: 5, height: 5, borderRadius: '50%',
-                background: activeProject.color,
-                boxShadow: `0 0 6px ${activeProject.color}`,
-              }} />
-            )}
-            <FolderOpen
-              size={18}
-              strokeWidth={1.5}
-              color={projectsOpen
-                ? (activeProject?.color ?? '#ff3c00')
-                : hoveredId === 'projects'
-                ? 'rgba(240,236,228,0.7)'
-                : 'rgba(240,236,228,0.3)'}
-            />
-            <motion.div
-              animate={{ rotate: projectsOpen ? 0 : 180 }}
-              transition={{ duration: 0.2 }}
-              style={{ lineHeight: 0 }}
-            >
-              <ChevronUp
-                size={8}
-                color={projectsOpen ? (activeProject?.color ?? '#ff3c00') : 'rgba(240,236,228,0.25)'}
-              />
-            </motion.div>
-          </motion.button>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: activeProject?.accent_color || 'var(--accent)' }} />
+            {activeProject?.title || 'No Project'}
+          </motion.div>
 
-          {/* Switcher tooltip */}
           <AnimatePresence>
-            {hoveredId === 'projects' && !projectsOpen && (
+            {showProjectMenu && (
               <motion.div
-                initial={{ opacity: 0, y: 6, scale: 0.92 }}
-                animate={{ opacity: 1, y: -10, scale: 1 }}
-                exit={{ opacity: 0, y: 6, scale: 0.92 }}
-                transition={{ duration: 0.18 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: -10 }}
+                exit={{ opacity: 0, y: -10 }}
                 style={{
                   position: 'absolute',
                   bottom: '100%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: 'rgba(14,14,14,0.96)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(240,236,228,0.85)',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 8.5,
-                  letterSpacing: 1.5,
-                  textTransform: 'uppercase',
-                  padding: '5px 10px',
-                  borderRadius: 8,
-                  whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
-                  backdropFilter: 'blur(10px)',
+                  right: 0,
+                  marginBottom: 12,
+                  width: 200,
+                  background: 'rgba(10, 10, 10, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: 16,
+                  padding: 8,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                  zIndex: 10000,
+                  pointerEvents: 'auto'
                 }}
               >
-                {activeProject ? activeProject.title : 'Projects'}
-                <div style={{
-                  position: 'absolute',
-                  top: '100%', left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 0, height: 0,
-                  borderLeft: '4px solid transparent',
-                  borderRight: '4px solid transparent',
-                  borderTop: '4px solid rgba(255,255,255,0.1)',
-                }} />
+                <div style={{ fontSize: 8, color: '#666', padding: '4px 8px', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Project</div>
+                {projects.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setActiveProject(p);
+                      setShowProjectMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: activeProject?.id === p.id ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      color: activeProject?.id === p.id ? '#fff' : '#aaa',
+                      textAlign: 'left',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = activeProject?.id === p.id ? 'rgba(255,255,255,0.05)' : 'transparent')}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: p.accent_color || 'var(--accent)' }} />
+                    {p.title}
+                  </button>
+                ))}
+                {projects.length === 0 && (
+                  <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 10, color: '#444' }}>No projects found</div>
+                )}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 4, paddingTop: 4 }}>
+                  <Link href="/projects" style={{ textDecoration: 'none' }}>
+                    <button style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--accent)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', textAlign: 'center' }}>Manage All Projects</button>
+                  </Link>
+                </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Project switcher panel */}
-          <AnimatePresence>
-            {projectsOpen && (
-              <ProjectSwitcher onClose={() => setProjectsOpen(false)} />
             )}
           </AnimatePresence>
         </div>

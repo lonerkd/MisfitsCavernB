@@ -10,6 +10,7 @@ export interface StoredScript {
   updatedAt: string;
   user_id?: string;
   project_id?: string;
+  learned_rules?: any;
 }
 
 // Get all scripts for the current user
@@ -35,7 +36,8 @@ export async function getAllScripts(): Promise<StoredScript[]> {
     createdAt: s.created_at,
     updatedAt: s.updated_at,
     user_id: s.user_id,
-    project_id: s.project_id
+    project_id: s.project_id,
+    learned_rules: s.learned_rules
   }));
 }
 
@@ -56,7 +58,8 @@ export async function getScript(id: string): Promise<StoredScript | null> {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     user_id: data.user_id,
-    project_id: data.project_id
+    project_id: data.project_id,
+    learned_rules: data.learned_rules
   };
 }
 
@@ -70,7 +73,8 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
     content: script.content || '',
     user_id: user.id,
     updated_at: new Date().toISOString(),
-    project_id: script.project_id
+    project_id: script.project_id,
+    learned_rules: script.learned_rules || null
   };
 
   if (script.id && !script.id.includes('-')) { // Not a temporary ID
@@ -90,7 +94,8 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       title: data.title,
       content: data.content,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
+      learned_rules: data.learned_rules
     };
   } else {
     const { data, error } = await supabase
@@ -108,7 +113,8 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       title: data.title,
       content: data.content,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
+      learned_rules: data.learned_rules
     };
   }
 }
