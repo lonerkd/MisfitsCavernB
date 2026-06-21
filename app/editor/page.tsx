@@ -33,6 +33,7 @@ import ScreenplayEditor, { type ScreenplayEditorHandle } from '@/components/edit
 import type { BlockType } from '@/lib/scriptos/blocks';
 import { importToContent } from '@/lib/scriptos/import';
 import { extractTextFromPdf } from '@/lib/scriptos/pdfImport';
+import { TitlePageModal, CharacterBibleModal, ShortcutsModal, GoToSceneModal, RevisionDiffModal } from '@/components/editor/EditorModals';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -2241,215 +2242,72 @@ export default function EditorPage() {
 
       </div>
 
-      {/* TITLE PAGE EDITOR MODAL */}
-      <AnimatePresence>
-        {showTitleEditor && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowTitleEditor(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: 'calc(100vw - 40px)', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Title Page</h2>
-                <button onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Document Format</label>
-                <select
-                  value={currentScript?.format || 'screenplay'}
-                  onChange={e => handleFormatChange(e.target.value as ScriptFormat)}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Courier Prime, monospace' }}
-                >
-                  <option value="screenplay">Screenplay</option>
-                  <option value="teleplay">Teleplay</option>
-                  <option value="stage-play">Stage Play</option>
-                  <option value="treatment">Treatment</option>
-                  <option value="podcast">Podcast Script</option>
-                  <option value="doc-outline">Documentary Outline</option>
-                </select>
-              </div>
-              {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
-                <div key={field} style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{field.replace(/([A-Z])/g, ' $1').trim()}</label>
-                  <input value={titlePage[field]} onChange={e => handleTitlePageChange(field, e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Courier Prime, monospace' }} />
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <TitlePageModal
+        show={showTitleEditor}
+        onClose={() => setShowTitleEditor(false)}
+        format={currentScript?.format || 'screenplay'}
+        onFormatChange={handleFormatChange}
+        titlePage={titlePage}
+        onTitlePageChange={handleTitlePageChange}
+      />
 
-      {/* CHARACTER BIBLE MODAL */}
-      <AnimatePresence>
-        {showCharBible && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCharBible(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 680, maxWidth: 'calc(100vw - 40px)', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
-                <button onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              {chars.length === 0 ? (
-                <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 40 }}>No characters detected yet. Start writing dialogue!</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {chars.map((name, i) => {
-                    const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
-                    const isSelected = selectedCharProfile === name;
-                    const stat = charStats.find(cs => cs.name === name);
-                    return (
-                      <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
-                        <button onClick={async () => {
-                          const next = isSelected ? null : name;
-                          setSelectedCharProfile(next);
-                          if (next && currentScript && currentScript.id !== 'demo' && !profile) {
-                            const updated = await ensureScriptCharacters(currentScript.id, [name]);
-                            setCharProfiles(updated);
-                          }
-                        }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
-                            <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
-                          </div>
-                          <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} lines · ${stat.scenesIn.length} scenes` : ''}</span>
-                        </button>
-                        {isSelected && (
-                          <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            {(activeProject?.crew?.length ?? 0) > 0 && (
-                              <div>
-                                <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Played By</label>
-                                <select value={profile?.played_by_crew_id || ''} onChange={e => {
-                                  const value = e.target.value;
-                                  if (!profile) return;
-                                  setCharProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, played_by_crew_id: value || null } : p));
-                                  updateScriptCharacter(profile.id, { played_by_crew_id: value || null });
-                                }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}>
-                                  <option value="" style={{ background: '#111' }}>Unassigned</option>
-                                  {activeProject!.crew!.map(c => (
-                                    <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.name} ({c.role})</option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-                            {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
-                              <div key={field}>
-                                <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>
-                                <textarea value={profile?.[field] || ''} onChange={e => {
-                                  const value = e.target.value;
-                                  if (!profile) return;
-                                  setCharProfiles(prev => prev.map(p => p.id === profile.id ? { ...p, [field]: value } : p));
-                                  queueCharacterFieldSave(profile.id, field, value);
-                                }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', minHeight: 40, fontFamily: 'inherit' }} />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CharacterBibleModal
+        show={showCharBible}
+        onClose={() => setShowCharBible(false)}
+        chars={chars}
+        charProfiles={charProfiles}
+        selectedCharProfile={selectedCharProfile}
+        onSelectCharProfile={async (name) => {
+          const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
+          const isSelected = selectedCharProfile === name;
+          const next = isSelected ? null : name;
+          setSelectedCharProfile(next);
+          if (next && currentScript && currentScript.id !== 'demo' && !profile) {
+            const updated = await ensureScriptCharacters(currentScript.id, [name]);
+            setCharProfiles(updated);
+          }
+        }}
+        charStats={charStats}
+        cardColors={CARD_COLORS}
+        crew={activeProject?.crew}
+        onPlayedByChange={(profileId, crewId) => {
+          setCharProfiles(prev => prev.map(p => p.id === profileId ? { ...p, played_by_crew_id: crewId } : p));
+          updateScriptCharacter(profileId, { played_by_crew_id: crewId });
+        }}
+        onFieldChange={(profileId, field, value) => {
+          setCharProfiles(prev => prev.map(p => p.id === profileId ? { ...p, [field]: value } : p));
+          queueCharacterFieldSave(profileId, field, value);
+        }}
+      />
 
-      {/* KEYBOARD SHORTCUTS MODAL */}
-      <AnimatePresence>
-        {showShortcuts && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowShortcuts(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 420, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Keyboard Shortcuts</h2>
-                <button onClick={() => setShowShortcuts(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  ['Ctrl + S', 'Save script'],
-                  ['Ctrl + F', 'Find & Replace'],
-                  ['Ctrl + E', 'Toggle Focus Mode'],
-                  ['Ctrl + G', 'Go to Scene'],
-                  ['Ctrl + /', 'Show Shortcuts'],
-                  ['Tab', 'Smart element insert'],
-                  ['Escape', 'Close panels / Exit focus'],
-                ].map(([key, desc]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontSize: 12, color: '#ccc' }}>{desc}</span>
-                    <kbd style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 4, color: '#fff', fontWeight: 600 }}>{key}</kbd>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ShortcutsModal show={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
-      {/* GO TO SCENE DIALOG */}
-      <AnimatePresence>
-        {showGoToScene && (
-          <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 16, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Go to Scene</div>
-            <input autoFocus type="number" min={1} max={scenesList.length} value={goToSceneNum} onChange={e => setGoToSceneNum(e.target.value)} onKeyDown={e => {
-              if (e.key === 'Enter') {
-                const num = parseInt(goToSceneNum);
-                if (num >= 1 && num <= scenesList.length) {
-                  setActiveView('write');
-                  setShowGoToScene(false);
-                  setGoToSceneNum('');
-                  toast(`Jumped to Scene ${num}`, 'success');
-                }
-              }
-              if (e.key === 'Escape') setShowGoToScene(false);
-            }} placeholder={`1 - ${scenesList.length}`} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
-            <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{scenesList.length} scenes · Press Enter to jump</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <GoToSceneModal
+        show={showGoToScene}
+        onClose={() => setShowGoToScene(false)}
+        sceneCount={scenesList.length}
+        value={goToSceneNum}
+        onChange={setGoToSceneNum}
+        onJump={(num) => {
+          setActiveView('write');
+          setShowGoToScene(false);
+          setGoToSceneNum('');
+          toast(`Jumped to Scene ${num}`, 'success');
+        }}
+      />
 
-      {/* REVISION DIFF MODAL */}
-      <AnimatePresence>
-        {showDiff && diffRevision && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowDiff(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 720, maxWidth: 'calc(100vw - 40px)', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <SplitSquareHorizontal size={18} /> {diffRevision.label} → Current
-                </h2>
-                <button onClick={() => setShowDiff(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              <div style={{ display: 'flex', gap: 14, marginBottom: 18, fontSize: 10, fontFamily: 'var(--mono)' }}>
-                <span style={{ color: '#51cf66' }}>+ {revisionDiff.filter(m => m.type === 'added').length} added</span>
-                <span style={{ color: '#ffd43b' }}>~ {revisionDiff.filter(m => m.type === 'modified').length} modified</span>
-                <span style={{ color: '#ff6b6b' }}>− {revisionDiff.filter(m => m.type === 'deleted').length} removed</span>
-              </div>
-              {(() => {
-                const oldLines = diffRevision.snapshot.split('\n');
-                const newLines = content.split('\n');
-                const markByIndex = new Map(revisionDiff.map(m => [m.lineIndex, m.type]));
-                const maxLen = Math.max(oldLines.length, newLines.length);
-                const rows = Array.from({ length: maxLen }, (_, i) => ({ i, mark: markByIndex.get(i), text: newLines[i] ?? oldLines[i] ?? '' }));
-                const changed = rows.filter(r => r.mark);
-                if (changed.length === 0) {
-                  return <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 30 }}>No differences — current draft matches this revision.</div>;
-                }
-                return (
-                  <div style={{ fontFamily: 'Courier Prime, monospace', fontSize: 12 }}>
-                    {changed.map(({ i, mark, text }) => (
-                      <div key={i} style={{
-                        display: 'flex', gap: 10, padding: '4px 8px', borderRadius: 4, marginBottom: 2,
-                        background: mark === 'added' ? 'rgba(81,207,102,0.08)' : mark === 'deleted' ? 'rgba(255,107,107,0.08)' : 'rgba(255,212,59,0.08)',
-                        borderLeft: `2px solid ${mark === 'added' ? '#51cf66' : mark === 'deleted' ? '#ff6b6b' : '#ffd43b'}`,
-                      }}>
-                        <span style={{ color: 'var(--fg-dim)', flexShrink: 0, width: 36, textAlign: 'right' }}>{i + 1}</span>
-                        <span style={{ color: mark === 'deleted' ? '#ff9b9b' : '#ddd', whiteSpace: 'pre-wrap', textDecoration: mark === 'deleted' ? 'line-through' : 'none' }}>{text || ' '}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <button onClick={() => { setContent(diffRevision.snapshot); setShowDiff(false); toast(`Restored to ${diffRevision.label}`, 'success'); }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '7px 14px', color: '#fff', cursor: 'pointer' }}>Restore This Revision</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <RevisionDiffModal
+        show={showDiff}
+        onClose={() => setShowDiff(false)}
+        revision={diffRevision}
+        marks={revisionDiff}
+        currentContent={content}
+        onRestore={(snapshot, label) => {
+          setContent(snapshot);
+          setShowDiff(false);
+          toast(`Restored to ${label}`, 'success');
+        }}
+      />
 
       {/* STATUS BAR */}
       <div style={{
