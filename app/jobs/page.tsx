@@ -453,6 +453,7 @@ function JobsPageInner() {
   const [roleFilter, setRoleFilter] = useState('');
   const [showPost, setShowPost] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   // Deep-linkable so Profile's "My Jobs" link (?tab=mine) actually lands there.
   const [tab, setTab] = useState<'open' | 'mine'>(searchParams?.get('tab') === 'mine' ? 'mine' : 'open');
 
@@ -481,14 +482,22 @@ function JobsPageInner() {
 
   const loadJobs = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       let query = supabase
         .from('jobs')
         .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
         .eq('status', 'open')
         .order('created_at', { ascending: false });
-      const { data } = await query;
+      const { data, error } = await query;
+      if (error) throw error;
       setJobs(data || []);
+    } catch (error: any) {
+      // Distinguish "the board is genuinely empty" from "the request failed" —
+      // an API/config error must never render as a calm empty state.
+      console.error(error);
+      setLoadError(error?.message || 'Failed to load job listings.');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -710,6 +719,15 @@ function JobsPageInner() {
                 <div style={{ padding: '80px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.2)', textTransform: 'uppercase' }}>
                   Loading positions…
                 </div>
+              ) : loadError ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '80px 0', textAlign: 'center' }}>
+                  <Briefcase size={28} color="var(--accent)" style={{ margin: '0 auto 16px', display: 'block' }} />
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 8 }}>
+                    Couldn't load job listings
+                  </div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'rgba(240,236,228,0.4)', marginBottom: 20 }}>{loadError}</div>
+                  <button onClick={loadJobs} style={{ padding: '10px 22px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer' }}>Retry</button>
+                </motion.div>
               ) : filtered.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}

@@ -26,6 +26,7 @@ export default function CrewPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [availFilter, setAvailFilter] = useState<'all' | 'OPEN' | 'BUSY'>('all');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     loadCrew();
@@ -33,6 +34,7 @@ export default function CrewPage() {
 
   const loadCrew = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
@@ -51,8 +53,12 @@ export default function CrewPage() {
       const { data, error } = await query;
       if (error) throw error;
       setCrew(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      // Surface a distinct error state — an API/config failure (bad key,
+      // network down) must never look identical to "genuinely no crew yet."
+      setLoadError(error?.message || 'Failed to load crew directory.');
+      setCrew([]);
     } finally {
       setLoading(false);
     }
@@ -114,6 +120,13 @@ export default function CrewPage() {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, opacity: 0.5, fontFamily: 'var(--mono)', fontSize: 11 }}>Loading crew...</div>
+        ) : loadError ? (
+          <div style={{ textAlign: 'center', padding: 60, opacity: 0.6 }}>
+            <User size={32} style={{ margin: '0 auto 16px', color: 'var(--accent)' }} />
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', marginBottom: 6 }}>Couldn't load the crew directory.</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.6, marginBottom: 16 }}>{loadError}</div>
+            <button onClick={loadCrew} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', padding: '8px 16px', fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer' }}>Retry</button>
+          </div>
         ) : crew.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 60, opacity: 0.4 }}>
             <User size={32} style={{ margin: '0 auto 16px' }} />
