@@ -257,10 +257,27 @@ export function EditorSidePanels({
                         <span>{cs.scenesIn.length} scenes</span>
                         <span>~{cs.avgWordsPerLine} w/line</span>
                       </div>
-                      {/* Top relationships */}
-                      {Object.keys(cs.speaksTo).length > 0 && (
-                        <div style={{ marginTop: 8, fontSize: 10, color: '#666' }}>Shares scenes with: {Object.entries(cs.speaksTo).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name]) => name).join(', ')}</div>
-                      )}
+                      {/* Top relationships — proportional co-occurrence bars */}
+                      {Object.keys(cs.speaksTo).length > 0 && (() => {
+                        const top = Object.entries(cs.speaksTo).sort((a, b) => b[1] - a[1]).slice(0, 4);
+                        const max = top[0][1];
+                        return (
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Shares Scenes With</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              {top.map(([name, count]) => (
+                                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span style={{ fontSize: 10, color: '#ccc', width: 64, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                                  <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${Math.round((count / max) * 100)}%`, background: '#6366f1', borderRadius: 2 }} />
+                                  </div>
+                                  <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0 }}>{count}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))
                 )}
