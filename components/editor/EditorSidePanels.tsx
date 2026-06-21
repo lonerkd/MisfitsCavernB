@@ -94,10 +94,10 @@ export function EditorSidePanels({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 272, opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          style={{ width: 272, background: 'rgba(8,8,8,0.96)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}
+          style={{ width: 272, background: 'rgba(8,12,20,0.96)', borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}
         >
           {/* Panel Tabs — pill group */}
-          <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(224,221,174,0.05)' }}>
             {PANEL_TABS.map(([key, Icon]) => (
               <button key={key} onClick={() => onRightPanelChange(key)} style={{
                 flex: 1, padding: '7px 0', background: 'transparent', border: 'none',
@@ -152,7 +152,7 @@ export function EditorSidePanels({
                       {sceneChars.length > 0 && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           {sceneChars.slice(0, 5).map(c => (
-                            <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>{c}</span>
+                            <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.08)', padding: '2px 6px', borderRadius: 4 }}>{c}</span>
                           ))}
                         </div>
                       )}
@@ -167,24 +167,24 @@ export function EditorSidePanels({
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
-                      <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 11, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
+                      <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 11, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(224,221,174,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(224,221,174,0.03)'}>{type}</button>
                     ))}
                   </div>
                 </div>
                 {/* Sprint Timer */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
+                <div style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', padding: 12, borderRadius: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
-                    <button onClick={onToggleSprint} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#ff3c00' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
+                    <button onClick={onToggleSprint} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#d7340b' : '#336467', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
                 </div>
                 {/* Goal Tracker */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}><span>Daily Goal</span><span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{wordCount} / {dailyGoal}</span></div>
-                  <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#0099ff', transition: 'width 0.5s' }} /></div>
+                  <div style={{ height: 4, background: 'rgba(224,221,174,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#336467', transition: 'width 0.5s' }} /></div>
                 </div>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ height: 1, background: 'rgba(224,221,174,0.05)' }} />
                 {/* Breakdown Analytics */}
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Breakdown</div>
@@ -198,21 +198,21 @@ export function EditorSidePanels({
                   </div>
                 </div>
                 {/* View Options */}
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ height: 1, background: 'rgba(224,221,174,0.05)' }} />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                       <span>Typewriter Mode</span>
-                      <input type="checkbox" checked={typewriterMode} onChange={e => onTypewriterModeChange(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                      <input type="checkbox" checked={typewriterMode} onChange={e => onTypewriterModeChange(e.target.checked)} style={{ accentColor: '#336467' }} />
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                       <span>Dark Mode (Preview)</span>
-                      <input type="checkbox" checked={nightModePreview} onChange={e => onNightModePreviewChange(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                      <input type="checkbox" checked={nightModePreview} onChange={e => onNightModePreviewChange(e.target.checked)} style={{ accentColor: '#336467' }} />
                     </label>
                   </div>
                 </div>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ height: 1, background: 'rgba(224,221,174,0.05)' }} />
                 {/* Breakdown Tags */}
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Tags size={14} /> Elements</div>
@@ -224,7 +224,7 @@ export function EditorSidePanels({
                         <div key={category}>
                           <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{category}</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {items.map(item => (<span key={item} style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#fff' }}>{item}</span>))}
+                            {items.map(item => (<span key={item} style={{ fontSize: 9, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', padding: '2px 6px', borderRadius: 4, color: '#fff' }}>{item}</span>))}
                           </div>
                         </div>
                       ))}
@@ -242,13 +242,13 @@ export function EditorSidePanels({
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No characters detected yet.</div>
                 ) : (
                   charStats.slice(0, 15).map((cs) => (
-                    <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                    <div key={cs.name} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 8, padding: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: typeColors.character }}>{cs.name}</span>
                         <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
                       </div>
                       {/* Dialogue bar */}
-                      <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 8 }}>
+                      <div style={{ height: 3, background: 'rgba(224,221,174,0.1)', borderRadius: 2, marginBottom: 8 }}>
                         <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: typeColors.character, borderRadius: 2 }} />
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 10, color: 'var(--fg-muted)' }}>
@@ -262,13 +262,13 @@ export function EditorSidePanels({
                         const top = Object.entries(cs.speaksTo).sort((a, b) => b[1] - a[1]).slice(0, 4);
                         const max = top[0][1];
                         return (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(224,221,174,0.05)' }}>
                             <div style={{ fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Shares Scenes With</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                               {top.map(([name, count]) => (
                                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <span style={{ fontSize: 10, color: '#ccc', width: 64, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                                  <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ flex: 1, height: 3, background: 'rgba(224,221,174,0.08)', borderRadius: 2, overflow: 'hidden' }}>
                                     <div style={{ height: '100%', width: `${Math.round((count / max) * 100)}%`, background: '#6366f1', borderRadius: 2 }} />
                                   </div>
                                   <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0 }}>{count}</span>
@@ -289,7 +289,7 @@ export function EditorSidePanels({
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><History size={14} /> Revisions</div>
-                  <button onClick={onLockRevision} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
+                  <button onClick={onLockRevision} style={{ fontSize: 10, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
                 </div>
                 {revisions.length === 0 ? (
                   <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No revisions locked yet. Lock your first draft to start tracking changes.</div>
@@ -333,14 +333,14 @@ export function EditorSidePanels({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                     <span>Scene Numbers</span>
-                    <input type="checkbox" checked={showSceneNumbers} onChange={e => onShowSceneNumbersChange(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                    <input type="checkbox" checked={showSceneNumbers} onChange={e => onShowSceneNumbersChange(e.target.checked)} style={{ accentColor: '#336467' }} />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                     <span>DRAFT Watermark</span>
-                    <input type="checkbox" checked={showWatermark} onChange={e => onShowWatermarkChange(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                    <input type="checkbox" checked={showWatermark} onChange={e => onShowWatermarkChange(e.target.checked)} style={{ accentColor: '#336467' }} />
                   </label>
                 </div>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ height: 1, background: 'rgba(224,221,174,0.05)' }} />
                 {/* Issue summary */}
                 <div style={{ display: 'flex', gap: 8 }}>
                   <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{lintIssues.filter(i => i.type === 'error').length} errors</span>
@@ -352,7 +352,7 @@ export function EditorSidePanels({
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {lintIssues.slice(0, 30).map((issue, idx) => (
-                      <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                      <div key={idx} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                           <span style={{ fontSize: 9, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
                           <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
@@ -371,7 +371,7 @@ export function EditorSidePanels({
               <>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Bookmark size={14} /> The Stash</div>
-                  <button onClick={onAddStashFromSelection} style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
+                  <button onClick={onAddStashFromSelection} style={{ fontSize: 9, background: 'rgba(224,221,174,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 12, lineHeight: 1.4 }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
 
@@ -380,12 +380,12 @@ export function EditorSidePanels({
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {stashItems.map(item => (
-                      <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
+                      <div key={item.id} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 6, padding: '10px' }}>
                         <div style={{ fontSize: 11, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(224,221,174,0.05)' }}>
                           <span style={{ fontSize: 9, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
                           <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => onInsertStash(item.text)} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
+                            <button onClick={() => onInsertStash(item.text)} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#336467', cursor: 'pointer', padding: 0 }}>Insert</button>
                             <button onClick={() => onDeleteStash(item.id)} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
                           </div>
                         </div>
@@ -408,14 +408,14 @@ export function EditorSidePanels({
                   <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No props, wardrobe, vehicles, VFX or SFX detected yet.</div>
                 ) : (
                   breakdownGroups.map(group => (
-                    <div key={group.category} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                    <div key={group.category} style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 8, padding: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: group.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
                         {group.category}
                         <span style={{ opacity: 0.6, fontWeight: 500 }}>{group.items.length}</span>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {group.items.map(item => (
-                          <span key={item} style={{ fontSize: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff' }}>
+                          <span key={item} style={{ fontSize: 10, background: 'rgba(224,221,174,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff' }}>
                             {item}
                           </span>
                         ))}
@@ -424,7 +424,7 @@ export function EditorSidePanels({
                   ))
                 )}
 
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                <div style={{ height: 1, background: 'rgba(224,221,174,0.05)' }} />
 
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 10 }}>Locations ({uniqueLocations.length})</div>

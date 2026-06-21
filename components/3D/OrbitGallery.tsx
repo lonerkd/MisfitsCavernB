@@ -31,7 +31,7 @@ function PhotoFrame({ position, imageUrl, rotation }: { position: [number, numbe
       scale={hovered ? 1.1 : 1}
     >
       <boxGeometry args={[2, 1.4, 0.05]} />
-      <meshStandardMaterial color={hovered ? '#ff3c00' : '#1a1a1a'} metalness={0.8} roughness={0.2} />
+      <meshStandardMaterial color={hovered ? '#d7340b' : '#1a1a1a'} metalness={0.8} roughness={0.2} />
       
       {/* Frame border */}
       <lineSegments>
@@ -95,12 +95,12 @@ export default function OrbitGallery({ photos = [] }: { photos?: Photo[] }) {
         
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#ff3c00" />
+        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#d7340b" />
         
         <RotatingGallery photos={photosToShow} />
         
         {/* Floor grid */}
-        <gridHelper args={[20, 20, '#ff3c00', '#1a1a1a']} position={[0, -2, 0]} />
+        <gridHelper args={[20, 20, '#d7340b', '#1a1a1a']} position={[0, -2, 0]} />
       </Canvas>
     </div>
   );

@@ -88,7 +88,7 @@ function blockStyle(type: BlockType, focusMode: boolean, color: string): React.C
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     color,
-    caretColor: '#ff3c00',
+    caretColor: '#d7340b',
     minHeight: '1.55em',
     transition: 'background 0.15s',
   };
@@ -440,7 +440,7 @@ const ScreenplayEditor = forwardRef<ScreenplayEditorHandle, Props>(function Scre
           pointer-events: none;
         }
         .sp-block { transition: background .15s; border-radius: 3px; }
-        .sp-block:focus { background: rgba(255,255,255,0.025); }
+        .sp-block:focus { background: rgba(224,221,174,0.025); }
       `}</style>
     </div>
   );

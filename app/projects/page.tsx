@@ -31,7 +31,7 @@ const TYPE_COLORS: Record<string, string> = {
   'Music Video':   '#f59e0b',
   'Documentary':   '#3b82f6',
   'Commercial':    '#ec4899',
-  'Podcast':       '#ff3c00',
+  'Podcast':       '#d7340b',
 };
 
 function typeColor(type?: string) {
@@ -81,7 +81,7 @@ function ProjectCard({ project }: { project: DBProject }) {
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         style={{
           background: 'rgba(12,12,12,0.8)',
-          border: `1px solid ${hovered ? color + '44' : 'rgba(255,255,255,0.06)'}`,
+          border: `1px solid ${hovered ? color + '44' : 'rgba(224,221,174,0.06)'}`,
           borderRadius: 16,
           padding: 18,
           position: 'relative',
@@ -112,7 +112,7 @@ function ProjectCard({ project }: { project: DBProject }) {
             </div>
           </div>
           <motion.div animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : 4 }} transition={{ duration: 0.2 }}>
-            <ArrowUpRight size={13} color="rgba(255,255,255,0.4)" />
+            <ArrowUpRight size={13} color="rgba(224,221,174,0.4)" />
           </motion.div>
         </div>
 
@@ -127,7 +127,7 @@ function ProjectCard({ project }: { project: DBProject }) {
           {project.description || 'No description yet.'}
         </div>
 
-        <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
+        <div style={{ height: 2, background: 'rgba(224,221,174,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
           <motion.div
             initial={{ width: 0 }}
             whileInView={{ width: `${progress}%` }}
@@ -199,7 +199,7 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 520,
-          background: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(10,15,24,0.98)', border: '1px solid rgba(224,221,174,0.08)',
           borderRadius: 20, padding: 32, boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
         }}
       >
@@ -223,8 +223,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
               placeholder="e.g. Femme Fatale"
               autoFocus
               style={{
-                width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)',
+                width: '100%', padding: '12px 14px', background: 'rgba(224,221,174,0.04)',
+                border: '1px solid rgba(224,221,174,0.08)', borderRadius: 10, color: 'var(--fg)',
                 fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box',
               }}
             />
@@ -242,8 +242,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
                     onClick={() => { setUsingCustom(false); setProjectType(t); }}
                     style={{
                       padding: '6px 12px', borderRadius: 9999,
-                      background: active ? `${color}18` : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${active ? color + '55' : 'rgba(255,255,255,0.06)'}`,
+                      background: active ? `${color}18` : 'rgba(224,221,174,0.03)',
+                      border: `1px solid ${active ? color + '55' : 'rgba(224,221,174,0.06)'}`,
                       color: active ? color : 'rgba(240,236,228,0.4)',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
@@ -257,8 +257,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
                 onClick={() => setUsingCustom(true)}
                 style={{
                   padding: '6px 12px', borderRadius: 9999,
-                  background: usingCustom ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${usingCustom ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                  background: usingCustom ? 'rgba(255,60,0,0.12)' : 'rgba(224,221,174,0.03)',
+                  border: `1px solid ${usingCustom ? 'rgba(255,60,0,0.4)' : 'rgba(224,221,174,0.06)'}`,
                   color: usingCustom ? 'var(--accent)' : 'rgba(240,236,228,0.4)',
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                   textTransform: 'uppercase', cursor: 'pointer',
@@ -272,8 +272,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
                 type="text" value={customType} onChange={e => setCustomType(e.target.value)}
                 placeholder="e.g. Live Multi-Cam, Branded Content, Album Visualizer…"
                 style={{
-                  width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)',
+                  width: '100%', padding: '12px 14px', background: 'rgba(224,221,174,0.04)',
+                  border: '1px solid rgba(224,221,174,0.08)', borderRadius: 10, color: 'var(--fg)',
                   fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box',
                 }}
               />
@@ -290,8 +290,8 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
               placeholder="What's the vision?"
               rows={3}
               style={{
-                width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)',
+                width: '100%', padding: '12px 14px', background: 'rgba(224,221,174,0.04)',
+                border: '1px solid rgba(224,221,174,0.08)', borderRadius: 10, color: 'var(--fg)',
                 fontFamily: 'var(--serif)', fontSize: 13, outline: 'none', resize: 'none',
                 boxSizing: 'border-box', lineHeight: 1.6,
               }}
@@ -303,7 +303,7 @@ function NewProjectModal({ onClose, onCreated, userId }: { onClose: () => void; 
             disabled={!title.trim() || !effectiveType || submitting}
             style={{
               marginTop: 6, padding: '14px',
-              background: title.trim() && effectiveType ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+              background: title.trim() && effectiveType ? 'var(--accent)' : 'rgba(224,221,174,0.05)',
               color: title.trim() && effectiveType ? '#060606' : 'rgba(240,236,228,0.3)',
               border: 'none', borderRadius: 12,
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
@@ -347,15 +347,15 @@ export default function ProjectsPage() {
       <div style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', background: 'rgba(6,6,6,0.92)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)', zIndex: 200,
+        padding: '0 24px', background: 'rgba(7,11,19,0.92)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(224,221,174,0.04)', zIndex: 200,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{
             fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6,
             color: 'var(--fg)', textDecoration: 'none', opacity: 0.7,
           }}>MC</Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(224,221,174,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.4)', textTransform: 'uppercase' }}>
             Projects
           </div>
@@ -373,7 +373,7 @@ export default function ProjectsPage() {
               </div>
             ))}
           </div>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(224,221,174,0.08)' }} />
           <button
             onClick={() => { if (!user) { toast('Sign in to create projects', 'error'); return; } setShowNew(true); }}
             style={{
@@ -394,16 +394,16 @@ export default function ProjectsPage() {
         <div style={{
           position: 'fixed', top: 58, left: 0, width: '100%', height: 40,
           display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(8,8,8,0.85)', backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(255,255,255,0.03)', zIndex: 199, padding: '0 24px',
+          background: 'rgba(8,12,20,0.85)', backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(224,221,174,0.03)', zIndex: 199, padding: '0 24px',
           overflowX: 'auto',
         }}>
           <button
             onClick={() => setTypeFilter('')}
             style={{
               padding: '5px 12px', borderRadius: 9999, whiteSpace: 'nowrap',
-              background: !typeFilter ? 'rgba(255,255,255,0.08)' : 'transparent',
-              border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer',
+              background: !typeFilter ? 'rgba(224,221,174,0.08)' : 'transparent',
+              border: '1px solid rgba(224,221,174,0.06)', cursor: 'pointer',
               color: !typeFilter ? 'var(--fg)' : 'rgba(240,236,228,0.4)',
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase',
             }}
@@ -421,7 +421,7 @@ export default function ProjectsPage() {
                 style={{
                   padding: '5px 12px', borderRadius: 9999, whiteSpace: 'nowrap',
                   background: active ? `${color}18` : 'transparent',
-                  border: `1px solid ${active ? color + '44' : 'rgba(255,255,255,0.06)'}`,
+                  border: `1px solid ${active ? color + '44' : 'rgba(224,221,174,0.06)'}`,
                   cursor: 'pointer', color: active ? color : 'rgba(240,236,228,0.4)',
                   fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase',
                 }}
@@ -487,8 +487,8 @@ export default function ProjectsPage() {
         input::placeholder, textarea::placeholder { color: rgba(240,236,228,0.18); }
         ::-webkit-scrollbar { height: 4px; width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+        ::-webkit-scrollbar-thumb { background: rgba(224,221,174,0.08); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(224,221,174,0.16); }
       `}</style>
     </main>
   );

@@ -11,31 +11,35 @@
   --mono: 'DM Mono', monospace;
   --serif: 'Cormorant Garamond', serif;
 
-  /* Surface hierarchy */
-  --bg:    #060606;
-  --bg-2:  #0a0a0a;
-  --bg-3:  #0f0f0f;
-  --bg-4:  #141414;
-  --glass: rgba(12, 12, 12, 0.72);
+  /* Surface hierarchy — deep ink-blue base */
+  --bg:    #070b13;
+  --bg-2:  #0a1019;
+  --bg-3:  #0d141f;
+  --bg-4:  #111a27;
+  --glass: rgba(8, 12, 20, 0.78);
 
-  /* Foreground */
-  --fg:       #f0ece4;
-  --fg-muted: rgba(240, 236, 228, 0.55);
-  --fg-dim:   rgba(240, 236, 228, 0.30);
-  --fg-ghost: rgba(240, 236, 228, 0.12);
+  /* Foreground — Vanilla */
+  --fg:       #e0ddae;
+  --fg-muted: rgba(224, 221, 174, 0.55);
+  --fg-dim:   rgba(224, 221, 174, 0.30);
+  --fg-ghost: rgba(224, 221, 174, 0.12);
 
-  /* Accent */
-  --accent:       #ff3c00;
-  --accent-dim:   rgba(255, 60, 0, 0.18);
-  --accent-glow:  rgba(255, 60, 0, 0.08);
+  /* Accent — Sinopia */
+  --accent:       #d7340b;
+  --accent-dim:   rgba(215, 52, 11, 0.18);
+  --accent-glow:  rgba(215, 52, 11, 0.10);
+
+  /* Secondary accent — Caribbean */
+  --secondary:     #336467;
+  --secondary-dim: rgba(51, 100, 103, 0.25);
 
   /* Borders */
-  --border:       rgba(255, 255, 255, 0.05);
-  --border-2:     rgba(255, 255, 255, 0.09);
-  --border-accent: rgba(255, 60, 0, 0.30);
+  --border:       rgba(224, 221, 174, 0.07);
+  --border-2:     rgba(224, 221, 174, 0.12);
+  --border-accent: rgba(215, 52, 11, 0.32);
 
   /* Module accent colors (used sparingly as glows) */
-  --script-color:    #ff3c00;
+  --script-color:    #d7340b;
   --studio-color:    #6366f1;
   --lounge-color:    #10b981;
   --portfolio-color: #f59e0b;
@@ -60,10 +64,11 @@
   --radius-full: var(--r-full);
 
   /* Ambient — updated per page/content */
-  --ambient-r: 255;
-  --ambient-g: 60;
-  --ambient-b: 0;
+  --ambient-r: 215;
+  --ambient-g: 52;
+  --ambient-b: 11;
 }
+
 
 /* ═══════════════════════════════
    RESET & BASE

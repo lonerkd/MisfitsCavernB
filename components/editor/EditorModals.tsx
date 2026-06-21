@@ -21,8 +21,8 @@ const modalOverlay: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 const modalCard: React.CSSProperties = {
-  background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)',
-  border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32,
+  background: 'rgba(10,15,24,0.97)', backdropFilter: 'blur(32px)',
+  border: '1px solid rgba(224,221,174,0.09)', borderRadius: 20, padding: 32,
   maxWidth: 'calc(100vw - 40px)', maxHeight: '85vh', overflowY: 'auto',
   boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
 };
@@ -33,7 +33,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6,
 };
 const inputStyle: React.CSSProperties = {
-  width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+  width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)',
   borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Courier Prime, monospace',
 };
 
@@ -116,7 +116,7 @@ export function CharacterBibleModal({
                   const isSelected = selectedCharProfile === name;
                   const stat = charStats.find(cs => cs.name === name);
                   return (
-                    <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
+                    <div key={name} style={{ background: 'rgba(224,221,174,0.02)', border: `1px solid ${isSelected ? 'rgba(224,221,174,0.2)' : 'rgba(224,221,174,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
                       <button onClick={() => onSelectCharProfile(name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: cardColors[i % cardColors.length] }} />
@@ -129,7 +129,7 @@ export function CharacterBibleModal({
                           {(crew?.length ?? 0) > 0 && (
                             <div>
                               <label style={labelStyle}>Played By</label>
-                              <select value={profile?.played_by_crew_id || ''} onChange={e => { if (profile) onPlayedByChange(profile.id, e.target.value || null); }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}>
+                              <select value={profile?.played_by_crew_id || ''} onChange={e => { if (profile) onPlayedByChange(profile.id, e.target.value || null); }} style={{ width: '100%', background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}>
                                 <option value="" style={{ background: '#111' }}>Unassigned</option>
                                 {crew!.map(c => (
                                   <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.name} ({c.role})</option>
@@ -140,7 +140,7 @@ export function CharacterBibleModal({
                           {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
                             <div key={field}>
                               <label style={labelStyle}>{field}</label>
-                              <textarea value={profile?.[field] || ''} onChange={e => { if (profile) onFieldChange(profile.id, field, e.target.value); }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', minHeight: 40, fontFamily: 'inherit' }} />
+                              <textarea value={profile?.[field] || ''} onChange={e => { if (profile) onFieldChange(profile.id, field, e.target.value); }} style={{ width: '100%', background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', minHeight: 40, fontFamily: 'inherit' }} />
                             </div>
                           ))}
                         </div>
@@ -178,9 +178,9 @@ export function ShortcutsModal({ show, onClose }: { show: boolean; onClose: () =
                 ['Tab', 'Smart element insert'],
                 ['Escape', 'Close panels / Exit focus'],
               ].map(([key, desc]) => (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(224,221,174,0.05)' }}>
                   <span style={{ fontSize: 12, color: '#ccc' }}>{desc}</span>
-                  <kbd style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 4, color: '#fff', fontWeight: 600 }}>{key}</kbd>
+                  <kbd style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'rgba(224,221,174,0.08)', padding: '2px 8px', borderRadius: 4, color: '#fff', fontWeight: 600 }}>{key}</kbd>
                 </div>
               ))}
             </div>
@@ -205,7 +205,7 @@ export function GoToSceneModal({
   return (
     <AnimatePresence>
       {show && (
-        <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 16, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+        <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(10,15,24,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(224,221,174,0.09)', borderRadius: 16, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Go to Scene</div>
           <input autoFocus type="number" min={1} max={sceneCount} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => {
             if (e.key === 'Enter') {
@@ -213,7 +213,7 @@ export function GoToSceneModal({
               if (num >= 1 && num <= sceneCount) onJump(num);
             }
             if (e.key === 'Escape') onClose();
-          }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
+          }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
           <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{sceneCount} scenes · Press Enter to jump</div>
         </motion.div>
       )}
@@ -273,8 +273,8 @@ export function RevisionDiffModal({
                 </div>
               );
             })()}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <button onClick={() => onRestore(revision.snapshot, revision.label)} style={{ fontSize: 11, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '7px 14px', color: '#fff', cursor: 'pointer' }}>Restore This Revision</button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(224,221,174,0.06)' }}>
+              <button onClick={() => onRestore(revision.snapshot, revision.label)} style={{ fontSize: 11, background: 'rgba(224,221,174,0.06)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '7px 14px', color: '#fff', cursor: 'pointer' }}>Restore This Revision</button>
             </div>
           </motion.div>
         </motion.div>

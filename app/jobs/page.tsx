@@ -32,7 +32,7 @@ const ROLES = [
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  'Director':            '#ff3c00',
+  'Director':            '#d7340b',
   'DP / Cinematographer':'#f59e0b',
   'Editor':              '#6366f1',
   'Sound Designer':      '#10b981',
@@ -92,8 +92,8 @@ function PostModal({ onClose, onCreated, userId }: {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 520,
-          background: 'rgba(10,10,10,0.98)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(10,15,24,0.98)',
+          border: '1px solid rgba(224,221,174,0.08)',
           borderRadius: 20,
           padding: 32,
           boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
@@ -128,8 +128,8 @@ function PostModal({ onClose, onCreated, userId }: {
                     onClick={() => setForm(f => ({ ...f, role: r }))}
                     style={{
                       padding: '6px 12px', borderRadius: 9999,
-                      background: active ? `${color}18` : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${active ? color + '55' : 'rgba(255,255,255,0.06)'}`,
+                      background: active ? `${color}18` : 'rgba(224,221,174,0.03)',
+                      border: `1px solid ${active ? color + '55' : 'rgba(224,221,174,0.06)'}`,
                       color: active ? color : 'rgba(240,236,228,0.4)',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
@@ -153,15 +153,15 @@ function PostModal({ onClose, onCreated, userId }: {
               placeholder="e.g. Lead Editor for short film"
               style={{
                 width: '100%', padding: '12px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(224,221,174,0.04)',
+                border: '1px solid rgba(224,221,174,0.08)',
                 borderRadius: 10, color: 'var(--fg)',
                 fontFamily: 'var(--mono)', fontSize: 12,
                 outline: 'none', boxSizing: 'border-box',
                 transition: 'border-color 0.2s',
               }}
               onFocus={e => (e.currentTarget.style.borderColor = `${roleColor(form.role)}55`)}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(224,221,174,0.08)')}
             />
           </div>
 
@@ -175,15 +175,15 @@ function PostModal({ onClose, onCreated, userId }: {
               rows={3}
               style={{
                 width: '100%', padding: '12px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(224,221,174,0.04)',
+                border: '1px solid rgba(224,221,174,0.08)',
                 borderRadius: 10, color: 'var(--fg)',
                 fontFamily: 'var(--serif)', fontSize: 13,
                 outline: 'none', resize: 'none', boxSizing: 'border-box',
                 lineHeight: 1.6, transition: 'border-color 0.2s',
               }}
               onFocus={e => (e.currentTarget.style.borderColor = `${roleColor(form.role)}55`)}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(224,221,174,0.08)')}
             />
           </div>
 
@@ -200,8 +200,8 @@ function PostModal({ onClose, onCreated, userId }: {
                 placeholder="0.00"
                 style={{
                   width: '100%', padding: '12px 14px 12px 32px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(224,221,174,0.04)',
+                  border: '1px solid rgba(224,221,174,0.08)',
                   borderRadius: 10, color: 'var(--fg)',
                   fontFamily: 'var(--mono)', fontSize: 12,
                   outline: 'none', boxSizing: 'border-box',
@@ -215,7 +215,7 @@ function PostModal({ onClose, onCreated, userId }: {
             disabled={!form.title || submitting}
             style={{
               marginTop: 6, padding: '14px',
-              background: form.title ? '#8b5cf6' : 'rgba(255,255,255,0.05)',
+              background: form.title ? '#8b5cf6' : 'rgba(224,221,174,0.05)',
               color: form.title ? '#fff' : 'rgba(240,236,228,0.3)',
               border: 'none', borderRadius: 12,
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
@@ -267,8 +267,8 @@ function JobCard({ job, index }: { job: Job; index: number }) {
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       style={{
-        background: 'rgba(10,10,10,0.8)',
-        border: `1px solid ${hovered ? color + '33' : 'rgba(255,255,255,0.06)'}`,
+        background: 'rgba(10,15,24,0.8)',
+        border: `1px solid ${hovered ? color + '33' : 'rgba(224,221,174,0.06)'}`,
         borderRadius: 16, padding: '22px 24px',
         position: 'relative', overflow: 'hidden',
         boxShadow: hovered ? `0 16px 48px rgba(0,0,0,0.6), 0 0 28px ${color}10` : '0 2px 8px rgba(0,0,0,0.3)',
@@ -367,8 +367,8 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
       style={{
-        background: 'rgba(10,10,10,0.8)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(10,15,24,0.8)',
+        border: '1px solid rgba(224,221,174,0.06)',
         borderRadius: 16, padding: '20px 22px',
       }}
     >
@@ -385,8 +385,8 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             </div>
             <div style={{
               padding: '3px 9px', borderRadius: 9999,
-              background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(224,221,174,0.04)',
+              border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(224,221,174,0.06)'}`,
               fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
               color: job.status === 'open' ? '#10b981' : 'rgba(240,236,228,0.3)',
               textTransform: 'uppercase',
@@ -412,7 +412,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             style={{
               padding: '7px 14px', borderRadius: 9999,
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(224,221,174,0.08)',
               color: 'rgba(240,236,228,0.3)',
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
               textTransform: 'uppercase', cursor: 'pointer',
@@ -423,7 +423,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               (e.currentTarget as HTMLElement).style.color = '#ef4444';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(224,221,174,0.08)';
               (e.currentTarget as HTMLElement).style.color = 'rgba(240,236,228,0.3)';
             }}
           >
@@ -534,9 +534,9 @@ function JobsPageInner() {
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', zIndex: 200,
-        background: 'rgba(6,6,6,0.92)',
+        background: 'rgba(7,11,19,0.92)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(224,221,174,0.04)',
         boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -546,7 +546,7 @@ function JobsPageInner() {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(224,221,174,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase' }}>Jobs</div>
         </div>
 
@@ -554,8 +554,8 @@ function JobsPageInner() {
           {user && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 2,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(224,221,174,0.03)',
+              border: '1px solid rgba(224,221,174,0.06)',
               borderRadius: 9999, padding: '3px 4px',
             }}>
               {(['open', 'mine'] as const).map(t => (
@@ -620,10 +620,10 @@ function JobsPageInner() {
 
         {/* Left sidebar — role filter */}
         <div style={{
-          width: 220, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.04)',
+          width: 220, flexShrink: 0, borderRight: '1px solid rgba(224,221,174,0.04)',
           padding: '32px 20px', position: 'sticky', top: 58,
           height: 'calc(100vh - 58px)', overflowY: 'auto',
-          background: 'rgba(6,6,6,0.6)',
+          background: 'rgba(7,11,19,0.6)',
         }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'rgba(240,236,228,0.25)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
@@ -634,7 +634,7 @@ function JobsPageInner() {
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               width: '100%', padding: '8px 10px', borderRadius: 8,
-              background: !roleFilter ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: !roleFilter ? 'rgba(224,221,174,0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
               color: !roleFilter ? 'var(--fg)' : 'rgba(240,236,228,0.35)',
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
@@ -668,7 +668,7 @@ function JobsPageInner() {
                 onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(240,236,228,0.35)')}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'rgba(255,255,255,0.15)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'rgba(224,221,174,0.15)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
                   {r}
                 </div>
                 {count > 0 && <span style={{ fontSize: 8, color: active ? color : 'rgba(240,236,228,0.2)' }}>{count}</span>}
@@ -692,15 +692,15 @@ function JobsPageInner() {
                   placeholder="Search positions…"
                   style={{
                     width: '100%', padding: '12px 16px 12px 38px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: 'rgba(224,221,174,0.03)',
+                    border: '1px solid rgba(224,221,174,0.07)',
                     borderRadius: 12, color: 'var(--fg)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                     outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.2s',
                   }}
                   onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(224,221,174,0.07)')}
                 />
               </div>
 

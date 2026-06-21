@@ -88,7 +88,7 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
         overflow: 'hidden',
         aspectRatio,
         background: '#0e0e0e',
-        border: '1px solid rgba(255,255,255,0.04)',
+        border: '1px solid rgba(224,221,174,0.04)',
         cursor: 'none',
         gridColumn: span === 'wide' ? '1 / -1' : undefined,
         gridRow: span === 'tall' ? 'span 2' : undefined,
@@ -155,7 +155,7 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
           width: 48,
           height: 48,
           borderRadius: '50%',
-          border: `1.5px solid ${hover ? 'var(--accent)' : 'rgba(255,255,255,0.4)'}`,
+          border: `1.5px solid ${hover ? 'var(--accent)' : 'rgba(224,221,174,0.4)'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -164,7 +164,7 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
           transition: 'border-color 0.4s, background 0.4s',
         }}
       >
-        <Play size={16} fill={hover ? '#ff3c00' : '#fff'} color={hover ? '#ff3c00' : '#fff'} style={{ marginLeft: 2 }} />
+        <Play size={16} fill={hover ? '#d7340b' : '#fff'} color={hover ? '#d7340b' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
 
       {/* Info */}
@@ -188,7 +188,7 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
         }}>
           {project.title}
         </h3>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224,221,174,0.35)', textTransform: 'uppercase' }}>
           {project.role} · {project.year}
         </div>
         {hover && project.description && (
@@ -199,7 +199,7 @@ function VideoCard({ project, onClick, span }: { project: Project; onClick: (p: 
             style={{
               fontFamily: 'var(--serif)',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.45)',
+              color: 'rgba(224,221,174,0.45)',
               marginTop: 6,
               fontStyle: 'italic',
               maxWidth: 380,
@@ -263,7 +263,7 @@ function ProjectBible({ project, onClose }: { project: Project | null; onClose: 
 
           {/* Media Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
-            <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(224,221,174,0.06)', borderRadius: 8, overflow: 'hidden' }}>
               {media?.media_type === 'image' ? (
                 <img src={media.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               ) : embedUrl ? (
@@ -280,7 +280,7 @@ function ProjectBible({ project, onClose }: { project: Project | null; onClose: 
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
+              <div style={{ padding: 24, background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 8 }}>
                 <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Executive Summary</h3>
                 <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
                   {project.description || 'No description added yet.'}
@@ -306,7 +306,7 @@ function ProjectBible({ project, onClose }: { project: Project | null; onClose: 
                       style={{
                         minWidth: 220, aspectRatio: '16/9', borderRadius: 8, overflow: 'hidden',
                         background: '#111', cursor: 'pointer', padding: 0, flexShrink: 0,
-                        border: i === selectedIndex ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.08)',
+                        border: i === selectedIndex ? '1px solid var(--accent)' : '1px solid rgba(224,221,174,0.08)',
                       }}
                     >
                       {thumb ? (
@@ -409,7 +409,7 @@ function AddProjectModal({ isOpen, onClose, userId, onCreated }: {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 520, maxHeight: '85vh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
+            style={{ width: 520, maxHeight: '85vh', overflowY: 'auto', background: '#111', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Add Project</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Add a finished project to your public portfolio.</p>
@@ -558,9 +558,9 @@ export default function PortfolioPage() {
         padding: '0 32px', height: 62,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(6,6,6,0.88)',
+        background: 'rgba(7,11,19,0.88)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(224,221,174,0.04)',
         boxShadow: '0 1px 0 rgba(245,158,11,0.08) inset',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -570,7 +570,7 @@ export default function PortfolioPage() {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(224,221,174,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -595,7 +595,7 @@ export default function PortfolioPage() {
       </nav>
 
       {/* Hero Section */}
-      <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(224,221,174,0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
            <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4, filter: 'grayscale(50%)' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
@@ -647,8 +647,8 @@ export default function PortfolioPage() {
       <div style={{
         padding: '28px 0',
         overflow: 'hidden',
-        borderTop: '1px solid rgba(255,255,255,0.03)',
-        borderBottom: '1px solid rgba(255,255,255,0.03)',
+        borderTop: '1px solid rgba(224,221,174,0.03)',
+        borderBottom: '1px solid rgba(224,221,174,0.03)',
         marginBottom: 0,
       }}>
         <div style={{ display: 'flex', gap: 44, animation: 'marquee 28s linear infinite', whiteSpace: 'nowrap' }}>

@@ -24,8 +24,8 @@ import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 // ─────────────────────────────────────────────────────────────────────────
 
 const APPS = [
-  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#ff3c00' },
-  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#ff3c00' },
+  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#d7340b' },
+  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#d7340b' },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: '#6366f1' },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: '#10b981' },
   { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b' },
@@ -70,7 +70,7 @@ function DockIcon({
           y: lift,
           borderRadius: 15,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: isActive ? `${app.color}1f` : hovered ? 'rgba(255,255,255,0.07)' : 'transparent',
+          background: isActive ? `${app.color}1f` : hovered ? 'rgba(224,221,174,0.07)' : 'transparent',
           color: isActive ? app.color : hovered ? 'rgba(240,236,228,0.85)' : 'rgba(240,236,228,0.38)',
           boxShadow: isActive ? `0 0 20px ${app.color}33, inset 0 0 0 1px ${app.color}33` : 'none',
           position: 'relative',
@@ -99,7 +99,7 @@ function DockIcon({
             transition={{ duration: 0.16 }}
             style={{
               position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-              background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(224,221,174,0.1)',
               color: 'rgba(240,236,228,0.85)', fontFamily: 'var(--mono)', fontSize: 8.5,
               letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px',
               borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
@@ -181,17 +181,17 @@ function ContextSatellite({
           height: 52, padding: expanded ? '0 16px 0 13px' : '0 13px',
           borderRadius: 26, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
           // Same Liquid-Glass material as the dock, tinted to the active accent.
-          background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(8,8,8,0.9) 100%)',
+          background: 'linear-gradient(180deg, rgba(22,22,22,0.82) 0%, rgba(8,12,20,0.9) 100%)',
           backdropFilter: 'blur(30px) saturate(1.8)',
           WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
           border: `1px solid ${accent}40`,
-          boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 24px ${accent}24, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${accent}33`,
+          boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 24px ${accent}24, inset 0 1px 0 rgba(224,221,174,0.07), inset 0 -1px 0 ${accent}33`,
         }}
       >
         {/* Specular sheen — matches the dock's glass highlight */}
         <div style={{
           position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 40%)',
+          background: 'linear-gradient(180deg, rgba(224,221,174,0.10) 0%, rgba(224,221,174,0) 40%)',
         }} />
 
         {/* Live beacon — the "active" pulse, the heart of the satellite */}
@@ -235,7 +235,7 @@ function ContextSatellite({
             )}
 
             {title && hasStrip && (
-              <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+              <div style={{ width: 1, height: 22, background: 'rgba(224,221,174,0.1)', flexShrink: 0 }} />
             )}
 
             {fields.map((f, i) => (
@@ -281,7 +281,7 @@ function ContextSatellite({
                 )}
                 <span style={{
                   width: 15, height: 15, borderRadius: 5,
-                  border: `1px solid ${t.active ? accent : 'rgba(255,255,255,0.18)'}`,
+                  border: `1px solid ${t.active ? accent : 'rgba(224,221,174,0.18)'}`,
                   background: t.active ? accent : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
@@ -348,7 +348,7 @@ function Keycap({ char, accent, active }: { char: string; accent: string; active
 
 // ── Transient activity (Dynamic Island live event) ───────────────────────
 function TransientView({ label, tone }: { label: string; tone: 'default' | 'success' | 'accent' }) {
-  const color = tone === 'success' ? '#10b981' : tone === 'accent' ? '#ff3c00' : 'rgba(240,236,228,0.8)';
+  const color = tone === 'success' ? '#10b981' : tone === 'accent' ? '#d7340b' : 'rgba(240,236,228,0.8)';
   return (
     <motion.div
       layout
@@ -389,14 +389,14 @@ function ProjectSwitcher({
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-        marginBottom: 12, background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(28px)',
-        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 10, width: 220,
+        marginBottom: 12, background: 'rgba(10,15,24,0.96)', backdropFilter: 'blur(28px)',
+        border: '1px solid rgba(224,221,174,0.08)', borderRadius: 16, padding: 10, width: 220,
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)', zIndex: 10,
       }}
     >
       <div style={{
         fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5, textTransform: 'uppercase',
-        color: 'rgba(240,236,228,0.3)', padding: '4px 8px 8px', borderBottom: '1px solid rgba(255,255,255,0.05)',
+        color: 'rgba(240,236,228,0.3)', padding: '4px 8px 8px', borderBottom: '1px solid rgba(224,221,174,0.05)',
         marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         Projects
@@ -409,7 +409,7 @@ function ProjectSwitcher({
           No projects yet.
         </div>
       ) : projects.map((proj, i) => {
-        const color = proj.accent_color || '#ff3c00';
+        const color = proj.accent_color || '#d7340b';
         const isActive = activeProject?.id === proj.id;
         return (
           <div key={proj.id} onClick={() => { onSelect(proj); onClose(); }} style={{ cursor: 'pointer' }}>
@@ -419,9 +419,9 @@ function ProjectSwitcher({
               transition={{ delay: i * 0.05 }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', borderRadius: 10,
-                background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
+                background: isActive ? 'rgba(224,221,174,0.05)' : 'transparent',
               }}
-              whileHover={{ background: 'rgba(255,255,255,0.05)' } as any}
+              whileHover={{ background: 'rgba(224,221,174,0.05)' } as any}
             >
               <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -544,7 +544,7 @@ export default function EcosystemTaskbar() {
   const activeApp = APPS.find(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
   // A hovered zone may override the accent (e.g. a scene cue tints differently
   // from the page); otherwise we use the active module's color.
-  const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#ff3c00';
+  const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#d7340b';
   const showContext = !!activeDescriptor && !transient;
   // The Pill morphs open when the cursor engages it, an in-page zone is
   // hovered, or the keyboard-hotkey layer is armed — Caps Lock needs the
@@ -581,18 +581,18 @@ export default function EcosystemTaskbar() {
             borderRadius: 26,
             // Liquid-Glass material — translucency + saturation + a contextual
             // under-glow tinted to the active module.
-            background: 'linear-gradient(180deg, rgba(22,22,22,0.78) 0%, rgba(8,8,8,0.88) 100%)',
+            background: 'linear-gradient(180deg, rgba(22,22,22,0.78) 0%, rgba(8,12,20,0.88) 100%)',
             backdropFilter: 'blur(30px) saturate(1.8)',
             WebkitBackdropFilter: 'blur(30px) saturate(1.8)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: `0 24px 70px rgba(0,0,0,0.65), 0 0 36px ${moduleColor}14, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 ${moduleColor}26`,
+            border: '1px solid rgba(224,221,174,0.08)',
+            boxShadow: `0 24px 70px rgba(0,0,0,0.65), 0 0 36px ${moduleColor}14, inset 0 1px 0 rgba(224,221,174,0.07), inset 0 -1px 0 ${moduleColor}26`,
             overflow: 'hidden',
           }}
         >
           {/* Specular sheen — the glass highlight along the top edge */}
           <div style={{
             position: 'absolute', inset: 0, borderRadius: 26, pointerEvents: 'none',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%)',
+            background: 'linear-gradient(180deg, rgba(224,221,174,0.10) 0%, rgba(224,221,174,0) 38%)',
           }} />
 
           <AnimatePresence mode="popLayout" initial={false}>
@@ -614,7 +614,7 @@ export default function EcosystemTaskbar() {
                 })}
 
                 {/* Divider + project switcher */}
-                <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 6px', flexShrink: 0 }} />
+                <div style={{ width: 1, height: 22, background: 'rgba(224,221,174,0.07)', margin: '0 6px', flexShrink: 0 }} />
                 <div style={{ position: 'relative' }}>
                   <motion.button
                     onClick={() => setProjectsOpen(v => !v)}
@@ -624,23 +624,23 @@ export default function EcosystemTaskbar() {
                     style={{
                       width: 46, height: 46, borderRadius: 15,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                      background: projectsOpen ? `${activeProject?.accent_color ?? '#ff3c00'}1f` : 'transparent',
+                      background: projectsOpen ? `${activeProject?.accent_color ?? '#d7340b'}1f` : 'transparent',
                       border: 'none', cursor: 'pointer', position: 'relative',
                     }}
                   >
                     {activeProject && (
                       <div style={{
                         position: 'absolute', top: 8, right: 8, width: 5, height: 5, borderRadius: '50%',
-                        background: activeProject.accent_color || '#ff3c00',
-                        boxShadow: `0 0 6px ${activeProject.accent_color || '#ff3c00'}`,
+                        background: activeProject.accent_color || '#d7340b',
+                        boxShadow: `0 0 6px ${activeProject.accent_color || '#d7340b'}`,
                       }} />
                     )}
                     <FolderOpen
                       size={18} strokeWidth={1.6}
-                      color={projectsOpen ? (activeProject?.accent_color ?? '#ff3c00') : 'rgba(240,236,228,0.4)'}
+                      color={projectsOpen ? (activeProject?.accent_color ?? '#d7340b') : 'rgba(240,236,228,0.4)'}
                     />
                     <motion.div animate={{ rotate: projectsOpen ? 0 : 180 }} transition={{ duration: 0.2 }} style={{ lineHeight: 0 }}>
-                      <ChevronUp size={8} color={projectsOpen ? (activeProject?.accent_color ?? '#ff3c00') : 'rgba(240,236,228,0.25)'} />
+                      <ChevronUp size={8} color={projectsOpen ? (activeProject?.accent_color ?? '#d7340b') : 'rgba(240,236,228,0.25)'} />
                     </motion.div>
                   </motion.button>
 

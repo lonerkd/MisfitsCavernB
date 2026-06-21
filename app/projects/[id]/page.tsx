@@ -41,8 +41,8 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
       onHoverEnd={() => setHovered(false)}
       style={{
         gridColumn: span === 'double' ? 'span 2' : 'span 1',
-        background: 'rgba(10,10,10,0.8)',
-        border: `1px solid ${hovered ? color + '30' : 'rgba(255,255,255,0.06)'}`,
+        background: 'rgba(10,15,24,0.8)',
+        border: `1px solid ${hovered ? color + '30' : 'rgba(224,221,174,0.06)'}`,
         borderRadius: 16,
         overflow: 'hidden',
         display: 'flex',
@@ -63,7 +63,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
       {/* Window chrome */}
       <div style={{
         padding: '10px 14px',
-        borderBottom: `1px solid ${hovered ? color + '18' : 'rgba(255,255,255,0.04)'}`,
+        borderBottom: `1px solid ${hovered ? color + '18' : 'rgba(224,221,174,0.04)'}`,
         display: 'flex', alignItems: 'center', gap: 8,
         transition: 'border-color 0.4s', flexShrink: 0,
       }}>
@@ -79,13 +79,13 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {preview}
         {/* Bottom fade */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, background: 'linear-gradient(transparent, rgba(10,10,10,0.9))', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, background: 'linear-gradient(transparent, rgba(10,15,24,0.9))', pointerEvents: 'none' }} />
       </div>
 
       {/* Footer */}
       <div style={{
         padding: '12px 16px',
-        borderTop: `1px solid rgba(255,255,255,0.04)`,
+        borderTop: `1px solid rgba(224,221,174,0.04)`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', gap: 18 }}>
@@ -146,7 +146,7 @@ function AssetPreview({ references }: { references: DBProject['references'] }) {
     <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
       {references.slice(0, 6).map(item => (
         <div key={item.id} style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.05)',
           borderRadius: 8, padding: '8px 10px',
           display: 'flex', alignItems: 'center', gap: 7,
         }}>
@@ -186,7 +186,7 @@ function CrewPreview({ team, onAdd }: { team: DBProject['crew']; onAdd: () => vo
           <div style={{
             width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
             background: `hsl(${(i * 97) % 360}, 40%, 30%)`,
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(224,221,174,0.1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg)',
           }}>
@@ -202,8 +202,8 @@ function CrewPreview({ team, onAdd }: { team: DBProject['crew']; onAdd: () => vo
         onClick={e => { e.stopPropagation(); e.preventDefault(); onAdd(); }}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: 2,
-          padding: '4px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-dim)',
+          padding: '4px 10px', borderRadius: 9999, background: 'rgba(224,221,174,0.03)',
+          border: '1px solid rgba(224,221,174,0.08)', color: 'var(--fg-dim)',
           fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer',
         }}
       >
@@ -227,7 +227,7 @@ function TimelinePreview({ endDate, phase, projectType }: { endDate?: string; ph
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         {daysLeft !== null ? (
           <>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#ff3c00' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to end date</span>
           </>
         ) : (
@@ -236,7 +236,7 @@ function TimelinePreview({ endDate, phase, projectType }: { endDate?: string; ph
       </div>
 
       {/* Progress rail */}
-      <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
+      <div style={{ height: 3, background: 'rgba(224,221,174,0.06)', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
@@ -251,7 +251,7 @@ function TimelinePreview({ endDate, phase, projectType }: { endDate?: string; ph
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
               width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-              background: m.done ? '#10b981' : 'rgba(255,255,255,0.1)',
+              background: m.done ? '#10b981' : 'rgba(224,221,174,0.1)',
             }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: m.done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: m.done ? 'line-through' : 'none', opacity: m.done ? 0.5 : 1 }}>{m.label}</span>
           </div>
@@ -282,7 +282,7 @@ function BriefBlock({ project, color, editing, onStartEdit, onCancelEdit, onSave
           rows={3}
           placeholder="What's the vision?"
           style={{
-            width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)',
+            width: '100%', padding: '10px 12px', background: 'rgba(224,221,174,0.04)',
             border: `1px solid ${color}40`, borderRadius: 10, color: 'var(--fg)',
             fontFamily: 'var(--serif)', fontSize: '0.95rem', outline: 'none', resize: 'none',
             boxSizing: 'border-box', lineHeight: 1.6,
@@ -304,7 +304,7 @@ function BriefBlock({ project, color, editing, onStartEdit, onCancelEdit, onSave
             onClick={onCancelEdit}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-dim)',
+              background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', color: 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
             }}
           >
@@ -375,7 +375,7 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
         initial={{ scale: 0.94, y: 16, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.94, y: 16, opacity: 0 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 440, background: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 28, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}
+        style={{ width: '100%', maxWidth: 440, background: 'rgba(10,15,24,0.98)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 20, padding: 28, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2 }}>Add Crew</div>
@@ -386,7 +386,7 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
           type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search by username…"
           autoFocus
-          style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+          style={{ width: '100%', padding: '10px 12px', background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 10, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
         />
 
         <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
@@ -408,7 +408,7 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
                   cursor: 'pointer', textAlign: 'left',
                 }}
               >
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', flexShrink: 0 }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(224,221,174,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', flexShrink: 0 }}>
                   {p.username.charAt(0).toUpperCase()}
                 </div>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: active ? 'var(--accent)' : 'var(--fg-muted)' }}>{p.username}</span>
@@ -423,7 +423,7 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
             <input
               type="text" value={role} onChange={e => setRole(e.target.value)}
               placeholder="e.g. Director of Photography"
-              style={{ width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 12px', background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 10, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
         )}
@@ -433,7 +433,7 @@ function AddCrewModal({ project, onClose, onAdded }: { project: DBProject; onClo
           disabled={!selected || submitting}
           style={{
             width: '100%', padding: '12px', borderRadius: 12,
-            background: selected ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+            background: selected ? 'var(--accent)' : 'rgba(224,221,174,0.05)',
             color: selected ? '#060606' : 'rgba(240,236,228,0.3)',
             border: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5, fontWeight: 600,
             textTransform: 'uppercase', cursor: selected ? 'pointer' : 'default',
@@ -496,8 +496,8 @@ function SetupChecklist({ project, color, onEditBrief, onAddCrew }: {
             disabled={item.done}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 9999,
-              background: item.done ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-              border: item.done ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(255,255,255,0.08)',
+              background: item.done ? 'rgba(16,185,129,0.1)' : 'rgba(224,221,174,0.04)',
+              border: item.done ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(224,221,174,0.08)',
               color: item.done ? '#10b981' : 'var(--fg-muted)',
               fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, textTransform: 'uppercase',
               cursor: item.done ? 'default' : 'pointer',
@@ -540,7 +540,7 @@ export default function ProjectHubPage() {
 
   if (!project) return null;
 
-  const color = project.accent_color || '#ff3c00';
+  const color = project.accent_color || '#d7340b';
   const phases = getPhaseTemplate(project.project_type);
   const currentPhaseIdx = getPhaseIndex(project.project_type, project.status);
 
@@ -561,8 +561,8 @@ export default function ProjectHubPage() {
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'sticky', top: 0, zIndex: 100,
-          background: 'rgba(6,6,6,0.92)', backdropFilter: 'blur(24px)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(7,11,19,0.92)', backdropFilter: 'blur(24px)',
+          borderBottom: '1px solid rgba(224,221,174,0.05)',
           padding: '0 28px', height: 58,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
@@ -574,7 +574,7 @@ export default function ProjectHubPage() {
           >
             <ArrowLeft size={16} />
           </Link>
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.07)' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(224,221,174,0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>{project.title}</span>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: color, opacity: 0.8 }}>
@@ -604,7 +604,7 @@ export default function ProjectHubPage() {
                 {i < phases.length - 1 && (
                   <div style={{
                     width: 16, height: 1,
-                    background: isDone ? `${color}60` : 'rgba(255,255,255,0.08)',
+                    background: isDone ? `${color}60` : 'rgba(224,221,174,0.08)',
                     transition: 'background 0.4s',
                   }} />
                 )}
@@ -616,7 +616,7 @@ export default function ProjectHubPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5,
-            padding: '5px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', textTransform: 'uppercase',
+            padding: '5px 10px', borderRadius: 6, background: 'rgba(224,221,174,0.04)', textTransform: 'uppercase',
           }}>
             {project.status}
           </div>
@@ -674,7 +674,7 @@ export default function ProjectHubPage() {
           <DeptWindow
             title="ScriptOS"
             tag="Screenplay"
-            color="#ff3c00"
+            color="#d7340b"
             href="/editor"
             delay={0.05}
             stats={[

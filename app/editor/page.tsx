@@ -174,7 +174,7 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
   const contd = line.meta?.isContinued;
   
   if (line.type === 'slug') {
-    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>{displayContent}</div>;
+    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(224,221,174,0.02)', padding: '4px 8px', borderRadius: 4 }}>{displayContent}</div>;
   }
   if (line.type === 'character') {
     const name = line.meta?.isDualDialogue ? displayContent.replace(/^\^/, '') : displayContent;
@@ -202,7 +202,7 @@ function CharChip({ name, sceneNum }: { name: string; sceneNum: number }) {
     accent: '#f59e0b',
     title: name,
     fields: [
-      { label: 'In', value: `Scene ${sceneNum}`, color: '#ff3c00' },
+      { label: 'In', value: `Scene ${sceneNum}`, color: '#d7340b' },
     ],
   }), [name, sceneNum]);
   const zoneHandlers = usePillZone(zone, 3);
@@ -235,7 +235,7 @@ function OutlineSceneRow({
 }) {
   const zone = useMemo(() => ({
     module: 'editor',
-    accent: '#ff3c00',
+    accent: '#d7340b',
     title: `Scene ${globalIdx + 1}`,
     fields: [
       { label: 'Length', value: `${wc}w`, color: '#6366f1' },
@@ -252,7 +252,7 @@ function OutlineSceneRow({
       {...zoneHandlers}
       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay }}
       onClick={() => onJump(globalIdx + 1)}
-      style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', borderLeft: `2px solid ${taggedColor || 'transparent'}`, paddingLeft: taggedColor ? 8 : 0, cursor: 'pointer' }}
+      style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(224,221,174,0.05)', borderLeft: `2px solid ${taggedColor || 'transparent'}`, paddingLeft: taggedColor ? 8 : 0, cursor: 'pointer' }}
     >
       <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -279,7 +279,7 @@ function OutlineSceneRow({
                   key={color}
                   title={taggedColor === color ? 'Click to untag' : `Tag scene ${color}`}
                   onClick={(e) => { e.stopPropagation(); onTag(scene.id, color); }}
-                  style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: taggedColor === color ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }}
+                  style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: taggedColor === color ? '2px solid #fff' : '1px solid rgba(224,221,174,0.1)', cursor: 'pointer', padding: 0 }}
                 />
               ))}
             </div>
@@ -885,7 +885,7 @@ export default function EditorPage() {
   }, [lines, scenesList]);
 
   // Board card colors (cycle through a palette)
-  const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
+  const CARD_COLORS = ['#d7340b', '#336467', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
 
   // Scene type classifier — encodes the actual spatial/temporal context of a scene
@@ -946,7 +946,7 @@ export default function EditorPage() {
       module: 'editor',
       title: currentScript?.title || 'Untitled',
       fields: [
-        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#ff3c00' },
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
         { label: 'Words', value: `${wordCount.toLocaleString()}`, color: '#6366f1' },
         { label: 'Pages', value: `${pageEst}` },
         { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
@@ -973,7 +973,7 @@ export default function EditorPage() {
     module: 'editor',
     title: currentScript?.title || 'Script',
     fields: [
-      { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#ff3c00' },
+      { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
       { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
     ],
     toggles: [
@@ -1023,7 +1023,7 @@ export default function EditorPage() {
   // sourced straight from the parser's dictionary-driven extraction, not
   // placeholder data.
   const breakdownGroups = useMemo(() => {
-    const colors: Record<string, string> = { PROPS: '#ffaa00', WARDROBE: '#ff3c00', VEHICLES: '#0099ff', VFX: '#a855f7', SFX: '#06b6d4' };
+    const colors: Record<string, string> = { PROPS: '#ffaa00', WARDROBE: '#d7340b', VEHICLES: '#336467', VFX: '#a855f7', SFX: '#06b6d4' };
     return Object.entries(elements)
       .filter(([, items]) => items.length > 0)
       .map(([category, items]) => ({ category, items, color: colors[category] || '#888' }));
@@ -1064,10 +1064,10 @@ export default function EditorPage() {
       {!focusMode && (
         <header style={{
           position: 'sticky', top: 0,
-          background: 'rgba(6,6,6,0.94)',
+          background: 'rgba(7,11,19,0.94)',
           backdropFilter: 'blur(24px) saturate(1.4)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(224,221,174,0.05)',
           padding: '0 20px',
           height: 58,
           display: 'flex',
@@ -1084,13 +1084,13 @@ export default function EditorPage() {
               <ArrowLeft size={18} />
             </Link>
 
-            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ width: 1, height: 24, background: 'rgba(224,221,174,0.1)' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button
                 onClick={() => setShowSidebar(!showSidebar)}
                 className="link-btn"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(224,221,174,0.03)', borderRadius: 'var(--radius-sm)' }}
               >
                 <List size={14} className="text-indigo-400" /> 
                 <input 
@@ -1115,12 +1115,12 @@ export default function EditorPage() {
                     width: 'auto',
                     minWidth: 120
                   }}
-                  onFocus={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                  onFocus={(e) => e.target.style.background = 'rgba(224,221,174,0.05)'}
                   onBlur={(e) => e.target.style.background = 'transparent'}
                 />
               </button>
               
-              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(224,221,174,0.05)', color: revisionMode ? '#336467' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </span>
 
@@ -1135,7 +1135,7 @@ export default function EditorPage() {
                     title={linked ? 'Click to unlink from project' : 'Click to link this script to the active project'}
                     style={{
                       fontSize: 10, fontFamily: 'var(--mono)', letterSpacing: 1,
-                      background: linked ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.05)',
+                      background: linked ? 'rgba(99,102,241,0.12)' : 'rgba(224,221,174,0.05)',
                       color: linked ? '#818cf8' : 'var(--fg-subtle)',
                       padding: '4px 8px', borderRadius: 4,
                       cursor: activeProject ? 'pointer' : 'default',
@@ -1150,7 +1150,7 @@ export default function EditorPage() {
           </div>
 
           {/* Center: View Switcher — pill nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9999, padding: '3px 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.06)', borderRadius: 9999, padding: '3px 4px' }}>
             {([
               { id: 'write',   icon: Type,            label: 'Write'   },
               { id: 'board',   icon: LayoutDashboard, label: 'Board'   },
@@ -1165,7 +1165,7 @@ export default function EditorPage() {
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   padding: '5px 13px', borderRadius: 9999, fontSize: 10.5, fontWeight: 600,
                   letterSpacing: 0.5, border: 'none', cursor: 'pointer',
-                  background: activeView === id ? 'rgba(255,255,255,0.10)' : 'transparent',
+                  background: activeView === id ? 'rgba(224,221,174,0.10)' : 'transparent',
                   color: activeView === id ? 'var(--fg)' : 'var(--fg-dim)',
                   fontFamily: 'var(--mono)',
                   transition: 'background 0.2s, color 0.2s',
@@ -1209,7 +1209,7 @@ export default function EditorPage() {
                   cursor: 'pointer',
                   transition: 'background 0.2s, color 0.2s, border-color 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--fg)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(224,221,174,0.06)'; e.currentTarget.style.color = 'var(--fg)'; e.currentTarget.style.borderColor = 'rgba(224,221,174,0.08)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-dim)'; e.currentTarget.style.borderColor = 'transparent'; }}
               >
                 <Icon size={14} />
@@ -1237,8 +1237,8 @@ export default function EditorPage() {
               {showFormatMenu && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                  background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.09)',
+                  background: 'rgba(10,15,24,0.96)', backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(224,221,174,0.09)',
                   borderRadius: 12, padding: 6, minWidth: 164, zIndex: 200,
                   boxShadow: '0 16px 48px rgba(0,0,0,0.6)'
                 }}>
@@ -1251,7 +1251,7 @@ export default function EditorPage() {
                       textTransform: 'uppercase', letterSpacing: 2,
                       fontFamily: 'var(--mono)', fontWeight: 500,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--fg)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(224,221,174,0.05)'; e.currentTarget.style.color = 'var(--fg)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>
                       .{fmt.toUpperCase()}
                     </button>
@@ -1265,13 +1265,13 @@ export default function EditorPage() {
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 36, height: 36,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(224,221,174,0.05)',
+                border: '1px solid rgba(224,221,174,0.08)',
                 borderRadius: 10, color: saving ? 'var(--fg-dim)' : 'var(--fg-muted)',
                 cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = 'var(--fg)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(224,221,174,0.09)'; e.currentTarget.style.color = 'var(--fg)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(224,221,174,0.05)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
             >
               {saving ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
             </button>
@@ -1282,13 +1282,13 @@ export default function EditorPage() {
       {/* FIND & REPLACE BAR */}
       <AnimatePresence>
         {showFindReplace && (
-          <motion.div initial={{ y: -32, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -32, opacity: 0 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ background: 'rgba(8,8,8,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <motion.div initial={{ y: -32, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -32, opacity: 0 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ background: 'rgba(8,12,20,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(224,221,174,0.05)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <Search size={14} style={{ color: 'var(--fg-muted)' }} />
-            <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
+            <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
             <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{findCount} found</span>
-            <button onClick={handleFindReplaceOne} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Replace</button>
-            <button onClick={handleFindReplace} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>All</button>
+            <button onClick={handleFindReplaceOne} style={{ background: 'rgba(224,221,174,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Replace</button>
+            <button onClick={handleFindReplace} style={{ background: 'rgba(224,221,174,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>All</button>
             <button onClick={() => setShowFindReplace(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={14} /></button>
           </motion.div>
         )}
@@ -1307,13 +1307,13 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: 248,
-                background: 'rgba(8,8,8,0.96)',
-                borderRight: '1px solid rgba(255,255,255,0.05)',
+                background: 'rgba(8,12,20,0.96)',
+                borderRight: '1px solid rgba(224,221,174,0.05)',
                 display: 'flex', flexDirection: 'column', flexShrink: 0,
               }}
             >
               {/* Script Controls */}
-              <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(224,221,174,0.05)' }}>
                 <button onClick={async () => {
                   const s = await createNewScript('Untitled Script', getDefaultScriptFormat(activeProject?.project_type) as ScriptFormat);
                   if (s) {
@@ -1323,13 +1323,13 @@ export default function EditorPage() {
                   }
                 }} style={{
                   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)',
                   padding: '8px 12px', borderRadius: 9, color: 'var(--fg-muted)',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
                   cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(224,221,174,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(224,221,174,0.04)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
                 >
                   <Plus size={12} /> New Script
                 </button>
@@ -1341,14 +1341,14 @@ export default function EditorPage() {
                   ].map(({ icon: Icon, label, onClick }) => (
                     <button key={label} onClick={onClick} style={{
                       flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      background: 'transparent', border: '1px solid rgba(255,255,255,0.06)',
+                      background: 'transparent', border: '1px solid rgba(224,221,174,0.06)',
                       padding: '6px', borderRadius: 7,
                       color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 8.5,
                       letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(224,221,174,0.14)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(224,221,174,0.06)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >
                       <Icon size={11} /> {label}
                     </button>
@@ -1372,14 +1372,14 @@ export default function EditorPage() {
                     }} style={{
                       fontSize: 8, padding: '4px 9px',
                       background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(224,221,174,0.07)',
                       borderRadius: 6, color: 'var(--fg-dim)',
                       cursor: 'pointer', textTransform: 'capitalize',
                       fontFamily: 'var(--mono)', letterSpacing: 1,
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(224,221,174,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >{key}</button>
                   ))}
                 </div>
@@ -1424,11 +1424,11 @@ export default function EditorPage() {
                             display: 'flex', alignItems: 'center', gap: 6,
                             margin: '6px 0 4px', paddingLeft: 4,
                           }}>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                            <div style={{ flex: 1, height: 1, background: 'rgba(224,221,174,0.08)' }} />
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', flexShrink: 0 }}>
                               Act {isAct2Start ? 'II' : 'III'}
                             </span>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                            <div style={{ flex: 1, height: 1, background: 'rgba(224,221,174,0.08)' }} />
                           </div>
                         )}
 
@@ -1444,7 +1444,7 @@ export default function EditorPage() {
                             borderLeft: `2px solid ${isActive ? color : 'transparent'}`,
                             transition: 'border-color 0.25s, background 0.18s',
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(224,221,174,0.03)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           {/* Scene header row */}
@@ -1467,7 +1467,7 @@ export default function EditorPage() {
                           </div>
 
                           {/* Word count bar */}
-                          <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1, marginBottom: 5, overflow: 'hidden' }}>
+                          <div style={{ height: 2, background: 'rgba(224,221,174,0.06)', borderRadius: 1, marginBottom: 5, overflow: 'hidden' }}>
                             <div style={{
                               height: '100%', width: `${barPct}%`,
                               background: isActive ? color : `${color}88`,
@@ -1481,7 +1481,7 @@ export default function EditorPage() {
                               {chars.slice(0, 4).map(c => (
                                 <span key={c} style={{
                                   fontFamily: 'var(--mono)', fontSize: 7,
-                                  color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)',
+                                  color: 'var(--fg-dim)', background: 'rgba(224,221,174,0.05)',
                                   padding: '1px 5px', borderRadius: 3,
                                   overflow: 'hidden', maxWidth: 56,
                                   textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -1526,14 +1526,14 @@ export default function EditorPage() {
                 format={(currentScript?.format as ScriptFormat) || 'screenplay'}
                 typewriter={typewriterMode}
                 focusMode={focusMode}
-                revisionColor={revisionMode ? '#0099ff' : undefined}
+                revisionColor={revisionMode ? '#336467' : undefined}
               />
             </div>
           )}
 
           {/* Structure Lines (Visual Act Markers) */}
           {activeView === 'write' && !focusMode && (
-            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
+            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(224,221,174,0.03)', zIndex: 0 }}>
               {scenesList.map((s, idx) => {
                 const pos = (idx / scenesList.length) * 100;
                 const isActBreak = s.text.includes('ACT');
@@ -1546,7 +1546,7 @@ export default function EditorPage() {
                       left: -4, 
                       width: 10, 
                       height: 2, 
-                      background: isActBreak ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                      background: isActBreak ? 'var(--accent)' : 'rgba(224,221,174,0.1)',
                     }} 
                     title={s.text}
                   />
@@ -1608,7 +1608,7 @@ export default function EditorPage() {
                     style={{
                       width: 272, minHeight: 180,
                       background: 'var(--bg-3)',
-                      border: `1px solid rgba(255,255,255,0.06)`,
+                      border: `1px solid rgba(224,221,174,0.06)`,
                       borderTop: `2px solid ${cardColor}`,
                       borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
                       transition: 'box-shadow 0.35s, border-color 0.35s',
@@ -1636,10 +1636,10 @@ export default function EditorPage() {
                       const refs = getSceneReferences(scene, i);
                       if (refs.length === 0) return null;
                       return (
-                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6 }}>
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(224,221,174,0.06)', display: 'flex', gap: 6 }}>
                           {refs.slice(0, 4).map(r => (
                             <img key={r.id} src={r.url} title={r.title} alt={r.title}
-                              style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,0.1)' }} />
+                              style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(224,221,174,0.1)' }} />
                           ))}
                           {refs.length > 4 && (
                             <span style={{ fontSize: 9, color: 'var(--fg-muted)', alignSelf: 'center' }}>+{refs.length - 4}</span>
@@ -1658,7 +1658,7 @@ export default function EditorPage() {
               {/* Scene Filter Bar */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
                 {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
-                  <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: sceneFilter === f ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
+                  <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(224,221,174,0.12)' : 'rgba(224,221,174,0.03)', color: sceneFilter === f ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
                 ))}
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
               </div>
@@ -1711,7 +1711,7 @@ export default function EditorPage() {
                 {[
                   { label: 'Words',   value: wordCount.toLocaleString(), color: '#6366f1', sub: `${pageEst} pages` },
                   { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
-                  { label: 'Scenes',  value: `${scenesList.length}`, color: '#ff3c00', sub: `${uniqueLocations.length} locations` },
+                  { label: 'Scenes',  value: `${scenesList.length}`, color: '#d7340b', sub: `${uniqueLocations.length} locations` },
                   { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
                   { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
                 ].map(s => (
@@ -1763,7 +1763,7 @@ export default function EditorPage() {
                               borderRadius: 3, cursor: 'pointer', opacity: 0.85,
                               minWidth: 4, position: 'relative',
                               transition: 'opacity 0.15s, transform 0.15s',
-                              border: i === currentSceneIdx ? '1px solid rgba(255,255,255,0.6)' : 'none',
+                              border: i === currentSceneIdx ? '1px solid rgba(224,221,174,0.6)' : 'none',
                             }}
                             onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scaleY(1.15)'; }}
                             onMouseLeave={e => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = ''; }}
@@ -1831,7 +1831,7 @@ export default function EditorPage() {
                                     title={appearsHere ? `${cs.name} in Scene ${si + 1}` : `Not in Scene ${si + 1}`}
                                     style={{
                                       flex: 1, height: 14, borderRadius: 2, minWidth: 8,
-                                      background: appearsHere ? charColor : 'rgba(255,255,255,0.04)',
+                                      background: appearsHere ? charColor : 'rgba(224,221,174,0.04)',
                                       opacity: appearsHere ? 0.85 : 1,
                                       transition: 'opacity 0.15s',
                                     }}
@@ -1867,11 +1867,11 @@ export default function EditorPage() {
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
                 <div style={{ display: 'flex', gap: 1, borderRadius: 6, overflow: 'hidden', height: 20 }}>
                   <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
-                  <div style={{ flex: 1, background: '#ff3c00' }} />
+                  <div style={{ flex: 1, background: '#d7340b' }} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#6366f1' }}>{dialogueRatio}% Dialogue</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#ff3c00' }}>{100 - dialogueRatio}% Action</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#d7340b' }}>{100 - dialogueRatio}% Action</span>
                 </div>
               </div>
 
@@ -1881,7 +1881,7 @@ export default function EditorPage() {
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
                   <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                     {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(224,221,174,0.05)' }}>
                       {['#', 'Scene', 'Type', 'Cast', 'Words', 'Time'].map(h => (
                         <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</div>
                       ))}
@@ -1902,10 +1902,10 @@ export default function EditorPage() {
                             gap: 0, padding: '9px 14px',
                             background: isActive ? `${color}0d` : 'transparent',
                             borderLeft: isActive ? `2px solid ${color}` : '2px solid transparent',
-                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                            borderBottom: '1px solid rgba(224,221,174,0.04)',
                             transition: 'background 0.2s',
                           }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(224,221,174,0.02)'; }}
                           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                         >
                           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{i + 1}</div>
@@ -2077,9 +2077,9 @@ export default function EditorPage() {
       {/* STATUS BAR */}
       <div style={{
         height: 26,
-        background: 'rgba(4,4,4,0.97)',
+        background: 'rgba(5,8,14,0.97)',
         backdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderTop: '1px solid rgba(224,221,174,0.04)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
         fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
@@ -2090,7 +2090,7 @@ export default function EditorPage() {
           <span style={{ color: 'var(--fg-muted)' }}>{currentScript?.title || 'Untitled'}</span>
           <span style={{
             padding: '1px 7px', borderRadius: 4,
-            background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)',
+            background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(224,221,174,0.04)',
             color: revisionMode ? '#6366f1' : 'var(--fg-dim)',
             letterSpacing: 2,
           }}>
@@ -2127,7 +2127,7 @@ export default function EditorPage() {
         textarea::placeholder { color: rgba(240,236,228,0.15); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(224,221,174,0.1); border-radius: 4px; }
       `}</style>
     </div>
   );

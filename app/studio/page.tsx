@@ -66,8 +66,8 @@ function timeAgo(iso: string): string {
 
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
-  { id: 'pre', name: 'Pre-Production', color: '#0099ff', icon: ClipboardList },
-  { id: 'prod', name: 'Production', color: '#ff3c00', icon: Video },
+  { id: 'pre', name: 'Pre-Production', color: '#336467', icon: ClipboardList },
+  { id: 'prod', name: 'Production', color: '#d7340b', icon: Video },
   { id: 'post', name: 'Post-Production', color: '#a855f7', icon: Layers },
   { id: 'del', name: 'Delivery', color: '#00cc66', icon: CheckCircle2 },
 ];
@@ -80,8 +80,8 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  image: '#0099ff',
-  video: '#ff3c00',
+  image: '#336467',
+  video: '#d7340b',
   document: '#ffaa00',
   audio: '#00cc66',
 };
@@ -127,7 +127,7 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
           </span>
         </div>
         {asset.commentCount > 0 && (
-           <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#ccc' }}>
+           <span style={{ fontSize: 9, background: 'rgba(224,221,174,0.1)', padding: '2px 6px', borderRadius: 4, color: '#ccc' }}>
              {asset.commentCount} {asset.commentCount === 1 ? 'Note' : 'Notes'}
            </span>
         )}
@@ -207,7 +207,7 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
         style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#050505', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(224,221,174,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name}</div>
@@ -252,8 +252,8 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
           </div>
 
           {/* Comments Sidebar (Frame.io style) */}
-          <div style={{ width: 340, background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
+          <div style={{ width: 340, background: '#0a0a0a', borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(224,221,174,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {loadingComments && <div style={{ fontSize: 11, color: '#666' }}>Loading feedback…</div>}
@@ -262,7 +262,7 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
               )}
               {comments.map((comment) => (
                 <div key={comment.id} style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(224,221,174,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
                     {(comment.profiles?.username || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -278,12 +278,12 @@ function AssetReviewModal({ asset, isOpen, onClose, userId, onCommentPosted }: {
               ))}
             </div>
 
-            <div style={{ padding: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ padding: 20, borderTop: '1px solid rgba(224,221,174,0.05)' }}>
                <textarea
                  value={draft}
                  onChange={e => setDraft(e.target.value)}
                  placeholder={asset.type === 'video' ? `Leave a comment at ${formatTimecode(currentTime)}...` : 'Leave a comment...'}
-                 style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }}
+                 style={{ width: '100%', background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }}
                />
                <button
                  onClick={handleSend}
@@ -368,7 +368,7 @@ function IntakeModal({ isOpen, onClose, userId, boardId, projectId, onUploaded }
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 500, maxWidth: 'calc(100vw - 40px)', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
+            style={{ width: 500, maxWidth: 'calc(100vw - 40px)', background: '#111', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Upload raw footage, references, or documents to the project vault.</p>
@@ -391,7 +391,7 @@ function IntakeModal({ isOpen, onClose, userId, boardId, projectId, onUploaded }
                   if (dropped) setFile(dropped);
                 }}
                 style={{
-                  padding: 40, border: `2px dashed ${dragOver ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
+                  padding: 40, border: `2px dashed ${dragOver ? 'var(--accent)' : 'rgba(224,221,174,0.1)'}`,
                   borderRadius: 12, textAlign: 'center', cursor: 'pointer',
                   background: dragOver ? 'rgba(255,60,0,0.04)' : 'transparent', transition: 'all 0.2s',
                 }}
@@ -463,7 +463,7 @@ function ProjectCard({ project, index }: { project: any; index: number }) {
           fontFamily: 'var(--display)',
           fontSize: 'clamp(3rem, 8vw, 6rem)',
           lineHeight: 1,
-          color: 'rgba(255,255,255,0.025)',
+          color: 'rgba(224,221,174,0.025)',
           letterSpacing: -2,
           userSelect: 'none',
           pointerEvents: 'none',
@@ -531,7 +531,7 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
           <div key={stage.id} style={{ flex: 1, position: 'relative' }}>
             <div style={{ 
               height: 4, 
-              background: isActive ? stage.color : 'rgba(255,255,255,0.05)', 
+              background: isActive ? stage.color : 'rgba(224,221,174,0.05)', 
               borderRadius: 2,
               marginBottom: 12,
               transition: 'all 0.5s'
@@ -569,7 +569,7 @@ function ConceptCard({ image, index, onDelete, onLinkToScene, scripts }: {
         position: 'relative',
         borderRadius: 8,
         overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
+        border: '1px solid rgba(224,221,174,0.05)',
         background: '#0a0a0a'
       }}
     >
@@ -600,7 +600,7 @@ function ConceptCard({ image, index, onDelete, onLinkToScene, scripts }: {
             {onLinkToScene && (
               <button
                 onClick={(e) => { e.stopPropagation(); onLinkToScene(image.id); }}
-                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
+                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(224,221,174,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
               >
                 Link to Scene
               </button>
@@ -608,7 +608,7 @@ function ConceptCard({ image, index, onDelete, onLinkToScene, scripts }: {
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(image.id); }}
-                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
+                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(224,221,174,0.15)', color: '#fff', borderRadius: 6, fontSize: 9, padding: '4px 8px', cursor: 'pointer' }}
               >
                 Remove
               </button>
@@ -628,8 +628,8 @@ function BeatCard({ beat, index, onDelete }: { beat: any; index: number; onDelet
       transition={{ delay: index * 0.05 }}
       style={{
         padding: 20,
-        background: 'rgba(255,255,255,0.03)',
-        border: `1px solid ${beat.color || 'rgba(255,255,255,0.06)'}`,
+        background: 'rgba(224,221,174,0.03)',
+        border: `1px solid ${beat.color || 'rgba(224,221,174,0.06)'}`,
         borderTop: `4px solid ${beat.color || 'var(--accent)'}`,
         borderRadius: 8,
         minHeight: 140,
@@ -671,8 +671,8 @@ function CrewMemberCard({ member, index, castAs }: { member: any; index: number;
         alignItems: 'center',
         gap: 16,
         padding: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(224,221,174,0.02)',
+        border: '1px solid rgba(224,221,174,0.05)',
         borderRadius: 12
       }}
     >
@@ -686,7 +686,7 @@ function CrewMemberCard({ member, index, castAs }: { member: any; index: number;
           <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>as {castAs.join(', ')}</div>
         )}
       </div>
-      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(224,221,174,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
         {member.status || 'pending'}
       </div>
     </motion.div>
@@ -743,9 +743,9 @@ function ReferenceSearchModal({
         <motion.div
           initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
           onClick={e => e.stopPropagation()}
-          style={{ width: '100%', maxWidth: 900, maxHeight: '85vh', background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          style={{ width: '100%', maxWidth: 900, maxHeight: '85vh', background: '#0c0c0c', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         >
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(224,221,174,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 700 }}>Reference Search</div>
               <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2 }}>
@@ -755,8 +755,8 @@ function ReferenceSearchModal({
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><XIcon size={18} /></button>
           </div>
 
-          <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '0 12px' }}>
+          <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 8, padding: '0 12px' }}>
               <Search size={15} color="#888" />
               <input
                 autoFocus value={query} onChange={e => setQuery(e.target.value)}
@@ -785,7 +785,7 @@ function ReferenceSearchModal({
                   const added = addedUrls.has(ref.url);
                   const isPending = pending.has(ref.id);
                   return (
-                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: '#0a0a0a' }}>
+                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#0a0a0a' }}>
                       <img src={ref.thumbnail} alt={ref.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
                       <div
                         style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
@@ -889,7 +889,7 @@ function PitchPresentationModal({ isOpen, onClose, project, conceptImages, chara
           <button onClick={() => setSlide(s => Math.max(s - 1, 0))} disabled={slide === 0} className="link-btn" style={{ opacity: slide === 0 ? 0.3 : 1 }}>← Prev</button>
           <div style={{ display: 'flex', gap: 8 }}>
             {Array.from({ length: slideCount }).map((_, i) => (
-              <button key={i} onClick={() => setSlide(i)} style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === slide ? 'var(--accent)' : 'rgba(255,255,255,0.2)' }} />
+              <button key={i} onClick={() => setSlide(i)} style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === slide ? 'var(--accent)' : 'rgba(224,221,174,0.2)' }} />
             ))}
           </div>
           <button onClick={() => setSlide(s => Math.min(s + 1, slideCount - 1))} disabled={slide === slideCount - 1} className="link-btn" style={{ opacity: slide === slideCount - 1 ? 0.3 : 1 }}>Next →</button>
@@ -916,7 +916,7 @@ function BudgetLineItem({ item, hiring, onHire, onDelete }: {
   const zoneHandlers = usePillZone(zone, 2);
 
   return (
-    <div {...zoneHandlers} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+    <div {...zoneHandlers} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px dashed rgba(224,221,174,0.05)' }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 12, fontWeight: 700 }}>{item.category}</div>
         {item.description && <div style={{ fontSize: 10, color: 'var(--fg-subtle)' }}>{item.description}</div>}
@@ -1407,9 +1407,9 @@ export default function StudioPage() {
         padding: '0 28px', height: 62,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(6,6,6,0.92)',
+        background: 'rgba(7,11,19,0.92)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(224,221,174,0.04)',
         boxShadow: '0 1px 0 rgba(99,102,241,0.08) inset',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -1419,11 +1419,11 @@ export default function StudioPage() {
               onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(224,221,174,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#6366f1', textTransform: 'uppercase' }}>Studio</div>
 
           {/* Project Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(224,221,174,0.06)' }}>
             <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Project:</span>
             <select 
               value={activeProject?.id || ''} 
@@ -1490,7 +1490,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showNewProject && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowNewProject(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,15,24,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(224,221,174,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><LayoutGrid size={18} /> New Project</h2>
                 <button onClick={() => setShowNewProject(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1500,22 +1500,22 @@ export default function StudioPage() {
                 autoFocus value={npTitle} onChange={e => setNpTitle(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleCreateProject(); }}
                 placeholder="e.g. Femme Fatale"
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '11px 14px', color: '#fff', fontSize: 14, outline: 'none', marginBottom: 18 }}
+                style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 8, padding: '11px 14px', color: '#fff', fontSize: 14, outline: 'none', marginBottom: 18 }}
               />
               <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Type</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 26 }}>
                 {CURATED_PROJECT_TYPES.map(t => (
                   <button key={t} onClick={() => setNpType(t)}
                     style={{ padding: '7px 14px', borderRadius: 9999, fontSize: 11, cursor: 'pointer',
-                      background: npType === t ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${npType === t ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                      background: npType === t ? 'rgba(99,102,241,0.2)' : 'rgba(224,221,174,0.04)',
+                      border: `1px solid ${npType === t ? 'rgba(99,102,241,0.5)' : 'rgba(224,221,174,0.08)'}`,
                       color: npType === t ? '#fff' : 'var(--fg-dim)' }}>
                     {t}
                   </button>
                 ))}
               </div>
               <button onClick={handleCreateProject} disabled={!npTitle.trim() || npCreating}
-                style={{ width: '100%', background: npTitle.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.08)', color: npTitle.trim() ? '#060606' : 'var(--fg-dim)', border: 'none', borderRadius: 10, padding: '13px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: npTitle.trim() ? 'pointer' : 'default' }}>
+                style={{ width: '100%', background: npTitle.trim() ? 'var(--accent)' : 'rgba(224,221,174,0.08)', color: npTitle.trim() ? '#060606' : 'var(--fg-dim)', border: 'none', borderRadius: 10, padding: '13px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, cursor: npTitle.trim() ? 'pointer' : 'default' }}>
                 {npCreating ? 'Creating…' : 'Create Project'}
               </button>
             </motion.div>
@@ -1526,7 +1526,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showBeatModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowBeatModal(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,15,24,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(224,221,174,0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><BookOpen size={20} /> New Beat</h2>
                 <button onClick={() => setShowBeatModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1534,15 +1534,15 @@ export default function StudioPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Title</label>
-                  <input value={beatTitle} onChange={e => setBeatTitle(e.target.value)} placeholder="The Inciting Incident" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                  <input value={beatTitle} onChange={e => setBeatTitle(e.target.value)} placeholder="The Inciting Incident" style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Content</label>
-                  <textarea value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+                  <textarea value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ width: '100%', minHeight: 80, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Anchor to Scene {scriptScenes.length === 0 && '(no linked script scenes found)'}</label>
-                  <select value={beatScene} onChange={e => setBeatScene(e.target.value)} disabled={scriptScenes.length === 0} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}>
+                  <select value={beatScene} onChange={e => setBeatScene(e.target.value)} disabled={scriptScenes.length === 0} style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }}>
                     <option value="" style={{ background: '#111' }}>None</option>
                     {scriptScenes.map((s, i) => <option key={i} value={s} style={{ background: '#111' }}>{s}</option>)}
                   </select>
@@ -1559,7 +1559,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showBudgetModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowBudgetModal(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,15,24,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(224,221,174,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={20} /> New Budget Line Item</h2>
                 <button onClick={() => setShowBudgetModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1567,15 +1567,15 @@ export default function StudioPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Category</label>
-                  <input value={budgetCategory} onChange={e => setBudgetCategory(e.target.value)} placeholder="e.g. Sound Designer" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                  <input value={budgetCategory} onChange={e => setBudgetCategory(e.target.value)} placeholder="e.g. Sound Designer" style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Description</label>
-                  <textarea value={budgetDescription} onChange={e => setBudgetDescription(e.target.value)} style={{ width: '100%', minHeight: 60, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+                  <textarea value={budgetDescription} onChange={e => setBudgetDescription(e.target.value)} style={{ width: '100%', minHeight: 60, background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Amount (USD)</label>
-                  <input type="number" min="0" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} placeholder="0" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                  <input type="number" min="0" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} placeholder="0" style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
                 </div>
                 <button onClick={handleCreateBudgetItem} disabled={!budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !budgetCategory.trim() || !budgetAmount.trim() || savingBudgetItem ? 0.5 : 1 }}>
                   {savingBudgetItem ? 'Saving…' : 'Add Line Item'}
@@ -1589,7 +1589,7 @@ export default function StudioPage() {
       <AnimatePresence>
         {showCampaignModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCampaignModal(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,15,24,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(224,221,174,0.09)', borderRadius: 20, padding: 32, width: 460, maxWidth: 'calc(100vw - 40px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Megaphone size={20} /> New Campaign</h2>
                 <button onClick={() => setShowCampaignModal(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><XIcon size={18} /></button>
@@ -1597,13 +1597,13 @@ export default function StudioPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Title</label>
-                  <input autoFocus value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleCreateCampaign(); }} placeholder="e.g. Official Trailer Premiere" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                  <input autoFocus value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleCreateCampaign(); }} placeholder="e.g. Official Trailer Premiere" style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Platform</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {CAMPAIGN_PLATFORMS.map(p => (
-                      <button key={p} onClick={() => setCampaignPlatform(p)} style={{ background: campaignPlatform === p ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', border: campaignPlatform === p ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', color: campaignPlatform === p ? '#fff' : '#999', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>{p}</button>
+                      <button key={p} onClick={() => setCampaignPlatform(p)} style={{ background: campaignPlatform === p ? 'rgba(99,102,241,0.2)' : 'rgba(224,221,174,0.04)', border: campaignPlatform === p ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(224,221,174,0.08)', color: campaignPlatform === p ? '#fff' : '#999', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>{p}</button>
                     ))}
                   </div>
                 </div>
@@ -1611,13 +1611,13 @@ export default function StudioPage() {
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Status</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {CAMPAIGN_STATUSES.map(s => (
-                      <button key={s} onClick={() => setCampaignStatus(s)} style={{ background: campaignStatus === s ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', border: campaignStatus === s ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)', color: campaignStatus === s ? '#fff' : '#999', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>{s}</button>
+                      <button key={s} onClick={() => setCampaignStatus(s)} style={{ background: campaignStatus === s ? 'rgba(99,102,241,0.2)' : 'rgba(224,221,174,0.04)', border: campaignStatus === s ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(224,221,174,0.08)', color: campaignStatus === s ? '#fff' : '#999', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>{s}</button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Target Reach (optional)</label>
-                  <input value={campaignReach} onChange={e => setCampaignReach(e.target.value)} placeholder="e.g. 25k impressions" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
+                  <input value={campaignReach} onChange={e => setCampaignReach(e.target.value)} placeholder="e.g. 25k impressions" style={{ width: '100%', background: 'rgba(224,221,174,0.05)', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
                 </div>
                 <button onClick={handleCreateCampaign} disabled={!campaignTitle.trim() || savingCampaign} className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)', marginTop: 8, opacity: !campaignTitle.trim() || savingCampaign ? 0.5 : 1 }}>
                   {savingCampaign ? 'Saving…' : 'Create Campaign'}
@@ -1631,15 +1631,15 @@ export default function StudioPage() {
       {/* TABS BAR */}
       <div style={{
         position: 'fixed', top: 62, left: 0, width: '100%',
-        height: 52, background: 'rgba(6,6,6,0.88)',
-        backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.04)',
+        height: 52, background: 'rgba(7,11,19,0.88)',
+        backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(224,221,174,0.04)',
         display: 'flex', justifyContent: 'center', alignItems: 'center',
         zIndex: 90,
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 2,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(224,221,174,0.03)',
+          border: '1px solid rgba(224,221,174,0.06)',
           borderRadius: 9999, padding: '4px 6px',
         }}>
           {tabs.map(tab => {
@@ -1704,7 +1704,7 @@ export default function StudioPage() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 480 }}>
                 {projects.map(p => (
                   <button key={p.id} onClick={() => setActiveProject(p)}
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', borderRadius: 9999, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>
+                    style={{ background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', color: '#fff', borderRadius: 9999, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>
                     {p.title}
                   </button>
                 ))}
@@ -1750,11 +1750,11 @@ export default function StudioPage() {
                   <div>
                     <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Production Stats</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(224,221,174,0.05)', paddingBottom: 8 }}>
                         <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Status</span>
                         <span style={{ fontSize: 12, fontWeight: 600, color: '#ffaa00' }}>{activeProject.status}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(224,221,174,0.05)', paddingBottom: 8 }}>
                         <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Completion</span>
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
                           {Math.round((getPhaseIndex(activeProject.project_type, activeProject.status) / (getPhaseTemplate(activeProject.project_type).length - 1)) * 100)}%
@@ -1769,12 +1769,12 @@ export default function StudioPage() {
                     ) : (
                       <div style={{ display: 'flex', gap: 8 }}>
                         {(activeProject.crew || []).slice(0, 3).map(c => (
-                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(224,221,174,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
                             {c.name.slice(0, 2).toUpperCase()}
                           </div>
                         ))}
                         {(activeProject.crew || []).length > 3 && (
-                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(224,221,174,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
                             +{(activeProject.crew || []).length - 3}
                           </div>
                         )}
@@ -1784,12 +1784,12 @@ export default function StudioPage() {
                 </div>
 
                 {/* Production Budget */}
-                <div {...budgetZoneHandlers} style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                <div {...budgetZoneHandlers} style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(224,221,174,0.02), transparent)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
                       <DollarSign size={16} color="var(--accent)" /> Production Budget
                     </div>
-                    <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
+                    <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(224,221,174,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
                   </div>
                   {editingBudget ? (
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -1817,7 +1817,7 @@ export default function StudioPage() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid rgba(224,221,174,0.06)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                       <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>Line Items</div>
                       <button className="link-btn" onClick={handleOpenBudgetModal} style={{ fontSize: 9, padding: '4px 10px' }}>+ Add Line Item</button>
@@ -1857,7 +1857,7 @@ export default function StudioPage() {
                        ) : null;
                      })()}
                    </div>
-                   <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24, marginTop: 12 }}>
+                   <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(224,221,174,0.05)', display: 'flex', flexDirection: 'column', gap: 24, marginTop: 12 }}>
                       {getPhaseTemplate(activeProject.project_type).map((phase, i) => {
                         const currentIdx = getPhaseIndex(activeProject.project_type, activeProject.status);
                         const completed = currentIdx >= i;
@@ -1877,7 +1877,7 @@ export default function StudioPage() {
               </motion.div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
+            <div style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.06)', borderRadius: 12, padding: 32 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ClipboardList size={16} /> Recent Activity
               </div>
@@ -1887,7 +1887,7 @@ export default function StudioPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {(activeProject.activity || []).slice(0, 6).map((act) => (
                   <div key={act.id} style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(224,221,174,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>
                       {(act.profiles?.username || '?').slice(0, 2).toUpperCase()}
                     </div>
                     <div>
@@ -1929,7 +1929,7 @@ export default function StudioPage() {
             {conceptLoading ? (
               <div style={{ color: 'var(--fg-subtle)', fontSize: 12 }}>Loading moodboard…</div>
             ) : conceptImages.length === 0 ? (
-              <div style={{ padding: 60, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, color: 'var(--fg-subtle)', fontSize: 12 }}>
+              <div style={{ padding: 60, textAlign: 'center', border: '1px dashed rgba(224,221,174,0.1)', borderRadius: 12, color: 'var(--fg-subtle)', fontSize: 12 }}>
                 No references yet. {user ? 'Click "+ New Ref" to pin your first image.' : 'Sign in to start building this project\'s moodboard.'}
               </div>
             ) : (
@@ -1988,7 +1988,7 @@ export default function StudioPage() {
                        />
                      ))}
                      {activeProject && (
-                       <Link href={`/projects/${activeProject.id}`} style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>
+                       <Link href={`/projects/${activeProject.id}`} style={{ padding: 12, border: '1px dashed rgba(224,221,174,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>
                          + Recruit Crew / Invite Talent
                        </Link>
                      )}
@@ -1996,7 +1996,7 @@ export default function StudioPage() {
                  </div>
 
                  {/* Shooting Schedule — scenes parsed live from the linked script */}
-                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
+                 <div style={{ background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
                      {activeProject && <button className="link-btn" onClick={handleAddShootDay} style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> + Add Shoot Day</button>}
@@ -2008,7 +2008,7 @@ export default function StudioPage() {
                      </div>
                    ) : (
                      <>
-                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
+                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(224,221,174,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
                          <div style={{ width: 50 }}>Scene</div>
                          <div style={{ flex: 1, minWidth: 160 }}>Heading / Location</div>
                          <div style={{ width: 110 }}>Cast</div>
@@ -2017,7 +2017,7 @@ export default function StudioPage() {
                        </div>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                          {sceneSchedule.map(s => (
-                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(224,221,174,0.05)' }}>
                              <div style={{ width: 50, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
                              <div style={{ flex: 1, minWidth: 160 }}>
                                <div style={{ fontSize: 11, fontWeight: 600 }}>{s.scene_heading}</div>
@@ -2025,7 +2025,7 @@ export default function StudioPage() {
                                  defaultValue={s.location}
                                  placeholder="Location…"
                                  onBlur={e => handleSceneFieldBlur(s.id, 'location', e.target.value)}
-                                 style={{ width: '90%', marginTop: 4, background: 'transparent', border: 'none', borderBottom: '1px dashed rgba(255,255,255,0.1)', color: '#aaa', fontSize: 9, fontFamily: 'var(--mono)', outline: 'none', padding: '2px 0' }}
+                                 style={{ width: '90%', marginTop: 4, background: 'transparent', border: 'none', borderBottom: '1px dashed rgba(224,221,174,0.1)', color: '#aaa', fontSize: 9, fontFamily: 'var(--mono)', outline: 'none', padding: '2px 0' }}
                                />
                              </div>
                              <div style={{ width: 110, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{(sceneCast[s.scene_number] || []).join(', ') || '—'}</div>
@@ -2035,12 +2035,12 @@ export default function StudioPage() {
                                defaultValue={s.estimated_hours || ''}
                                placeholder="0"
                                onBlur={e => handleSceneFieldBlur(s.id, 'estimated_hours', e.target.value)}
-                               style={{ width: 70, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none', padding: '4px 6px' }}
+                               style={{ width: 70, background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.06)', borderRadius: 4, color: '#ccc', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none', padding: '4px 6px' }}
                              />
                              <select
                                value={s.shoot_day_id || ''}
                                onChange={e => handleAssignDay(s.id, e.target.value)}
-                               style={{ width: 130, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc', fontSize: 10, outline: 'none', padding: '4px 6px' }}
+                               style={{ width: 130, background: 'rgba(224,221,174,0.03)', border: '1px solid rgba(224,221,174,0.06)', borderRadius: 4, color: '#ccc', fontSize: 10, outline: 'none', padding: '4px 6px' }}
                              >
                                <option value="" style={{ background: '#111' }}>Unscheduled</option>
                                {shootDays.map(d => <option key={d.id} value={d.id} style={{ background: '#111' }}>Day {d.day_number}</option>)}
@@ -2073,8 +2073,8 @@ export default function StudioPage() {
                   onClick={() => setFilter(t)}
                   style={{
                     padding: '7px 16px',
-                    background: filter === t ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${filter === t ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
+                    background: filter === t ? 'var(--accent)' : 'rgba(224,221,174,0.03)',
+                    border: `1px solid ${filter === t ? 'var(--accent)' : 'rgba(224,221,174,0.06)'}`,
                     color: filter === t ? 'var(--bg)' : 'var(--fg-muted)',
                     fontFamily: 'var(--mono)',
                     fontSize: 9,
@@ -2092,7 +2092,7 @@ export default function StudioPage() {
             {assetsLoading ? (
               <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, fontFamily: 'var(--mono)' }}>Loading library…</div>
             ) : filtered.length === 0 ? (
-              <div style={{ padding: '60px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12 }}>
+              <div style={{ padding: '60px 0', textAlign: 'center', border: '1px dashed rgba(224,221,174,0.08)', borderRadius: 12 }}>
                 <Archive size={28} color="#444" style={{ marginBottom: 12 }} />
                 <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 4 }}>No assets in your library yet.</div>
                 <div style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>Use Intake above to upload raw footage, references, or documents.</div>
@@ -2116,12 +2116,12 @@ export default function StudioPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 01" />
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>{activeProject.title}</h3>
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
               </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
                 {conceptImages[0] && (
                   <img src={conceptImages[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
                 )}
@@ -2133,7 +2133,7 @@ export default function StudioPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 03" />
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE CHARACTERS</h3>
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>
@@ -2165,7 +2165,7 @@ export default function StudioPage() {
                {(activeProject.campaigns || []).map((campaign) => {
                  const color = PLATFORM_COLORS[campaign.platform] || '#888';
                  return (
-                    <div key={campaign.id} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={campaign.id} style={{ padding: 24, background: 'rgba(224,221,174,0.02)', border: '1px solid rgba(224,221,174,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                        <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                              <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: `${color}22`, color, borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
@@ -2187,7 +2187,7 @@ export default function StudioPage() {
                })}
 
                {(activeProject.campaigns || []).length === 0 && (
-                 <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
+                 <div style={{ padding: 32, border: '1px dashed rgba(224,221,174,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
                     <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
                     No campaigns yet. Click "+ New Campaign" to plan your first promotion.
                  </div>

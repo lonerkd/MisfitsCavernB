@@ -31,7 +31,7 @@ function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: num
 
 /* ─── Workflow Pipeline ───────────────────────────────────────────────────── */
 const STAGES = [
-  { id: 'write',     label: 'Write',       icon: PenTool,   color: '#ff3c00', href: '/editor'    },
+  { id: 'write',     label: 'Write',       icon: PenTool,   color: '#d7340b', href: '/editor'    },
   { id: 'organize',  label: 'Organize',    icon: Layers,    color: '#6366f1', href: '/studio'    },
   { id: 'crew',      label: 'Crew',        icon: Users,     color: '#10b981', href: '/lounge'    },
   { id: 'showcase',  label: 'Showcase',    icon: Film,      color: '#f59e0b', href: '/portfolio' },
@@ -70,8 +70,8 @@ function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: numbe
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: hovered ? `${stage.color}18` : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${hovered ? stage.color + '45' : 'rgba(255,255,255,0.07)'}`,
+            background: hovered ? `${stage.color}18` : 'rgba(224,221,174,0.03)',
+            border: `1px solid ${hovered ? stage.color + '45' : 'rgba(224,221,174,0.07)'}`,
             color: hovered ? stage.color : 'rgba(240,236,228,0.45)',
             transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
             boxShadow: hovered ? `0 8px 28px ${stage.color}22` : 'none',
@@ -115,7 +115,7 @@ function PipelineConnector({ index }: { index: number }) {
       whileInView={{ scaleX: 1 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 + 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)', transformOrigin: 'left', position: 'relative', top: -15, overflow: 'hidden' }}
+      style={{ flex: 1, height: 1, background: 'rgba(224,221,174,0.07)', transformOrigin: 'left', position: 'relative', top: -15, overflow: 'hidden' }}
     >
       <div style={{
         position: 'absolute',
@@ -159,7 +159,7 @@ function StudioPreview() {
   const items = [
     { label: 'Opening_v3.mov', type: 'video', color: '#6366f1' },
     { label: 'Score_Final.wav', type: 'audio', color: '#10b981' },
-    { label: 'Act1_Draft.fdx',  type: 'script', color: '#ff3c00' },
+    { label: 'Act1_Draft.fdx',  type: 'script', color: '#d7340b' },
     { label: 'Cast_Photos.zip', type: 'image', color: '#f59e0b' },
     { label: 'Budget_R2.xlsx',  type: 'doc',   color: '#8b5cf6' },
     { label: 'Storyboard.pdf',  type: 'doc',   color: '#06b6d4' },
@@ -168,8 +168,8 @@ function StudioPreview() {
     <div style={{ padding: '16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
       {items.map((item, i) => (
         <div key={i} style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(224,221,174,0.03)',
+          border: '1px solid rgba(224,221,174,0.06)',
           borderRadius: 8,
           padding: '10px 12px',
           display: 'flex',
@@ -217,8 +217,8 @@ function LoungePreview() {
             <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: '#10b981', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
-            background: m.mine ? 'rgba(255,60,0,0.15)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${m.mine ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.07)'}`,
+            background: m.mine ? 'rgba(255,60,0,0.15)' : 'rgba(224,221,174,0.05)',
+            border: `1px solid ${m.mine ? 'rgba(255,60,0,0.2)' : 'rgba(224,221,174,0.07)'}`,
             borderRadius: m.mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
             padding: '7px 12px',
             maxWidth: '80%',
@@ -247,7 +247,7 @@ function PortfolioPreview() {
           left: 0, right: 0,
           top: `${y * 100}%`,
           height: 1,
-          background: 'rgba(255,255,255,0.04)',
+          background: 'rgba(224,221,174,0.04)',
         }} />
       ))}
       {/* Letterbox bars */}
@@ -309,7 +309,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
             position: 'relative',
             overflow: 'hidden',
             background: 'var(--bg-2)',
-            border: `1px solid ${hovered ? color + '30' : 'rgba(255,255,255,0.05)'}`,
+            border: `1px solid ${hovered ? color + '30' : 'rgba(224,221,174,0.05)'}`,
             borderRadius: 16,
             transition: 'border-color 0.45s var(--ease-expo)',
             boxShadow: hovered ? `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px ${color}18` : 'none',
@@ -334,7 +334,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
           <div style={{
             flex: 1,
             overflow: 'hidden',
-            borderBottom: `1px solid ${hovered ? color + '20' : 'rgba(255,255,255,0.04)'}`,
+            borderBottom: `1px solid ${hovered ? color + '20' : 'rgba(224,221,174,0.04)'}`,
             transition: 'border-color 0.4s',
           }}>
             {preview}
@@ -441,7 +441,7 @@ export default function Home() {
       module: 'hub',
       title: activeProject ? activeProject.title : 'Misfits Cavern',
       fields: [
-        { label: 'Projects', value: `${projects.length}`, color: '#ff3c00' },
+        { label: 'Projects', value: `${projects.length}`, color: '#d7340b' },
       ],
       actions: [
         {
@@ -520,7 +520,7 @@ export default function Home() {
               textTransform: 'uppercase',
               color: 'rgba(255,60,0,0.85)',
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff3c00', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#d7340b', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
               Digital Film Studio
             </div>
           </motion.div>
@@ -647,14 +647,14 @@ export default function Home() {
           <ModuleTile
             title="ScriptOS"
             tag="Screenplay Editor"
-            color="#ff3c00"
+            color="#d7340b"
             href="/editor"
             index={0}
             preview={
               <div style={{ minHeight: 220 }}>
                 <div style={{
                   padding: '10px 16px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  borderBottom: '1px solid rgba(224,221,174,0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
