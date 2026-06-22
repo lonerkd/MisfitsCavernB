@@ -72,7 +72,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('budget_items').select('*').eq('project_id', projectId),
       supabase.from('timeline_items').select('*').eq('project_id', projectId),
-      supabase.from('project_crews').select('*, users(username, avatar)').eq('project_id', projectId)
+      supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId)
     ]);
 
     if (projectRes.data) {
@@ -83,9 +83,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         timeline_items: timelineRes.data || [],
         crew: (crewRes.data || []).map((c: any) => ({
           id: c.id,
-          name: c.users?.username || 'Unknown',
+          name: c.profiles?.username || 'Unknown',
           role: c.role,
-          avatar: c.users?.avatar,
+          avatar: c.profiles?.avatar_url,
           status: 'confirmed'
         }))
       };
