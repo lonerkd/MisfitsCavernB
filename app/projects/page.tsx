@@ -5,7 +5,7 @@ import { Plus, ArrowUpRight, Clock, Film, Tv, Video, Music } from 'lucide-react'
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/clihent';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { useProject } from '@/lib/context/ProjectContext';
@@ -303,7 +303,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
 export default function ProjectsPage() {
   const { projects: contextProjects, createProject, activeProject, setActiveProject } = useProject();
   const [projectsList, setProjectsList] = useState<Project[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null); const [showNewModal, setShowNewModal] = useState(false); const [newTitle, setNewTitle] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -349,22 +349,16 @@ export default function ProjectsPage() {
 
   const handleNewProject = async () => {
     if (!user) { toast('Sign in to create projects', 'error'); return; }
-    const title = prompt('Project title:');
-    if (!title || !title.trim()) {
-      toast('Please enter a project title', 'error');
-      return;
-    }
-    
-    try {
-      const p = await createProject(title.trim(), 'A new cinematic vision.');
-      if (p) {
-        toast('Project created and activated!', 'success');
-      }
-    } catch (e) {
-      console.error(e);
-      toast('Failed to create project', 'error');
-    }
+    setShowNewModal(true); return;
   };
+
+    const handleModalSubmit = async () => {
+          if (!newTitle.trim()) { toast('Please enter a title', 'error'); return; }
+          try {
+                  const p = await createProject(newTitle.trim(), 'A new cinematic vision.');
+                  if (p) { toast('Project created!', 'success'); setShowNewModal(false); setNewTitle(''); }
+          } catch (e) { console.error(e); toast('Failed to create project', 'error'); }
+    };
 
   const total = projectsList.length;
   const inFlight = projectsList.filter(p => p.phase !== 'delivery').length;
@@ -533,6 +527,7 @@ export default function ProjectsPage() {
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
       `}</style>
+      {showNewModal && (<div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.85)',display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setShowNewModal(false)}><div style={{background:'#111',border:'1px solid rgba(255,255,255,0.1)',borderRadius:16,padding:32,width:400,maxWidth:'90vw'}} onClick={e=>e.stopPropagation()}><div style={{fontFamily:'var(--display)',fontSize:'1.1rem',letterSpacing:4,color:'var(--fg)',marginBottom:20,textTransform:'uppercase'}}>New Project</div>div><input autoFocus value={newTitle} onChange={e=>setNewTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')handleModalSubmit();if(e.key==='Escape')setShowNewModal(false);}} placeholder="Project title..." style={{width:'100%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:8,padding:'10px 14px',color:'var(--fg)',fontFamily:'var(--mono)',fontSize:13,outline:'none',marginBottom:16,boxSizing:'border-box'}} /><div style={{display:'flex',gap:10,justifyContent:'flex-end'}}><button onClick={()=>setShowNewModal(false)} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,padding:'8px 16px',color:'rgba(255,255,255,0.5)',fontFamily:'var(--mono)',fontSize:11,cursor:'pointer'}}>Cancel</button>button><button onClick={handleModalSubmit} style={{background:'var(--accent)',border:'none',borderRadius:8,padding:'8px 16px',color:'#060606',fontFamily:'var(--mono)',fontSize:11,fontWeight:600,cursor:'pointer'}}>Create</button>button></div>div></div>div></div>div>)}
     </main>
   );
 }
