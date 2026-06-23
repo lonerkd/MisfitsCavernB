@@ -200,39 +200,42 @@ export default function JobDetailPage() {
 
       {/* Fixed Header */}
       <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'rgba(8, 8, 8, 0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+        position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
+        background: 'rgba(6,6,6,0.92)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', zIndex: 100, boxSizing: 'border-box',
+        padding: '0 28px', zIndex: 100, boxSizing: 'border-box',
       }}>
-        <Link href="/jobs" style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          color: 'var(--fg)', textDecoration: 'none', opacity: 0.7,
-          transition: 'opacity 0.15s',
-        }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
-        >
-          <ArrowLeft size={16} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2 }}>JOBS</span>
-        </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden', maxWidth: '60%' }}>
-          <span style={{
-            fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 2,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
+            >MC</div>
+          </Link>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <Link href="/jobs" style={{ textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.6')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+            >Jobs</div>
+          </Link>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{
+            fontFamily: 'var(--display)', fontSize: '0.85rem', letterSpacing: 2,
+            color: 'var(--fg)', opacity: 0.7,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260,
           }}>
             {job.title}
-          </span>
-          <span style={statusBadgeStyle(job.status)}>{job.status}</span>
+          </div>
         </div>
 
-        <div style={{ width: 80 }} />
+        <span style={statusBadgeStyle(job.status)}>{job.status}</span>
       </header>
 
       {/* Main Content */}
-      <main style={{ marginTop: 60, padding: '48px 24px 80px', maxWidth: 720, margin: '60px auto 0' }}>
+      <main style={{ maxWidth: 720, margin: '58px auto 0', padding: '48px 24px 100px' }}>
 
         {/* Job Header */}
         <div style={{ marginBottom: 40 }}>
@@ -331,10 +334,10 @@ export default function JobDetailPage() {
                 {applications.map(app => (
                   <div key={app.id} style={{
                     padding: 24,
-                    background: '#0a0a0a',
+                    background: 'rgba(10,10,10,0.8)',
+                    borderRadius: 14,
                     ...appStatusStyle(app.status),
                     transition: 'border-color 0.2s',
-                    textDecoration: app.status === 'rejected' ? 'none' : 'none',
                   }}>
                     {/* Applicant header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
