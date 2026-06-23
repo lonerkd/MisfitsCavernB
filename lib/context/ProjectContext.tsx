@@ -7,7 +7,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 export interface Beat {
   id: string;
   title: string;
-  content: string;
+  content: string;h
   color?: string;
 }
 
@@ -72,7 +72,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('budget_items').select('*').eq('project_id', projectId),
       supabase.from('timeline_items').select('*').eq('project_id', projectId),
-      supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId)
+      supabase.from('project_crew').select('*, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', projectId)
     ]);
 
     if (projectRes.data) {
