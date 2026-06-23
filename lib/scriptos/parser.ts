@@ -115,6 +115,9 @@ export interface LearnedRules {
   characters?: string[];
   slugs?: string[];
   transitions?: string[];
+  // Exact-text overrides from manual Smart Import classification, keyed by
+  // the trimmed uppercase line text. Takes priority over all heuristics.
+  forcedTypes?: Record<string, LineType>;
 }
 
 export function parseScript(content: string, learnedRules?: LearnedRules) {
@@ -253,9 +256,12 @@ export class ScriptParser {
       const trim = line.trim();
       if (this.isCaps(trim) && trim.length > 1 && trim.length < 50) {
         const cleanName = this.clean(trim);
-        if (!KNOWLEDGE.SCENE_PREFIXES.has(cleanName) && 
-            !KNOWLEDGE.TRANSITIONS.has(cleanName) &&
-            !KNOWLEDGE.CAMERA_ANGLES.has(cleanName)) {
+        const upperTrim = trim.toUpperCase();
+        // Compare against the punctuated form too — dictionary entries like "TITLE CARD:"
+        // or "SMASH CUT TO:" would never match a punctuation-stripped cleanName.
+        if (!KNOWLEDGE.SCENE_PREFIXES.has(cleanName) &&
+            !KNOWLEDGE.TRANSITIONS.has(cleanName) && !KNOWLEDGE.TRANSITIONS.has(upperTrim) &&
+            !KNOWLEDGE.CAMERA_ANGLES.has(cleanName) && !this.matchesSetStart(upperTrim, KNOWLEDGE.CAMERA_ANGLES)) {
           this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
         }
       }
@@ -267,12 +273,28 @@ export class ScriptParser {
     type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any 
   } {
     const scores: Record<LineType, number> = {
-      slug: 0, action: 0, character: 0, dialogue: 0, 
+      slug: 0, action: 0, character: 0, dialogue: 0,
       parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0
     };
     const reasoning: string[] = [];
     const upper = text.toUpperCase();
     const cleanName = this.clean(text);
+
+    // 0. MANUAL OVERRIDE — user-classified during Smart Import takes priority over everything
+    const forced = this.learnedRules.forcedTypes?.[upper];
+    if (forced) {
+      scores[forced] = 100;
+      return {
+        type: forced,
+        confidence: 100,
+        scores,
+        reasoning: ['Manually classified by user'],
+        meta: {
+          characterName: forced === 'character' ? cleanName : undefined,
+          sceneNumber: this.extractSceneNumber(text)
+        }
+      };
+    }
 
     // 1. SLUG DETECTION
     if (this.learnedRules.slugs && this.matchesSetStart(upper, new Set(this.learnedRules.slugs))) {
@@ -287,15 +309,20 @@ export class ScriptParser {
     }
 
     // 2. TRANSITION DETECTION
-    if (this.learnedRules.transitions && (this.learnedRules.transitions.includes(upper) || this.learnedRules.transitions.includes(upper.replace(/:$/, '')))) {
+    // Normalize trailing punctuation so "SMASH CUT TO BLACK." still matches "SMASH CUT TO:"-style entries
+    const upperNoTrailingPunct = upper.replace(/[:.]+$/, '');
+    if (this.learnedRules.transitions && (this.learnedRules.transitions.includes(upper) || this.learnedRules.transitions.includes(upperNoTrailingPunct))) {
       scores.transition = 100;
       reasoning.push('Learned transition match');
-    } else if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, ''))) {
+    } else if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upperNoTrailingPunct)) {
       scores.transition = 100;
       reasoning.push('Exact transition match');
     } else if (upper.endsWith(' TO:') && this.isCaps(text) && text.length < 40) {
-      scores.transition = 85;
+      scores.transition = 90;
       reasoning.push('Ends with " TO:" and is caps');
+    } else if (/ TO (BLACK|WHITE)\.?$/.test(upper) && this.isCaps(text) && text.length < 40) {
+      scores.transition = 90;
+      reasoning.push('Cut/fade transition to black or white');
     }
 
     // 3. PARENTHETICAL DETECTION
@@ -405,20 +432,25 @@ export class ScriptParser {
     else if (scores.shot >= 90) bestType = 'shot';
     else bestType = 'action';
 
+    let classifiedAsShot = false;
     if (bestType === 'shot') {
       bestType = 'action';
+      classifiedAsShot = true;
       reasoning.push('Camera direction treated as Action');
     }
 
     return {
       type: bestType,
-      confidence: Math.min(100, Math.max(scores[bestType] || 0, scores.action)),
+      // Shot/camera-cue lines are confidently resolved even though they bucket into 'action' —
+      // don't let the low action score undercut that confidence.
+      confidence: classifiedAsShot ? Math.max(scores.shot, scores.action) : Math.min(100, Math.max(scores[bestType] || 0, scores.action)),
       scores,
       reasoning,
       meta: {
         characterName: bestType === 'character' ? cleanName : undefined,
         visualDensity: visualScore,
-        sceneNumber: this.extractSceneNumber(text)
+        sceneNumber: this.extractSceneNumber(text),
+        classifiedAsShot
       }
     };
   }

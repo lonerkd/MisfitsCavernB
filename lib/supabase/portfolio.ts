@@ -21,3 +21,13 @@ export async function addPortfolioMedia(media: any) {
   if (error) throw error;
   return data;
 }
+
+export async function deletePortfolioProject(id: string) {
+  const { error } = await supabase.from('portfolio_projects').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function deletePortfolioMedia(id: string) {
+  const { error } = await supabase.from('portfolio_media').delete().eq('id', id);
+  if (error) throw error;
+}

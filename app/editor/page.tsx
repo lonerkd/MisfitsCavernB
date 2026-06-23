@@ -6,19 +6,19 @@ import {
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
   Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
   Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
-  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
+  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive, Cloud, Share2, Copy as CopyIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript, type LearnedRules } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
+import { saveScript, getAllScripts, createNewScript, importScriptFromText, getScriptVersions, setScriptShared, type StoredScript, type ScriptVersion } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
@@ -37,6 +37,15 @@ const TYPE_COLORS: Record<string, string> = {
   action: 'rgba(240,236,228,0.75)',
   note: '#eab308'
 };
+
+const IMPORT_CLASSIFY_OPTIONS: { type: LineType; label: string; color: string }[] = [
+  { type: 'character', label: 'Character', color: '#ffaa00' },
+  { type: 'slug', label: 'Scene', color: '#fff' },
+  { type: 'transition', label: 'Transition', color: '#6366f1' },
+  { type: 'parenthetical', label: 'Parenthetical', color: '#a78bfa' },
+  { type: 'dialogue', label: 'Dialogue', color: '#22d3ee' },
+  { type: 'action', label: 'Action', color: '#9ca3af' },
+];
 
 const PRINT_COLORS: Record<string, string> = {
   slug: '#000',
@@ -204,6 +213,7 @@ export default function EditorPage() {
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
   const [pendingImport, setPendingImport] = useState<{ text: string, title: string, unknowns: string[] } | null>(null);
+  const [importChoices, setImportChoices] = useState<Record<string, LineType>>({});
   
   // UI States
   const [showSidebar, setShowSidebar] = useState(true);
@@ -234,6 +244,9 @@ export default function EditorPage() {
   // Panels
   const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown'>('tools');
   const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [cloudVersions, setCloudVersions] = useState<ScriptVersion[]>([]);
+  const [showSharePopover, setShowSharePopover] = useState(false);
+  const [shareToggling, setShareToggling] = useState(false);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
@@ -260,7 +273,7 @@ export default function EditorPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Supabase Realtime Sync
-  const { isSyncing, lastSyncedAt } = useScriptSync(currentScript?.id || '', content, (newContent) => {
+  const { isSyncing, lastSyncedAt, collaborators } = useScriptSync(currentScript?.id || '', content, (newContent) => {
     // Only update if it's different to avoid cursor jumping
     if (newContent !== content) {
       setContent(newContent);
@@ -407,16 +420,37 @@ export default function EditorPage() {
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
     setSaving(true);
-    const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
+    const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content }, { snapshot: true });
     if (saved) {
       setCurrentScript(saved);
       toast('Screenplay saved to cloud.', 'success');
-      
+      if (rightPanel === 'revisions') {
+        getScriptVersions(saved.id).then(setCloudVersions);
+      }
+
       // Log ecosystem activity
       logActivity('updated the script', 'script', saved.id, { title: saved.title });
     }
     setSaving(false);
-  }, [currentScript, content, toast]);
+  }, [currentScript, content, toast, rightPanel]);
+
+  const handleToggleShare = useCallback(async () => {
+    if (!currentScript) return;
+    setShareToggling(true);
+    const result = await setScriptShared(currentScript.id, !currentScript.shared);
+    if (result) {
+      setCurrentScript(prev => prev ? { ...prev, shared: result.shared, shareToken: result.shareToken } : prev);
+      toast(result.shared ? 'Script is now publicly viewable.' : 'Script is now private.', 'success');
+    }
+    setShareToggling(false);
+  }, [currentScript, toast]);
+
+  const copyShareLink = useCallback(() => {
+    if (!currentScript?.shareToken) return;
+    const link = `${window.location.origin}/s/${currentScript.shareToken}`;
+    navigator.clipboard.writeText(link);
+    toast('Share link copied', 'success');
+  }, [currentScript, toast]);
 
   const handleExport = useCallback((format: string) => {
     if (!currentScript) return;
@@ -455,6 +489,12 @@ export default function EditorPage() {
     setRevisions(prev => [...prev, rev]);
     toast(`Locked as ${rev.label}`, 'success');
   }, [currentScript, content, toast]);
+
+  // Load cloud version history when the Revisions panel is opened
+  useEffect(() => {
+    if (rightPanel !== 'revisions' || !currentScript) return;
+    getScriptVersions(currentScript.id).then(setCloudVersions);
+  }, [rightPanel, currentScript]);
 
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
@@ -541,6 +581,7 @@ export default function EditorPage() {
       const unknowns = [...new Set(issues.filter(i => i.rule === 'unknown-caps').map(i => i.message.match(/"([^"]+)"/)?.[1] || '').filter(Boolean))];
       
       if (unknowns.length > 0) {
+        setImportChoices({});
         setPendingImport({ text, title, unknowns: unknowns.slice(0, 5) });
       } else {
         finalizeImport(text, title, { characters: [], slugs: [], transitions: [] });
@@ -873,6 +914,24 @@ export default function EditorPage() {
           {/* Right: Tools & Export */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             
+            {/* Live collaborators */}
+            {collaborators.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: -4 }} title={collaborators.map(c => c.username).join(', ') + ' editing now'}>
+                {collaborators.slice(0, 4).map((c, i) => (
+                  <div key={c.userId} style={{
+                    width: 22, height: 22, borderRadius: '50%',
+                    background: c.color, color: '#000',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 9, fontWeight: 700, fontFamily: 'var(--mono)',
+                    border: '2px solid var(--bg)',
+                    marginLeft: i > 0 ? -8 : 0,
+                  }}>
+                    {c.username[0]?.toUpperCase()}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Session word count */}
             {sessionWordsWritten > 0 && (
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
@@ -907,6 +966,76 @@ export default function EditorPage() {
                 <Icon size={14} />
               </button>
             ))}
+
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowSharePopover(v => !v)}
+                title="Share"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 34, height: 34,
+                  background: currentScript?.shared ? 'rgba(0,204,102,0.12)' : 'transparent',
+                  border: `1px solid ${currentScript?.shared ? 'rgba(0,204,102,0.3)' : 'transparent'}`,
+                  borderRadius: 9,
+                  color: currentScript?.shared ? '#00cc66' : 'var(--fg-dim)',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s, color 0.2s, border-color 0.2s',
+                }}
+              >
+                <Share2 size={14} />
+              </button>
+
+              {showSharePopover && currentScript && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                  background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.09)',
+                  borderRadius: 12, padding: 16, minWidth: 280, zIndex: 200,
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>Public Link</span>
+                    <button
+                      onClick={handleToggleShare}
+                      disabled={shareToggling}
+                      style={{
+                        fontSize: 9, letterSpacing: 1, fontFamily: 'var(--mono)',
+                        padding: '5px 10px', borderRadius: 9999, border: 'none', cursor: shareToggling ? 'not-allowed' : 'pointer',
+                        background: currentScript.shared ? 'rgba(0,204,102,0.15)' : 'var(--accent)',
+                        color: currentScript.shared ? '#00cc66' : 'var(--bg)',
+                        opacity: shareToggling ? 0.6 : 1,
+                      }}
+                    >
+                      {currentScript.shared ? 'ON' : 'TURN ON'}
+                    </button>
+                  </div>
+                  {currentScript.shared ? (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        readOnly
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/s/${currentScript.shareToken || ''}`}
+                        style={{
+                          flex: 1, fontSize: 10, fontFamily: 'var(--mono)', padding: '8px 10px',
+                          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                          color: 'var(--fg-muted)', borderRadius: 6,
+                        }}
+                      />
+                      <button onClick={copyShareLink} title="Copy link" style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 34, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 6, color: 'var(--fg)', cursor: 'pointer',
+                      }}>
+                        <CopyIcon size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 10, color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>
+                      Anyone with the link can read this screenplay. Turn on to generate a link.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div style={{ position: 'relative' }}>
               <button
@@ -1871,6 +2000,42 @@ export default function EditorPage() {
                         );
                       })
                     )}
+
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-muted)', marginTop: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Cloud size={12} /> Cloud Save History
+                    </div>
+                    {cloudVersions.length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No prior versions yet. Each manual save (Ctrl+S) checkpoints the previous version here.</div>
+                    ) : (
+                      cloudVersions.map(v => (
+                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Version {v.version}</span>
+                            <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(v.created_at).toLocaleString()}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>{v.content.split('\n').length} lines · {v.content.split(/\s+/).filter(Boolean).length} words</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <button
+                              onClick={() => {
+                                setContent(v.content);
+                                toast(`Restored cloud version ${v.version}`, 'success');
+                              }}
+                              style={{ fontSize: 9, background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              Restore
+                            </button>
+                            <button
+                              onClick={() => {
+                                alert("Snapshot Content:\n\n" + v.content.substring(0, 1000) + "...");
+                              }}
+                              style={{ fontSize: 9, background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}
+                            >
+                              View
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </>
                 )}
 
@@ -2239,34 +2404,59 @@ export default function EditorPage() {
                 <h2 style={{ fontSize: 20, fontFamily: 'var(--display)', margin: 0, letterSpacing: 1 }}>Smart Import</h2>
                 <p style={{ color: 'var(--fg-muted)', fontSize: 13, marginTop: 8, marginBottom: 0 }}>We noticed some non-standard formatting in "{pendingImport.title}". Help ScriptOS learn by classifying these.</p>
               </div>
-              <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {pendingImport.unknowns.map((unknown, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: 8 }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: '#fff' }}>{unknown}</span>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={(e) => { e.currentTarget.style.background = '#ffaa00'; e.currentTarget.style.color = '#000'; e.currentTarget.dataset.choice = 'character'; }} data-unknown={unknown} className="import-choice-btn" style={{ background: 'rgba(255,170,0,0.1)', color: '#ffaa00', border: '1px solid rgba(255,170,0,0.3)', padding: '6px 12px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}>Character</button>
-                      <button onClick={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; e.currentTarget.dataset.choice = 'slug'; }} data-unknown={unknown} className="import-choice-btn" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '6px 12px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}>Scene</button>
+              <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '50vh', overflowY: 'auto' }}>
+                {pendingImport.unknowns.map((unknown, idx) => {
+                  const choice = importChoices[unknown];
+                  return (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '12px 16px', borderRadius: 8 }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 13, color: '#fff' }}>{unknown}</span>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {IMPORT_CLASSIFY_OPTIONS.map(opt => {
+                          const selected = choice === opt.type;
+                          return (
+                            <button
+                              key={opt.type}
+                              onClick={() => setImportChoices(prev => ({ ...prev, [unknown]: opt.type }))}
+                              style={{
+                                background: selected ? opt.color : 'rgba(255,255,255,0.05)',
+                                color: selected ? '#000' : opt.color,
+                                border: `1px solid ${selected ? opt.color : 'rgba(255,255,255,0.15)'}`,
+                                padding: '6px 12px', borderRadius: 4, fontSize: 10, cursor: 'pointer',
+                                fontFamily: 'var(--mono)', textTransform: 'uppercase',
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <div style={{ padding: '16px 32px', background: 'var(--bg-3)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button onClick={() => setPendingImport(null)} style={{ padding: '8px 16px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--mono)' }}>Cancel</button>
-                <button 
-                  onClick={() => {
-                    const newRules: LearnedRules = { characters: [], slugs: [], transitions: [] };
-                    document.querySelectorAll('.import-choice-btn[data-choice]').forEach((btn) => {
-                      const choice = (btn as HTMLElement).dataset.choice;
-                      const unknown = (btn as HTMLElement).dataset.unknown;
-                      if (choice === 'character' && unknown) newRules.characters?.push(unknown.replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase());
-                      if (choice === 'slug' && unknown) newRules.slugs?.push(unknown.split('-')[0].trim().toUpperCase());
-                    });
-                    finalizeImport(pendingImport.text, pendingImport.title, newRules);
-                  }}
-                  style={{ padding: '8px 24px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}
-                >
-                  Import Script
-                </button>
+              <div style={{ padding: '16px 32px', background: 'var(--bg-3)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>
+                  {Object.keys(importChoices).length}/{pendingImport.unknowns.length} classified
+                </span>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button onClick={() => { setPendingImport(null); setImportChoices({}); }} style={{ padding: '8px 16px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--mono)' }}>Cancel</button>
+                  <button
+                    onClick={() => {
+                      const newRules: LearnedRules = { characters: [], slugs: [], transitions: [], forcedTypes: {} };
+                      for (const [unknown, type] of Object.entries(importChoices)) {
+                        newRules.forcedTypes![unknown.toUpperCase()] = type;
+                        if (type === 'character') newRules.characters?.push(unknown.replace(/[^a-zA-Z0-9\s]/g, '').trim().toUpperCase());
+                        if (type === 'slug') newRules.slugs?.push(unknown.split('-')[0].trim().toUpperCase());
+                        if (type === 'transition') newRules.transitions?.push(unknown.toUpperCase());
+                      }
+                      finalizeImport(pendingImport.text, pendingImport.title, newRules);
+                      setImportChoices({});
+                    }}
+                    style={{ padding: '8px 24px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}
+                  >
+                    Import Script
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

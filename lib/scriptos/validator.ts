@@ -41,10 +41,11 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
       issues.push({ line: i + 1, type: 'info', message: 'Action block is very long (>500 chars). Consider breaking it up.', rule: 'action-length' });
     }
 
-    // Rule: Unknown caps format
+    // Rule: Unknown caps format — only flag lines the parser genuinely couldn't resolve.
+    // Camera cues (shot detection) confidently bucket into 'action' by design; don't re-flag those.
     const trimText = line.text.trim();
-    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
-      issues.push({ line: i + 1, type: 'warning', message: `Unrecognized uppercase format: "${trimText}". Is this a Character or Scene Heading?`, rule: 'unknown-caps' });
+    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && !line.meta.classifiedAsShot && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
+      issues.push({ line: i + 1, type: 'warning', message: `Unrecognized uppercase format: "${trimText}"`, rule: 'unknown-caps' });
     }
 
     // Rule: Parenthetical without preceding character

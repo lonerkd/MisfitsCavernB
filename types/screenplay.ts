@@ -32,6 +32,7 @@ export interface ScriptLine {
     isDualDialogue?: boolean;
     isContinued?: boolean;
     visualDensity?: number; // 0-100 score
+    classifiedAsShot?: boolean;
   };
 }
 
