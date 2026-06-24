@@ -246,6 +246,9 @@ export default function EditorPage() {
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [draggedSceneIdx, setDraggedSceneIdx] = useState<number | null>(null);
+  const [dragOverSceneIdx, setDragOverSceneIdx] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Supabase Realtime Sync
@@ -428,6 +431,9 @@ export default function EditorPage() {
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (typeof e.getModifierState === 'function') {
+        setCapsLockOn(e.getModifierState('CapsLock'));
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         handleSave();
@@ -491,8 +497,61 @@ export default function EditorPage() {
     });
   }, [currentScript]);
 
+  // Caps Lock as a chord modifier: while it's toggled on, plain letter keys reformat
+  // the current line instead of typing — flipped off, the same keys type normally.
+  const CAPS_LINE_SHORTCUTS: Record<string, string> = {
+    s: 'slug', a: 'action', c: 'character', d: 'dialogue', p: 'parenthetical', t: 'transition',
+  };
+
+  const formatLineForType = (text: string, type: string): string => {
+    const trimmed = text.trim();
+    switch (type) {
+      case 'slug':
+        return trimmed ? trimmed.toUpperCase() : 'INT. LOCATION - DAY';
+      case 'character':
+        return trimmed ? trimmed.toUpperCase() : 'CHARACTER NAME';
+      case 'transition': {
+        const t = (trimmed || 'CUT TO').toUpperCase().replace(/:$/, '');
+        return `${t}:`;
+      }
+      case 'parenthetical': {
+        const inner = trimmed.replace(/^\(|\)$/g, '') || 'beat';
+        return `(${inner})`;
+      }
+      case 'dialogue':
+      case 'action':
+      default:
+        return trimmed;
+    }
+  };
+
+  const convertCurrentLine = useCallback((type: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+    let lineEnd = content.indexOf('\n', cursor);
+    if (lineEnd === -1) lineEnd = content.length;
+    const formatted = formatLineForType(content.substring(lineStart, lineEnd), type);
+    const newContent = content.substring(0, lineStart) + formatted + content.substring(lineEnd);
+    setContent(newContent);
+    setTimeout(() => {
+      editor.focus();
+      const newPos = lineStart + formatted.length;
+      editor.setSelectionRange(newPos, newPos);
+    }, 0);
+  }, [content]);
+
   // Tab key cycling (in the textarea: Tab inserts element type based on context)
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (capsLockOn && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const shortcutType = CAPS_LINE_SHORTCUTS[e.key.toLowerCase()];
+      if (shortcutType) {
+        e.preventDefault();
+        convertCurrentLine(shortcutType);
+        return;
+      }
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const editor = textareaRef.current;
@@ -525,7 +584,7 @@ export default function EditorPage() {
         editor.setSelectionRange(cursor + 4, cursor + 4);
       }, 0);
     }
-  }, [content]);
+  }, [content, capsLockOn, convertCurrentLine]);
 
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
@@ -621,6 +680,25 @@ export default function EditorPage() {
 
   // Board card colors (cycle through a palette)
   const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
+
+  // "Script teleporting" — dragging a scene card on the Board rewrites its block's
+  // position in the underlying script text, not just the card order.
+  const moveScene = useCallback((fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0) return;
+    const rawLines = content.split('\n');
+    const starts = scenesList.map(s => lines.findIndex(l => l.id === s.id));
+    const blocks = scenesList.map((_, i) => {
+      const start = starts[i];
+      const end = i + 1 < scenesList.length ? starts[i + 1] : rawLines.length;
+      return rawLines.slice(start, end);
+    });
+    const preamble = rawLines.slice(0, starts[0] ?? 0);
+    const reordered = [...blocks];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    setContent([...preamble, ...reordered.flat()].join('\n'));
+    toast(`Moved Scene ${fromIdx + 1} to position ${toIdx + 1}`, 'success');
+  }, [content, lines, scenesList, toast]);
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
 
   // Scene type classifier — encodes the actual spatial/temporal context of a scene
@@ -1188,6 +1266,47 @@ export default function EditorPage() {
             </div>
           )}
 
+          {/* Context Island — current line type + Caps Lock shortcut state */}
+          {activeView === 'write' && !focusMode && (() => {
+            const curType = lines[cursorLine]?.type ?? 'action';
+            const TYPE_LABELS: Record<string, string> = {
+              slug: 'SCENE HEADING', character: 'CHARACTER', dialogue: 'DIALOGUE',
+              parenthetical: 'PARENTHETICAL', transition: 'TRANSITION', action: 'ACTION', empty: 'ACTION',
+            };
+            return (
+              <div style={{
+                position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+                zIndex: 50, display: 'flex', alignItems: 'center', gap: 14,
+                padding: '10px 20px', borderRadius: 24,
+                background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1.5,
+                color: 'rgba(240,236,228,0.6)', whiteSpace: 'nowrap',
+              }}>
+                <span style={{ color: 'var(--accent)', textTransform: 'uppercase' }}>{TYPE_LABELS[curType] || curType}</span>
+                <span style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.12)' }} />
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  color: capsLockOn ? '#22c55e' : 'rgba(240,236,228,0.3)',
+                  textTransform: 'uppercase',
+                }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: capsLockOn ? '#22c55e' : 'rgba(240,236,228,0.2)',
+                    boxShadow: capsLockOn ? '0 0 6px #22c55e' : 'none',
+                  }} />
+                  Caps {capsLockOn ? 'On' : 'Off'}
+                </span>
+                {capsLockOn && (
+                  <span style={{ color: 'rgba(240,236,228,0.35)', fontSize: 9 }}>
+                    S Slug · A Action · C Character · D Dialogue · P Paren · T Transition
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
           {activeView === 'preview' && (
             <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: nightModePreview ? '#111' : '#fff', color: nightModePreview ? '#ddd' : '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
               {/* Page number */}
@@ -1229,6 +1348,11 @@ export default function EditorPage() {
 
           {activeView === 'board' && (
             <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
+              {scenesList.length > 0 && (
+                <div style={{ width: '100%', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 4 }}>
+                  Drag a card to reorder — moves the scene in the script too.
+                </div>
+              )}
               {scenesList.length === 0 ? (
                  <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
               ) : scenesList.map((scene, i) => {
@@ -1238,13 +1362,26 @@ export default function EditorPage() {
                 return (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+                    draggable
+                    onDragStart={() => setDraggedSceneIdx(i)}
+                    onDragOver={(e) => { e.preventDefault(); if (dragOverSceneIdx !== i) setDragOverSceneIdx(i); }}
+                    onDragLeave={() => setDragOverSceneIdx(prev => (prev === i ? null : prev))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedSceneIdx !== null) moveScene(draggedSceneIdx, i);
+                      setDraggedSceneIdx(null);
+                      setDragOverSceneIdx(null);
+                    }}
+                    onDragEnd={() => { setDraggedSceneIdx(null); setDragOverSceneIdx(null); }}
                     style={{
                       width: 272, minHeight: 180,
                       background: 'var(--bg-3)',
-                      border: `1px solid rgba(255,255,255,0.06)`,
+                      border: `1px solid ${dragOverSceneIdx === i ? cardColor : 'rgba(255,255,255,0.06)'}`,
                       borderTop: `2px solid ${cardColor}`,
                       borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-                      transition: 'box-shadow 0.35s, border-color 0.35s',
+                      cursor: 'grab',
+                      opacity: draggedSceneIdx === i ? 0.4 : 1,
+                      transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s',
                     }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
