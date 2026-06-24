@@ -13,6 +13,7 @@ export interface Beat {
 
 export interface CrewMember {
   id: string;
+  user_id?: string;
   name: string;
   role: string;
   avatar?: string;
@@ -57,6 +58,11 @@ interface ProjectContextType {
   loading: boolean;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   refreshProject: (id: string) => Promise<void>;
+  addCrewMember: (projectId: string, username: string, role: string) => Promise<{ error?: string }>;
+  removeCrewMember: (projectId: string, crewId: string) => Promise<void>;
+  addTimelineItem: (item: Omit<TimelineItem, 'id'> & { project_id: string }) => Promise<void>;
+  updateTimelineItem: (id: string, projectId: string, updates: Partial<TimelineItem>) => Promise<void>;
+  removeTimelineItem: (id: string, projectId: string) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -71,7 +77,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('budget_items').select('*').eq('project_id', projectId),
       supabase.from('timeline_items').select('*').eq('project_id', projectId),
-      supabase.from('project_crews').select('*, users(username, avatar)').eq('project_id', projectId)
+      supabase.from('project_crew').select('*, profiles(username, avatar_url)').eq('project_id', projectId)
     ]);
 
     if (projectRes.data) {
@@ -82,9 +88,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         timeline_items: timelineRes.data || [],
         crew: (crewRes.data || []).map((c: any) => ({
           id: c.id,
-          name: c.users?.username || 'Unknown',
+          user_id: c.user_id,
+          name: c.profiles?.username || 'Unknown',
           role: c.role,
-          avatar: c.users?.avatar,
+          avatar: c.profiles?.avatar_url,
           status: 'confirmed'
         }))
       };
@@ -163,12 +170,74 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .from('projects')
       .update(updates)
       .eq('id', id);
-    
+
     if (error) console.error('Error updating project:', error);
   };
 
+  const addCrewMember = useCallback(async (projectId: string, username: string, role: string) => {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .ilike('username', username.trim())
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      return { error: `No user found with username "${username}"` };
+    }
+
+    const { error } = await supabase
+      .from('project_crew')
+      .insert({ project_id: projectId, user_id: profile.id, role });
+
+    if (error) {
+      return { error: error.code === '23505' ? 'That person is already on the crew' : 'Failed to add crew member' };
+    }
+
+    await refreshProject(projectId);
+    return {};
+  }, [refreshProject]);
+
+  const removeCrewMember = useCallback(async (projectId: string, crewId: string) => {
+    const { error } = await supabase.from('project_crew').delete().eq('id', crewId);
+    if (error) {
+      console.error('Error removing crew member:', error);
+      return;
+    }
+    await refreshProject(projectId);
+  }, [refreshProject]);
+
+  const addTimelineItem = useCallback(async (item: Omit<TimelineItem, 'id'> & { project_id: string }) => {
+    const { error } = await supabase.from('timeline_items').insert(item);
+    if (error) {
+      console.error('Error adding timeline item:', error);
+      return;
+    }
+    await refreshProject(item.project_id);
+  }, [refreshProject]);
+
+  const updateTimelineItem = useCallback(async (id: string, projectId: string, updates: Partial<TimelineItem>) => {
+    const { error } = await supabase.from('timeline_items').update(updates).eq('id', id);
+    if (error) {
+      console.error('Error updating timeline item:', error);
+      return;
+    }
+    await refreshProject(projectId);
+  }, [refreshProject]);
+
+  const removeTimelineItem = useCallback(async (id: string, projectId: string) => {
+    const { error } = await supabase.from('timeline_items').delete().eq('id', id);
+    if (error) {
+      console.error('Error removing timeline item:', error);
+      return;
+    }
+    await refreshProject(projectId);
+  }, [refreshProject]);
+
   return (
-    <ProjectContext.Provider value={{ activeProject, setActiveProject, projects, loading, updateProject, refreshProject }}>
+    <ProjectContext.Provider value={{
+      activeProject, setActiveProject, projects, loading, updateProject, refreshProject,
+      addCrewMember, removeCrewMember, addTimelineItem, updateTimelineItem, removeTimelineItem,
+    }}>
       {children}
     </ProjectContext.Provider>
   );

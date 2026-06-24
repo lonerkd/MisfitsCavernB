@@ -7,12 +7,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Plus, Trash2, Edit2, Check, X, ChevronRight,
   FileText, Image, Music, Video, Users, Clock, Calendar, Award,
-  Download, Share2, Lock, Unlock,
+  Download, Share2, Lock, Unlock, Loader, AlertCircle,
 } from 'lucide-react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useToast } from '@/components/Toast';
 import GrainOverlay from '@/components/GrainOverlay';
+import { supabase } from '@/lib/supabase/client';
+import { getAllScripts, deleteScript as deleteScriptRow, type StoredScript } from '@/lib/scriptos/storage';
 import type { Project, CrewMember, TimelineItem, Beat } from '@/lib/context/ProjectContext';
+
+// ─── Demo data banner — used by tabs that aren't backed by real storage yet ──
+
+function DemoBanner({ text }: { text: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '8px 14px', borderRadius: 8, marginBottom: 20,
+      background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+    }}>
+      <AlertCircle size={12} color="#f59e0b" />
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 0.5 }}>{text}</span>
+    </div>
+  );
+}
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 
@@ -31,16 +48,38 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 function ScreenplayTab({ project }: { project: Project }) {
   const { toast } = useToast();
-  const [scripts, setScripts] = useState<any[]>([
-    {
-      id: '1',
-      title: `${project.title} - Draft 1`,
-      pages: 133,
-      draft: 9,
-      lastModified: '2026-06-20',
-      status: 'in-progress',
-    },
-  ]);
+  const [scripts, setScripts] = useState<StoredScript[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const accent = project.accent_color || '#ff3c00';
+
+  const loadScripts = async () => {
+    setLoading(true);
+    const all = await getAllScripts();
+    setScripts(all.filter(s => s.project_id === project.id));
+    setLoading(false);
+  };
+
+  useEffect(() => { loadScripts(); }, [project.id]);
+
+  const handleAddScript = async () => {
+    setCreating(true);
+    window.location.href = `/editor?new=1&projectId=${project.id}&title=${encodeURIComponent(project.title)}`;
+  };
+
+  const handleDelete = async (script: StoredScript) => {
+    if (!confirm(`Delete "${script.title}"? This can't be undone.`)) return;
+    const ok = await deleteScriptRow(script.id);
+    if (ok) {
+      setScripts(s => s.filter(x => x.id !== script.id));
+      toast(`Deleted ${script.title}`, 'success');
+    } else {
+      toast('Failed to delete script', 'error');
+    }
+  };
+
+  const wordCount = (content: string) => content.trim().split(/\s+/).filter(Boolean).length;
+  const pageEstimate = (content: string) => Math.max(1, Math.round(wordCount(content) / 220));
 
   return (
     <div style={{ padding: '24px' }}>
@@ -49,59 +88,93 @@ function ScreenplayTab({ project }: { project: Project }) {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => toast('New script creation coming soon', 'info')}
+          disabled={creating}
+          onClick={handleAddScript}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', borderRadius: 8, border: 'none', background: `${project.accent_color || '#ff3c00'}20`,
-            color: project.accent_color || '#ff3c00', fontFamily: 'var(--mono)', fontSize: 9,
-            letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer',
+            padding: '8px 16px', borderRadius: 8, border: 'none', background: `${accent}20`,
+            color: accent, fontFamily: 'var(--mono)', fontSize: 9,
+            letterSpacing: 2, textTransform: 'uppercase', cursor: creating ? 'wait' : 'pointer',
+            opacity: creating ? 0.6 : 1,
           }}
         >
-          <Plus size={14} /> Add Script
+          {creating ? <Loader size={14} className="spin" /> : <Plus size={14} />} {creating ? 'Creating…' : 'New Script'}
         </motion.button>
       </div>
 
-      <div style={{ display: 'grid', gap: 12 }}>
-        {scripts.map(s => (
-          <motion.div
-            key={s.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: '16px',
-              background: 'rgba(255,255,255,0.02)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 6 }}>{s.title}</h3>
-              <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
-                <span>{s.pages} pages</span>
-                <span>Draft #{s.draft}</span>
-                <span>{s.lastModified}</span>
+      {loading ? (
+        <div style={{ padding: '40px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
+          Loading scripts…
+        </div>
+      ) : scripts.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
+            padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
+          }}
+        >
+          <FileText size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            No scripts yet
+          </p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
+            Create one to start writing in ScriptOS
+          </p>
+        </motion.div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {scripts.map(s => (
+            <motion.div
+              key={s.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12,
+                padding: '16px',
+                background: 'rgba(255,255,255,0.02)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 6 }}>{s.title}</h3>
+                <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
+                  <span>~{pageEstimate(s.content || '')} pages</span>
+                  <span>{wordCount(s.content || '')} words</span>
+                  <span>Updated {new Date(s.updatedAt).toLocaleDateString()}</span>
+                </div>
               </div>
-            </div>
-            <Link href="/editor" style={{ textDecoration: 'none' }}>
-              <motion.button
-                whileHover={{ scale: 1.06, x: 2 }}
-                style={{
-                  padding: '8px 14px', borderRadius: 8, border: 'none',
-                  background: `${project.accent_color || '#ff3c00'}28`,
-                  color: project.accent_color || '#ff3c00',
-                  fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2,
-                  textTransform: 'uppercase', cursor: 'pointer',
-                }}
-              >
-                Edit
-              </motion.button>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Link href={`/editor?scriptId=${s.id}`} style={{ textDecoration: 'none' }}>
+                  <motion.button
+                    whileHover={{ scale: 1.06, x: 2 }}
+                    style={{
+                      padding: '8px 14px', borderRadius: 8, border: 'none',
+                      background: `${accent}28`,
+                      color: accent,
+                      fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2,
+                      textTransform: 'uppercase', cursor: 'pointer',
+                    }}
+                  >
+                    Open
+                  </motion.button>
+                </Link>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  onClick={() => handleDelete(s)}
+                  style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 8 }}
+                >
+                  <Trash2 size={14} />
+                </motion.button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -148,6 +221,8 @@ function AssetsTab({ project }: { project: Project }) {
           <Plus size={14} /> Upload
         </motion.button>
       </div>
+
+      <DemoBanner text="Demo data — file storage isn't connected yet" />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
         {assets.map((asset, i) => (
@@ -215,23 +290,34 @@ function AssetsTab({ project }: { project: Project }) {
 
 function CrewTab({ project }: { project: Project }) {
   const { toast } = useToast();
-  const [crew, setCrew] = useState<CrewMember[]>(project.crew || []);
-  const [newMember, setNewMember] = useState({ name: '', role: '' });
+  const { addCrewMember, removeCrewMember } = useProject();
+  const crew = project.crew || [];
+  const [newMember, setNewMember] = useState({ username: '', role: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const accent = project.accent_color || '#ff3c00';
 
-  const handleAddMember = () => {
-    if (!newMember.name || !newMember.role) {
-      toast('Please fill in all fields', 'error');
+  const handleAddMember = async () => {
+    if (!newMember.username.trim() || !newMember.role.trim()) {
+      toast('Enter a username and role', 'error');
       return;
     }
-    const member: CrewMember = {
-      id: Date.now().toString(),
-      name: newMember.name,
-      role: newMember.role,
-      status: 'active',
-    };
-    setCrew([...crew, member]);
-    setNewMember({ name: '', role: '' });
-    toast(`Added ${newMember.name}`, 'success');
+    setSubmitting(true);
+    const { error } = await addCrewMember(project.id, newMember.username.trim(), newMember.role.trim());
+    setSubmitting(false);
+    if (error) {
+      toast(error, 'error');
+    } else {
+      toast(`Added ${newMember.username}`, 'success');
+      setNewMember({ username: '', role: '' });
+    }
+  };
+
+  const handleRemove = async (member: CrewMember) => {
+    setRemovingId(member.id);
+    await removeCrewMember(project.id, member.id);
+    setRemovingId(null);
+    toast(`Removed ${member.name}`, 'success');
   };
 
   return (
@@ -250,13 +336,17 @@ function CrewTab({ project }: { project: Project }) {
           background: 'rgba(255,255,255,0.01)',
         }}
       >
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>Add Team Member</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Add Team Member</p>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', opacity: 0.6, marginBottom: 12 }}>
+          They must already have a Misfits Cavern account.
+        </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12 }}>
           <input
             type="text"
-            placeholder="Name"
-            value={newMember.name}
-            onChange={e => setNewMember({ ...newMember, name: e.target.value })}
+            placeholder="Username"
+            value={newMember.username}
+            onChange={e => setNewMember({ ...newMember, username: e.target.value })}
+            onKeyDown={e => e.key === 'Enter' && handleAddMember()}
             style={{
               padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.02)', color: 'var(--fg)',
@@ -268,6 +358,7 @@ function CrewTab({ project }: { project: Project }) {
             placeholder="Role"
             value={newMember.role}
             onChange={e => setNewMember({ ...newMember, role: e.target.value })}
+            onKeyDown={e => e.key === 'Enter' && handleAddMember()}
             style={{
               padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.02)', color: 'var(--fg)',
@@ -277,59 +368,84 @@ function CrewTab({ project }: { project: Project }) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            disabled={submitting}
             onClick={handleAddMember}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 14px', borderRadius: 8, border: 'none',
-              background: `${project.accent_color || '#ff3c00'}25`,
-              color: project.accent_color || '#ff3c00',
+              background: `${accent}25`,
+              color: accent,
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2,
-              textTransform: 'uppercase', cursor: 'pointer',
+              textTransform: 'uppercase', cursor: submitting ? 'wait' : 'pointer',
+              opacity: submitting ? 0.6 : 1,
             }}
           >
-            <Plus size={12} /> Add
+            {submitting ? <Loader size={12} /> : <Plus size={12} />} Add
           </motion.button>
         </div>
       </motion.div>
 
       {/* Crew list */}
-      <div style={{ display: 'grid', gap: 12 }}>
-        {crew.map((member, i) => (
-          <motion.div
-            key={member.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            style={{
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: '14px',
-              background: 'rgba(255,255,255,0.02)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 4 }}>{member.name}</h3>
-              <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              onClick={() => {
-                setCrew(c => c.filter(x => x.id !== member.id));
-                toast(`Removed ${member.name}`, 'success');
-              }}
+      {crew.length === 0 ? (
+        <div style={{
+          border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
+          padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
+        }}>
+          <Users size={28} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            No crew members yet
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {crew.map((member, i) => (
+            <motion.div
+              key={member.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
               style={{
-                background: 'none', border: 'none', color: 'var(--fg-dim)',
-                cursor: 'pointer', padding: 0,
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12,
+                padding: '14px',
+                background: 'rgba(255,255,255,0.02)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                opacity: removingId === member.id ? 0.5 : 1,
               }}
             >
-              <Trash2 size={14} />
-            </motion.button>
-          </motion.div>
-        ))}
-      </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                  background: `hsl(${(i * 97) % 360}, 40%, 30%)`,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg)',
+                  overflow: 'hidden',
+                }}>
+                  {member.avatar ? <img src={member.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : member.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 4 }}>{member.name}</h3>
+                  <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</p>
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                disabled={removingId === member.id}
+                onClick={() => handleRemove(member)}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--fg-dim)',
+                  cursor: 'pointer', padding: 4,
+                }}
+              >
+                <Trash2 size={14} />
+              </motion.button>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -338,64 +454,215 @@ function CrewTab({ project }: { project: Project }) {
 
 function ScheduleTab({ project }: { project: Project }) {
   const { toast } = useToast();
-  const [milestones, setMilestones] = useState<TimelineItem[]>(project.timeline_items || [
-    { id: '1', phase: 'development', title: 'Script Lock', description: '', start_date: '2026-04-15', end_date: '2026-04-20', completion: 100 },
-    { id: '2', phase: 'pre-production', title: 'Cast Confirmed', description: '', start_date: '2026-05-01', end_date: '2026-05-15', completion: 100 },
-    { id: '3', phase: 'production', title: 'Principal Shoot', description: '', start_date: '2026-06-01', end_date: '2026-06-20', completion: 75 },
-    { id: '4', phase: 'post-production', title: 'Picture Lock', description: '', start_date: '2026-06-25', end_date: '2026-06-29', completion: 0 },
-    { id: '5', phase: 'delivery', title: 'Final Delivery', description: '', start_date: '2026-06-30', end_date: '2026-06-30', completion: 0 },
-  ]);
+  const { addTimelineItem, updateTimelineItem, removeTimelineItem } = useProject();
+  const milestones = project.timeline_items || [];
+  const accent = project.accent_color || '#ff3c00';
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [newItem, setNewItem] = useState({ phase: 'pre-production', title: '', start_date: '', end_date: '' });
+
+  const handleAdd = async () => {
+    if (!newItem.title.trim() || !newItem.start_date || !newItem.end_date) {
+      toast('Title, start date, and end date are required', 'error');
+      return;
+    }
+    setSubmitting(true);
+    await addTimelineItem({
+      project_id: project.id,
+      phase: newItem.phase,
+      title: newItem.title.trim(),
+      start_date: newItem.start_date,
+      end_date: newItem.end_date,
+      completion: 0,
+    });
+    setSubmitting(false);
+    setNewItem({ phase: 'pre-production', title: '', start_date: '', end_date: '' });
+    setShowForm(false);
+    toast('Milestone added', 'success');
+  };
+
+  const handleRemove = async (m: TimelineItem) => {
+    setRemovingId(m.id);
+    await removeTimelineItem(m.id, project.id);
+    setRemovingId(null);
+    toast(`Removed ${m.title}`, 'success');
+  };
+
+  const handleCompletionChange = (m: TimelineItem, completion: number) => {
+    updateTimelineItem(m.id, project.id, { completion });
+  };
 
   return (
     <div style={{ padding: '24px' }}>
-      <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, marginBottom: 24 }}>Production Schedule</h2>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {milestones.map((m, i) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            style={{
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: '16px',
-              background: 'rgba(255,255,255,0.02)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <div>
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: '1rem', marginBottom: 4 }}>{m.title}</h3>
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{m.phase}</p>
-              </div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: project.accent_color || '#ff3c00', fontWeight: 700 }}>
-                {m.completion}%
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', marginBottom: 12 }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${m.completion}%` }}
-                transition={{ duration: 0.8, delay: i * 0.05 + 0.2 }}
-                style={{
-                  height: '100%',
-                  background: project.accent_color || '#ff3c00',
-                  borderRadius: 2,
-                }}
-              />
-            </div>
-
-            {/* Dates */}
-            <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
-              <span>Start: {new Date(m.start_date).toLocaleDateString()}</span>
-              <span>End: {new Date(m.end_date).toLocaleDateString()}</span>
-            </div>
-          </motion.div>
-        ))}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2 }}>Production Schedule</h2>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowForm(s => !s)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 16px', borderRadius: 8, border: 'none', background: `${accent}20`,
+            color: accent, fontFamily: 'var(--mono)', fontSize: 9,
+            letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer',
+          }}
+        >
+          {showForm ? <X size={14} /> : <Plus size={14} />} {showForm ? 'Cancel' : 'Add Milestone'}
+        </motion.button>
       </div>
+
+      {showForm && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            border: '1px dashed rgba(255,255,255,0.1)',
+            borderRadius: 12,
+            padding: '16px',
+            marginBottom: 24,
+            background: 'rgba(255,255,255,0.01)',
+            display: 'grid',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <input
+              type="text"
+              placeholder="Milestone title"
+              value={newItem.title}
+              onChange={e => setNewItem({ ...newItem, title: e.target.value })}
+              style={{
+                padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.02)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9,
+              }}
+            />
+            <select
+              value={newItem.phase}
+              onChange={e => setNewItem({ ...newItem, phase: e.target.value })}
+              style={{
+                padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.02)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9,
+              }}
+            >
+              <option value="development">development</option>
+              <option value="pre-production">pre-production</option>
+              <option value="production">production</option>
+              <option value="post-production">post-production</option>
+              <option value="delivery">delivery</option>
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12 }}>
+            <input
+              type="date"
+              value={newItem.start_date}
+              onChange={e => setNewItem({ ...newItem, start_date: e.target.value })}
+              style={{
+                padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.02)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9,
+              }}
+            />
+            <input
+              type="date"
+              value={newItem.end_date}
+              onChange={e => setNewItem({ ...newItem, end_date: e.target.value })}
+              style={{
+                padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.02)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 9,
+              }}
+            />
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              disabled={submitting}
+              onClick={handleAdd}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 14px', borderRadius: 8, border: 'none',
+                background: `${accent}25`, color: accent,
+                fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2,
+                textTransform: 'uppercase', cursor: submitting ? 'wait' : 'pointer',
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? <Loader size={12} /> : <Check size={12} />} Save
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+
+      {milestones.length === 0 ? (
+        <div style={{
+          border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
+          padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
+        }}>
+          <Calendar size={28} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            No milestones yet
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {milestones.map((m, i) => (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              style={{
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12,
+                padding: '16px',
+                background: 'rgba(255,255,255,0.02)',
+                opacity: removingId === m.id ? 0.5 : 1,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--display)', fontSize: '1rem', marginBottom: 4 }}>{m.title}</h3>
+                  <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{m.phase}</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: accent, fontWeight: 700 }}>
+                    {m.completion}%
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    disabled={removingId === m.id}
+                    onClick={() => handleRemove(m)}
+                    style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', padding: 4 }}
+                  >
+                    <Trash2 size={14} />
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Progress bar — drag to set completion */}
+              <div
+                onClick={e => {
+                  const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                  const pct = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                  handleCompletionChange(m, Math.max(0, Math.min(100, pct)));
+                }}
+                style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden', marginBottom: 12, cursor: 'pointer' }}
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${m.completion}%` }}
+                  transition={{ duration: 0.8, delay: i * 0.05 + 0.2 }}
+                  style={{ height: '100%', background: accent, borderRadius: 4 }}
+                />
+              </div>
+
+              {/* Dates */}
+              <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
+                <span>Start: {new Date(m.start_date).toLocaleDateString()}</span>
+                <span>End: {new Date(m.end_date).toLocaleDateString()}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -422,6 +689,8 @@ function ShowcaseTab({ project }: { project: Project }) {
           <Plus size={14} /> Add Work
         </motion.button>
       </div>
+
+      <DemoBanner text="Demo data — portfolio storage isn't connected yet" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -459,6 +728,8 @@ function LaunchTab({ project }: { project: Project }) {
   return (
     <div style={{ padding: '24px' }}>
       <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, marginBottom: 24 }}>Launch Strategy</h2>
+
+      <DemoBanner text="Demo data — festival/press tracking isn't connected yet" />
 
       {/* Festival submissions */}
       <div style={{ marginBottom: 32 }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2, 
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
@@ -9,9 +9,10 @@ import {
   Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
+import { saveScript, getAllScripts, getScript, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
@@ -185,8 +186,18 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 // ============================================================================
 
 export default function EditorPage() {
+  return (
+    <Suspense fallback={null}>
+      <EditorPageInner />
+    </Suspense>
+  );
+}
+
+function EditorPageInner() {
   const { activeProject } = useProject();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
@@ -270,11 +281,43 @@ export default function EditorPage() {
     setActiveView('write');
   }, [toast]);
 
-  // Init
+  // Init — honors deep links from the project hub: ?scriptId=X opens that
+  // script directly, ?new=1&projectId=X&title=Y creates one tied to a project.
   useEffect(() => {
     const init = async () => {
       const all = await getAllScripts();
       setScripts(all);
+
+      const scriptId = searchParams.get('scriptId');
+      const isNew = searchParams.get('new') === '1';
+      const projectId = searchParams.get('projectId') || undefined;
+      const title = searchParams.get('title') || undefined;
+
+      if (scriptId) {
+        const found = all.find(s => s.id === scriptId) || await getScript(scriptId);
+        if (found) {
+          setCurrentScript(found);
+          setContent(found.content || PLACEHOLDER);
+          setTitlePage(loadTitlePage(found.id));
+          setCharProfiles(loadCharacterProfiles(found.id));
+          setSessionStartWords((found.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+          return;
+        }
+        toast('Script not found — it may have been deleted', 'error');
+      }
+
+      if (isNew) {
+        const fresh = await saveScript({ title: title || 'Untitled Screenplay', content: '', project_id: projectId });
+        if (fresh) {
+          setCurrentScript(fresh);
+          setScripts(s => [fresh, ...s]);
+          setContent(PLACEHOLDER);
+          setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+          router.replace(`/editor?scriptId=${fresh.id}`);
+          return;
+        }
+      }
+
       if (all.length > 0) {
         const latest = all[0];
         setCurrentScript(latest);
@@ -294,17 +337,6 @@ export default function EditorPage() {
     };
     init();
   }, []);
-
-  // Auto-load script based on active project
-  useEffect(() => {
-    if (activeProject && scripts.length > 0) {
-      const projectScript = scripts.find(s => s.title.toLowerCase() === activeProject.title.toLowerCase());
-      if (projectScript && (!currentScript || currentScript.id !== projectScript.id)) {
-        handleLoadScript(projectScript);
-        toast(`Loaded script for ${activeProject.title}`, 'info');
-      }
-    }
-  }, [activeProject, scripts]);
 
   // Measure native scrollbar width once, so the live-highlight overlay behind the
   // textarea can reserve the same gutter and stay pixel-aligned with it.
