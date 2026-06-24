@@ -188,6 +188,8 @@ export default function EditorPage() {
   const { activeProject } = useProject();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
@@ -303,6 +305,16 @@ export default function EditorPage() {
       }
     }
   }, [activeProject, scripts]);
+
+  // Measure native scrollbar width once, so the live-highlight overlay behind the
+  // textarea can reserve the same gutter and stay pixel-aligned with it.
+  useEffect(() => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;top:-9999px;width:100px;height:100px;overflow:scroll;';
+    document.body.appendChild(probe);
+    setScrollbarWidth(probe.offsetWidth - probe.clientWidth);
+    document.body.removeChild(probe);
+  }, []);
 
   // Parser hook
   useEffect(() => {
@@ -1225,21 +1237,62 @@ export default function EditorPage() {
           )}
 
           {activeView === 'write' && (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleEditorChange}
-              onKeyDown={handleEditorKeyDown}
-              placeholder={PLACEHOLDER}
-              spellCheck={false}
-              style={{
-                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
-                background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
-                fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
-                resize: 'none', outline: 'none',
-                position: 'relative'
-              }}
-            />
+            <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+              {/* Live syntax-highlight overlay — re-derived from `lines` (the parser's
+                  output) on every render, so it tracks content as fast as React re-renders.
+                  Sits visually behind the textarea; the textarea's own text is made
+                  transparent so only its native caret/selection paint on top. */}
+              <div
+                ref={highlightRef}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  overflow: 'hidden', pointerEvents: 'none',
+                  padding: focusMode ? '100px 10%' : '60px 80px',
+                  // The overlay has no scrollbar gutter (overflow: hidden), but the
+                  // textarea below always reserves one (overflowY: 'scroll') — pad the
+                  // overlay's right edge by that same width so both wrap text identically.
+                  paddingRight: `calc(${focusMode ? '10%' : '80px'} + ${scrollbarWidth}px)`,
+                  paddingBottom: typewriterMode ? '60vh' : '60px',
+                  width: '100%', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                }}
+              >
+                {content.split('\n').map((raw, i) => {
+                  const type = lines[i]?.type;
+                  const color = revisionMode ? '#0099ff' : (type ? (TYPE_COLORS[type] || TYPE_COLORS.action) : 'transparent');
+                  return (
+                    <div key={i} style={{
+                      borderLeft: type && type !== 'empty' ? `3px solid ${color}` : '3px solid transparent',
+                      marginLeft: -9, paddingLeft: 6, color,
+                      fontWeight: type === 'slug' || type === 'transition' ? 700 : 400,
+                    }}>
+                      {raw.length ? raw : ' '}
+                    </div>
+                  );
+                })}
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleEditorChange}
+                onKeyDown={handleEditorKeyDown}
+                onScroll={(e) => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                placeholder={PLACEHOLDER}
+                spellCheck={false}
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  padding: focusMode ? '100px 10%' : '60px 80px',
+                  paddingBottom: typewriterMode ? '60vh' : '60px',
+                  width: '100%', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box',
+                  background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : '#e0e0e0',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  resize: 'none', outline: 'none', overflowY: 'scroll', zIndex: 1,
+                }}
+              />
+            </div>
           )}
 
           {/* Structure Lines (Visual Act Markers) */}
