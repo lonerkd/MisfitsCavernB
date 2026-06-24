@@ -316,20 +316,37 @@ export default function EditorPage() {
     document.body.removeChild(probe);
   }, []);
 
-  // Parser hook
+  // Stage 1 — structural parse: runs on every keystroke. Drives the live
+  // highlight overlay, scene list, and element extraction, all of which need
+  // to feel instant while typing. parseScript() is a single synchronous pass
+  // over the lines, cheap enough to not need debouncing.
   useEffect(() => {
     if (content) {
       const result = parseScript(content);
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
-      setCharStats(analyzeCharacters(result.lines, result.scenes));
-      setLintIssues(validateScript(result.lines, content));
     } else {
       setLines([]);
       setElements({});
+    }
+  }, [content]);
+
+  // Stage 2 — analysis pass: character stats and lint validation. These feed
+  // panels (Stats tab, lint markers) that aren't watched on every keystroke,
+  // and validateScript does extra cross-line scanning on top of the parse, so
+  // it's debounced to run once typing pauses rather than on every change.
+  useEffect(() => {
+    if (!content) {
       setCharStats([]);
       setLintIssues([]);
+      return;
     }
+    const handle = setTimeout(() => {
+      const result = parseScript(content);
+      setCharStats(analyzeCharacters(result.lines, result.scenes));
+      setLintIssues(validateScript(result.lines, content));
+    }, 400);
+    return () => clearTimeout(handle);
   }, [content]);
 
   // Load revisions when script changes
