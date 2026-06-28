@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { Suspense, useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -415,7 +415,10 @@ function CrewTab({ project }: { project: Project }) {
                 opacity: removingId === member.id ? 0.5 : 1,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Link
+                href={member.user_id ? `/crew/${member.user_id}` : '#'}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 10, cursor: member.user_id ? 'pointer' : 'default' }}
+              >
                 <div style={{
                   width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                   background: `hsl(${(i * 97) % 360}, 40%, 30%)`,
@@ -430,7 +433,7 @@ function CrewTab({ project }: { project: Project }) {
                   <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 4 }}>{member.name}</h3>
                   <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</p>
                 </div>
-              </div>
+              </Link>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 disabled={removingId === member.id}
@@ -669,8 +672,52 @@ function ScheduleTab({ project }: { project: Project }) {
 
 // ─── Showcase Tab ───────────────────────────────────────────────────────────────
 
+interface PortfolioEntry {
+  id: string;
+  title: string;
+  category: string | null;
+  year: number | null;
+  share_token: string;
+}
+
 function ShowcaseTab({ project }: { project: Project }) {
   const { toast } = useToast();
+  const accent = project.accent_color || '#ff3c00';
+  const [entries, setEntries] = useState<PortfolioEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [linking, setLinking] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('portfolio_projects')
+      .select('id, title, category, year, share_token')
+      .eq('source_project_id', project.id)
+      .order('updated_at', { ascending: false });
+    setEntries(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [project.id]);
+
+  const handleAddWork = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setLinking(true);
+    const { data, error } = await supabase
+      .from('portfolio_projects')
+      .insert({ user_id: user.id, title: project.title, source_project_id: project.id, category: project.type || null })
+      .select('id, title, category, year, share_token')
+      .single();
+    setLinking(false);
+    if (error || !data) {
+      toast('Failed to add to portfolio', 'error');
+      return;
+    }
+    setEntries(e => [data, ...e]);
+    toast('Added to your portfolio — add media in Portfolio', 'success');
+  };
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -678,39 +725,78 @@ function ShowcaseTab({ project }: { project: Project }) {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => toast('Portfolio management coming soon', 'info')}
+          disabled={linking}
+          onClick={handleAddWork}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', borderRadius: 8, border: 'none', background: `${project.accent_color || '#ff3c00'}20`,
-            color: project.accent_color || '#ff3c00', fontFamily: 'var(--mono)', fontSize: 9,
-            letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer',
+            padding: '8px 16px', borderRadius: 8, border: 'none', background: `${accent}20`,
+            color: accent, fontFamily: 'var(--mono)', fontSize: 9,
+            letterSpacing: 2, textTransform: 'uppercase', cursor: linking ? 'wait' : 'pointer',
+            opacity: linking ? 0.6 : 1,
           }}
         >
-          <Plus size={14} /> Add Work
+          {linking ? <Loader size={14} /> : <Plus size={14} />} Add to Portfolio
         </motion.button>
       </div>
 
-      <DemoBanner text="Demo data — portfolio storage isn't connected yet" />
-
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          border: '2px dashed rgba(255,255,255,0.1)',
-          borderRadius: 16,
-          padding: '48px 24px',
-          textAlign: 'center',
-          background: 'rgba(255,255,255,0.01)',
-        }}
-      >
-        <Award size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-          No portfolio items yet
-        </p>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
-          Add finished works, stills, teasers, and clips to showcase this project
-        </p>
-      </motion.div>
+      {loading ? (
+        <div style={{ padding: '40px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
+          Loading…
+        </div>
+      ) : entries.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            border: '2px dashed rgba(255,255,255,0.1)',
+            borderRadius: 16,
+            padding: '48px 24px',
+            textAlign: 'center',
+            background: 'rgba(255,255,255,0.01)',
+          }}
+        >
+          <Award size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+            Not in your portfolio yet
+          </p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
+            Add this project, then attach stills, teasers, and clips from the Portfolio page
+          </p>
+        </motion.div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {entries.map(e => (
+            <motion.div
+              key={e.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px',
+                background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}
+            >
+              <div>
+                <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 6 }}>{e.title}</h3>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
+                  {e.category || 'Uncategorized'}{e.year ? ` · ${e.year}` : ''}
+                </div>
+              </div>
+              <Link href="/portfolio" style={{ textDecoration: 'none' }}>
+                <motion.button
+                  whileHover={{ scale: 1.06, x: 2 }}
+                  style={{
+                    padding: '8px 14px', borderRadius: 8, border: 'none', background: `${accent}28`,
+                    color: accent, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2,
+                    textTransform: 'uppercase', cursor: 'pointer',
+                  }}
+                >
+                  Manage
+                </motion.button>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -828,11 +914,18 @@ function LaunchTab({ project }: { project: Project }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
-export default function ProjectDetailPage() {
+function ProjectDetailPageInner() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { activeProject, projects, setActiveProject } = useProject();
-  const [currentTab, setCurrentTab] = useState<TabId>('screenplay');
+  const initialTab = (TABS.find(t => t.id === searchParams.get('tab'))?.id) || 'screenplay';
+  const [currentTab, setCurrentTab] = useState<TabId>(initialTab);
+
+  const selectTab = (id: TabId) => {
+    setCurrentTab(id);
+    router.replace(`/projects/${params.id}?tab=${id}`, { scroll: false });
+  };
 
   const project = projects.find(p => p.id === params.id) || activeProject;
 
@@ -877,34 +970,39 @@ export default function ProjectDetailPage() {
           padding: '16px 28px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
           <Link href="/projects" style={{ color: 'var(--fg-dim)', display: 'flex', cursor: 'pointer' }}>
             <ArrowLeft size={16} />
           </Link>
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.07)' }} />
+          <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.07)' }} />
           <div>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 3 }}>{project.title}</h1>
-            <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1.5 }}>{project.title}</h1>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>
               {project.type || 'Project'}
             </p>
           </div>
         </div>
 
-        {/* Tab navigation */}
-        <div style={{ display: 'flex', gap: 2, overflowX: 'auto', paddingBottom: 8 }}>
+        {/* Tab navigation — segmented pill control */}
+        <div style={{
+          display: 'inline-flex', gap: 2, padding: 4, borderRadius: 14,
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+          overflowX: 'auto', maxWidth: '100%',
+        }}>
           {TABS.map(tab => (
             <motion.button
               key={tab.id}
-              onClick={() => setCurrentTab(tab.id)}
-              whileHover={{ y: -2 }}
+              onClick={() => selectTab(tab.id)}
+              whileTap={{ scale: 0.96 }}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 14px', borderRadius: 8, border: 'none',
-                background: currentTab === tab.id ? `${project.accent_color}25` : 'transparent',
-                color: currentTab === tab.id ? project.accent_color : 'var(--fg-dim)',
-                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-                cursor: 'pointer', transition: 'all 0.2s',
-                borderBottom: currentTab === tab.id ? `2px solid ${project.accent_color}` : '2px solid transparent',
+                position: 'relative',
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 16px', borderRadius: 10, border: 'none',
+                background: currentTab === tab.id ? project.accent_color : 'transparent',
+                color: currentTab === tab.id ? '#06060a' : 'var(--fg-dim)',
+                fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+                fontWeight: currentTab === tab.id ? 700 : 400,
+                cursor: 'pointer', transition: 'color 0.2s', whiteSpace: 'nowrap',
               }}
             >
               {tab.icon}
@@ -950,5 +1048,13 @@ export default function ProjectDetailPage() {
         </AnimatePresence>
       </div>
     </main>
+  );
+}
+
+export default function ProjectDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProjectDetailPageInner />
+    </Suspense>
   );
 }
