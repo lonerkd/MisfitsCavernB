@@ -3,6 +3,8 @@
 // Manage character profiles, backstories, and notes
 // ============================================================================
 
+import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
+
 export interface CharacterProfile {
   name: string;
   fullName: string;
@@ -40,14 +42,14 @@ export function getDefaultProfile(name: string, index: number): CharacterProfile
 
 export function saveCharacterProfiles(scriptId: string, profiles: CharacterProfile[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(`${PROFILE_KEY}_${scriptId}`, JSON.stringify(profiles));
+  setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
 }
 
 export function loadCharacterProfiles(scriptId: string): CharacterProfile[] {
   if (typeof window === 'undefined') return [];
   try {
-    const stored = localStorage.getItem(`${PROFILE_KEY}_${scriptId}`);
-    return stored ? JSON.parse(stored) : [];
+    const stored = getCacheItem(`${PROFILE_KEY}_${scriptId}`, 'profiles');
+    return Array.isArray(stored) ? stored : [];
   } catch { return []; }
 }
 
