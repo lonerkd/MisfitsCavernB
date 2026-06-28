@@ -166,15 +166,23 @@ export default function AuthPage() {
       toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
       setTimeout(() => router.push('/profile'), 600);
     } catch (err: any) {
+      const code = err.code || '';
       const msg = err.message || '';
-      if (msg.includes('Invalid API key')) {
-        setError('Unable to connect. Please try again later.');
-      } else if (msg.includes('Invalid login credentials')) {
+
+      if (code === 'invalid_credentials' || msg.includes('Invalid login credentials')) {
         setError('Incorrect email or password.');
-      } else if (msg.includes('User already registered')) {
+      } else if (code === 'user_already_exists' || msg.includes('User already registered')) {
         setError('An account with this email already exists.');
-      } else if (msg.includes('Email not confirmed')) {
+      } else if (code === 'email_not_confirmed' || msg.includes('Email not confirmed')) {
         setError('Please check your email to confirm your account.');
+      } else if (code === 'weak_password') {
+        setError('Password must be at least 8 characters with uppercase, lowercase, and numbers.');
+      } else if (code === 'otp_expired') {
+        setError('Confirmation code has expired. Please try again.');
+      } else if (msg.includes('Invalid API key') || msg.includes('fetch failed')) {
+        setError('Unable to connect. Please try again later.');
+      } else if (msg.includes('rate limit')) {
+        setError('Too many attempts. Please wait a moment and try again.');
       } else {
         setError('Something went wrong. Please try again.');
       }

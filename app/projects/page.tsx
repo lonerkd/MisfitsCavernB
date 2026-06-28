@@ -307,10 +307,11 @@ export default function ProjectsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUser(user);
-    });
+    })();
   }, []);
 
   useEffect(() => {

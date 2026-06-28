@@ -129,11 +129,12 @@ export default function JobDetailPage() {
   }, [jobId]);
 
   useEffect(() => {
-    loadJob();
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
+    (async () => {
+      await loadJob();
+      const { data: { user: u } } = await supabase.auth.getUser();
       setUser(u);
-      if (u) checkAlreadyApplied(u.id);
-    });
+      if (u) await checkAlreadyApplied(u.id);
+    })();
   }, [loadJob, checkAlreadyApplied]);
 
   useEffect(() => {

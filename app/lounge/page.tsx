@@ -108,11 +108,11 @@ export default function LoungePage() {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (user && mounted) setCurrentUser(user);
-    });
 
-    supabase.from('profiles').select('*').limit(20).then(({ data }) => {
+      const { data } = await supabase.from('profiles').select('*').limit(20);
       if (data && mounted) {
         setCrewList(data.map(p => ({
           id: p.id,
@@ -121,7 +121,7 @@ export default function LoungePage() {
           online: p.status === 'OPEN'
         })));
       }
-    });
+    })();
 
     const loadMessages = async () => {
       try {
