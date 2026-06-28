@@ -11,11 +11,20 @@ export interface Collaborator {
 const CURSOR_COLORS = ['#ff6b00', '#00cc66', '#0099ff', '#a855f7', '#ec4899', '#eab308'];
 const colorForUser = (userId: string) => CURSOR_COLORS[Math.abs(userId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % CURSOR_COLORS.length];
 
+export interface ConflictInfo {
+  detected: boolean;
+  remoteLength: number;
+  localLength: number;
+  message: string;
+}
+
 export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string) => void) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [channel, setChannel] = useState<any>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [conflict, setConflict] = useState<ConflictInfo>({ detected: false, remoteLength: 0, localLength: 0, message: '' });
+  const [lastRemoteContent, setLastRemoteContent] = useState<string>('');
 
   // Initialize sync
   useEffect(() => {
@@ -36,7 +45,26 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       newChannel
         .on('broadcast', { event: 'content_update' }, (payload) => {
           if (payload.payload.content !== undefined) {
-            onRemoteChange(payload.payload.content);
+            const remoteContent = payload.payload.content;
+
+            // Detect conflicts: if both local and remote have changed significantly
+            if (lastRemoteContent && localContent !== lastRemoteContent && remoteContent !== lastRemoteContent) {
+              const localChanges = Math.abs(localContent.length - lastRemoteContent.length);
+              const remoteChanges = Math.abs(remoteContent.length - lastRemoteContent.length);
+
+              // Flag as conflict if both sides made significant changes (>5 character diff)
+              if (localChanges > 5 && remoteChanges > 5) {
+                setConflict({
+                  detected: true,
+                  remoteLength: remoteContent.length,
+                  localLength: localContent.length,
+                  message: 'Concurrent edits detected. Please review changes.'
+                });
+              }
+            }
+
+            setLastRemoteContent(remoteContent);
+            onRemoteChange(remoteContent);
           }
         })
         .on('presence', { event: 'sync' }, () => {
@@ -101,5 +129,5 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     return () => clearTimeout(timer);
   }, [localContent, scriptId, channel]);
 
-  return { isSyncing, lastSyncedAt, collaborators };
+  return { isSyncing, lastSyncedAt, collaborators, conflict };
 }

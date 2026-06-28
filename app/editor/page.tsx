@@ -274,12 +274,18 @@ export default function EditorPage() {
   const autoSaveInFlightRef = useRef(false);
 
   // Supabase Realtime Sync
-  const { isSyncing, lastSyncedAt, collaborators } = useScriptSync(currentScript?.id || '', content, (newContent) => {
+  const { isSyncing, lastSyncedAt, collaborators, conflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
     // Only update if it's different to avoid cursor jumping
     if (newContent !== content) {
       setContent(newContent);
     }
   });
+
+  useEffect(() => {
+    if (conflict.detected) {
+      toast(`⚠️ ${conflict.message}`, 'info');
+    }
+  }, [conflict.detected, conflict.message, toast]);
 
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
