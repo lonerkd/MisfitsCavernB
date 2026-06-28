@@ -35,13 +35,22 @@ export default function ProfilePage() {
       if (data) setProfile(data);
 
       // Load quick stats
-      const [{ count: scripts }, { count: projects }, { count: jobs }] = await Promise.all([
-        supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', user.id),
-        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
-        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
-      ]);
-      setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
-    });
+      try {
+        const [scripts, projects, jobs] = await Promise.all([
+          supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', user.id),
+          supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
+          supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
+        ]);
+        setStats({
+          scripts: scripts?.count || 0,
+          projects: projects?.count || 0,
+          jobs: jobs?.count || 0,
+        });
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+        setStats({ scripts: 0, projects: 0, jobs: 0 });
+      }
+    }).catch(error => console.error('Failed to get user:', error));
   }, []);
 
   const handleSave = async () => {
