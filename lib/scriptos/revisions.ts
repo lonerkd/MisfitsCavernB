@@ -3,6 +3,8 @@
 // Industry-standard colored revision pages (Final Draft workflow)
 // ============================================================================
 
+import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
+
 export const REVISION_COLORS = [
   { name: 'White',     color: '#ffffff', bg: 'rgba(255,255,255,0.05)' },
   { name: 'Blue',      color: '#4da6ff', bg: 'rgba(77,166,255,0.1)' },
@@ -36,8 +38,9 @@ const REVISIONS_KEY = 'scriptos_revisions';
 export function getRevisions(scriptId: string): Revision[] {
   if (typeof window === 'undefined') return [];
   try {
-    const stored = localStorage.getItem(`${REVISIONS_KEY}_${scriptId}`);
-    return stored ? JSON.parse(stored) : [];
+    const data = getCacheItem(`${REVISIONS_KEY}_${scriptId}`, 'revisions');
+    if (Array.isArray(data)) return data;
+    return [];
   } catch { return []; }
 }
 
@@ -45,15 +48,14 @@ export function saveRevision(scriptId: string, revision: Revision): { success: b
   try {
     const revisions = getRevisions(scriptId);
     revisions.push(revision);
-    const data = JSON.stringify(revisions);
 
     try {
-      localStorage.setItem(`${REVISIONS_KEY}_${scriptId}`, data);
+      setCacheItem(`${REVISIONS_KEY}_${scriptId}`, revisions);
       return { success: true };
     } catch (e: any) {
       if (e.name === 'QuotaExceededError') {
         const limited = revisions.slice(-10);
-        localStorage.setItem(`${REVISIONS_KEY}_${scriptId}`, JSON.stringify(limited));
+        setCacheItem(`${REVISIONS_KEY}_${scriptId}`, limited);
         return {
           success: false,
           error: 'Revision storage quota exceeded. Kept only the 10 most recent revisions.'

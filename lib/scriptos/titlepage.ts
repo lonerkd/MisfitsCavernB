@@ -3,6 +3,8 @@
 // Standard screenplay title page fields
 // ============================================================================
 
+import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
+
 export interface TitlePage {
   title: string;
   credit: string;      // "Written by", "Screenplay by", etc.
@@ -31,14 +33,14 @@ export function getDefaultTitlePage(): TitlePage {
 
 export function saveTitlePage(scriptId: string, titlePage: TitlePage): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(`${TITLE_KEY}_${scriptId}`, JSON.stringify(titlePage));
+  setCacheItem(`${TITLE_KEY}_${scriptId}`, titlePage);
 }
 
 export function loadTitlePage(scriptId: string): TitlePage {
   if (typeof window === 'undefined') return getDefaultTitlePage();
   try {
-    const stored = localStorage.getItem(`${TITLE_KEY}_${scriptId}`);
-    return stored ? { ...getDefaultTitlePage(), ...JSON.parse(stored) } : getDefaultTitlePage();
+    const stored = getCacheItem(`${TITLE_KEY}_${scriptId}`, 'titlepage');
+    return stored ? { ...getDefaultTitlePage(), ...stored } : getDefaultTitlePage();
   } catch { return getDefaultTitlePage(); }
 }
 
