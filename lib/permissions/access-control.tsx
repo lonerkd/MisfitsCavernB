@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Permission, AccessContext } from '@/lib/context/types';
 import { useAuth } from '@/lib/context/AuthContext';

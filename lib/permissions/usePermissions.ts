@@ -1,4 +1,4 @@
-// Custom hooks for working with permissions and access control
+'use client';
 
 import { useAuth } from '@/lib/context/AuthContext';
 import { Permission, AccessContext } from '@/lib/context/types';
