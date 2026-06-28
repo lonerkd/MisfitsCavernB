@@ -2,10 +2,20 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentUser } from '@/lib/supabase/auth';
 
+export interface Collaborator {
+  userId: string;
+  username: string;
+  color: string;
+}
+
+const CURSOR_COLORS = ['#ff6b00', '#00cc66', '#0099ff', '#a855f7', '#ec4899', '#eab308'];
+const colorForUser = (userId: string) => CURSOR_COLORS[Math.abs(userId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % CURSOR_COLORS.length];
+
 export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string) => void) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [channel, setChannel] = useState<any>(null);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
   // Initialize sync
   useEffect(() => {
@@ -15,34 +25,35 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       const user = await getCurrentUser();
       if (!user) return; // Only sync if logged in
 
-      // 1. Fetch initial remote state
-      const { data, error } = await supabase
-        .from('scripts')
-        .select('content, updated_at')
-        .eq('id', scriptId)
-        .single();
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+      const username = profile?.username || user.email?.split('@')[0] || 'Anonymous';
 
-      if (data && data.content) {
-        // If remote has data and we just loaded, we should maybe prefer remote or prompt
-        // For now, let's just use it if local is empty or we force it.
-        // Actually, if we just landed on the page, we should load from local storage FIRST,
-        // then if remote is newer, replace local. (Conflict resolution is tricky, keeping simple)
-      }
-
-      // 2. Setup Realtime Channel for Broadcast
+      // Realtime channel: content broadcast + presence (who's currently editing)
       const newChannel = supabase.channel(`script_${scriptId}`, {
-        config: { broadcast: { self: false } }
+        config: { broadcast: { self: false }, presence: { key: user.id } }
       });
 
-      newChannel.on('broadcast', { event: 'content_update' }, (payload) => {
-        if (payload.payload.content !== undefined) {
-          onRemoteChange(payload.payload.content);
-        }
-      }).subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime sync established for script:', scriptId);
-        }
-      });
+      newChannel
+        .on('broadcast', { event: 'content_update' }, (payload) => {
+          if (payload.payload.content !== undefined) {
+            onRemoteChange(payload.payload.content);
+          }
+        })
+        .on('presence', { event: 'sync' }, () => {
+          const state = newChannel.presenceState();
+          const others: Collaborator[] = Object.keys(state)
+            .filter(key => key !== user.id)
+            .map(key => {
+              const meta = state[key][0] as any;
+              return { userId: key, username: meta.username, color: colorForUser(key) };
+            });
+          setCollaborators(others);
+        })
+        .subscribe((status: string) => {
+          if (status === 'SUBSCRIBED') {
+            newChannel.track({ username });
+          }
+        });
 
       setChannel(newChannel);
     };
@@ -50,7 +61,11 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     setupSync();
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      setChannel((current: any) => {
+        if (current) supabase.removeChannel(current);
+        return null;
+      });
+      setCollaborators([]);
     };
   }, [scriptId]);
 
@@ -60,7 +75,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
 
     const pushChanges = async () => {
       setIsSyncing(true);
-      
+
       // Broadcast to other clients immediately
       channel.send({
         type: 'broadcast',
@@ -86,5 +101,5 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     return () => clearTimeout(timer);
   }, [localContent, scriptId, channel]);
 
-  return { isSyncing, lastSyncedAt };
+  return { isSyncing, lastSyncedAt, collaborators };
 }

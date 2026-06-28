@@ -1,7 +1,7 @@
 // Supabase utilities for ScriptOS - Cloud Sync Architecture
 // scripts table columns: id, project_id, title, content, format, version,
 //   last_edited_by, status, created_at, updated_at, title_page, stash_items,
-//   daily_goal, sprint_minutes, learned_rules, created_by
+//   daily_goal, sprint_minutes, learned_rules, created_by, share_token, shared
 
 import { supabase } from '@/lib/supabase/client';
 
@@ -13,6 +13,8 @@ export interface StoredScript {
       updatedAt: string;
       project_id?: string;
       learned_rules?: any;
+      shareToken?: string;
+      shared?: boolean;
 }
 
 // Get all scripts for the current user (by created_by)
@@ -39,6 +41,8 @@ export async function getAllScripts(): Promise<StoredScript[]> {
           updatedAt: s.updated_at,
           project_id: s.project_id,
           learned_rules: s.learned_rules,
+          shareToken: s.share_token,
+          shared: s.shared,
   }));
 }
 
@@ -60,11 +64,15 @@ export async function getScript(id: string): Promise<StoredScript | null> {
           updatedAt: data.updated_at,
           project_id: data.project_id,
           learned_rules: data.learned_rules,
+          shareToken: data.share_token,
+          shared: data.shared,
   };
 }
 
-// Save script (INSERT or UPDATE)
-export async function saveScript(script: Partial<StoredScript>): Promise<StoredScript | null> {
+// Save script (INSERT or UPDATE). Pass { snapshot: true } on explicit user-initiated
+// saves (e.g. Ctrl+S) to checkpoint the prior content into script_versions — the silent
+// 2s auto-save loop deliberately skips this so version history doesn't fill up with noise.
+export async function saveScript(script: Partial<StoredScript>, options?: { snapshot?: boolean }): Promise<StoredScript | null> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
@@ -78,6 +86,24 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
         };
           if (script.project_id !== undefined) updateData.project_id = script.project_id;
           if (script.learned_rules !== undefined) updateData.learned_rules = script.learned_rules;
+
+          if (options?.snapshot) {
+            const { data: existing } = await supabase
+              .from('scripts')
+              .select('content, version')
+              .eq('id', script.id)
+              .single();
+            if (existing && existing.content !== updateData.content) {
+              updateData.version = (existing.version || 1) + 1;
+              const { error: snapshotError } = await supabase.from('script_versions').insert({
+                script_id: script.id,
+                content: existing.content,
+                version: existing.version || 1,
+                edited_by: user.id,
+              });
+              if (snapshotError) console.error('Error snapshotting script version:', snapshotError);
+            }
+          }
 
         const { data, error } = await supabase
             .from('scripts')
@@ -98,6 +124,8 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
                     updatedAt: data.updated_at,
                     project_id: data.project_id,
                     learned_rules: data.learned_rules,
+                    shareToken: data.share_token,
+                    shared: data.shared,
           };
   } else {
           // New script - insert
@@ -131,8 +159,50 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
                     updatedAt: data.updated_at,
                     project_id: data.project_id,
                     learned_rules: data.learned_rules,
+                    shareToken: data.share_token,
+                    shared: data.shared,
           };
   }
+}
+
+// Toggle public sharing for a script. Returns the new shared state and share URL token.
+export async function setScriptShared(id: string, shared: boolean): Promise<{ shared: boolean; shareToken: string } | null> {
+  const { data, error } = await supabase
+    .from('scripts')
+    .update({ shared })
+    .eq('id', id)
+    .select('shared, share_token')
+    .single();
+
+  if (error || !data) {
+    console.error('Error updating script share state:', error);
+    return null;
+  }
+  return { shared: data.shared, shareToken: data.share_token };
+}
+
+export interface ScriptVersion {
+  id: string;
+  script_id: string;
+  content: string;
+  version: number;
+  edited_by: string;
+  created_at: string;
+}
+
+// Get version history for a script (newest first)
+export async function getScriptVersions(scriptId: string): Promise<ScriptVersion[]> {
+  const { data, error } = await supabase
+    .from('script_versions')
+    .select('*')
+    .eq('script_id', scriptId)
+    .order('version', { ascending: false });
+
+  if (error) {
+    console.error('Error loading script versions:', error);
+    return [];
+  }
+  return data || [];
 }
 
 // Delete script

@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS project_crew (
 -- Scripts table
 CREATE TABLE IF NOT EXISTS scripts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id) ON DELETE CASCADE,
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   content TEXT DEFAULT '',
@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS scripts (
   version INT DEFAULT 1,
   last_edited_by UUID REFERENCES profiles(id),
   status TEXT DEFAULT 'draft',
+  share_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
+  shared BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -251,18 +253,22 @@ CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_i
 
 -- RLS Policies: Scripts
 CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (
-  project_id IS NULL OR
-  project_id IN (
+  shared = TRUE OR
+  created_by = auth.uid() OR
+  last_edited_by = auth.uid() OR
+  (project_id IS NOT NULL AND project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
     UNION
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
+  ))
 );
-CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
+  created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
   project_id IN (SELECT id FROM projects WHERE creator_id = auth.uid())
 );
+CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
 
 -- RLS Policies: Jobs
 CREATE POLICY "Jobs publicly readable" ON jobs FOR SELECT USING (status = 'open' OR created_by = auth.uid());
@@ -285,6 +291,9 @@ CREATE POLICY "Studio assets owner only" ON studio_assets FOR ALL USING (user_id
 CREATE POLICY "Portfolio publicly readable" ON portfolio_projects FOR SELECT USING (true);
 CREATE POLICY "Portfolio owner only write" ON portfolio_projects FOR ALL USING (user_id = auth.uid());
 CREATE POLICY "Portfolio media readable" ON portfolio_media FOR SELECT USING (true);
+CREATE POLICY "Portfolio media owner write" ON portfolio_media FOR ALL USING (
+  project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
 
 -- RLS Policies: Project Tasks
 CREATE POLICY "Project task members can view" ON project_tasks FOR SELECT USING (

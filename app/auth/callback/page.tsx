@@ -3,6 +3,56 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import type { Session } from '@supabase/supabase-js';
+
+// Discord's raw OAuth payload, as Supabase stores it under identities[].identity_data
+interface DiscordIdentityData {
+  id?: string;
+  username?: string;
+  global_name?: string;
+  full_name?: string;
+  avatar_url?: string;
+  picture?: string;
+}
+
+function buildProfileFields(session: Session) {
+  const user = session.user;
+  const discordIdentity = user.identities?.find(i => i.provider === 'discord');
+  const discordData = discordIdentity?.identity_data as DiscordIdentityData | undefined;
+
+  return {
+    id: user.id,
+    username: discordData?.global_name || discordData?.full_name ||
+      user.user_metadata?.full_name || user.user_metadata?.name ||
+      discordData?.username || user.email?.split('@')[0] || 'user',
+    avatar_url: discordData?.avatar_url || discordData?.picture || user.user_metadata?.avatar_url || null,
+    discord_id: discordData?.id || null,
+    discord_username: discordData?.username || null,
+    discord_avatar: discordData?.avatar_url || discordData?.picture || null,
+    status: 'OPEN' as const,
+  };
+}
+
+async function ensureProfile(session: Session) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, discord_username')
+    .eq('id', session.user.id)
+    .single();
+
+  const fields = buildProfileFields(session);
+
+  if (!profile) {
+    await supabase.from('profiles').insert(fields);
+  } else if (fields.discord_id && !profile.discord_username) {
+    // Backfill Discord identity onto a profile created before linking Discord
+    await supabase.from('profiles').update({
+      discord_id: fields.discord_id,
+      discord_username: fields.discord_username,
+      discord_avatar: fields.discord_avatar,
+    }).eq('id', session.user.id);
+  }
+}
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -12,26 +62,9 @@ export default function AuthCallback() {
       // Handle hash-based auth (implicit flow)
       if (window.location.hash) {
         // Supabase client auto-detects hash fragments when detectSessionInUrl is true
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          // Ensure profile exists
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!profile) {
-            await supabase.from('profiles').insert({
-              id: session.user.id,
-              username: session.user.user_metadata?.full_name || 
-                       session.user.user_metadata?.name ||
-                       session.user.email?.split('@')[0] || 'user',
-              avatar_url: session.user.user_metadata?.avatar_url || null,
-              status: 'OPEN'
-            });
-          }
-          
+          await ensureProfile(session);
           router.push('/profile');
           return;
         }
@@ -41,26 +74,9 @@ export default function AuthCallback() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code');
       if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data } = await supabase.auth.exchangeCodeForSession(code);
         if (data?.session) {
-          // Ensure profile exists
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', data.session.user.id)
-            .single();
-          
-          if (!profile) {
-            await supabase.from('profiles').insert({
-              id: data.session.user.id,
-              username: data.session.user.user_metadata?.full_name || 
-                       data.session.user.user_metadata?.name ||
-                       data.session.user.email?.split('@')[0] || 'user',
-              avatar_url: data.session.user.user_metadata?.avatar_url || null,
-              status: 'OPEN'
-            });
-          }
-          
+          await ensureProfile(data.session);
           router.push('/profile');
           return;
         }
