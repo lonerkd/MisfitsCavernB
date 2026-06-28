@@ -115,6 +115,18 @@ export default function AdminDashboard() {
             >
               ANALYTICS
             </Link>
+            <Link
+              href="/admin/audit-logs"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 2,
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              AUDIT LOGS
+            </Link>
           </div>
 
           {/* Stats Grid */}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { ProtectedPage } from '@/lib/permissions/access-control';
 import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
+import { ActionButton, IfAccess } from '@/lib/permissions/access-control';
 
 interface UserRow {
   id: string;
@@ -128,6 +129,30 @@ export default function AdminUsersPage() {
             >
               ANALYTICS
             </Link>
+            <Link
+              href="/admin/audit-logs"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 2,
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              AUDIT LOGS
+            </Link>
+            <Link
+              href="/admin/analytics"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 2,
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              ANALYTICS
+            </Link>
           </div>
 
           {/* Users Table */}
@@ -213,11 +238,9 @@ export default function AdminUsersPage() {
                       </td>
                       <td style={{ padding: 16 }}>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleAdminRole(user.id, user.is_admin || false);
-                            }}
+                          <ActionButton
+                            permission="manage_users"
+                            onClick={() => toggleAdminRole(user.id, user.is_admin || false)}
                             style={{
                               display: 'flex',
                               gap: 4,
@@ -227,14 +250,14 @@ export default function AdminUsersPage() {
                               border: '1px solid rgba(255,60,0,0.3)',
                               color: 'var(--accent)',
                               borderRadius: 4,
-                              cursor: 'pointer',
                               fontSize: 10,
                               fontFamily: 'var(--mono)',
                             }}
                             title={user.is_admin ? 'Remove admin' : 'Make admin'}
+                            disabledTooltip="Only admins can manage user roles"
                           >
                             <Shield size={10} />
-                          </button>
+                          </ActionButton>
                         </div>
                       </td>
                     </tr>
