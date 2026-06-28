@@ -208,9 +208,9 @@ export default function ProfilePage() {
           ].map(({ icon, count, label, href }) => (
             <Link key={label} href={href} style={{ textDecoration: 'none' }}>
               <div style={{ padding: 16, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center',
-                transition: 'border-color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
+                transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,60,0,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
                 <div style={{ fontSize: 8, letterSpacing: 2, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 4 }}>{label.toUpperCase()}</div>
