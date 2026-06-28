@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
+import { AuthProvider } from '@/lib/context/AuthContext';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
@@ -26,13 +27,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <ToastProvider>
-          <ProjectProvider>
-            <CustomCursor />
-            <EcosystemTaskbar />
-            {children}
-          </ProjectProvider>
-        </ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <ProjectProvider>
+              <CustomCursor />
+              <EcosystemTaskbar />
+              {children}
+            </ProjectProvider>
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );
