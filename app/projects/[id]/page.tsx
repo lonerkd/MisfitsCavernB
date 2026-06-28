@@ -14,6 +14,7 @@ import { useToast } from '@/components/Toast';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getAllScripts, deleteScript as deleteScriptRow, type StoredScript } from '@/lib/scriptos/storage';
+import EmptyState from '@/components/EmptyState';
 import type { Project, CrewMember, TimelineItem, Beat } from '@/lib/context/ProjectContext';
 
 // ─── Demo data banner — used by tabs that aren't backed by real storage yet ──
@@ -103,26 +104,17 @@ function ScreenplayTab({ project }: { project: Project }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: '40px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
-          Loading scripts…
+        <div style={{ display: 'grid', gap: 12 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} className="skeleton" style={{ height: 64, borderRadius: 12 }} />
+          ))}
         </div>
       ) : scripts.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
-            padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
-          }}
-        >
-          <FileText size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            No scripts yet
-          </p>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
-            Create one to start writing in ScriptOS
-          </p>
-        </motion.div>
+        <EmptyState
+          icon={<FileText size={28} />}
+          title="No scripts yet"
+          subtitle="Create one to start writing in ScriptOS"
+        />
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
           {scripts.map(s => (
@@ -431,15 +423,7 @@ function CrewTab({ project }: { project: Project }) {
 
       {/* Crew list */}
       {crew.length === 0 ? (
-        <div style={{
-          border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
-          padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
-        }}>
-          <Users size={28} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            No crew members yet
-          </p>
-        </div>
+        <EmptyState icon={<Users size={28} />} title="No crew members yet" />
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
           {crew.map((member, i) => (
@@ -457,7 +441,10 @@ function CrewTab({ project }: { project: Project }) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 opacity: removingId === member.id ? 0.5 : 1,
+                transition: 'border-color 0.3s, box-shadow 0.3s',
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <Link
                 href={member.user_id ? `/crew/${member.user_id}` : '#'}
@@ -641,15 +628,7 @@ function ScheduleTab({ project }: { project: Project }) {
       )}
 
       {milestones.length === 0 ? (
-        <div style={{
-          border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
-          padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
-        }}>
-          <Calendar size={28} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            No milestones yet
-          </p>
-        </div>
+        <EmptyState icon={<Calendar size={28} />} title="No milestones yet" />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {milestones.map((m, i) => (
@@ -664,7 +643,10 @@ function ScheduleTab({ project }: { project: Project }) {
                 padding: '16px',
                 background: 'rgba(255,255,255,0.02)',
                 opacity: removingId === m.id ? 0.5 : 1,
+                transition: 'border-color 0.3s, box-shadow 0.3s',
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div>
@@ -786,29 +768,17 @@ function ShowcaseTab({ project }: { project: Project }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: '40px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
-          Loading…
+        <div style={{ display: 'grid', gap: 12 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} className="skeleton" style={{ height: 64, borderRadius: 12 }} />
+          ))}
         </div>
       ) : entries.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            border: '2px dashed rgba(255,255,255,0.1)',
-            borderRadius: 16,
-            padding: '48px 24px',
-            textAlign: 'center',
-            background: 'rgba(255,255,255,0.01)',
-          }}
-        >
-          <Award size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            Not in your portfolio yet
-          </p>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
-            Add this project, then attach stills, teasers, and clips from the Portfolio page
-          </p>
-        </motion.div>
+        <EmptyState
+          icon={<Award size={28} />}
+          title="Not in your portfolio yet"
+          subtitle="Add this project, then attach stills, teasers, and clips from the Portfolio page"
+        />
       ) : (
         <div style={{ display: 'grid', gap: 12 }}>
           {entries.map(e => (
@@ -819,7 +789,10 @@ function ShowcaseTab({ project }: { project: Project }) {
               style={{
                 border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px',
                 background: 'rgba(255,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                transition: 'border-color 0.3s, box-shadow 0.3s',
               }}
+              onMouseEnter={ev => { ev.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; ev.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+              onMouseLeave={ev => { ev.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; ev.currentTarget.style.boxShadow = 'none'; }}
             >
               <div>
                 <h3 style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', marginBottom: 6 }}>{e.title}</h3>
@@ -897,7 +870,10 @@ function LaunchTab({ project }: { project: Project }) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                transition: 'border-color 0.3s, box-shadow 0.3s',
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <div>
                 <h4 style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', marginBottom: 2 }}>{f.name}</h4>
@@ -935,7 +911,10 @@ function LaunchTab({ project }: { project: Project }) {
               padding: '16px',
               background: 'rgba(255,255,255,0.02)',
               textAlign: 'center',
+              transition: 'border-color 0.3s, box-shadow 0.3s',
             }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; }}
           >
             <div style={{ color: project.accent_color || '#ff3c00', marginBottom: 12, display: 'flex', justifyContent: 'center' }}>
               {item.icon}
