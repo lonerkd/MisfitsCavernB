@@ -803,16 +803,17 @@ export default function StudioPage() {
                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                    <BookOpen size={16} /> Beat Board / Outline
                  </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                   {(activeProject?.beats || [
-                     { id: 'B1', title: 'The Inciting Incident', content: 'Our protagonist finds the map in the attic. The adventure begins.', color: '#0099ff' },
-                     { id: 'B2', title: 'The First Threshold', content: 'Escaping the city through the underground tunnels. No turning back.', color: '#ffaa00' },
-                     { id: 'B3', title: 'The Midpoint', content: 'Discovery of the true nature of the artifact. High stakes.', color: '#ff3c00' },
-                     { id: 'B4', title: 'All Is Lost', content: 'The antagonist takes everything. Darkness falls.', color: '#a855f7' },
-                   ]).map((beat, i) => (
-                     <BeatCard key={beat.id} beat={beat} index={i} />
-                   ))}
-                 </div>
+                 {(activeProject?.beats && activeProject.beats.length > 0) ? (
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                     {activeProject.beats.map((beat, i) => (
+                       <BeatCard key={beat.id} beat={beat} index={i} />
+                     ))}
+                   </div>
+                 ) : (
+                   <div style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: '28px 20px', textAlign: 'center', color: '#666', fontSize: 11 }}>
+                     No beats outlined yet
+                   </div>
+                 )}
                </div>
 
                {/* Staffing & Casting */}
@@ -822,17 +823,14 @@ export default function StudioPage() {
                      <Users size={16} /> Cast & Crew Hub
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                     {(activeProject?.crew || [
-                       { id: 'C1', name: 'James Miller', role: 'Director', status: 'confirmed' },
-                       { id: 'C2', name: 'Sarah Vance', role: 'DP / Cinematographer', status: 'confirmed' },
-                       { id: 'C3', name: 'Elena Kross', role: 'Lead Actress (Jane)', status: 'confirmed' },
-                       { id: 'C4', name: 'Marcus Thorne', role: 'Lead Actor (Detective)', status: 'pending' },
-                     ]).map((member, i) => (
+                     {(activeProject?.crew || []).map((member, i) => (
                        <CrewMemberCard key={member.id} member={member} index={i} />
                      ))}
-                     <button style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>
-                       + Recruit Crew / Invite Talent
-                     </button>
+                     <Link href={activeProject ? `/projects/${activeProject.id}?tab=crew` : '#'} style={{ textDecoration: 'none' }}>
+                       <button style={{ width: '100%', padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>
+                         + Recruit Crew / Invite Talent
+                       </button>
+                     </Link>
                    </div>
                  </div>
 
@@ -842,7 +840,9 @@ export default function StudioPage() {
                      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule (Gantt)</div>
                      <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> View Call Sheets</button>
                    </div>
-                   
+
+                   <DemoBanner text="Demo data — scene-level scheduling isn't connected yet" />
+
                    {/* Gantt Header */}
                    <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
                      <div style={{ width: 60 }}>Scene</div>
