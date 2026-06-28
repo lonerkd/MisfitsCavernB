@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/EmptyState';
 
 interface Job {
   id: string;
@@ -666,19 +667,17 @@ export default function JobsPage() {
               </div>
 
               {loading ? (
-                <div style={{ padding: '80px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.2)', textTransform: 'uppercase' }}>
-                  Loading positions…
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="skeleton" style={{ height: 88, borderRadius: 14 }} />
+                  ))}
                 </div>
               ) : filtered.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  style={{ padding: '80px 0', textAlign: 'center' }}
-                >
-                  <Briefcase size={28} color="rgba(240,236,228,0.1)" style={{ margin: '0 auto 16px', display: 'block' }} />
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.2)', textTransform: 'uppercase', marginBottom: 20 }}>
-                    No open positions
-                  </div>
-                  {user && (
+                <EmptyState
+                  icon={<Briefcase size={28} />}
+                  title="No open positions"
+                  subtitle="Be the first to post a role for your production"
+                  action={user && (
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
@@ -688,7 +687,7 @@ export default function JobsPage() {
                       Post the first one
                     </button>
                   )}
-                </motion.div>
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {filtered.map((job, i) => (
@@ -702,23 +701,20 @@ export default function JobsPage() {
           {tab === 'mine' && user && (
             <>
               {myJobs.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  style={{ padding: '80px 0', textAlign: 'center' }}
-                >
-                  <Briefcase size={28} color="rgba(240,236,228,0.1)" style={{ margin: '0 auto 16px', display: 'block' }} />
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.2)', textTransform: 'uppercase', marginBottom: 20 }}>
-                    No positions posted yet
-                  </div>
-                  <button onClick={() => setShowPost(true)} style={{
-                    padding: '10px 22px', borderRadius: 9999,
-                    background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                    color: '#8b5cf6', cursor: 'pointer',
-                    fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
-                  }}>
-                    Post your first position
-                  </button>
-                </motion.div>
+                <EmptyState
+                  icon={<Briefcase size={28} />}
+                  title="No positions posted yet"
+                  action={
+                    <button onClick={() => setShowPost(true)} style={{
+                      padding: '10px 22px', borderRadius: 9999,
+                      background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+                      color: '#8b5cf6', cursor: 'pointer',
+                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
+                    }}>
+                      Post your first position
+                    </button>
+                  }
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {myJobs.map((job, i) => (
