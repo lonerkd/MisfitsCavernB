@@ -287,7 +287,10 @@ function EditorPageInner() {
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [draggedSceneIdx, setDraggedSceneIdx] = useState<number | null>(null);
   const [dragOverSceneIdx, setDragOverSceneIdx] = useState<number | null>(null);
+  const [linkedProject, setLinkedProject] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { projects } = useProject();
 
   // Supabase Realtime Sync
   const { isSyncing, lastSyncedAt, collaborators } = useScriptSync(currentScript?.id || '', content, (newContent) => {
@@ -320,6 +323,14 @@ function EditorPageInner() {
     });
     toast(`Learned new ${type.slice(0, -1)}: ${cleanText}`, 'success');
   }, [currentScript, toast]);
+
+  // Link to project if script has one
+  useEffect(() => {
+    if (currentScript?.project_id) {
+      const found = projects.find(p => p.id === currentScript.project_id);
+      setLinkedProject(found || null);
+    }
+  }, [currentScript, projects]);
 
   // Init — honors deep links from the project hub: ?scriptId=X opens that
   // script directly, ?new=1&projectId=X&title=Y creates one tied to a project.
@@ -1022,6 +1033,18 @@ function EditorPageInner() {
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </span>
+
+              {linkedProject && (
+                <Link href={`/projects/${linkedProject.id}`} style={{ textDecoration: 'none', marginLeft: 16, paddingLeft: 16, borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, fontFamily: 'var(--mono)', color: linkedProject.accent_color || 'var(--accent)', transition: 'opacity 0.2s', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: linkedProject.accent_color || 'var(--accent)' }} />
+                    {linkedProject.title}
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
 
