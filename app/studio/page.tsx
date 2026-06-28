@@ -9,7 +9,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
-import { getAllStudioAssets } from '@/lib/supabase/studio';
+import { getAllStudioAssets, getStudioBoards, createStudioBoard, addStudioAsset } from '@/lib/supabase/studio';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
@@ -23,14 +23,6 @@ interface Asset {
   dateAdded: string;
 }
 
-const ASSETS: Asset[] = [
-  { id: '1', name: 'Femme Fatale — Draft 9', type: 'document', category: 'Screenplays', size: '248 KB', dateAdded: '2026-04-15' },
-  { id: '2', name: '10 Million — Final Cut', type: 'video', category: 'Music Videos', size: '4.2 GB', dateAdded: '2026-04-20' },
-  { id: '3', name: 'The Briefcase — Poster Concept', type: 'image', category: 'Marketing', size: '3.8 MB', dateAdded: '2026-04-10' },
-  { id: '4', name: 'Production Score — V1', type: 'audio', category: 'Audio', size: '68 MB', dateAdded: '2026-03-28' },
-  { id: '5', name: 'Grand PSA — Grade LUT', type: 'document', category: 'Color', size: '12 KB', dateAdded: '2026-03-15' },
-  { id: '6', name: 'Altitude — Raw Footage B-Roll', type: 'video', category: 'Documentaries', size: '11.3 GB', dateAdded: '2026-02-20' },
-];
 
 const CONCEPT_IMAGES = [
   { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
@@ -182,7 +174,56 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
   );
 }
 
-function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function IntakeModal({ isOpen, onClose, onAdded }: { isOpen: boolean; onClose: () => void; onAdded: (asset: Asset) => void }) {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [category, setCategory] = useState('Raw Footage');
+  const [type, setType] = useState<'video' | 'image' | 'document' | 'audio'>('video');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !url.trim()) {
+      setError('Title and a link to the file are required');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+
+      let boards = await getStudioBoards(user.id);
+      let board = boards?.[0];
+      if (!board) {
+        board = await createStudioBoard({ user_id: user.id, title: 'My Studio Board' });
+      }
+
+      const inserted = await addStudioAsset({
+        board_id: board.id,
+        user_id: user.id,
+        title: title.trim(),
+        asset_url: url.trim(),
+        asset_type: type,
+      });
+
+      onAdded({
+        id: inserted.id,
+        name: inserted.title || 'Untitled',
+        type,
+        category,
+        size: 'Unknown',
+        dateAdded: new Date(inserted.created_at).toISOString().split('T')[0],
+      });
+      setTitle(''); setUrl('');
+      onClose();
+    } catch (e) {
+      setError('Failed to save — try again');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -201,19 +242,34 @@ function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
             style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Upload raw footage, references, or documents to the project vault.</p>
-            
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>
+              File storage isn't connected yet — link to a file already hosted elsewhere (Drive, YouTube, etc.) to track it here.
+            </p>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ padding: 40, border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', cursor: 'pointer' }}>
-                <Upload size={32} color="var(--accent)" style={{ marginBottom: 12 }} />
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Drop files here or click to browse</div>
-                <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 4 }}>Maximum file size: 10GB</div>
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
+                <input
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="e.g. Final Cut v3"
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                />
               </div>
-              
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Link</label>
+                <input
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  placeholder="https://..."
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                />
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
-                  <select style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
+                  <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
                     <option>Raw Footage</option>
                     <option>Reference</option>
                     <option>Production Doc</option>
@@ -222,17 +278,23 @@ function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
                 </div>
                 <div>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
-                   <select style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
-                    <option>Video</option>
-                    <option>Image</option>
-                    <option>PDF</option>
-                    <option>Audio</option>
+                   <select value={type} onChange={e => setType(e.target.value as any)} style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
+                    <option value="video">Video</option>
+                    <option value="image">Image</option>
+                    <option value="document">PDF</option>
+                    <option value="audio">Audio</option>
                   </select>
                 </div>
               </div>
-              
-              <button style={{ marginTop: 12, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: 'pointer' }}>
-                Start Intake Process
+
+              {error && <div style={{ fontSize: 11, color: '#ef4444' }}>{error}</div>}
+
+              <button
+                disabled={submitting}
+                onClick={handleSubmit}
+                style={{ marginTop: 12, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: submitting ? 'wait' : 'pointer', opacity: submitting ? 0.6 : 1 }}
+              >
+                {submitting ? 'Saving…' : 'Add to Vault'}
               </button>
             </div>
           </motion.div>
@@ -447,7 +509,7 @@ export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
-  const [assetsList, setAssetsList] = useState<Asset[]>(ASSETS);
+  const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
@@ -533,7 +595,7 @@ export default function StudioPage() {
         </div>
       </nav>
 
-      <IntakeModal isOpen={showIntake} onClose={() => setShowIntake(false)} />
+      <IntakeModal isOpen={showIntake} onClose={() => setShowIntake(false)} onAdded={asset => setAssetsList(a => [asset, ...a])} />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
 
       {/* TABS BAR */}
@@ -859,6 +921,23 @@ export default function StudioPage() {
                 </button>
               ))}
             </div>
+
+            {filtered.length === 0 && (
+              <div style={{
+                border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
+                padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
+              }}>
+                <Archive size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                  {assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
+                </p>
+                {assetsList.length === 0 && (
+                  <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
+                    Use Intake above to track files hosted elsewhere
+                  </p>
+                )}
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
               {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
