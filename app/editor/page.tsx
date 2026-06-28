@@ -440,6 +440,15 @@ export default function EditorPage() {
     return () => clearInterval(interval);
   }, [sprintActive, sprintTime, toast]);
 
+  // Debounce title page saves (300ms)
+  useEffect(() => {
+    if (!currentScript) return;
+    const timer = setTimeout(() => {
+      saveTitlePage(currentScript.id, titlePage);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [titlePage, currentScript]);
+
   // Actions
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
@@ -617,12 +626,8 @@ export default function EditorPage() {
 
   // Title page save
   const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
-    setTitlePage(prev => {
-      const updated = { ...prev, [field]: value };
-      if (currentScript) saveTitlePage(currentScript.id, updated);
-      return updated;
-    });
-  }, [currentScript]);
+    setTitlePage(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   // Tab key cycling (in the textarea: Tab inserts element type based on context)
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {

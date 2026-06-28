@@ -417,11 +417,12 @@ export default function JobsPage() {
   const [tab, setTab] = useState<'open' | 'mine'>('open');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      if (user) loadMyJobs(user.id);
-    });
-    loadJobs();
+      if (user) await loadMyJobs(user.id);
+      await loadJobs();
+    })();
   }, []);
 
   const loadJobs = async () => {

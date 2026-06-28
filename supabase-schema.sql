@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS portfolio_projects (
   year INT,
   role TEXT,
   accent_color TEXT,
+  is_public BOOLEAN DEFAULT false,
   share_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -288,9 +289,15 @@ CREATE POLICY "Studio boards owner only" ON studio_boards FOR ALL USING (user_id
 CREATE POLICY "Studio assets owner only" ON studio_assets FOR ALL USING (user_id = auth.uid());
 
 -- RLS Policies: Portfolio
-CREATE POLICY "Portfolio publicly readable" ON portfolio_projects FOR SELECT USING (true);
+CREATE POLICY "Portfolio readable if public or owner" ON portfolio_projects FOR SELECT USING (
+  is_public = true OR user_id = auth.uid()
+);
 CREATE POLICY "Portfolio owner only write" ON portfolio_projects FOR ALL USING (user_id = auth.uid());
-CREATE POLICY "Portfolio media readable" ON portfolio_media FOR SELECT USING (true);
+CREATE POLICY "Portfolio media readable if public or owner" ON portfolio_media FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM portfolio_projects WHERE is_public = true OR user_id = auth.uid()
+  )
+);
 CREATE POLICY "Portfolio media owner write" ON portfolio_media FOR ALL USING (
   project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
