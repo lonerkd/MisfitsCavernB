@@ -518,9 +518,13 @@ export default function EditorPage() {
 
   const handleLockRevision = useCallback(() => {
     if (!currentScript) return;
-    const rev = createRevision(currentScript.id, content);
-    setRevisions(prev => [...prev, rev]);
-    toast(`Locked as ${rev.label}`, 'success');
+    const { revision, result } = createRevision(currentScript.id, content);
+    setRevisions(prev => [...prev, revision]);
+    if (result.error) {
+      toast(result.error, 'info');
+    } else {
+      toast(`Locked as ${revision.label}`, 'success');
+    }
   }, [currentScript, content, toast]);
 
   // Load cloud version history when the Revisions panel is opened
@@ -604,15 +608,36 @@ export default function EditorPage() {
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const ALLOWED_EXTENSIONS = ['txt', 'fountain', 'fdx'];
+
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !ALLOWED_EXTENSIONS.includes(fileExtension)) {
+      toast('Invalid file format. Please upload a .txt, .fountain, or .fdx file.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast('File too large. Maximum size is 5MB.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      toast('Failed to read file. Please try again.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
     reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
-      
+
       const preParse = parseScript(text);
       const issues = validateScript(preParse.lines, text);
       const unknowns = [...new Set(issues.filter(i => i.rule === 'unknown-caps').map(i => i.message.match(/"([^"]+)"/)?.[1] || '').filter(Boolean))];
-      
+
       if (unknowns.length > 0) {
         setImportChoices({});
         setPendingImport({ text, title, unknowns: unknowns.slice(0, 5) });

@@ -41,13 +41,35 @@ export function getRevisions(scriptId: string): Revision[] {
   } catch { return []; }
 }
 
-export function saveRevision(scriptId: string, revision: Revision): void {
-  const revisions = getRevisions(scriptId);
-  revisions.push(revision);
-  localStorage.setItem(`${REVISIONS_KEY}_${scriptId}`, JSON.stringify(revisions));
+export function saveRevision(scriptId: string, revision: Revision): { success: boolean; error?: string } {
+  try {
+    const revisions = getRevisions(scriptId);
+    revisions.push(revision);
+    const data = JSON.stringify(revisions);
+
+    try {
+      localStorage.setItem(`${REVISIONS_KEY}_${scriptId}`, data);
+      return { success: true };
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError') {
+        const limited = revisions.slice(-10);
+        localStorage.setItem(`${REVISIONS_KEY}_${scriptId}`, JSON.stringify(limited));
+        return {
+          success: false,
+          error: 'Revision storage quota exceeded. Kept only the 10 most recent revisions.'
+        };
+      }
+      throw e;
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to save revision'
+    };
+  }
 }
 
-export function createRevision(scriptId: string, content: string, label?: string): Revision {
+export function createRevision(scriptId: string, content: string, label?: string): { revision: Revision; result: { success: boolean; error?: string } } {
   const revisions = getRevisions(scriptId);
   const colorIndex = revisions.length % REVISION_COLORS.length;
   const revision: Revision = {
@@ -57,8 +79,8 @@ export function createRevision(scriptId: string, content: string, label?: string
     label: label || `${REVISION_COLORS[colorIndex].name} Revision`,
     snapshot: content,
   };
-  saveRevision(scriptId, revision);
-  return revision;
+  const result = saveRevision(scriptId, revision);
+  return { revision, result };
 }
 
 // Compare two text snapshots and return changed line indices
