@@ -5,6 +5,7 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import EmptyState from '@/components/EmptyState';
 
 interface Job {
   id: string;
@@ -330,15 +331,13 @@ export default function JobDetailPage() {
             </div>
 
             {appsLoading ? (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, letterSpacing: 2 }}>LOADING...</div>
-            ) : applications.length === 0 ? (
-              <div style={{
-                padding: 40, textAlign: 'center',
-                border: '1px dashed rgba(255,255,255,0.08)',
-                fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, letterSpacing: 2,
-              }}>
-                NO APPLICATIONS YET
+              <div style={{ display: 'grid', gap: 16 }}>
+                {[0, 1].map(i => (
+                  <div key={i} className="skeleton" style={{ height: 100, borderRadius: 14 }} />
+                ))}
               </div>
+            ) : applications.length === 0 ? (
+              <EmptyState icon={<User size={28} />} title="No applications yet" />
             ) : (
               <div style={{ display: 'grid', gap: 16 }}>
                 {applications.map(app => (
@@ -347,8 +346,11 @@ export default function JobDetailPage() {
                     background: 'rgba(10,10,10,0.8)',
                     borderRadius: 14,
                     ...appStatusStyle(app.status),
-                    transition: 'border-color 0.2s',
-                  }}>
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
+                  >
                     {/* Applicant header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

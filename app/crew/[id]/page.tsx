@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import EmptyState from '@/components/EmptyState';
 
 interface Profile {
   id: string;
@@ -257,13 +258,7 @@ export default function CrewMemberPage() {
           </div>
 
           {projects.length === 0 ? (
-            <div style={{
-              padding: '40px 24px', border: '1px solid rgba(255,255,255,0.05)',
-              textAlign: 'center', background: 'rgba(255,255,255,0.015)'
-            }}>
-              <Film size={24} style={{ opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.3 }}>No portfolio projects yet.</div>
-            </div>
+            <EmptyState icon={<Film size={28} />} title="No portfolio projects yet" />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
               {projects.map(project => (
@@ -277,7 +272,8 @@ export default function CrewMemberPage() {
                       padding: '20px 22px',
                       background: '#0a0a0a',
                       border: `1px solid ${hoveredCard === project.id ? 'rgba(255,60,0,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                      transition: 'border-color 0.2s',
+                      boxShadow: hoveredCard === project.id ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
                       cursor: 'pointer'
                     }}
                     onMouseEnter={() => setHoveredCard(project.id)}
