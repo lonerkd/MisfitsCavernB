@@ -16,6 +16,7 @@ import { getActivities, subscribeToActivities, type Activity } from '@/lib/supab
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle } from 'lucide-react';
+import EmptyState from '@/components/EmptyState';
 
 function DemoBanner({ text }: { text: string }) {
   return (
@@ -539,6 +540,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
       transition={{ delay: index * 0.05 }}
       style={{
         padding: 20,
@@ -550,8 +552,11 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        position: 'relative'
+        position: 'relative',
+        transition: 'box-shadow 0.3s',
       }}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(255,60,0,0.08)'}`)}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
     >
       <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
         {onPush && (
@@ -593,6 +598,7 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
+      whileHover={{ x: 2 }}
       transition={{ delay: index * 0.05 }}
       style={{
         display: 'flex',
@@ -601,8 +607,11 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
         padding: 16,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 12
+        borderRadius: 12,
+        transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent), #ffaa00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#000' }}>
         {member.avatar ? <img src={member.avatar} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : member.name.charAt(0)}
@@ -1284,9 +1293,7 @@ export default function StudioPage() {
                      ))}
                    </div>
                  ) : (
-                   <div style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: '28px 20px', textAlign: 'center', color: '#666', fontSize: 11 }}>
-                     No beats outlined yet
-                   </div>
+                   <EmptyState icon={<BookOpen size={28} />} title="No beats outlined yet" subtitle="Break the story into beats above" />
                  )}
                </div>
 
@@ -1305,7 +1312,7 @@ export default function StudioPage() {
                           avatar: member.profiles?.avatar_url
                         }} index={i} />
                       )) : (
-                        <div style={{ padding: 20, textAlign: 'center', color: '#444', fontSize: 11 }}>No crew members recruited yet.</div>
+                        <EmptyState icon={<Users size={28} />} title="No crew members recruited yet" />
                       )}
                       <button
                         onClick={() => setShowRecruit(true)}
@@ -1367,9 +1374,7 @@ export default function StudioPage() {
                        </div>
                      </>
                    ) : (
-                     <div style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: '24px 16px', textAlign: 'center', color: '#666', fontSize: 11 }}>
-                       No scenes scheduled yet
-                     </div>
+                     <EmptyState icon={<Calendar size={28} />} title="No scenes scheduled yet" />
                    )}
                  </div>
                </div>
@@ -1410,26 +1415,23 @@ export default function StudioPage() {
               ))}
             </div>
 
-            {filtered.length === 0 && (
-              <div style={{
-                border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
-                padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
-              }}>
-                <Archive size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                  {assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
-                </p>
-                {assetsList.length === 0 && (
-                  <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
-                    Use Intake above to track files hosted elsewhere
-                  </p>
-                )}
+            {loadingBoards ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="skeleton" style={{ height: 180, borderRadius: 14 }} />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                icon={<Archive size={28} />}
+                title={assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
+                subtitle={assetsList.length === 0 ? 'Use Intake above to track files hosted elsewhere' : undefined}
+              />
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
               </div>
             )}
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-              {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
-            </div>
           </AnimatedSection>
         )}
 
@@ -1510,7 +1512,12 @@ export default function StudioPage() {
 
                   {(activeProject?.campaigns && activeProject.campaigns.length > 0) ? (
                     activeProject.campaigns.map((campaign) => (
-                      <div key={campaign.id} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div
+                        key={campaign.id}
+                        style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color 0.3s, box-shadow 0.3s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
+                      >
                          <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
@@ -1522,10 +1529,7 @@ export default function StudioPage() {
                       </div>
                     ))
                   ) : (
-                    <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
-                       <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
-                       No campaigns planned yet — use + New Campaign above.
-                    </div>
+                    <EmptyState icon={<Megaphone size={28} />} title="No campaigns planned yet" subtitle="Use + New Campaign above" />
                   )}
                </div>
 
