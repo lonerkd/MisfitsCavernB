@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createScript } from '@/lib/scripts';
+import { getAuthenticatedUser, verifyUserOwnership } from '@/lib/api-auth';
 
 function validateScriptPayload(data: any): { valid: boolean; error?: string } {
   if (typeof data.userId !== 'string' || !data.userId.trim()) {
@@ -31,6 +32,11 @@ function validateScriptPayload(data: any): { valid: boolean; error?: string } {
 
 export async function POST(req: NextRequest) {
   try {
+    const authenticatedUser = await getAuthenticatedUser(req);
+    if (!authenticatedUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     let body;
     try {
       body = await req.json();
@@ -44,6 +50,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { userId, title, content, projectId } = body;
+
+    if (!verifyUserOwnership(userId, authenticatedUser.id)) {
+      return NextResponse.json({ error: 'Forbidden: cannot create scripts for other users' }, { status: 403 });
+    }
+
     const result = await createScript(userId, title, content, projectId);
 
     if (!result.success) {
