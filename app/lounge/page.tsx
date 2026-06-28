@@ -8,6 +8,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
+import EmptyState from '@/components/EmptyState';
 
 interface Message {
   id: string;
@@ -272,8 +273,8 @@ export default function LoungePage() {
               <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
                 <div style={{ maxWidth: 720, margin: '0 auto' }}>
                   {messages.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
-                      NO MESSAGES IN #{activeChannel.toUpperCase()} YET
+                    <div style={{ marginTop: 80 }}>
+                      <EmptyState icon={<Hash size={28} />} title={`No messages in #${activeChannel} yet`} />
                     </div>
                   ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />)}
                   <div ref={bottomRef} />
