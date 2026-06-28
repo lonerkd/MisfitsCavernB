@@ -426,15 +426,15 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ image, index }: { image: typeof CONCEPT_IMAGES[0]; index: number }) {
+function ConceptCard({ image, index, onRemove }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.05 }}
-      style={{ 
-        marginBottom: 16, 
-        breakInside: 'avoid', 
+      style={{
+        marginBottom: 16,
+        breakInside: 'avoid',
         position: 'relative',
         borderRadius: 8,
         overflow: 'hidden',
@@ -443,24 +443,29 @@ function ConceptCard({ image, index }: { image: typeof CONCEPT_IMAGES[0]; index:
       }}
     >
       <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.8 }} />
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))', 
-        padding: 16, 
-        display: 'flex', 
-        flexDirection: 'column', 
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))',
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'flex-end',
         opacity: 0,
         transition: 'opacity 0.3s'
       }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
-        <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1 }}>{image.title}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1 }}>{image.title || 'Untitled'}</span>
+          {onRemove && (
+            <button onClick={onRemove} style={{ background: 'rgba(255,0,0,0.2)', border: 'none', color: '#fff', borderRadius: 4, fontSize: 9, padding: '2px 6px', cursor: 'pointer' }}>Remove</button>
+          )}
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function BeatCard({ beat, index }: { beat: any; index: number }) {
+function BeatCard({ beat, index, onRemove }: { beat: any; index: number; onRemove?: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -479,10 +484,12 @@ function BeatCard({ beat, index }: { beat: any; index: number }) {
       }}
     >
       <div>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+          {onRemove && <button onClick={onRemove} style={{ background: 'none', border: 'none', color: '#666', fontSize: 9, cursor: 'pointer' }}>✕</button>}
+        </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
       </div>
-      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>ID: {beat.id}</div>
     </motion.div>
   );
 }
@@ -518,7 +525,7 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
 }
 
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects } = useProject();
+  const { activeProject, setActiveProject, projects, addBeat, removeBeat, addConceptAsset, removeConceptAsset, addScene, removeScene, addCampaign, removeCampaign } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -526,6 +533,23 @@ export default function StudioPage() {
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
+
+  const [showAddConcept, setShowAddConcept] = useState(false);
+  const [conceptTitle, setConceptTitle] = useState('');
+  const [conceptUrl, setConceptUrl] = useState('');
+
+  const [showAddBeat, setShowAddBeat] = useState(false);
+  const [beatTitle, setBeatTitle] = useState('');
+  const [beatContent, setBeatContent] = useState('');
+
+  const [showAddScene, setShowAddScene] = useState(false);
+  const [sceneTitle, setSceneTitle] = useState('');
+  const [sceneLocation, setSceneLocation] = useState('');
+  const [sceneDay, setSceneDay] = useState('1');
+
+  const [showAddCampaign, setShowAddCampaign] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -776,11 +800,39 @@ export default function StudioPage() {
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
               </div>
-              <button className="link-btn">+ New Ref</button>
+              <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
             </div>
-            <div style={{ columnCount: 3, columnGap: 16 }}>
-              {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
-            </div>
+
+            {showAddConcept && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                <input placeholder="Title" value={conceptTitle} onChange={e => setConceptTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <input placeholder="Image URL" value={conceptUrl} onChange={e => setConceptUrl(e.target.value)} style={{ flex: 2, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <button
+                  className="link-btn"
+                  onClick={async () => {
+                    if (!activeProject || !conceptUrl.trim()) return;
+                    const { data: { user } } = await supabase.auth.getUser();
+                    await addConceptAsset({ project_id: activeProject.id, title: conceptTitle.trim() || undefined, image_url: conceptUrl.trim(), created_by: user?.id });
+                    setConceptTitle(''); setConceptUrl(''); setShowAddConcept(false);
+                  }}
+                >Add</button>
+              </div>
+            )}
+
+            {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
+              <div style={{ columnCount: 3, columnGap: 16 }}>
+                {activeProject.concept_assets.map((img, i) => (
+                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} onRemove={() => removeConceptAsset(img.id, activeProject.id)} />
+                ))}
+              </div>
+            ) : (
+              <>
+                <DemoBanner text="Showing stock placeholder imagery — add your own references above to replace these" />
+                <div style={{ columnCount: 3, columnGap: 16 }}>
+                  {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
+                </div>
+              </>
+            )}
           </motion.div>
         )}
 
@@ -793,20 +845,36 @@ export default function StudioPage() {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="link-btn">Export Schedule</button>
-                <button className="link-btn">+ New Beat</button>
+                <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>
               </div>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
                {/* Beat Board */}
                <div>
                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                    <BookOpen size={16} /> Beat Board / Outline
                  </div>
+
+                 {showAddBeat && (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                     <input placeholder="Beat title" value={beatTitle} onChange={e => setBeatTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                     <textarea placeholder="What happens in this beat?" value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, minHeight: 60, resize: 'vertical' }} />
+                     <button
+                       className="link-btn"
+                       onClick={async () => {
+                         if (!activeProject || !beatTitle.trim()) return;
+                         await addBeat({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                         setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
+                       }}
+                     >Add Beat</button>
+                   </div>
+                 )}
+
                  {(activeProject?.beats && activeProject.beats.length > 0) ? (
                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                      {activeProject.beats.map((beat, i) => (
-                       <BeatCard key={beat.id} beat={beat} index={i} />
+                       <BeatCard key={beat.id} beat={beat} index={i} onRemove={() => removeBeat(beat.id, activeProject.id)} />
                      ))}
                    </div>
                  ) : (
@@ -837,53 +905,58 @@ export default function StudioPage() {
                  {/* Scene Gantt Timeline (StudioBinder style) */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule (Gantt)</div>
-                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> View Call Sheets</button>
+                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
+                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                    </div>
 
-                   <DemoBanner text="Demo data — scene-level scheduling isn't connected yet" />
-
-                   {/* Gantt Header */}
-                   <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
-                     <div style={{ width: 60 }}>Scene</div>
-                     <div style={{ flex: 1, minWidth: 200 }}>Location</div>
-                     <div style={{ width: 100 }}>Cast</div>
-                     <div style={{ width: 60 }}>Est. Time</div>
-                     <div style={{ width: 140, display: 'flex', justifyContent: 'space-between' }}>
-                       <span>Day 1</span><span>Day 2</span><span>Day 3</span>
-                     </div>
-                   </div>
-
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                     {[
-                       { id: 1, title: 'EXT. ABANDONED PIER', time: 'NIGHT', dur: '4h', cast: '1, 3', day: 1, span: 1.5, color: '#003366' },
-                       { id: 2, title: 'INT. JANE\'S APARTMENT', time: 'DAY', dur: '6h', cast: '3', day: 2, span: 2, color: '#ffcc00' },
-                       { id: 3, title: 'EXT. CITY STREETS', time: 'DAWN', dur: '2h', cast: '1, 2, 3', day: 3, span: 0.8, color: '#ff6600' },
-                     ].map(s => (
-                       <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                         <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.id}</div>
-                         <div style={{ flex: 1, minWidth: 200 }}>
-                           <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
-                           <div style={{ fontSize: 9, color: s.time === 'DAY' ? '#ffcc00' : s.time === 'NIGHT' ? '#0099ff' : '#ff6600', fontFamily: 'var(--mono)' }}>{s.time}</div>
-                         </div>
-                         <div style={{ width: 100, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{s.cast}</div>
-                         <div style={{ width: 60, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{s.dur}</div>
-                         
-                         {/* Gantt Bar */}
-                         <div style={{ width: 140, position: 'relative', height: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{ 
-                              position: 'absolute', 
-                              left: `${(s.day - 1) * 33}%`, 
-                              width: `${s.span * 33}%`, 
-                              height: '100%', 
-                              background: s.color, 
-                              opacity: 0.8,
-                              borderRadius: 4
-                            }} />
-                         </div>
+                   {showAddScene && (
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                       <input placeholder="Scene title (e.g. EXT. ABANDONED PIER)" value={sceneTitle} onChange={e => setSceneTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                       <div style={{ display: 'flex', gap: 8 }}>
+                         <input placeholder="Location" value={sceneLocation} onChange={e => setSceneLocation(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                         <input placeholder="Shoot day #" type="number" min="1" value={sceneDay} onChange={e => setSceneDay(e.target.value)} style={{ width: 100, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
                        </div>
-                     ))}
-                   </div>
+                       <button
+                         className="link-btn"
+                         onClick={async () => {
+                           if (!activeProject || !sceneTitle.trim()) return;
+                           const nextNum = (activeProject.scenes?.length || 0) + 1;
+                           await addScene({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || undefined, shoot_day: Number(sceneDay) || 1 });
+                           setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
+                         }}
+                       >Add Scene</button>
+                     </div>
+                   )}
+
+                   {(activeProject?.scenes && activeProject.scenes.length > 0) ? (
+                     <>
+                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
+                         <div style={{ width: 60 }}>Scene</div>
+                         <div style={{ flex: 1, minWidth: 200 }}>Location</div>
+                         <div style={{ width: 80 }}>Day</div>
+                         <div style={{ width: 30 }}></div>
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                         {activeProject.scenes.map(s => (
+                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                             <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
+                             <div style={{ flex: 1, minWidth: 200 }}>
+                               <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
+                               {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
+                             </div>
+                             <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
+                             <div style={{ width: 30, textAlign: 'right' }}>
+                               <button onClick={() => removeScene(s.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </>
+                   ) : (
+                     <div style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: '24px 16px', textAlign: 'center', color: '#666', fontSize: 11 }}>
+                       No scenes scheduled yet
+                     </div>
+                   )}
                  </div>
                </div>
             </div>
@@ -956,6 +1029,8 @@ export default function StudioPage() {
               <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Enter Presentation View</button>
             </div>
 
+            <DemoBanner text="Demo data — slides are placeholders, not auto-generated from real Concept/Character data yet" />
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 01" />
@@ -963,7 +1038,7 @@ export default function StudioPage() {
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
               </div>
               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
-                <img src={CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
+                <img src={activeProject.concept_assets?.[0]?.image_url || CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
                 <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                   <SectionLabel text="Slide 02" />
                   <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
@@ -980,7 +1055,7 @@ export default function StudioPage() {
             <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
               <Info size={20} color="var(--accent)" />
               <div style={{ fontSize: 12, color: '#ccc' }}>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Pro Tip:</span> This deck is automatically generated using your Concept Board and ScriptOS Character Bible. Update them to see changes here.
+                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Coming soon:</span> auto-generating this deck from your Concept Board and ScriptOS Character Bible.
               </div>
             </div>
           </motion.div>
@@ -993,42 +1068,59 @@ export default function StudioPage() {
                 <SectionLabel text="Delivery & Promotion" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Marketing Hub</h2>
               </div>
-              <button className="link-btn">+ New Campaign</button>
+              <button className="link-btn" onClick={() => setShowAddCampaign(s => !s)}>+ New Campaign</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 40 }}>
                {/* Campaign Planner */}
                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  {[
-                    { title: 'Instagram Teaser Series', platform: 'Instagram', status: 'Scheduled', reach: 'Estimated 25k', color: '#E1306C' },
-                    { title: 'Behind the Scenes (BTS) Thread', platform: 'X / Twitter', status: 'In Review', reach: 'Estimated 10k', color: '#000' },
-                    { title: 'Official Trailer Premiere', platform: 'YouTube', status: 'Drafting', reach: 'Target 100k', color: '#FF0000' },
-                  ].map((campaign, i) => (
-                    <div key={i} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                             <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: `${campaign.color}22`, color: campaign.color, borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
-                             <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
-                          </div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
-                       </div>
-                       <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 4 }}>Reach Potential</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp size={12}/> {campaign.reach}</div>
-                       </div>
+                  {showAddCampaign && (
+                    <div style={{ display: 'flex', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+                      <input placeholder="Campaign title" value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                      <select value={campaignPlatform} onChange={e => setCampaignPlatform(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }}>
+                        <option>Instagram</option>
+                        <option>X / Twitter</option>
+                        <option>YouTube</option>
+                        <option>TikTok</option>
+                      </select>
+                      <button
+                        className="link-btn"
+                        onClick={async () => {
+                          if (!activeProject || !campaignTitle.trim()) return;
+                          const { data: { user } } = await supabase.auth.getUser();
+                          await addCampaign({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          setCampaignTitle(''); setShowAddCampaign(false);
+                        }}
+                      >Add</button>
                     </div>
-                  ))}
-                  
-                  <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
-                     <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
-                     Plan your global promotion strategy here.
-                  </div>
+                  )}
+
+                  {(activeProject?.campaigns && activeProject.campaigns.length > 0) ? (
+                    activeProject.campaigns.map((campaign) => (
+                      <div key={campaign.id} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                               <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
+                               <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
+                            </div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
+                         </div>
+                         <button onClick={() => removeCampaign(campaign.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
+                       <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
+                       No campaigns planned yet — use + New Campaign above.
+                    </div>
+                  )}
                </div>
 
                {/* Analytics Preview */}
                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
-                  
+                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
+                  <DemoBanner text="Demo data — no analytics source is connected yet" />
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                      <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Interest Score</span><span>78%</span></div>
