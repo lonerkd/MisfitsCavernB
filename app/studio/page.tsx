@@ -12,7 +12,20 @@ import { getUserProjects } from '@/lib/supabase/projects';
 import { getAllStudioAssets, getStudioBoards, createStudioBoard, addStudioAsset } from '@/lib/supabase/studio';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, AlertCircle } from 'lucide-react';
+
+function DemoBanner({ text }: { text: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '8px 14px', borderRadius: 8, marginBottom: 16,
+      background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+    }}>
+      <AlertCircle size={12} color="#f59e0b" />
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 0.5 }}>{text}</span>
+    </div>
+  );
+}
 
 interface Asset {
   id: string;
@@ -679,16 +692,25 @@ export default function StudioPage() {
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Active Leads</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ff3c00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>JD</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#0099ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>SK</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+4</div>
-                    </div>
+                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Crew</div>
+                    {(activeProject.crew && activeProject.crew.length > 0) ? (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {activeProject.crew.slice(0, 3).map((c, i) => (
+                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: `hsl(${(i * 97) % 360}, 40%, 30%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, overflow: 'hidden' }}>
+                            {c.avatar ? <img src={c.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : c.name.charAt(0).toUpperCase()}
+                          </div>
+                        ))}
+                        {activeProject.crew.length > 3 && (
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+{activeProject.crew.length - 3}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link href={`/projects/${activeProject.id}?tab=crew`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No crew yet — add some →</Link>
+                    )}
                   </div>
                 </div>
 
-                {/* Real Production Budget Module */}
+                {/* Production budget — pulled from this project's budget_items */}
                 <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -696,74 +718,53 @@ export default function StudioPage() {
                     </div>
                     <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
-                    <div>
-                      <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
-                      <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>$1.25M</div>
-                      <div style={{ width: '100%', height: 4, background: '#333', borderRadius: 2, marginTop: 12, overflow: 'hidden', display: 'flex' }}>
-                         <div style={{ width: '30%', background: '#ffaa00' }} title="Above the Line" />
-                         <div style={{ width: '50%', background: '#0099ff' }} title="Below the Line" />
-                         <div style={{ width: '20%', background: '#00cc66' }} title="Post Production" />
+                  {(activeProject.budget_items && activeProject.budget_items.length > 0) ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
+                        <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>
+                          ${activeProject.budget_items.reduce((s, b) => s + Number(b.amount || 0), 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
+                        {activeProject.budget_items.slice(0, 4).map(b => (
+                          <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
+                            <span style={{ color: 'var(--fg-muted)' }}>{b.category}</span>
+                            <span>${Number(b.amount || 0).toLocaleString()}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#ffaa00' }}>Above the Line</span>
-                         <span>$375,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#0099ff' }}>Below the Line</span>
-                         <span>$625,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#00cc66' }}>Post-Production</span>
-                         <span>$250,000</span>
-                      </div>
-                    </div>
-                  </div>
+                  ) : (
+                    <p style={{ fontSize: 11, color: 'var(--fg-dim)' }}>No budget line items tracked for this project yet.</p>
+                  )}
                 </div>
 
-                {/* Project Milestone Timeline */}
+                {/* Milestones — pulled from this project's timeline_items */}
                 <div style={{ marginTop: 40 }}>
                    <SectionLabel text="Project Milestones" />
-                   <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      {[
-                        { label: 'Script Finalized', date: 'April 10', completed: true },
-                        { label: 'Casting Call', date: 'April 20', completed: true },
-                        { label: 'Principle Photography', date: 'May 15', completed: false },
-                        { label: 'VFX & Post', date: 'June 30', completed: false },
-                        { label: 'World Premiere', date: 'August 12', completed: false },
-                      ].map((m, i) => (
-                        <div key={i} style={{ position: 'relative' }}>
-                           <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completed ? 'var(--accent)' : '#222', border: m.completed ? 'none' : '1px solid #444' }} />
-                           <div style={{ fontSize: 12, fontWeight: 700, color: m.completed ? '#fff' : '#666' }}>{m.label}</div>
-                           <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{m.date}</div>
-                        </div>
-                      ))}
-                   </div>
+                   {(activeProject.timeline_items && activeProject.timeline_items.length > 0) ? (
+                     <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {activeProject.timeline_items.map((m) => (
+                          <div key={m.id} style={{ position: 'relative' }}>
+                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completion >= 100 ? 'var(--accent)' : '#222', border: m.completion >= 100 ? 'none' : '1px solid #444' }} />
+                             <div style={{ fontSize: 12, fontWeight: 700, color: m.completion >= 100 ? '#fff' : '#666' }}>{m.title}</div>
+                             <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.end_date).toLocaleDateString()} · {m.completion}%</div>
+                          </div>
+                        ))}
+                     </div>
+                   ) : (
+                     <Link href={`/projects/${activeProject.id}?tab=schedule`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No milestones yet — add some →</Link>
+                   )}
                 </div>
               </motion.div>
             </div>
-            
+
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ClipboardList size={16} /> Recent Activity
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {[
-                  { user: 'JD', action: 'uploaded 12 raw files', time: '2h ago' },
-                  { user: 'SK', action: 'updated Scene 14 in ScriptOS', time: '5h ago' },
-                  { user: 'JD', action: 'tagged moodboard references', time: '1d ago' },
-                ].map((act, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>{act.user}</div>
-                    <div>
-                      <div style={{ fontSize: 11, color: '#eee' }}><span style={{ fontWeight: 700 }}>{act.user}</span> {act.action}</div>
-                      <div style={{ fontSize: 9, color: 'var(--fg-subtle)' }}>{act.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DemoBanner text="Demo data — activity feed isn't wired to this project yet" />
             </div>
           </div>
         )}
