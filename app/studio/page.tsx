@@ -9,14 +9,26 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
-import { getAllStudioAssets } from '@/lib/supabase/studio';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { saveScript } from '@/lib/scriptos/storage';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
-import { getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, getMarketingCampaigns, createMarketingCampaign, deleteMarketingCampaign, uploadStudioFile } from '@/lib/supabase/studio';
+import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search } from 'lucide-react';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle } from 'lucide-react';
+
+function DemoBanner({ text }: { text: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '8px 14px', borderRadius: 8, marginBottom: 16,
+      background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+    }}>
+      <AlertCircle size={12} color="#f59e0b" />
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 0.5 }}>{text}</span>
+    </div>
+  );
+}
 
 interface Asset {
   id: string;
@@ -27,14 +39,6 @@ interface Asset {
   dateAdded: string;
 }
 
-const ASSETS: Asset[] = [
-  { id: '1', name: 'Femme Fatale — Draft 9', type: 'document', category: 'Screenplays', size: '248 KB', dateAdded: '2026-04-15' },
-  { id: '2', name: '10 Million — Final Cut', type: 'video', category: 'Music Videos', size: '4.2 GB', dateAdded: '2026-04-20' },
-  { id: '3', name: 'The Briefcase — Poster Concept', type: 'image', category: 'Marketing', size: '3.8 MB', dateAdded: '2026-04-10' },
-  { id: '4', name: 'Production Score — V1', type: 'audio', category: 'Audio', size: '68 MB', dateAdded: '2026-03-28' },
-  { id: '5', name: 'Grand PSA — Grade LUT', type: 'document', category: 'Color', size: '12 KB', dateAdded: '2026-03-15' },
-  { id: '6', name: 'Altitude — Raw Footage B-Roll', type: 'video', category: 'Documentaries', size: '11.3 GB', dateAdded: '2026-02-20' },
-];
 
 const CONCEPT_IMAGES = [
   { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
@@ -193,13 +197,18 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
   const [category, setCategory] = useState('Reference');
   const [type, setType] = useState('image');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if ((!url && !file) || !boardId || !userId) return;
+    if ((!url && !file) || !boardId || !userId) {
+      setError('Add a file or a link before submitting');
+      return;
+    }
     setLoading(true);
+    setError('');
     try {
       let finalUrl = url;
-      
+
       if (file) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
@@ -223,7 +232,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
       setFile(null);
     } catch (err) {
       console.error('Error adding asset:', err);
-      alert('Upload failed. Check console for details.');
+      setError('Upload failed — try again');
     } finally {
       setLoading(false);
     }
@@ -247,12 +256,14 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
             style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Upload raw footage, references, or documents to the project vault.</p>
-            
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>
+              File storage isn't connected yet — link to a file already hosted elsewhere (Drive, YouTube, etc.) to track it here.
+            </p>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
-                <input 
+                <input
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="Asset Title"
@@ -262,24 +273,24 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
 
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Upload File</label>
-                <div 
+                <div
                   onClick={() => document.getElementById('studio-file-input')?.click()}
-                  style={{ 
-                    width: '100%', 
-                    background: '#0a0a0a', 
-                    border: '1px dashed #333', 
-                    color: '#fff', 
-                    padding: 20, 
-                    borderRadius: 6, 
+                  style={{
+                    width: '100%',
+                    background: '#0a0a0a',
+                    border: '1px dashed #333',
+                    color: '#fff',
+                    padding: 20,
+                    borderRadius: 6,
                     fontSize: 12,
                     textAlign: 'center',
                     cursor: 'pointer'
                   }}
                 >
                   {file ? file.name : 'Click to select or drop file'}
-                  <input 
+                  <input
                     id="studio-file-input"
-                    type="file" 
+                    type="file"
                     onChange={e => {
                       if (e.target.files?.[0]) {
                         setFile(e.target.files[0]);
@@ -290,8 +301,8 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
                         else if (f.type.includes('audio')) setType('audio');
                         else setType('document');
                       }
-                    }} 
-                    style={{ display: 'none' }} 
+                    }}
+                    style={{ display: 'none' }}
                   />
                 </div>
               </div>
@@ -300,7 +311,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
 
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>External URL</label>
-                <input 
+                <input
                   value={url}
                   onChange={e => {
                     setUrl(e.target.value);
@@ -310,11 +321,11 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
                   style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
                 />
               </div>
-              
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
-                  <select 
+                  <select
                     value={category}
                     onChange={e => setCategory(e.target.value)}
                     style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
@@ -327,7 +338,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
                 </div>
                 <div>
                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
-                   <select 
+                   <select
                     value={type}
                     onChange={e => setType(e.target.value)}
                     style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
@@ -339,8 +350,10 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
                   </select>
                 </div>
               </div>
-              
-              <button 
+
+              {error && <div style={{ fontSize: 11, color: '#ef4444' }}>{error}</div>}
+
+              <button
                 onClick={handleSubmit}
                 disabled={loading || (!url && !file)}
                 style={{ marginTop: 12, padding: 14, background: loading ? '#333' : 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: loading ? 'not-allowed' : 'pointer' }}
@@ -464,7 +477,7 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ asset, index, onDelete }: { asset: any; index: number; onDelete?: (id: string) => void }) {
+function ConceptCard({ image, index, onRemove }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -474,9 +487,9 @@ function ConceptCard({ asset, index, onDelete }: { asset: any; index: number; on
       transition={{ delay: index * 0.05 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ 
-        marginBottom: 16, 
-        breakInside: 'avoid', 
+      style={{
+        marginBottom: 16,
+        breakInside: 'avoid',
         position: 'relative',
         borderRadius: 8,
         overflow: 'hidden',
@@ -484,35 +497,35 @@ function ConceptCard({ asset, index, onDelete }: { asset: any; index: number; on
         background: '#0a0a0a'
       }}
     >
-      <img src={asset.url} alt={asset.name} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s' }} />
-      
+      <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s' }} />
+
       <AnimatePresence>
         {isHovered && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ 
-              position: 'absolute', 
-              inset: 0, 
-              background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))', 
-              padding: 16, 
-              display: 'flex', 
-              flexDirection: 'column', 
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))',
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
               justifyContent: 'space-between',
               alignItems: 'flex-end'
             }}
           >
-            {onDelete && (
-              <button 
-                onClick={() => onDelete(asset.id)}
+            {onRemove && (
+              <button
+                onClick={onRemove}
                 style={{ background: 'rgba(255,0,0,0.2)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ff4444' }}
               >
                 <Trash2 size={14} />
               </button>
             )}
             <div style={{ width: '100%' }}>
-              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1, display: 'block' }}>{asset.name}</span>
+              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1, display: 'block' }}>{image.title || 'Untitled'}</span>
             </div>
           </motion.div>
         )}
@@ -565,7 +578,9 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
         )}
       </div>
       <div>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+        </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
       </div>
       <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
@@ -724,11 +739,11 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 }
 
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects } = useProject();
+  const { activeProject, setActiveProject, projects, addBeat, removeBeat, addConceptAsset, removeConceptAsset, addScene, removeScene, addCampaign, removeCampaign } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
-  const [assetsList, setAssetsList] = useState<Asset[]>(ASSETS);
+  const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
@@ -737,9 +752,25 @@ export default function StudioPage() {
   const [activeBoard, setActiveBoard] = useState<any>(null);
   const [loadingBoards, setLoadingBoards] = useState(false);
   const [beats, setBeats] = useState<any[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showRecruit, setShowRecruit] = useState(false);
+
+  const [showAddConcept, setShowAddConcept] = useState(false);
+  const [conceptTitle, setConceptTitle] = useState('');
+  const [conceptUrl, setConceptUrl] = useState('');
+
+  const [showAddBeat, setShowAddBeat] = useState(false);
+  const [beatTitle, setBeatTitle] = useState('');
+  const [beatContent, setBeatContent] = useState('');
+
+  const [showAddScene, setShowAddScene] = useState(false);
+  const [sceneTitle, setSceneTitle] = useState('');
+  const [sceneLocation, setSceneLocation] = useState('');
+  const [sceneDay, setSceneDay] = useState('1');
+
+  const [showAddCampaign, setShowAddCampaign] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -816,13 +847,6 @@ export default function StudioPage() {
           console.error('Error loading beats:', err);
         }
         
-        try {
-          const projectCampaigns = await getMarketingCampaigns(activeProject.id);
-          setCampaigns(projectCampaigns);
-        } catch (err) {
-          console.error('Error loading campaigns:', err);
-        }
-
         try {
           const crew = await getProjectCrew(activeProject.id);
           setCrewList(crew);
@@ -989,16 +1013,16 @@ export default function StudioPage() {
         </div>
       </nav>
 
-      <IntakeModal 
-        isOpen={showIntake} 
-        onClose={() => setShowIntake(false)} 
+      <IntakeModal
+        isOpen={showIntake}
+        onClose={() => setShowIntake(false)}
         boardId={activeBoard?.id}
         userId={user?.id}
         onSuccess={refreshAssets}
       />
-      <RecruitModal 
-        isOpen={showRecruit} 
-        onClose={() => setShowRecruit(false)} 
+      <RecruitModal
+        isOpen={showRecruit}
+        onClose={() => setShowRecruit(false)}
         projectId={activeProject?.id}
         onSuccess={refreshCrew}
       />
@@ -1085,16 +1109,25 @@ export default function StudioPage() {
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Active Leads</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ff3c00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>JD</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#0099ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>SK</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+4</div>
-                    </div>
+                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Crew</div>
+                    {(activeProject.crew && activeProject.crew.length > 0) ? (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {activeProject.crew.slice(0, 3).map((c, i) => (
+                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: `hsl(${(i * 97) % 360}, 40%, 30%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, overflow: 'hidden' }}>
+                            {c.avatar ? <img src={c.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : c.name.charAt(0).toUpperCase()}
+                          </div>
+                        ))}
+                        {activeProject.crew.length > 3 && (
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+{activeProject.crew.length - 3}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link href={`/projects/${activeProject.id}?tab=crew`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No crew yet — add some →</Link>
+                    )}
                   </div>
                 </div>
 
-                {/* Real Production Budget Module */}
+                {/* Production budget — pulled from this project's budget_items */}
                 <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -1102,51 +1135,48 @@ export default function StudioPage() {
                     </div>
                     <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
-                    <div>
-                      <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
-                      <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>${((activeProject as any).budget || 0).toLocaleString()}</div>
-                      <div style={{ width: '100%', height: 4, background: '#333', borderRadius: 2, marginTop: 12, overflow: 'hidden', display: 'flex' }}>
-                         <div style={{ width: '30%', background: '#ffaa00' }} title="Above the Line" />
-                         <div style={{ width: '50%', background: '#0099ff' }} title="Below the Line" />
-                         <div style={{ width: '20%', background: '#00cc66' }} title="Post Production" />
+                  {(activeProject.budget_items && activeProject.budget_items.length > 0) ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
+                        <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>
+                          ${activeProject.budget_items.reduce((s, b) => s + Number(b.amount || 0), 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
+                        {activeProject.budget_items.slice(0, 4).map(b => (
+                          <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
+                            <span style={{ color: 'var(--fg-muted)' }}>{b.category}</span>
+                            <span>${Number(b.amount || 0).toLocaleString()}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#ffaa00' }}>Above the Line</span>
-                         <span>$375,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#0099ff' }}>Below the Line</span>
-                         <span>$625,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#00cc66' }}>Post-Production</span>
-                         <span>$250,000</span>
-                      </div>
-                    </div>
-                  </div>
+                  ) : (
+                    <p style={{ fontSize: 11, color: 'var(--fg-dim)' }}>No budget line items tracked for this project yet.</p>
+                  )}
                 </div>
 
-                {/* Project Milestone Timeline */}
+                {/* Milestones — pulled from this project's timeline_items */}
                 <div style={{ marginTop: 40 }}>
                    <SectionLabel text="Project Milestones" />
-                    <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      {(activeProject.timeline_items && activeProject.timeline_items.length > 0 ? activeProject.timeline_items : [
-                        { title: 'Project Initialization', start_date: (activeProject as any).created_at || (activeProject as any).createdAt || new Date().toISOString(), completion: 100 },
-                      ]).map((m: any, i) => (
-                        <div key={i} style={{ position: 'relative' }}>
-                           <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completion === 100 ? 'var(--accent)' : '#222', border: m.completion === 100 ? 'none' : '1px solid #444' }} />
-                           <div style={{ fontSize: 12, fontWeight: 700, color: m.completion === 100 ? '#fff' : '#666' }}>{m.title}</div>
-                           <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.start_date).toLocaleDateString()}</div>
-                        </div>
-                      ))}
-                   </div>
+                   {(activeProject.timeline_items && activeProject.timeline_items.length > 0) ? (
+                     <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {activeProject.timeline_items.map((m) => (
+                          <div key={m.id} style={{ position: 'relative' }}>
+                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completion >= 100 ? 'var(--accent)' : '#222', border: m.completion >= 100 ? 'none' : '1px solid #444' }} />
+                             <div style={{ fontSize: 12, fontWeight: 700, color: m.completion >= 100 ? '#fff' : '#666' }}>{m.title}</div>
+                             <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.end_date).toLocaleDateString()} · {m.completion}%</div>
+                          </div>
+                        ))}
+                     </div>
+                   ) : (
+                     <Link href={`/projects/${activeProject.id}?tab=schedule`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No milestones yet — add some →</Link>
+                   )}
                 </div>
               </motion.div>
             </div>
-            
+
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ClipboardList size={16} /> Recent Activity
@@ -1177,20 +1207,39 @@ export default function StudioPage() {
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
               </div>
-              <button className="link-btn" onClick={() => setShowIntake(true)}>+ New Ref</button>
+              <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
             </div>
-            <div style={{ columnCount: 3, columnGap: 16 }}>
-              {assetsList.filter(a => a.type === 'image').length > 0 ? (
-                assetsList.filter(a => a.type === 'image').map((asset, i) => (
-                  <ConceptCard key={asset.id} asset={asset} index={i} onDelete={handleDeleteAsset} />
-                ))
-              ) : (
-                <div style={{ gridColumn: 'span 3', padding: 100, textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px dashed rgba(255,255,255,0.1)' }}>
-                  <Image size={40} color="#333" style={{ marginBottom: 16 }} />
-                  <div style={{ color: '#666', fontSize: 14 }}>No concept references yet. Start by adding an image to the project vault.</div>
+
+            {showAddConcept && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                <input placeholder="Title" value={conceptTitle} onChange={e => setConceptTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <input placeholder="Image URL" value={conceptUrl} onChange={e => setConceptUrl(e.target.value)} style={{ flex: 2, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <button
+                  className="link-btn"
+                  onClick={async () => {
+                    if (!activeProject || !conceptUrl.trim()) return;
+                    const { data: { user } } = await supabase.auth.getUser();
+                    await addConceptAsset({ project_id: activeProject.id, title: conceptTitle.trim() || undefined, image_url: conceptUrl.trim(), created_by: user?.id });
+                    setConceptTitle(''); setConceptUrl(''); setShowAddConcept(false);
+                  }}
+                >Add</button>
+              </div>
+            )}
+
+            {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
+              <div style={{ columnCount: 3, columnGap: 16 }}>
+                {activeProject.concept_assets.map((img, i) => (
+                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} onRemove={() => removeConceptAsset(img.id, activeProject.id)} />
+                ))}
+              </div>
+            ) : (
+              <>
+                <DemoBanner text="Showing stock placeholder imagery — add your own references above to replace these" />
+                <div style={{ columnCount: 3, columnGap: 16 }}>
+                  {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </motion.div>
         )}
 
@@ -1203,27 +1252,42 @@ export default function StudioPage() {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="link-btn">Export Schedule</button>
-                <button className="link-btn" onClick={handleAddBeat}>+ New Beat</button>
+                <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>
               </div>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
                {/* Beat Board */}
                <div>
                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                    <BookOpen size={16} /> Beat Board / Outline
                  </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                   {beats.length > 0 ? (
-                     beats.map((beat, i) => (
-                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={handleDeleteBeat} onPush={handlePushToScript} />
-                     ))
-                   ) : (
-                     <div style={{ gridColumn: 'span 2', padding: 40, border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 8, textAlign: 'center', color: '#444', fontSize: 11 }}>
-                       No beats created for this project. Start outlining to see them here.
-                     </div>
-                   )}
-                 </div>
+                 {showAddBeat && (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                     <input placeholder="Beat title" value={beatTitle} onChange={e => setBeatTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                     <textarea placeholder="What happens in this beat?" value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, minHeight: 60, resize: 'vertical' }} />
+                     <button
+                       className="link-btn"
+                       onClick={async () => {
+                         if (!activeProject || !beatTitle.trim()) return;
+                         await addBeat({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                         setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
+                       }}
+                     >Add Beat</button>
+                   </div>
+                 )}
+
+                 {(activeProject?.beats && activeProject.beats.length > 0) ? (
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                     {activeProject.beats.map((beat, i) => (
+                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={(id) => removeBeat(id, activeProject.id)} onPush={handlePushToScript} />
+                     ))}
+                   </div>
+                 ) : (
+                   <div style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: '28px 20px', textAlign: 'center', color: '#666', fontSize: 11 }}>
+                     No beats outlined yet
+                   </div>
+                 )}
                </div>
 
                {/* Staffing & Casting */}
@@ -1243,7 +1307,7 @@ export default function StudioPage() {
                       )) : (
                         <div style={{ padding: 20, textAlign: 'center', color: '#444', fontSize: 11 }}>No crew members recruited yet.</div>
                       )}
-                      <button 
+                      <button
                         onClick={() => setShowRecruit(true)}
                         style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}
                       >
@@ -1255,59 +1319,58 @@ export default function StudioPage() {
                  {/* Scene Gantt Timeline (StudioBinder style) */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule (Gantt)</div>
-                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> View Call Sheets</button>
-                   </div>
-                   
-                   {/* Gantt Header */}
-                   <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
-                     <div style={{ width: 60 }}>Scene</div>
-                     <div style={{ flex: 1, minWidth: 200 }}>Location</div>
-                     <div style={{ width: 100 }}>Cast</div>
-                     <div style={{ width: 60 }}>Est. Time</div>
-                     <div style={{ width: 140, display: 'flex', justifyContent: 'space-between' }}>
-                       <span>Day 1</span><span>Day 2</span><span>Day 3</span>
-                     </div>
+                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
+                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                    </div>
 
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {beats.length > 0 ? (
-                        beats.map((beat, i) => {
-                          const colors = ['#003366', '#ffcc00', '#ff6600', '#a855f7', '#00cc66'];
-                          const color = beat.color || colors[i % colors.length];
-                          const day = Math.floor(i / 2) + 1;
-                          const span = 0.5 + (Math.random() * 1.5);
-                          return (
-                            <div key={beat.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                              <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{i + 1}</div>
-                              <div style={{ flex: 1, minWidth: 200 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600 }}>{beat.title}</div>
-                                <div style={{ fontSize: 9, color: color, fontFamily: 'var(--mono)' }}>{i % 2 === 0 ? 'DAY' : 'NIGHT'}</div>
-                              </div>
-                              <div style={{ width: 100, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>1, {2 + (i % 3)}</div>
-                              <div style={{ width: 60, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{Math.floor(span * 2)}h</div>
-                              
-                              {/* Gantt Bar */}
-                              <div style={{ width: 140, position: 'relative', height: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 4, overflow: 'hidden' }}>
-                                 <div style={{ 
-                                   position: 'absolute', 
-                                   left: `${((day - 1) * 33) + ((i % 2) * 15)}%`, 
-                                   width: `${span * 20}%`, 
-                                   height: '100%', 
-                                   background: color, 
-                                   opacity: 0.8,
-                                   borderRadius: 4
-                                 }} />
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div style={{ padding: 40, textAlign: 'center', color: '#444', fontSize: 11 }}>
-                           No story beats yet to generate schedule.
-                        </div>
-                      )}
-                    </div>
+                   {showAddScene && (
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                       <input placeholder="Scene title (e.g. EXT. ABANDONED PIER)" value={sceneTitle} onChange={e => setSceneTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                       <div style={{ display: 'flex', gap: 8 }}>
+                         <input placeholder="Location" value={sceneLocation} onChange={e => setSceneLocation(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                         <input placeholder="Shoot day #" type="number" min="1" value={sceneDay} onChange={e => setSceneDay(e.target.value)} style={{ width: 100, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                       </div>
+                       <button
+                         className="link-btn"
+                         onClick={async () => {
+                           if (!activeProject || !sceneTitle.trim()) return;
+                           const nextNum = (activeProject.scenes?.length || 0) + 1;
+                           await addScene({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || undefined, shoot_day: Number(sceneDay) || 1 });
+                           setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
+                         }}
+                       >Add Scene</button>
+                     </div>
+                   )}
+
+                   {(activeProject?.scenes && activeProject.scenes.length > 0) ? (
+                     <>
+                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
+                         <div style={{ width: 60 }}>Scene</div>
+                         <div style={{ flex: 1, minWidth: 200 }}>Location</div>
+                         <div style={{ width: 80 }}>Day</div>
+                         <div style={{ width: 30 }}></div>
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                         {activeProject.scenes.map(s => (
+                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                             <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
+                             <div style={{ flex: 1, minWidth: 200 }}>
+                               <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
+                               {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
+                             </div>
+                             <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
+                             <div style={{ width: 30, textAlign: 'right' }}>
+                               <button onClick={() => removeScene(s.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </>
+                   ) : (
+                     <div style={{ border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, padding: '24px 16px', textAlign: 'center', color: '#666', fontSize: 11 }}>
+                       No scenes scheduled yet
+                     </div>
+                   )}
                  </div>
                </div>
             </div>
@@ -1347,6 +1410,23 @@ export default function StudioPage() {
               ))}
             </div>
 
+            {filtered.length === 0 && (
+              <div style={{
+                border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16,
+                padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.01)',
+              }}>
+                <Archive size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                  {assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
+                </p>
+                {assetsList.length === 0 && (
+                  <p style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 8, opacity: 0.6 }}>
+                    Use Intake above to track files hosted elsewhere
+                  </p>
+                )}
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
               {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
             </div>
@@ -1363,6 +1443,8 @@ export default function StudioPage() {
               <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Enter Presentation View</button>
             </div>
 
+            <DemoBanner text="Demo data — slides are placeholders, not auto-generated from real Concept/Character data yet" />
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                 <SectionLabel text="Slide 01" />
@@ -1370,9 +1452,7 @@ export default function StudioPage() {
                 <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
               </div>
               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
-                {assetsList.find(a => a.type === 'image') && (
-                  <img src={(assetsList.find(a => a.type === 'image') as any)?.url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
-                )}
+                <img src={activeProject.concept_assets?.[0]?.image_url || (assetsList.find(a => a.type === 'image') as any)?.url || CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
                 <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
                   <SectionLabel text="Slide 02" />
                   <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
@@ -1389,7 +1469,7 @@ export default function StudioPage() {
             <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
               <Info size={20} color="var(--accent)" />
               <div style={{ fontSize: 12, color: '#ccc' }}>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Pro Tip:</span> This deck is automatically generated using your Concept Board and ScriptOS Character Bible. Update them to see changes here.
+                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Coming soon:</span> auto-generating this deck from your Concept Board and ScriptOS Character Bible.
               </div>
             </div>
           </motion.div>
@@ -1401,63 +1481,59 @@ export default function StudioPage() {
                 <SectionLabel text="Delivery & Promotion" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Marketing Hub</h2>
               </div>
-              <button className="link-btn" onClick={async () => {
-                const title = prompt('Campaign Title:');
-                if (!title) return;
-                const platform = prompt('Platform (e.g. Instagram):');
-                await createMarketingCampaign({ project_id: activeProject.id, title, platform });
-                const updated = await getMarketingCampaigns(activeProject.id);
-                setCampaigns(updated);
-              }}>+ New Campaign</button>
+              <button className="link-btn" onClick={() => setShowAddCampaign(s => !s)}>+ New Campaign</button>
             </div>
 
             <div style={{ gridTemplateColumns: '2fr 1fr', display: 'grid', gap: 40 }}>
                {/* Campaign Planner */}
                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  {campaigns.length > 0 ? campaigns.map((campaign, i) => (
-                    <div key={campaign.id} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                             <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: `${campaign.accent_color}22`, color: campaign.accent_color, borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
-                             <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
-                          </div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
-                       </div>
-                       <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 20 }}>
-                          <div>
-                            <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 4 }}>Reach Potential</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp size={12}/> {campaign.reach_estimate || 'Pending'}</div>
-                          </div>
-                          <button 
-                            onClick={async () => {
-                              if (!confirm('Delete campaign?')) return;
-                              await deleteMarketingCampaign(campaign.id);
-                              const updated = await getMarketingCampaigns(activeProject.id);
-                              setCampaigns(updated);
-                            }}
-                            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                    </div>
-                  )) : (
-                    <div style={{ padding: 60, border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 12, textAlign: 'center', color: '#444' }}>
-                      <Megaphone size={32} style={{ marginBottom: 16, opacity: 0.3, margin: '0 auto' }} />
-                      No marketing campaigns tracked yet.
+                  {showAddCampaign && (
+                    <div style={{ display: 'flex', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+                      <input placeholder="Campaign title" value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                      <select value={campaignPlatform} onChange={e => setCampaignPlatform(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }}>
+                        <option>Instagram</option>
+                        <option>X / Twitter</option>
+                        <option>YouTube</option>
+                        <option>TikTok</option>
+                      </select>
+                      <button
+                        className="link-btn"
+                        onClick={async () => {
+                          if (!activeProject || !campaignTitle.trim()) return;
+                          const { data: { user } } = await supabase.auth.getUser();
+                          await addCampaign({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          setCampaignTitle(''); setShowAddCampaign(false);
+                        }}
+                      >Add</button>
                     </div>
                   )}
-                  
-                  <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
-                     <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
-                     Plan your global promotion strategy here.
-                  </div>
+
+                  {(activeProject?.campaigns && activeProject.campaigns.length > 0) ? (
+                    activeProject.campaigns.map((campaign) => (
+                      <div key={campaign.id} style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                               <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
+                               <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
+                            </div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
+                         </div>
+                         <button onClick={() => removeCampaign(campaign.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
+                       <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
+                       No campaigns planned yet — use + New Campaign above.
+                    </div>
+                  )}
                </div>
 
                {/* Analytics Preview */}
                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
-                  
+                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
+                  <DemoBanner text="Demo data — no analytics source is connected yet" />
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                      <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Interest Score</span><span>78%</span></div>

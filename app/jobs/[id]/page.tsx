@@ -263,6 +263,16 @@ export default function JobDetailPage() {
             {job.title}
           </h1>
 
+          {job.project_id && job.projects?.title && (
+            <Link href={`/projects/${job.project_id}`} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
+              color: 'var(--accent)', textDecoration: 'none', marginBottom: 16,
+            }}>
+              For production: {job.projects.title} →
+            </Link>
+          )}
+
           {/* Meta row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             {job.rate && (
@@ -273,9 +283,9 @@ export default function JobDetailPage() {
             )}
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1 }}>
               Posted by{' '}
-              <span style={{ opacity: 1, color: 'var(--fg)' }}>
+              <Link href={`/crew/${job.created_by}`} style={{ opacity: 1, color: 'var(--fg)', textDecoration: 'none', borderBottom: '1px dotted rgba(255,255,255,0.3)' }}>
                 {job.profiles?.username || 'unknown'}
-              </span>
+              </Link>
               {job.profiles?.role && (
                 <span style={{ opacity: 0.6 }}> · {job.profiles.role}</span>
               )}
@@ -356,13 +366,14 @@ export default function JobDetailPage() {
                           )}
                         </div>
                         <div>
-                          <div style={{
+                          <Link href={`/crew/${app.applicant_id}`} style={{
                             fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
                             textDecoration: app.status === 'rejected' ? 'line-through' : 'none',
                             opacity: app.status === 'rejected' ? 0.5 : 1,
+                            color: 'var(--fg)',
                           }}>
                             {app.profiles?.username || 'unknown'}
-                          </div>
+                          </Link>
                           {app.profiles?.role && (
                             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1, marginTop: 2 }}>
                               {app.profiles.role}

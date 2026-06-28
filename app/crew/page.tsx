@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import EmptyState from '@/components/EmptyState';
 
 interface Profile {
   id: string;
@@ -107,22 +108,36 @@ export default function CrewPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, opacity: 0.5, fontFamily: 'var(--mono)', fontSize: 11 }}>Loading crew...</div>
-        ) : crew.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60, opacity: 0.4 }}>
-            <User size={32} style={{ margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>No crew members found.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            {[0, 1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="skeleton" style={{ height: 140, borderRadius: 14 }} />
+            ))}
           </div>
+        ) : crew.length === 0 ? (
+          <EmptyState
+            icon={<User size={28} />}
+            title="No crew members found"
+            subtitle="Try adjusting your search or filters"
+          />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {crew.map(member => (
               <Link key={member.id} href={`/crew/${member.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
               <div style={{
                 padding: 24, background: '#0a0a0a',
-                border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.2s', height: '100%'
+                border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.2s', height: '100%',
+                borderRadius: 14,
               }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(255,60,0,0.06)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
                   {member.avatar_url ? (
                     <img src={member.avatar_url} alt={member.username}
