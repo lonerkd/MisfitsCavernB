@@ -8,13 +8,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await getUserScripts(userId);
+    const url = new URL(req.url);
+    const pageStr = url.searchParams.get('page');
+    const pageSizeStr = url.searchParams.get('pageSize');
+
+    let page = 1;
+    let pageSize = 50;
+
+    if (pageStr) {
+      const p = parseInt(pageStr, 10);
+      if (p > 0) page = p;
+    }
+
+    if (pageSizeStr) {
+      const ps = parseInt(pageSizeStr, 10);
+      if (ps > 0 && ps <= 200) pageSize = ps;
+    }
+
+    const result = await getUserScripts(userId, page, pageSize);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    return NextResponse.json(result.scripts);
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

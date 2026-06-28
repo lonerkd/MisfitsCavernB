@@ -96,14 +96,35 @@ export async function getScript(scriptId: string, userId?: string) {
   }
 }
 
-export async function getUserScripts(userId: string) {
+export async function getUserScripts(userId: string, page: number = 1, pageSize: number = 50) {
   try {
-    const scripts = await prisma.script.findMany({
-      where: { user_id: userId },
-      orderBy: { updated_at: 'desc' },
-    });
+    const skip = (page - 1) * pageSize;
 
-    return { success: true, scripts };
+    const [scripts, total] = await Promise.all([
+      prisma.script.findMany({
+        where: { user_id: userId },
+        orderBy: { updated_at: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.script.count({
+        where: { user_id: userId },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    return {
+      success: true,
+      scripts,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

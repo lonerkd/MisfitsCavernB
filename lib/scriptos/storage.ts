@@ -94,14 +94,31 @@ export async function saveScript(script: Partial<StoredScript>, options?: { snap
               .eq('id', script.id)
               .single();
             if (existing && existing.content !== updateData.content) {
-              updateData.version = (existing.version || 1) + 1;
-              const { error: snapshotError } = await supabase.from('script_versions').insert({
-                script_id: script.id,
-                content: existing.content,
-                version: existing.version || 1,
-                edited_by: user.id,
-              });
-              if (snapshotError) console.error('Error snapshotting script version:', snapshotError);
+              const newVersion = (existing.version || 1) + 1;
+              updateData.version = newVersion;
+
+              const { data: existingVersion, error: checkError } = await supabase
+                .from('script_versions')
+                .select('id')
+                .eq('script_id', script.id)
+                .eq('version', existing.version || 1)
+                .single();
+
+              if (checkError?.code !== 'PGRST116' && !existingVersion) {
+                const { error: snapshotError } = await supabase.from('script_versions').insert({
+                  script_id: script.id,
+                  content: existing.content,
+                  version: existing.version || 1,
+                  edited_by: user.id,
+                });
+                if (snapshotError) {
+                  if (snapshotError.message?.includes('duplicate')) {
+                    console.warn('Version already exists (race condition detected), skipping snapshot');
+                  } else {
+                    console.error('Error snapshotting script version:', snapshotError);
+                  }
+                }
+              }
             }
           }
 
