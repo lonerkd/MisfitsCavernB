@@ -16,6 +16,7 @@ import { saveScript } from '@/lib/scriptos/storage';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
 import { getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, getMarketingCampaigns, createMarketingCampaign, deleteMarketingCampaign, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search } from 'lucide-react';
 
 interface Asset {
@@ -942,7 +943,8 @@ export default function StudioPage() {
   };
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <ProtectedPage requiredPermission="access_studio">
+      <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       {/* Nav */}
@@ -1481,6 +1483,7 @@ export default function StudioPage() {
           </motion.div>
         )}
       </section>
-    </main>
+      </main>
+    </ProtectedPage>
   );
 }

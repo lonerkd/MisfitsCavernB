@@ -5,6 +5,7 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 interface Job {
   id: string;
@@ -181,23 +182,28 @@ export default function JobDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, letterSpacing: 2 }}>LOADING...</span>
-      </div>
+      <ProtectedPage requiredPermission="view_site">
+        <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, letterSpacing: 2 }}>LOADING...</span>
+        </div>
+      </ProtectedPage>
     );
   }
 
   if (!job) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-        <span style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4 }}>JOB NOT FOUND</span>
-        <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO JOBS</Link>
-      </div>
+      <ProtectedPage requiredPermission="view_site">
+        <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+          <span style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4 }}>JOB NOT FOUND</span>
+          <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO JOBS</Link>
+        </div>
+      </ProtectedPage>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <ProtectedPage requiredPermission="view_site">
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
       {/* Fixed Header */}
       <header style={{
@@ -583,6 +589,7 @@ export default function JobDetailPage() {
           </section>
         )}
       </main>
-    </div>
+      </div>
+    </ProtectedPage>
   );
 }

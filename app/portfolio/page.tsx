@@ -9,6 +9,7 @@ import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
 import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
 import { useEffect } from 'react';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -354,7 +355,8 @@ export default function PortfolioPage() {
   const rest = videosList.filter(v => !v.featured);
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <ProtectedPage requiredPermission="manage_portfolio">
+      <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       {/* Nav */}
@@ -446,6 +448,7 @@ export default function PortfolioPage() {
       </div>
 
       <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
-    </main>
+      </main>
+    </ProtectedPage>
   );
 }
