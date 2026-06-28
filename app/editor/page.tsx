@@ -21,6 +21,7 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/EmptyState';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { logActivity } from '@/lib/supabase/activity';
@@ -2169,10 +2170,12 @@ function EditorPageInner() {
                   <>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={14} /> Character Report</div>
                     {charStats.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No characters detected yet.</div>
+                      <EmptyState icon={<Users size={24} />} title="No characters detected yet" subtitle="Write dialogue to populate the character report" />
                     ) : (
                       charStats.slice(0, 15).map((cs, i) => (
-                        <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                        <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
                             <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
@@ -2205,12 +2208,14 @@ function EditorPageInner() {
                       <button onClick={handleLockRevision} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
                     </div>
                     {revisions.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No revisions locked yet. Lock your first draft to start tracking changes.</div>
+                      <EmptyState icon={<Lock size={24} />} title="No revisions locked yet" subtitle="Lock your first draft to start tracking changes" />
                     ) : (
                       revisions.map((rev, i) => {
                         const revColor = REVISION_COLORS[rev.colorIndex];
                         return (
-                          <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12 }}>
+                          <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = revColor.color; e.currentTarget.style.boxShadow = `0 4px 12px ${revColor.color}40`; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = `${revColor.color}33`; e.currentTarget.style.boxShadow = 'none'; }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                               <span style={{ fontSize: 12, fontWeight: 700, color: revColor.color }}>{rev.label}</span>
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
@@ -2245,10 +2250,12 @@ function EditorPageInner() {
                       <Cloud size={12} /> Cloud Save History
                     </div>
                     {cloudVersions.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No prior versions yet. Each manual save (Ctrl+S) checkpoints the previous version here.</div>
+                      <EmptyState icon={<Cloud size={24} />} title="No prior versions yet" subtitle="Each manual save (Ctrl+S) checkpoints the previous version here" />
                     ) : (
                       cloudVersions.map(v => (
-                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 12 }}>
+                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Version {v.version}</span>
                             <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(v.created_at).toLocaleString()}</span>
@@ -2302,11 +2309,13 @@ function EditorPageInner() {
                       <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
                     </div>
                     {lintIssues.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#00cc66', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
+                      <EmptyState icon={<AlertCircle size={24} />} title="No issues found" subtitle="Script formatting looks great!" />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {lintIssues.slice(0, 30).map((issue, idx) => (
-                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}`, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'; e.currentTarget.style.boxShadow = `0 4px 12px rgba(0,0,0,0.4)`; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                               <span style={{ fontSize: 9, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
                               <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
@@ -2375,11 +2384,13 @@ function EditorPageInner() {
                     <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 12, lineHeight: 1.4 }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
                     
                     {stashItems.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click "+ Add Selected" to save it here.</div>
+                      <EmptyState icon={<Archive size={24} />} title="Stash is empty" subtitle='Select text in the editor and click "+ Add Selected" to save it here' />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {stashItems.map(item => (
-                          <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
+                          <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <div style={{ fontSize: 11, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                               <span style={{ fontSize: 9, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
