@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 interface Profile {
   id: string;
@@ -120,7 +121,8 @@ export default function CrewMemberPage() {
 
   // ── Full profile ─────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <ProtectedPage requiredPermission="view_site">
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
       {/* ── Fixed Header ───────────────────────────────────────────────────────── */}
       <header style={{
@@ -331,6 +333,7 @@ export default function CrewMemberPage() {
         </div>
 
       </div>
-    </div>
+      </div>
+    </ProtectedPage>
   );
 }
