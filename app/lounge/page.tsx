@@ -8,7 +8,6 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
-import { Headphones, Disc, Radio, ExternalLink } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -19,32 +18,6 @@ interface Message {
   mine?: boolean;
 }
 
-const SEED_MESSAGES: Message[] = [
-  {
-    id: '1',
-    user: 'Peter',
-    text: 'Working on the final edit for 10 Million. The timing is sitting perfectly.',
-    timestamp: new Date('2026-04-27T01:30:00'),
-  },
-  {
-    id: '2',
-    user: 'Creative',
-    text: "Can't wait to see it. The rough cut was incredible — every cut felt intentional.",
-    timestamp: new Date('2026-04-27T01:32:00'),
-  },
-  {
-    id: '3',
-    user: 'Peter',
-    text: 'Starting on the Femme Fatale pitch deck next. Need to get it submission-ready.',
-    timestamp: new Date('2026-04-27T01:35:00'),
-  },
-];
-
-const CREW = [
-  { name: 'Peter Olowude', role: 'Director / DP', online: true, activity: 'Writing ScriptOS' },
-  { name: 'Creative Director', role: 'Art Direction', online: true, activity: 'Building Moodboard' },
-  { name: 'Producer', role: 'Production', online: false, activity: 'Idle' },
-];
 
 function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
@@ -99,11 +72,10 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
 export default function LoungePage() {
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
-  const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [nowPlaying, setNowPlaying] = useState({ title: 'Resonance', artist: 'HOME', album: 'Odyssey' });
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [crewList, setCrewList] = useState<any[]>(CREW);
+  const [crewList, setCrewList] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -209,27 +181,6 @@ export default function LoungePage() {
             >
               {projects.map(p => <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.title}</option>)}
             </select>
-          </div>
-
-          {/* Now playing */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 14px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 'var(--radius-full)',
-            maxWidth: 300,
-            overflow: 'hidden',
-          }}>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
-              <Disc size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-            </motion.div>
-            <span style={{
-              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-              color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {nowPlaying.title} · {nowPlaying.artist}
-            </span>
           </div>
         </div>
       </nav>
@@ -429,9 +380,8 @@ export default function LoungePage() {
                     <div style={{ fontSize: 7, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
                   <span>{member.role}</span>
-                  {member.online && <span style={{ fontStyle: 'italic', color: '#888' }}>{member.activity}</span>}
                 </div>
               </div>
             </motion.div>

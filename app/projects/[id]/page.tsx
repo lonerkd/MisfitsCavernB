@@ -288,6 +288,50 @@ function AssetsTab({ project }: { project: Project }) {
 
 // ─── Crew Tab ──────────────────────────────────────────────────────────────────
 
+function ProjectJobsPanel({ projectId }: { projectId: string }) {
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from('jobs')
+      .select('id, title, role, status')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setJobs(data || []);
+        setLoading(false);
+      });
+  }, [projectId]);
+
+  if (loading) return null;
+
+  return (
+    <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>Job Postings</p>
+        <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--accent)', textDecoration: 'none' }}>+ Post a Job →</Link>
+      </div>
+      {jobs.length === 0 ? (
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.6 }}>No jobs posted for this production yet.</p>
+      ) : (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {jobs.map(job => (
+            <Link key={job.id} href={`/jobs/${job.id}`} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 14px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
+              textDecoration: 'none', color: 'var(--fg)',
+            }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10 }}>{job.title}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{job.status}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CrewTab({ project }: { project: Project }) {
   const { toast } = useToast();
   const { addCrewMember, removeCrewMember } = useProject();
@@ -449,6 +493,8 @@ function CrewTab({ project }: { project: Project }) {
           ))}
         </div>
       )}
+
+      <ProjectJobsPanel projectId={project.id} />
     </div>
   );
 }

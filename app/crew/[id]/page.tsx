@@ -30,6 +30,7 @@ interface PortfolioProject {
   id: string;
   user_id: string;
   title: string;
+  share_token: string;
   portfolio_media: MediaItem[];
 }
 
@@ -268,7 +269,7 @@ export default function CrewMemberPage() {
               {projects.map(project => (
                 <Link
                   key={project.id}
-                  href="/portfolio"
+                  href={`/p/${project.share_token}`}
                   style={{ textDecoration: 'none', color: 'var(--fg)' }}
                 >
                   <div
