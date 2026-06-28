@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writehr', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
@@ -140,7 +141,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <ProtectedPage requiredPermission="view_site">
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -303,6 +305,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedPage>
   );
 }

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia } from '@/lib/supabase/portfolio';
 import { useToast } from '@/components/Toast';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
 
@@ -124,7 +125,8 @@ export default function ManagePortfolioPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <ProtectedPage requiredPermission="manage_portfolio">
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -217,6 +219,7 @@ export default function ManagePortfolioPage() {
           })}
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedPage>
   );
 }

@@ -23,6 +23,7 @@ import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { logActivity } from '@/lib/supabase/activity';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -876,7 +877,8 @@ export default function EditorPage() {
   }, [scenesList]);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <ProtectedPage requiredPermission="create_script">
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
 
       {/* TOOLBAR */}
       {!focusMode && (
@@ -2523,6 +2525,7 @@ export default function EditorPage() {
         )}
       </AnimatePresence>
 
-    </div>
+      </div>
+    </ProtectedPage>
   );
 }

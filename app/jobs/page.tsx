@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 interface Job {
   id: string;
@@ -481,7 +482,8 @@ export default function JobsPage() {
   }, {});
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <ProtectedPage requiredPermission="create_job">
+      <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       {/* Nav */}
@@ -748,6 +750,7 @@ export default function JobsPage() {
         input::placeholder, textarea::placeholder { color: rgba(240,236,228,0.18); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
-    </main>
+      </main>
+    </ProtectedPage>
   );
 }
