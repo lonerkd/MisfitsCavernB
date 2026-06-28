@@ -10,6 +10,7 @@ import {
   Music, Plus, ExternalLink, Circle,
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -382,7 +383,8 @@ export default function ProjectHubPage() {
   const onlineCount = project.team.filter(m => m.online).length;
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
+    <ProtectedPage requiredPermission="view_site">
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
       <GrainOverlay />
 
       {/* Ambient project glow */}
@@ -596,6 +598,7 @@ export default function ProjectHubPage() {
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
-    </main>
+      </main>
+    </ProtectedPage>
   );
 }

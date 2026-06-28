@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { ProtectedPage } from '@/lib/permissions/access-control';
 
 interface Profile {
   id: string;
@@ -57,7 +58,8 @@ export default function CrewPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <ProtectedPage requiredPermission="view_site">
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
         background: 'rgba(8, 8, 8, 0.95)', backdropFilter: 'blur(10px)',
@@ -173,6 +175,7 @@ export default function CrewPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </ProtectedPage>
   );
 }
