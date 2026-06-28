@@ -271,6 +271,7 @@ export default function EditorPage() {
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveInFlightRef = useRef(false);
 
   // Supabase Realtime Sync
   const { isSyncing, lastSyncedAt, collaborators } = useScriptSync(currentScript?.id || '', content, (newContent) => {
@@ -395,14 +396,37 @@ export default function EditorPage() {
   }, [findText, content]);
 
 
-  // Auto-save
+  // Auto-save with retry logic
   useEffect(() => {
     if (!currentScript) return;
     const timer = setTimeout(async () => {
-      await saveScript({ id: currentScript.id, title: currentScript.title, content });
+      if (autoSaveInFlightRef.current) return;
+
+      autoSaveInFlightRef.current = true;
+      const contentSnapshot = content;
+      let lastError: Error | null = null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await saveScript({ id: currentScript.id, title: currentScript.title, content: contentSnapshot });
+          autoSaveInFlightRef.current = false;
+          return;
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          if (attempt < 2) {
+            const delay = Math.pow(2, attempt) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      autoSaveInFlightRef.current = false;
+      if (lastError) {
+        toast(`Auto-save failed: ${lastError.message}`, 'error');
+      }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [content, currentScript]);
+  }, [content, currentScript, toast]);
 
   // Sprint Timer Hook
   useEffect(() => {
