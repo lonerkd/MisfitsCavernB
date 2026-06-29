@@ -20,7 +20,7 @@ export async function getAllScripts(): Promise<StoredScript[]> {
   const { data, error } = await supabase
     .from('scripts')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('created_by', user.id)
     .order('updated_at', { ascending: false });
 
   if (error) {
@@ -34,7 +34,7 @@ export async function getAllScripts(): Promise<StoredScript[]> {
     content: s.content,
     createdAt: s.created_at,
     updatedAt: s.updated_at,
-    user_id: s.user_id,
+    user_id: s.created_by,
     project_id: s.project_id
   }));
 }
@@ -55,7 +55,7 @@ export async function getScript(id: string): Promise<StoredScript | null> {
     content: data.content,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
-    user_id: data.user_id,
+    user_id: data.created_by,
     project_id: data.project_id
   };
 }
@@ -65,18 +65,20 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const scriptData = {
+  // The scripts table keys ownership on created_by/last_edited_by (there is no
+  // user_id column). RLS requires created_by = auth.uid() on insert.
+  const baseData = {
     title: script.title || 'Untitled',
     content: script.content || '',
-    user_id: user.id,
+    last_edited_by: user.id,
     updated_at: new Date().toISOString(),
     project_id: script.project_id
   };
 
-  if (script.id && !script.id.includes('-')) { // Not a temporary ID
+  if (script.id) { // Existing script -> update
     const { data, error } = await supabase
       .from('scripts')
-      .update(scriptData)
+      .update(baseData)
       .eq('id', script.id)
       .select()
       .single();
@@ -95,7 +97,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
   } else {
     const { data, error } = await supabase
       .from('scripts')
-      .insert([scriptData])
+      .insert([{ ...baseData, created_by: user.id, status: 'draft' }])
       .select()
       .single();
 
