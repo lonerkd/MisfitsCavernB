@@ -132,12 +132,12 @@ export default function AuthPage() {
 
     try {
       if (mode === 'signin') {
-        const { user } = await signIn(form.email, form.password);
-        if (user) localStorage.setItem('user', JSON.stringify(user));
+        await signIn(form.email, form.password);
       } else {
-        const { user } = await signUp(form.email, form.password, form.username);
-        if (user) localStorage.setItem('user', JSON.stringify(user));
+        await signUp(form.email, form.password, form.username);
       }
+      // Session is persisted by the Supabase client (persistSession);
+      // pages read it via supabase.auth.getUser().
 
       toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
       setTimeout(() => router.push('/'), 600);

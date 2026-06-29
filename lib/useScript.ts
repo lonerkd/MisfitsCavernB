@@ -1,18 +1,31 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import {
+  createScript as sbCreateScript,
+  getScript as sbGetScript,
+  updateScript as sbUpdateScript,
+} from '@/lib/supabase/scripts';
 
 export interface ScriptData {
   id: string;
+  project_id?: string;
   title: string;
   content: string;
+  format?: string;
   status: string;
-  visibility: string;
-  page_count: number;
-  word_count: number;
-  characters?: string;
-  scenes?: string;
+  version?: number;
+  last_edited_by?: string;
   updated_at: string;
+}
+
+async function getUserId(): Promise<string> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  return user.id;
 }
 
 export function useScript() {
@@ -25,22 +38,19 @@ export function useScript() {
       setLoading(true);
       setError(null);
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const response = await fetch('/api/scripts/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': user.id,
-          },
-          body: JSON.stringify({ userId: user.id, title, content, projectId }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create script');
+        const userId = await getUserId();
+        if (!projectId) {
+          throw new Error('A project is required to create a script');
         }
 
-        const newScript = await response.json();
-        setScript(newScript);
+        const created = await sbCreateScript(projectId, title);
+        // Persist initial content if provided
+        const newScript =
+          content && content.length > 0
+            ? await sbUpdateScript(created.id, content, userId)
+            : created;
+
+        setScript(newScript as ScriptData);
         return { success: true, script: newScript };
       } catch (err: any) {
         setError(err.message);
@@ -52,27 +62,38 @@ export function useScript() {
     []
   );
 
-  const updateScript = useCallback(async (id: string, data: Partial<ScriptData>) => {
+  const updateScript = useCallback(
+    async (id: string, data: Partial<ScriptData>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const userId = await getUserId();
+        const updated = await sbUpdateScript(id, data.content ?? '', userId);
+        setScript(updated as ScriptData);
+        return { success: true, script: updated };
+      } catch (err: any) {
+        setError(err.message);
+        return { success: false, error: err.message };
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const deleteScript = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const response = await fetch(`/api/scripts/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': user.id,
-        },
-        body: JSON.stringify(data),
-      });
+      await getUserId();
+      const { error: delError } = await supabase
+        .from('scripts')
+        .delete()
+        .eq('id', id);
+      if (delError) throw delError;
 
-      if (!response.ok) {
-        throw new Error('Failed to update script');
-      }
-
-      const updated = await response.json();
-      setScript(updated);
-      return { success: true, script: updated };
+      setScript(null);
+      return { success: true };
     } catch (err: any) {
       setError(err.message);
       return { success: false, error: err.message };
@@ -81,24 +102,13 @@ export function useScript() {
     }
   }, []);
 
-  const deleteScript = useCallback(async (id: string) => {
+  const loadScript = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const response = await fetch(`/api/scripts/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-User-Id': user.id,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete script');
-      }
-
-      setScript(null);
-      return { success: true };
+      const loaded = await sbGetScript(id);
+      setScript(loaded as ScriptData);
+      return { success: true, script: loaded };
     } catch (err: any) {
       setError(err.message);
       return { success: false, error: err.message };
@@ -114,5 +124,6 @@ export function useScript() {
     createScript,
     updateScript,
     deleteScript,
+    loadScript,
   };
 }
