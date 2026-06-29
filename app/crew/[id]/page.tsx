@@ -48,29 +48,34 @@ export default function CrewMemberPage() {
 
     const load = async () => {
       setLoading(true);
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
+        if (profileError || !profileData) {
+          setNotFound(true);
+          return;
+        }
 
-      if (profileError || !profileData) {
+        setProfile(profileData as Profile);
+
+        const { data: projectData } = await supabase
+          .from('portfolio_projects')
+          .select('*, portfolio_media(*)')
+          .eq('user_id', id)
+          .order('created_at', { ascending: false });
+
+        setProjects((projectData as PortfolioProject[]) || []);
+      } catch (err) {
+        // Network failure — surface not-found instead of an infinite spinner
+        console.error('Failed to load crew member:', err);
         setNotFound(true);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setProfile(profileData as Profile);
-
-      const { data: projectData } = await supabase
-        .from('portfolio_projects')
-        .select('*, portfolio_media(*)')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false });
-
-      setProjects((projectData as PortfolioProject[]) || []);
-      setLoading(false);
     };
 
     load();
