@@ -1,4 +1,14 @@
-const STUDIO_KEY = 'misfits_cavern_studio';
+'use client';
+
+import { supabase } from '@/lib/supabase/client';
+import {
+  getStudioBoards,
+  createStudioBoard as sbCreateBoard,
+  getStudioAssets,
+  addStudioAsset as sbAddAsset,
+  updateStudioAsset as sbUpdateAsset,
+  deleteStudioAsset as sbDeleteAsset,
+} from '@/lib/supabase/studio';
 
 export interface Asset {
   id: string;
@@ -26,117 +36,221 @@ export interface Board {
   updatedAt: string;
 }
 
-export function getAllBoards(): Board[] {
-  if (typeof window === 'undefined') return [];
+async function getCurrentUserId(): Promise<string> {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error('Not authenticated');
+  return data.user.id;
+}
 
+export async function getAllBoards(): Promise<Board[]> {
   try {
-    const stored = localStorage.getItem(STUDIO_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const userId = await getCurrentUserId();
+    const sbBoards = await getStudioBoards(userId);
+
+    return Promise.all(
+      sbBoards.map(async (sbBoard) => {
+        const sbAssets = await getStudioAssets(sbBoard.id);
+
+        return {
+          id: sbBoard.id,
+          name: sbBoard.name,
+          description: sbBoard.description,
+          assets: (sbAssets || []).map((a) => ({
+            id: a.id,
+            url: a.url,
+            type: a.type as 'image' | 'color' | 'typography',
+            boardId: a.board_id,
+            x: a.x,
+            y: a.y,
+            width: a.width,
+            height: a.height,
+            title: a.title,
+            notes: a.notes,
+            createdAt: a.created_at,
+          })),
+          canvasWidth: sbBoard.canvas_width,
+          canvasHeight: sbBoard.canvas_height,
+          backgroundColor: sbBoard.background_color,
+          createdAt: sbBoard.created_at,
+          updatedAt: sbBoard.updated_at,
+        };
+      })
+    );
   } catch (error) {
     console.error('Error loading boards:', error);
     return [];
   }
 }
 
-export function getBoard(id: string): Board | null {
-  const boards = getAllBoards();
-  return boards.find(b => b.id === id) || null;
+export async function getBoard(id: string): Promise<Board | null> {
+  try {
+    const allBoards = await getAllBoards();
+    return allBoards.find((b) => b.id === id) || null;
+  } catch (error) {
+    console.error('Error loading board:', error);
+    return null;
+  }
 }
 
-export function createBoard(name: string, description: string = ''): Board {
-  const newBoard: Board = {
-    id: generateId(),
-    name,
-    description,
-    assets: [],
-    canvasWidth: 1920,
-    canvasHeight: 1080,
-    backgroundColor: '#0a0a0a',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+export async function createBoard(name: string, description: string = ''): Promise<Board> {
+  try {
+    const userId = await getCurrentUserId();
+    const sbBoard = await sbCreateBoard({
+      user_id: userId,
+      name,
+      description,
+      canvas_width: 1920,
+      canvas_height: 1080,
+      background_color: '#0a0a0a',
+    });
 
-  const boards = getAllBoards();
-  boards.push(newBoard);
-  localStorage.setItem(STUDIO_KEY, JSON.stringify(boards));
-
-  return newBoard;
+    return {
+      id: sbBoard.id,
+      name: sbBoard.name,
+      description: sbBoard.description,
+      assets: [],
+      canvasWidth: sbBoard.canvas_width,
+      canvasHeight: sbBoard.canvas_height,
+      backgroundColor: sbBoard.background_color,
+      createdAt: sbBoard.created_at,
+      updatedAt: sbBoard.updated_at,
+    };
+  } catch (error) {
+    console.error('Error creating board:', error);
+    throw error;
+  }
 }
 
-export function updateBoard(id: string, updates: Partial<Board>): Board {
-  const boards = getAllBoards();
-  const index = boards.findIndex(b => b.id === id);
+export async function updateBoard(id: string, updates: Partial<Board>): Promise<Board> {
+  try {
+    const userId = await getCurrentUserId();
+    const board = await getBoard(id);
+    if (!board) throw new Error('Board not found');
 
-  if (index === -1) throw new Error('Board not found');
+    const sbUpdates: any = {};
+    if (updates.name) sbUpdates.name = updates.name;
+    if (updates.description) sbUpdates.description = updates.description;
+    if (updates.canvasWidth) sbUpdates.canvas_width = updates.canvasWidth;
+    if (updates.canvasHeight) sbUpdates.canvas_height = updates.canvasHeight;
+    if (updates.backgroundColor) sbUpdates.background_color = updates.backgroundColor;
 
-  const updated = {
-    ...boards[index],
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
+    // For now, we don't update assets through this method
+    // Assets are managed separately via addAsset/updateAsset/deleteAsset
 
-  boards[index] = updated;
-  localStorage.setItem(STUDIO_KEY, JSON.stringify(boards));
+    const allBoards = await getStudioBoards(userId);
+    const sbBoard = allBoards.find((b) => b.id === id);
+    if (!sbBoard) throw new Error('Board not found');
 
-  return updated;
+    // Update the board properties via direct Supabase update
+    const { error } = await supabase
+      .from('studio_boards')
+      .update(sbUpdates)
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // Return updated board
+    return getBoard(id) as Promise<Board>;
+  } catch (error) {
+    console.error('Error updating board:', error);
+    throw error;
+  }
 }
 
-export function deleteBoard(id: string): boolean {
-  const boards = getAllBoards();
-  const filtered = boards.filter(b => b.id !== id);
+export async function deleteBoard(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('studio_boards').delete().eq('id', id);
 
-  if (filtered.length === boards.length) return false;
-
-  localStorage.setItem(STUDIO_KEY, JSON.stringify(filtered));
-  return true;
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting board:', error);
+    return false;
+  }
 }
 
-export function addAsset(boardId: string, url: string, type: Asset['type'], title: string = ''): Asset {
-  const board = getBoard(boardId);
-  if (!board) throw new Error('Board not found');
+export async function addAsset(
+  boardId: string,
+  url: string,
+  type: Asset['type'],
+  title: string = ''
+): Promise<Asset> {
+  try {
+    const userId = await getCurrentUserId();
+    const sbAsset = await sbAddAsset({
+      user_id: userId,
+      board_id: boardId,
+      url,
+      type,
+      title,
+      notes: '',
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 300,
+    });
 
-  const asset: Asset = {
-    id: generateId(),
-    url,
-    type,
-    boardId,
-    x: 0,
-    y: 0,
-    width: 300,
-    height: 300,
-    title,
-    notes: '',
-    createdAt: new Date().toISOString()
-  };
-
-  board.assets.push(asset);
-  updateBoard(boardId, { assets: board.assets });
-
-  return asset;
+    return {
+      id: sbAsset.id,
+      url: sbAsset.url,
+      type: sbAsset.type,
+      boardId: sbAsset.board_id,
+      x: sbAsset.x,
+      y: sbAsset.y,
+      width: sbAsset.width,
+      height: sbAsset.height,
+      title: sbAsset.title,
+      notes: sbAsset.notes,
+      createdAt: sbAsset.created_at,
+    };
+  } catch (error) {
+    console.error('Error adding asset:', error);
+    throw error;
+  }
 }
 
-export function updateAsset(boardId: string, assetId: string, updates: Partial<Asset>): Asset {
-  const board = getBoard(boardId);
-  if (!board) throw new Error('Board not found');
+export async function updateAsset(
+  boardId: string,
+  assetId: string,
+  updates: Partial<Asset>
+): Promise<Asset> {
+  try {
+    const sbUpdates: any = {};
+    if (updates.url) sbUpdates.url = updates.url;
+    if (updates.type) sbUpdates.type = updates.type;
+    if (updates.title) sbUpdates.title = updates.title;
+    if (updates.notes) sbUpdates.notes = updates.notes;
+    if (updates.x !== undefined) sbUpdates.x = updates.x;
+    if (updates.y !== undefined) sbUpdates.y = updates.y;
+    if (updates.width !== undefined) sbUpdates.width = updates.width;
+    if (updates.height !== undefined) sbUpdates.height = updates.height;
 
-  const asset = board.assets.find(a => a.id === assetId);
-  if (!asset) throw new Error('Asset not found');
+    const sbAsset = await sbUpdateAsset(assetId, sbUpdates);
 
-  const updated = { ...asset, ...updates };
-  board.assets = board.assets.map(a => (a.id === assetId ? updated : a));
-  updateBoard(boardId, { assets: board.assets });
-
-  return updated;
+    return {
+      id: sbAsset.id,
+      url: sbAsset.url,
+      type: sbAsset.type,
+      boardId: sbAsset.board_id,
+      x: sbAsset.x,
+      y: sbAsset.y,
+      width: sbAsset.width,
+      height: sbAsset.height,
+      title: sbAsset.title,
+      notes: sbAsset.notes,
+      createdAt: sbAsset.created_at,
+    };
+  } catch (error) {
+    console.error('Error updating asset:', error);
+    throw error;
+  }
 }
 
-export function deleteAsset(boardId: string, assetId: string): void {
-  const board = getBoard(boardId);
-  if (!board) throw new Error('Board not found');
-
-  board.assets = board.assets.filter(a => a.id !== assetId);
-  updateBoard(boardId, { assets: board.assets });
-}
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+export async function deleteAsset(boardId: string, assetId: string): Promise<void> {
+  try {
+    await sbDeleteAsset(assetId);
+  } catch (error) {
+    console.error('Error deleting asset:', error);
+    throw error;
+  }
 }

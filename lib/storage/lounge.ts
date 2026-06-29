@@ -1,4 +1,15 @@
-const LOUNGE_KEY = 'misfits_cavern_lounge';
+'use client';
+
+import { supabase } from '@/lib/supabase/client';
+import {
+  getChannels,
+  getChannelMessages,
+  sendMessage as sbSendMessage,
+  addReaction as sbAddReaction,
+  removeReaction as sbRemoveReaction,
+  pinMessage as sbPinMessage,
+  initializeChannels,
+} from '@/lib/supabase/lounge';
 
 export interface Message {
   id: string;
@@ -27,164 +38,105 @@ export interface LoungeState {
   currentUsername: string;
 }
 
-function getDefaultLounge(): LoungeState {
-  return {
-    channels: [
-      {
-        id: 'general',
-        name: 'general',
-        description: 'General discussion',
-        messages: [],
-        pinnedMessages: [],
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'writing-room',
-        name: 'writing-room',
-        description: 'Collaborative writing space',
-        messages: [],
-        pinnedMessages: [],
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'music',
-        name: 'music',
-        description: 'Music and sound design',
-        messages: [],
-        pinnedMessages: [],
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: 'feedback',
-        name: 'feedback',
-        description: 'Project feedback and reviews',
-        messages: [],
-        pinnedMessages: [],
-        createdAt: new Date().toISOString()
-      }
-    ],
-    currentUserId: generateId(),
-    currentUsername: 'Anonymous'
-  };
-}
+let currentUserId: string = '';
+let currentUsername: string = 'Anonymous';
 
-export function getLounge(): LoungeState {
-  if (typeof window === 'undefined') return getDefaultLounge();
-
+export async function initLounge() {
   try {
-    const stored = localStorage.getItem(LOUNGE_KEY);
-    if (!stored) {
-      const defaultLounge = getDefaultLounge();
-      localStorage.setItem(LOUNGE_KEY, JSON.stringify(defaultLounge));
-      return defaultLounge;
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      currentUserId = data.user.id;
+      currentUsername = data.user.email?.split('@')[0] || 'Anonymous';
     }
-
-    const parsed = JSON.parse(stored);
-    // Convert reaction Maps back from JSON
-    parsed.channels.forEach((channel: Channel) => {
-      channel.messages.forEach((msg: any) => {
-        msg.reactions = new Map(Object.entries(msg.reactions || {}));
-      });
-    });
-    return parsed;
+    await initializeChannels();
   } catch (error) {
-    console.error('Error loading lounge:', error);
-    return getDefaultLounge();
+    console.error('Failed to init lounge:', error);
   }
 }
 
-export function saveLounge(state: LoungeState): void {
-  if (typeof window === 'undefined') return;
+export async function getLounge(): Promise<LoungeState> {
+  await initLounge();
 
-  const toSave = {
-    ...state,
-    channels: state.channels.map(ch => ({
-      ...ch,
-      messages: ch.messages.map(msg => ({
-        ...msg,
-        reactions: Object.fromEntries(msg.reactions)
-      }))
-    }))
-  };
+  try {
+    const sbChannels = await getChannels();
 
-  localStorage.setItem(LOUNGE_KEY, JSON.stringify(toSave));
+    const channels: Channel[] = await Promise.all(
+      sbChannels.map(async (ch) => {
+        const messages = await getChannelMessages(ch.id);
+
+        return {
+          id: ch.id,
+          name: ch.name,
+          description: ch.description,
+          messages: messages.map((m) => ({
+            id: m.id,
+            channelId: m.channel_id,
+            userId: m.user_id,
+            username: m.username,
+            content: m.content,
+            reactions: new Map(Object.entries(m.reactions || {})),
+            pinned: m.pinned,
+            createdAt: m.created_at,
+            editedAt: m.edited_at,
+          })),
+          pinnedMessages: messages.filter((m) => m.pinned).map((m) => m.id),
+          createdAt: ch.created_at,
+        };
+      })
+    );
+
+    return {
+      channels,
+      currentUserId,
+      currentUsername,
+    };
+  } catch (error) {
+    console.error('Error loading lounge:', error);
+    return {
+      channels: [],
+      currentUserId,
+      currentUsername,
+    };
+  }
 }
 
-export function sendMessage(content: string): void {
-  const lounge = getLounge();
-  const channel = lounge.channels[0]; // general by default
-
-  const message: Message = {
-    id: generateId(),
-    channelId: channel.id,
-    userId: lounge.currentUserId,
-    username: lounge.currentUsername,
-    content,
-    reactions: new Map(),
-    pinned: false,
-    createdAt: new Date().toISOString()
-  };
-
-  channel.messages.push(message);
-  saveLounge(lounge);
+export async function saveLounge(state: LoungeState): Promise<void> {
+  // Lounge state is now persisted to Supabase automatically
+  // This function is a no-op for backwards compatibility
 }
 
-export function addReaction(messageId: string, emoji: string): void {
-  const lounge = getLounge();
-
-  lounge.channels.forEach(channel => {
-    const message = channel.messages.find(m => m.id === messageId);
-    if (message) {
-      if (!message.reactions.has(emoji)) {
-        message.reactions.set(emoji, []);
-      }
-
-      const reactors = message.reactions.get(emoji)!;
-      if (!reactors.includes(lounge.currentUserId)) {
-        reactors.push(lounge.currentUserId);
-      }
-
-      saveLounge(lounge);
-    }
-  });
+export async function sendMessage(content: string): Promise<void> {
+  try {
+    await sbSendMessage('general', currentUserId, currentUsername, content);
+  } catch (error) {
+    console.error('Failed to send message:', error);
+    throw error;
+  }
 }
 
-export function removeReaction(messageId: string, emoji: string): void {
-  const lounge = getLounge();
-
-  lounge.channels.forEach(channel => {
-    const message = channel.messages.find(m => m.id === messageId);
-    if (message) {
-      const reactors = message.reactions.get(emoji) || [];
-      message.reactions.set(
-        emoji,
-        reactors.filter(r => r !== lounge.currentUserId)
-      );
-
-      if ((message.reactions.get(emoji) || []).length === 0) {
-        message.reactions.delete(emoji);
-      }
-
-      saveLounge(lounge);
-    }
-  });
+export async function addReaction(messageId: string, emoji: string): Promise<void> {
+  try {
+    await sbAddReaction(messageId, currentUserId, emoji);
+  } catch (error) {
+    console.error('Failed to add reaction:', error);
+    throw error;
+  }
 }
 
-export function pinMessage(messageId: string): void {
-  const lounge = getLounge();
-
-  lounge.channels.forEach(channel => {
-    const message = channel.messages.find(m => m.id === messageId);
-    if (message) {
-      message.pinned = true;
-      if (!channel.pinnedMessages.includes(messageId)) {
-        channel.pinnedMessages.push(messageId);
-      }
-      saveLounge(lounge);
-    }
-  });
+export async function removeReaction(messageId: string, emoji: string): Promise<void> {
+  try {
+    await sbRemoveReaction(messageId, currentUserId, emoji);
+  } catch (error) {
+    console.error('Failed to remove reaction:', error);
+    throw error;
+  }
 }
 
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+export async function pinMessage(messageId: string): Promise<void> {
+  try {
+    await sbPinMessage(messageId);
+  } catch (error) {
+    console.error('Failed to pin message:', error);
+    throw error;
+  }
 }

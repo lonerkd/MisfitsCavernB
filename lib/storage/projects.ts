@@ -1,4 +1,20 @@
-const PROJECTS_KEY = 'misfits_cavern_projects';
+'use client';
+
+import { supabase } from '@/lib/supabase/client';
+import {
+  getUserProjects,
+  getProject as sbGetProject,
+  createProject as sbCreateProject,
+  updateProject as sbUpdateProject,
+  deleteProject as sbDeleteProject,
+  getProjectTasks,
+  addTask as sbAddTask,
+  toggleTask as sbToggleTask,
+  deleteTask as sbDeleteTask,
+  getProjectNotes,
+  addNote as sbAddNote,
+  deleteNote as sbDeleteNote,
+} from '@/lib/supabase/projects-storage';
 
 export interface Task {
   id: string;
@@ -26,108 +42,194 @@ export interface Project {
   updatedAt: string;
 }
 
-export function getAllProjects(): Project[] {
-  if (typeof window === 'undefined') return [];
+async function getCurrentUserId(): Promise<string> {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error('Not authenticated');
+  return data.user.id;
+}
 
+export async function getAllProjects(): Promise<Project[]> {
   try {
-    const stored = localStorage.getItem(PROJECTS_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const userId = await getCurrentUserId();
+    const sbProjects = await getUserProjects(userId);
+
+    return Promise.all(
+      sbProjects.map(async (sbProj) => {
+        const tasks = await getProjectTasks(sbProj.id);
+        const notes = await getProjectNotes(sbProj.id);
+
+        return {
+          id: sbProj.id,
+          title: sbProj.title,
+          status: sbProj.status,
+          description: sbProj.description,
+          accentColor: sbProj.accent_color,
+          tasks: tasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            completed: t.completed,
+            createdAt: t.created_at,
+          })),
+          notes: notes.map((n) => ({
+            id: n.id,
+            content: n.content,
+            type: n.type,
+          })),
+          wiki: sbProj.wiki,
+          createdAt: sbProj.created_at,
+          updatedAt: sbProj.updated_at,
+        };
+      })
+    );
   } catch (error) {
     console.error('Error loading projects:', error);
     return [];
   }
 }
 
-export function getProject(id: string): Project | null {
-  const projects = getAllProjects();
-  return projects.find(p => p.id === id) || null;
-}
+export async function getProject(id: string): Promise<Project | null> {
+  try {
+    const sbProj = await sbGetProject(id);
+    if (!sbProj) return null;
 
-export function createProject(title: string): Project {
-  const newProject: Project = {
-    id: generateId(),
-    title,
-    status: 'concept',
-    description: '',
-    accentColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-    tasks: [],
-    notes: [],
-    wiki: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+    const tasks = await getProjectTasks(id);
+    const notes = await getProjectNotes(id);
 
-  const projects = getAllProjects();
-  projects.push(newProject);
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-
-  return newProject;
-}
-
-export function updateProject(id: string, updates: Partial<Project>): Project {
-  const projects = getAllProjects();
-  const index = projects.findIndex(p => p.id === id);
-
-  if (index === -1) throw new Error('Project not found');
-
-  const updated = {
-    ...projects[index],
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
-
-  projects[index] = updated;
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-
-  return updated;
-}
-
-export function deleteProject(id: string): boolean {
-  const projects = getAllProjects();
-  const filtered = projects.filter(p => p.id !== id);
-
-  if (filtered.length === projects.length) return false;
-
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(filtered));
-  return true;
-}
-
-export function addTask(projectId: string, title: string): Task {
-  const project = getProject(projectId);
-  if (!project) throw new Error('Project not found');
-
-  const task: Task = {
-    id: generateId(),
-    title,
-    completed: false,
-    createdAt: new Date().toISOString()
-  };
-
-  project.tasks.push(task);
-  updateProject(projectId, { tasks: project.tasks });
-
-  return task;
-}
-
-export function toggleTask(projectId: string, taskId: string): void {
-  const project = getProject(projectId);
-  if (!project) throw new Error('Project not found');
-
-  const task = project.tasks.find(t => t.id === taskId);
-  if (task) {
-    task.completed = !task.completed;
-    updateProject(projectId, { tasks: project.tasks });
+    return {
+      id: sbProj.id,
+      title: sbProj.title,
+      status: sbProj.status,
+      description: sbProj.description,
+      accentColor: sbProj.accent_color,
+      tasks: tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        completed: t.completed,
+        createdAt: t.created_at,
+      })),
+      notes: notes.map((n) => ({
+        id: n.id,
+        content: n.content,
+        type: n.type,
+      })),
+      wiki: sbProj.wiki,
+      createdAt: sbProj.created_at,
+      updatedAt: sbProj.updated_at,
+    };
+  } catch (error) {
+    console.error('Error loading project:', error);
+    return null;
   }
 }
 
-export function deleteTask(projectId: string, taskId: string): void {
-  const project = getProject(projectId);
-  if (!project) throw new Error('Project not found');
+export async function createProject(title: string): Promise<Project> {
+  try {
+    const userId = await getCurrentUserId();
+    const sbProj = await sbCreateProject(userId, title);
 
-  project.tasks = project.tasks.filter(t => t.id !== taskId);
-  updateProject(projectId, { tasks: project.tasks });
+    return {
+      id: sbProj.id,
+      title: sbProj.title,
+      status: sbProj.status,
+      description: sbProj.description,
+      accentColor: sbProj.accent_color,
+      tasks: [],
+      notes: [],
+      wiki: sbProj.wiki,
+      createdAt: sbProj.created_at,
+      updatedAt: sbProj.updated_at,
+    };
+  } catch (error) {
+    console.error('Error creating project:', error);
+    throw error;
+  }
 }
 
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+export async function updateProject(id: string, updates: Partial<Project>): Promise<Project> {
+  try {
+    const sbUpdates: any = {};
+    if (updates.title) sbUpdates.title = updates.title;
+    if (updates.status) sbUpdates.status = updates.status;
+    if (updates.description) sbUpdates.description = updates.description;
+    if (updates.accentColor) sbUpdates.accent_color = updates.accentColor;
+    if (updates.wiki) sbUpdates.wiki = updates.wiki;
+
+    const sbProj = await sbUpdateProject(id, sbUpdates);
+
+    const tasks = await getProjectTasks(id);
+    const notes = await getProjectNotes(id);
+
+    return {
+      id: sbProj.id,
+      title: sbProj.title,
+      status: sbProj.status,
+      description: sbProj.description,
+      accentColor: sbProj.accent_color,
+      tasks: tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        completed: t.completed,
+        createdAt: t.created_at,
+      })),
+      notes: notes.map((n) => ({
+        id: n.id,
+        content: n.content,
+        type: n.type,
+      })),
+      wiki: sbProj.wiki,
+      createdAt: sbProj.created_at,
+      updatedAt: sbProj.updated_at,
+    };
+  } catch (error) {
+    console.error('Error updating project:', error);
+    throw error;
+  }
+}
+
+export async function deleteProject(id: string): Promise<boolean> {
+  try {
+    return await sbDeleteProject(id);
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    return false;
+  }
+}
+
+export async function addTask(projectId: string, title: string): Promise<Task> {
+  try {
+    const task = await sbAddTask(projectId, title);
+    return {
+      id: task.id,
+      title: task.title,
+      completed: task.completed,
+      createdAt: task.created_at,
+    };
+  } catch (error) {
+    console.error('Error adding task:', error);
+    throw error;
+  }
+}
+
+export async function toggleTask(projectId: string, taskId: string): Promise<void> {
+  try {
+    const project = await getProject(projectId);
+    if (!project) throw new Error('Project not found');
+
+    const task = project.tasks.find((t) => t.id === taskId);
+    if (!task) throw new Error('Task not found');
+
+    await sbToggleTask(taskId, !task.completed);
+  } catch (error) {
+    console.error('Error toggling task:', error);
+    throw error;
+  }
+}
+
+export async function deleteTask(projectId: string, taskId: string): Promise<void> {
+  try {
+    await sbDeleteTask(taskId);
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    throw error;
+  }
 }
