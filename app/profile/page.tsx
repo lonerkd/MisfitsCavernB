@@ -37,7 +37,7 @@ export default function ProfilePage() {
       // Load quick stats
       const [{ count: scripts }, { count: projects }, { count: jobs }] = await Promise.all([
         supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', user.id),
-        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
+        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
         supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
       ]);
       setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
