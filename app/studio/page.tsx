@@ -25,15 +25,6 @@ interface Asset {
   url?: string;
 }
 
-const CONCEPT_IMAGES = [
-  { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
-  { id: 'c2', url: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80', title: 'Cinematic Framing', aspect: 'wide' },
-  { id: 'c3', url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80', title: 'Low Key Lighting', aspect: 'square' },
-  { id: 'c4', url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80', title: 'Urban Gritty Texture', aspect: 'tall' },
-  { id: 'c5', url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80', title: 'Vintage Lens Flare', aspect: 'wide' },
-  { id: 'c6', url: 'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&q=80', title: 'Dramatic Shadows', aspect: 'square' },
-];
-
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
   { id: 'pre', name: 'Pre-Production', color: '#0099ff', icon: ClipboardList },
@@ -559,118 +550,7 @@ export default function StudioPage() {
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '160px 20px 80px' }}>
         
         {activeTab === 'overview' && activeProject && (
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
-            <div>
-              <StageIndicator currentStage={activeProject.status} />
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <SectionLabel text="Project Summary" />
-                <h1 style={{ fontFamily: 'var(--display)', fontSize: '4rem', letterSpacing: 4, lineHeight: 1.1, marginBottom: 24 }}>{activeProject.title}</h1>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
-                  {activeProject.description || "No project description provided. Update your script metadata to populate this field."}
-                </p>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 60 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Production Stats</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Status</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#ffaa00' }}>{activeProject.status}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Completion</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>85%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Active Leads</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ff3c00', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>JD</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#0099ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>SK</div>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+4</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Real Production Budget Module */}
-                <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                      <DollarSign size={16} color="var(--accent)" /> Production Budget
-                    </div>
-                    <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
-                    <div>
-                      <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
-                      <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>$1.25M</div>
-                      <div style={{ width: '100%', height: 4, background: '#333', borderRadius: 2, marginTop: 12, overflow: 'hidden', display: 'flex' }}>
-                         <div style={{ width: '30%', background: '#ffaa00' }} title="Above the Line" />
-                         <div style={{ width: '50%', background: '#0099ff' }} title="Below the Line" />
-                         <div style={{ width: '20%', background: '#00cc66' }} title="Post Production" />
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#ffaa00' }}>Above the Line</span>
-                         <span>$375,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#0099ff' }}>Below the Line</span>
-                         <span>$625,000</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                         <span style={{ color: '#00cc66' }}>Post-Production</span>
-                         <span>$250,000</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Project Milestone Timeline */}
-                <div style={{ marginTop: 40 }}>
-                   <SectionLabel text="Project Milestones" />
-                   <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-                      {[
-                        { label: 'Script Finalized', date: 'April 10', completed: true },
-                        { label: 'Casting Call', date: 'April 20', completed: true },
-                        { label: 'Principle Photography', date: 'May 15', completed: false },
-                        { label: 'VFX & Post', date: 'June 30', completed: false },
-                        { label: 'World Premiere', date: 'August 12', completed: false },
-                      ].map((m, i) => (
-                        <div key={i} style={{ position: 'relative' }}>
-                           <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completed ? 'var(--accent)' : '#222', border: m.completed ? 'none' : '1px solid #444' }} />
-                           <div style={{ fontSize: 12, fontWeight: 700, color: m.completed ? '#fff' : '#666' }}>{m.label}</div>
-                           <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{m.date}</div>
-                        </div>
-                      ))}
-                   </div>
-                </div>
-              </motion.div>
-            </div>
-            
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClipboardList size={16} /> Recent Activity
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {[
-                  { user: 'JD', action: 'uploaded 12 raw files', time: '2h ago' },
-                  { user: 'SK', action: 'updated Scene 14 in ScriptOS', time: '5h ago' },
-                  { user: 'JD', action: 'tagged moodboard references', time: '1d ago' },
-                ].map((act, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>{act.user}</div>
-                    <div>
-                      <div style={{ fontSize: 11, color: '#eee' }}><span style={{ fontWeight: 700 }}>{act.user}</span> {act.action}</div>
-                      <div style={{ fontSize: 9, color: 'var(--fg-subtle)' }}>{act.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <OverviewPanel project={activeProject} />
         )}
 
         {activeTab === 'concept' && (
@@ -760,44 +640,14 @@ export default function StudioPage() {
           </AnimatedSection>
         )}
 
-        {activeTab === 'pitch' && activeProject && (
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-              <div>
-                <SectionLabel text="Investor Relations" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck Mode</h2>
-              </div>
-              <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Enter Presentation View</button>
+        {activeTab === 'pitch' && (
+          activeProject ? (
+            <PitchDeck project={activeProject} assets={assetsList} />
+          ) : (
+            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>
+              SELECT A PROJECT TO BUILD A PITCH
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                <SectionLabel text="Slide 01" />
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>{activeProject.title}</h3>
-                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
-              </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
-                <img src={CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
-                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                  <SectionLabel text="Slide 02" />
-                  <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
-                  <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Cinematography & Mood</div>
-                </div>
-              </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                <SectionLabel text="Slide 03" />
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE CHARACTERS</h3>
-                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Casting & Archetypes</div>
-              </div>
-            </div>
-            
-            <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <Info size={20} color="var(--accent)" />
-              <div style={{ fontSize: 12, color: '#ccc' }}>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Pro Tip:</span> This deck is automatically generated using your Concept Board and ScriptOS Character Bible. Update them to see changes here.
-              </div>
-            </div>
-          </motion.div>
+          )
         )}
 
         {activeTab === 'marketing' && (
@@ -1204,6 +1054,239 @@ function CampaignPlanner({ projectId }: { projectId: string }) {
           </div>
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+// ─── Overview Panel (live project dashboard) ──────────────────────────────────
+
+function OverviewPanel({ project }: { project: any }) {
+  const [budget, setBudget] = useState<{ category: string; amount: number; created_at: string }[]>([]);
+  const [milestones, setMilestones] = useState<{ title: string; start_date: string | null; created_at: string }[]>([]);
+  const [crew, setCrew] = useState<{ role: string; created_at: string; profiles?: { username: string } | null }[]>([]);
+  const [tasks, setTasks] = useState<{ completed: boolean }[]>([]);
+  const [scripts, setScripts] = useState<{ title: string; page_count: number | null }[]>([]);
+
+  useEffect(() => {
+    const pid = project.id;
+    (async () => {
+      const [b, t, c, tk, sc] = await Promise.all([
+        supabase.from('budget_items').select('category,amount,created_at').eq('project_id', pid),
+        supabase.from('timeline_items').select('title,start_date,created_at').eq('project_id', pid).order('start_date', { nullsFirst: false }),
+        supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', pid),
+        supabase.from('project_tasks').select('completed').eq('project_id', pid),
+        supabase.from('scripts').select('title,page_count').eq('project_id', pid),
+      ]);
+      setBudget((b.data as any) || []);
+      setMilestones((t.data as any) || []);
+      setCrew((c.data as any) || []);
+      setTasks((tk.data as any) || []);
+      setScripts((sc.data as any) || []);
+    })();
+  }, [project.id]);
+
+  const budgetTotal = budget.reduce((s, x) => s + Number(x.amount || 0), 0);
+  const byCat: Record<string, number> = {};
+  budget.forEach(b => { byCat[b.category] = (byCat[b.category] || 0) + Number(b.amount || 0); });
+  const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const catColors = ['#ffaa00', '#0099ff', '#00cc66', '#a855f7'];
+  const done = tasks.filter(t => t.completed).length;
+  const completion = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+  const pages = scripts.reduce((s, x) => s + (x.page_count || 0), 0);
+
+  const recent = [
+    ...budget.map(b => ({ t: b.created_at, label: `Budget — ${b.category}` })),
+    ...milestones.map(m => ({ t: m.created_at, label: `Milestone — ${m.title}` })),
+    ...crew.map(c => ({ t: c.created_at, label: `Crew — ${c.profiles?.username || 'member'} (${c.role})` })),
+  ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 6);
+
+  const fmt = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `$${n}`;
+  const ago = (iso: string) => { const d = (Date.now() - new Date(iso).getTime()) / 86400000; return d < 1 ? 'today' : d < 2 ? 'yesterday' : `${Math.floor(d)}d ago`; };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
+      <div>
+        <StageIndicator currentStage={project.status} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <SectionLabel text="Project Summary" />
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '4rem', letterSpacing: 4, lineHeight: 1.1, marginBottom: 24 }}>{project.title}</h1>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
+            {project.description || 'No project description yet.'}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginTop: 48 }}>
+            {[['Status', project.status], ['Completion', `${completion}%`], ['Scripts', `${scripts.length}`], ['Script Pages', `${pages}`]].map(([l, v]) => (
+              <div key={l as string}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>{v}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginTop: 4 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Budget — real */}
+          <div style={{ marginTop: 48, padding: 28, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}><DollarSign size={16} color="var(--accent)" /> Production Budget</div>
+              <Link href={`/projects/${project.id}`} className="link-btn" style={{ fontSize: 9 }}>Manage →</Link>
+            </div>
+            <div style={{ fontSize: '2.2rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>{budgetTotal > 0 ? fmt(budgetTotal) : '—'}</div>
+            {topCats.length > 0 ? (
+              <>
+                <div style={{ width: '100%', height: 4, background: '#222', borderRadius: 2, marginTop: 12, overflow: 'hidden', display: 'flex' }}>
+                  {topCats.map(([cat, amt], i) => <div key={cat} style={{ width: `${(amt / budgetTotal) * 100}%`, background: catColors[i] }} title={cat} />)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+                  {topCats.map(([cat, amt], i) => (
+                    <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
+                      <span style={{ color: catColors[i] }}>{cat}</span><span>{fmt(amt)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginTop: 10 }}>No budget items yet.</div>}
+          </div>
+
+          {/* Milestones — real */}
+          <div style={{ marginTop: 40 }}>
+            <SectionLabel text="Project Milestones" />
+            {milestones.length > 0 ? (
+              <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {milestones.map((m, i) => {
+                  const past = m.start_date ? new Date(m.start_date).getTime() < Date.now() : false;
+                  return (
+                    <div key={i} style={{ position: 'relative' }}>
+                      <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: past ? 'var(--accent)' : '#222', border: past ? 'none' : '1px solid #444' }} />
+                      <div style={{ fontSize: 12, fontWeight: 700, color: past ? '#fff' : '#aaa' }}>{m.title}</div>
+                      {m.start_date && <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No milestones yet — add them in the project timeline.</div>}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Right: crew + recent activity (real) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16} /> Crew</div>
+          {crew.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {crew.map((c, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#a5b4fc' }}>{(c.profiles?.username || '?')[0].toUpperCase()}</div>
+                  <span style={{ flex: 1, fontSize: 12 }}>{c.profiles?.username || 'Unknown'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.role}</span>
+                </div>
+              ))}
+            </div>
+          ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No crew assigned yet.</div>}
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><ClipboardList size={16} /> Recent Activity</div>
+          {recent.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {recent.map((r, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ fontSize: 11, color: '#eee' }}>{r.label}</div>
+                  <div style={{ fontSize: 9, color: 'var(--fg-subtle)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>{ago(r.t)}</div>
+                </div>
+              ))}
+            </div>
+          ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No activity yet.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pitch Deck (real: title/logline, concept image, script characters) ───────
+
+function PitchDeck({ project, assets }: { project: any; assets: Asset[] }) {
+  const [characters, setCharacters] = useState<string[]>([]);
+  const [present, setPresent] = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
+
+  useEffect(() => {
+    supabase.from('scripts').select('content').eq('project_id', project.id).order('updated_at', { ascending: false }).then(({ data }) => {
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (withContent) {
+        try { setCharacters(parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean).slice(0, 10)); } catch { /* ignore */ }
+      }
+    });
+  }, [project.id]);
+
+  const images = assets.filter(a => a.type === 'image' && a.url).map(a => a.url!) as string[];
+  const visual = images[0];
+
+  const slides = [
+    { label: 'Logline & Title', render: () => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: present ? '5rem' : '2rem', letterSpacing: 4, margin: '20px 0' }}>{project.title}</h3>
+        <p style={{ fontFamily: 'var(--serif)', fontSize: present ? '1.4rem' : '0.85rem', color: 'var(--fg-muted)', maxWidth: 640, margin: '0 auto', lineHeight: 1.6 }}>{project.description || 'Add a logline in the project summary.'}</p>
+      </>
+    )},
+    { label: 'The Visual World', bg: visual, render: () => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: present ? '4rem' : '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
+        <div style={{ fontSize: present ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>{images.length > 0 ? `${images.length} concept references` : 'Add references in the Concept board'}</div>
+      </>
+    )},
+    { label: 'The Characters', render: () => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: present ? '4rem' : '1.6rem', letterSpacing: 4, margin: '16px 0' }}>THE CHARACTERS</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 700, margin: '0 auto' }}>
+          {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: present ? 14 : 9.5, padding: present ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 99 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the cast.</span>}
+        </div>
+      </>
+    )},
+  ];
+
+  const SlideCard = ({ s, i }: { s: typeof slides[0]; i: number }) => (
+    <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+      {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <SectionLabel text={`Slide 0${i + 1}`} />
+        {s.render()}
+      </div>
+    </div>
+  );
+
+  return (
+    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+        <div>
+          <SectionLabel text="Investor Relations" />
+          <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck</h2>
+        </div>
+        <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { setSlideIdx(0); setPresent(true); }}>Enter Presentation View</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+        {slides.map((s, i) => <SlideCard key={i} s={s} i={i} />)}
+      </div>
+
+      <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Info size={20} color="var(--accent)" />
+        <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your project logline, Concept board references, and ScriptOS characters. Update them and this updates.</div>
+      </div>
+
+      <AnimatePresence>
+        {present && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
+            <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
+              {slides[slideIdx].bg && (<><img src={slides[slideIdx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
+              <div style={{ position: 'relative', zIndex: 1 }}>{slides[slideIdx].render()}</div>
+            </div>
+            <button onClick={() => setSlideIdx(i => Math.max(0, i - 1))} disabled={slideIdx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: slideIdx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
+            <button onClick={() => setSlideIdx(i => Math.min(slides.length - 1, i + 1))} disabled={slideIdx === slides.length - 1} aria-label="next" style={{ position: 'fixed', right: 28, top: '50%', background: 'none', border: 'none', color: slideIdx === slides.length - 1 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>›</button>
+            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#666', letterSpacing: 2 }}>{slideIdx + 1} / {slides.length}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
