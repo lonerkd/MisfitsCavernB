@@ -9,21 +9,46 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
-import { getAllStudioAssets } from '@/lib/supabase/studio';
-import { parseScript } from '@/lib/scriptos/parser';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
+import { saveScript } from '@/lib/scriptos/storage';
+import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
+import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
+import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle } from 'lucide-react';
+import EmptyState from '@/components/EmptyState';
+
+function DemoBanner({ text }: { text: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '8px 14px', borderRadius: 8, marginBottom: 16,
+      background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+    }}>
+      <AlertCircle size={12} color="#f59e0b" />
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 0.5 }}>{text}</span>
+    </div>
+  );
+}
 
 interface Asset {
   id: string;
   name: string;
-  type: 'image' | 'video' | 'document' | 'audio' | 'color';
+  type: 'image' | 'video' | 'document' | 'audio';
   category: string;
   size: string;
   dateAdded: string;
-  url?: string;
 }
+
+
+const CONCEPT_IMAGES = [
+  { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
+  { id: 'c2', url: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80', title: 'Cinematic Framing', aspect: 'wide' },
+  { id: 'c3', url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80', title: 'Low Key Lighting', aspect: 'square' },
+  { id: 'c4', url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80', title: 'Urban Gritty Texture', aspect: 'tall' },
+  { id: 'c5', url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80', title: 'Vintage Lens Flare', aspect: 'wide' },
+  { id: 'c6', url: 'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&q=80', title: 'Dramatic Shadows', aspect: 'square' },
+];
 
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
@@ -127,13 +152,8 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
                  <Video size={48} color="#333" style={{ marginBottom: 16 }} />
                  <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>VIDEO PLAYER MOCKUP</div>
                </div>
-             ) : asset.url ? (
-               // eslint-disable-next-line @next/next/no-img-element
-               <img src={asset.url} alt={asset.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
              ) : (
-               <div style={{ width: '100%', maxWidth: 1000, aspectRatio: '16/9', background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>
-                 NO PREVIEW
-               </div>
+               <img src={CONCEPT_IMAGES[1].url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
              )}
           </div>
 
@@ -171,59 +191,53 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
   );
 }
 
-// Get the user's studio board (creating a default one if none exists yet).
-async function getOrCreateBoard(userId: string, projectId?: string): Promise<string | null> {
-  const { data: existing } = await supabase
-    .from('studio_boards').select('id').eq('user_id', userId).limit(1).maybeSingle();
-  if (existing?.id) return existing.id;
-  const { data: created, error } = await supabase
-    .from('studio_boards')
-    .insert({ user_id: userId, name: projectId || 'Studio', description: 'Concept board' })
-    .select('id').single();
-  if (error) return null;
-  return created.id;
-}
-
-function IntakeModal({ isOpen, onClose, userId, projectId, onCreated }: {
-  isOpen: boolean;
-  onClose: () => void;
-  userId: string | null;
-  projectId?: string;
-  onCreated: (asset: { id: string; title: string; asset_type: string; asset_url: string; created_at: string }) => void;
-}) {
+function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: boolean; onClose: () => void; boardId: string; userId: string; onSuccess: () => void }) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [category, setCategory] = useState('Reference');
   const [type, setType] = useState('image');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const reset = () => { setTitle(''); setUrl(''); setType('image'); setError(null); };
-  const close = () => { reset(); onClose(); };
-
-  const submit = async () => {
-    setError(null);
-    if (!userId) { setError('You must be signed in.'); return; }
-    if (!url.trim()) { setError('Paste an asset URL.'); return; }
-    setSaving(true);
+  const handleSubmit = async () => {
+    if ((!url && !file) || !boardId || !userId) {
+      setError('Add a file or a link before submitting');
+      return;
+    }
+    setLoading(true);
+    setError('');
     try {
-      const boardId = await getOrCreateBoard(userId, projectId);
-      if (!boardId) throw new Error('Could not create a board.');
-      const { data, error: insErr } = await supabase
-        .from('studio_assets')
-        .insert({ board_id: boardId, user_id: userId, title: title || 'Untitled', asset_url: url.trim(), asset_type: type })
-        .select('id,title,asset_type,asset_url,created_at')
-        .single();
-      if (insErr) throw insErr;
-      onCreated(data as any);
-      close();
-    } catch (e: any) {
-      setError(e.message || 'Failed to add asset.');
+      let finalUrl = url;
+
+      if (file) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+        finalUrl = await uploadStudioFile(filePath, file);
+      }
+
+      await addStudioAsset({
+        board_id: boardId,
+        user_id: userId,
+        title: title || (file ? file.name : 'Untitled Asset'),
+        asset_url: finalUrl,
+        asset_type: type,
+        category: category
+      });
+      onSuccess();
+      onClose();
+      // Reset form
+      setTitle('');
+      setUrl('');
+      setFile(null);
+    } catch (err) {
+      console.error('Error adding asset:', err);
+      setError('Upload failed — try again');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
-
-  const inputStyle: React.CSSProperties = { width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12, outline: 'none' };
 
   return (
     <AnimatePresence>
@@ -233,7 +247,7 @@ function IntakeModal({ isOpen, onClose, userId, projectId, onCreated }: {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={close}
+          onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -243,32 +257,109 @@ function IntakeModal({ isOpen, onClose, userId, projectId, onCreated }: {
             style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Add a reference, frame, or asset to the studio board by URL.</p>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>
+              File storage isn't connected yet — link to a file already hosted elsewhere (Drive, YouTube, etc.) to track it here.
+            </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
-                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Opening shot reference" style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Asset URL</label>
-                <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} placeholder="https://…" style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
-                <select value={type} onChange={e => setType(e.target.value)} style={inputStyle}>
-                  <option value="image">Image</option>
-                  <option value="video">Video</option>
-                  <option value="document">Document</option>
-                  <option value="audio">Audio</option>
-                  <option value="color">Color</option>
-                </select>
+                <input
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="Asset Title"
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                />
               </div>
 
-              {error && <div style={{ color: '#ff5555', fontSize: 11, fontFamily: 'var(--mono)' }}>⚠ {error}</div>}
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Upload File</label>
+                <div
+                  onClick={() => document.getElementById('studio-file-input')?.click()}
+                  style={{
+                    width: '100%',
+                    background: '#0a0a0a',
+                    border: '1px dashed #333',
+                    color: '#fff',
+                    padding: 20,
+                    borderRadius: 6,
+                    fontSize: 12,
+                    textAlign: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {file ? file.name : 'Click to select or drop file'}
+                  <input
+                    id="studio-file-input"
+                    type="file"
+                    onChange={e => {
+                      if (e.target.files?.[0]) {
+                        setFile(e.target.files[0]);
+                        // Auto-detect type
+                        const f = e.target.files[0];
+                        if (f.type.includes('image')) setType('image');
+                        else if (f.type.includes('video')) setType('video');
+                        else if (f.type.includes('audio')) setType('audio');
+                        else setType('document');
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+              </div>
 
-              <button onClick={submit} disabled={saving} style={{ marginTop: 8, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Adding…' : 'Add to Studio'}
+              <div style={{ textAlign: 'center', fontSize: 10, color: '#444' }}>— OR —</div>
+
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>External URL</label>
+                <input
+                  value={url}
+                  onChange={e => {
+                    setUrl(e.target.value);
+                    if (e.target.value) setFile(null);
+                  }}
+                  placeholder="https://..."
+                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
+                  <select
+                    value={category}
+                    onChange={e => setCategory(e.target.value)}
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                  >
+                    <option>Raw Footage</option>
+                    <option>Reference</option>
+                    <option>Production Doc</option>
+                    <option>Asset</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
+                   <select
+                    value={type}
+                    onChange={e => setType(e.target.value)}
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
+                   >
+                    <option value="video">Video</option>
+                    <option value="image">Image</option>
+                    <option value="document">PDF / Doc</option>
+                    <option value="audio">Audio</option>
+                  </select>
+                </div>
+              </div>
+
+              {error && <div style={{ fontSize: 11, color: '#ef4444' }}>{error}</div>}
+
+              <button
+                onClick={handleSubmit}
+                disabled={loading || (!url && !file)}
+                style={{ marginTop: 12, padding: 14, background: loading ? '#333' : 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: loading ? 'not-allowed' : 'pointer' }}
+              >
+                {loading ? 'Processing...' : 'Complete Intake'}
               </button>
             </div>
           </motion.div>
@@ -387,8 +478,277 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
+function ConceptCard({ image, index, onRemove }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.05 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        marginBottom: 16,
+        breakInside: 'avoid',
+        position: 'relative',
+        borderRadius: 8,
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.05)',
+        background: '#0a0a0a'
+      }}
+    >
+      <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s' }} />
+
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))',
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end'
+            }}
+          >
+            {onRemove && (
+              <button
+                onClick={onRemove}
+                style={{ background: 'rgba(255,0,0,0.2)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ff4444' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+            <div style={{ width: '100%' }}>
+              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1, display: 'block' }}>{image.title || 'Untitled'}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number; onDelete?: (id: string) => void; onPush?: (beat: any) => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      transition={{ delay: index * 0.05 }}
+      style={{
+        padding: 20,
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid ${beat.color || 'rgba(255,255,255,0.06)'}`,
+        borderTop: `4px solid ${beat.color || 'var(--accent)'}`,
+        borderRadius: 8,
+        minHeight: 140,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        position: 'relative',
+        transition: 'box-shadow 0.3s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(255,60,0,0.08)'}`)}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+    >
+      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+        {onPush && (
+          <button 
+            onClick={() => onPush(beat)}
+            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
+            title="Push to ScriptOS"
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+            onMouseLeave={e => e.currentTarget.style.color = '#444'}
+          >
+            <Share2 size={12} />
+          </button>
+        )}
+        {onDelete && (
+          <button 
+            onClick={() => onDelete(beat.id)}
+            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
+            title="Delete Beat"
+            onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
+            onMouseLeave={e => e.currentTarget.style.color = '#444'}
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
+      </div>
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+        </div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
+      </div>
+      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
+    </motion.div>
+  );
+}
+
+function CrewMemberCard({ member, index }: { member: any; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ x: 2 }}
+      transition={{ delay: index * 0.05 }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        padding: 16,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: 12,
+        transition: 'border-color 0.3s, box-shadow 0.3s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
+    >
+      <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent), #ffaa00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#000' }}>
+        {member.avatar ? <img src={member.avatar} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : member.name.charAt(0)}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
+        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+      </div>
+      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
+        {member.status || 'pending'}
+      </div>
+    </motion.div>
+  );
+}
+function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boolean; onClose: () => void; projectId: string; onSuccess: () => void }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [role, setRole] = useState('Production Assistant');
+
+  const handleSearch = async () => {
+    if (!query) return;
+    setLoading(true);
+    const users = await searchProfiles(query);
+    setResults(users);
+    setLoading(false);
+  };
+
+  const handleInvite = async () => {
+    if (!selectedUser || !projectId) return;
+    setLoading(true);
+    try {
+      await inviteToCrew(projectId, selectedUser.id, role);
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to invite.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+            onClick={e => e.stopPropagation()}
+            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
+          >
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
+            
+            {!selectedUser ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search by username..."
+                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: '12px 40px 12px 16px', borderRadius: 8, fontSize: 13 }}
+                  />
+                  <Search size={16} style={{ position: 'absolute', right: 14, top: 14, color: '#666' }} />
+                </div>
+                
+                <div style={{ minHeight: 200, maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {loading ? <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>Searching...</div> : 
+                   results.map(u => (
+                    <div 
+                      key={u.id}
+                      onClick={() => setSelectedUser(u)}
+                      style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                    >
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                        {u.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ fontSize: 14 }}>{u.username}</div>
+                    </div>
+                  ))}
+                  {results.length === 0 && !loading && query && <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>No results found.</div>}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
+                      {selectedUser.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>{selectedUser.username}</div>
+                      <div style={{ fontSize: 12, color: 'var(--accent)' }}>Active Professional</div>
+                    </div>
+                 </div>
+
+                 <div>
+                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <select 
+                     value={role}
+                     onChange={e => setRole(e.target.value)}
+                     style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 12, borderRadius: 8, fontSize: 13 }}
+                   >
+                     <option>Director</option>
+                     <option>Director of Photography</option>
+                     <option>Lead Actor</option>
+                     <option>Sound Mixer</option>
+                     <option>Editor</option>
+                     <option>Production Assistant</option>
+                   </select>
+                 </div>
+
+                 <div style={{ display: 'flex', gap: 12 }}>
+                    <button onClick={() => setSelectedUser(null)} style={{ flex: 1, padding: 14, background: 'transparent', border: '1px solid #333', color: '#fff', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}>Back</button>
+                    <button onClick={handleInvite} disabled={loading} style={{ flex: 2, padding: 14, background: 'var(--accent)', border: 'none', color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      {loading ? 'Sending...' : 'Send Invitation'}
+                    </button>
+                 </div>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects } = useProject();
+  const { activeProject, setActiveProject, projects, addBeat, removeBeat, addConceptAsset, removeConceptAsset, addScene, removeScene, addCampaign, removeCampaign } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -396,6 +756,30 @@ export default function StudioPage() {
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [boards, setBoards] = useState<any[]>([]);
+  const [activeBoard, setActiveBoard] = useState<any>(null);
+  const [loadingBoards, setLoadingBoards] = useState(false);
+  const [beats, setBeats] = useState<any[]>([]);
+  const [crewList, setCrewList] = useState<any[]>([]);
+  const [showRecruit, setShowRecruit] = useState(false);
+
+  const [showAddConcept, setShowAddConcept] = useState(false);
+  const [conceptTitle, setConceptTitle] = useState('');
+  const [conceptUrl, setConceptUrl] = useState('');
+
+  const [showAddBeat, setShowAddBeat] = useState(false);
+  const [beatTitle, setBeatTitle] = useState('');
+  const [beatContent, setBeatContent] = useState('');
+
+  const [showAddScene, setShowAddScene] = useState(false);
+  const [sceneTitle, setSceneTitle] = useState('');
+  const [sceneLocation, setSceneLocation] = useState('');
+  const [sceneDay, setSceneDay] = useState('1');
+
+  const [showAddCampaign, setShowAddCampaign] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -409,25 +793,186 @@ export default function StudioPage() {
   const types = ['all', 'image', 'video', 'document', 'audio'];
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUser(user);
       
-      getAllStudioAssets(user.id).then(data => {
-        setAssetsList((data || []).map(a => ({
-          id: a.id,
-          name: a.title || 'Untitled',
-          type: (a.asset_type as any) || 'document',
-          category: 'Studio',
-          size: '—',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
-          url: (a as any).asset_url,
-        })));
-      }).catch(console.error);
+      // Load Boards for Project
+      if (activeProject) {
+        setLoadingBoards(true);
+        try {
+          const projectBoards = await getProjectBoards(activeProject.id);
+          setBoards(projectBoards);
+          
+          let currentBoard = projectBoards[0];
+          if (projectBoards.length > 0) {
+            setActiveBoard(currentBoard);
+          } else {
+            // Auto-create a default board if none exist
+            currentBoard = await createStudioBoard({
+              user_id: user.id,
+              project_id: activeProject.id,
+              name: 'Project Mood Board',
+              description: `Main mood board for ${activeProject.title}`
+            });
+            setBoards([currentBoard]);
+            setActiveBoard(currentBoard);
+          }
+
+          // Fetch assets for this board specifically
+          const boardAssets = await getStudioAssets(currentBoard.id);
+          setAssetsList(boardAssets.map((a: any) => ({
+            id: a.id,
+            name: a.title || 'Untitled',
+            type: (a.asset_type as any) || 'image',
+            category: a.category || 'Studio',
+            url: a.asset_url,
+            size: 'Unknown',
+            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          })));
+
+        } catch (err) {
+          console.error('Error loading boards:', err);
+        } finally {
+          setLoadingBoards(false);
+        }
+      }
+
+      // Load activities
+      try {
+        const acts = await getActivities(5);
+        setActivities(acts);
+      } catch (err) {
+        console.error('Error loading activities:', err);
+      }
+
+      // Load Beats
+      if (activeProject) {
+        try {
+          const projectBeats = await getProjectBeats(activeProject.id);
+          setBeats(projectBeats);
+        } catch (err) {
+          console.error('Error loading beats:', err);
+        }
+        
+        try {
+          const crew = await getProjectCrew(activeProject.id);
+          setCrewList(crew);
+        } catch (err) {
+          console.error('Error loading crew:', err);
+        }
+      }
+    };
+    init();
+
+    const sub = subscribeToActivities((payload) => {
+      getActivities(5).then(setActivities);
     });
-  }, []);
+
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, [activeProject?.id]);
 
   const filtered = filter === 'all' ? assetsList : assetsList.filter(a => a.type === filter);
+
+  const refreshAssets = async () => {
+    if (!user || !activeBoard) return;
+    try {
+      const data = await getStudioAssets(activeBoard.id);
+      if (data) {
+        setAssetsList(data.map(a => ({
+          id: a.id,
+          name: a.title || 'Untitled',
+          type: (a.asset_type as any) || 'image',
+          category: a.category || 'Studio',
+          url: a.asset_url,
+          size: 'Unknown',
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+        })));
+      }
+    } catch (err) {
+      console.error('Error refreshing assets:', err);
+    }
+  };
+
+  const refreshBeats = async () => {
+    if (!activeProject) return;
+    try {
+      const projectBeats = await getProjectBeats(activeProject.id);
+      setBeats(projectBeats);
+    } catch (err) {
+      console.error('Error refreshing beats:', err);
+    }
+  };
+
+  const handleAddBeat = async () => {
+    if (!activeProject) return;
+    const title = prompt('Beat Title:');
+    if (!title) return;
+    const content = prompt('Beat Content:');
+    try {
+      await createProjectBeat({
+        project_id: activeProject.id,
+        title,
+        content,
+        order_index: beats.length
+      });
+      refreshBeats();
+    } catch (err) {
+      console.error('Error adding beat:', err);
+    }
+  };
+
+  const handlePushToScript = async (beat: any) => {
+    if (!activeProject || !user) return;
+    try {
+      const sceneTitle = beat.title.toUpperCase().startsWith('EXT.') || beat.title.toUpperCase().startsWith('INT.') 
+        ? beat.title.toUpperCase() 
+        : `INT. ${beat.title.toUpperCase()} - DAY`;
+        
+      const content = `${sceneTitle}\n\n${beat.content}`;
+      
+      const newScript = await saveScript({
+        title: `${activeProject.title} - ${beat.title}`,
+        content,
+        project_id: activeProject.id
+      });
+      
+      if (newScript) {
+        alert('Beat pushed to ScriptOS! You can find it in your scripts list.');
+      }
+    } catch (err) {
+      console.error('Error pushing beat to script:', err);
+    }
+  };
+
+  const handleDeleteBeat = async (id: string) => {
+    if (!confirm('Delete this beat?')) return;
+    try {
+      await deleteProjectBeat(id);
+      refreshBeats();
+    } catch (err) {
+      console.error('Error deleting beat:', err);
+    }
+  };
+
+  const handleDeleteAsset = async (id: string) => {
+    if (!confirm('Delete this asset?')) return;
+    try {
+      await deleteStudioAsset(id);
+      refreshAssets();
+    } catch (err) {
+      console.error('Error deleting asset:', err);
+    }
+  };
+
+  const refreshCrew = async () => {
+    if (!activeProject) return;
+    const crew = await getProjectCrew(activeProject.id);
+    setCrewList(crew);
+  };
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
@@ -480,17 +1025,15 @@ export default function StudioPage() {
       <IntakeModal
         isOpen={showIntake}
         onClose={() => setShowIntake(false)}
-        userId={user?.id ?? null}
+        boardId={activeBoard?.id}
+        userId={user?.id}
+        onSuccess={refreshAssets}
+      />
+      <RecruitModal
+        isOpen={showRecruit}
+        onClose={() => setShowRecruit(false)}
         projectId={activeProject?.id}
-        onCreated={(a) => setAssetsList(prev => [{
-          id: a.id,
-          name: a.title || 'Untitled',
-          type: (a.asset_type as any) || 'image',
-          category: 'Studio',
-          size: '—',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
-          url: (a as any).asset_url,
-        }, ...prev])}
+        onSuccess={refreshCrew}
       />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
 
@@ -547,10 +1090,123 @@ export default function StudioPage() {
         </div>
       </div>
 
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '160px 20px 80px' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 20px 80px' }}>
         
         {activeTab === 'overview' && activeProject && (
-          <OverviewPanel project={activeProject} />
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
+            <div>
+              <StageIndicator currentStage={activeProject.status} />
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <SectionLabel text="Project Summary" />
+                <h1 style={{ fontFamily: 'var(--display)', fontSize: '4rem', letterSpacing: 4, lineHeight: 1.1, marginBottom: 24 }}>{activeProject.title}</h1>
+                <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
+                  {activeProject.description || "No project description provided. Update your script metadata to populate this field."}
+                </p>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 60 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Production Stats</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
+                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Status</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#ffaa00' }}>{activeProject.status}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
+                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Completion</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{(activeProject as any).completion || 0}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Crew</div>
+                    {(activeProject.crew && activeProject.crew.length > 0) ? (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {activeProject.crew.slice(0, 3).map((c, i) => (
+                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: `hsl(${(i * 97) % 360}, 40%, 30%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, overflow: 'hidden' }}>
+                            {c.avatar ? <img src={c.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : c.name.charAt(0).toUpperCase()}
+                          </div>
+                        ))}
+                        {activeProject.crew.length > 3 && (
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+{activeProject.crew.length - 3}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link href={`/projects/${activeProject.id}?tab=crew`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No crew yet — add some →</Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* Production budget — pulled from this project's budget_items */}
+                <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      <DollarSign size={16} color="var(--accent)" /> Production Budget
+                    </div>
+                    <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
+                  </div>
+                  {(activeProject.budget_items && activeProject.budget_items.length > 0) ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
+                        <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>
+                          ${activeProject.budget_items.reduce((s, b) => s + Number(b.amount || 0), 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
+                        {activeProject.budget_items.slice(0, 4).map(b => (
+                          <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
+                            <span style={{ color: 'var(--fg-muted)' }}>{b.category}</span>
+                            <span>${Number(b.amount || 0).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 11, color: 'var(--fg-dim)' }}>No budget line items tracked for this project yet.</p>
+                  )}
+                </div>
+
+                {/* Milestones — pulled from this project's timeline_items */}
+                <div style={{ marginTop: 40 }}>
+                   <SectionLabel text="Project Milestones" />
+                   {(activeProject.timeline_items && activeProject.timeline_items.length > 0) ? (
+                     <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {activeProject.timeline_items.map((m) => (
+                          <div key={m.id} style={{ position: 'relative' }}>
+                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completion >= 100 ? 'var(--accent)' : '#222', border: m.completion >= 100 ? 'none' : '1px solid #444' }} />
+                             <div style={{ fontSize: 12, fontWeight: 700, color: m.completion >= 100 ? '#fff' : '#666' }}>{m.title}</div>
+                             <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.end_date).toLocaleDateString()} · {m.completion}%</div>
+                          </div>
+                        ))}
+                     </div>
+                   ) : (
+                     <Link href={`/projects/${activeProject.id}?tab=schedule`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No milestones yet — add some →</Link>
+                   )}
+                </div>
+              </motion.div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ClipboardList size={16} /> Recent Activity
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {activities.length > 0 ? activities.map((act, i) => (
+                  <div key={act.id} style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>
+                      {act.profiles?.username?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#eee' }}><span style={{ fontWeight: 700 }}>{act.profiles?.username || 'Someone'}</span> {act.action}</div>
+                      <div style={{ fontSize: 9, color: 'var(--fg-subtle)' }}>{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+                )) : (
+                  <div style={{ fontSize: 11, color: '#444', textAlign: 'center', padding: '20px 0' }}>No recent activity</div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'concept' && (
@@ -560,45 +1216,170 @@ export default function StudioPage() {
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
               </div>
-              <button className="link-btn" onClick={() => setShowIntake(true)}>+ New Ref</button>
+              <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
             </div>
-            {(() => {
-              const refs = assetsList.filter(a => a.type === 'image' || a.type === 'color');
-              if (refs.length === 0) {
-                return (
-                  <div style={{ padding: '64px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12 }}>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, marginBottom: 14 }}>NO VISUAL REFERENCES YET</div>
-                    <button className="link-btn" onClick={() => setShowIntake(true)}>+ Add your first reference</button>
-                  </div>
-                );
-              }
-              return (
+
+            {showAddConcept && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                <input placeholder="Title" value={conceptTitle} onChange={e => setConceptTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <input placeholder="Image URL" value={conceptUrl} onChange={e => setConceptUrl(e.target.value)} style={{ flex: 2, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <button
+                  className="link-btn"
+                  onClick={async () => {
+                    if (!activeProject || !conceptUrl.trim()) return;
+                    const { data: { user } } = await supabase.auth.getUser();
+                    await addConceptAsset({ project_id: activeProject.id, title: conceptTitle.trim() || undefined, image_url: conceptUrl.trim(), created_by: user?.id });
+                    setConceptTitle(''); setConceptUrl(''); setShowAddConcept(false);
+                  }}
+                >Add</button>
+              </div>
+            )}
+
+            {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
+              <div style={{ columnCount: 3, columnGap: 16 }}>
+                {activeProject.concept_assets.map((img, i) => (
+                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} onRemove={() => removeConceptAsset(img.id, activeProject.id)} />
+                ))}
+              </div>
+            ) : (
+              <>
+                <DemoBanner text="Showing stock placeholder imagery — add your own references above to replace these" />
                 <div style={{ columnCount: 3, columnGap: 16 }}>
-                  {refs.map((ref) => (
-                    <div key={ref.id} style={{ breakInside: 'avoid', marginBottom: 16, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', background: '#0d0d0d' }}>
-                      {ref.type === 'color' ? (
-                        <div style={{ height: 140, background: ref.url || '#222' }} />
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={ref.url} alt={ref.name} style={{ width: '100%', display: 'block' }} loading="lazy" />
-                      )}
-                      <div style={{ padding: '10px 12px', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', letterSpacing: 1 }}>{ref.name}</div>
-                    </div>
-                  ))}
+                  {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
                 </div>
-              );
-            })()}
+              </>
+            )}
           </motion.div>
         )}
 
         {activeTab === 'production' && (
-          activeProject ? (
-            <ProductionSuite projectId={activeProject.id} userId={user?.id ?? null} />
-          ) : (
-            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>
-              SELECT A PROJECT TO PLAN PRODUCTION
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+              <div>
+                <SectionLabel text="Pre-Production" />
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="link-btn">Export Schedule</button>
+                <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>
+              </div>
             </div>
-          )
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
+               {/* Beat Board */}
+               <div>
+                 <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
+                   <BookOpen size={16} /> Beat Board / Outline
+                 </div>
+                 {showAddBeat && (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                     <input placeholder="Beat title" value={beatTitle} onChange={e => setBeatTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                     <textarea placeholder="What happens in this beat?" value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, minHeight: 60, resize: 'vertical' }} />
+                     <button
+                       className="link-btn"
+                       onClick={async () => {
+                         if (!activeProject || !beatTitle.trim()) return;
+                         await addBeat({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                         setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
+                       }}
+                     >Add Beat</button>
+                   </div>
+                 )}
+
+                 {(activeProject?.beats && activeProject.beats.length > 0) ? (
+                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                     {activeProject.beats.map((beat, i) => (
+                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={(id) => removeBeat(id, activeProject.id)} onPush={handlePushToScript} />
+                     ))}
+                   </div>
+                 ) : (
+                   <EmptyState icon={<BookOpen size={28} />} title="No beats outlined yet" subtitle="Break the story into beats above" />
+                 )}
+               </div>
+
+               {/* Staffing & Casting */}
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+                 <div>
+                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
+                     <Users size={16} /> Cast & Crew Hub
+                   </div>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {crewList.length > 0 ? crewList.map((member, i) => (
+                        <CrewMemberCard key={member.id} member={{
+                          name: member.profiles?.username || 'Unknown',
+                          role: member.role,
+                          status: member.status,
+                          avatar: member.profiles?.avatar_url
+                        }} index={i} />
+                      )) : (
+                        <EmptyState icon={<Users size={28} />} title="No crew members recruited yet" />
+                      )}
+                      <button
+                        onClick={() => setShowRecruit(true)}
+                        style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}
+                      >
+                        + Recruit Crew / Invite Talent
+                      </button>
+                    </div>
+                 </div>
+
+                 {/* Scene Gantt Timeline (StudioBinder style) */}
+                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
+                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
+                   </div>
+
+                   {showAddScene && (
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                       <input placeholder="Scene title (e.g. EXT. ABANDONED PIER)" value={sceneTitle} onChange={e => setSceneTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                       <div style={{ display: 'flex', gap: 8 }}>
+                         <input placeholder="Location" value={sceneLocation} onChange={e => setSceneLocation(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                         <input placeholder="Shoot day #" type="number" min="1" value={sceneDay} onChange={e => setSceneDay(e.target.value)} style={{ width: 100, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                       </div>
+                       <button
+                         className="link-btn"
+                         onClick={async () => {
+                           if (!activeProject || !sceneTitle.trim()) return;
+                           const nextNum = (activeProject.scenes?.length || 0) + 1;
+                           await addScene({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || undefined, shoot_day: Number(sceneDay) || 1 });
+                           setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
+                         }}
+                       >Add Scene</button>
+                     </div>
+                   )}
+
+                   {(activeProject?.scenes && activeProject.scenes.length > 0) ? (
+                     <>
+                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
+                         <div style={{ width: 60 }}>Scene</div>
+                         <div style={{ flex: 1, minWidth: 200 }}>Location</div>
+                         <div style={{ width: 80 }}>Day</div>
+                         <div style={{ width: 30 }}></div>
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                         {activeProject.scenes.map(s => (
+                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                             <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
+                             <div style={{ flex: 1, minWidth: 200 }}>
+                               <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
+                               {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
+                             </div>
+                             <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
+                             <div style={{ width: 30, textAlign: 'right' }}>
+                               <button onClick={() => removeScene(s.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </>
+                   ) : (
+                     <EmptyState icon={<Calendar size={28} />} title="No scenes scheduled yet" />
+                   )}
+                 </div>
+               </div>
+            </div>
+          </motion.div>
         )}
 
         {activeTab === 'assets' && (
@@ -634,659 +1415,152 @@ export default function StudioPage() {
               ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-              {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
-            </div>
+            {loadingBoards ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="skeleton" style={{ height: 180, borderRadius: 14 }} />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                icon={<Archive size={28} />}
+                title={assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
+                subtitle={assetsList.length === 0 ? 'Use Intake above to track files hosted elsewhere' : undefined}
+              />
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+                {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
+              </div>
+            )}
           </AnimatedSection>
         )}
 
-        {activeTab === 'pitch' && (
-          activeProject ? (
-            <PitchDeck project={activeProject} assets={assetsList} />
-          ) : (
-            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>
-              SELECT A PROJECT TO BUILD A PITCH
+        {activeTab === 'pitch' && activeProject && (
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+              <div>
+                <SectionLabel text="Investor Relations" />
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck Mode</h2>
+              </div>
+              <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Enter Presentation View</button>
             </div>
-          )
-        )}
 
-        {activeTab === 'marketing' && (
-          activeProject ? (
-            <CampaignPlanner projectId={activeProject.id} />
-          ) : (
-            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>
-              SELECT A PROJECT TO PLAN MARKETING
+            <DemoBanner text="Demo data — slides are placeholders, not auto-generated from real Concept/Character data yet" />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+                <SectionLabel text="Slide 01" />
+                <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>{activeProject.title}</h3>
+                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
+              </div>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
+                <img src={activeProject.concept_assets?.[0]?.image_url || (assetsList.find(a => a.type === 'image') as any)?.url || CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
+                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+                  <SectionLabel text="Slide 02" />
+                  <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
+                  <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Cinematography & Mood</div>
+                </div>
+              </div>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+                <SectionLabel text="Slide 03" />
+                <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, margin: '20px 0' }}>{beats[0]?.title || 'STORY BEATS'}</h3>
+                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Narrative Engine</div>
+              </div>
             </div>
-          )
+            
+            <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <Info size={20} color="var(--accent)" />
+              <div style={{ fontSize: 12, color: '#ccc' }}>
+                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Coming soon:</span> auto-generating this deck from your Concept Board and ScriptOS Character Bible.
+              </div>
+            </div>
+          </motion.div>
+        )}
+        {activeTab === 'marketing' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+              <div>
+                <SectionLabel text="Delivery & Promotion" />
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Marketing Hub</h2>
+              </div>
+              <button className="link-btn" onClick={() => setShowAddCampaign(s => !s)}>+ New Campaign</button>
+            </div>
+
+            <div style={{ gridTemplateColumns: '2fr 1fr', display: 'grid', gap: 40 }}>
+               {/* Campaign Planner */}
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  {showAddCampaign && (
+                    <div style={{ display: 'flex', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+                      <input placeholder="Campaign title" value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                      <select value={campaignPlatform} onChange={e => setCampaignPlatform(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }}>
+                        <option>Instagram</option>
+                        <option>X / Twitter</option>
+                        <option>YouTube</option>
+                        <option>TikTok</option>
+                      </select>
+                      <button
+                        className="link-btn"
+                        onClick={async () => {
+                          if (!activeProject || !campaignTitle.trim()) return;
+                          const { data: { user } } = await supabase.auth.getUser();
+                          await addCampaign({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          setCampaignTitle(''); setShowAddCampaign(false);
+                        }}
+                      >Add</button>
+                    </div>
+                  )}
+
+                  {(activeProject?.campaigns && activeProject.campaigns.length > 0) ? (
+                    activeProject.campaigns.map((campaign) => (
+                      <div
+                        key={campaign.id}
+                        style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color 0.3s, box-shadow 0.3s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
+                      >
+                         <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                               <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
+                               <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
+                            </div>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
+                         </div>
+                         <button onClick={() => removeCampaign(campaign.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                      </div>
+                    ))
+                  ) : (
+                    <EmptyState icon={<Megaphone size={28} />} title="No campaigns planned yet" subtitle="Use + New Campaign above" />
+                  )}
+               </div>
+
+               {/* Analytics Preview */}
+               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
+                  <DemoBanner text="Demo data — no analytics source is connected yet" />
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                     <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Interest Score</span><span>78%</span></div>
+                        <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: '78%', height: '100%', background: 'var(--accent)', borderRadius: 2 }} /></div>
+                     </div>
+                     <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Audience Retention</span><span>64%</span></div>
+                        <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: '64%', height: '100%', background: '#0099ff', borderRadius: 2 }} /></div>
+                     </div>
+                  </div>
+
+                  <div style={{ marginTop: 32, padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+                     <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 8 }}>Top Performing Asset</div>
+                     <div style={{ fontSize: 12, fontWeight: 600 }}>Neon Noir Poster Concept</div>
+                     <div style={{ fontSize: 10, color: '#00cc66', marginTop: 4 }}>+12% Engagement</div>
+                  </div>
+
+                  <button style={{ width: '100%', marginTop: 24, padding: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#fff', borderRadius: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer' }}>View Detailed Analytics</button>
+               </div>
+            </div>
+          </motion.div>
         )}
       </section>
     </main>
-  );
-}
-
-// ─── Production Suite (script-driven breakdown · stripboard · call sheets) ────
-
-interface PSceneElements { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] }
-interface PScene { key: string; num: number; intExt: string; heading: string; location: string; time: string; characters: string[]; eighths: number; elements: PSceneElements }
-const EMPTY_ELEMENTS: PSceneElements = { props: [], wardrobe: [], vehicles: [], sfx: [], vfx: [] };
-interface SchedRow { id: string; scene_number: string; shoot_day_id: string | null }
-interface PShootDay { id: string; day_number: number; shoot_date: string | null }
-interface PCrew { id: string; role: string; profiles?: { username: string } | null }
-
-const INTEXT_COLOR: Record<string, string> = { INT: '#0099ff', EXT: '#f59e0b', 'INT/EXT': '#a855f7' };
-
-function intExtOf(heading: string): string {
-  const m = heading.trim().match(/^(INT\.?\/EXT\.?|INT\.?|EXT\.?)/i);
-  if (!m) return '';
-  const v = m[1].toUpperCase().replace(/\./g, '');
-  return v === 'INT/EXT' ? 'INT/EXT' : v;
-}
-
-function ProductionSuite({ projectId, userId }: { projectId: string; userId: string | null }) {
-  const [scriptId, setScriptId] = useState<string | null>(null);
-  const [scriptTitle, setScriptTitle] = useState<string | null>(null);
-  const [scenes, setScenes] = useState<PScene[]>([]);
-  const [castList, setCastList] = useState<string[]>([]);
-  const [sched, setSched] = useState<Record<string, SchedRow>>({});
-  const [days, setDays] = useState<PShootDay[]>([]);
-  const [crew, setCrew] = useState<PCrew[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const [openSheet, setOpenSheet] = useState<string | null>(null);
-  const [expandedScene, setExpandedScene] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadSchedule = React.useCallback(async () => {
-    const { data } = await supabase.from('scene_schedule').select('id,scene_number,shoot_day_id').eq('project_id', projectId);
-    const map: Record<string, SchedRow> = {};
-    (data || []).forEach((r: any) => { map[r.scene_number] = r; });
-    setSched(map);
-  }, [projectId]);
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: scripts } = await supabase.from('scripts').select('id,title,content,updated_at').eq('project_id', projectId).order('updated_at', { ascending: false });
-      const chosen = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
-      if (chosen) {
-        setScriptId(chosen.id); setScriptTitle(chosen.title);
-        if (chosen.content) {
-          const parsed = parseScript(chosen.content);
-          setScenes(parsed.scenes.filter((s: any) => !s.omitted).map((s: any, i: number) => ({
-            key: String(i + 1), num: i + 1, intExt: intExtOf(s.heading),
-            heading: s.heading, location: s.location || '—', time: s.timeOfDay || '', characters: s.characters || [],
-            eighths: s.eighths || 1, elements: s.elements || EMPTY_ELEMENTS,
-          })));
-          setCastList((parsed.characters || []).map((c: any) => c.name).filter(Boolean));
-        } else { setScenes([]); setCastList([]); }
-      } else { setScriptId(null); setScriptTitle(null); setScenes([]); setCastList([]); }
-
-      const [sd, cr] = await Promise.all([
-        supabase.from('shoot_days').select('id,day_number,shoot_date').eq('project_id', projectId).order('day_number'),
-        supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
-      ]);
-      setDays((sd.data as PShootDay[]) || []);
-      setCrew((cr.data as unknown as PCrew[]) || []);
-      await loadSchedule();
-    } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
-  }, [projectId, loadSchedule]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const addDay = async () => {
-    const { data, error } = await supabase.from('shoot_days').insert({ project_id: projectId, day_number: days.length + 1, shoot_date: null }).select('id,day_number,shoot_date').single();
-    if (error) return setErr(error.message);
-    setDays(p => [...p, data as PShootDay]);
-  };
-  const setDayDate = async (id: string, date: string) => {
-    setDays(p => p.map(d => d.id === id ? { ...d, shoot_date: date || null } : d));
-    await supabase.from('shoot_days').update({ shoot_date: date || null }).eq('id', id);
-  };
-  const delDay = async (id: string) => {
-    setDays(p => p.filter(d => d.id !== id));
-    setSched(p => { const n = { ...p }; Object.keys(n).forEach(k => { if (n[k].shoot_day_id === id) delete n[k]; }); return n; });
-    await supabase.from('shoot_days').delete().eq('id', id);
-  };
-
-  const assign = async (sc: PScene, dayId: string) => {
-    const existing = sched[sc.key];
-    if (!dayId) {
-      if (existing) { setSched(p => { const n = { ...p }; delete n[sc.key]; return n; }); await supabase.from('scene_schedule').delete().eq('id', existing.id); }
-      return;
-    }
-    if (existing) {
-      setSched(p => ({ ...p, [sc.key]: { ...existing, shoot_day_id: dayId } }));
-      await supabase.from('scene_schedule').update({ shoot_day_id: dayId }).eq('id', existing.id);
-    } else {
-      const { data, error } = await supabase.from('scene_schedule').insert({ project_id: projectId, script_id: scriptId, scene_number: sc.key, scene_heading: sc.heading, location: sc.location, shoot_day_id: dayId, order_index: sc.num }).select('id,scene_number,shoot_day_id').single();
-      if (error) return setErr(error.message);
-      setSched(p => ({ ...p, [sc.key]: data as SchedRow }));
-    }
-  };
-
-  const [crewName, setCrewName] = useState(''); const [crewRole, setCrewRole] = useState('');
-  const addCrew = async () => {
-    if (!crewName.trim()) return;
-    const { data: prof, error: pErr } = await supabase.from('profiles').select('id').eq('username', crewName.trim()).single();
-    if (pErr || !prof) { setErr(`No user "${crewName}"`); return; }
-    const { error } = await supabase.from('project_crew').insert({ project_id: projectId, user_id: prof.id, role: crewRole || 'team member' });
-    if (error) return setErr(error.message);
-    setCrewName(''); setCrewRole(''); setErr(null); load();
-  };
-  const delCrew = async (id: string) => { setCrew(p => p.filter(x => x.id !== id)); await supabase.from('project_crew').delete().eq('id', id); };
-
-  const scenesForDay = (dayId: string) => scenes.filter(s => sched[s.key]?.shoot_day_id === dayId);
-  const scheduledCount = scenes.filter(s => sched[s.key]?.shoot_day_id).length;
-  const totalPages = (scenes.reduce((t, s) => t + s.eighths, 0) / 8);
-  const input: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '7px 9px', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
-  const stat = (label: string, value: React.ReactNode) => (
-    <div><div style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</div><div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginTop: 4 }}>{label}</div></div>
-  );
-
-  if (loading) return <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>LOADING BREAKDOWN…</div>;
-
-  if (!scriptId || scenes.length === 0) {
-    return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div style={{ marginBottom: 24 }}><SectionLabel text="Pre-Production" /><h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2></div>
-        <div style={{ padding: '64px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, marginBottom: 14 }}>
-            {scriptId ? 'THIS SCRIPT HAS NO SCENES YET' : 'NO SCREENPLAY FOR THIS PROJECT'}
-          </div>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)', opacity: 0.7, marginBottom: 18 }}>
-            The shooting breakdown is generated from your screenplay. Write scenes (INT./EXT. headings) in ScriptOS and they appear here automatically.
-          </div>
-          <Link href="/editor" className="link-btn">Open ScriptOS →</Link>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-        <div><SectionLabel text="Pre-Production" /><h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1, marginTop: 4 }}>Broken down from “{scriptTitle}”</div>
-        </div>
-        <div style={{ display: 'flex', gap: 28 }}>{stat('Scenes', scenes.length)}{stat('Pages', totalPages.toFixed(1))}{stat('Scheduled', `${scheduledCount}/${scenes.length}`)}{stat('Cast', castList.length)}{stat('Days', days.length)}</div>
-      </div>
-      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {err}</div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 32 }}>
-        {/* Scene breakdown from the screenplay */}
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}><BookOpen size={16} /> Scene Breakdown <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· auto from script</span></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {scenes.map(sc => {
-              const dayId = sched[sc.key]?.shoot_day_id || '';
-              const c = INTEXT_COLOR[sc.intExt] || '#6b7280';
-              const el = sc.elements;
-              const elCount = el.props.length + el.wardrobe.length + el.vehicles.length + el.sfx.length + el.vfx.length;
-              const expanded = expandedScene === sc.key;
-              return (
-                <div key={sc.key} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${dayId ? c : 'transparent'}`, borderRadius: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px' }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', width: 18, flexShrink: 0 }}>{sc.num}</span>
-                    {sc.intExt && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: c, background: `${c}1e`, padding: '2px 5px', borderRadius: 3, flexShrink: 0 }}>{sc.intExt}</span>}
-                    <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setExpandedScene(expanded ? null : sc.key)}>
-                      <div style={{ fontSize: 11.5, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.location}{sc.time ? <span style={{ color: 'var(--fg-dim)' }}> · {sc.time}</span> : null}</div>
-                      {sc.characters.length > 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.characters.join(' · ')}{elCount > 0 ? <span style={{ color: '#6366f1' }}> · {elCount} elements</span> : null}</div>}
-                    </div>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', flexShrink: 0 }} title="page eighths">{sc.eighths}/8</span>
-                    <select value={dayId} onChange={e => assign(sc, e.target.value)} style={{ ...input, fontSize: 9, padding: '4px 6px', flexShrink: 0 }}>
-                      <option value="">Unscheduled</option>
-                      {days.map(d => <option key={d.id} value={d.id}>Day {d.day_number}</option>)}
-                    </select>
-                  </div>
-                  {expanded && elCount > 0 && (
-                    <div style={{ padding: '0 12px 10px 48px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {([['Props', el.props, '#f59e0b'], ['Wardrobe', el.wardrobe, '#ec4899'], ['Vehicles', el.vehicles, '#0099ff'], ['SFX', el.sfx, '#10b981'], ['VFX', el.vfx, '#a855f7']] as [string, string[], string][]).map(([label, items, col]) => items.length > 0 && (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: col, letterSpacing: 1, textTransform: 'uppercase' }}>{label}</span>
-                          {items.map(it => <span key={it} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#ddd', background: `${col}1a`, border: `1px solid ${col}33`, padding: '1px 6px', borderRadius: 99 }}>{it.toLowerCase()}</span>)}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {expanded && elCount === 0 && <div style={{ padding: '0 12px 10px 48px', fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', opacity: 0.6 }}>No tagged elements in this scene.</div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Stripboard + cast + crew */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--fg-muted)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={16} /> Shooting Schedule</span>
-              <button onClick={addDay} style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 10 }}>+ Day</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {days.map(d => {
-                const dayScenes = scenesForDay(d.id);
-                const locations = Array.from(new Set(dayScenes.map(s => s.location)));
-                const cast = Array.from(new Set(dayScenes.flatMap(s => s.characters)));
-                const open = openSheet === d.id;
-                return (
-                  <div key={d.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: '#f59e0b' }}>DAY {d.day_number}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <input type="date" value={d.shoot_date || ''} onChange={e => setDayDate(d.id, e.target.value)} style={{ ...input, fontSize: 9, padding: '4px 6px' }} />
-                        <button onClick={() => delDay(d.id)} aria-label="delete day" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 14, opacity: 0.5 }}>×</button>
-                      </div>
-                    </div>
-                    {dayScenes.length === 0 ? (
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.5 }}>Assign scenes from the breakdown →</div>
-                    ) : (
-                      <>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-                          {dayScenes.map(s => {
-                            const c = INTEXT_COLOR[s.intExt] || '#6b7280';
-                            return (<div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: c }}>{s.intExt || '—'}</span>
-                              <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.location}</span>
-                              {s.time && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{s.time}</span>}
-                            </div>);
-                          })}
-                        </div>
-                        <div style={{ display: 'flex', gap: 14, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginBottom: 8 }}>
-                          <span>{dayScenes.length} sc</span><span>{locations.length} loc</span><span>{cast.length} cast</span>
-                          <span style={{ color: '#f59e0b' }}>{(dayScenes.reduce((t, s) => t + s.eighths, 0) / 8).toFixed(1)} pg</span>
-                        </div>
-                        <button onClick={() => setOpenSheet(open ? null : d.id)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}><FileText size={11} /> {open ? 'HIDE' : 'CALL SHEET'}</button>
-                        {open && (
-                          <div style={{ marginTop: 10, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 10, lineHeight: 1.7 }}>
-                            <div style={{ color: '#f59e0b', fontWeight: 700, marginBottom: 6 }}>CALL SHEET — DAY {d.day_number}{d.shoot_date ? ` · ${new Date(d.shoot_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}</div>
-                            <div style={{ color: 'var(--fg-dim)' }}>SCENES</div>
-                            {dayScenes.map(s => <div key={s.key} style={{ color: '#ddd' }}>· {s.intExt} {s.location}{s.time ? ` — ${s.time}` : ''}</div>)}
-                            <div style={{ color: 'var(--fg-dim)', marginTop: 6 }}>LOCATIONS</div><div style={{ color: '#ddd' }}>{locations.join(', ') || '—'}</div>
-                            <div style={{ color: 'var(--fg-dim)', marginTop: 6 }}>CAST</div><div style={{ color: '#ddd' }}>{cast.join(', ') || '—'}</div>
-                            <div style={{ color: 'var(--fg-dim)', marginTop: 6 }}>CREW</div><div style={{ color: '#ddd' }}>{crew.map(c => `${c.profiles?.username || '—'} (${c.role})`).join(', ') || '—'}</div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-              {days.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>Add a shoot day, then assign scenes to it.</div>}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}><Users size={16} /> Cast <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· from script</span></div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {castList.map(name => <span key={name} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 99 }}>{name}</span>)}
-              {castList.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.6 }}>No characters detected in the script.</span>}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}><Users size={16} /> Crew</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {crew.map(c => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 11px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
-                  <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{c.role}</span>
-                  <button onClick={() => delCrew(c.id)} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, opacity: 0.5 }}>×</button>
-                </div>
-              ))}
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input value={crewName} onChange={e => setCrewName(e.target.value)} placeholder="Username" style={{ ...input, flex: 1 }} />
-                <input value={crewRole} onChange={e => setCrewRole(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCrew()} placeholder="Role" style={{ ...input, flex: 1 }} />
-                <button onClick={addCrew} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#818cf8', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 16 }}>+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-
-// ─── Campaign Planner (live: marketing_campaigns) ─────────────────────────────
-
-const PLATFORMS: Record<string, string> = {
-  Instagram: '#E1306C', 'X / Twitter': '#1d9bf0', YouTube: '#FF0000',
-  TikTok: '#69C9D0', Festival: '#a855f7', Press: '#f59e0b', Other: '#6b7280',
-};
-const CAMPAIGN_STATUSES = ['Drafting', 'Scheduled', 'Live', 'Done'];
-
-interface Campaign { id: string; title: string; platform: string; status: string; reach_estimate: string | null; accent_color: string | null }
-
-function CampaignPlanner({ projectId }: { projectId: string }) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [platform, setPlatform] = useState('Instagram');
-  const [status, setStatus] = useState('Drafting');
-  const [reach, setReach] = useState('');
-
-  const load = React.useCallback(async () => {
-    const { data, error } = await supabase.from('marketing_campaigns')
-      .select('id,title,platform,status,reach_estimate,accent_color').eq('project_id', projectId).order('created_at', { ascending: false });
-    if (error) setErr(error.message); else setCampaigns((data as Campaign[]) || []);
-  }, [projectId]);
-  useEffect(() => { load(); }, [load]);
-
-  const add = async () => {
-    if (!title.trim()) return;
-    const { data, error } = await supabase.from('marketing_campaigns')
-      .insert({ project_id: projectId, title, platform, status, reach_estimate: reach || null, accent_color: PLATFORMS[platform] || '#6b7280' })
-      .select('id,title,platform,status,reach_estimate,accent_color').single();
-    if (error) return setErr(error.message);
-    setCampaigns(p => [data as Campaign, ...p]); setTitle(''); setReach('');
-  };
-  const cycleStatus = async (c: Campaign) => {
-    const next = CAMPAIGN_STATUSES[(CAMPAIGN_STATUSES.indexOf(c.status) + 1) % CAMPAIGN_STATUSES.length];
-    setCampaigns(p => p.map(x => x.id === c.id ? { ...x, status: next } : x));
-    await supabase.from('marketing_campaigns').update({ status: next }).eq('id', c.id);
-  };
-  const del = async (id: string) => { setCampaigns(p => p.filter(x => x.id !== id)); await supabase.from('marketing_campaigns').delete().eq('id', id); };
-
-  const byStatus = CAMPAIGN_STATUSES.map(s => ({ s, n: campaigns.filter(c => c.status === s).length }));
-  const input: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '8px 10px', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div style={{ marginBottom: 32 }}>
-        <SectionLabel text="Delivery & Promotion" />
-        <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Marketing Hub</h2>
-      </div>
-      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {err}</div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 40 }}>
-        {/* Campaigns */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {campaigns.map(c => {
-            const color = c.accent_color || PLATFORMS[c.platform] || '#6b7280';
-            return (
-              <div key={c.id} style={{ padding: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: `${color}22`, color, borderRadius: 4, textTransform: 'uppercase' }}>{c.platform}</span>
-                    <button onClick={() => cycleStatus(c)} style={{ fontSize: 10, color: 'var(--fg-subtle)', background: 'none', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '1px 8px', cursor: 'pointer' }}>{c.status}</button>
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{c.title}</div>
-                </div>
-                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 14 }}>
-                  {c.reach_estimate && <div><div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginBottom: 4 }}>Reach</div><div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}><TrendingUp size={12} /> {c.reach_estimate}</div></div>}
-                  <button onClick={() => del(c.id)} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 16, opacity: 0.5 }}>×</button>
-                </div>
-              </div>
-            );
-          })}
-          {campaigns.length === 0 && (
-            <div style={{ padding: 32, border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', color: '#666', fontSize: 12 }}>
-              <Megaphone size={24} style={{ marginBottom: 12, opacity: 0.5, margin: '0 auto' }} />
-              No campaigns yet — plan your promotion below.
-            </div>
-          )}
-
-          {/* New campaign form */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Campaign title" style={{ ...input, flex: '1 1 100%' }} />
-            <select value={platform} onChange={e => setPlatform(e.target.value)} style={{ ...input, flex: 1 }}>{Object.keys(PLATFORMS).map(p => <option key={p} value={p}>{p}</option>)}</select>
-            <select value={status} onChange={e => setStatus(e.target.value)} style={{ ...input, flex: 1 }}>{CAMPAIGN_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}</select>
-            <input value={reach} onChange={e => setReach(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} placeholder="Reach est." style={{ ...input, width: 110 }} />
-            <button onClick={add} style={{ background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 6, padding: '0 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>Add</button>
-          </div>
-        </div>
-
-        {/* Real status breakdown */}
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, alignSelf: 'flex-start' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Campaign Pipeline</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {byStatus.map(({ s, n }) => {
-              const pct = campaigns.length ? Math.round((n / campaigns.length) * 100) : 0;
-              return (
-                <div key={s}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>{s}</span><span>{n}</span></div>
-                  <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent)', borderRadius: 2, transition: 'width 0.4s' }} /></div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ marginTop: 28, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
-            {campaigns.length} total campaign{campaigns.length === 1 ? '' : 's'} across {new Set(campaigns.map(c => c.platform)).size} platform{new Set(campaigns.map(c => c.platform)).size === 1 ? '' : 's'}
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Overview Panel (live project dashboard) ──────────────────────────────────
-
-function OverviewPanel({ project }: { project: any }) {
-  const [budget, setBudget] = useState<{ category: string; amount: number; created_at: string }[]>([]);
-  const [milestones, setMilestones] = useState<{ title: string; start_date: string | null; created_at: string }[]>([]);
-  const [crew, setCrew] = useState<{ role: string; created_at: string; profiles?: { username: string } | null }[]>([]);
-  const [tasks, setTasks] = useState<{ completed: boolean }[]>([]);
-  const [scripts, setScripts] = useState<{ title: string; page_count: number | null }[]>([]);
-
-  useEffect(() => {
-    const pid = project.id;
-    (async () => {
-      const [b, t, c, tk, sc] = await Promise.all([
-        supabase.from('budget_items').select('category,amount,created_at').eq('project_id', pid),
-        supabase.from('timeline_items').select('title,start_date,created_at').eq('project_id', pid).order('start_date', { nullsFirst: false }),
-        supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', pid),
-        supabase.from('project_tasks').select('completed').eq('project_id', pid),
-        supabase.from('scripts').select('title,page_count').eq('project_id', pid),
-      ]);
-      setBudget((b.data as any) || []);
-      setMilestones((t.data as any) || []);
-      setCrew((c.data as any) || []);
-      setTasks((tk.data as any) || []);
-      setScripts((sc.data as any) || []);
-    })();
-  }, [project.id]);
-
-  const budgetTotal = budget.reduce((s, x) => s + Number(x.amount || 0), 0);
-  const byCat: Record<string, number> = {};
-  budget.forEach(b => { byCat[b.category] = (byCat[b.category] || 0) + Number(b.amount || 0); });
-  const topCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  const catColors = ['#ffaa00', '#0099ff', '#00cc66', '#a855f7'];
-  const done = tasks.filter(t => t.completed).length;
-  const completion = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
-  const pages = scripts.reduce((s, x) => s + (x.page_count || 0), 0);
-
-  const recent = [
-    ...budget.map(b => ({ t: b.created_at, label: `Budget — ${b.category}` })),
-    ...milestones.map(m => ({ t: m.created_at, label: `Milestone — ${m.title}` })),
-    ...crew.map(c => ({ t: c.created_at, label: `Crew — ${c.profiles?.username || 'member'} (${c.role})` })),
-  ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 6);
-
-  const fmt = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `$${n}`;
-  const ago = (iso: string) => { const d = (Date.now() - new Date(iso).getTime()) / 86400000; return d < 1 ? 'today' : d < 2 ? 'yesterday' : `${Math.floor(d)}d ago`; };
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
-      <div>
-        <StageIndicator currentStage={project.status} />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <SectionLabel text="Project Summary" />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '4rem', letterSpacing: 4, lineHeight: 1.1, marginBottom: 24 }}>{project.title}</h1>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
-            {project.description || 'No project description yet.'}
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, marginTop: 48 }}>
-            {[['Status', project.status], ['Completion', `${completion}%`], ['Scripts', `${scripts.length}`], ['Script Pages', `${pages}`]].map(([l, v]) => (
-              <div key={l as string}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '1.6rem', fontWeight: 700, color: '#fff' }}>{v}</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginTop: 4 }}>{l}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Budget — real */}
-          <div style={{ marginTop: 48, padding: 28, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}><DollarSign size={16} color="var(--accent)" /> Production Budget</div>
-              <Link href={`/projects/${project.id}`} className="link-btn" style={{ fontSize: 9 }}>Manage →</Link>
-            </div>
-            <div style={{ fontSize: '2.2rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>{budgetTotal > 0 ? fmt(budgetTotal) : '—'}</div>
-            {topCats.length > 0 ? (
-              <>
-                <div style={{ width: '100%', height: 4, background: '#222', borderRadius: 2, marginTop: 12, overflow: 'hidden', display: 'flex' }}>
-                  {topCats.map(([cat, amt], i) => <div key={cat} style={{ width: `${(amt / budgetTotal) * 100}%`, background: catColors[i] }} title={cat} />)}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
-                  {topCats.map(([cat, amt], i) => (
-                    <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                      <span style={{ color: catColors[i] }}>{cat}</span><span>{fmt(amt)}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginTop: 10 }}>No budget items yet.</div>}
-          </div>
-
-          {/* Milestones — real */}
-          <div style={{ marginTop: 40 }}>
-            <SectionLabel text="Project Milestones" />
-            {milestones.length > 0 ? (
-              <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {milestones.map((m, i) => {
-                  const past = m.start_date ? new Date(m.start_date).getTime() < Date.now() : false;
-                  return (
-                    <div key={i} style={{ position: 'relative' }}>
-                      <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: past ? 'var(--accent)' : '#222', border: past ? 'none' : '1px solid #444' }} />
-                      <div style={{ fontSize: 12, fontWeight: 700, color: past ? '#fff' : '#aaa' }}>{m.title}</div>
-                      {m.start_date && <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No milestones yet — add them in the project timeline.</div>}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Right: crew + recent activity (real) */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16} /> Crew</div>
-          {crew.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {crew.map((c, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#a5b4fc' }}>{(c.profiles?.username || '?')[0].toUpperCase()}</div>
-                  <span style={{ flex: 1, fontSize: 12 }}>{c.profiles?.username || 'Unknown'}</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.role}</span>
-                </div>
-              ))}
-            </div>
-          ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No crew assigned yet.</div>}
-        </div>
-
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><ClipboardList size={16} /> Recent Activity</div>
-          {recent.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {recent.map((r, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ fontSize: 11, color: '#eee' }}>{r.label}</div>
-                  <div style={{ fontSize: 9, color: 'var(--fg-subtle)', fontFamily: 'var(--mono)', whiteSpace: 'nowrap' }}>{ago(r.t)}</div>
-                </div>
-              ))}
-            </div>
-          ) : <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No activity yet.</div>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Pitch Deck (real: title/logline, concept image, script characters) ───────
-
-function PitchDeck({ project, assets }: { project: any; assets: Asset[] }) {
-  const [characters, setCharacters] = useState<string[]>([]);
-  const [present, setPresent] = useState(false);
-  const [slideIdx, setSlideIdx] = useState(0);
-
-  useEffect(() => {
-    supabase.from('scripts').select('content').eq('project_id', project.id).order('updated_at', { ascending: false }).then(({ data }) => {
-      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
-      if (withContent) {
-        try { setCharacters(parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean).slice(0, 10)); } catch { /* ignore */ }
-      }
-    });
-  }, [project.id]);
-
-  const images = assets.filter(a => a.type === 'image' && a.url).map(a => a.url!) as string[];
-  const visual = images[0];
-
-  const slides = [
-    { label: 'Logline & Title', render: () => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: present ? '5rem' : '2rem', letterSpacing: 4, margin: '20px 0' }}>{project.title}</h3>
-        <p style={{ fontFamily: 'var(--serif)', fontSize: present ? '1.4rem' : '0.85rem', color: 'var(--fg-muted)', maxWidth: 640, margin: '0 auto', lineHeight: 1.6 }}>{project.description || 'Add a logline in the project summary.'}</p>
-      </>
-    )},
-    { label: 'The Visual World', bg: visual, render: () => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: present ? '4rem' : '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
-        <div style={{ fontSize: present ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>{images.length > 0 ? `${images.length} concept references` : 'Add references in the Concept board'}</div>
-      </>
-    )},
-    { label: 'The Characters', render: () => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: present ? '4rem' : '1.6rem', letterSpacing: 4, margin: '16px 0' }}>THE CHARACTERS</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 700, margin: '0 auto' }}>
-          {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: present ? 14 : 9.5, padding: present ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 99 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the cast.</span>}
-        </div>
-      </>
-    )},
-  ];
-
-  const SlideCard = ({ s, i }: { s: typeof slides[0]; i: number }) => (
-    <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-      {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <SectionLabel text={`Slide 0${i + 1}`} />
-        {s.render()}
-      </div>
-    </div>
-  );
-
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-        <div>
-          <SectionLabel text="Investor Relations" />
-          <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck</h2>
-        </div>
-        <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { setSlideIdx(0); setPresent(true); }}>Enter Presentation View</button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-        {slides.map((s, i) => <SlideCard key={i} s={s} i={i} />)}
-      </div>
-
-      <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Info size={20} color="var(--accent)" />
-        <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your project logline, Concept board references, and ScriptOS characters. Update them and this updates.</div>
-      </div>
-
-      <AnimatePresence>
-        {present && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
-            <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
-              {slides[slideIdx].bg && (<><img src={slides[slideIdx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
-              <div style={{ position: 'relative', zIndex: 1 }}>{slides[slideIdx].render()}</div>
-            </div>
-            <button onClick={() => setSlideIdx(i => Math.max(0, i - 1))} disabled={slideIdx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: slideIdx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
-            <button onClick={() => setSlideIdx(i => Math.min(slides.length - 1, i + 1))} disabled={slideIdx === slides.length - 1} aria-label="next" style={{ position: 'fixed', right: 28, top: '50%', background: 'none', border: 'none', color: slideIdx === slides.length - 1 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>›</button>
-            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#666', letterSpacing: 2 }}>{slideIdx + 1} / {slides.length}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
   );
 }
