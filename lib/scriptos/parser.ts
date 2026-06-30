@@ -493,7 +493,17 @@ export class ScriptParser {
       currentScene.endIndex = lines.length - 1;
       scenes.push(currentScene);
     }
-    
+
+    // Per-scene breakdown: page-eighths estimate + tagged production elements.
+    scenes.forEach(sc => {
+      const body = lines.slice(sc.startIndex, sc.endIndex + 1).map(l => l.text).join(' ');
+      const words = body.split(/\s+/).filter(Boolean).length;
+      sc.wordCount = words;
+      // ~190 words per script page, 8 eighths per page; min 1/8.
+      sc.eighths = Math.max(1, Math.round((words / 190) * 8));
+      sc.elements = this.tagElements(body);
+    });
+
     return scenes;
   }
 
@@ -526,6 +536,19 @@ export class ScriptParser {
     // Compound times not in the dictionary but ending in a known token.
     for (const t of KNOWLEDGE.TIME_OF_DAY) if (last.endsWith(t)) return t;
     return 'UNKNOWN';
+  }
+
+  // Scan a scene's text for production elements (props, wardrobe, etc.).
+  private tagElements(text: string): { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] } {
+    const words = new Set(text.toUpperCase().split(/[^A-Z]+/).filter(Boolean));
+    const pick = (dict: Set<string>) => [...dict].filter(w => words.has(w));
+    return {
+      props: pick(KNOWLEDGE.PROPS),
+      wardrobe: pick(KNOWLEDGE.WARDROBE),
+      vehicles: pick(KNOWLEDGE.VEHICLES),
+      sfx: pick(KNOWLEDGE.SOUNDS),
+      vfx: pick(KNOWLEDGE.VFX),
+    };
   }
 
 }

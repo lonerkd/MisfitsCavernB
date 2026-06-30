@@ -46,6 +46,16 @@ export interface Scene {
   characters: string[];
   omitted: boolean;
   wordCount?: number;
+  eighths?: number;
+  elements?: SceneElements;
+}
+
+export interface SceneElements {
+  props: string[];
+  wardrobe: string[];
+  vehicles: string[];
+  sfx: string[];
+  vfx: string[];
 }
 
 export interface Character {

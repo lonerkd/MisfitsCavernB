@@ -816,7 +816,9 @@ export default function StudioPage() {
 
 // ─── Production Suite (script-driven breakdown · stripboard · call sheets) ────
 
-interface PScene { key: string; num: number; intExt: string; heading: string; location: string; time: string; characters: string[] }
+interface PSceneElements { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] }
+interface PScene { key: string; num: number; intExt: string; heading: string; location: string; time: string; characters: string[]; eighths: number; elements: PSceneElements }
+const EMPTY_ELEMENTS: PSceneElements = { props: [], wardrobe: [], vehicles: [], sfx: [], vfx: [] };
 interface SchedRow { id: string; scene_number: string; shoot_day_id: string | null }
 interface PShootDay { id: string; day_number: number; shoot_date: string | null }
 interface PCrew { id: string; role: string; profiles?: { username: string } | null }
@@ -840,6 +842,7 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
   const [crew, setCrew] = useState<PCrew[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [openSheet, setOpenSheet] = useState<string | null>(null);
+  const [expandedScene, setExpandedScene] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadSchedule = React.useCallback(async () => {
@@ -861,6 +864,7 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
           setScenes(parsed.scenes.filter((s: any) => !s.omitted).map((s: any, i: number) => ({
             key: String(i + 1), num: i + 1, intExt: intExtOf(s.heading),
             heading: s.heading, location: s.location || '—', time: s.timeOfDay || '', characters: s.characters || [],
+            eighths: s.eighths || 1, elements: s.elements || EMPTY_ELEMENTS,
           })));
           setCastList((parsed.characters || []).map((c: any) => c.name).filter(Boolean));
         } else { setScenes([]); setCastList([]); }
@@ -922,6 +926,7 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
 
   const scenesForDay = (dayId: string) => scenes.filter(s => sched[s.key]?.shoot_day_id === dayId);
   const scheduledCount = scenes.filter(s => sched[s.key]?.shoot_day_id).length;
+  const totalPages = (scenes.reduce((t, s) => t + s.eighths, 0) / 8);
   const input: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '7px 9px', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
   const stat = (label: string, value: React.ReactNode) => (
     <div><div style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</div><div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginTop: 4 }}>{label}</div></div>
@@ -952,7 +957,7 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
         <div><SectionLabel text="Pre-Production" /><h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1, marginTop: 4 }}>Broken down from “{scriptTitle}”</div>
         </div>
-        <div style={{ display: 'flex', gap: 28 }}>{stat('Scenes', scenes.length)}{stat('Scheduled', `${scheduledCount}/${scenes.length}`)}{stat('Cast', castList.length)}{stat('Days', days.length)}</div>
+        <div style={{ display: 'flex', gap: 28 }}>{stat('Scenes', scenes.length)}{stat('Pages', totalPages.toFixed(1))}{stat('Scheduled', `${scheduledCount}/${scenes.length}`)}{stat('Cast', castList.length)}{stat('Days', days.length)}</div>
       </div>
       {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {err}</div>}
 
@@ -964,18 +969,35 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
             {scenes.map(sc => {
               const dayId = sched[sc.key]?.shoot_day_id || '';
               const c = INTEXT_COLOR[sc.intExt] || '#6b7280';
+              const el = sc.elements;
+              const elCount = el.props.length + el.wardrobe.length + el.vehicles.length + el.sfx.length + el.vfx.length;
+              const expanded = expandedScene === sc.key;
               return (
-                <div key={sc.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${dayId ? c : 'transparent'}`, borderRadius: 8 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', width: 18, flexShrink: 0 }}>{sc.num}</span>
-                  {sc.intExt && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: c, background: `${c}1e`, padding: '2px 5px', borderRadius: 3, flexShrink: 0 }}>{sc.intExt}</span>}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11.5, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.location}{sc.time ? <span style={{ color: 'var(--fg-dim)' }}> · {sc.time}</span> : null}</div>
-                    {sc.characters.length > 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.characters.join(' · ')}</div>}
+                <div key={sc.key} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${dayId ? c : 'transparent'}`, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px' }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', width: 18, flexShrink: 0 }}>{sc.num}</span>
+                    {sc.intExt && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: c, background: `${c}1e`, padding: '2px 5px', borderRadius: 3, flexShrink: 0 }}>{sc.intExt}</span>}
+                    <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setExpandedScene(expanded ? null : sc.key)}>
+                      <div style={{ fontSize: 11.5, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.location}{sc.time ? <span style={{ color: 'var(--fg-dim)' }}> · {sc.time}</span> : null}</div>
+                      {sc.characters.length > 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.characters.join(' · ')}{elCount > 0 ? <span style={{ color: '#6366f1' }}> · {elCount} elements</span> : null}</div>}
+                    </div>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', flexShrink: 0 }} title="page eighths">{sc.eighths}/8</span>
+                    <select value={dayId} onChange={e => assign(sc, e.target.value)} style={{ ...input, fontSize: 9, padding: '4px 6px', flexShrink: 0 }}>
+                      <option value="">Unscheduled</option>
+                      {days.map(d => <option key={d.id} value={d.id}>Day {d.day_number}</option>)}
+                    </select>
                   </div>
-                  <select value={dayId} onChange={e => assign(sc, e.target.value)} style={{ ...input, fontSize: 9, padding: '4px 6px', flexShrink: 0 }}>
-                    <option value="">Unscheduled</option>
-                    {days.map(d => <option key={d.id} value={d.id}>Day {d.day_number}</option>)}
-                  </select>
+                  {expanded && elCount > 0 && (
+                    <div style={{ padding: '0 12px 10px 48px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {([['Props', el.props, '#f59e0b'], ['Wardrobe', el.wardrobe, '#ec4899'], ['Vehicles', el.vehicles, '#0099ff'], ['SFX', el.sfx, '#10b981'], ['VFX', el.vfx, '#a855f7']] as [string, string[], string][]).map(([label, items, col]) => items.length > 0 && (
+                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: col, letterSpacing: 1, textTransform: 'uppercase' }}>{label}</span>
+                          {items.map(it => <span key={it} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#ddd', background: `${col}1a`, border: `1px solid ${col}33`, padding: '1px 6px', borderRadius: 99 }}>{it.toLowerCase()}</span>)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {expanded && elCount === 0 && <div style={{ padding: '0 12px 10px 48px', fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', opacity: 0.6 }}>No tagged elements in this scene.</div>}
                 </div>
               );
             })}
@@ -1020,6 +1042,7 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
                         </div>
                         <div style={{ display: 'flex', gap: 14, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginBottom: 8 }}>
                           <span>{dayScenes.length} sc</span><span>{locations.length} loc</span><span>{cast.length} cast</span>
+                          <span style={{ color: '#f59e0b' }}>{(dayScenes.reduce((t, s) => t + s.eighths, 0) / 8).toFixed(1)} pg</span>
                         </div>
                         <button onClick={() => setOpenSheet(open ? null : d.id)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}><FileText size={11} /> {open ? 'HIDE' : 'CALL SHEET'}</button>
                         {open && (
