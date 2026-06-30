@@ -473,3 +473,21 @@ CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticate
   WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
   USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+
+-- Casting/look references: link concept-board images to characters
+CREATE TABLE IF NOT EXISTS character_references (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  character_id UUID NOT NULL REFERENCES script_characters(id) ON DELETE CASCADE,
+  concept_asset_id UUID NOT NULL REFERENCES concept_assets(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(character_id, concept_asset_id)
+);
+ALTER TABLE character_references ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "char_refs view" ON character_references FOR SELECT TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+CREATE POLICY "char_refs insert" ON character_references FOR INSERT TO authenticated
+  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
