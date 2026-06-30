@@ -126,6 +126,7 @@ export default function LoungePage() {
   const [nowPlaying, setNowPlaying] = useState({ title: 'Resonance', artist: 'HOME', album: 'Odyssey' });
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [crewList, setCrewList] = useState<any[]>([]);
+  const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -349,14 +350,19 @@ export default function LoungePage() {
             flexShrink: 0,
           }}>
             <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-              <button style={{
-                background: 'none', border: 'none', color: 'var(--fg-muted)',
-                padding: 10, alignSelf: 'center', transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
-                <Smile size={16} />
-              </button>
+              <div style={{ position: 'relative', alignSelf: 'center' }}>
+                <button style={{ background: 'none', border: 'none', color: showEmoji ? 'var(--fg)' : 'var(--fg-muted)', padding: 10, cursor: 'pointer', transition: 'color 0.2s' }}
+                  onClick={() => setShowEmoji(v => !v)} aria-label="emoji">
+                  <Smile size={16} />
+                </button>
+                {showEmoji && (
+                  <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: 8, display: 'flex', gap: 4, flexWrap: 'wrap', width: 180, boxShadow: '0 12px 30px rgba(0,0,0,0.6)' }}>
+                    {['😀','😂','🔥','❤️','👍','🎬','🎥','✨','💡','🎉','😮','🙏'].map(e => (
+                      <button key={e} onClick={() => { setInput(prev => prev + e); setShowEmoji(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 2 }}>{e}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <textarea
                 value={input}
