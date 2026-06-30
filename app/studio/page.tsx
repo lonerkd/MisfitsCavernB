@@ -1180,6 +1180,52 @@ export default function StudioPage() {
     w.document.close();
   };
 
+  // Auto-schedule: real 1st-AD board logic. Groups scenes by location to
+  // minimise company moves, then packs each location's scenes into shoot days
+  // respecting a daily page capacity (in eighths). NIGHT scenes are clustered
+  // together within a location so the unit isn't bouncing between day/night.
+  const [autoScheduling, setAutoScheduling] = useState(false);
+  const eighthsOf = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\s*\/\s*8/); return m ? Number(m[1]) : 8; };
+  const autoSchedule = async () => {
+    if (!activeProject) return;
+    const scenes = ((activeProject.scenes || []) as any[]).slice();
+    if (scenes.length === 0) { alert('No scenes to schedule yet — import from the screenplay first.'); return; }
+    const CAP = 40; // eighths/day ≈ 5 script pages, standard indie pace
+    // Group by location (unset locations bucket together at the end).
+    const groups = new Map<string, any[]>();
+    for (const s of scenes) {
+      const key = (s.location || '').trim().toUpperCase() || '￿UNSET';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(s);
+    }
+    // Sort groups by size desc (anchor the biggest locations first), and
+    // within a group cluster NIGHT scenes after DAY ones.
+    const ordered = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
+    const nightRank = (s: any) => /NIGHT|DUSK|NUIT/i.test(String(s.time_of_day || '')) ? 1 : 0;
+    let day = 0, used = CAP + 1; // force day 1 on first scene
+    const updates: { id: string; shoot_day: number }[] = [];
+    for (const [, list] of ordered) {
+      list.sort((a, b) => nightRank(a) - nightRank(b) || a.scene_number - b.scene_number);
+      let first = true;
+      for (const s of list) {
+        const e = eighthsOf(s);
+        // New location always starts a fresh day (a company move = new day).
+        if (first || used + e > CAP) { day += 1; used = 0; first = false; }
+        used += e;
+        if ((s.shoot_day || 1) !== day) updates.push({ id: s.id, shoot_day: day });
+      }
+    }
+    if (updates.length === 0) { alert(`Schedule is already optimal — ${day} shoot day${day === 1 ? '' : 's'}, grouped by location.`); return; }
+    if (!confirm(`Auto-schedule will reorganise ${scenes.length} scenes into ${day} shoot day${day === 1 ? '' : 's'}, grouped by location to minimise company moves (~5 pages/day). Reassign ${updates.length} scene${updates.length === 1 ? '' : 's'}?`)) return;
+    setAutoScheduling(true);
+    try {
+      for (const u of updates) await supabase.from('scenes').update({ shoot_day: u.shoot_day }).eq('id', u.id);
+      await refreshProject(activeProject.id);
+    } finally {
+      setAutoScheduling(false);
+    }
+  };
+
   // Cycle a scene's shoot status: planned → shot → wrapped → planned.
   const cycleSceneStatus = async (s: any) => {
     if (!activeProject) return;
@@ -1825,6 +1871,7 @@ export default function StudioPage() {
                      })()}
                      <div style={{ display: 'flex', gap: 8 }}>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,60,0,0.12)', borderColor: 'rgba(255,60,0,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                      </div>
                    </div>
