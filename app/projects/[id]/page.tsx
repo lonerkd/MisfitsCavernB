@@ -426,17 +426,19 @@ export default function ProjectHubPage() {
 
   // Live cross-suite counts for real projects, so the hub tiles reflect the
   // actual scripts / crew / tasks / budget / timeline managed elsewhere.
-  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0 });
+  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0 });
   useEffect(() => {
     if (mockProject) return;
     let active = true;
     (async () => {
-      const [sc, cr, tk, bd, tl] = await Promise.all([
+      const [sc, cr, tk, bd, tl, scn, cn] = await Promise.all([
         supabase.from('scripts').select('page_count').eq('project_id', id),
         supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
         supabase.from('budget_items').select('amount').eq('project_id', id),
         supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('concept_assets').select('id', { count: 'exact', head: true }).eq('project_id', id),
       ]);
       if (!active) return;
       const tasks = (tk.data as { completed: boolean }[]) || [];
@@ -448,6 +450,8 @@ export default function ProjectHubPage() {
         tasksDone: tasks.filter(t => t.completed).length,
         budget: (bd.data as { amount: number }[] | null)?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0,
         timeline: tl.count || 0,
+        scenes: scn.count || 0,
+        concepts: cn.count || 0,
       });
     })();
     return () => { active = false; };
@@ -602,10 +606,10 @@ export default function ProjectHubPage() {
             href="/studio"
             delay={0.1}
             stats={[
-              { label: 'Files',  value: project.assetCount ?? 0 },
-              { label: 'GB',     value: project.assetGB ?? 0 },
+              { label: 'Concepts', value: isRealProject ? counts.concepts : (project.assetCount ?? 0) },
+              { label: 'Scenes',   value: isRealProject ? counts.scenes : (project.assetGB ?? 0) },
             ]}
-            preview={<AssetPreview count={project.assetCount ?? 0} gb={project.assetGB ?? 0} />}
+            preview={<AssetPreview count={isRealProject ? counts.concepts : (project.assetCount ?? 0)} gb={project.assetGB ?? 0} />}
           />
 
           {/* ─ Lounge / Crew ─ */}
