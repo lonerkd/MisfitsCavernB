@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2, 
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
@@ -9,9 +9,10 @@ import {
   Search, Replace, X, BarChart3, Lock, ClipboardList, Archive, Cloud, Share2, Copy as CopyIcon
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript, type LearnedRules } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, createNewScript, importScriptFromText, getScriptVersions, setScriptShared, type StoredScript, type ScriptVersion } from '@/lib/scriptos/storage';
+import { saveScript, getAllScripts, getScript, createNewScript, importScriptFromText, getScriptVersions, setScriptShared, type StoredScript, type ScriptVersion } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
@@ -20,6 +21,7 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/EmptyState';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { logActivity } from '@/lib/supabase/activity';
@@ -196,9 +198,21 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 // ============================================================================
 
 export default function EditorPage() {
+  return (
+    <Suspense fallback={null}>
+      <EditorPageInner />
+    </Suspense>
+  );
+}
+
+function EditorPageInner() {
   const { activeProject } = useProject();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
 
@@ -271,8 +285,14 @@ export default function EditorPage() {
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [draggedSceneIdx, setDraggedSceneIdx] = useState<number | null>(null);
+  const [dragOverSceneIdx, setDragOverSceneIdx] = useState<number | null>(null);
+  const [linkedProject, setLinkedProject] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveInFlightRef = useRef(false);
+
+  const { projects } = useProject();
 
   // Supabase Realtime Sync
   const { isSyncing, lastSyncedAt, collaborators, conflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
@@ -312,11 +332,52 @@ export default function EditorPage() {
     toast(`Learned new ${type.slice(0, -1)}: ${cleanText}`, 'success');
   }, [currentScript, toast]);
 
-  // Init
+  // Link to project if script has one
+  useEffect(() => {
+    if (currentScript?.project_id) {
+      const found = projects.find(p => p.id === currentScript.project_id);
+      setLinkedProject(found || null);
+    }
+  }, [currentScript, projects]);
+
+  // Init — honors deep links from the project hub: ?scriptId=X opens that
+  // script directly, ?new=1&projectId=X&title=Y creates one tied to a project.
   useEffect(() => {
     const init = async () => {
       const all = await getAllScripts();
       setScripts(all);
+
+      const scriptId = searchParams.get('scriptId');
+      const isNew = searchParams.get('new') === '1';
+      const projectId = searchParams.get('projectId') || undefined;
+      const title = searchParams.get('title') || undefined;
+
+      if (scriptId) {
+        const found = all.find(s => s.id === scriptId) || await getScript(scriptId);
+        if (found) {
+          setCurrentScript(found);
+          setContent(found.content || PLACEHOLDER);
+          setTitlePage(loadTitlePage(found.id));
+          setLearnedRules(found.learned_rules || { characters: [], slugs: [], transitions: [] });
+          setCharProfiles(loadCharacterProfiles(found.id));
+          setSessionStartWords((found.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+          return;
+        }
+        toast('Script not found — it may have been deleted', 'error');
+      }
+
+      if (isNew) {
+        const fresh = await saveScript({ title: title || 'Untitled Screenplay', content: '', project_id: projectId });
+        if (fresh) {
+          setCurrentScript(fresh);
+          setScripts(s => [fresh, ...s]);
+          setContent(PLACEHOLDER);
+          setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+          router.replace(`/editor?scriptId=${fresh.id}`);
+          return;
+        }
+      }
+
       if (all.length > 0) {
         const latest = all[0];
         setCurrentScript(latest);
@@ -339,31 +400,47 @@ export default function EditorPage() {
     init();
   }, []);
 
-  // Auto-load script based on active project
+  // Measure native scrollbar width once, so the live-highlight overlay behind the
+  // textarea can reserve the same gutter and stay pixel-aligned with it.
   useEffect(() => {
-    if (activeProject && scripts.length > 0) {
-      const projectScript = scripts.find(s => s.title.toLowerCase() === activeProject.title.toLowerCase());
-      if (projectScript && (!currentScript || currentScript.id !== projectScript.id)) {
-        handleLoadScript(projectScript);
-        toast(`Loaded script for ${activeProject.title}`, 'info');
-      }
-    }
-  }, [activeProject, scripts]);
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;top:-9999px;width:100px;height:100px;overflow:scroll;';
+    document.body.appendChild(probe);
+    setScrollbarWidth(probe.offsetWidth - probe.clientWidth);
+    document.body.removeChild(probe);
+  }, []);
 
-  // Parser hook
+  // Stage 1 — structural parse: runs on every keystroke. Drives the live
+  // highlight overlay, scene list, and element extraction, all of which need
+  // to feel instant while typing. parseScript() is a single synchronous pass
+  // over the lines, cheap enough to not need debouncing.
   useEffect(() => {
     if (content) {
       const result = parseScript(content, learnedRules);
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
-      setCharStats(analyzeCharacters(result.lines, result.scenes));
-      setLintIssues(validateScript(result.lines, content));
     } else {
       setLines([]);
       setElements({});
+    }
+  }, [content]);
+
+  // Stage 2 — analysis pass: character stats and lint validation. These feed
+  // panels (Stats tab, lint markers) that aren't watched on every keystroke,
+  // and validateScript does extra cross-line scanning on top of the parse, so
+  // it's debounced to run once typing pauses rather than on every change.
+  useEffect(() => {
+    if (!content) {
       setCharStats([]);
       setLintIssues([]);
+      return;
     }
+    const handle = setTimeout(() => {
+      const result = parseScript(content, learnedRules);
+      setCharStats(analyzeCharacters(result.lines, result.scenes));
+      setLintIssues(validateScript(result.lines, content));
+    }, 400);
+    return () => clearTimeout(handle);
   }, [content, learnedRules]);
 
   // Load revisions when script changes
@@ -543,6 +620,9 @@ export default function EditorPage() {
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (typeof e.getModifierState === 'function') {
+        setCapsLockOn(e.getModifierState('CapsLock'));
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         handleSave();
@@ -661,8 +741,61 @@ export default function EditorPage() {
     setTitlePage(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  // Caps Lock as a chord modifier: while it's toggled on, plain letter keys reformat
+  // the current line instead of typing — flipped off, the same keys type normally.
+  const CAPS_LINE_SHORTCUTS: Record<string, string> = {
+    s: 'slug', a: 'action', c: 'character', d: 'dialogue', p: 'parenthetical', t: 'transition',
+  };
+
+  const formatLineForType = (text: string, type: string): string => {
+    const trimmed = text.trim();
+    switch (type) {
+      case 'slug':
+        return trimmed ? trimmed.toUpperCase() : 'INT. LOCATION - DAY';
+      case 'character':
+        return trimmed ? trimmed.toUpperCase() : 'CHARACTER NAME';
+      case 'transition': {
+        const t = (trimmed || 'CUT TO').toUpperCase().replace(/:$/, '');
+        return `${t}:`;
+      }
+      case 'parenthetical': {
+        const inner = trimmed.replace(/^\(|\)$/g, '') || 'beat';
+        return `(${inner})`;
+      }
+      case 'dialogue':
+      case 'action':
+      default:
+        return trimmed;
+    }
+  };
+
+  const convertCurrentLine = useCallback((type: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+    let lineEnd = content.indexOf('\n', cursor);
+    if (lineEnd === -1) lineEnd = content.length;
+    const formatted = formatLineForType(content.substring(lineStart, lineEnd), type);
+    const newContent = content.substring(0, lineStart) + formatted + content.substring(lineEnd);
+    setContent(newContent);
+    setTimeout(() => {
+      editor.focus();
+      const newPos = lineStart + formatted.length;
+      editor.setSelectionRange(newPos, newPos);
+    }, 0);
+  }, [content]);
+
   // Tab key cycling (in the textarea: Tab inserts element type based on context)
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (capsLockOn && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const shortcutType = CAPS_LINE_SHORTCUTS[e.key.toLowerCase()];
+      if (shortcutType) {
+        e.preventDefault();
+        convertCurrentLine(shortcutType);
+        return;
+      }
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const editor = textareaRef.current;
@@ -695,7 +828,7 @@ export default function EditorPage() {
         editor.setSelectionRange(cursor + 4, cursor + 4);
       }, 0);
     }
-  }, [content]);
+  }, [content, capsLockOn, convertCurrentLine]);
 
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
@@ -794,6 +927,25 @@ export default function EditorPage() {
 
   // Board card colors (cycle through a palette)
   const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
+
+  // "Script teleporting" — dragging a scene card on the Board rewrites its block's
+  // position in the underlying script text, not just the card order.
+  const moveScene = useCallback((fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0) return;
+    const rawLines = content.split('\n');
+    const starts = scenesList.map(s => lines.findIndex(l => l.id === s.id));
+    const blocks = scenesList.map((_, i) => {
+      const start = starts[i];
+      const end = i + 1 < scenesList.length ? starts[i + 1] : rawLines.length;
+      return rawLines.slice(start, end);
+    });
+    const preamble = rawLines.slice(0, starts[0] ?? 0);
+    const reordered = [...blocks];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    setContent([...preamble, ...reordered.flat()].join('\n'));
+    toast(`Moved Scene ${fromIdx + 1} to position ${toIdx + 1}`, 'success');
+  }, [content, lines, scenesList, toast]);
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
 
   // Scene type classifier — encodes the actual spatial/temporal context of a scene
@@ -943,6 +1095,18 @@ export default function EditorPage() {
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </span>
+
+              {linkedProject && (
+                <Link href={`/projects/${linkedProject.id}`} style={{ textDecoration: 'none', marginLeft: 16, paddingLeft: 16, borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, fontFamily: 'var(--mono)', color: linkedProject.accent_color || 'var(--accent)', transition: 'opacity 0.2s', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: linkedProject.accent_color || 'var(--accent)' }} />
+                    {linkedProject.title}
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -1409,21 +1573,62 @@ export default function EditorPage() {
           )}
 
           {activeView === 'write' && (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleEditorChange}
-              onKeyDown={handleEditorKeyDown}
-              placeholder={PLACEHOLDER}
-              spellCheck={false}
-              style={{
-                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
-                background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
-                fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
-                resize: 'none', outline: 'none',
-                position: 'relative'
-              }}
-            />
+            <div style={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
+              {/* Live syntax-highlight overlay — re-derived from `lines` (the parser's
+                  output) on every render, so it tracks content as fast as React re-renders.
+                  Sits visually behind the textarea; the textarea's own text is made
+                  transparent so only its native caret/selection paint on top. */}
+              <div
+                ref={highlightRef}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  overflow: 'hidden', pointerEvents: 'none',
+                  padding: focusMode ? '100px 10%' : '60px 80px',
+                  // The overlay has no scrollbar gutter (overflow: hidden), but the
+                  // textarea below always reserves one (overflowY: 'scroll') — pad the
+                  // overlay's right edge by that same width so both wrap text identically.
+                  paddingRight: `calc(${focusMode ? '10%' : '80px'} + ${scrollbarWidth}px)`,
+                  paddingBottom: typewriterMode ? '60vh' : '60px',
+                  width: '100%', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                }}
+              >
+                {content.split('\n').map((raw, i) => {
+                  const type = lines[i]?.type;
+                  const color = revisionMode ? '#0099ff' : (type ? (TYPE_COLORS[type] || TYPE_COLORS.action) : 'transparent');
+                  return (
+                    <div key={i} style={{
+                      borderLeft: type && type !== 'empty' ? `3px solid ${color}` : '3px solid transparent',
+                      marginLeft: -9, paddingLeft: 6, color,
+                      fontWeight: type === 'slug' || type === 'transition' ? 700 : 400,
+                    }}>
+                      {raw.length ? raw : ' '}
+                    </div>
+                  );
+                })}
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleEditorChange}
+                onKeyDown={handleEditorKeyDown}
+                onScroll={(e) => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                placeholder={PLACEHOLDER}
+                spellCheck={false}
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  padding: focusMode ? '100px 10%' : '60px 80px',
+                  paddingBottom: typewriterMode ? '60vh' : '60px',
+                  width: '100%', maxWidth: 900, margin: '0 auto', boxSizing: 'border-box',
+                  background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : '#e0e0e0',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  resize: 'none', outline: 'none', overflowY: 'scroll', zIndex: 1,
+                }}
+              />
+            </div>
           )}
 
           {/* Structure Lines (Visual Act Markers) */}
@@ -1449,6 +1654,47 @@ export default function EditorPage() {
               })}
             </div>
           )}
+
+          {/* Context Island — current line type + Caps Lock shortcut state */}
+          {activeView === 'write' && !focusMode && (() => {
+            const curType = lines[cursorLine]?.type ?? 'action';
+            const TYPE_LABELS: Record<string, string> = {
+              slug: 'SCENE HEADING', character: 'CHARACTER', dialogue: 'DIALOGUE',
+              parenthetical: 'PARENTHETICAL', transition: 'TRANSITION', action: 'ACTION', empty: 'ACTION',
+            };
+            return (
+              <div style={{
+                position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+                zIndex: 50, display: 'flex', alignItems: 'center', gap: 14,
+                padding: '10px 20px', borderRadius: 24,
+                background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1.5,
+                color: 'rgba(240,236,228,0.6)', whiteSpace: 'nowrap',
+              }}>
+                <span style={{ color: 'var(--accent)', textTransform: 'uppercase' }}>{TYPE_LABELS[curType] || curType}</span>
+                <span style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.12)' }} />
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  color: capsLockOn ? '#22c55e' : 'rgba(240,236,228,0.3)',
+                  textTransform: 'uppercase',
+                }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: capsLockOn ? '#22c55e' : 'rgba(240,236,228,0.2)',
+                    boxShadow: capsLockOn ? '0 0 6px #22c55e' : 'none',
+                  }} />
+                  Caps {capsLockOn ? 'On' : 'Off'}
+                </span>
+                {capsLockOn && (
+                  <span style={{ color: 'rgba(240,236,228,0.35)', fontSize: 9 }}>
+                    S Slug · A Action · C Character · D Dialogue · P Paren · T Transition
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
           {activeView === 'preview' && (
             <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: nightModePreview ? '#111' : '#fff', color: nightModePreview ? '#ddd' : '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
@@ -1491,6 +1737,11 @@ export default function EditorPage() {
 
           {activeView === 'board' && (
             <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
+              {scenesList.length > 0 && (
+                <div style={{ width: '100%', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 4 }}>
+                  Drag a card to reorder — moves the scene in the script too.
+                </div>
+              )}
               {scenesList.length === 0 ? (
                  <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
               ) : scenesList.map((scene, i) => {
@@ -1500,13 +1751,26 @@ export default function EditorPage() {
                 return (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+                    draggable
+                    onDragStart={() => setDraggedSceneIdx(i)}
+                    onDragOver={(e) => { e.preventDefault(); if (dragOverSceneIdx !== i) setDragOverSceneIdx(i); }}
+                    onDragLeave={() => setDragOverSceneIdx(prev => (prev === i ? null : prev))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedSceneIdx !== null) moveScene(draggedSceneIdx, i);
+                      setDraggedSceneIdx(null);
+                      setDragOverSceneIdx(null);
+                    }}
+                    onDragEnd={() => { setDraggedSceneIdx(null); setDragOverSceneIdx(null); }}
                     style={{
                       width: 272, minHeight: 180,
                       background: 'var(--bg-3)',
-                      border: `1px solid rgba(255,255,255,0.06)`,
+                      border: `1px solid ${dragOverSceneIdx === i ? cardColor : 'rgba(255,255,255,0.06)'}`,
                       borderTop: `2px solid ${cardColor}`,
                       borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-                      transition: 'box-shadow 0.35s, border-color 0.35s',
+                      cursor: 'grab',
+                      opacity: draggedSceneIdx === i ? 0.4 : 1,
+                      transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s',
                     }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
@@ -1991,10 +2255,12 @@ export default function EditorPage() {
                   <>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={14} /> Character Report</div>
                     {charStats.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No characters detected yet.</div>
+                      <EmptyState icon={<Users size={24} />} title="No characters detected yet" subtitle="Write dialogue to populate the character report" />
                     ) : (
                       charStats.slice(0, 15).map((cs, i) => (
-                        <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                        <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
                             <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
@@ -2027,12 +2293,14 @@ export default function EditorPage() {
                       <button onClick={handleLockRevision} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
                     </div>
                     {revisions.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No revisions locked yet. Lock your first draft to start tracking changes.</div>
+                      <EmptyState icon={<Lock size={24} />} title="No revisions locked yet" subtitle="Lock your first draft to start tracking changes" />
                     ) : (
                       revisions.map((rev, i) => {
                         const revColor = REVISION_COLORS[rev.colorIndex];
                         return (
-                          <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12 }}>
+                          <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = revColor.color; e.currentTarget.style.boxShadow = `0 4px 12px ${revColor.color}40`; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = `${revColor.color}33`; e.currentTarget.style.boxShadow = 'none'; }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                               <span style={{ fontSize: 12, fontWeight: 700, color: revColor.color }}>{rev.label}</span>
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
@@ -2067,10 +2335,12 @@ export default function EditorPage() {
                       <Cloud size={12} /> Cloud Save History
                     </div>
                     {cloudVersions.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No prior versions yet. Each manual save (Ctrl+S) checkpoints the previous version here.</div>
+                      <EmptyState icon={<Cloud size={24} />} title="No prior versions yet" subtitle="Each manual save (Ctrl+S) checkpoints the previous version here" />
                     ) : (
                       cloudVersions.map(v => (
-                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 12 }}>
+                        <div key={v.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Version {v.version}</span>
                             <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(v.created_at).toLocaleString()}</span>
@@ -2124,11 +2394,13 @@ export default function EditorPage() {
                       <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
                     </div>
                     {lintIssues.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#00cc66', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
+                      <EmptyState icon={<AlertCircle size={24} />} title="No issues found" subtitle="Script formatting looks great!" />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {lintIssues.slice(0, 30).map((issue, idx) => (
-                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}`, transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'; e.currentTarget.style.boxShadow = `0 4px 12px rgba(0,0,0,0.4)`; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                               <span style={{ fontSize: 9, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
                               <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
@@ -2197,11 +2469,13 @@ export default function EditorPage() {
                     <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 12, lineHeight: 1.4 }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
                     
                     {stashItems.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click "+ Add Selected" to save it here.</div>
+                      <EmptyState icon={<Archive size={24} />} title="Stash is empty" subtitle='Select text in the editor and click "+ Add Selected" to save it here' />
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {stashItems.map(item => (
-                          <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
+                          <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
                             <div style={{ fontSize: 11, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                               <span style={{ fontSize: 9, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>

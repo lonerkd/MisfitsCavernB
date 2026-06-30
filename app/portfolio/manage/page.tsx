@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Copy, Film } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia } from '@/lib/supabase/portfolio';
 import { useToast } from '@/components/Toast';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import EmptyState from '@/components/EmptyState';
 
 const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
 
@@ -125,8 +125,7 @@ export default function ManagePortfolioPage() {
   }
 
   return (
-    <ProtectedPage requiredPermission="manage_portfolio">
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -160,17 +159,22 @@ export default function ManagePortfolioPage() {
           </div>
         )}
 
-        {!loading && projects.length === 0 && !showNew && (
-          <div style={{ textAlign: 'center', padding: 60, opacity: 0.4, fontFamily: 'var(--mono)', fontSize: 11 }}>
-            No portfolio projects yet. Click "New Project" to add your first piece of work.
+        {loading ? (
+          <div style={{ display: 'grid', gap: 20 }}>
+            {[0, 1].map(i => (
+              <div key={i} className="skeleton" style={{ height: 140, borderRadius: 12 }} />
+            ))}
           </div>
-        )}
-
+        ) : projects.length === 0 && !showNew ? (
+          <EmptyState icon={<Film size={28} />} title="No portfolio projects yet" subtitle='Click "New Project" to add your first piece of work' />
+        ) : (
         <div style={{ display: 'grid', gap: 20 }}>
           {projects.map(project => {
             const form = mediaForm[project.id] || { title: '', url: '', media_type: 'youtube' };
             return (
-              <div key={project.id} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div key={project.id} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,60,0,0.15)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 'bold' }}>{project.title}</div>
@@ -218,8 +222,8 @@ export default function ManagePortfolioPage() {
             );
           })}
         </div>
+        )}
       </div>
-      </div>
-    </ProtectedPage>
+    </div>
   );
 }

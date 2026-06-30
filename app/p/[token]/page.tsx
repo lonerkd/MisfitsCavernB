@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { Film } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import EmptyState from '@/components/EmptyState';
 
 interface MediaItem {
   id: string;
@@ -388,15 +390,8 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           margin: '0 auto',
           padding: '0 clamp(20px, 5vw, 64px) 80px',
         }}>
-          <div style={{
-            padding: '48px 0',
-            borderTop: '1px solid rgba(255,255,255,0.05)',
-            fontFamily: 'var(--mono)',
-            fontSize: 11,
-            opacity: 0.25,
-            letterSpacing: 2,
-          }}>
-            NO MEDIA YET
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 32 }}>
+            <EmptyState icon={<Film size={28} />} title="No media yet" />
           </div>
         </div>
       )}
@@ -521,10 +516,11 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         aspectRatio: '16/9',
         background: '#111',
         border: `1px solid ${hovered ? 'var(--accent)' : 'rgba(255,255,255,0.07)'}`,
+        boxShadow: hovered ? '0 12px 28px rgba(0,0,0,0.5), 0 0 16px rgba(255,60,0,0.25)' : 'none',
         cursor: 'pointer',
         overflow: 'hidden',
         position: 'relative',
-        transition: 'border-color 0.2s, transform 0.2s',
+        transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         outline: 'none',
       }}
