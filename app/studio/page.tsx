@@ -542,6 +542,104 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0 }: { image: { id: 
   );
 }
 
+// Live pitch deck: title + logline, real concept images, and the character
+// bible — auto-built from the project's data, with a presentation view.
+function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts: any[]; beats: any[] }) {
+  const [characters, setCharacters] = useState<string[]>([]);
+  const [present, setPresent] = useState(false);
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', project.id).order('updated_at', { ascending: false });
+      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
+      if (!withContent) return;
+      const { data: saved } = await supabase.from('script_characters').select('name,full_name').eq('script_id', withContent.id);
+      let names = (saved || []).map((r: any) => r.full_name || r.name);
+      if (names.length === 0 && withContent.content) {
+        try { names = parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean); } catch { /* ignore */ }
+      }
+      setCharacters(names.slice(0, 12));
+    })();
+  }, [project.id]);
+
+  const visual = concepts[0]?.image_url;
+  const slides = [
+    { label: 'Logline & Title', bg: undefined as string | undefined, render: (big: boolean) => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '5rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>{project.title}</h3>
+        <p style={{ fontFamily: 'var(--serif)', fontSize: big ? '1.4rem' : '0.85rem', color: 'var(--fg-muted)', maxWidth: 640, margin: '0 auto', lineHeight: 1.6 }}>{project.description || 'Add a logline in the project summary.'}</p>
+      </>
+    ) },
+    { label: 'The Visual World', bg: visual, render: (big: boolean) => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>THE VISUAL WORLD</h3>
+        <div style={{ fontSize: big ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>{concepts.length > 0 ? `${concepts.length} concept references` : 'Add references in the Concept board'}</div>
+      </>
+    ) },
+    { label: 'The Characters', bg: undefined, render: (big: boolean) => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: 4, margin: '14px 0' }}>THE CHARACTERS</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 720, margin: '0 auto' }}>
+          {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: big ? 14 : 9.5, padding: big ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 99 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Develop the Character Bible to populate the cast.</span>}
+        </div>
+      </>
+    ) },
+    { label: 'Story Engine', bg: undefined, render: (big: boolean) => (
+      <>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: 4, margin: '14px 0' }}>STORY ENGINE</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 600, margin: '0 auto' }}>
+          {beats.length > 0 ? beats.slice(0, 5).map((b: any) => <div key={b.id} style={{ fontFamily: 'var(--mono)', fontSize: big ? 13 : 10, color: '#ddd' }}>{b.title}</div>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Add story beats in the Concept tab.</span>}
+        </div>
+      </>
+    ) },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+        <div>
+          <SectionLabel text="Investor Relations" />
+          <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck</h2>
+        </div>
+        <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { setIdx(0); setPresent(true); }}>Enter Presentation View</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
+        {slides.map((s, i) => (
+          <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+            {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <SectionLabel text={`Slide 0${i + 1}`} />
+              {s.render(false)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Info size={20} color="var(--accent)" />
+        <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, Concept board, Character Bible, and story beats — update them and this updates.</div>
+      </div>
+
+      <AnimatePresence>
+        {present && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
+            <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
+              {slides[idx].bg && (<><img src={slides[idx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
+              <div style={{ position: 'relative', zIndex: 1 }}>{slides[idx].render(true)}</div>
+            </div>
+            <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: idx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
+            <button onClick={() => setIdx(i => Math.min(slides.length - 1, i + 1))} disabled={idx === slides.length - 1} aria-label="next" style={{ position: 'fixed', right: 28, top: '50%', background: 'none', border: 'none', color: idx === slides.length - 1 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>›</button>
+            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#666', letterSpacing: 2 }}>{idx + 1} / {slides.length}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 // Character bible: parsed from the screenplay, persisted to script_characters
 // (Supabase) so character development is shared across the suite, not trapped
 // in one browser.
@@ -1751,46 +1849,12 @@ export default function StudioPage() {
           </AnimatedSection>
         )}
 
-        {activeTab === 'pitch' && activeProject && (
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-              <div>
-                <SectionLabel text="Investor Relations" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck Mode</h2>
-              </div>
-              <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Enter Presentation View</button>
-            </div>
-
-            <DemoBanner text="Demo data — slides are placeholders, not auto-generated from real Concept/Character data yet" />
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                <SectionLabel text="Slide 01" />
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>{activeProject.title}</h3>
-                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Logline & Title</div>
-              </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative' }}>
-                <img src={activeProject.concept_assets?.[0]?.image_url || (assetsList.find(a => a.type === 'image') as any)?.url || CONCEPT_IMAGES[0].url} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} />
-                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                  <SectionLabel text="Slide 02" />
-                  <h3 style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, margin: '20px 0' }}>THE VISUAL WORLD</h3>
-                  <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Cinematography & Mood</div>
-                </div>
-              </div>
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-                <SectionLabel text="Slide 03" />
-                <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, margin: '20px 0' }}>{beats[0]?.title || 'STORY BEATS'}</h3>
-                <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>Narrative Engine</div>
-              </div>
-            </div>
-            
-            <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <Info size={20} color="var(--accent)" />
-              <div style={{ fontSize: 12, color: '#ccc' }}>
-                <span style={{ fontWeight: 700, color: 'var(--accent)' }}>Coming soon:</span> auto-generating this deck from your Concept Board and ScriptOS Character Bible.
-              </div>
-            </div>
-          </motion.div>
+        {activeTab === 'pitch' && (
+          activeProject ? (
+            <ProjectPitchDeck project={activeProject} concepts={(activeProject.concept_assets || []) as any[]} beats={beats} />
+          ) : (
+            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>SELECT A PROJECT TO BUILD A PITCH</div>
+          )
         )}
         {activeTab === 'marketing' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
