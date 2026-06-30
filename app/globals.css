@@ -6,10 +6,10 @@
    DESIGN TOKENS
 ═══════════════════════════════ */
 :root {
-  /* Typefaces */
-  --display: 'Bebas Neue', sans-serif;
-  --mono: 'DM Mono', monospace;
-  --serif: 'Cormorant Garamond', serif;
+  /* Typefaces — backed by next/font CSS variables (self-hosted) */
+  --display: var(--font-display), 'Bebas Neue', sans-serif;
+  --mono: var(--font-mono), 'DM Mono', monospace;
+  --serif: var(--font-serif), 'Cormorant Garamond', serif;
 
   /* Surface hierarchy */
   --bg:    #060606;

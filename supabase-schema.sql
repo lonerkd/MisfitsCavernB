@@ -244,14 +244,46 @@ CREATE POLICY "Profiles readable by all" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
+-- Membership-check helpers. SECURITY DEFINER bypasses RLS on the referenced
+-- tables, which prevents the projects <-> project_crew policies from recursing
+-- into each other (Postgres error 42P17: infinite recursion).
+CREATE OR REPLACE FUNCTION public.is_project_creator(pid uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (SELECT 1 FROM projects WHERE id = pid AND creator_id = auth.uid());
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_project_member(pid uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (SELECT 1 FROM project_crew WHERE project_id = pid AND user_id = auth.uid());
+$$;
+
 -- RLS Policies: Projects
 CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
-  creator_id = auth.uid() OR
-  id IN (SELECT project_id FROM project_crew WHERE user_id = auth.uid())
+  creator_id = auth.uid() OR public.is_project_member(id)
 );
 CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
 CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_id = auth.uid());
+
+-- RLS Policies: Project crew (uses is_project_creator to avoid recursion)
+CREATE POLICY "Project crew viewable by project members" ON project_crew FOR SELECT USING (
+  user_id = auth.uid() OR public.is_project_creator(project_id)
+);
+CREATE POLICY "Project creators can manage crew" ON project_crew FOR INSERT WITH CHECK (
+  public.is_project_creator(project_id)
+);
+CREATE POLICY "Project creators can update crew" ON project_crew FOR UPDATE USING (
+  public.is_project_creator(project_id)
+);
+CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USING (
+  public.is_project_creator(project_id) OR user_id = auth.uid()
+);
 
 -- RLS Policies: Scripts
 CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (

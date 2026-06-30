@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Send, Music, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
-import EmptyState from '@/components/EmptyState';
+import { Headphones, Disc, Radio, ExternalLink } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -18,7 +18,6 @@ interface Message {
   sender_id?: string;
   mine?: boolean;
 }
-
 
 function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
@@ -75,17 +74,18 @@ export default function LoungePage() {
   const [activeChannel, setActiveChannel] = useState('general');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [nowPlaying, setNowPlaying] = useState({ title: 'Resonance', artist: 'HOME', album: 'Odyssey' });
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [crewList, setCrewList] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    supabase.auth.getUser().then(({ data: { user } }) => {
       if (user && mounted) setCurrentUser(user);
+    });
 
-      const { data } = await supabase.from('profiles').select('*').limit(20);
+    supabase.from('profiles').select('*').limit(20).then(({ data }) => {
       if (data && mounted) {
         setCrewList(data.map(p => ({
           id: p.id,
@@ -94,7 +94,7 @@ export default function LoungePage() {
           online: p.status === 'OPEN'
         })));
       }
-    })();
+    });
 
     const loadMessages = async () => {
       try {
@@ -183,6 +183,27 @@ export default function LoungePage() {
               {projects.map(p => <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.title}</option>)}
             </select>
           </div>
+
+          {/* Now playing */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 14px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 'var(--radius-full)',
+            maxWidth: 300,
+            overflow: 'hidden',
+          }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
+              <Disc size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+            </motion.div>
+            <span style={{
+              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
+              color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {nowPlaying.title} · {nowPlaying.artist}
+            </span>
+          </div>
         </div>
       </nav>
 
@@ -259,92 +280,80 @@ export default function LoungePage() {
              </div>
           </div>
 
-          {/* Messages and Input */}
-          {(['production', 'legal'].includes(activeChannel) && !currentUser) ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 40 }}>
-              <Lock size={32} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 16 }} />
-              <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 3, marginBottom: 8 }}>PRIVATE CHANNEL</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 20 }}>Sign in to access #{activeChannel}</div>
-              <a href="/auth" style={{ padding: '8px 20px', background: 'var(--accent)', color: '#060606', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 16 }}>Sign In</a>
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
+            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+              {messages.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
+                  NO MESSAGES IN #{activeChannel.toUpperCase()} YET
+                </div>
+              ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />)}
+              <div ref={bottomRef} />
             </div>
-          ) : (
-            <>
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
-                <div style={{ maxWidth: 720, margin: '0 auto' }}>
-                  {messages.length === 0 ? (
-                    <div style={{ marginTop: 80 }}>
-                      <EmptyState icon={<Hash size={28} />} title={`No messages in #${activeChannel} yet`} />
-                    </div>
-                  ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />)}
-                  <div ref={bottomRef} />
-                </div>
-              </div>
+          </div>
 
-              {/* Input */}
-              <div style={{
-                padding: '16px 28px',
-                borderTop: '1px solid rgba(255,255,255,0.04)',
-                background: '#090909',
-                flexShrink: 0,
-              }}>
-                <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                  <button style={{
-                    background: 'none', border: 'none', color: 'var(--fg-muted)',
-                    padding: 10, alignSelf: 'center', transition: 'color 0.2s',
-                  }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
-                    <Smile size={16} />
-                  </button>
+          {/* Input */}
+          <div style={{
+            padding: '16px 28px',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            background: '#090909',
+            flexShrink: 0,
+          }}>
+            <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <button style={{
+                background: 'none', border: 'none', color: 'var(--fg-muted)',
+                padding: 10, alignSelf: 'center', transition: 'color 0.2s',
+              }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
+                <Smile size={16} />
+              </button>
 
-                  <textarea
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={`Message #${activeChannel}...`}
-                    rows={1}
-                    style={{
-                      flex: 1,
-                      padding: '12px 16px',
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--fg)',
-                      fontFamily: 'var(--serif)',
-                      fontSize: 14,
-                      resize: 'none',
-                      outline: 'none',
-                      transition: 'border-color 0.3s',
-                      lineHeight: 1.5,
-                    }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.35)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-                  />
+              <textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder={`Message #${activeChannel}...`}
+                rows={1}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--fg)',
+                  fontFamily: 'var(--serif)',
+                  fontSize: 14,
+                  resize: 'none',
+                  outline: 'none',
+                  transition: 'border-color 0.3s',
+                  lineHeight: 1.5,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.35)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+              />
 
-                  <motion.button
-                    onClick={handleSend}
-                    whileHover={input.trim() ? { scale: 1.05 } : {}}
-                    whileTap={input.trim() ? { scale: 0.95 } : {}}
-                    style={{
-                      padding: '11px 18px',
-                      background: input.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                      border: 'none',
-                      color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
-                      borderRadius: 'var(--radius-sm)',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
-                      textTransform: 'uppercase',
-                      transition: 'background 0.3s, color 0.3s',
-                      alignSelf: 'flex-end',
-                    }}
-                  >
-                    <Send size={12} /> Send
-                  </motion.button>
-                </div>
-              </div>
-            </>
-          )}
+              <motion.button
+                onClick={handleSend}
+                whileHover={input.trim() ? { scale: 1.05 } : {}}
+                whileTap={input.trim() ? { scale: 0.95 } : {}}
+                style={{
+                  padding: '11px 18px',
+                  background: input.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                  border: 'none',
+                  color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  transition: 'background 0.3s, color 0.3s',
+                  alignSelf: 'flex-end',
+                }}
+              >
+                <Send size={12} /> Send
+              </motion.button>
+            </div>
+          </div>
         </div>
 
         {/* Crew sidebar */}
@@ -393,8 +402,9 @@ export default function LoungePage() {
                     <div style={{ fontSize: 7, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
                   <span>{member.role}</span>
+                  {member.online && <span style={{ fontStyle: 'italic', color: '#888' }}>{member.activity}</span>}
                 </div>
               </div>
             </motion.div>

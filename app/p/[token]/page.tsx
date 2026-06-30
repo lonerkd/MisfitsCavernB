@@ -41,18 +41,25 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
   useEffect(() => {
     const fetchProject = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('portfolio_projects')
-        .select('*, portfolio_media(*), profiles(username, role, avatar_url)')
-        .eq('share_token', params.token)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('portfolio_projects')
+          .select('*, portfolio_media(*), profiles(username, role, avatar_url)')
+          .eq('share_token', params.token)
+          .single();
 
-      if (error || !data) {
+        if (error || !data) {
+          setNotFound(true);
+        } else {
+          setProject(data as Project);
+        }
+      } catch (err) {
+        // Network/connection failure — don't leave the page stuck on "LOADING"
+        console.error('Failed to load portfolio:', err);
         setNotFound(true);
-      } else {
-        setProject(data as Project);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchProject();

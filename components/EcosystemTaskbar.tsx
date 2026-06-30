@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
 
 const APPS = [
@@ -15,32 +15,132 @@ const APPS = [
   { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b' },
 ];
 
+interface RecentProject {
+  id: string;
+  title: string;
+  color: string;
+  phase: string;
+}
+
+function ProjectSwitcher({ onClose }: { onClose: () => void }) {
+  const { projects, activeProject, setActiveProject } = useProject();
+  const router = useRouter();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        position: 'absolute',
+        bottom: '100%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        marginBottom: 10,
+        background: 'rgba(10,10,10,0.96)',
+        backdropFilter: 'blur(28px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 16,
+        padding: 10,
+        width: 220,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+        zIndex: 10,
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5,
+        textTransform: 'uppercase', color: 'rgba(240,236,228,0.3)',
+        padding: '4px 8px 8px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        marginBottom: 6,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        Projects
+        <Link href="/projects" onClick={onClose} style={{
+          color: 'rgba(255,60,0,0.7)', textDecoration: 'none', fontSize: 7,
+          letterSpacing: 1.5,
+          transition: 'color 0.2s',
+        }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#ff3c00')}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,60,0,0.7)')}
+        >
+          All →
+        </Link>
+      </div>
+
+      {/* Project list — real, sets the global active project */}
+      {projects.length === 0 && (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(240,236,228,0.3)', padding: '10px 8px', letterSpacing: 1 }}>
+          No projects yet.
+        </div>
+      )}
+      {projects.map((proj, i) => {
+        const color = proj.accent_color || '#ff3c00';
+        const isActive = activeProject?.id === proj.id;
+        return (
+          <motion.div
+            key={proj.id}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04 }}
+            onClick={() => { setActiveProject(proj); onClose(); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 8px', borderRadius: 10, cursor: 'pointer',
+              background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+              transition: 'background 0.2s',
+            }}
+            whileHover={{ background: 'rgba(255,255,255,0.05)' } as any}
+          >
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: 1, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {proj.title}
+              </div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
+                {proj.status || 'project'}
+              </div>
+            </div>
+            {isActive && <div style={{ fontFamily: 'var(--mono)', fontSize: 6.5, letterSpacing: 1, color: color, flexShrink: 0 }}>ACTIVE</div>}
+            <button
+              onClick={(e) => { e.stopPropagation(); setActiveProject(proj); onClose(); router.push(`/projects/${proj.id}`); }}
+              aria-label="open hub"
+              style={{ background: 'none', border: 'none', color: 'rgba(240,236,228,0.3)', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}
+            >›</button>
+          </motion.div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
-  const { activeProject, projects, setActiveProject } = useProject();
+  const { activeProject } = useProject();
+  const activeColor = activeProject?.accent_color || '#ff3c00';
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [showProjectMenu, setShowProjectMenu] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
 
   // Close switcher on route change
-  useEffect(() => { setShowProjectMenu(false); }, [pathname]);
+  useEffect(() => { setProjectsOpen(false); }, [pathname]);
 
   // Close on outside click
   useEffect(() => {
-    if (!showProjectMenu) return;
+    if (!projectsOpen) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('[data-taskbar]')) setShowProjectMenu(false);
+      if (!target.closest('[data-taskbar]')) setProjectsOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [showProjectMenu]);
+  }, [projectsOpen]);
 
   if (pathname === '/login' || pathname === '/auth') return null;
 
   // Determine active module color for contextual glow
   const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
   const moduleColor = activeApp?.color ?? '#ff3c00';
-  const activeColor = activeProject?.accent_color ?? '#ff3c00';
 
   return (
     <div
@@ -172,21 +272,27 @@ export default function EcosystemTaskbar() {
             </Link>
           );
         })}
-        <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', alignSelf: 'center', margin: '0 4px' }} />
-        
-        {/* Project Selector */}
+
+        {/* Divider */}
+        <div style={{
+          width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
+          margin: '0 4px', flexShrink: 0,
+        }} />
+
+        {/* Project switcher button */}
         <div style={{ position: 'relative' }}>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onMouseEnter={() => setHoveredId('projects')}
-            onMouseLeave={() => setHoveredId(null)}
-            onClick={() => setShowProjectMenu(!showProjectMenu)}
+            onClick={() => setProjectsOpen(v => !v)}
+            onHoverStart={() => setHoveredId('projects')}
+            onHoverEnd={() => setHoveredId(null)}
+            whileHover={{ scale: 1.08, y: -3 }}
+            whileTap={{ scale: 0.93 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 26 }}
             style={{
               width: 46, height: 46, borderRadius: 16,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 2,
-              background: showProjectMenu
+              background: projectsOpen
                 ? `${activeColor}18`
                 : hoveredId === 'projects'
                 ? 'rgba(255,255,255,0.06)'
@@ -209,85 +315,69 @@ export default function EcosystemTaskbar() {
             <FolderOpen
               size={18}
               strokeWidth={1.5}
-              color={showProjectMenu
-                ? activeColor
+              color={projectsOpen
+                ? (activeColor)
                 : hoveredId === 'projects'
                 ? 'rgba(240,236,228,0.7)'
                 : 'rgba(240,236,228,0.3)'}
             />
             <motion.div
-              animate={{ rotate: showProjectMenu ? 0 : 180 }}
+              animate={{ rotate: projectsOpen ? 0 : 180 }}
               transition={{ duration: 0.2 }}
               style={{ lineHeight: 0 }}
             >
               <ChevronUp
                 size={8}
-                color={showProjectMenu ? activeColor : 'rgba(240,236,228,0.25)'}
+                color={projectsOpen ? (activeColor) : 'rgba(240,236,228,0.25)'}
               />
             </motion.div>
           </motion.button>
 
+          {/* Switcher tooltip */}
           <AnimatePresence>
-            {showProjectMenu && (
+            {hoveredId === 'projects' && !projectsOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: -10 }}
-                exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 6, scale: 0.92 }}
+                animate={{ opacity: 1, y: -10, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.92 }}
+                transition={{ duration: 0.18 }}
                 style={{
                   position: 'absolute',
                   bottom: '100%',
-                  right: 0,
-                  marginBottom: 12,
-                  width: 200,
-                  background: 'rgba(10, 10, 10, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: 16,
-                  padding: 8,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-                  zIndex: 10000,
-                  pointerEvents: 'auto'
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(14,14,14,0.96)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'rgba(240,236,228,0.85)',
+                  fontFamily: 'var(--mono)',
+                  fontSize: 8.5,
+                  letterSpacing: 1.5,
+                  textTransform: 'uppercase',
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  backdropFilter: 'blur(10px)',
                 }}
               >
-                <div style={{ fontSize: 8, color: '#666', padding: '4px 8px', textTransform: 'uppercase', letterSpacing: 1 }}>Switch Project</div>
-                {projects.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setActiveProject(p);
-                      setShowProjectMenu(false);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: activeProject?.id === p.id ? 'rgba(255,255,255,0.05)' : 'transparent',
-                      color: activeProject?.id === p.id ? '#fff' : '#aaa',
-                      textAlign: 'left',
-                      fontSize: 11,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = activeProject?.id === p.id ? 'rgba(255,255,255,0.05)' : 'transparent')}
-                  >
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: p.accent_color || 'var(--accent)' }} />
-                    {p.title}
-                  </button>
-                ))}
-                {projects.length === 0 && (
-                  <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 10, color: '#444' }}>No projects found</div>
-                )}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 4, paddingTop: 4 }}>
-                  <Link href="/projects" style={{ textDecoration: 'none' }}>
-                    <button style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--accent)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', textAlign: 'center' }}>Manage All Projects</button>
-                  </Link>
-                </div>
+                {activeProject ? activeProject.title : 'Projects'}
+                <div style={{
+                  position: 'absolute',
+                  top: '100%', left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 0, height: 0,
+                  borderLeft: '4px solid transparent',
+                  borderRight: '4px solid transparent',
+                  borderTop: '4px solid rgba(255,255,255,0.1)',
+                }} />
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Project switcher panel */}
+          <AnimatePresence>
+            {projectsOpen && (
+              <ProjectSwitcher onClose={() => setProjectsOpen(false)} />
             )}
           </AnimatePresence>
         </div>

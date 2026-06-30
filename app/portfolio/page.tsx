@@ -7,9 +7,8 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getPortfolioProjects as getPortfolioData } from '@/lib/supabase/portfolio';
+import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
 import { useEffect } from 'react';
-import { ProtectedPage } from '@/lib/permissions/access-control';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -25,87 +24,7 @@ interface Video {
   featured?: boolean;
   laurels?: string[];
   stills?: string[];
-  mediaType?: 'youtube' | 'gdrive' | 'image';
-  url?: string;
 }
-
-const getYoutubeId = (url: string) => {
-  if (!url) return '';
-  try {
-    const urlObj = new URL(url);
-    if (urlObj.hostname === 'youtu.be' || urlObj.hostname === 'www.youtu.be') {
-      return urlObj.pathname.substring(1);
-    }
-    return urlObj.searchParams.get('v') || '';
-  } catch {
-    return '';
-  }
-};
-
-const VIDEOS: Video[] = [
-  {
-    id: '10m',
-    title: '10 Million',
-    category: 'Music Video',
-    role: 'Director of Photography / Editor',
-    description: 'High-energy visual rhythm. Every cut lands on the beat, every frame tells a story of ambition.',
-    driveId: '10A2uzDxrEEgx-6tiS3M_qbhAq72dglZt',
-    year: '2026',
-    featured: true,
-    laurels: ['Official Selection - SXSW 2026', 'Best Editing - Music Video Awards'],
-    stills: [
-      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80'
-    ]
-  },
-  {
-    id: 'brief',
-    title: 'The Briefcase',
-    category: 'Short Film',
-    role: 'Writer / Cinematographer',
-    description: 'A crime thriller about two couriers, a mysterious briefcase, and a deal that has to go right.',
-    driveId: '1EM1AVe-50e6IMKL2m8teeakg6aSL3ctr',
-    year: '2024',
-    featured: true,
-  },
-  {
-    id: 'audio',
-    title: 'The Audio Blueprint',
-    category: 'Documentary Teaser',
-    role: 'Director / Writer / Editor',
-    description: 'The invisible art of sound design — why audio is the secret weapon behind iconic movie moments.',
-    driveId: '1hpS5fIfDRthOgzCD0jda5IcuHiverR8n',
-    year: '2025',
-  },
-  {
-    id: 'psa',
-    title: 'The Grand PSA',
-    category: 'Commercial / PSA',
-    role: 'Writer / Director / DP / Editor',
-    description: 'A love letter to The Grand Theatre. Wrote the script, directed the shoot, graded the final cut.',
-    driveId: '1Mmk_nM_WXCskja0NEIa6PlM51cul-z00',
-    year: '2025',
-  },
-  {
-    id: 'altitude',
-    title: 'The Pursuit of Altitude',
-    category: 'Documentary',
-    role: 'Cinematographer / Editor',
-    description: 'Chasing elevation, both literal and metaphorical. Visual storytelling through landscape.',
-    driveId: '1-bPAYnQROhT9awRMEBWuDCGSw04CtBgE',
-    year: '2024',
-  },
-  {
-    id: 'cook',
-    title: 'Live Cooking Demo',
-    category: 'Live Multi-Cam',
-    role: 'Camera Operator / Switcher',
-    description: 'Live multi-camera production. Real-time switching, no second takes, all precision.',
-    driveId: '13fmSRFNiGZl2b57-cd0qVnjcPx9IDUUZ',
-    year: '2025',
-  },
-];
 
 function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video) => void; span?: 'wide' | 'tall' }) {
   const [hover, setHover] = useState(false);
@@ -132,12 +51,11 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
     >
       {/* Thumbnail */}
       <img
-        src={video.mediaType === 'youtube' && video.url ? `https://img.youtube.com/vi/${getYoutubeId(video.url)}/hqdefault.jpg` : IMG(video.driveId)}
+        src={IMG(video.driveId)}
         alt={video.title}
         loading="lazy"
         style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
         onError={e => {
-          if (video.mediaType === 'youtube') return;
           const t = e.target as HTMLImageElement;
           if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = IMG_FB(video.driveId); }
         }}
@@ -291,21 +209,12 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
           {/* Media Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
             <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
-              {project.mediaType === 'youtube' && project.url ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${getYoutubeId(project.url)}`}
-                  width="100%" height="100%"
-                  allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen
-                  style={{ border: 'none', display: 'block' }}
-                />
-              ) : (
-                <iframe
-                  src={`https://drive.google.com/file/d/${project.driveId}/preview`}
-                  width="100%" height="100%"
-                  allow="autoplay;encrypted-media" allowFullScreen
-                  style={{ border: 'none', display: 'block' }}
-                />
-              )}
+              <iframe
+                src={`https://drive.google.com/file/d/${project.driveId}/preview`}
+                width="100%" height="100%"
+                allow="autoplay;encrypted-media" allowFullScreen
+                style={{ border: 'none', display: 'block' }}
+              />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
@@ -353,37 +262,33 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
 
 export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
-  const [videosList, setVideosList] = useState<Video[]>(VIDEOS);
+  const [videosList, setVideosList] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getPortfolioData().then(data => {
-      if (data && data.length > 0) {
-        const fetchedVideos: Video[] = data.map((p: any) => {
-          const media = p.portfolio_media?.[0];
-          return {
-            id: p.id,
-            title: p.title,
-            category: p.category || 'Video',
-            role: p.role || 'Creator',
-            description: p.description || '',
-            driveId: media?.media_type === 'youtube' ? '' : (media?.url?.split('id=')?.[1] || media?.url || ''),
-            year: p.year?.toString() || '2026',
-            featured: true,
-            mediaType: media?.media_type || 'gdrive',
-            url: media?.url || ''
-          };
-        });
-        setVideosList(fetchedVideos);
-      }
-    }).catch(console.error);
+      const fetchedVideos: Video[] = (data || []).map((p: any) => {
+        const media = p.portfolio_media?.[0] || p.media?.[0];
+        return {
+          id: p.id,
+          title: p.title,
+          category: p.category || 'Video',
+          role: p.role || 'Creator',
+          description: p.description || '',
+          driveId: media?.url?.split('id=')?.[1] || media?.url || '',
+          year: p.year?.toString() || '',
+          featured: true,
+        };
+      });
+      setVideosList(fetchedVideos);
+    }).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   const featured = videosList.filter(v => v.featured);
   const rest = videosList.filter(v => !v.featured);
 
   return (
-    <ProtectedPage requiredPermission="manage_portfolio">
-      <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       {/* Nav */}
@@ -432,21 +337,36 @@ export default function PortfolioPage() {
           <SectionLabel text={`The Work — ${videosList.length} Projects`} />
         </AnimatedSection>
 
-        {/* Featured — 2 col */}
-        <AnimatedSection>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
-            {featured.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
+        {videosList.length === 0 ? (
+          <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 10 }}>
+              {loading ? 'LOADING…' : 'NO PUBLISHED WORK YET'}
+            </div>
+            {!loading && (
+              <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)', opacity: 0.6 }}>
+                Published portfolio projects will appear here.
+              </div>
+            )}
           </div>
-        </AnimatedSection>
-
-        {/* Rest — 3 col */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-          {rest.map((v, i) => (
-            <AnimatedSection key={v.id} delay={i * 0.08}>
-              <VideoCard video={v} onClick={setActiveVideo} />
+        ) : (
+          <>
+            {/* Featured — 2 col */}
+            <AnimatedSection>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
+                {featured.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
+              </div>
             </AnimatedSection>
-          ))}
-        </div>
+
+            {/* Rest — 3 col */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+              {rest.map((v, i) => (
+                <AnimatedSection key={v.id} delay={i * 0.08}>
+                  <VideoCard video={v} onClick={setActiveVideo} />
+                </AnimatedSection>
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       {/* Marquee */}
@@ -475,7 +395,6 @@ export default function PortfolioPage() {
       </div>
 
       <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
-      </main>
-    </ProtectedPage>
+    </main>
   );
 }

@@ -111,33 +111,18 @@ const KNOWLEDGE = {
 // PARSER CLASS
 // =========================================================================
 
-export interface LearnedRules {
-  characters?: string[];
-  slugs?: string[];
-  transitions?: string[];
-  // Exact-text overrides from manual Smart Import classification, keyed by
-  // the trimmed uppercase line text. Takes priority over all heuristics.
-  forcedTypes?: Record<string, LineType>;
-}
-
-export function parseScript(content: string, learnedRules?: LearnedRules) {
-  const parser = new ScriptParser(content, learnedRules);
-  return parser.parse();
-}
-
 export class ScriptParser {
   private rawLines: string[];
   private characterStats: Map<string, number>;
   private elements: Record<string, Set<string>>;
   private lines: ScriptLine[];
-  private learnedRules: LearnedRules;
   
   // State Machine
   private sceneIndex: number = -1;
   private lastSpeaker: string | null = null;
   private insideDialogueBlock: boolean = false;
 
-  constructor(text: string, learnedRules?: LearnedRules) {
+  constructor(text: string) {
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.characterStats = new Map();
     this.elements = {
@@ -148,7 +133,6 @@ export class ScriptParser {
       'SFX': new Set()
     };
     this.lines = [];
-    this.learnedRules = learnedRules || {};
   }
 
   // --- UTILS ---
@@ -158,7 +142,18 @@ export class ScriptParser {
   }
 
   private clean(text: string): string {
-    return text.replace(/\s*\(.*?\)\s*/g, '').replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    return text
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // é -> e, ç -> c, etc.
+      .replace(/\s*\(.*?\)\s*/g, ' ')                    // drop (V.O.), (CONT'D)…
+      .replace(/[^a-zA-Z0-9\s'\-]/g, '')                 // keep letters, digits, apostrophe, hyphen
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // True only for real scene headings — INT./EXT./EST. as a whole token, so
+  // "INTERVIEWER" and "INTERNET CAFÉ" are NOT mistaken for slugs.
+  private isSceneHeading(text: string): boolean {
+    return /^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.test(text.trim());
   }
 
   // --- MAIN PARSE LOOP ---
@@ -252,19 +247,22 @@ export class ScriptParser {
 
   // --- PASS 1: CHARACTER RECOGNITION ---
   private preScanCharacters() {
-    this.rawLines.forEach(line => {
+    this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
-      if (this.isCaps(trim) && trim.length > 1 && trim.length < 50) {
-        const cleanName = this.clean(trim);
-        const upperTrim = trim.toUpperCase();
-        // Compare against the punctuated form too — dictionary entries like "TITLE CARD:"
-        // or "SMASH CUT TO:" would never match a punctuation-stripped cleanName.
-        if (!KNOWLEDGE.SCENE_PREFIXES.has(cleanName) &&
-            !KNOWLEDGE.TRANSITIONS.has(cleanName) && !KNOWLEDGE.TRANSITIONS.has(upperTrim) &&
-            !KNOWLEDGE.CAMERA_ANGLES.has(cleanName) && !this.matchesSetStart(upperTrim, KNOWLEDGE.CAMERA_ANGLES)) {
-          this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
-        }
-      }
+      if (!this.isCaps(trim) || trim.length < 2 || trim.length >= 50) return;
+      const cleanName = this.clean(trim);
+      const words = cleanName.split(' ').filter(Boolean);
+      // Real character cues are short (≤4 words), have no digits, aren't a
+      // scene heading / transition / time-of-day / pure section header, and
+      // are followed by dialogue or a parenthetical.
+      if (words.length === 0 || words.length > 4) return;
+      if (/\d/.test(cleanName)) return;
+      if (this.isSceneHeading(trim)) return;
+      if (KNOWLEDGE.SCENE_PREFIXES.has(cleanName) || KNOWLEDGE.TRANSITIONS.has(cleanName) || KNOWLEDGE.CAMERA_ANGLES.has(cleanName) || KNOWLEDGE.TIME_OF_DAY.has(cleanName)) return;
+      const next = (this.rawLines[idx + 1] || '').trim();
+      const followedBySpeech = next.length > 0 && (next.startsWith('(') || !this.isCaps(next));
+      if (!followedBySpeech) return;
+      this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
     });
   }
 
@@ -273,56 +271,29 @@ export class ScriptParser {
     type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any 
   } {
     const scores: Record<LineType, number> = {
-      slug: 0, action: 0, character: 0, dialogue: 0,
+      slug: 0, action: 0, character: 0, dialogue: 0, 
       parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0
     };
     const reasoning: string[] = [];
     const upper = text.toUpperCase();
     const cleanName = this.clean(text);
 
-    // 0. MANUAL OVERRIDE — user-classified during Smart Import takes priority over everything
-    const forced = this.learnedRules.forcedTypes?.[upper];
-    if (forced) {
-      scores[forced] = 100;
-      return {
-        type: forced,
-        confidence: 100,
-        scores,
-        reasoning: ['Manually classified by user'],
-        meta: {
-          characterName: forced === 'character' ? cleanName : undefined,
-          sceneNumber: this.extractSceneNumber(text)
-        }
-      };
-    }
-
-    // 1. SLUG DETECTION
-    if (this.learnedRules.slugs && this.matchesSetStart(upper, new Set(this.learnedRules.slugs))) {
-      scores.slug = 100;
-      reasoning.push('Learned scene prefix match');
-    } else if (this.matchesSetStart(upper, KNOWLEDGE.SCENE_PREFIXES)) {
+    // 1. SLUG DETECTION — requires a real INT./EXT. token, not just an "INT…" word
+    if (this.isSceneHeading(text)) {
       scores.slug = 100;
       reasoning.push('Starts with known scene prefix');
-    } else if (upper.startsWith('.') && this.isCaps(text)) {
+    } else if (upper.startsWith('.') && this.isCaps(text) && text.length > 1) {
       scores.slug = 90;
       reasoning.push('Starts with dot (shorthand slug)');
     }
 
     // 2. TRANSITION DETECTION
-    // Normalize trailing punctuation so "SMASH CUT TO BLACK." still matches "SMASH CUT TO:"-style entries
-    const upperNoTrailingPunct = upper.replace(/[:.]+$/, '');
-    if (this.learnedRules.transitions && (this.learnedRules.transitions.includes(upper) || this.learnedRules.transitions.includes(upperNoTrailingPunct))) {
-      scores.transition = 100;
-      reasoning.push('Learned transition match');
-    } else if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upperNoTrailingPunct)) {
+    if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, ''))) {
       scores.transition = 100;
       reasoning.push('Exact transition match');
     } else if (upper.endsWith(' TO:') && this.isCaps(text) && text.length < 40) {
-      scores.transition = 90;
+      scores.transition = 85;
       reasoning.push('Ends with " TO:" and is caps');
-    } else if (/ TO (BLACK|WHITE)\.?$/.test(upper) && this.isCaps(text) && text.length < 40) {
-      scores.transition = 90;
-      reasoning.push('Cut/fade transition to black or white');
     }
 
     // 3. PARENTHETICAL DETECTION
@@ -341,11 +312,8 @@ export class ScriptParser {
     // 4. CHARACTER DETECTION
     if (this.isCaps(text) && text.length < 60) {
       let charScore = 30; // Base score for all-caps
-
-      if (this.learnedRules.characters && this.learnedRules.characters.includes(cleanName)) {
-        charScore = 100;
-        reasoning.push('Learned character match');
-      } else if (this.characterStats.get(cleanName)! >= 1) {
+      
+      if (this.characterStats.get(cleanName)! >= 1) {
         charScore += 20;
         reasoning.push('Found in cast pre-scan');
       }
@@ -432,25 +400,20 @@ export class ScriptParser {
     else if (scores.shot >= 90) bestType = 'shot';
     else bestType = 'action';
 
-    let classifiedAsShot = false;
     if (bestType === 'shot') {
       bestType = 'action';
-      classifiedAsShot = true;
       reasoning.push('Camera direction treated as Action');
     }
 
     return {
       type: bestType,
-      // Shot/camera-cue lines are confidently resolved even though they bucket into 'action' —
-      // don't let the low action score undercut that confidence.
-      confidence: classifiedAsShot ? Math.max(scores.shot, scores.action) : Math.min(100, Math.max(scores[bestType] || 0, scores.action)),
+      confidence: Math.min(100, Math.max(scores[bestType] || 0, scores.action)),
       scores,
       reasoning,
       meta: {
         characterName: bestType === 'character' ? cleanName : undefined,
         visualDensity: visualScore,
-        sceneNumber: this.extractSceneNumber(text),
-        classifiedAsShot
+        sceneNumber: this.extractSceneNumber(text)
       }
     };
   }
@@ -530,19 +493,71 @@ export class ScriptParser {
       currentScene.endIndex = lines.length - 1;
       scenes.push(currentScene);
     }
-    
+
+    // Per-scene breakdown: page-eighths estimate + tagged production elements.
+    scenes.forEach(sc => {
+      const body = lines.slice(sc.startIndex, sc.endIndex + 1).map(l => l.text).join(' ');
+      const words = body.split(/\s+/).filter(Boolean).length;
+      sc.wordCount = words;
+      // ~190 words per script page, 8 eighths per page; min 1/8.
+      sc.eighths = Math.max(1, Math.round((words / 190) * 8));
+      sc.elements = this.tagElements(body);
+    });
+
     return scenes;
   }
 
+  private stripScenePrefix(slug: string): string {
+    return slug.trim().replace(/^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
+  }
+
+  private isTimePart(part: string): boolean {
+    const up = part.toUpperCase().replace(/[^A-Z\s/]/g, '').trim();
+    if (KNOWLEDGE.TIME_OF_DAY.has(up)) return true;
+    return [...KNOWLEDGE.TIME_OF_DAY].some(t => up === t || up.endsWith(' ' + t) || up.endsWith(t));
+  }
+
   private parseLocation(slug: string): string {
-    return slug.replace(/^(INT\.|EXT\.|INT\/EXT)\s*/i, '').split('-')[0].trim();
+    const body = this.stripScenePrefix(slug);
+    // Split only on spaced dashes (" - " / " -- "), preserving hyphenated words.
+    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length === 0) return body.trim();
+    while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
+    return parts.join(' - ');
   }
 
   private parseTime(slug: string): string {
-    const parts = slug.split('-');
-    const time = parts[parts.length - 1].trim().toUpperCase();
-    return KNOWLEDGE.TIME_OF_DAY.has(time) ? time : 'UNKNOWN';
+    const body = this.stripScenePrefix(slug);
+    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    const last = (parts[parts.length - 1] || '').toUpperCase().replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    // Prefer multi-word matches (LATE NIGHT) over single (NIGHT) by length.
+    const hits = [...KNOWLEDGE.TIME_OF_DAY].filter(t => new RegExp(`(^|\\s)${t}(\\s|$)`).test(last));
+    if (hits.length) return hits.sort((a, b) => b.length - a.length)[0];
+    // Compound times not in the dictionary but ending in a known token.
+    for (const t of KNOWLEDGE.TIME_OF_DAY) if (last.endsWith(t)) return t;
+    return 'UNKNOWN';
   }
+
+  // Scan a scene's text for production elements (props, wardrobe, etc.).
+  private tagElements(text: string): { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] } {
+    const words = new Set(text.toUpperCase().split(/[^A-Z]+/).filter(Boolean));
+    const pick = (dict: Set<string>) => [...dict].filter(w => words.has(w));
+    return {
+      props: pick(KNOWLEDGE.PROPS),
+      wardrobe: pick(KNOWLEDGE.WARDROBE),
+      vehicles: pick(KNOWLEDGE.VEHICLES),
+      sfx: pick(KNOWLEDGE.SOUNDS),
+      vfx: pick(KNOWLEDGE.VFX),
+    };
+  }
+
 }
 
+// =========================================================================
+// EXPORT FUNCTION
+// =========================================================================
 
+export function parseScript(text: string): ParseResult {
+  const parser = new ScriptParser(text);
+  return parser.parse();
+}

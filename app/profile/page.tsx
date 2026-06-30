@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { ProtectedPage } from '@/lib/permissions/access-control';
 
-const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writehr', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
+const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
 const fieldStyle: React.CSSProperties = {
   width: '100%',
@@ -36,22 +35,15 @@ export default function ProfilePage() {
       if (data) setProfile(data);
 
       // Load quick stats
-      try {
-        const [scripts, projects, jobs] = await Promise.all([
-          supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', user.id),
-          supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
-          supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
-        ]);
-        setStats({
-          scripts: scripts?.count || 0,
-          projects: projects?.count || 0,
-          jobs: jobs?.count || 0,
-        });
-      } catch (error) {
-        console.error('Failed to load stats:', error);
-        setStats({ scripts: 0, projects: 0, jobs: 0 });
-      }
-    }).catch(error => console.error('Failed to get user:', error));
+      const [{ count: scripts }, { count: projects }, { count: jobs }] = await Promise.all([
+        supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', user.id),
+        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
+        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
+      ]);
+      setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
+    }).catch((err) => {
+      console.error('Failed to load profile:', err);
+    });
   }, []);
 
   const handleSave = async () => {
@@ -76,73 +68,17 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {/* Background orb */}
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at 50% 40%, rgba(255,60,0,0.06) 0%, transparent 60%)',
-        }} />
-        <div style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
-          <div style={{
-            fontFamily: 'var(--display)',
-            fontSize: 'clamp(2rem, 6vw, 3rem)',
-            letterSpacing: 6,
-            lineHeight: 1.1,
-            marginBottom: 16,
-          }}>
-            MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
-          </div>
-          <p style={{
-            fontFamily: 'var(--serif)',
-            fontSize: '1rem',
-            fontStyle: 'italic',
-            color: 'var(--fg-muted)',
-            marginBottom: 32,
-          }}>Sign in to access your profile</p>
-          <Link href="/auth" style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '14px 32px',
-            background: 'var(--accent)',
-            color: 'var(--bg)',
-            textDecoration: 'none',
-            fontFamily: 'var(--mono)',
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            borderRadius: 'var(--radius-sm)',
-            transition: 'transform 0.2s, box-shadow 0.3s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,60,0,0.3)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'none'; }}
-          >
-            Sign In
-          </Link>
-          <div style={{ marginTop: 20 }}>
-            <Link href="/" style={{
-              fontFamily: 'var(--mono)',
-              fontSize: 9,
-              letterSpacing: 2,
-              color: 'var(--fg-muted)',
-              textDecoration: 'none',
-              transition: 'color 0.2s',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
-            >
-              ← BACK TO HOME
-            </Link>
-          </div>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, marginBottom: 16 }}>Not signed in.</p>
+          <Link href="/auth" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11 }}>Sign in →</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <ProtectedPage requiredPermission="view_site">
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -219,9 +155,9 @@ export default function ProfilePage() {
           ].map(({ icon, count, label, href }) => (
             <Link key={label} href={href} style={{ textDecoration: 'none' }}>
               <div style={{ padding: 16, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center',
-                transition: 'border-color 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,60,0,0.15)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                transition: 'border-color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
                 <div style={{ fontSize: 8, letterSpacing: 2, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 4 }}>{label.toUpperCase()}</div>
@@ -293,7 +229,7 @@ export default function ProfilePage() {
 
           {/* Quick links */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link href="/portfolio/manage" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
+            <Link href="/portfolio" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
               → MANAGE PORTFOLIO
             </Link>
             <Link href="/editor" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
@@ -305,7 +241,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-      </div>
-    </ProtectedPage>
+    </div>
   );
 }

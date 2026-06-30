@@ -30,24 +30,15 @@ export async function createProject(userId: string, title: string, description =
   return data;
 }
 
-export async function getUserProjects(userId: string) {
-  const { data: crewData, error: crewError } = await supabase
-    .from('project_crew')
-    .select('project_id')
-    .eq('user_id', userId);
-
-  if (crewError) throw crewError;
-  const projectIds = (crewData || []).map(c => c.project_id);
-
-  let query = supabase.from('projects').select('*');
-  if (projectIds.length > 0) {
-    const idsString = projectIds.join(',');
-    query = query.or(`creator_id.eq.${userId},id.in.(${idsString})`);
-  } else {
-    query = query.eq('creator_id', userId);
-  }
-
-  const { data, error } = await query.order('created_at', { ascending: false });
+export async function getUserProjects(_userId?: string) {
+  // RLS ("Project members can view") already scopes this to projects the
+  // current user created or is crew on, so no client-side filter is needed.
+  // The previous .or(... id.in.(SELECT ...)) embedded raw SQL inside a
+  // PostgREST filter, which is unsupported and returned a 400 every time.
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data;
