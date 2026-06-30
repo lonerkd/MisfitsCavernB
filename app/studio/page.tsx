@@ -1280,7 +1280,8 @@ export default function StudioPage() {
                        className="link-btn"
                        onClick={async () => {
                          if (!activeProject || !beatTitle.trim()) return;
-                         await addBeat({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                         await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                          await refreshProject(activeProject.id);
                          setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
                        }}
                      >Add Beat</button>
