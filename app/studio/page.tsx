@@ -478,7 +478,7 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ image, index, onRemove }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void }) {
+function ConceptCard({ image, index, onRemove, sceneCount = 0 }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -499,6 +499,12 @@ function ConceptCard({ image, index, onRemove }: { image: { id: string; url: str
       }}
     >
       <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s' }} />
+
+      {sceneCount > 0 && (
+        <div style={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#fff', background: 'rgba(99,102,241,0.85)', padding: '2px 7px', borderRadius: 99 }}>
+          {sceneCount} {sceneCount === 1 ? 'scene' : 'scenes'}
+        </div>
+      )}
 
       <AnimatePresence>
         {isHovered && (
@@ -780,6 +786,37 @@ export default function StudioPage() {
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState('');
   const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
+
+  // Scene ↔ concept references (assets linked to scenes)
+  type SceneRef = { id: string; concept_asset_id: string; image_url: string; title: string | null };
+  const [sceneRefs, setSceneRefs] = useState<Record<string, SceneRef[]>>({});
+  const [linkScene, setLinkScene] = useState<string | null>(null);
+
+  const loadSceneRefs = async (projectId: string) => {
+    const { data } = await supabase
+      .from('scene_references')
+      .select('id,scene_id,concept_asset_id,concept_assets(image_url,title)')
+      .eq('project_id', projectId);
+    const map: Record<string, SceneRef[]> = {};
+    (data || []).forEach((r: any) => {
+      (map[r.scene_id] ||= []).push({ id: r.id, concept_asset_id: r.concept_asset_id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title });
+    });
+    setSceneRefs(map);
+  };
+  useEffect(() => {
+    if (activeProject?.id) loadSceneRefs(activeProject.id);
+    else setSceneRefs({});
+  }, [activeProject?.id, activeProject?.scenes]);
+
+  const linkConceptToScene = async (sceneId: string, conceptId: string) => {
+    if (!activeProject) return;
+    const { error } = await supabase.from('scene_references').insert({ project_id: activeProject.id, scene_id: sceneId, concept_asset_id: conceptId, created_by: user?.id });
+    if (!error) { setLinkScene(null); loadSceneRefs(activeProject.id); }
+  };
+  const unlinkConcept = async (refId: string) => {
+    await supabase.from('scene_references').delete().eq('id', refId);
+    if (activeProject) loadSceneRefs(activeProject.id);
+  };
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -1228,7 +1265,7 @@ export default function StudioPage() {
                   onClick={async () => {
                     if (!activeProject || !conceptUrl.trim()) return;
                     const { data: { user } } = await supabase.auth.getUser();
-                    await supabase.from('concept_images').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), created_by: user?.id });
+                    await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), created_by: user?.id });
                     await refreshProject(activeProject.id);
                     setConceptTitle(''); setConceptUrl(''); setShowAddConcept(false);
                   }}
@@ -1238,9 +1275,12 @@ export default function StudioPage() {
 
             {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
               <div style={{ columnCount: 3, columnGap: 16 }}>
-                {activeProject.concept_assets.map((img, i) => (
-                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} onRemove={async () => { await supabase.from('concept_images').delete().eq('id', img.id); await refreshProject(activeProject.id); }} />
-                ))}
+                {activeProject.concept_assets.map((img, i) => {
+                  const sceneCount = Object.values(sceneRefs).reduce((n, arr) => n + (arr.some(r => r.concept_asset_id === img.id) ? 1 : 0), 0);
+                  return (
+                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} onRemove={async () => { await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject.id); }} />
+                  );
+                })}
               </div>
             ) : (
               <>
@@ -1361,19 +1401,59 @@ export default function StudioPage() {
                          <div style={{ width: 30 }}></div>
                        </div>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                         {activeProject.scenes.map(s => (
-                           <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                             <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
-                             <div style={{ flex: 1, minWidth: 200 }}>
-                               <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
-                               {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
+                         {activeProject.scenes.map(s => {
+                           const refs = sceneRefs[s.id] || [];
+                           const concepts = (activeProject.concept_assets || []) as any[];
+                           const linkedIds = new Set(refs.map(r => r.concept_asset_id));
+                           const available = concepts.filter(c => !linkedIds.has(c.id));
+                           const picking = linkScene === s.id;
+                           return (
+                           <div key={s.id} style={{ padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                             <div style={{ display: 'flex', alignItems: 'center' }}>
+                               <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
+                               <div style={{ flex: 1, minWidth: 200 }}>
+                                 <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
+                                 {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
+                               </div>
+                               <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
+                               <div style={{ width: 30, textAlign: 'right' }}>
+                                 <button onClick={async () => { await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                               </div>
                              </div>
-                             <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
-                             <div style={{ width: 30, textAlign: 'right' }}>
-                               <button onClick={async () => { await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                             {/* Linked concept references */}
+                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
+                               {refs.map(r => (
+                                 <div key={r.id} style={{ position: 'relative', width: 40, height: 28, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }} title={r.title || 'reference'}>
+                                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                                   <img src={r.image_url} alt={r.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                   <button onClick={() => unlinkConcept(r.id)} aria-label="unlink" style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 8, lineHeight: 1, cursor: 'pointer', padding: '1px 3px' }}>✕</button>
+                                 </div>
+                               ))}
+                               {concepts.length > 0 && (
+                                 <button onClick={() => setLinkScene(picking ? null : s.id)} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 4, padding: '3px 7px', cursor: 'pointer' }}>
+                                   {picking ? 'close' : '+ ref'}
+                                 </button>
+                               )}
+                               {refs.length === 0 && concepts.length === 0 && (
+                                 <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.5 }}>add concept images to link references</span>
+                               )}
                              </div>
+                             {/* Concept picker */}
+                             {picking && (
+                               <div style={{ marginTop: 8, marginLeft: 60, padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                 {available.length === 0 ? (
+                                   <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>All concept images already linked.</span>
+                                 ) : available.map(c => (
+                                   <button key={c.id} onClick={() => linkConceptToScene(s.id, c.id)} title={c.title || 'link'} style={{ width: 52, height: 36, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', padding: 0, background: 'none' }}>
+                                     {/* eslint-disable-next-line @next/next/no-img-element */}
+                                     <img src={c.image_url} alt={c.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                   </button>
+                                 ))}
+                               </div>
+                             )}
                            </div>
-                         ))}
+                           );
+                         })}
                        </div>
                      </>
                    ) : (

@@ -110,7 +110,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('timeline_items').select('*').eq('project_id', projectId),
       supabase.from('project_crew').select('*, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', projectId),
       supabase.from('project_beats').select('*').eq('project_id', projectId).order('created_at'),
-      supabase.from('concept_images').select('*').eq('project_id', projectId).order('created_at'),
+      supabase.from('concept_assets').select('*').eq('project_id', projectId).order('created_at'),
       supabase.from('scenes').select('*').eq('project_id', projectId).order('scene_number'),
       supabase.from('campaigns').select('*').eq('project_id', projectId).order('created_at'),
     ]);

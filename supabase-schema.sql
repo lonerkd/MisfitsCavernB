@@ -455,3 +455,21 @@ BEGIN
     END IF;
 END
 $$;
+
+-- Scene ↔ concept references: link concept-board images to specific scenes
+CREATE TABLE IF NOT EXISTS scene_references (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  scene_id UUID NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
+  concept_asset_id UUID NOT NULL REFERENCES concept_assets(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(scene_id, concept_asset_id)
+);
+ALTER TABLE scene_references ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "scene_refs view" ON scene_references FOR SELECT TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticated
+  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
