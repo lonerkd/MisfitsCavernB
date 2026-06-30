@@ -47,53 +47,6 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   'Documentary':     Video,
 };
 
-const SEED_PROJECTS: Project[] = [
-  {
-    id: '1',
-    title: 'Femme Fatale',
-    type: 'Limited Series',
-    phase: 'pre-production',
-    progress: 85,
-    deadline: '2026-06-30',
-    team: ['PO', 'CT', 'PR'],
-    description: '133-page political noir. Submitted to A24 and Proximity Media.',
-    color: '#ff3c00',
-  },
-  {
-    id: '2',
-    title: '10 Million',
-    type: 'Music Video',
-    phase: 'post-production',
-    progress: 95,
-    deadline: '2026-05-15',
-    team: ['PO', 'ED'],
-    description: 'High-energy visual rhythm. Final color grade in progress.',
-    color: '#f59e0b',
-  },
-  {
-    id: '3',
-    title: 'The Briefcase',
-    type: 'Short Film',
-    phase: 'delivery',
-    progress: 100,
-    deadline: '2024-12-01',
-    team: ['PO', 'CA', 'CR'],
-    description: 'Crime thriller. Festival submissions complete.',
-    color: '#10b981',
-  },
-  {
-    id: '4',
-    title: 'Untitled Drama',
-    type: 'Feature',
-    phase: 'development',
-    progress: 12,
-    deadline: '2027-01-15',
-    team: ['PO'],
-    description: 'Early treatment stage. Exploring structural arcs.',
-    color: '#6366f1',
-  },
-];
-
 function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
@@ -300,7 +253,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
 }
 
 export default function ProjectsPage() {
-  const [projectsList, setProjectsList] = useState<Project[]>(SEED_PROJECTS);
+  const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
 
@@ -309,24 +262,23 @@ export default function ProjectsPage() {
       if (!user) return;
       setUser(user);
       getUserProjects(user.id).then(data => {
-        if (data && data.length > 0) {
-          const fetched: Project[] = data.map(p => ({
-            id: p.id,
-            title: p.title,
-            type: 'Feature',
-            phase: (p.status === 'completed' ? 'delivery' :
-                    p.status === 'in-production' ? 'production' :
-                    p.status === 'post-production' ? 'post-production' :
-                    'development') as Phase,
-            progress: 0,
-            deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
-            team: ['CR'],
-            description: p.description || 'No description.',
-            color: p.accent_color || '#ff3c00',
-          }));
-          setProjectsList(fetched);
-        }
-      });
+        const fetched: Project[] = (data || []).map(p => ({
+          id: p.id,
+          title: p.title,
+          type: p.project_type || 'Project',
+          phase: (p.status === 'released' || p.status === 'completed' ? 'delivery' :
+                  p.status === 'production' ? 'production' :
+                  p.status === 'post' || p.status === 'post-production' ? 'post-production' :
+                  p.status === 'pre-prod' || p.status === 'pre-production' ? 'pre-production' :
+                  'development') as Phase,
+          progress: 0,
+          deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
+          team: ['CR'],
+          description: p.description || 'No description.',
+          color: p.accent_color || '#ff3c00',
+        }));
+        setProjectsList(fetched);
+      }).catch(console.error);
     });
   }, []);
 

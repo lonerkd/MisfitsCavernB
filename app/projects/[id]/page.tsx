@@ -309,7 +309,8 @@ function CrewPreview({ team }: { team: Project['team'] }) {
 // ─── Timeline preview ────────────────────────────────────────────────────────
 
 function TimelinePreview({ deadline, progress, phase }: { deadline: string; progress: number; phase: Phase }) {
-  const daysLeft = Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000));
+  const dl = deadline ? new Date(deadline).getTime() : NaN;
+  const daysLeft = isNaN(dl) ? 0 : Math.max(0, Math.ceil((dl - Date.now()) / 86400000));
   const milestones = [
     { label: 'Script Lock',     done: true  },
     { label: 'Cast Confirmed',  done: phaseIndex(phase) >= 1 },
@@ -417,6 +418,35 @@ export default function ProjectHubPage() {
     });
     return () => { active = false; };
   }, [id, mockProject, router]);
+
+  // Live cross-suite counts for real projects, so the hub tiles reflect the
+  // actual scripts / crew / tasks / budget / timeline managed elsewhere.
+  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0 });
+  useEffect(() => {
+    if (mockProject) return;
+    let active = true;
+    (async () => {
+      const [sc, cr, tk, bd, tl] = await Promise.all([
+        supabase.from('scripts').select('page_count').eq('project_id', id),
+        supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('project_tasks').select('completed').eq('project_id', id),
+        supabase.from('budget_items').select('amount').eq('project_id', id),
+        supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
+      ]);
+      if (!active) return;
+      const tasks = (tk.data as { completed: boolean }[]) || [];
+      setCounts({
+        scripts: sc.data?.length || 0,
+        pages: (sc.data as { page_count: number }[] | null)?.reduce((s, x) => s + (x.page_count || 0), 0) || 0,
+        crew: cr.count || 0,
+        tasks: tasks.length,
+        tasksDone: tasks.filter(t => t.completed).length,
+        budget: (bd.data as { amount: number }[] | null)?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0,
+        timeline: tl.count || 0,
+      });
+    })();
+    return () => { active = false; };
+  }, [id, mockProject]);
 
   const project = mockProject || realProject;
 
@@ -553,8 +583,8 @@ export default function ProjectHubPage() {
             href="/editor"
             delay={0.05}
             stats={[
-              { label: 'Pages', value: project.scriptPages ?? 0 },
-              { label: `Draft`, value: `#${project.scriptDraft ?? 1}` },
+              { label: 'Pages', value: isRealProject ? counts.pages : (project.scriptPages ?? 0) },
+              { label: 'Scripts', value: isRealProject ? counts.scripts : `#${project.scriptDraft ?? 1}` },
             ]}
             preview={<ScriptPreview pages={project.scriptPages ?? 0} draft={project.scriptDraft ?? 1} />}
           />
@@ -581,8 +611,8 @@ export default function ProjectHubPage() {
             href="/lounge"
             delay={0.15}
             stats={[
-              { label: 'Members', value: project.team.length },
-              { label: 'Online',  value: onlineCount },
+              { label: 'Crew',  value: isRealProject ? counts.crew : project.team.length },
+              { label: 'Tasks', value: isRealProject ? `${counts.tasksDone}/${counts.tasks}` : onlineCount },
             ]}
             preview={<CrewPreview team={project.team} />}
           />
@@ -594,9 +624,12 @@ export default function ProjectHubPage() {
             color="#f59e0b"
             href="/projects"
             delay={0.2}
-            stats={[
+            stats={isRealProject ? [
+              { label: 'Milestones', value: counts.timeline },
+              { label: 'Budget', value: counts.budget > 0 ? `$${(counts.budget / 1000).toFixed(1)}k` : '$0' },
+            ] : [
               { label: 'Progress', value: `${project.progress}%` },
-              { label: 'Deadline', value: new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) },
+              { label: 'Deadline', value: project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' },
             ]}
             preview={<TimelinePreview deadline={project.deadline} progress={project.progress} phase={project.phase} />}
           />
