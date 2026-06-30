@@ -122,8 +122,23 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
 
 // Frame.io style Asset Review Modal
 function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isOpen: boolean; onClose: () => void }) {
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState('');
+  useEffect(() => {
+    if (!asset?.id || !isOpen) { setComments([]); return; }
+    supabase.from('asset_comments').select('id,content,timecode,created_at,profiles(username)').eq('asset_id', asset.id).order('created_at').then(({ data }) => setComments(data || []));
+  }, [asset?.id, isOpen]);
+  const sendComment = async () => {
+    const t = commentText.trim();
+    if (!t || !asset?.id) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase.from('asset_comments').insert({ asset_id: asset.id, user_id: user.id, content: t, timecode: 'Global' }).select('id,content,timecode,created_at').single();
+    if (data) setComments(p => [...p, { ...data, profiles: { username: 'You' } }]);
+    setCommentText('');
+  };
   if (!asset || !isOpen) return null;
-  
+
   return (
     <AnimatePresence>
       <motion.div
@@ -164,27 +179,27 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
             <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
             
             <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {[
-                { time: '00:12:04', user: 'Director', text: 'Color grade looks a bit too magenta here. Let\'s pull it back toward teal.' },
-                { time: '00:15:22', user: 'Client', text: 'Can we cut this shot earlier? The pacing drags.' },
-                { time: 'Global', user: 'Sound Mixer', text: 'Stems are uploaded, ready for final layback.' }
-              ].map((comment, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{comment.user.charAt(0)}</div>
+              {comments.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No feedback yet — leave the first note.</div>}
+              {comments.map((comment) => {
+                const u = comment.profiles?.username || 'User';
+                return (
+                <div key={comment.id} style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{u.charAt(0).toUpperCase()}</div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{comment.user}</span>
-                      <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.time}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{u}</span>
+                      {comment.timecode && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.text}</div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.content}</div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ padding: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-               <textarea placeholder="Leave a comment at current timecode..." style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }} />
-               <button style={{ width: '100%', padding: 10, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer' }}>Send Feedback</button>
+               <textarea value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Leave a comment…" style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }} />
+               <button onClick={sendComment} disabled={!commentText.trim()} style={{ width: '100%', padding: 10, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: commentText.trim() ? 'pointer' : 'default', opacity: commentText.trim() ? 1 : 0.6 }}>Send Feedback</button>
             </div>
           </div>
         </div>
@@ -2091,7 +2106,6 @@ export default function StudioPage() {
                      <div style={{ fontSize: 10, color: '#00cc66', marginTop: 4 }}>+12% Engagement</div>
                   </div>
 
-                  <button style={{ width: '100%', marginTop: 24, padding: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#fff', borderRadius: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer' }}>View Detailed Analytics</button>
                </div>
             </div>
           </motion.div>
