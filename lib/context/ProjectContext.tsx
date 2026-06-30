@@ -61,10 +61,22 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
+const ACTIVE_KEY = 'mc_active_project';
+
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [activeProject, setActiveProjectState] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Persist the active project so the whole suite stays on the same context
+  // across pages and reloads.
+  const setActiveProject = useCallback((project: Project | null) => {
+    setActiveProjectState(project);
+    if (typeof window !== 'undefined') {
+      if (project?.id) localStorage.setItem(ACTIVE_KEY, project.id);
+      else localStorage.removeItem(ACTIVE_KEY);
+    }
+  }, []);
 
   const fetchProjectDetails = async (projectId: string) => {
     const [projectRes, budgetRes, timelineRes, crewRes] = await Promise.all([
@@ -118,8 +130,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       if (!error && data) {
         setProjects(data);
         if (data.length > 0 && !activeProject) {
-          const full = await fetchProjectDetails(data[0].id);
-          setActiveProject(full || data[0]);
+          const savedId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_KEY) : null;
+          const target = (savedId && data.find(p => p.id === savedId)) || data[0];
+          const full = await fetchProjectDetails(target.id);
+          setActiveProjectState(full || target);
         }
       }
       setLoading(false);
@@ -132,7 +146,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             const updated = payload.new as Project;
             setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
             if (activeProject?.id === updated.id) {
-              setActiveProject(prev => prev ? { ...prev, ...updated } : null);
+              setActiveProjectState(prev => prev ? { ...prev, ...updated } : null);
             }
           }
         })

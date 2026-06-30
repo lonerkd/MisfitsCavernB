@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useProject } from '@/lib/context/ProjectContext';
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#ff3c00' },
@@ -21,13 +22,9 @@ interface RecentProject {
   phase: string;
 }
 
-const SAMPLE_PROJECTS: RecentProject[] = [
-  { id: '1', title: 'Femme Fatale', color: '#ff3c00', phase: 'pre-production' },
-  { id: '2', title: '10 Million',   color: '#f59e0b', phase: 'post-production' },
-  { id: '3', title: 'The Briefcase',color: '#10b981', phase: 'delivery' },
-];
-
 function ProjectSwitcher({ onClose }: { onClose: () => void }) {
+  const { projects, activeProject, setActiveProject } = useProject();
+  const router = useRouter();
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -72,61 +69,58 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         </Link>
       </div>
 
-      {/* Project list */}
-      {SAMPLE_PROJECTS.map((proj, i) => (
-        <Link
-          key={proj.id}
-          href={`/projects/${proj.id}`}
-          onClick={onClose}
-          style={{ textDecoration: 'none', display: 'block' }}
-        >
+      {/* Project list — real, sets the global active project */}
+      {projects.length === 0 && (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(240,236,228,0.3)', padding: '10px 8px', letterSpacing: 1 }}>
+          No projects yet.
+        </div>
+      )}
+      {projects.map((proj, i) => {
+        const color = proj.accent_color || '#ff3c00';
+        const isActive = activeProject?.id === proj.id;
+        return (
           <motion.div
+            key={proj.id}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ delay: i * 0.04 }}
+            onClick={() => { setActiveProject(proj); onClose(); }}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 8px',
-              borderRadius: 10,
-              cursor: 'pointer',
+              padding: '8px 8px', borderRadius: 10, cursor: 'pointer',
+              background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
               transition: 'background 0.2s',
             }}
             whileHover={{ background: 'rgba(255,255,255,0.05)' } as any}
           >
-            {/* Color dot */}
-            <div style={{
-              width: 7, height: 7, borderRadius: '50%',
-              background: proj.color,
-              boxShadow: `0 0 8px ${proj.color}`,
-              flexShrink: 0,
-            }} />
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontFamily: 'var(--display)', fontSize: '0.78rem',
-                letterSpacing: 1, color: 'var(--fg)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: 1, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {proj.title}
               </div>
-              <div style={{
-                fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5,
-                color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase',
-              }}>
-                {proj.phase}
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
+                {proj.status || 'project'}
               </div>
             </div>
+            {isActive && <div style={{ fontFamily: 'var(--mono)', fontSize: 6.5, letterSpacing: 1, color: color, flexShrink: 0 }}>ACTIVE</div>}
+            <button
+              onClick={(e) => { e.stopPropagation(); setActiveProject(proj); onClose(); router.push(`/projects/${proj.id}`); }}
+              aria-label="open hub"
+              style={{ background: 'none', border: 'none', color: 'rgba(240,236,228,0.3)', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}
+            >›</button>
           </motion.div>
-        </Link>
-      ))}
+        );
+      })}
     </motion.div>
   );
 }
 
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
+  const { activeProject } = useProject();
+  const activeColor = activeProject?.accent_color || '#ff3c00';
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [projectsOpen, setProjectsOpen] = useState(false);
-  const [activeProject, setActiveProject] = useState<RecentProject | null>(SAMPLE_PROJECTS[0]);
 
   // Close switcher on route change
   useEffect(() => { setProjectsOpen(false); }, [pathname]);
@@ -299,7 +293,7 @@ export default function EcosystemTaskbar() {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 2,
               background: projectsOpen
-                ? `${activeProject?.color ?? '#ff3c00'}18`
+                ? `${activeColor}18`
                 : hoveredId === 'projects'
                 ? 'rgba(255,255,255,0.06)'
                 : 'transparent',
@@ -314,15 +308,15 @@ export default function EcosystemTaskbar() {
                 position: 'absolute',
                 top: 8, right: 8,
                 width: 5, height: 5, borderRadius: '50%',
-                background: activeProject.color,
-                boxShadow: `0 0 6px ${activeProject.color}`,
+                background: activeColor,
+                boxShadow: `0 0 6px ${activeColor}`,
               }} />
             )}
             <FolderOpen
               size={18}
               strokeWidth={1.5}
               color={projectsOpen
-                ? (activeProject?.color ?? '#ff3c00')
+                ? (activeColor)
                 : hoveredId === 'projects'
                 ? 'rgba(240,236,228,0.7)'
                 : 'rgba(240,236,228,0.3)'}
@@ -334,7 +328,7 @@ export default function EcosystemTaskbar() {
             >
               <ChevronUp
                 size={8}
-                color={projectsOpen ? (activeProject?.color ?? '#ff3c00') : 'rgba(240,236,228,0.25)'}
+                color={projectsOpen ? (activeColor) : 'rgba(240,236,228,0.25)'}
               />
             </motion.div>
           </motion.button>
