@@ -447,7 +447,7 @@ export default function EditorPage() {
 
   const handleLockRevision = useCallback(() => {
     if (!currentScript) return;
-    const rev = createRevision(currentScript.id, content);
+    const { revision: rev } = createRevision(currentScript.id, content);
     setRevisions(prev => [...prev, rev]);
     toast(`Locked as ${rev.label}`, 'success');
   }, [currentScript, content, toast]);
