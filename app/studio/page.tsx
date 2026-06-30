@@ -12,6 +12,7 @@ import { getUserProjects } from '@/lib/supabase/projects';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { saveScript } from '@/lib/scriptos/storage';
+import { parseScript } from '@/lib/scriptos/parser';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
@@ -801,6 +802,42 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
+  // Generate the production scene list directly from the screenplay. Adds a
+  // scenes row for every parsed scene whose number isn't already present, so
+  // ScriptOS becomes the source of the shooting schedule.
+  const [importingScenes, setImportingScenes] = useState(false);
+  const importScenesFromScript = async () => {
+    if (!activeProject) return;
+    setImportingScenes(true);
+    try {
+      const { data } = await supabase.from('scripts').select('content').eq('project_id', activeProject.id).order('updated_at', { ascending: false });
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (!withContent) { alert('No script content yet — write one in ScriptOS first.'); return; }
+      const parsed = parseScript(withContent.content);
+      const existingNums = new Set((activeProject.scenes || []).map((s: any) => s.scene_number));
+      const rows = parsed.scenes
+        .filter((s: any) => !s.omitted)
+        .map((s: any, i: number) => ({ s, num: i + 1 }))
+        .filter(({ num }: any) => !existingNums.has(num))
+        .map(({ s, num }: any) => ({
+          project_id: activeProject.id,
+          scene_number: num,
+          title: (s.heading || s.location || `Scene ${num}`).slice(0, 200),
+          location: s.location || null,
+          time_of_day: s.timeOfDay && s.timeOfDay !== 'UNKNOWN' ? s.timeOfDay : 'DAY',
+          cast_list: (s.characters || []).join(', ') || null,
+          est_duration: `${s.eighths || 1}/8 pg`,
+          shoot_day: 1,
+        }));
+      if (rows.length === 0) { alert('Schedule is already in sync with the script.'); return; }
+      const { error } = await supabase.from('scenes').insert(rows);
+      if (error) { alert(error.message); return; }
+      await refreshProject(activeProject.id);
+    } finally {
+      setImportingScenes(false);
+    }
+  };
+
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState('');
   const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
@@ -1387,7 +1424,10 @@ export default function StudioPage() {
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
-                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
+                     <div style={{ display: 'flex', gap: 8 }}>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,60,0,0.12)', borderColor: 'rgba(255,60,0,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
+                     </div>
                    </div>
 
                    {showAddScene && (
