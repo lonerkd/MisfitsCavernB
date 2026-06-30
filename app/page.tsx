@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase/client';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
   ArrowRight, PenTool, Layers, Users, Film,
@@ -404,6 +405,8 @@ function StatsTicker() {
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
 export default function Home() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user)); }, []);
   const { scrollY } = useScroll();
   const springY = useSpring(scrollY, { stiffness: 50, damping: 18 });
   const heroOpacity = useTransform(springY, [0, 500], [1, 0]);
@@ -537,8 +540,8 @@ export default function Home() {
             transition={{ delay: 0.85, duration: 0.9 }}
             style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}
           >
-            <Link href="/editor" className="btn-primary">
-              Enter Studio <ArrowRight size={13} />
+            <Link href={loggedIn ? '/projects' : '/auth'} className="btn-primary">
+              {loggedIn ? 'Enter Studio' : 'Start Creating'} <ArrowRight size={13} />
             </Link>
             <Link href="/portfolio" className="btn-ghost">
               The Work
