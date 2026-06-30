@@ -37,6 +37,28 @@ export interface TimelineItem {
   completion: number;
 }
 
+export interface ConceptAsset {
+  id: string;
+  image_url: string;
+  title?: string;
+}
+
+export interface Scene {
+  id: string;
+  scene_number: number;
+  title: string;
+  location?: string;
+  time_of_day?: string;
+  shoot_day?: number;
+}
+
+export interface Campaign {
+  id: string;
+  title: string;
+  platform: string;
+  status: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -48,6 +70,9 @@ export interface Project {
   crew?: CrewMember[];
   budget_items?: BudgetItem[];
   timeline_items?: TimelineItem[];
+  concept_assets?: ConceptAsset[];
+  scenes?: Scene[];
+  campaigns?: Campaign[];
 }
 
 interface ProjectContextType {
@@ -79,11 +104,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchProjectDetails = async (projectId: string) => {
-    const [projectRes, budgetRes, timelineRes, crewRes] = await Promise.all([
+    const [projectRes, budgetRes, timelineRes, crewRes, beatsRes, conceptRes, scenesRes, campaignsRes] = await Promise.all([
       supabase.from('projects').select('*').eq('id', projectId).single(),
       supabase.from('budget_items').select('*').eq('project_id', projectId),
       supabase.from('timeline_items').select('*').eq('project_id', projectId),
-      supabase.from('project_crew').select('*, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', projectId)
+      supabase.from('project_crew').select('*, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', projectId),
+      supabase.from('project_beats').select('*').eq('project_id', projectId).order('created_at'),
+      supabase.from('concept_images').select('*').eq('project_id', projectId).order('created_at'),
+      supabase.from('scenes').select('*').eq('project_id', projectId).order('scene_number'),
+      supabase.from('campaigns').select('*').eq('project_id', projectId).order('created_at'),
     ]);
 
     if (projectRes.data) {
@@ -98,7 +127,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           role: c.role,
           avatar: c.profiles?.avatar_url || null,
           status: 'confirmed'
-        }))
+        })),
+        beats: beatsRes.data || [],
+        concept_assets: conceptRes.data || [],
+        scenes: scenesRes.data || [],
+        campaigns: campaignsRes.data || [],
       };
     }
     return null;
