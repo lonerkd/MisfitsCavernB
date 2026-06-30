@@ -18,6 +18,7 @@ import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoar
 import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 interface Asset {
   id: string;
@@ -1108,6 +1109,7 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 }
 
 export default function StudioPage() {
+  useRequireAuth();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');

@@ -23,6 +23,7 @@ import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { supabase } from '@/lib/supabase/client';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -186,6 +187,7 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 // ============================================================================
 
 export default function EditorPage() {
+  useRequireAuth();
   const { activeProject } = useProject();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);

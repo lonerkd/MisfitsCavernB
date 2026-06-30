@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { useProject } from '@/lib/context/ProjectContext';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
 
@@ -299,6 +300,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
 }
 
 export default function ProjectsPage() {
+  useRequireAuth();
   const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showNew, setShowNew] = useState(false);

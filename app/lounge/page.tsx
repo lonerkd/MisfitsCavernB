@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
 import { Headphones, Disc, Radio, ExternalLink } from 'lucide-react';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 interface Message {
   id: string;
@@ -119,6 +120,7 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
 }
 
 export default function LoungePage() {
+  useRequireAuth();
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
   const [messages, setMessages] = useState<Message[]>([]);
