@@ -782,6 +782,24 @@ export default function StudioPage() {
   const [sceneTitle, setSceneTitle] = useState('');
   const [sceneLocation, setSceneLocation] = useState('');
   const [sceneDay, setSceneDay] = useState('1');
+  const [editSceneId, setEditSceneId] = useState<string | null>(null);
+  const [editScene, setEditScene] = useState<{ title: string; location: string; time_of_day: string; shoot_day: string }>({ title: '', location: '', time_of_day: 'DAY', shoot_day: '1' });
+
+  const startEditScene = (s: any) => {
+    setEditSceneId(s.id);
+    setEditScene({ title: s.title || '', location: s.location || '', time_of_day: s.time_of_day || 'DAY', shoot_day: String(s.shoot_day || 1) });
+  };
+  const saveScene = async () => {
+    if (!editSceneId || !activeProject) return;
+    await supabase.from('scenes').update({
+      title: editScene.title.trim(),
+      location: editScene.location.trim() || null,
+      time_of_day: editScene.time_of_day,
+      shoot_day: Number(editScene.shoot_day) || 1,
+    }).eq('id', editSceneId);
+    setEditSceneId(null);
+    await refreshProject(activeProject.id);
+  };
 
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState('');
@@ -1409,17 +1427,32 @@ export default function StudioPage() {
                            const picking = linkScene === s.id;
                            return (
                            <div key={s.id} style={{ padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                             {editSceneId === s.id ? (
+                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                 <div style={{ width: 54, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
+                                 <input value={editScene.title} onChange={e => setEditScene(p => ({ ...p, title: e.target.value }))} placeholder="Title" style={{ flex: 2, minWidth: 0, padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                                 <input value={editScene.location} onChange={e => setEditScene(p => ({ ...p, location: e.target.value }))} placeholder="Location" style={{ flex: 1, minWidth: 0, padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                                 <select value={editScene.time_of_day} onChange={e => setEditScene(p => ({ ...p, time_of_day: e.target.value }))} style={{ padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10 }}>
+                                   {['DAY', 'NIGHT', 'DAWN', 'DUSK', 'MORNING', 'EVENING', 'CONTINUOUS'].map(t => <option key={t} value={t}>{t}</option>)}
+                                 </select>
+                                 <input type="number" min="1" value={editScene.shoot_day} onChange={e => setEditScene(p => ({ ...p, shoot_day: e.target.value }))} style={{ width: 56, padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                                 <button onClick={saveScene} style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 10 }}>Save</button>
+                                 <button onClick={() => setEditSceneId(null)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                               </div>
+                             ) : (
                              <div style={{ display: 'flex', alignItems: 'center' }}>
                                <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
                                <div style={{ flex: 1, minWidth: 200 }}>
-                                 <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
+                                 <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}{s.time_of_day ? <span style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 9, marginLeft: 6 }}>{s.time_of_day}</span> : null}</div>
                                  {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
                                </div>
                                <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
-                               <div style={{ width: 30, textAlign: 'right' }}>
+                               <div style={{ width: 54, textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                 <button onClick={() => startEditScene(s)} aria-label="edit scene" style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer' }}>✎</button>
                                  <button onClick={async () => { await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
                                </div>
                              </div>
+                             )}
                              {/* Linked concept references */}
                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
                                {refs.map(r => (
