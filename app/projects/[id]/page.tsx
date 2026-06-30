@@ -11,6 +11,11 @@ import {
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
+import { parseScript } from '@/lib/scriptos/parser';
+
+// Rough indie default rates used to seed budget suggestions from the script
+// breakdown. They are starting points the user edits after inserting.
+const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
 // Map the DB project.status to the production phase used by the header rail.
 function mapStatusToPhase(status?: string): Phase {
@@ -700,6 +705,8 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
   const [crew, setCrew] = useState<CrewRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const load = React.useCallback(async () => {
     try {
@@ -748,6 +755,50 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const delBudget = async (id: string) => {
     setBudget(p => p.filter(x => x.id !== id));
     await supabase.from('budget_items').delete().eq('id', id);
+  };
+
+  // Build budget suggestions from the project's screenplay breakdown.
+  const analyzeBudget = async () => {
+    setAnalyzing(true); setErr(null);
+    try {
+      const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setSuggestions([]); return; }
+      const parsed = parseScript(withContent.content);
+      const uniq = (key: 'props' | 'wardrobe' | 'vehicles' | 'sfx' | 'vfx') => {
+        const set = new Set<string>();
+        parsed.scenes.forEach(sc => (sc.elements?.[key] || []).forEach(v => set.add(v)));
+        return set.size;
+      };
+      const castN = parsed.characters?.length || 0;
+      const pages = Math.max(1, Math.round(parsed.scenes.reduce((s, sc) => s + (sc.eighths || 0), 0) / 8));
+      const props = uniq('props'), wardrobe = uniq('wardrobe'), vehicles = uniq('vehicles'), sfx = uniq('sfx'), vfx = uniq('vfx');
+      const existing = new Set(budget.map(b => b.category.toLowerCase()));
+      const sugg = [
+        castN && { category: `Cast (${castN} roles)`, amount: castN * BUDGET_RATES.cast },
+        props && { category: `Props (${props} items)`, amount: props * BUDGET_RATES.props },
+        wardrobe && { category: `Wardrobe (${wardrobe} items)`, amount: wardrobe * BUDGET_RATES.wardrobe },
+        vehicles && { category: `Vehicles (${vehicles})`, amount: vehicles * BUDGET_RATES.vehicles },
+        sfx && { category: `Special FX (${sfx})`, amount: sfx * BUDGET_RATES.sfx },
+        vfx && { category: `Visual FX (${vfx})`, amount: vfx * BUDGET_RATES.vfx },
+        { category: `Camera & Crew (${pages} pg)`, amount: pages * BUDGET_RATES.perPage },
+      ].filter(Boolean) as { category: string; amount: number }[];
+      setSuggestions(sugg.filter(s => !existing.has(s.category.toLowerCase())));
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const acceptSuggestion = async (s: { category: string; amount: number }) => {
+    await addBudget(s.category, s.amount);
+    setSuggestions(prev => prev ? prev.filter(x => x.category !== s.category) : prev);
+  };
+  const acceptAllSuggestions = async () => {
+    const list = suggestions || [];
+    for (const s of list) await addBudget(s.category, s.amount);
+    setSuggestions([]);
   };
 
   const addTimeline = async (title: string, start: string, end: string) => {
@@ -808,6 +859,31 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
             </Row>
           ))}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
+
+          {/* Budget-from-breakdown: suggest line items from the script */}
+          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+            {analyzing ? 'ANALYZING SCRIPT…' : '✦ SUGGEST FROM SCRIPT BREAKDOWN'}
+          </button>
+          {suggestions && suggestions.length > 0 && (
+            <div style={{ marginTop: 8, padding: 8, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', letterSpacing: 1 }}>SUGGESTED — from tagged elements</span>
+                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {suggestions.map(s => (
+                  <Row key={s.category}>
+                    <span style={{ flex: 1, fontSize: 10.5 }}>{s.category}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>${s.amount.toLocaleString()}</span>
+                    <button onClick={() => acceptSuggestion(s)} aria-label="add" style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 4, padding: '0 7px', cursor: 'pointer', fontSize: 12 }}>+</button>
+                  </Row>
+                ))}
+              </div>
+            </div>
+          )}
+          {suggestions && suggestions.length === 0 && !analyzing && (
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
+          )}
         </Panel>
 
         {/* Timeline */}
