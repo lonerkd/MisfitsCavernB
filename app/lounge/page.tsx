@@ -19,6 +19,55 @@ interface Message {
   mine?: boolean;
 }
 
+// Live production feed for the active project — surfaces the latest changes
+// across scenes, budget, milestones, crew, concept board, and characters.
+function ProductionFeed({ projectId }: { projectId: string }) {
+  const [items, setItems] = useState<{ label: string; t: string; color: string }[]>([]);
+
+  useEffect(() => {
+    let on = true;
+    (async () => {
+      const [sc, bd, tl, cr, ca] = await Promise.all([
+        supabase.from('scenes').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('concept_assets').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+      ]);
+      if (!on) return;
+      const merged = [
+        ...(sc.data || []).map((x: any) => ({ label: `Scene — ${x.title}`, t: x.created_at, color: '#f59e0b' })),
+        ...(bd.data || []).map((x: any) => ({ label: `Budget — ${x.category}`, t: x.created_at, color: '#10b981' })),
+        ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#6366f1' })),
+        ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
+        ...(ca.data || []).map((x: any) => ({ label: `Concept — ${x.title || 'image'}`, t: x.created_at, color: '#a855f7' })),
+      ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
+      setItems(merged);
+    })();
+    return () => { on = false; };
+  }, [projectId]);
+
+  const ago = (iso: string) => { const d = (Date.now() - new Date(iso).getTime()) / 3600000; return d < 1 ? `${Math.max(1, Math.floor(d * 60))}m` : d < 24 ? `${Math.floor(d)}h` : `${Math.floor(d / 24)}d`; };
+
+  if (items.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 10 }}>Production Feed</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: it.color, marginTop: 5, flexShrink: 0, boxShadow: `0 0 6px ${it.color}` }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.label}</div>
+            </div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)', flexShrink: 0 }}>{ago(it.t)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
   return (
@@ -368,6 +417,8 @@ export default function LoungePage() {
           flexShrink: 0,
           overflowY: 'auto',
         }}>
+          {activeProject && <ProductionFeed projectId={activeProject.id} />}
+
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
             Crew
           </div>
