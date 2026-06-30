@@ -1922,7 +1922,21 @@ export default function EditorPage() {
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><ClipboardList size={14} /> Script Breakdown</div>
-                      <button className="link-btn" style={{ fontSize: 9 }}>Export</button>
+                      <button className="link-btn" style={{ fontSize: 9 }} onClick={() => {
+                        const entries = Object.entries(elements).filter(([, items]) => (items as string[]).length > 0);
+                        if (entries.length === 0) { toast('No tagged elements to export yet', 'info'); return; }
+                        const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+                        const w = window.open('', '_blank', 'width=820,height=1080');
+                        if (!w) return;
+                        w.document.write(`<!doctype html><html><head><title>${esc(currentScript?.title || 'Script')} — Breakdown</title>
+                          <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:20px;letter-spacing:2px}
+                          h2{font-size:11px;letter-spacing:2px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 8px;text-transform:uppercase}
+                          .chip{display:inline-block;font-size:12px;padding:3px 9px;background:#f3f3f5;border:1px solid #ddd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
+                          <h1>${esc(currentScript?.title || 'SCRIPT')} — BREAKDOWN</h1>
+                          ${entries.map(([cat, items]) => `<h2>${esc(cat)} (${(items as string[]).length})</h2>${(items as string[]).map(i => `<span class="chip">${esc(i)}</span>`).join('')}`).join('')}
+                          <script>window.onload=()=>window.print()</script></body></html>`);
+                        w.document.close();
+                      }}>⎙ Export</button>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 16 }}>Tag production elements per scene.</div>
                     

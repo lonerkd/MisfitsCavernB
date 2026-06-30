@@ -39,6 +39,7 @@ interface Asset {
   category: string;
   size: string;
   dateAdded: string;
+  url?: string;
 }
 
 
@@ -139,8 +140,8 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
              <div style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(0,204,102,0.1)', color: '#00cc66', borderRadius: 4, textTransform: 'uppercase' }}>Approved</div>
            </div>
            <div style={{ display: 'flex', gap: 12 }}>
-             <button className="link-btn"><Download size={12} /> Download</button>
-             <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }}>Share Link</button>
+             <button className="link-btn" onClick={() => { if (asset.url) window.open(asset.url, '_blank'); }} disabled={!asset.url}><Download size={12} /> Download</button>
+             <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { if (asset.url) { navigator.clipboard?.writeText(asset.url); } }}>Share Link</button>
            </div>
         </div>
 
@@ -1157,6 +1158,29 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
+  // Export the whole shooting schedule (all scenes grouped by day) to print/PDF.
+  const printSchedule = () => {
+    if (!activeProject) return;
+    const scenes = (activeProject.scenes || []) as any[];
+    if (scenes.length === 0) { alert('No scenes to export yet.'); return; }
+    const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+    const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+    const w = window.open('', '_blank', 'width=860,height=1100');
+    if (!w) return;
+    const body = days.map(day => {
+      const ds = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
+      return `<h2>DAY ${day}</h2><table><tr><th>#</th><th>Scene</th><th>Location</th><th>I/E·T</th><th>Cast</th><th>Pages</th><th>Status</th></tr>
+        ${ds.map(s => `<tr><td>${s.scene_number}</td><td>${esc(s.title)}</td><td>${esc(s.location || '—')}</td><td>${esc(s.time_of_day || '')}</td><td>${esc(s.cast_list || '—')}</td><td>${esc(s.est_duration || '')}</td><td>${esc(s.status || 'planned')}</td></tr>`).join('')}</table>`;
+    }).join('');
+    w.document.write(`<!doctype html><html><head><title>${esc(activeProject.title)} — Shooting Schedule</title>
+      <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:22px;letter-spacing:2px;margin:0 0 4px}
+      h2{font-size:11px;letter-spacing:3px;color:#b45309;margin:24px 0 8px}table{width:100%;border-collapse:collapse;font-size:12px}
+      th{text-align:left;color:#888;font-size:9px;letter-spacing:1px;border-bottom:1px solid #ccc;padding:4px}td{padding:5px 4px;border-bottom:1px solid #eee}</style></head><body>
+      <h1>${esc(activeProject.title).toUpperCase()} — SHOOTING SCHEDULE</h1><div style="color:#888;font-size:11px">${scenes.length} scenes · ${days.length} days</div>
+      ${body}<script>window.onload=()=>window.print()</script></body></html>`);
+    w.document.close();
+  };
+
   // Cycle a scene's shoot status: planned → shot → wrapped → planned.
   const cycleSceneStatus = async (s: any) => {
     if (!activeProject) return;
@@ -1720,7 +1744,7 @@ export default function StudioPage() {
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="link-btn">Export Schedule</button>
+                <button className="link-btn" onClick={printSchedule}>⎙ Export Schedule</button>
                 <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>
               </div>
             </div>
