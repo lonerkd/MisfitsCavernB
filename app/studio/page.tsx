@@ -19,19 +19,6 @@ import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/pro
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 
-function DemoBanner({ text }: { text: string }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '8px 14px', borderRadius: 8, marginBottom: 16,
-      background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
-    }}>
-      <AlertCircle size={12} color="#f59e0b" />
-      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 0.5 }}>{text}</span>
-    </div>
-  );
-}
-
 interface Asset {
   id: string;
   name: string;
@@ -42,15 +29,6 @@ interface Asset {
   url?: string;
 }
 
-
-const CONCEPT_IMAGES = [
-  { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
-  { id: 'c2', url: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80', title: 'Cinematic Framing', aspect: 'wide' },
-  { id: 'c3', url: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80', title: 'Low Key Lighting', aspect: 'square' },
-  { id: 'c4', url: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80', title: 'Urban Gritty Texture', aspect: 'tall' },
-  { id: 'c5', url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80', title: 'Vintage Lens Flare', aspect: 'wide' },
-  { id: 'c6', url: 'https://images.unsplash.com/photo-1505685296765-3a2736de412f?auto=format&fit=crop&q=80', title: 'Dramatic Shadows', aspect: 'square' },
-];
 
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
@@ -164,13 +142,17 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Main Viewer */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, background: '#000', position: 'relative' }}>
-             {asset.type === 'video' ? (
-               <div style={{ width: '100%', maxWidth: 1000, aspectRatio: '16/9', background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-                 <Video size={48} color="#333" style={{ marginBottom: 16 }} />
-                 <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>VIDEO PLAYER MOCKUP</div>
+             {asset.type === 'video' && asset.url ? (
+               <video src={asset.url} controls style={{ width: '100%', maxWidth: 1000, maxHeight: '100%', borderRadius: 8, background: '#000' }} />
+             ) : asset.type === 'audio' && asset.url ? (
+               <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                 <Music size={48} color="#555" />
+                 <audio src={asset.url} controls style={{ width: '100%' }} />
                </div>
+             ) : asset.url ? (
+               <img src={asset.url} alt={asset.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
              ) : (
-               <img src={CONCEPT_IMAGES[1].url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+               <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>No preview available</div>
              )}
           </div>
 
@@ -1741,12 +1723,7 @@ export default function StudioPage() {
                 })}
               </div>
             ) : (
-              <>
-                <DemoBanner text="Showing stock placeholder imagery — add your own references above to replace these" />
-                <div style={{ columnCount: 3, columnGap: 16 }}>
-                  {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
-                </div>
-              </>
+              <EmptyState icon={<Image size={28} />} title="No concept references yet" subtitle="Paste an image URL above to start your visual moodboard. References can be linked to scenes and characters." />
             )}
           </motion.div>
         )}
@@ -2084,29 +2061,35 @@ export default function StudioPage() {
                   )}
                </div>
 
-               {/* Analytics Preview */}
-               <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Eye size={16} /> Awareness Metrics</div>
-                  <DemoBanner text="Demo data — no analytics source is connected yet" />
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Interest Score</span><span>78%</span></div>
-                        <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: '78%', height: '100%', background: 'var(--accent)', borderRadius: 2 }} /></div>
-                     </div>
-                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}><span>Audience Retention</span><span>64%</span></div>
-                        <div style={{ height: 4, background: '#222', borderRadius: 2 }}><div style={{ width: '64%', height: '100%', background: '#0099ff', borderRadius: 2 }} /></div>
-                     </div>
-                  </div>
-
-                  <div style={{ marginTop: 32, padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
-                     <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginBottom: 8 }}>Top Performing Asset</div>
-                     <div style={{ fontSize: 12, fontWeight: 600 }}>Neon Noir Poster Concept</div>
-                     <div style={{ fontSize: 10, color: '#00cc66', marginTop: 4 }}>+12% Engagement</div>
-                  </div>
-
-               </div>
+               {/* Campaign Overview — real */}
+               {(() => {
+                 const camps = (activeProject?.campaigns || []) as any[];
+                 const byStatus: Record<string, number> = {};
+                 const byPlatform: Record<string, number> = {};
+                 camps.forEach(c => { byStatus[c.status || 'planned'] = (byStatus[c.status || 'planned'] || 0) + 1; byPlatform[c.platform || 'Other'] = (byPlatform[c.platform || 'Other'] || 0) + 1; });
+                 return (
+                   <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
+                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Megaphone size={16} /> Campaign Overview</div>
+                     {camps.length === 0 ? (
+                       <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No campaigns yet — create one to start planning your rollout.</div>
+                     ) : (
+                       <>
+                         <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 2 }}>{camps.length}<span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', marginLeft: 8 }}>campaigns</span></div>
+                         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                           {Object.entries(byStatus).map(([st, n]) => (
+                             <div key={st} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}><span style={{ color: 'var(--fg-muted)', textTransform: 'capitalize' }}>{st}</span><span>{n}</span></div>
+                           ))}
+                         </div>
+                         <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                           {Object.entries(byPlatform).map(([pl, n]) => (
+                             <span key={pl} style={{ fontFamily: 'var(--mono)', fontSize: 9, color: '#a5b4fc', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 99, padding: '2px 8px' }}>{pl} · {n}</span>
+                           ))}
+                         </div>
+                       </>
+                     )}
+                   </div>
+                 );
+               })()}
             </div>
           </motion.div>
         )}
