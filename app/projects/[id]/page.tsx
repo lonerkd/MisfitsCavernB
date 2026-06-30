@@ -694,7 +694,7 @@ export default function ProjectHubPage() {
 // ─── Production Manager (live Supabase CRUD: tasks, budget, timeline, crew) ────
 
 interface TaskRow { id: string; title: string; completed: boolean }
-interface BudgetRow { id: string; category: string; amount: number }
+interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
 
@@ -712,7 +712,7 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     try {
       const [t, b, tl, c] = await Promise.all([
         supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
-        supabase.from('budget_items').select('id,category,amount').eq('project_id', projectId).order('created_at'),
+        supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
         supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
       ]);
@@ -755,6 +755,10 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const delBudget = async (id: string) => {
     setBudget(p => p.filter(x => x.id !== id));
     await supabase.from('budget_items').delete().eq('id', id);
+  };
+  const setActual = async (id: string, actual: number | null) => {
+    setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
+    await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
   };
 
   // Build budget suggestions from the project's screenplay breakdown.
@@ -828,6 +832,8 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   };
 
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
+  const totalActual = budget.reduce((s, b) => s + Number(b.actual_cost || 0), 0);
+  const hasActuals = budget.some(b => b.actual_cost != null);
 
   return (
     <div style={{ marginTop: 40 }}>
@@ -851,13 +857,29 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
         {/* Budget */}
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {budget.length === 0 && <Empty>No budget items</Empty>}
-          {budget.map(b => (
+          {budget.map(b => {
+            const over = b.actual_cost != null && Number(b.actual_cost) > Number(b.amount);
+            return (
             <Row key={b.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{b.category}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>${Number(b.amount).toLocaleString()}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(b.amount).toLocaleString()}</span>
+              <input
+                type="number"
+                defaultValue={b.actual_cost ?? ''}
+                placeholder="actual"
+                onBlur={(e) => { const v = e.target.value.trim(); setActual(b.id, v === '' ? null : Number(v)); }}
+                style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
+              />
               <DelBtn onClick={() => delBudget(b.id)} />
             </Row>
-          ))}
+            );
+          })}
+          {hasActuals && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 10 }}>
+              <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
+              <span style={{ color: totalActual > totalBudget ? '#ff6b6b' : '#10b981' }}>{totalActual > totalBudget ? '+' : ''}{(totalActual - totalBudget).toLocaleString()}</span>
+            </div>
+          )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
           {/* Budget-from-breakdown: suggest line items from the script */}
