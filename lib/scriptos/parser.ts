@@ -142,7 +142,18 @@ export class ScriptParser {
   }
 
   private clean(text: string): string {
-    return text.replace(/\s*\(.*?\)\s*/g, '').replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    return text
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // é -> e, ç -> c, etc.
+      .replace(/\s*\(.*?\)\s*/g, ' ')                    // drop (V.O.), (CONT'D)…
+      .replace(/[^a-zA-Z0-9\s'\-]/g, '')                 // keep letters, digits, apostrophe, hyphen
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // True only for real scene headings — INT./EXT./EST. as a whole token, so
+  // "INTERVIEWER" and "INTERNET CAFÉ" are NOT mistaken for slugs.
+  private isSceneHeading(text: string): boolean {
+    return /^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.test(text.trim());
   }
 
   // --- MAIN PARSE LOOP ---
@@ -236,16 +247,22 @@ export class ScriptParser {
 
   // --- PASS 1: CHARACTER RECOGNITION ---
   private preScanCharacters() {
-    this.rawLines.forEach(line => {
+    this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
-      if (this.isCaps(trim) && trim.length > 1 && trim.length < 50) {
-        const cleanName = this.clean(trim);
-        if (!KNOWLEDGE.SCENE_PREFIXES.has(cleanName) && 
-            !KNOWLEDGE.TRANSITIONS.has(cleanName) &&
-            !KNOWLEDGE.CAMERA_ANGLES.has(cleanName)) {
-          this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
-        }
-      }
+      if (!this.isCaps(trim) || trim.length < 2 || trim.length >= 50) return;
+      const cleanName = this.clean(trim);
+      const words = cleanName.split(' ').filter(Boolean);
+      // Real character cues are short (≤4 words), have no digits, aren't a
+      // scene heading / transition / time-of-day / pure section header, and
+      // are followed by dialogue or a parenthetical.
+      if (words.length === 0 || words.length > 4) return;
+      if (/\d/.test(cleanName)) return;
+      if (this.isSceneHeading(trim)) return;
+      if (KNOWLEDGE.SCENE_PREFIXES.has(cleanName) || KNOWLEDGE.TRANSITIONS.has(cleanName) || KNOWLEDGE.CAMERA_ANGLES.has(cleanName) || KNOWLEDGE.TIME_OF_DAY.has(cleanName)) return;
+      const next = (this.rawLines[idx + 1] || '').trim();
+      const followedBySpeech = next.length > 0 && (next.startsWith('(') || !this.isCaps(next));
+      if (!followedBySpeech) return;
+      this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
     });
   }
 
@@ -261,11 +278,11 @@ export class ScriptParser {
     const upper = text.toUpperCase();
     const cleanName = this.clean(text);
 
-    // 1. SLUG DETECTION
-    if (this.matchesSetStart(upper, KNOWLEDGE.SCENE_PREFIXES)) {
+    // 1. SLUG DETECTION — requires a real INT./EXT. token, not just an "INT…" word
+    if (this.isSceneHeading(text)) {
       scores.slug = 100;
       reasoning.push('Starts with known scene prefix');
-    } else if (upper.startsWith('.') && this.isCaps(text)) {
+    } else if (upper.startsWith('.') && this.isCaps(text) && text.length > 1) {
       scores.slug = 90;
       reasoning.push('Starts with dot (shorthand slug)');
     }
@@ -480,15 +497,37 @@ export class ScriptParser {
     return scenes;
   }
 
+  private stripScenePrefix(slug: string): string {
+    return slug.trim().replace(/^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
+  }
+
+  private isTimePart(part: string): boolean {
+    const up = part.toUpperCase().replace(/[^A-Z\s/]/g, '').trim();
+    if (KNOWLEDGE.TIME_OF_DAY.has(up)) return true;
+    return [...KNOWLEDGE.TIME_OF_DAY].some(t => up === t || up.endsWith(' ' + t) || up.endsWith(t));
+  }
+
   private parseLocation(slug: string): string {
-    return slug.replace(/^(INT\.|EXT\.|INT\/EXT)\s*/i, '').split('-')[0].trim();
+    const body = this.stripScenePrefix(slug);
+    // Split only on spaced dashes (" - " / " -- "), preserving hyphenated words.
+    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length === 0) return body.trim();
+    while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
+    return parts.join(' - ');
   }
 
   private parseTime(slug: string): string {
-    const parts = slug.split('-');
-    const time = parts[parts.length - 1].trim().toUpperCase();
-    return KNOWLEDGE.TIME_OF_DAY.has(time) ? time : 'UNKNOWN';
+    const body = this.stripScenePrefix(slug);
+    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    const last = (parts[parts.length - 1] || '').toUpperCase().replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    // Prefer multi-word matches (LATE NIGHT) over single (NIGHT) by length.
+    const hits = [...KNOWLEDGE.TIME_OF_DAY].filter(t => new RegExp(`(^|\\s)${t}(\\s|$)`).test(last));
+    if (hits.length) return hits.sort((a, b) => b.length - a.length)[0];
+    // Compound times not in the dictionary but ending in a known token.
+    for (const t of KNOWLEDGE.TIME_OF_DAY) if (last.endsWith(t)) return t;
+    return 'UNKNOWN';
   }
+
 }
 
 // =========================================================================

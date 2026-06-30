@@ -10,6 +10,7 @@ import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
 import { getAllStudioAssets } from '@/lib/supabase/studio';
+import { parseScript } from '@/lib/scriptos/parser';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users } from 'lucide-react';
@@ -813,54 +814,101 @@ export default function StudioPage() {
   );
 }
 
-// ─── Production Suite (live: beats, crew, shoot schedule) ─────────────────────
+// ─── Production Suite (script-driven breakdown · stripboard · call sheets) ────
 
-const BEAT_COLORS = ['#0099ff', '#ffaa00', '#ff3c00', '#a855f7', '#10b981', '#ec4899'];
-
-interface Beat { id: string; title: string; content: string; color: string; order_index: number }
+interface PScene { key: string; num: number; intExt: string; heading: string; location: string; time: string; characters: string[] }
+interface SchedRow { id: string; scene_number: string; shoot_day_id: string | null }
+interface PShootDay { id: string; day_number: number; shoot_date: string | null }
 interface PCrew { id: string; role: string; profiles?: { username: string } | null }
-interface ShootDay { id: string; day_number: number; shoot_date: string | null }
-interface Scene { id: string; scene_heading: string; location: string | null; estimated_hours: number | null; shoot_day_id: string | null }
+
+const INTEXT_COLOR: Record<string, string> = { INT: '#0099ff', EXT: '#f59e0b', 'INT/EXT': '#a855f7' };
+
+function intExtOf(heading: string): string {
+  const m = heading.trim().match(/^(INT\.?\/EXT\.?|INT\.?|EXT\.?)/i);
+  if (!m) return '';
+  const v = m[1].toUpperCase().replace(/\./g, '');
+  return v === 'INT/EXT' ? 'INT/EXT' : v;
+}
 
 function ProductionSuite({ projectId, userId }: { projectId: string; userId: string | null }) {
-  const [beats, setBeats] = useState<Beat[]>([]);
+  const [scriptId, setScriptId] = useState<string | null>(null);
+  const [scriptTitle, setScriptTitle] = useState<string | null>(null);
+  const [scenes, setScenes] = useState<PScene[]>([]);
+  const [castList, setCastList] = useState<string[]>([]);
+  const [sched, setSched] = useState<Record<string, SchedRow>>({});
+  const [days, setDays] = useState<PShootDay[]>([]);
   const [crew, setCrew] = useState<PCrew[]>([]);
-  const [days, setDays] = useState<ShootDay[]>([]);
-  const [scenes, setScenes] = useState<Scene[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [openSheet, setOpenSheet] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadSchedule = React.useCallback(async () => {
+    const { data } = await supabase.from('scene_schedule').select('id,scene_number,shoot_day_id').eq('project_id', projectId);
+    const map: Record<string, SchedRow> = {};
+    (data || []).forEach((r: any) => { map[r.scene_number] = r; });
+    setSched(map);
+  }, [projectId]);
 
   const load = React.useCallback(async () => {
+    setLoading(true);
     try {
-      const [b, c, d, s] = await Promise.all([
-        supabase.from('project_beats').select('id,title,content,color,order_index').eq('project_id', projectId).order('order_index'),
-        supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+      const { data: scripts } = await supabase.from('scripts').select('id,title,content,updated_at').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const chosen = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
+      if (chosen) {
+        setScriptId(chosen.id); setScriptTitle(chosen.title);
+        if (chosen.content) {
+          const parsed = parseScript(chosen.content);
+          setScenes(parsed.scenes.filter((s: any) => !s.omitted).map((s: any, i: number) => ({
+            key: String(i + 1), num: i + 1, intExt: intExtOf(s.heading),
+            heading: s.heading, location: s.location || '—', time: s.timeOfDay || '', characters: s.characters || [],
+          })));
+          setCastList((parsed.characters || []).map((c: any) => c.name).filter(Boolean));
+        } else { setScenes([]); setCastList([]); }
+      } else { setScriptId(null); setScriptTitle(null); setScenes([]); setCastList([]); }
+
+      const [sd, cr] = await Promise.all([
         supabase.from('shoot_days').select('id,day_number,shoot_date').eq('project_id', projectId).order('day_number'),
-        supabase.from('scene_schedule').select('id,scene_heading,location,estimated_hours,shoot_day_id').eq('project_id', projectId).order('order_index'),
+        supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
       ]);
-      setBeats((b.data as Beat[]) || []);
-      setCrew((c.data as unknown as PCrew[]) || []);
-      setDays((d.data as ShootDay[]) || []);
-      setScenes((s.data as Scene[]) || []);
-    } catch (e: any) { setErr(e.message); }
-  }, [projectId]);
+      setDays((sd.data as PShootDay[]) || []);
+      setCrew((cr.data as unknown as PCrew[]) || []);
+      await loadSchedule();
+    } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
+  }, [projectId, loadSchedule]);
 
   useEffect(() => { load(); }, [load]);
 
-  // ── Beats ──
-  const [beatTitle, setBeatTitle] = useState('');
-  const [beatContent, setBeatContent] = useState('');
-  const addBeat = async () => {
-    if (!beatTitle.trim()) return;
-    const color = BEAT_COLORS[beats.length % BEAT_COLORS.length];
-    const { data, error } = await supabase.from('project_beats')
-      .insert({ project_id: projectId, title: beatTitle, content: beatContent, color, order_index: beats.length, created_by: userId })
-      .select('id,title,content,color,order_index').single();
+  const addDay = async () => {
+    const { data, error } = await supabase.from('shoot_days').insert({ project_id: projectId, day_number: days.length + 1, shoot_date: null }).select('id,day_number,shoot_date').single();
     if (error) return setErr(error.message);
-    setBeats(p => [...p, data as Beat]); setBeatTitle(''); setBeatContent('');
+    setDays(p => [...p, data as PShootDay]);
   };
-  const delBeat = async (id: string) => { setBeats(p => p.filter(x => x.id !== id)); await supabase.from('project_beats').delete().eq('id', id); };
+  const setDayDate = async (id: string, date: string) => {
+    setDays(p => p.map(d => d.id === id ? { ...d, shoot_date: date || null } : d));
+    await supabase.from('shoot_days').update({ shoot_date: date || null }).eq('id', id);
+  };
+  const delDay = async (id: string) => {
+    setDays(p => p.filter(d => d.id !== id));
+    setSched(p => { const n = { ...p }; Object.keys(n).forEach(k => { if (n[k].shoot_day_id === id) delete n[k]; }); return n; });
+    await supabase.from('shoot_days').delete().eq('id', id);
+  };
 
-  // ── Crew ──
+  const assign = async (sc: PScene, dayId: string) => {
+    const existing = sched[sc.key];
+    if (!dayId) {
+      if (existing) { setSched(p => { const n = { ...p }; delete n[sc.key]; return n; }); await supabase.from('scene_schedule').delete().eq('id', existing.id); }
+      return;
+    }
+    if (existing) {
+      setSched(p => ({ ...p, [sc.key]: { ...existing, shoot_day_id: dayId } }));
+      await supabase.from('scene_schedule').update({ shoot_day_id: dayId }).eq('id', existing.id);
+    } else {
+      const { data, error } = await supabase.from('scene_schedule').insert({ project_id: projectId, script_id: scriptId, scene_number: sc.key, scene_heading: sc.heading, location: sc.location, shoot_day_id: dayId, order_index: sc.num }).select('id,scene_number,shoot_day_id').single();
+      if (error) return setErr(error.message);
+      setSched(p => ({ ...p, [sc.key]: data as SchedRow }));
+    }
+  };
+
   const [crewName, setCrewName] = useState(''); const [crewRole, setCrewRole] = useState('');
   const addCrew = async () => {
     if (!crewName.trim()) return;
@@ -872,99 +920,149 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
   };
   const delCrew = async (id: string) => { setCrew(p => p.filter(x => x.id !== id)); await supabase.from('project_crew').delete().eq('id', id); };
 
-  // ── Schedule ──
-  const [dayDate, setDayDate] = useState('');
-  const addDay = async () => {
-    const { data, error } = await supabase.from('shoot_days')
-      .insert({ project_id: projectId, day_number: days.length + 1, shoot_date: dayDate || null })
-      .select('id,day_number,shoot_date').single();
-    if (error) return setErr(error.message);
-    setDays(p => [...p, data as ShootDay]); setDayDate('');
-  };
-  const delDay = async (id: string) => {
-    setDays(p => p.filter(x => x.id !== id));
-    setScenes(p => p.filter(x => x.shoot_day_id !== id));
-    await supabase.from('shoot_days').delete().eq('id', id);
-  };
-  const addScene = async (dayId: string, heading: string, location: string, hours: string) => {
-    if (!heading.trim()) return;
-    const { data, error } = await supabase.from('scene_schedule')
-      .insert({ project_id: projectId, scene_heading: heading, location: location || null, estimated_hours: hours ? Number(hours) : null, shoot_day_id: dayId, order_index: scenes.length })
-      .select('id,scene_heading,location,estimated_hours,shoot_day_id').single();
-    if (error) return setErr(error.message);
-    setScenes(p => [...p, data as Scene]);
-  };
-  const delScene = async (id: string) => { setScenes(p => p.filter(x => x.id !== id)); await supabase.from('scene_schedule').delete().eq('id', id); };
-
+  const scenesForDay = (dayId: string) => scenes.filter(s => sched[s.key]?.shoot_day_id === dayId);
+  const scheduledCount = scenes.filter(s => sched[s.key]?.shoot_day_id).length;
   const input: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '7px 9px', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
-  const sectionTitle: React.CSSProperties = { fontSize: 12, fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' };
-  const del = (fn: () => void) => <button onClick={fn} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 14, opacity: 0.5, flexShrink: 0 }}>×</button>;
+  const stat = (label: string, value: React.ReactNode) => (
+    <div><div style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{value}</div><div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginTop: 4 }}>{label}</div></div>
+  );
+
+  if (loading) return <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>LOADING BREAKDOWN…</div>;
+
+  if (!scriptId || scenes.length === 0) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div style={{ marginBottom: 24 }}><SectionLabel text="Pre-Production" /><h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2></div>
+        <div style={{ padding: '64px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, marginBottom: 14 }}>
+            {scriptId ? 'THIS SCRIPT HAS NO SCENES YET' : 'NO SCREENPLAY FOR THIS PROJECT'}
+          </div>
+          <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)', opacity: 0.7, marginBottom: 18 }}>
+            The shooting breakdown is generated from your screenplay. Write scenes (INT./EXT. headings) in ScriptOS and they appear here automatically.
+          </div>
+          <Link href="/editor" className="link-btn">Open ScriptOS →</Link>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div style={{ marginBottom: 32 }}>
-        <SectionLabel text="Pre-Production" />
-        <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div><SectionLabel text="Pre-Production" /><h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1, marginTop: 4 }}>Broken down from “{scriptTitle}”</div>
+        </div>
+        <div style={{ display: 'flex', gap: 28 }}>{stat('Scenes', scenes.length)}{stat('Scheduled', `${scheduledCount}/${scenes.length}`)}{stat('Cast', castList.length)}{stat('Days', days.length)}</div>
       </div>
       {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {err}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
-        {/* Beat board */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 32 }}>
+        {/* Scene breakdown from the screenplay */}
         <div>
-          <div style={sectionTitle}><BookOpen size={16} /> Beat Board / Outline</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-            {beats.map(b => (
-              <div key={b.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${b.color}`, borderRadius: 8, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{b.title}</div>
-                  {del(() => delBeat(b.id))}
-                </div>
-                <div style={{ fontSize: 10.5, lineHeight: 1.5, color: 'var(--fg-dim)' }}>{b.content}</div>
-              </div>
-            ))}
-            {beats.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>No beats yet</div>}
-          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}><BookOpen size={16} /> Scene Breakdown <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· auto from script</span></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <input value={beatTitle} onChange={e => setBeatTitle(e.target.value)} placeholder="Beat title" style={input} />
-            <div style={{ display: 'flex', gap: 6 }}>
-              <input value={beatContent} onChange={e => setBeatContent(e.target.value)} onKeyDown={e => e.key === 'Enter' && addBeat()} placeholder="What happens…" style={{ ...input, flex: 1 }} />
-              <button onClick={addBeat} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#818cf8', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 16 }}>+</button>
-            </div>
+            {scenes.map(sc => {
+              const dayId = sched[sc.key]?.shoot_day_id || '';
+              const c = INTEXT_COLOR[sc.intExt] || '#6b7280';
+              return (
+                <div key={sc.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${dayId ? c : 'transparent'}`, borderRadius: 8 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', width: 18, flexShrink: 0 }}>{sc.num}</span>
+                  {sc.intExt && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: c, background: `${c}1e`, padding: '2px 5px', borderRadius: 3, flexShrink: 0 }}>{sc.intExt}</span>}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11.5, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.location}{sc.time ? <span style={{ color: 'var(--fg-dim)' }}> · {sc.time}</span> : null}</div>
+                    {sc.characters.length > 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sc.characters.join(' · ')}</div>}
+                  </div>
+                  <select value={dayId} onChange={e => assign(sc, e.target.value)} style={{ ...input, fontSize: 9, padding: '4px 6px', flexShrink: 0 }}>
+                    <option value="">Unscheduled</option>
+                    {days.map(d => <option key={d.id} value={d.id}>Day {d.day_number}</option>)}
+                  </select>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Crew + schedule */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+        {/* Stripboard + cast + crew */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           <div>
-            <div style={sectionTitle}><Users size={16} /> Cast & Crew Hub</div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--fg-muted)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={16} /> Shooting Schedule</span>
+              <button onClick={addDay} style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 10 }}>+ Day</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {days.map(d => {
+                const dayScenes = scenesForDay(d.id);
+                const locations = Array.from(new Set(dayScenes.map(s => s.location)));
+                const cast = Array.from(new Set(dayScenes.flatMap(s => s.characters)));
+                const open = openSheet === d.id;
+                return (
+                  <div key={d.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: '#f59e0b' }}>DAY {d.day_number}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="date" value={d.shoot_date || ''} onChange={e => setDayDate(d.id, e.target.value)} style={{ ...input, fontSize: 9, padding: '4px 6px' }} />
+                        <button onClick={() => delDay(d.id)} aria-label="delete day" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 14, opacity: 0.5 }}>×</button>
+                      </div>
+                    </div>
+                    {dayScenes.length === 0 ? (
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.5 }}>Assign scenes from the breakdown →</div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+                          {dayScenes.map(s => {
+                            const c = INTEXT_COLOR[s.intExt] || '#6b7280';
+                            return (<div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: c }}>{s.intExt || '—'}</span>
+                              <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.location}</span>
+                              {s.time && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{s.time}</span>}
+                            </div>);
+                          })}
+                        </div>
+                        <div style={{ display: 'flex', gap: 14, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', marginBottom: 8 }}>
+                          <span>{dayScenes.length} sc</span><span>{locations.length} loc</span><span>{cast.length} cast</span>
+                        </div>
+                        <button onClick={() => setOpenSheet(open ? null : d.id)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}><FileText size={11} /> {open ? 'HIDE' : 'CALL SHEET'}</button>
+                        {open && (
+                          <div style={{ marginTop: 10, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 10, lineHeight: 1.7 }}>
+                            <div style={{ color: '#f59e0b', fontWeight: 700, marginBottom: 6 }}>CALL SHEET — DAY {d.day_number}{d.shoot_date ? ` · ${new Date(d.shoot_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}</div>
+                            <div style={{ color: 'var(--fg-dim)' }}>SCENES</div>
+                            {dayScenes.map(s => <div key={s.key} style={{ color: '#ddd' }}>· {s.intExt} {s.location}{s.time ? ` — ${s.time}` : ''}</div>)}
+                            <div style={{ color: 'var(--fg-dim)', marginTop: 6 }}>LOCATIONS</div><div style={{ color: '#ddd' }}>{locations.join(', ') || '—'}</div>
+                            <div style={{ color: 'var(--fg-dim)', marginTop: 6 }}>CAST</div><div style={{ color: '#ddd' }}>{cast.join(', ') || '—'}</div>
+                            <div style={{ color: 'var(--fg-dim)', marginTop: 6 }}>CREW</div><div style={{ color: '#ddd' }}>{crew.map(c => `${c.profiles?.username || '—'} (${c.role})`).join(', ') || '—'}</div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              {days.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>Add a shoot day, then assign scenes to it.</div>}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}><Users size={16} /> Cast <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· from script</span></div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {castList.map(name => <span key={name} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 99 }}>{name}</span>)}
+              {castList.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.6 }}>No characters detected in the script.</span>}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}><Users size={16} /> Crew</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {crew.map(c => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#818cf8' }}>{(c.profiles?.username || '?')[0].toUpperCase()}</div>
-                  <span style={{ flex: 1, fontSize: 12 }}>{c.profiles?.username || 'Unknown'}</span>
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 11px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                  <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{c.role}</span>
-                  {del(() => delCrew(c.id))}
+                  <button onClick={() => delCrew(c.id)} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, opacity: 0.5 }}>×</button>
                 </div>
               ))}
-              {crew.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>No crew yet</div>}
               <div style={{ display: 'flex', gap: 6 }}>
                 <input value={crewName} onChange={e => setCrewName(e.target.value)} placeholder="Username" style={{ ...input, flex: 1 }} />
                 <input value={crewRole} onChange={e => setCrewRole(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCrew()} placeholder="Role" style={{ ...input, flex: 1 }} />
                 <button onClick={addCrew} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#818cf8', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 16 }}>+</button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div style={sectionTitle}><Calendar size={16} /> Shooting Schedule</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {days.map(d => (
-                <ShootDayRow key={d.id} day={d} scenes={scenes.filter(s => s.shoot_day_id === d.id)} onDelDay={() => delDay(d.id)} onAddScene={addScene} onDelScene={delScene} input={input} />
-              ))}
-              {days.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>No shoot days yet</div>}
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="date" value={dayDate} onChange={e => setDayDate(e.target.value)} style={{ ...input, flex: 1 }} />
-                <button onClick={addDay} style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 11, whiteSpace: 'nowrap' }}>+ Day</button>
               </div>
             </div>
           </div>
@@ -974,38 +1072,6 @@ function ProductionSuite({ projectId, userId }: { projectId: string; userId: str
   );
 }
 
-function ShootDayRow({ day, scenes, onDelDay, onAddScene, onDelScene, input }: {
-  day: ShootDay; scenes: Scene[]; onDelDay: () => void;
-  onAddScene: (dayId: string, heading: string, location: string, hours: string) => void;
-  onDelScene: (id: string) => void; input: React.CSSProperties;
-}) {
-  const [heading, setHeading] = useState(''); const [loc, setLoc] = useState(''); const [hrs, setHrs] = useState('');
-  const submit = () => { onAddScene(day.id, heading, loc, hrs); setHeading(''); setLoc(''); setHrs(''); };
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: '#f59e0b' }}>DAY {day.day_number}{day.shoot_date ? ` · ${new Date(day.shoot_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</div>
-        <button onClick={onDelDay} aria-label="delete day" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 14, opacity: 0.5 }}>×</button>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 }}>
-        {scenes.map(s => (
-          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
-            <span style={{ flex: 1 }}>{s.scene_heading}</span>
-            {s.location && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{s.location}</span>}
-            {s.estimated_hours != null && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{s.estimated_hours}h</span>}
-            <button onClick={() => onDelScene(s.id)} aria-label="delete scene" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, opacity: 0.5 }}>×</button>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        <input value={heading} onChange={e => setHeading(e.target.value)} placeholder="INT. SCENE — DAY" style={{ ...input, flex: 1, fontSize: 10 }} />
-        <input value={loc} onChange={e => setLoc(e.target.value)} placeholder="Location" style={{ ...input, width: 90, fontSize: 10 }} />
-        <input value={hrs} onChange={e => setHrs(e.target.value)} type="number" placeholder="h" onKeyDown={e => e.key === 'Enter' && submit()} style={{ ...input, width: 44, fontSize: 10 }} />
-        <button onClick={submit} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', borderRadius: 6, padding: '0 10px', cursor: 'pointer', fontSize: 14 }}>+</button>
-      </div>
-    </div>
-  );
-}
 
 // ─── Campaign Planner (live: marketing_campaigns) ─────────────────────────────
 
