@@ -748,7 +748,7 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 }
 
 export default function StudioPage() {
-  const { activeProject, setActiveProject, projects, addBeat, removeBeat, addConceptAsset, removeConceptAsset, addScene, removeScene, addCampaign, removeCampaign } = useProject();
+  const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -1228,7 +1228,8 @@ export default function StudioPage() {
                   onClick={async () => {
                     if (!activeProject || !conceptUrl.trim()) return;
                     const { data: { user } } = await supabase.auth.getUser();
-                    await addConceptAsset({ project_id: activeProject.id, title: conceptTitle.trim() || undefined, image_url: conceptUrl.trim(), created_by: user?.id });
+                    await supabase.from('concept_images').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), created_by: user?.id });
+                    await refreshProject(activeProject.id);
                     setConceptTitle(''); setConceptUrl(''); setShowAddConcept(false);
                   }}
                 >Add</button>
@@ -1238,7 +1239,7 @@ export default function StudioPage() {
             {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
               <div style={{ columnCount: 3, columnGap: 16 }}>
                 {activeProject.concept_assets.map((img, i) => (
-                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} onRemove={() => removeConceptAsset(img.id, activeProject.id)} />
+                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} onRemove={async () => { await supabase.from('concept_images').delete().eq('id', img.id); await refreshProject(activeProject.id); }} />
                 ))}
               </div>
             ) : (
@@ -1289,7 +1290,7 @@ export default function StudioPage() {
                  {(activeProject?.beats && activeProject.beats.length > 0) ? (
                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                      {activeProject.beats.map((beat, i) => (
-                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={(id) => removeBeat(id, activeProject.id)} onPush={handlePushToScript} />
+                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={async (id) => { await supabase.from('project_beats').delete().eq('id', id); await refreshProject(activeProject.id); }} onPush={handlePushToScript} />
                      ))}
                    </div>
                  ) : (
@@ -1342,7 +1343,8 @@ export default function StudioPage() {
                          onClick={async () => {
                            if (!activeProject || !sceneTitle.trim()) return;
                            const nextNum = (activeProject.scenes?.length || 0) + 1;
-                           await addScene({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || undefined, shoot_day: Number(sceneDay) || 1 });
+                           await supabase.from('scenes').insert({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || null, shoot_day: Number(sceneDay) || 1 });
+                           await refreshProject(activeProject.id);
                            setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
                          }}
                        >Add Scene</button>
@@ -1367,7 +1369,7 @@ export default function StudioPage() {
                              </div>
                              <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
                              <div style={{ width: 30, textAlign: 'right' }}>
-                               <button onClick={() => removeScene(s.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                               <button onClick={async () => { await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
                              </div>
                            </div>
                          ))}
@@ -1503,7 +1505,8 @@ export default function StudioPage() {
                         onClick={async () => {
                           if (!activeProject || !campaignTitle.trim()) return;
                           const { data: { user } } = await supabase.auth.getUser();
-                          await addCampaign({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          await supabase.from('campaigns').insert({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          await refreshProject(activeProject.id);
                           setCampaignTitle(''); setShowAddCampaign(false);
                         }}
                       >Add</button>
@@ -1525,7 +1528,7 @@ export default function StudioPage() {
                             </div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
                          </div>
-                         <button onClick={() => removeCampaign(campaign.id, activeProject.id)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                         <button onClick={async () => { await supabase.from('campaigns').delete().eq('id', campaign.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
                       </div>
                     ))
                   ) : (
