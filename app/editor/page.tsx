@@ -22,6 +22,7 @@ import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
+import { supabase } from '@/lib/supabase/client';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -290,16 +291,42 @@ export default function EditorPage() {
     init();
   }, []);
 
-  // Auto-load script based on active project
+  // Load (or create) the ACTIVE PROJECT's screenplay from Supabase, so the
+  // editor edits the same script row Studio/Production/Pitch read. Using the
+  // real Supabase id means useScriptSync persists edits straight to that row.
   useEffect(() => {
-    if (activeProject && scripts.length > 0) {
-      const projectScript = scripts.find(s => s.title.toLowerCase() === activeProject.title.toLowerCase());
-      if (projectScript && (!currentScript || currentScript.id !== projectScript.id)) {
-        handleLoadScript(projectScript);
-        toast(`Loaded script for ${activeProject.title}`, 'info');
+    if (!activeProject?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('scripts')
+          .select('id,title,content')
+          .eq('project_id', activeProject.id)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+        let row = data?.[0];
+        if (!row) {
+          const { data: auth } = await supabase.auth.getUser();
+          const uid = auth.user?.id;
+          const ins = await supabase
+            .from('scripts')
+            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: 'screenplay', status: 'draft', created_by: uid, last_edited_by: uid })
+            .select('id,title,content')
+            .single();
+          row = ins.data || undefined;
+        }
+        if (cancelled || !row) return;
+        if (currentScript?.id === row.id) return;
+        const now = new Date().toISOString();
+        handleLoadScript({ id: row.id, title: row.title || activeProject.title, content: row.content || '', createdAt: now, updatedAt: now, project_id: activeProject.id });
+        toast(`Editing “${activeProject.title}” screenplay`, 'info');
+      } catch (e) {
+        console.error('Failed to load project script:', e);
       }
-    }
-  }, [activeProject, scripts]);
+    })();
+    return () => { cancelled = true; };
+  }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parser hook
   useEffect(() => {
