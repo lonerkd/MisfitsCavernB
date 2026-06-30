@@ -5,7 +5,6 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import EmptyState from '@/components/EmptyState';
 
 interface Job {
   id: string;
@@ -264,16 +263,6 @@ export default function JobDetailPage() {
             {job.title}
           </h1>
 
-          {job.project_id && job.projects?.title && (
-            <Link href={`/projects/${job.project_id}`} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
-              color: 'var(--accent)', textDecoration: 'none', marginBottom: 16,
-            }}>
-              For production: {job.projects.title} →
-            </Link>
-          )}
-
           {/* Meta row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             {job.rate && (
@@ -284,9 +273,9 @@ export default function JobDetailPage() {
             )}
             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1 }}>
               Posted by{' '}
-              <Link href={`/crew/${job.created_by}`} style={{ opacity: 1, color: 'var(--fg)', textDecoration: 'none', borderBottom: '1px dotted rgba(255,255,255,0.3)' }}>
+              <span style={{ opacity: 1, color: 'var(--fg)' }}>
                 {job.profiles?.username || 'unknown'}
-              </Link>
+              </span>
               {job.profiles?.role && (
                 <span style={{ opacity: 0.6 }}> · {job.profiles.role}</span>
               )}
@@ -331,13 +320,15 @@ export default function JobDetailPage() {
             </div>
 
             {appsLoading ? (
-              <div style={{ display: 'grid', gap: 16 }}>
-                {[0, 1].map(i => (
-                  <div key={i} className="skeleton" style={{ height: 100, borderRadius: 14 }} />
-                ))}
-              </div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, letterSpacing: 2 }}>LOADING...</div>
             ) : applications.length === 0 ? (
-              <EmptyState icon={<User size={28} />} title="No applications yet" />
+              <div style={{
+                padding: 40, textAlign: 'center',
+                border: '1px dashed rgba(255,255,255,0.08)',
+                fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, letterSpacing: 2,
+              }}>
+                NO APPLICATIONS YET
+              </div>
             ) : (
               <div style={{ display: 'grid', gap: 16 }}>
                 {applications.map(app => (
@@ -346,11 +337,8 @@ export default function JobDetailPage() {
                     background: 'rgba(10,10,10,0.8)',
                     borderRadius: 14,
                     ...appStatusStyle(app.status),
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
-                  >
+                    transition: 'border-color 0.2s',
+                  }}>
                     {/* Applicant header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -368,14 +356,13 @@ export default function JobDetailPage() {
                           )}
                         </div>
                         <div>
-                          <Link href={`/crew/${app.applicant_id}`} style={{
+                          <div style={{
                             fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
                             textDecoration: app.status === 'rejected' ? 'line-through' : 'none',
                             opacity: app.status === 'rejected' ? 0.5 : 1,
-                            color: 'var(--fg)',
                           }}>
                             {app.profiles?.username || 'unknown'}
-                          </Link>
+                          </div>
                           {app.profiles?.role && (
                             <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1, marginTop: 2 }}>
                               {app.profiles.role}
