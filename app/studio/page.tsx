@@ -542,6 +542,95 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0 }: { image: { id: 
   );
 }
 
+// Character bible: parsed from the screenplay, persisted to script_characters
+// (Supabase) so character development is shared across the suite, not trapped
+// in one browser.
+function CharacterBible({ projectId, userId }: { projectId: string; userId: string | null }) {
+  type Bio = { id?: string; name: string; full_name: string; age: string; arc: string; description: string; color?: string };
+  const [bios, setBios] = useState<Bio[]>([]);
+  const [scriptId, setScriptId] = useState<string | null>(null);
+  const [editName, setEditName] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Bio | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const palette = ['#ff3c00', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
+      if (!withContent) { setBios([]); setScriptId(null); return; }
+      setScriptId(withContent.id);
+      const parsedNames: string[] = withContent.content ? parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean) : [];
+      const { data: saved } = await supabase.from('script_characters').select('*').eq('script_id', withContent.id);
+      const savedByName = new Map((saved || []).map((r: any) => [r.name, r]));
+      const names = Array.from(new Set([...parsedNames, ...(saved || []).map((r: any) => r.name)]));
+      setBios(names.map((name, i) => {
+        const r: any = savedByName.get(name);
+        return { id: r?.id, name, full_name: r?.full_name || '', age: r?.age || '', arc: r?.arc || '', description: r?.description || '', color: r?.color || palette[i % palette.length] };
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId]);
+
+  const startEdit = (b: Bio) => { setEditName(b.name); setDraft({ ...b }); };
+  const save = async () => {
+    if (!draft || !scriptId) return;
+    const payload: any = { script_id: scriptId, name: draft.name, full_name: draft.full_name || null, age: draft.age || null, arc: draft.arc || null, description: draft.description || null, color: draft.color, updated_by: userId, updated_at: new Date().toISOString() };
+    if (draft.id) await supabase.from('script_characters').update(payload).eq('id', draft.id);
+    else await supabase.from('script_characters').insert(payload);
+    setEditName(null); setDraft(null);
+    load();
+  };
+
+  return (
+    <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+        <Users size={16} /> Character Bible <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· from ScriptOS · {bios.length}</span>
+      </div>
+      {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Loading…</div>}
+      {!loading && bios.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to build the bible.</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+        {bios.map(b => {
+          const editing = editName === b.name;
+          return (
+            <div key={b.name} style={{ background: 'rgba(0,0,0,0.25)', border: `1px solid ${b.color}33`, borderLeft: `3px solid ${b.color}`, borderRadius: 10, padding: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, color: b.color }}>{b.name}</span>
+                {!editing && <button onClick={() => startEdit(b)} aria-label="edit" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 11 }}>✎</button>}
+              </div>
+              {editing && draft ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                  <input value={draft.full_name} onChange={e => setDraft({ ...draft, full_name: e.target.value })} placeholder="Full name" style={inputMini} />
+                  <input value={draft.age} onChange={e => setDraft({ ...draft, age: e.target.value })} placeholder="Age" style={inputMini} />
+                  <input value={draft.arc} onChange={e => setDraft({ ...draft, arc: e.target.value })} placeholder="Character arc" style={inputMini} />
+                  <textarea value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} placeholder="Description" rows={3} style={{ ...inputMini, resize: 'vertical' }} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={save} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px', cursor: 'pointer', fontSize: 10 }}>Save</button>
+                    <button onClick={() => { setEditName(null); setDraft(null); }} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 10 }}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 9.5, color: '#aaa', lineHeight: 1.7 }}>
+                  {b.full_name && <div><span style={{ color: '#666' }}>Name:</span> {b.full_name}</div>}
+                  {b.age && <div><span style={{ color: '#666' }}>Age:</span> {b.age}</div>}
+                  {b.arc && <div><span style={{ color: '#666' }}>Arc:</span> {b.arc}</div>}
+                  {b.description && <div style={{ marginTop: 4, color: '#ccc' }}>{b.description}</div>}
+                  {!b.full_name && !b.age && !b.arc && !b.description && <div style={{ color: '#555' }}>No bio yet — click ✎ to develop.</div>}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+const inputMini: React.CSSProperties = { width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none' };
+
 // Real call sheets generated by grouping the schedule's scenes by shoot day.
 function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
   const [openDay, setOpenDay] = useState<number | null>(null);
@@ -1604,6 +1693,7 @@ export default function StudioPage() {
                {activeProject?.scenes && activeProject.scenes.length > 0 && (
                  <CallSheets scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
                )}
+               {activeProject && <CharacterBible projectId={activeProject.id} userId={user?.id ?? null} />}
             </div>
           </motion.div>
         )}
