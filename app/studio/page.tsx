@@ -182,7 +182,60 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
   );
 }
 
-function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+// Get the user's studio board (creating a default one if none exists yet).
+async function getOrCreateBoard(userId: string, projectId?: string): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from('studio_boards').select('id').eq('user_id', userId).limit(1).maybeSingle();
+  if (existing?.id) return existing.id;
+  const { data: created, error } = await supabase
+    .from('studio_boards')
+    .insert({ user_id: userId, name: projectId || 'Studio', description: 'Concept board' })
+    .select('id').single();
+  if (error) return null;
+  return created.id;
+}
+
+function IntakeModal({ isOpen, onClose, userId, projectId, onCreated }: {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string | null;
+  projectId?: string;
+  onCreated: (asset: { id: string; title: string; asset_type: string; created_at: string }) => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [type, setType] = useState('image');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => { setTitle(''); setUrl(''); setType('image'); setError(null); };
+  const close = () => { reset(); onClose(); };
+
+  const submit = async () => {
+    setError(null);
+    if (!userId) { setError('You must be signed in.'); return; }
+    if (!url.trim()) { setError('Paste an asset URL.'); return; }
+    setSaving(true);
+    try {
+      const boardId = await getOrCreateBoard(userId, projectId);
+      if (!boardId) throw new Error('Could not create a board.');
+      const { data, error: insErr } = await supabase
+        .from('studio_assets')
+        .insert({ board_id: boardId, user_id: userId, title: title || 'Untitled', asset_url: url.trim(), asset_type: type })
+        .select('id,title,asset_type,created_at')
+        .single();
+      if (insErr) throw insErr;
+      onCreated(data as any);
+      close();
+    } catch (e: any) {
+      setError(e.message || 'Failed to add asset.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = { width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12, outline: 'none' };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -191,7 +244,7 @@ function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={onClose}
+          onClick={close}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -201,38 +254,32 @@ function IntakeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
             style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Upload raw footage, references, or documents to the project vault.</p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ padding: 40, border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12, textAlign: 'center', cursor: 'pointer' }}>
-                <Upload size={32} color="var(--accent)" style={{ marginBottom: 12 }} />
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Drop files here or click to browse</div>
-                <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 4 }}>Maximum file size: 10GB</div>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Add a reference, frame, or asset to the studio board by URL.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
+                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Opening shot reference" style={inputStyle} />
               </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
-                  <select style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
-                    <option>Raw Footage</option>
-                    <option>Reference</option>
-                    <option>Production Doc</option>
-                    <option>Asset</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
-                   <select style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}>
-                    <option>Video</option>
-                    <option>Image</option>
-                    <option>PDF</option>
-                    <option>Audio</option>
-                  </select>
-                </div>
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Asset URL</label>
+                <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} placeholder="https://…" style={inputStyle} />
               </div>
-              
-              <button style={{ marginTop: 12, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: 'pointer' }}>
-                Start Intake Process
+              <div>
+                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
+                <select value={type} onChange={e => setType(e.target.value)} style={inputStyle}>
+                  <option value="image">Image</option>
+                  <option value="video">Video</option>
+                  <option value="document">Document</option>
+                  <option value="audio">Audio</option>
+                  <option value="color">Color</option>
+                </select>
+              </div>
+
+              {error && <div style={{ color: '#ff5555', fontSize: 11, fontFamily: 'var(--mono)' }}>⚠ {error}</div>}
+
+              <button onClick={submit} disabled={saving} style={{ marginTop: 8, padding: 14, background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Adding…' : 'Add to Studio'}
               </button>
             </div>
           </motion.div>
@@ -447,7 +494,7 @@ export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
-  const [assetsList, setAssetsList] = useState<Asset[]>(ASSETS);
+  const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [showIntake, setShowIntake] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<any>(null);
   const [reviewAsset, setReviewAsset] = useState<Asset | null>(null);
@@ -469,17 +516,15 @@ export default function StudioPage() {
       setUser(user);
       
       getAllStudioAssets(user.id).then(data => {
-        if (data && data.length > 0) {
-          setAssetsList(data.map(a => ({
-            id: a.id,
-            name: a.title || 'Untitled',
-            type: (a.asset_type as any) || 'document',
-            category: 'Studio',
-            size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
-          })));
-        }
-      });
+        setAssetsList((data || []).map(a => ({
+          id: a.id,
+          name: a.title || 'Untitled',
+          type: (a.asset_type as any) || 'document',
+          category: 'Studio',
+          size: '—',
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+        })));
+      }).catch(console.error);
     });
   }, []);
 
@@ -533,7 +578,20 @@ export default function StudioPage() {
         </div>
       </nav>
 
-      <IntakeModal isOpen={showIntake} onClose={() => setShowIntake(false)} />
+      <IntakeModal
+        isOpen={showIntake}
+        onClose={() => setShowIntake(false)}
+        userId={user?.id ?? null}
+        projectId={activeProject?.id}
+        onCreated={(a) => setAssetsList(prev => [{
+          id: a.id,
+          name: a.title || 'Untitled',
+          type: (a.asset_type as any) || 'image',
+          category: 'Studio',
+          size: '—',
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+        }, ...prev])}
+      />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
 
       {/* TABS BAR */}

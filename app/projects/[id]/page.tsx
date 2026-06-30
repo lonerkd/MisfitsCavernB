@@ -10,6 +10,23 @@ import {
   Music, Plus, ExternalLink, Circle,
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
+import { supabase } from '@/lib/supabase/client';
+
+// Map the DB project.status to the production phase used by the header rail.
+function mapStatusToPhase(status?: string): Phase {
+  switch (status) {
+    case 'concept': return 'development';
+    case 'pre-prod':
+    case 'pre-production': return 'pre-production';
+    case 'production': return 'production';
+    case 'post':
+    case 'post-production': return 'post-production';
+    case 'released':
+    case 'completed':
+    case 'delivery': return 'delivery';
+    default: return 'development';
+  }
+}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -370,14 +387,48 @@ function PortfolioPreview({ published }: { published: number }) {
 export default function ProjectHubPage() {
   const params = useParams();
   const router = useRouter();
-  const project = PROJECTS.find(p => p.id === params.id);
+  const id = String(params.id);
+  const mockProject = PROJECTS.find(p => p.id === id);
 
+  const [realProject, setRealProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(!mockProject);
+
+  // Demo ids ('1','2','3') keep their rich mock dashboard; any real UUID loads
+  // the actual project from Supabase and shows the live production manager.
   useEffect(() => {
-    if (!project) router.push('/projects');
-  }, [project, router]);
+    if (mockProject) return;
+    let active = true;
+    supabase.from('projects').select('*').eq('id', id).single().then(({ data, error }) => {
+      if (!active) return;
+      if (error || !data) { router.push('/projects'); return; }
+      const phase = mapStatusToPhase(data.status);
+      setRealProject({
+        id: data.id,
+        title: data.title,
+        type: data.project_type || 'Project',
+        phase,
+        progress: Math.round((phaseIndex(phase) / (PHASES.length - 1)) * 100),
+        deadline: data.end_date || '',
+        description: data.description || '',
+        color: data.accent_color || '#ff3c00',
+        team: [],
+      });
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, [id, mockProject, router]);
 
-  if (!project) return null;
+  const project = mockProject || realProject;
 
+  if (loading || !project) {
+    return (
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, opacity: 0.4 }}>LOADING</div>
+      </main>
+    );
+  }
+
+  const isRealProject = !mockProject;
   const currentPhaseIdx = phaseIndex(project.phase);
   const onlineCount = project.team.filter(m => m.online).length;
 
@@ -593,9 +644,210 @@ export default function ProjectHubPage() {
           />
 
         </div>
+
+        {isRealProject && <ProductionManager projectId={id} accent={project.color} />}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </main>
+  );
+}
+
+// ─── Production Manager (live Supabase CRUD: tasks, budget, timeline, crew) ────
+
+interface TaskRow { id: string; title: string; completed: boolean }
+interface BudgetRow { id: string; category: string; amount: number }
+interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
+interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
+
+function ProductionManager({ projectId, accent }: { projectId: string; accent: string }) {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [budget, setBudget] = useState<BudgetRow[]>([]);
+  const [timeline, setTimeline] = useState<TimelineRow[]>([]);
+  const [crew, setCrew] = useState<CrewRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
+    try {
+      const [t, b, tl, c] = await Promise.all([
+        supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
+        supabase.from('budget_items').select('id,category,amount').eq('project_id', projectId).order('created_at'),
+        supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
+        supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+      ]);
+      setTasks((t.data as TaskRow[]) || []);
+      setBudget((b.data as BudgetRow[]) || []);
+      setTimeline((tl.data as TimelineRow[]) || []);
+      setCrew((c.data as unknown as CrewRow[]) || []);
+    } catch (e: any) {
+      setErr(e.message);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    load();
+  }, [load]);
+
+  // ── mutations ──
+  const addTask = async (title: string) => {
+    const { data, error } = await supabase.from('project_tasks')
+      .insert({ project_id: projectId, title }).select('id,title,completed').single();
+    if (error) return setErr(error.message);
+    setTasks(p => [...p, data as TaskRow]);
+  };
+  const toggleTask = async (t: TaskRow) => {
+    setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !x.completed } : x));
+    await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
+  };
+  const delTask = async (id: string) => {
+    setTasks(p => p.filter(x => x.id !== id));
+    await supabase.from('project_tasks').delete().eq('id', id);
+  };
+
+  const addBudget = async (category: string, amount: number) => {
+    const { data, error } = await supabase.from('budget_items')
+      .insert({ project_id: projectId, category, amount, created_by: userId }).select('id,category,amount').single();
+    if (error) return setErr(error.message);
+    setBudget(p => [...p, data as BudgetRow]);
+  };
+  const delBudget = async (id: string) => {
+    setBudget(p => p.filter(x => x.id !== id));
+    await supabase.from('budget_items').delete().eq('id', id);
+  };
+
+  const addTimeline = async (title: string, start: string, end: string) => {
+    const { data, error } = await supabase.from('timeline_items')
+      .insert({ project_id: projectId, title, start_date: start || null, end_date: end || null, created_by: userId })
+      .select('id,title,start_date,end_date').single();
+    if (error) return setErr(error.message);
+    setTimeline(p => [...p, data as TimelineRow]);
+  };
+  const delTimeline = async (id: string) => {
+    setTimeline(p => p.filter(x => x.id !== id));
+    await supabase.from('timeline_items').delete().eq('id', id);
+  };
+
+  const addCrew = async (username: string, role: string) => {
+    const { data: prof, error: pErr } = await supabase.from('profiles').select('id,username').eq('username', username).single();
+    if (pErr || !prof) return setErr(`No user "${username}"`);
+    const { error } = await supabase.from('project_crew')
+      .insert({ project_id: projectId, user_id: prof.id, role: role || 'team member' });
+    if (error) return setErr(error.message);
+    setErr(null);
+    load();
+  };
+  const delCrew = async (id: string) => {
+    setCrew(p => p.filter(x => x.id !== id));
+    await supabase.from('project_crew').delete().eq('id', id);
+  };
+
+  const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
+
+  return (
+    <div style={{ marginTop: 40 }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
+      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}>⚠ {err}</div>}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+
+        {/* Tasks */}
+        <Panel title="Tasks" accent={accent}>
+          {tasks.length === 0 && <Empty>No tasks yet</Empty>}
+          {tasks.map(t => (
+            <Row key={t.id}>
+              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(255,255,255,0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: '#10b981', fontSize: 10, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
+              <span style={{ flex: 1, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
+              <DelBtn onClick={() => delTask(t.id)} />
+            </Row>
+          ))}
+          <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
+        </Panel>
+
+        {/* Budget */}
+        <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
+          {budget.length === 0 && <Empty>No budget items</Empty>}
+          {budget.map(b => (
+            <Row key={b.id}>
+              <span style={{ flex: 1, fontSize: 11 }}>{b.category}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>${Number(b.amount).toLocaleString()}</span>
+              <DelBtn onClick={() => delBudget(b.id)} />
+            </Row>
+          ))}
+          <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
+        </Panel>
+
+        {/* Timeline */}
+        <Panel title="Timeline" accent={accent}>
+          {timeline.length === 0 && <Empty>No milestones</Empty>}
+          {timeline.map(tl => (
+            <Row key={tl.id}>
+              <span style={{ flex: 1, fontSize: 11 }}>{tl.title}</span>
+              {tl.start_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{new Date(tl.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              <DelBtn onClick={() => delTimeline(tl.id)} />
+            </Row>
+          ))}
+          <AddForm placeholder="Milestone" fields={['text', 'date', 'date']} dateLabels={['Start', 'End']} onSubmit={(v) => v[0] && addTimeline(v[0], v[1], v[2])} accent={accent} />
+        </Panel>
+
+        {/* Crew */}
+        <Panel title="Crew" accent={accent}>
+          {crew.length === 0 && <Empty>No crew yet</Empty>}
+          {crew.map(c => (
+            <Row key={c.id}>
+              <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.role}</span>
+              <DelBtn onClick={() => delCrew(c.id)} />
+            </Row>
+          ))}
+          <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function Panel({ title, accent, headerRight, children }: { title: string; accent: string; headerRight?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: 'rgba(10,10,10,0.8)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: accent }}>{title}</span>
+        {headerRight && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: 'var(--fg)' }}>{headerRight}</span>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>{children}</div>
+    </div>
+  );
+}
+
+function Row({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{children}</div>;
+}
+function Empty({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.6, padding: '2px 0' }}>{children}</div>;
+}
+function DelBtn({ onClick }: { onClick: () => void }) {
+  return <button onClick={onClick} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, opacity: 0.5, flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}>×</button>;
+}
+
+function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: { placeholder: string; second?: string; fields: string[]; dateLabels?: string[]; onSubmit: (vals: string[]) => void; accent: string }) {
+  const [vals, setVals] = useState<string[]>(fields.map(() => ''));
+  const set = (i: number, v: string) => setVals(p => p.map((x, idx) => idx === i ? v : x));
+  const submit = () => { onSubmit(vals); setVals(fields.map(() => '')); };
+  const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, outline: 'none' };
+  return (
+    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+      {fields.map((f, i) => (
+        <input
+          key={i}
+          type={f === 'number' ? 'number' : f === 'date' ? 'date' : 'text'}
+          value={vals[i]}
+          onChange={e => set(i, e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          placeholder={i === 0 ? placeholder : i === 1 ? (second || dateLabels?.[0] || '') : (dateLabels?.[1] || '')}
+          style={{ ...inputStyle, flex: f === 'date' ? '0 0 110px' : f === 'number' ? '0 0 90px' : 1 }}
+        />
+      ))}
+      <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
+    </div>
   );
 }
