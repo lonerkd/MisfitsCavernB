@@ -14,14 +14,15 @@ export interface DBProject {
   updated_at: string;
 }
 
-export async function createProject(userId: string, title: string, description = '') {
+export async function createProject(userId: string, title: string, description = '', projectType?: string) {
   const { data, error } = await supabase
     .from('projects')
     .insert({
       title,
       description,
       creator_id: userId,
-      status: 'concept'
+      status: 'concept',
+      ...(projectType ? { project_type: projectType } : {}),
     })
     .select()
     .single();
