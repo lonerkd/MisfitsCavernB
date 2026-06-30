@@ -17,20 +17,12 @@ import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Max
 interface Asset {
   id: string;
   name: string;
-  type: 'image' | 'video' | 'document' | 'audio';
+  type: 'image' | 'video' | 'document' | 'audio' | 'color';
   category: string;
   size: string;
   dateAdded: string;
+  url?: string;
 }
-
-const ASSETS: Asset[] = [
-  { id: '1', name: 'Femme Fatale — Draft 9', type: 'document', category: 'Screenplays', size: '248 KB', dateAdded: '2026-04-15' },
-  { id: '2', name: '10 Million — Final Cut', type: 'video', category: 'Music Videos', size: '4.2 GB', dateAdded: '2026-04-20' },
-  { id: '3', name: 'The Briefcase — Poster Concept', type: 'image', category: 'Marketing', size: '3.8 MB', dateAdded: '2026-04-10' },
-  { id: '4', name: 'Production Score — V1', type: 'audio', category: 'Audio', size: '68 MB', dateAdded: '2026-03-28' },
-  { id: '5', name: 'Grand PSA — Grade LUT', type: 'document', category: 'Color', size: '12 KB', dateAdded: '2026-03-15' },
-  { id: '6', name: 'Altitude — Raw Footage B-Roll', type: 'video', category: 'Documentaries', size: '11.3 GB', dateAdded: '2026-02-20' },
-];
 
 const CONCEPT_IMAGES = [
   { id: 'c1', url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80', title: 'Neon Noir Aesthetic', aspect: 'tall' },
@@ -143,8 +135,13 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
                  <Video size={48} color="#333" style={{ marginBottom: 16 }} />
                  <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>VIDEO PLAYER MOCKUP</div>
                </div>
+             ) : asset.url ? (
+               // eslint-disable-next-line @next/next/no-img-element
+               <img src={asset.url} alt={asset.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
              ) : (
-               <img src={CONCEPT_IMAGES[1].url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+               <div style={{ width: '100%', maxWidth: 1000, aspectRatio: '16/9', background: '#111', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>
+                 NO PREVIEW
+               </div>
              )}
           </div>
 
@@ -200,7 +197,7 @@ function IntakeModal({ isOpen, onClose, userId, projectId, onCreated }: {
   onClose: () => void;
   userId: string | null;
   projectId?: string;
-  onCreated: (asset: { id: string; title: string; asset_type: string; created_at: string }) => void;
+  onCreated: (asset: { id: string; title: string; asset_type: string; asset_url: string; created_at: string }) => void;
 }) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -222,7 +219,7 @@ function IntakeModal({ isOpen, onClose, userId, projectId, onCreated }: {
       const { data, error: insErr } = await supabase
         .from('studio_assets')
         .insert({ board_id: boardId, user_id: userId, title: title || 'Untitled', asset_url: url.trim(), asset_type: type })
-        .select('id,title,asset_type,created_at')
+        .select('id,title,asset_type,asset_url,created_at')
         .single();
       if (insErr) throw insErr;
       onCreated(data as any);
@@ -398,40 +395,6 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ image, index }: { image: typeof CONCEPT_IMAGES[0]; index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.05 }}
-      style={{ 
-        marginBottom: 16, 
-        breakInside: 'avoid', 
-        position: 'relative',
-        borderRadius: 8,
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
-        background: '#0a0a0a'
-      }}
-    >
-      <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: 0.8 }} />
-      <div style={{ 
-        position: 'absolute', 
-        inset: 0, 
-        background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))', 
-        padding: 16, 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'flex-end',
-        opacity: 0,
-        transition: 'opacity 0.3s'
-      }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
-        <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1 }}>{image.title}</span>
-      </div>
-    </motion.div>
-  );
-}
-
 function BeatCard({ beat, index }: { beat: any; index: number }) {
   return (
     <motion.div
@@ -522,7 +485,8 @@ export default function StudioPage() {
           type: (a.asset_type as any) || 'document',
           category: 'Studio',
           size: '—',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+          url: (a as any).asset_url,
         })));
       }).catch(console.error);
     });
@@ -590,6 +554,7 @@ export default function StudioPage() {
           category: 'Studio',
           size: '—',
           dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+          url: (a as any).asset_url,
         }, ...prev])}
       />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
@@ -771,11 +736,34 @@ export default function StudioPage() {
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
               </div>
-              <button className="link-btn">+ New Ref</button>
+              <button className="link-btn" onClick={() => setShowIntake(true)}>+ New Ref</button>
             </div>
-            <div style={{ columnCount: 3, columnGap: 16 }}>
-              {CONCEPT_IMAGES.map((img, i) => <ConceptCard key={img.id} image={img} index={i} />)}
-            </div>
+            {(() => {
+              const refs = assetsList.filter(a => a.type === 'image' || a.type === 'color');
+              if (refs.length === 0) {
+                return (
+                  <div style={{ padding: '64px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 12 }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, marginBottom: 14 }}>NO VISUAL REFERENCES YET</div>
+                    <button className="link-btn" onClick={() => setShowIntake(true)}>+ Add your first reference</button>
+                  </div>
+                );
+              }
+              return (
+                <div style={{ columnCount: 3, columnGap: 16 }}>
+                  {refs.map((ref) => (
+                    <div key={ref.id} style={{ breakInside: 'avoid', marginBottom: 16, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', background: '#0d0d0d' }}>
+                      {ref.type === 'color' ? (
+                        <div style={{ height: 140, background: ref.url || '#222' }} />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={ref.url} alt={ref.name} style={{ width: '100%', display: 'block' }} loading="lazy" />
+                      )}
+                      <div style={{ padding: '10px 12px', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', letterSpacing: 1 }}>{ref.name}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </motion.div>
         )}
 
