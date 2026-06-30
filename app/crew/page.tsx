@@ -25,18 +25,32 @@ export default function CrewPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [availFilter, setAvailFilter] = useState<'all' | 'OPEN' | 'BUSY'>('all');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search term to prevent network flooding and outdated state querying
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [search]);
 
   useEffect(() => {
-    loadCrew();
-  }, [roleFilter, availFilter]);
+    loadCrew(debouncedSearch);
+  }, [roleFilter, availFilter, debouncedSearch]);
 
-  const loadCrew = async () => {
+  const loadCrew = async (searchTerm = debouncedSearch) => {
     setLoading(true);
     try {
       let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
-      if (search) {
-        query = query.or(`username.ilike.%${search}%,bio.ilike.%${search}%`);
+      if (searchTerm) {
+        // Sanitize search to avoid breaking PostgREST or exposing injection vulnerabilities
+        const cleanSearch = searchTerm.replace(/[\(\),.:\\]/g, ' ').trim();
+        if (cleanSearch) {
+          query = query.or(`username.ilike.%${cleanSearch}%,bio.ilike.%${cleanSearch}%`);
+        }
       }
 
       if (roleFilter && roleFilter !== 'All') {
@@ -79,13 +93,13 @@ export default function CrewPage() {
           <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
             <input type="text" placeholder="Search by name, skill, bio..." value={search}
-              onChange={e => { setSearch(e.target.value); loadCrew(); }}
+              onChange={e => setSearch(e.target.value)}
               style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box' }} />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {(['all', 'OPEN', 'BUSY'] as const).map(a => (
-              <button key={a} onClick={() => { setAvailFilter(a); loadCrew(); }}
+              <button key={a} onClick={() => setAvailFilter(a)}
                 style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 {a === 'all' ? 'ALL' : a}
               </button>
@@ -94,7 +108,7 @@ export default function CrewPage() {
         </div>
         <div className="filter-row" style={{ marginBottom: 24 }}>
           {ROLES.map(r => (
-            <button key={r} onClick={() => { setRoleFilter(r); loadCrew(); }}
+            <button key={r} onClick={() => setRoleFilter(r)}
               style={{
                 padding: '8px 14px',
                 background: roleFilter === r ? 'var(--accent)' : 'rgba(255,255,255,0.05)',

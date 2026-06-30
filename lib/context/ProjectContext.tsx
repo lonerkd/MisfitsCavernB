@@ -7,7 +7,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 export interface Beat {
   id: string;
   title: string;
-  content: string;h
+  content: string;
   color?: string;
 }
 

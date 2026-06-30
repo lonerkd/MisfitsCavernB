@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   avatar_url TEXT,
   bio TEXT,
   role TEXT DEFAULT 'creator',
+  is_admin BOOLEAN DEFAULT false,
   location TEXT,
   status TEXT DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'BUSY')),
   discord_id TEXT,

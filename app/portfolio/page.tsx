@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
+import { getPortfolioProjects as getPortfolioData } from '@/lib/supabase/portfolio';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/permissions/access-control';
 
@@ -25,7 +25,22 @@ interface Video {
   featured?: boolean;
   laurels?: string[];
   stills?: string[];
+  mediaType?: 'youtube' | 'gdrive' | 'image';
+  url?: string;
 }
+
+const getYoutubeId = (url: string) => {
+  if (!url) return '';
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname === 'youtu.be' || urlObj.hostname === 'www.youtu.be') {
+      return urlObj.pathname.substring(1);
+    }
+    return urlObj.searchParams.get('v') || '';
+  } catch {
+    return '';
+  }
+};
 
 const VIDEOS: Video[] = [
   {
@@ -117,11 +132,12 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
     >
       {/* Thumbnail */}
       <img
-        src={IMG(video.driveId)}
+        src={video.mediaType === 'youtube' && video.url ? `https://img.youtube.com/vi/${getYoutubeId(video.url)}/hqdefault.jpg` : IMG(video.driveId)}
         alt={video.title}
         loading="lazy"
         style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
         onError={e => {
+          if (video.mediaType === 'youtube') return;
           const t = e.target as HTMLImageElement;
           if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = IMG_FB(video.driveId); }
         }}
@@ -275,12 +291,21 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
           {/* Media Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
             <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
-              <iframe
-                src={`https://drive.google.com/file/d/${project.driveId}/preview`}
-                width="100%" height="100%"
-                allow="autoplay;encrypted-media" allowFullScreen
-                style={{ border: 'none', display: 'block' }}
-              />
+              {project.mediaType === 'youtube' && project.url ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYoutubeId(project.url)}`}
+                  width="100%" height="100%"
+                  allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowFullScreen
+                  style={{ border: 'none', display: 'block' }}
+                />
+              ) : (
+                <iframe
+                  src={`https://drive.google.com/file/d/${project.driveId}/preview`}
+                  width="100%" height="100%"
+                  allow="autoplay;encrypted-media" allowFullScreen
+                  style={{ border: 'none', display: 'block' }}
+                />
+              )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
@@ -334,16 +359,18 @@ export default function PortfolioPage() {
     getPortfolioData().then(data => {
       if (data && data.length > 0) {
         const fetchedVideos: Video[] = data.map((p: any) => {
-          const media = p.media?.[0];
+          const media = p.portfolio_media?.[0];
           return {
             id: p.id,
             title: p.title,
             category: p.category || 'Video',
             role: p.role || 'Creator',
             description: p.description || '',
-            driveId: media?.url?.split('id=')?.[1] || media?.url || '',
+            driveId: media?.media_type === 'youtube' ? '' : (media?.url?.split('id=')?.[1] || media?.url || ''),
             year: p.year?.toString() || '2026',
-            featured: true
+            featured: true,
+            mediaType: media?.media_type || 'gdrive',
+            url: media?.url || ''
           };
         });
         setVideosList(fetchedVideos);

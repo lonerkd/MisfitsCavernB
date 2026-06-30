@@ -31,11 +31,23 @@ export async function createProject(userId: string, title: string, description =
 }
 
 export async function getUserProjects(userId: string) {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .or(`creator_id.eq.${userId},id.in.(SELECT project_id FROM project_crew WHERE user_id = '${userId}')`)
-    .order('created_at', { ascending: false });
+  const { data: crewData, error: crewError } = await supabase
+    .from('project_crew')
+    .select('project_id')
+    .eq('user_id', userId);
+
+  if (crewError) throw crewError;
+  const projectIds = (crewData || []).map(c => c.project_id);
+
+  let query = supabase.from('projects').select('*');
+  if (projectIds.length > 0) {
+    const idsString = projectIds.join(',');
+    query = query.or(`creator_id.eq.${userId},id.in.(${idsString})`);
+  } else {
+    query = query.eq('creator_id', userId);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) throw error;
   return data;
