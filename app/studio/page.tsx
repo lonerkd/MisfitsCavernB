@@ -395,63 +395,6 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function BeatCard({ beat, index }: { beat: any; index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      style={{
-        padding: 20,
-        background: 'rgba(255,255,255,0.03)',
-        border: `1px solid ${beat.color || 'rgba(255,255,255,0.06)'}`,
-        borderTop: `4px solid ${beat.color || 'var(--accent)'}`,
-        borderRadius: 8,
-        minHeight: 140,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
-      }}
-    >
-      <div>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
-      </div>
-      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>ID: {beat.id}</div>
-    </motion.div>
-  );
-}
-
-function CrewMemberCard({ member, index }: { member: any; index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05 }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 12
-      }}
-    >
-      <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent), #ffaa00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#000' }}>
-        {member.avatar ? <img src={member.avatar} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : member.name.charAt(0)}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
-        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
-      </div>
-      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
-        {member.status || 'pending'}
-      </div>
-    </motion.div>
-  );
-}
-
 export default function StudioPage() {
   const { activeProject, setActiveProject, projects } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
@@ -768,109 +711,13 @@ export default function StudioPage() {
         )}
 
         {activeTab === 'production' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-              <div>
-                <SectionLabel text="Pre-Production" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="link-btn">Export Schedule</button>
-                <button className="link-btn">+ New Beat</button>
-              </div>
+          activeProject ? (
+            <ProductionSuite projectId={activeProject.id} userId={user?.id ?? null} />
+          ) : (
+            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>
+              SELECT A PROJECT TO PLAN PRODUCTION
             </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
-               {/* Beat Board */}
-               <div>
-                 <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
-                   <BookOpen size={16} /> Beat Board / Outline
-                 </div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                   {(activeProject?.beats || [
-                     { id: 'B1', title: 'The Inciting Incident', content: 'Our protagonist finds the map in the attic. The adventure begins.', color: '#0099ff' },
-                     { id: 'B2', title: 'The First Threshold', content: 'Escaping the city through the underground tunnels. No turning back.', color: '#ffaa00' },
-                     { id: 'B3', title: 'The Midpoint', content: 'Discovery of the true nature of the artifact. High stakes.', color: '#ff3c00' },
-                     { id: 'B4', title: 'All Is Lost', content: 'The antagonist takes everything. Darkness falls.', color: '#a855f7' },
-                   ]).map((beat, i) => (
-                     <BeatCard key={beat.id} beat={beat} index={i} />
-                   ))}
-                 </div>
-               </div>
-
-               {/* Staffing & Casting */}
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-                 <div>
-                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
-                     <Users size={16} /> Cast & Crew Hub
-                   </div>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                     {(activeProject?.crew || [
-                       { id: 'C1', name: 'James Miller', role: 'Director', status: 'confirmed' },
-                       { id: 'C2', name: 'Sarah Vance', role: 'DP / Cinematographer', status: 'confirmed' },
-                       { id: 'C3', name: 'Elena Kross', role: 'Lead Actress (Jane)', status: 'confirmed' },
-                       { id: 'C4', name: 'Marcus Thorne', role: 'Lead Actor (Detective)', status: 'pending' },
-                     ]).map((member, i) => (
-                       <CrewMemberCard key={member.id} member={member} index={i} />
-                     ))}
-                     <button style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>
-                       + Recruit Crew / Invite Talent
-                     </button>
-                   </div>
-                 </div>
-
-                 {/* Scene Gantt Timeline (StudioBinder style) */}
-                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule (Gantt)</div>
-                     <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={12}/> View Call Sheets</button>
-                   </div>
-                   
-                   {/* Gantt Header */}
-                   <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
-                     <div style={{ width: 60 }}>Scene</div>
-                     <div style={{ flex: 1, minWidth: 200 }}>Location</div>
-                     <div style={{ width: 100 }}>Cast</div>
-                     <div style={{ width: 60 }}>Est. Time</div>
-                     <div style={{ width: 140, display: 'flex', justifyContent: 'space-between' }}>
-                       <span>Day 1</span><span>Day 2</span><span>Day 3</span>
-                     </div>
-                   </div>
-
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                     {[
-                       { id: 1, title: 'EXT. ABANDONED PIER', time: 'NIGHT', dur: '4h', cast: '1, 3', day: 1, span: 1.5, color: '#003366' },
-                       { id: 2, title: 'INT. JANE\'S APARTMENT', time: 'DAY', dur: '6h', cast: '3', day: 2, span: 2, color: '#ffcc00' },
-                       { id: 3, title: 'EXT. CITY STREETS', time: 'DAWN', dur: '2h', cast: '1, 2, 3', day: 3, span: 0.8, color: '#ff6600' },
-                     ].map(s => (
-                       <div key={s.id} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                         <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.id}</div>
-                         <div style={{ flex: 1, minWidth: 200 }}>
-                           <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}</div>
-                           <div style={{ fontSize: 9, color: s.time === 'DAY' ? '#ffcc00' : s.time === 'NIGHT' ? '#0099ff' : '#ff6600', fontFamily: 'var(--mono)' }}>{s.time}</div>
-                         </div>
-                         <div style={{ width: 100, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{s.cast}</div>
-                         <div style={{ width: 60, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>{s.dur}</div>
-                         
-                         {/* Gantt Bar */}
-                         <div style={{ width: 140, position: 'relative', height: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{ 
-                              position: 'absolute', 
-                              left: `${(s.day - 1) * 33}%`, 
-                              width: `${s.span * 33}%`, 
-                              height: '100%', 
-                              background: s.color, 
-                              opacity: 0.8,
-                              borderRadius: 4
-                            }} />
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 </div>
-               </div>
-            </div>
-          </motion.div>
+          )
         )}
 
         {activeTab === 'assets' && (
@@ -1019,5 +866,199 @@ export default function StudioPage() {
         )}
       </section>
     </main>
+  );
+}
+
+// ─── Production Suite (live: beats, crew, shoot schedule) ─────────────────────
+
+const BEAT_COLORS = ['#0099ff', '#ffaa00', '#ff3c00', '#a855f7', '#10b981', '#ec4899'];
+
+interface Beat { id: string; title: string; content: string; color: string; order_index: number }
+interface PCrew { id: string; role: string; profiles?: { username: string } | null }
+interface ShootDay { id: string; day_number: number; shoot_date: string | null }
+interface Scene { id: string; scene_heading: string; location: string | null; estimated_hours: number | null; shoot_day_id: string | null }
+
+function ProductionSuite({ projectId, userId }: { projectId: string; userId: string | null }) {
+  const [beats, setBeats] = useState<Beat[]>([]);
+  const [crew, setCrew] = useState<PCrew[]>([]);
+  const [days, setDays] = useState<ShootDay[]>([]);
+  const [scenes, setScenes] = useState<Scene[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
+    try {
+      const [b, c, d, s] = await Promise.all([
+        supabase.from('project_beats').select('id,title,content,color,order_index').eq('project_id', projectId).order('order_index'),
+        supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+        supabase.from('shoot_days').select('id,day_number,shoot_date').eq('project_id', projectId).order('day_number'),
+        supabase.from('scene_schedule').select('id,scene_heading,location,estimated_hours,shoot_day_id').eq('project_id', projectId).order('order_index'),
+      ]);
+      setBeats((b.data as Beat[]) || []);
+      setCrew((c.data as unknown as PCrew[]) || []);
+      setDays((d.data as ShootDay[]) || []);
+      setScenes((s.data as Scene[]) || []);
+    } catch (e: any) { setErr(e.message); }
+  }, [projectId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // ── Beats ──
+  const [beatTitle, setBeatTitle] = useState('');
+  const [beatContent, setBeatContent] = useState('');
+  const addBeat = async () => {
+    if (!beatTitle.trim()) return;
+    const color = BEAT_COLORS[beats.length % BEAT_COLORS.length];
+    const { data, error } = await supabase.from('project_beats')
+      .insert({ project_id: projectId, title: beatTitle, content: beatContent, color, order_index: beats.length, created_by: userId })
+      .select('id,title,content,color,order_index').single();
+    if (error) return setErr(error.message);
+    setBeats(p => [...p, data as Beat]); setBeatTitle(''); setBeatContent('');
+  };
+  const delBeat = async (id: string) => { setBeats(p => p.filter(x => x.id !== id)); await supabase.from('project_beats').delete().eq('id', id); };
+
+  // ── Crew ──
+  const [crewName, setCrewName] = useState(''); const [crewRole, setCrewRole] = useState('');
+  const addCrew = async () => {
+    if (!crewName.trim()) return;
+    const { data: prof, error: pErr } = await supabase.from('profiles').select('id').eq('username', crewName.trim()).single();
+    if (pErr || !prof) { setErr(`No user "${crewName}"`); return; }
+    const { error } = await supabase.from('project_crew').insert({ project_id: projectId, user_id: prof.id, role: crewRole || 'team member' });
+    if (error) return setErr(error.message);
+    setCrewName(''); setCrewRole(''); setErr(null); load();
+  };
+  const delCrew = async (id: string) => { setCrew(p => p.filter(x => x.id !== id)); await supabase.from('project_crew').delete().eq('id', id); };
+
+  // ── Schedule ──
+  const [dayDate, setDayDate] = useState('');
+  const addDay = async () => {
+    const { data, error } = await supabase.from('shoot_days')
+      .insert({ project_id: projectId, day_number: days.length + 1, shoot_date: dayDate || null })
+      .select('id,day_number,shoot_date').single();
+    if (error) return setErr(error.message);
+    setDays(p => [...p, data as ShootDay]); setDayDate('');
+  };
+  const delDay = async (id: string) => {
+    setDays(p => p.filter(x => x.id !== id));
+    setScenes(p => p.filter(x => x.shoot_day_id !== id));
+    await supabase.from('shoot_days').delete().eq('id', id);
+  };
+  const addScene = async (dayId: string, heading: string, location: string, hours: string) => {
+    if (!heading.trim()) return;
+    const { data, error } = await supabase.from('scene_schedule')
+      .insert({ project_id: projectId, scene_heading: heading, location: location || null, estimated_hours: hours ? Number(hours) : null, shoot_day_id: dayId, order_index: scenes.length })
+      .select('id,scene_heading,location,estimated_hours,shoot_day_id').single();
+    if (error) return setErr(error.message);
+    setScenes(p => [...p, data as Scene]);
+  };
+  const delScene = async (id: string) => { setScenes(p => p.filter(x => x.id !== id)); await supabase.from('scene_schedule').delete().eq('id', id); };
+
+  const input: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '7px 9px', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
+  const sectionTitle: React.CSSProperties = { fontSize: 12, fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' };
+  const del = (fn: () => void) => <button onClick={fn} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 14, opacity: 0.5, flexShrink: 0 }}>×</button>;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div style={{ marginBottom: 32 }}>
+        <SectionLabel text="Pre-Production" />
+        <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
+      </div>
+      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {err}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
+        {/* Beat board */}
+        <div>
+          <div style={sectionTitle}><BookOpen size={16} /> Beat Board / Outline</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+            {beats.map(b => (
+              <div key={b.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${b.color}`, borderRadius: 8, padding: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{b.title}</div>
+                  {del(() => delBeat(b.id))}
+                </div>
+                <div style={{ fontSize: 10.5, lineHeight: 1.5, color: 'var(--fg-dim)' }}>{b.content}</div>
+              </div>
+            ))}
+            {beats.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>No beats yet</div>}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <input value={beatTitle} onChange={e => setBeatTitle(e.target.value)} placeholder="Beat title" style={input} />
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={beatContent} onChange={e => setBeatContent(e.target.value)} onKeyDown={e => e.key === 'Enter' && addBeat()} placeholder="What happens…" style={{ ...input, flex: 1 }} />
+              <button onClick={addBeat} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#818cf8', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 16 }}>+</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Crew + schedule */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+          <div>
+            <div style={sectionTitle}><Users size={16} /> Cast & Crew Hub</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {crew.map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#818cf8' }}>{(c.profiles?.username || '?')[0].toUpperCase()}</div>
+                  <span style={{ flex: 1, fontSize: 12 }}>{c.profiles?.username || 'Unknown'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{c.role}</span>
+                  {del(() => delCrew(c.id))}
+                </div>
+              ))}
+              {crew.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>No crew yet</div>}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input value={crewName} onChange={e => setCrewName(e.target.value)} placeholder="Username" style={{ ...input, flex: 1 }} />
+                <input value={crewRole} onChange={e => setCrewRole(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCrew()} placeholder="Role" style={{ ...input, flex: 1 }} />
+                <button onClick={addCrew} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', color: '#818cf8', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 16 }}>+</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style={sectionTitle}><Calendar size={16} /> Shooting Schedule</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {days.map(d => (
+                <ShootDayRow key={d.id} day={d} scenes={scenes.filter(s => s.shoot_day_id === d.id)} onDelDay={() => delDay(d.id)} onAddScene={addScene} onDelScene={delScene} input={input} />
+              ))}
+              {days.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', opacity: 0.6 }}>No shoot days yet</div>}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input type="date" value={dayDate} onChange={e => setDayDate(e.target.value)} style={{ ...input, flex: 1 }} />
+                <button onClick={addDay} style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', borderRadius: 6, padding: '0 14px', cursor: 'pointer', fontSize: 11, whiteSpace: 'nowrap' }}>+ Day</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function ShootDayRow({ day, scenes, onDelDay, onAddScene, onDelScene, input }: {
+  day: ShootDay; scenes: Scene[]; onDelDay: () => void;
+  onAddScene: (dayId: string, heading: string, location: string, hours: string) => void;
+  onDelScene: (id: string) => void; input: React.CSSProperties;
+}) {
+  const [heading, setHeading] = useState(''); const [loc, setLoc] = useState(''); const [hrs, setHrs] = useState('');
+  const submit = () => { onAddScene(day.id, heading, loc, hrs); setHeading(''); setLoc(''); setHrs(''); };
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: '#f59e0b' }}>DAY {day.day_number}{day.shoot_date ? ` · ${new Date(day.shoot_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</div>
+        <button onClick={onDelDay} aria-label="delete day" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 14, opacity: 0.5 }}>×</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 }}>
+        {scenes.map(s => (
+          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+            <span style={{ flex: 1 }}>{s.scene_heading}</span>
+            {s.location && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{s.location}</span>}
+            {s.estimated_hours != null && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{s.estimated_hours}h</span>}
+            <button onClick={() => onDelScene(s.id)} aria-label="delete scene" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, opacity: 0.5 }}>×</button>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 5 }}>
+        <input value={heading} onChange={e => setHeading(e.target.value)} placeholder="INT. SCENE — DAY" style={{ ...input, flex: 1, fontSize: 10 }} />
+        <input value={loc} onChange={e => setLoc(e.target.value)} placeholder="Location" style={{ ...input, width: 90, fontSize: 10 }} />
+        <input value={hrs} onChange={e => setHrs(e.target.value)} type="number" placeholder="h" onKeyDown={e => e.key === 'Enter' && submit()} style={{ ...input, width: 44, fontSize: 10 }} />
+        <button onClick={submit} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', borderRadius: 6, padding: '0 10px', cursor: 'pointer', fontSize: 14 }}>+</button>
+      </div>
+    </div>
   );
 }
