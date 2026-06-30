@@ -491,3 +491,6 @@ CREATE POLICY "char_refs insert" ON character_references FOR INSERT TO authentic
   WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authenticated
   USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+
+-- Scene shoot status tracking
+ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';

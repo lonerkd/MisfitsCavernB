@@ -1157,6 +1157,15 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
+  // Cycle a scene's shoot status: planned → shot → wrapped → planned.
+  const cycleSceneStatus = async (s: any) => {
+    if (!activeProject) return;
+    const order = ['planned', 'shot', 'wrapped'];
+    const next = order[(order.indexOf(s.status || 'planned') + 1) % order.length];
+    await supabase.from('scenes').update({ status: next }).eq('id', s.id);
+    await refreshProject(activeProject.id);
+  };
+
   // Generate the production scene list directly from the screenplay. Adds a
   // scenes row for every parsed scene whose number isn't already present, so
   // ScriptOS becomes the source of the shooting schedule.
@@ -1778,7 +1787,24 @@ export default function StudioPage() {
                  {/* Scene Gantt Timeline (StudioBinder style) */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
+                     {(() => {
+                       const all = activeProject?.scenes || [];
+                       const wrapped = all.filter((s: any) => s.status === 'wrapped').length;
+                       const pct = all.length ? Math.round((wrapped / all.length) * 100) : 0;
+                       return (
+                         <div>
+                           <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
+                           {all.length > 0 && (
+                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                               <div style={{ width: 120, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                                 <div style={{ width: `${pct}%`, height: '100%', background: '#10b981' }} />
+                               </div>
+                               <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{wrapped}/{all.length} wrapped</span>
+                             </div>
+                           )}
+                         </div>
+                       );
+                     })()}
                      <div style={{ display: 'flex', gap: 8 }}>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,60,0,0.12)', borderColor: 'rgba(255,60,0,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
@@ -1842,6 +1868,9 @@ export default function StudioPage() {
                                  {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
                                </div>
                                <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
+                               {(() => { const st = s.status || 'planned'; const col = st === 'wrapped' ? '#10b981' : st === 'shot' ? '#f59e0b' : '#6b7280'; return (
+                                 <button onClick={() => cycleSceneStatus(s)} title="cycle shoot status" style={{ width: 64, fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}40`, borderRadius: 99, padding: '2px 0', cursor: 'pointer', flexShrink: 0 }}>{st}</button>
+                               ); })()}
                                <div style={{ width: 54, textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                  <button onClick={() => startEditScene(s)} aria-label="edit scene" style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer' }}>✎</button>
                                  <button onClick={async () => { await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>

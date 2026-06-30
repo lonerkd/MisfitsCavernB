@@ -50,6 +50,7 @@ export interface Scene {
   location?: string;
   time_of_day?: string;
   shoot_day?: number;
+  status?: string;
 }
 
 export interface Campaign {
