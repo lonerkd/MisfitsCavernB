@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Users, Smile, Hash, Lock, Bell, Search, Settings as SettingsIcon } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
-import { Headphones, Disc, Radio, ExternalLink } from 'lucide-react';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { notify } from '@/lib/supabase/notifications';
 
 interface Message {
   id: string;
@@ -125,8 +125,8 @@ export default function LoungePage() {
   const [activeChannel, setActiveChannel] = useState('general');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [nowPlaying, setNowPlaying] = useState({ title: 'Resonance', artist: 'HOME', album: 'Odyssey' });
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [myProfile, setMyProfile] = useState<any>(null);
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showEmoji, setShowEmoji] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -135,7 +135,11 @@ export default function LoungePage() {
     let mounted = true;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && mounted) setCurrentUser(user);
+      if (user && mounted) {
+        setCurrentUser(user);
+        const { data: mine } = await supabase.from('profiles').select('username, avatar_url, role, status').eq('id', user.id).single();
+        if (mounted) setMyProfile(mine);
+      }
 
       const { data } = await supabase.from('profiles').select('*').limit(20);
       if (data && mounted) {
@@ -186,6 +190,19 @@ export default function LoungePage() {
     setInput('');
     try {
       await sendMessage(currentUser.id, text, activeChannel);
+      // Notify anyone @mentioned by username (matched against known crew).
+      const mentioned = new Set((text.match(/@([a-zA-Z0-9_]+)/g) || []).map(m => m.slice(1).toLowerCase()));
+      if (mentioned.size > 0) {
+        const from = myProfile?.username || 'Someone';
+        crewList
+          .filter(m => m.id !== currentUser.id && mentioned.has(String(m.name).toLowerCase()))
+          .forEach(m => notify(m.id, {
+            type: 'mention',
+            title: `${from} mentioned you in #${activeChannel}`,
+            body: text.length > 90 ? text.slice(0, 90) + '…' : text,
+            link: '/lounge',
+          }, currentUser.id));
+      }
     } catch (e) {
       console.error(e);
     }
@@ -236,24 +253,17 @@ export default function LoungePage() {
             </select>
           </div>
 
-          {/* Now playing */}
+          {/* Live crew count */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '7px 14px',
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.06)',
             borderRadius: 'var(--radius-full)',
-            maxWidth: 300,
-            overflow: 'hidden',
           }}>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
-              <Disc size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-            </motion.div>
-            <span style={{
-              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-              color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {nowPlaying.title} · {nowPlaying.artist}
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-muted)' }}>
+              {crewList.filter(m => m.online).length} available · {crewList.length} crew
             </span>
           </div>
         </div>
@@ -306,12 +316,18 @@ export default function LoungePage() {
           
           <div style={{ marginTop: 'auto', padding: 20, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>P</div>
-                <div style={{ flex: 1 }}>
-                   <div style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>Peter O.</div>
-                   <div style={{ fontSize: 9, color: '#00cc66' }}>● Online</div>
+                {myProfile?.avatar_url ? (
+                  <img src={myProfile.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                    {(myProfile?.username || currentUser?.email || '?')[0]?.toUpperCase()}
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                   <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{myProfile?.username || 'You'}</div>
+                   <div style={{ fontSize: 9, color: myProfile?.status === 'BUSY' ? '#f59e0b' : '#00cc66' }}>● {myProfile?.status === 'BUSY' ? 'Busy' : 'Available'}</div>
                 </div>
-                <SettingsIcon size={14} color="#666" style={{ cursor: 'pointer' }} />
+                <Link href="/settings" title="Settings"><SettingsIcon size={14} color="#666" style={{ cursor: 'pointer' }} /></Link>
              </div>
           </div>
         </div>
@@ -323,12 +339,10 @@ export default function LoungePage() {
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>#{activeChannel}</span>
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>4 members</span>
+               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{messages.length} message{messages.length === 1 ? '' : 's'}</span>
              </div>
-             <div style={{ display: 'flex', gap: 16 }}>
-                <Search size={14} color="#666" />
-                <Bell size={14} color="#666" />
-                <Users size={14} color="#666" />
+             <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>
+                <Users size={13} color="#666" /> {crewList.length}
              </div>
           </div>
 
@@ -458,12 +472,11 @@ export default function LoungePage() {
                     {member.name}
                   </div>
                   {member.online && (
-                    <div style={{ fontSize: 7, color: 'var(--accent)', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
+                    <div style={{ fontSize: 7, color: '#00cc66', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Open</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
                   <span>{member.role}</span>
-                  {member.online && <span style={{ fontStyle: 'italic', color: '#888' }}>{member.activity}</span>}
                 </div>
               </div>
             </motion.div>
