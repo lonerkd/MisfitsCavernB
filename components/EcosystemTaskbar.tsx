@@ -6,6 +6,7 @@ import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, Folder
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
+import NotificationBell from './NotificationBell';
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#ff3c00' },
@@ -417,6 +418,9 @@ export default function EcosystemTaskbar() {
 
         {/* Divider */}
         <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
+
+        {/* Notifications */}
+        <NotificationBell />
 
         {/* Account: profile + settings */}
         {([

@@ -9,6 +9,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
+import { notify } from '@/lib/supabase/notifications';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { saveScript } from '@/lib/scriptos/storage';
@@ -114,6 +115,16 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
     if (!user) return;
     const { data } = await supabase.from('asset_comments').insert({ asset_id: asset.id, user_id: user.id, content: t, timecode: 'Global' }).select('id,content,timecode,created_at').single();
     if (data) setComments(p => [...p, { ...data, profiles: { username: 'You' } }]);
+    // Notify the asset owner of the new review comment.
+    const ownerId = (asset as any).created_by;
+    if (ownerId) {
+      notify(ownerId, {
+        type: 'comment',
+        title: `New comment · ${(asset as any).title || 'asset'}`,
+        body: t.length > 80 ? t.slice(0, 80) + '…' : t,
+        link: '/studio',
+      }, user.id);
+    }
     setCommentText('');
   };
   if (!asset || !isOpen) return null;

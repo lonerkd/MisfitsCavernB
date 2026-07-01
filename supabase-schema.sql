@@ -494,3 +494,9 @@ CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authentic
 
 -- Scene shoot status tracking
 ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
+
+-- Notifications: per-user feed (bell). Insert allowed for any authenticated
+-- user so actors can notify recipients; read/update/delete scoped to owner.
+CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC);
