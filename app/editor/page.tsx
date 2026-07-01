@@ -532,6 +532,28 @@ export default function EditorPage() {
       if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAutocomplete(autocompleteItems[autocompleteIdx]); return; }
       if (e.key === 'Escape') { e.preventDefault(); setShowAutocomplete(false); return; }
     }
+    // On Enter, auto-uppercase a scene heading so slugs are always formatted
+    // like Final Draft/WriterDuet — "int. kitchen - day" → "INT. KITCHEN - DAY".
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const editor = textareaRef.current;
+      if (editor && editor.selectionStart === editor.selectionEnd) {
+        const cursor = editor.selectionStart;
+        const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+        const lineEnd = content.indexOf('\n', cursor) === -1 ? content.length : content.indexOf('\n', cursor);
+        const line = content.substring(lineStart, lineEnd);
+        if (/^\s*(int|ext|int\.\/ext|i\/e)\b/i.test(line) && line !== line.toUpperCase()) {
+          e.preventDefault();
+          const upper = line.toUpperCase();
+          const col = cursor - lineStart;
+          // Uppercase the whole slug, then split it at the caret like Enter would.
+          const next = content.substring(0, lineStart) + upper.substring(0, col) + '\n' + upper.substring(col) + content.substring(lineEnd);
+          setContent(next);
+          const caret = cursor + 1; // toUpperCase preserves length
+          setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+          return;
+        }
+      }
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const editor = textareaRef.current;
