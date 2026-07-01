@@ -253,6 +253,8 @@ export default function EditorPage() {
   const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
   const [sceneNotes, setSceneNotes] = useState<Record<string, string>>({});
+  const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
+  const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
@@ -769,6 +771,25 @@ export default function EditorPage() {
 
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
+
+  // Reorder whole scenes by rewriting the script text — dragging a card on the
+  // board physically moves that scene (heading + body) to the new position.
+  const reorderScenes = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0) return;
+    let cursor = 0;
+    const positions: number[] = [];
+    for (const s of scenesList) {
+      const idx = content.toUpperCase().indexOf(s.text.toUpperCase(), cursor);
+      if (idx < 0) return; // bail if we can't locate a scene cleanly
+      positions.push(idx);
+      cursor = idx + s.text.length;
+    }
+    const preamble = content.substring(0, positions[0]);
+    const blocks = positions.map((p, k) => content.substring(p, k + 1 < positions.length ? positions[k + 1] : content.length));
+    const [moved] = blocks.splice(from, 1);
+    blocks.splice(to, 0, moved);
+    setContent(preamble + blocks.join(''));
+  };
   const filteredScenes = useMemo(() => {
     if (sceneFilter === 'all') return scenesList;
     return scenesList.filter(s => {
@@ -1421,14 +1442,20 @@ export default function EditorPage() {
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
                     onClick={() => jumpToScene(scene.text)}
-                    title="Open this scene in the script"
+                    title="Drag to reorder · click to open in the script"
+                    draggable
+                    onDragStart={(e: any) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
+                    onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
+                    onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
+                    onDrop={(e) => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
                     style={{
                       width: 272, minHeight: 180,
                       background: 'var(--bg-3)',
-                      border: `1px solid rgba(255,255,255,0.06)`,
+                      border: `1px solid ${dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? cardColor : 'rgba(255,255,255,0.06)'}`,
                       borderTop: `2px solid ${cardColor}`,
                       borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-                      transition: 'box-shadow 0.35s, border-color 0.35s', cursor: 'pointer',
+                      opacity: dragSceneIdx === i ? 0.4 : 1,
+                      transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
                     }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
