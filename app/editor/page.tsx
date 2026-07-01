@@ -252,6 +252,7 @@ export default function EditorPage() {
   const [showStash, setShowStash] = useState(false);
   const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
+  const [sceneNotes, setSceneNotes] = useState<Record<string, string>>({});
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
@@ -739,9 +740,22 @@ export default function EditorPage() {
   // Scene colour tags — persisted per script, keyed by slug text so they
   // survive re-parsing. Powers the outline's colour-coding (Arc-style).
   useEffect(() => {
-    if (!currentScript?.id) { setSceneColors({}); return; }
+    if (!currentScript?.id) { setSceneColors({}); setSceneNotes({}); return; }
     try { const raw = localStorage.getItem(`mc_scene_colors_${currentScript.id}`); setSceneColors(raw ? JSON.parse(raw) : {}); } catch { setSceneColors({}); }
+    try { const raw = localStorage.getItem(`mc_scene_notes_${currentScript.id}`); setSceneNotes(raw ? JSON.parse(raw) : {}); } catch { setSceneNotes({}); }
   }, [currentScript?.id]);
+
+  // Per-scene beat/summary — a one-line intent the writer sets on the board,
+  // persisted per script and keyed by slug.
+  const setSceneNote = (sceneText: string, note: string) => {
+    const key = sceneText.trim().toUpperCase();
+    setSceneNotes(prev => {
+      const next = { ...prev };
+      if (note.trim()) next[key] = note; else delete next[key];
+      if (currentScript?.id) { try { localStorage.setItem(`mc_scene_notes_${currentScript.id}`, JSON.stringify(next)); } catch {} }
+      return next;
+    });
+  };
 
   const tagScene = (sceneText: string, color: string) => {
     const key = sceneText.trim().toUpperCase();
@@ -1420,8 +1434,15 @@ export default function EditorPage() {
                       <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
                       <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wc}w · ~{estMins}m</span>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
-                    <div style={{ flex: 1, fontSize: 12, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
+                    <textarea
+                      defaultValue={sceneNotes[scene.text.trim().toUpperCase()] || ''}
+                      onClick={e => e.stopPropagation()}
+                      onBlur={e => setSceneNote(scene.text, e.target.value)}
+                      placeholder="Beat / summary — what has to happen here?"
+                      style={{ width: '100%', minHeight: 44, resize: 'none', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
+                    />
+                    <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                        {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
                     </div>
                     <div style={{ marginTop: 'auto', display: 'flex', gap: 6, paddingTop: 8 }}>
@@ -1483,6 +1504,7 @@ export default function EditorPage() {
                             ); })}
                           </div>
                         </div>
+                        {sceneNotes[scene.text.trim().toUpperCase()] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[scene.text.trim().toUpperCase()]}”</div>}
                         {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
