@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase } from 'lucide-react';
+import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 
@@ -99,6 +99,12 @@ export default function ProfilePage() {
               opacity: saving ? 0.6 : 1 }}>
             <Save size={12} /> {saving ? 'SAVING...' : 'SAVE'}
           </button>
+          <Link href="/settings" title="Settings"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+              background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)',
+              fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer', textDecoration: 'none' }}>
+            <Settings size={12} />
+          </Link>
           <button onClick={handleSignOut}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
               background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)',

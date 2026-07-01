@@ -93,6 +93,23 @@ body.custom-cursor-active * {
   cursor: none !important;
 }
 
+/* Text fields keep a native caret even with the custom cursor active. */
+body.custom-cursor-active input,
+body.custom-cursor-active textarea,
+body.custom-cursor-active [contenteditable="true"] {
+  cursor: text !important;
+}
+
+/* Reduce-motion preference (toggled from Settings) and OS-level setting. */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 ::selection {
   background: rgba(255, 60, 0, 0.30);
   color: var(--fg);
