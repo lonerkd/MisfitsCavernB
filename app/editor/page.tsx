@@ -535,6 +535,22 @@ export default function EditorPage() {
       if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAutocomplete(autocompleteItems[autocompleteIdx]); return; }
       if (e.key === 'Escape') { e.preventDefault(); setShowAutocomplete(false); return; }
     }
+    // Auto-close a parenthetical: typing "(" inserts "()" and drops the caret
+    // inside, so wrylies like "(beat)" are one keystroke instead of two.
+    if (e.key === '(') {
+      const editor = textareaRef.current;
+      if (editor) {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const sel = content.substring(start, end);
+        const next = content.substring(0, start) + '(' + sel + ')' + content.substring(end);
+        setContent(next);
+        const caret = start + 1 + sel.length;
+        setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+        return;
+      }
+    }
     // On Enter, auto-uppercase a scene heading so slugs are always formatted
     // like Final Draft/WriterDuet — "int. kitchen - day" → "INT. KITCHEN - DAY".
     if (e.key === 'Enter' && !e.shiftKey) {
