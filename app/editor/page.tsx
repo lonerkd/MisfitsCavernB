@@ -129,6 +129,9 @@ She leans back. Takes a long sip of cold coffee.
 
 CUT TO:`;
 
+// Standard screenplay transitions offered by the editor's autocomplete.
+const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
+
 // ============================================================================
 // COMPONENTS
 // ============================================================================
@@ -683,11 +686,14 @@ export default function EditorPage() {
         setShowAutocomplete(false);
       }
     } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
-      // Character name autocomplete - suggest known characters matching prefix
+      // Character-cue / transition autocomplete — suggest known characters and
+      // standard transitions matching what's typed.
       const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
-      if (matchingChars.length > 0) {
+      const matchingTrans = TRANSITIONS.filter(t => t.startsWith(trimmed) && t !== trimmed);
+      const items = [...matchingChars, ...matchingTrans];
+      if (items.length > 0) {
         const tokenStart = lineStart + (currentLine.length - currentLine.trimStart().length);
-        openAutocomplete(matchingChars, tokenStart, cursor, ta);
+        openAutocomplete(items, tokenStart, cursor, ta);
       } else {
         setShowAutocomplete(false);
       }
