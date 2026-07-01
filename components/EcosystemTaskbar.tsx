@@ -155,6 +155,7 @@ export default function EcosystemTaskbar() {
       }}
     >
       <motion.div
+        className="mc-taskbar"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}

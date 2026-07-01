@@ -100,6 +100,19 @@ body.custom-cursor-active [contenteditable="true"] {
   cursor: text !important;
 }
 
+/* On phones the taskbar can hold more items than fit — let it scroll
+   horizontally (tooltips are hover-only, so clipping them on touch is fine)
+   and never exceed the viewport width. */
+@media (max-width: 560px) {
+  .mc-taskbar {
+    max-width: calc(100vw - 20px);
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+  }
+  .mc-taskbar::-webkit-scrollbar { display: none; }
+}
+
 /* Reduce-motion preference (toggled from Settings) and OS-level setting. */
 body.reduce-motion *,
 body.reduce-motion *::before,

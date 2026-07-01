@@ -56,7 +56,7 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 
 function Row({ label, hint, control }: { label: string; hint?: string; control: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>{label}</div>
         {hint && <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
