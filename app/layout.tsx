@@ -8,6 +8,7 @@ import { AuthProvider } from '@/lib/context/AuthContext';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
+const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 
 // Self-hosted via next/font: no render-blocking request to Google, no FOUT,
 // and no client-side hit to fonts.googleapis.com (privacy/GDPR-friendly).
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ToastProvider>
             <ProjectProvider>
               <CustomCursor />
+              <CommandPalette />
               <EcosystemTaskbar />
               {children}
             </ProjectProvider>
