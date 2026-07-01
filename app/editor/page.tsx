@@ -216,6 +216,9 @@ export default function EditorPage() {
   const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 });
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteItems, setAutocompleteItems] = useState<string[]>([]);
+  const [autocompleteIdx, setAutocompleteIdx] = useState(0);
+  // Range of text (in the full document) the current suggestion will replace.
+  const [completionRange, setCompletionRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
   // Find & Replace
   const [showFindReplace, setShowFindReplace] = useState(false);
@@ -522,6 +525,13 @@ export default function EditorPage() {
 
   // Tab key cycling (in the textarea: Tab inserts element type based on context)
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Autocomplete navigation takes priority while the popup is open.
+    if (showAutocomplete && autocompleteItems.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setAutocompleteIdx(i => (i - 1 + autocompleteItems.length) % autocompleteItems.length); return; }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAutocomplete(autocompleteItems[autocompleteIdx]); return; }
+      if (e.key === 'Escape') { e.preventDefault(); setShowAutocomplete(false); return; }
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const editor = textareaRef.current;
@@ -554,7 +564,7 @@ export default function EditorPage() {
         editor.setSelectionRange(cursor + 4, cursor + 4);
       }, 0);
     }
-  }, [content]);
+  }, [content, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
@@ -582,30 +592,80 @@ export default function EditorPage() {
     }, 0);
   };
 
+  // Compute the caret's viewport pixel position by mirroring the textarea into
+  // an off-screen div, so the autocomplete popup can sit right under the caret
+  // instead of a fixed corner.
+  const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
+    const rect = ta.getBoundingClientRect();
+    const style = window.getComputedStyle(ta);
+    const mirror = document.createElement('div');
+    const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderLeftWidth', 'boxSizing'] as const;
+    props.forEach(p => { (mirror.style as any)[p] = style[p as any]; });
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+    mirror.style.width = `${ta.clientWidth}px`;
+    mirror.textContent = ta.value.substring(0, pos);
+    const marker = document.createElement('span');
+    marker.textContent = '​';
+    mirror.appendChild(marker);
+    document.body.appendChild(mirror);
+    const top = rect.top - ta.scrollTop + marker.offsetTop + parseFloat(style.lineHeight || '18');
+    const left = rect.left + marker.offsetLeft;
+    document.body.removeChild(mirror);
+    return { top, left };
+  };
+
+  const openAutocomplete = (items: string[], start: number, end: number, ta: HTMLTextAreaElement) => {
+    setAutocompleteItems(items);
+    setAutocompleteIdx(0);
+    setCompletionRange({ start, end });
+    setCursorPos(caretCoords(ta, end));
+    setShowAutocomplete(true);
+  };
+
+  // Replace the in-progress token with the chosen suggestion and drop the caret
+  // right after it, keeping the writer in flow.
+  const acceptAutocomplete = (item: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const { start, end } = completionRange;
+    const next = content.substring(0, start) + item + content.substring(end);
+    setContent(next);
+    setShowAutocomplete(false);
+    const caret = start + item.length;
+    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+  };
+
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
 
-    const cursor = e.target.selectionStart;
-    const currentLine = val.substring(0, cursor).split('\n').pop() || '';
+    const ta = e.target;
+    const cursor = ta.selectionStart;
+    const lineStart = val.lastIndexOf('\n', cursor - 1) + 1;
+    const currentLine = val.substring(lineStart, cursor);
     const trimmed = currentLine.trim();
-    
+
     if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
-      // Location autocomplete
-      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()))];
-      if (locations.length > 0 && currentLine.length < 15) {
-        setAutocompleteItems(locations);
-        setShowAutocomplete(true);
-        setCursorPos({ top: 100, left: 200 });
+      // Location autocomplete — complete the text after the INT./EXT. prefix.
+      const afterPrefix = currentLine.replace(/^(INT\.|EXT\.)\s*/, '');
+      const typed = afterPrefix.trim().toUpperCase();
+      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()).filter(Boolean))];
+      const matches = locations.filter(l => l.toUpperCase().startsWith(typed) && l.toUpperCase() !== typed);
+      if (matches.length > 0) {
+        openAutocomplete(matches, lineStart + (currentLine.length - afterPrefix.length), cursor, ta);
+      } else {
+        setShowAutocomplete(false);
       }
     } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
       // Character name autocomplete - suggest known characters matching prefix
       const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
       if (matchingChars.length > 0) {
-        setAutocompleteItems(matchingChars);
-        setShowAutocomplete(true);
-        setCursorPos({ top: 100, left: 200 });
+        const tokenStart = lineStart + (currentLine.length - currentLine.trimStart().length);
+        openAutocomplete(matchingChars, tokenStart, cursor, ta);
       } else {
         setShowAutocomplete(false);
       }
@@ -1973,16 +2033,22 @@ export default function EditorPage() {
       {/* Autocomplete Popover (Basic implementation) */}
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
-          position: 'absolute', top: cursorPos.top, left: cursorPos.left,
-          background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+          position: 'fixed', top: cursorPos.top, left: cursorPos.left,
+          background: '#111', border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 6, padding: 4, zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          maxHeight: 200, overflowY: 'auto'
+          maxHeight: 200, overflowY: 'auto', minWidth: 160
         }}>
           {autocompleteItems.map((item, idx) => (
-            <div key={idx} style={{ padding: '6px 12px', fontSize: 12, color: 'var(--fg)', cursor: 'pointer' }}>
+            <div
+              key={idx}
+              onMouseDown={(e) => { e.preventDefault(); acceptAutocomplete(item); }}
+              onMouseEnter={() => setAutocompleteIdx(idx)}
+              style={{ padding: '6px 12px', fontSize: 12, color: idx === autocompleteIdx ? '#fff' : 'var(--fg-muted)', background: idx === autocompleteIdx ? 'rgba(255,255,255,0.08)' : 'transparent', borderRadius: 4, cursor: 'pointer', fontFamily: 'Courier Prime, monospace', letterSpacing: 0.5 }}
+            >
               {item}
             </div>
           ))}
+          <div style={{ padding: '4px 12px 2px', fontSize: 8.5, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
         </div>
       )}
 
