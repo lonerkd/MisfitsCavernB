@@ -718,6 +718,41 @@ export default function EditorPage() {
     }
   };
 
+  // Jump from a plot card / outline row straight to that scene in the writing
+  // view (Arc Studio Pro-style board↔script navigation).
+  const jumpToScene = (sceneText: string) => {
+    setActiveView('write');
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const idx = content.toUpperCase().indexOf(sceneText.toUpperCase());
+      if (idx < 0) return;
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      const linesBefore = content.substring(0, idx).split('\n').length;
+      setCursorLine(linesBefore);
+      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
+      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lh);
+    }, 60);
+  };
+
+  // Scene colour tags — persisted per script, keyed by slug text so they
+  // survive re-parsing. Powers the outline's colour-coding (Arc-style).
+  useEffect(() => {
+    if (!currentScript?.id) { setSceneColors({}); return; }
+    try { const raw = localStorage.getItem(`mc_scene_colors_${currentScript.id}`); setSceneColors(raw ? JSON.parse(raw) : {}); } catch { setSceneColors({}); }
+  }, [currentScript?.id]);
+
+  const tagScene = (sceneText: string, color: string) => {
+    const key = sceneText.trim().toUpperCase();
+    setSceneColors(prev => {
+      const next = { ...prev };
+      if (next[key] === color) delete next[key]; else next[key] = color;
+      if (currentScript?.id) { try { localStorage.setItem(`mc_scene_colors_${currentScript.id}`, JSON.stringify(next)); } catch {} }
+      return next;
+    });
+  };
+
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
   const filteredScenes = useMemo(() => {
@@ -1365,19 +1400,21 @@ export default function EditorPage() {
               {scenesList.length === 0 ? (
                  <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
               ) : scenesList.map((scene, i) => {
-                const cardColor = CARD_COLORS[i % CARD_COLORS.length];
+                const cardColor = sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length];
                 const wc = sceneWordCounts[i] || 0;
                 const estMins = Math.max(1, Math.round(wc / 185 * 0.8));
                 return (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+                    onClick={() => jumpToScene(scene.text)}
+                    title="Open this scene in the script"
                     style={{
                       width: 272, minHeight: 180,
                       background: 'var(--bg-3)',
                       border: `1px solid rgba(255,255,255,0.06)`,
                       borderTop: `2px solid ${cardColor}`,
                       borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-                      transition: 'box-shadow 0.35s, border-color 0.35s',
+                      transition: 'box-shadow 0.35s, border-color 0.35s', cursor: 'pointer',
                     }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
@@ -1427,21 +1464,23 @@ export default function EditorPage() {
                   const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
                   return (
                     <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
+                      {(() => { const tag = sceneColors[scene.text.trim().toUpperCase()]; return (
+                        <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
+                      ); })()}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase' }}>{scene.text}</div>
+                          <div onClick={() => jumpToScene(scene.text)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
                           <div style={{ display: 'flex', gap: 4 }}>
-                            {CARD_COLORS.map(color => (
-                              <button 
-                                key={color} 
-                                onClick={() => {
-                                  // Assign color to scene in local state/storage
-                                  toast(`Scene ${globalIdx + 1} tagged`, 'success');
-                                }}
-                                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }} 
+                            {CARD_COLORS.map(color => {
+                              const active = sceneColors[scene.text.trim().toUpperCase()] === color;
+                              return (
+                              <button
+                                key={color}
+                                title={active ? 'Remove tag' : 'Tag scene'}
+                                onClick={() => tagScene(scene.text, color)}
+                                style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
                               />
-                            ))}
+                            ); })}
                           </div>
                         </div>
                         {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
