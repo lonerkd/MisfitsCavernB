@@ -551,6 +551,7 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
 
 function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number; onOpen?: () => void; board?: string | null }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [broken, setBroken] = useState(false);
 
   return (
     <motion.div
@@ -569,7 +570,14 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: 
         background: '#0a0a0a'
       }}
     >
-      <img src={image.url} alt={image.title} onClick={onOpen} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
+      {broken ? (
+        <div onClick={onOpen} style={{ width: '100%', minHeight: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20, background: 'rgba(255,255,255,0.02)', cursor: onOpen ? 'pointer' : 'default' }}>
+          <Image size={22} color="rgba(255,255,255,0.2)" />
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', textAlign: 'center', wordBreak: 'break-word' }}>{image.title || 'Image unavailable'}</span>
+        </div>
+      ) : (
+        <img src={image.url} alt={image.title} onClick={onOpen} onError={() => setBroken(true)} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
+      )}
 
       {sceneCount > 0 && (
         <div style={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#fff', background: 'rgba(99,102,241,0.85)', padding: '2px 7px', borderRadius: 99 }}>
