@@ -513,7 +513,16 @@ export default function ProjectsPage() {
         overflowX: 'auto',
         minHeight: '100vh',
       }}>
-        {loaded && user && projectsList.length === 0 ? (
+        {!loaded ? (
+          <div style={{ display: 'flex', gap: 18, padding: '4px 2px' }}>
+            {[0, 1, 2, 3].map(c => (
+              <div key={c} style={{ width: 260, flexShrink: 0 }}>
+                <div className="skeleton" style={{ height: 14, width: '50%', borderRadius: 4, marginBottom: 16 }} />
+                {[0, 1].map(r => <div key={r} className="skeleton" style={{ height: 96, borderRadius: 12, marginBottom: 12 }} />)}
+              </div>
+            ))}
+          </div>
+        ) : loaded && user && projectsList.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
             style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 4, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Welcome to the cavern</div>
