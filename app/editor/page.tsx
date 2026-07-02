@@ -270,10 +270,10 @@ export default function EditorPage() {
 
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
-    setContent(script.content || PLACEHOLDER);
+    setContent(script.content || '');
     setTitlePage(loadTitlePage(script.id));
     setCharProfiles(loadCharacterProfiles(script.id));
-    setSessionStartWords((script.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+    setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
 
@@ -285,17 +285,17 @@ export default function EditorPage() {
       if (all.length > 0) {
         const latest = all[0];
         setCurrentScript(latest);
-        setContent(latest.content || PLACEHOLDER);
+        setContent(latest.content || '');
         setTitlePage(loadTitlePage(latest.id));
         setCharProfiles(loadCharacterProfiles(latest.id));
-        setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+        setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
       } else {
         const fresh = await createNewScript('My First Screenplay');
         if (fresh) {
           setCurrentScript(fresh);
           setScripts([fresh]);
-          setContent(PLACEHOLDER);
-          setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+          setContent('');
+          setSessionStartWords(0);
         }
       }
     };

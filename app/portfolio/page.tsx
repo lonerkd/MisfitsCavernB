@@ -244,17 +244,6 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             </div>
           )}
 
-          {/* Mood & Aesthetic */}
-          <div>
-            <SectionLabel text="Visual Architecture" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} style={{ aspectRatio: '1/1', background: 'rgba(255,255,255,0.03)', borderRadius: 4, overflow: 'hidden' }}>
-                  <img src={`https://images.unsplash.com/photo-${1500000000000 + i * 1000000}?auto=format&fit=crop&q=60`} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </motion.div>
     </AnimatePresence>
@@ -322,7 +311,7 @@ export default function PortfolioPage() {
       {/* Hero Section */}
       <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-           <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4, filter: 'grayscale(50%)' }} />
+           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(255,60,0,0.08), transparent 55%), #060606' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
