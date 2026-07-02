@@ -1388,7 +1388,8 @@ export default function StudioPage() {
   const linkConceptToScene = async (sceneId: string, conceptId: string) => {
     if (!activeProject) return;
     const { error } = await supabase.from('scene_references').insert({ project_id: activeProject.id, scene_id: sceneId, concept_asset_id: conceptId, created_by: user?.id });
-    if (!error) { setLinkScene(null); loadSceneRefs(activeProject.id); }
+    if (error) { toast(error.message || 'Could not link reference', 'error'); return; }
+    setLinkScene(null); loadSceneRefs(activeProject.id);
   };
   const unlinkConcept = async (refId: string) => {
     await supabase.from('scene_references').delete().eq('id', refId);
