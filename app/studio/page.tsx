@@ -522,7 +522,7 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
         </>
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-        <img src={img.image_url} alt={img.title || ''} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
+        <img src={img.image_url} alt={img.title || ''} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(240,236,228,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>{img.title || 'Untitled'}</span>
           <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
