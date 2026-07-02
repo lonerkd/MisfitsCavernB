@@ -11,10 +11,12 @@ import { getUserProjects, createProject as createDBProject } from '@/lib/supabas
 import { useToast } from '@/components/Toast';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useEscapeKey } from '@/lib/useEscapeKey';
 
 const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
 
 function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (title: string, type: string, logline: string) => Promise<void> }) {
+  useEscapeKey(onClose, open);
   const [title, setTitle] = useState('');
   const [type, setType] = useState(PROJECT_TYPES[0]);
   const [logline, setLogline] = useState('');

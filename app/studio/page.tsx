@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
+import { useEscapeKey } from '@/lib/useEscapeKey';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { saveScript } from '@/lib/scriptos/storage';
@@ -105,6 +106,7 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
 function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isOpen: boolean; onClose: () => void }) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
+  useEscapeKey(onClose, isOpen);
   useEffect(() => {
     if (!asset?.id || !isOpen) { setComments([]); return; }
     supabase.from('asset_comments').select('id,content,timecode,created_at,profiles(username)').eq('asset_id', asset.id).order('created_at').then(({ data }) => setComments(data || []));
@@ -204,6 +206,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
 }
 
 function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: boolean; onClose: () => void; boardId: string; userId: string; onSuccess: () => void }) {
+  useEscapeKey(onClose, isOpen);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -1060,6 +1063,7 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
   );
 }
 function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boolean; onClose: () => void; projectId: string; onSuccess: () => void }) {
+  useEscapeKey(onClose, isOpen);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
