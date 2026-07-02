@@ -527,3 +527,12 @@ BEGIN
   RETURN r;
 END; $$;
 GRANT EXECUTE ON FUNCTION public.toggle_message_reaction(uuid, text) TO authenticated;
+
+-- Chat threads: a message can be a reply to another via parent_message_id.
+-- Top-level channel reads filter parent_message_id IS NULL; replies load per thread.
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS parent_message_id uuid REFERENCES messages(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS messages_parent_idx ON messages (parent_message_id);
+
+-- Concept board organisation into named boards (Pinterest-style).
+ALTER TABLE concept_assets ADD COLUMN IF NOT EXISTS board text;
+CREATE INDEX IF NOT EXISTS concept_assets_project_board_idx ON concept_assets (project_id, board);

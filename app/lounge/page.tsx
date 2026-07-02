@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction } from '@/lib/supabase/messages';
+import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
@@ -72,7 +72,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
   );
 }
 
-function MessageBubble({ msg, currentUserId, onReact }: { msg: Message, currentUserId?: string, onReact: (id: string, emoji: string) => void }) {
+function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount = 0 }: { msg: Message, currentUserId?: string, onReact: (id: string, emoji: string) => void, onOpenThread?: (m: Message) => void, replyCount?: number }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
   const [hovered, setHovered] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -130,7 +130,22 @@ function MessageBubble({ msg, currentUserId, onReact }: { msg: Message, currentU
             </div>
           )}
         </div>
+
+        {/* Reply-in-thread affordance */}
+        {onOpenThread && (
+          <button onClick={() => onOpenThread(msg)} aria-label="Reply in thread"
+            style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.9)', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MessageSquare size={12} />
+          </button>
+        )}
       </div>
+
+      {/* Thread summary */}
+      {replyCount > 0 && onOpenThread && (
+        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 99, padding: '3px 10px', cursor: 'pointer', color: '#10b981', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
+          <MessageSquare size={10} /> {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
+        </button>
+      )}
 
       {/* Reaction pills */}
       {reactions.length > 0 && (
@@ -161,6 +176,10 @@ export default function LoungePage() {
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
   const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
+  const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [threadParent, setThreadParent] = useState<Message | null>(null);
+  const [threadReplies, setThreadReplies] = useState<Message[]>([]);
+  const [threadInput, setThreadInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -210,6 +229,10 @@ export default function LoungePage() {
           reactions: m.reactions || {},
         }));
         setMessages(formatted);
+        if (!dmTarget) {
+          const counts = await getReplyCounts(formatted.map(f => f.id));
+          if (mounted) setReplyCounts(counts);
+        }
       } catch (e) {
         console.error(e);
       }
@@ -290,6 +313,41 @@ export default function LoungePage() {
       return { ...m, reactions: r };
     }));
     try { await toggleReaction(messageId, emoji, currentUser.id); } catch (e) { console.error(e); }
+  };
+
+  // Thread panel — load a message's replies live and let the user reply in it.
+  useEffect(() => {
+    if (!threadParent) { setThreadReplies([]); return; }
+    let mounted = true;
+    const load = async () => {
+      const data = await getThreadReplies(threadParent.id);
+      if (!mounted) return;
+      setThreadReplies(data.map((m: any) => ({ id: m.id, user: m.profiles?.username || 'Unknown', text: m.content, timestamp: new Date(m.created_at), sender_id: m.sender_id, reactions: m.reactions || {} })));
+    };
+    load();
+    const ch = supabase.channel(`thread:${threadParent.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `parent_message_id=eq.${threadParent.id}` }, () => load())
+      .subscribe();
+    return () => { mounted = false; supabase.removeChannel(ch); };
+  }, [threadParent]);
+
+  const handleThreadSend = async () => {
+    const text = threadInput.trim();
+    if (!text || !currentUser || !threadParent) return;
+    setThreadInput('');
+    try {
+      await sendMessage(currentUser.id, text, activeChannel, undefined, threadParent.id);
+      setReplyCounts(prev => ({ ...prev, [threadParent.id]: (prev[threadParent.id] || 0) + 1 }));
+      // Notify the original author of the reply.
+      if (threadParent.sender_id && threadParent.sender_id !== currentUser.id) {
+        notify(threadParent.sender_id, {
+          type: 'reply',
+          title: `${myProfile?.username || 'Someone'} replied in a thread`,
+          body: text.length > 90 ? text.slice(0, 90) + '…' : text,
+          link: '/lounge',
+        }, currentUser.id);
+      }
+    } catch (e) { console.error(e); }
   };
 
   const handleSend = async () => {
@@ -483,7 +541,7 @@ export default function LoungePage() {
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
                   {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : `NO MESSAGES IN #${activeChannel.toUpperCase()} YET`}
                 </div>
-              ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} />)}
+              ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0} />)}
               <div ref={bottomRef} />
             </div>
           </div>
@@ -632,6 +690,44 @@ export default function LoungePage() {
           ); })}
         </div>
       </div>
+
+      {/* Thread drawer */}
+      <AnimatePresence>
+        {threadParent && (
+          <motion.div
+            initial={{ x: 380 }} animate={{ x: 0 }} exit={{ x: 380 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(94vw, 380px)', background: 'rgba(9,9,9,0.98)', borderLeft: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)', zIndex: 200, display: 'flex', flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
+          >
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#10b981' }}>Thread</span>
+              <button onClick={() => setThreadParent(null)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
+              {/* Parent message */}
+              <div style={{ paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: 12, letterSpacing: 1, color: 'var(--accent)', marginBottom: 4 }}>{threadParent.user}</div>
+                <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(240,236,228,0.85)' }}>{threadParent.text}</div>
+              </div>
+              {threadReplies.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#444', marginTop: 40, fontFamily: 'var(--mono)', fontSize: 9.5 }}>No replies yet — start the thread.</div>
+              ) : threadReplies.map(r => (
+                <div key={r.id} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: r.sender_id === currentUser?.id ? '#ff7a4d' : '#10b981', fontWeight: 600 }}>{r.sender_id === currentUser?.id ? 'You' : r.user}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-subtle)' }}>{r.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.6, color: 'rgba(240,236,228,0.82)' }}>{r.text}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8 }}>
+              <input value={threadInput} onChange={e => setThreadInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleThreadSend(); } }}
+                placeholder="Reply…" style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--fg)', fontFamily: 'var(--serif)', fontSize: 13, outline: 'none' }} />
+              <button onClick={handleThreadSend} style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         textarea::placeholder { color: rgba(240,236,228,0.18); }

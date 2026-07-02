@@ -11,7 +11,7 @@ export interface DBMessage {
   created_at: string;
 }
 
-export async function sendMessage(senderId: string, content: string, channelId?: string, receiverId?: string) {
+export async function sendMessage(senderId: string, content: string, channelId?: string, receiverId?: string, parentMessageId?: string) {
   const { data, error } = await supabase
     .from('messages')
     .insert({
@@ -19,7 +19,8 @@ export async function sendMessage(senderId: string, content: string, channelId?:
       receiver_id: receiverId,
       channel_id: channelId,
       content,
-      reactions: {}
+      reactions: {},
+      parent_message_id: parentMessageId ?? null,
     })
     .select()
     .single();
@@ -28,16 +29,42 @@ export async function sendMessage(senderId: string, content: string, channelId?:
   return data;
 }
 
+// Top-level channel messages only (thread replies are hidden from the main
+// stream and read via getThreadReplies).
 export async function getChannelMessages(channelId: string, limit = 100) {
   const { data, error } = await supabase
     .from('messages')
     .select('*, profiles!messages_sender_id_fkey(username, avatar_url)')
     .eq('channel_id', channelId)
+    .is('parent_message_id', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
   return data.reverse();
+}
+
+export async function getThreadReplies(parentMessageId: string) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*, profiles!messages_sender_id_fkey(username, avatar_url)')
+    .eq('parent_message_id', parentMessageId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+// Reply counts for a set of parent message ids (for the "N replies" affordance).
+export async function getReplyCounts(parentIds: string[]): Promise<Record<string, number>> {
+  if (parentIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('messages')
+    .select('parent_message_id')
+    .in('parent_message_id', parentIds);
+  if (error || !data) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data as any[]) if (row.parent_message_id) counts[row.parent_message_id] = (counts[row.parent_message_id] || 0) + 1;
+  return counts;
 }
 
 export async function getDMThread(userId1: string, userId2: string) {
