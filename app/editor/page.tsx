@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
-import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
+import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
@@ -355,11 +355,17 @@ export default function EditorPage() {
     }
   }, [content]);
 
-  // Load revisions when script changes
+  // Load revisions when script changes — from Supabase so locked drafts
+  // persist across devices, with a localStorage fallback while offline.
   useEffect(() => {
-    if (currentScript) {
-      setRevisions(getRevisions(currentScript.id));
-    }
+    if (!currentScript) return;
+    let active = true;
+    (async () => {
+      const remote = await fetchRevisionsDB(currentScript.id);
+      if (!active) return;
+      setRevisions(remote.length > 0 ? remote : getRevisions(currentScript.id));
+    })();
+    return () => { active = false; };
   }, [currentScript]);
 
   // Typewriter Centering Effect
@@ -456,12 +462,19 @@ export default function EditorPage() {
     toast('Replaced 1 occurrence', 'success');
   }, [findText, replaceText, toast]);
 
-  const handleLockRevision = useCallback(() => {
+  const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
-    const { revision: rev } = createRevision(currentScript.id, content);
-    setRevisions(prev => [...prev, rev]);
-    toast(`Locked as ${rev.label}`, 'success');
-  }, [currentScript, content, toast]);
+    const rev = await createRevisionDB(currentScript.id, content, revisions.length);
+    if (rev) {
+      setRevisions(prev => [...prev, rev]);
+      toast(`Locked as ${rev.label}`, 'success');
+    } else {
+      // Offline / no access — fall back to a local snapshot so work isn't lost.
+      const { revision } = createRevision(currentScript.id, content);
+      setRevisions(prev => [...prev, revision]);
+      toast(`Locked locally as ${revision.label}`, 'info');
+    }
+  }, [currentScript, content, revisions.length, toast]);
 
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {

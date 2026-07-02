@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
+import { supabase } from '@/lib/supabase/client';
 
 export const REVISION_COLORS = [
   { name: 'White',     color: '#ffffff', bg: 'rgba(255,255,255,0.05)' },
@@ -69,6 +70,37 @@ export function saveRevision(scriptId: string, revision: Revision): { success: b
       error: error.message || 'Failed to save revision'
     };
   }
+}
+
+// ── Supabase-backed persistence ─────────────────────────────────────────────
+// Locked revisions live in the script_revisions table so they survive across
+// devices and sessions (localStorage was per-browser and lost on cleanup).
+
+export async function fetchRevisionsDB(scriptId: string): Promise<Revision[]> {
+  if (!scriptId) return [];
+  const { data, error } = await supabase
+    .from('script_revisions')
+    .select('id,color_index,label,snapshot,created_at')
+    .eq('script_id', scriptId)
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((r: any) => ({ id: r.id, colorIndex: r.color_index, date: r.created_at, label: r.label, snapshot: r.snapshot }));
+}
+
+export async function createRevisionDB(scriptId: string, content: string, existingCount: number, label?: string): Promise<Revision | null> {
+  const colorIndex = existingCount % REVISION_COLORS.length;
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('script_revisions')
+    .insert({ script_id: scriptId, color_index: colorIndex, label: label || `${REVISION_COLORS[colorIndex].name} Revision`, snapshot: content, created_by: user?.id })
+    .select('id,color_index,label,snapshot,created_at')
+    .single();
+  if (error || !data) return null;
+  return { id: data.id, colorIndex: data.color_index, date: data.created_at, label: data.label, snapshot: data.snapshot };
+}
+
+export async function deleteRevisionDB(id: string): Promise<void> {
+  await supabase.from('script_revisions').delete().eq('id', id);
 }
 
 export function createRevision(scriptId: string, content: string, label?: string): { revision: Revision; result: { success: boolean; error?: string } } {
