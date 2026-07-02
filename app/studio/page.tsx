@@ -1208,6 +1208,7 @@ export default function StudioPage() {
   const [conceptUrl, setConceptUrl] = useState('');
   const [conceptBoard, setConceptBoard] = useState('');
   const [activeConceptBoard, setActiveConceptBoard] = useState<string>('All');
+  const [adding, setAdding] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const [showAddBeat, setShowAddBeat] = useState(false);
@@ -1833,17 +1834,21 @@ export default function StudioPage() {
                 <input placeholder="Board (e.g. Lighting)" value={conceptBoard} onChange={e => setConceptBoard(e.target.value)} list="mc-board-list" style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
                 <button
                   className="link-btn"
+                  disabled={adding || !conceptUrl.trim()}
                   onClick={async () => {
-                    if (!activeProject || !conceptUrl.trim()) return;
-                    const { data: { user } } = await supabase.auth.getUser();
-                    const board = (conceptBoard.trim() || (activeConceptBoard !== 'All' ? activeConceptBoard : '')) || null;
-                    const { error } = await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
-                    if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
-                    await refreshProject(activeProject.id);
-                    toast('Reference added', 'success');
-                    setConceptTitle(''); setConceptUrl(''); setConceptBoard(''); setShowAddConcept(false);
+                    if (!activeProject || !conceptUrl.trim() || adding) return;
+                    setAdding(true);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      const board = (conceptBoard.trim() || (activeConceptBoard !== 'All' ? activeConceptBoard : '')) || null;
+                      const { error } = await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
+                      if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
+                      await refreshProject(activeProject.id);
+                      toast('Reference added', 'success');
+                      setConceptTitle(''); setConceptUrl(''); setConceptBoard(''); setShowAddConcept(false);
+                    } finally { setAdding(false); }
                   }}
-                >Add</button>
+                >{adding ? 'Adding…' : 'Add'}</button>
               </div>
             )}
 
@@ -1923,14 +1928,18 @@ export default function StudioPage() {
                      <textarea placeholder="What happens in this beat?" value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, minHeight: 60, resize: 'vertical' }} />
                      <button
                        className="link-btn"
+                       disabled={adding || !beatTitle.trim()}
                        onClick={async () => {
-                         if (!activeProject || !beatTitle.trim()) return;
-                         const { error } = await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
-                         if (error) { toast(error.message || 'Could not add beat', 'error'); return; }
-                         await refreshProject(activeProject.id);
-                         setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
+                         if (!activeProject || !beatTitle.trim() || adding) return;
+                         setAdding(true);
+                         try {
+                           const { error } = await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                           if (error) { toast(error.message || 'Could not add beat', 'error'); return; }
+                           await refreshProject(activeProject.id);
+                           setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
+                         } finally { setAdding(false); }
                        }}
-                     >Add Beat</button>
+                     >{adding ? 'Adding…' : 'Add Beat'}</button>
                    </div>
                  )}
 
@@ -2008,13 +2017,17 @@ export default function StudioPage() {
                        </div>
                        <button
                          className="link-btn"
+                         disabled={adding || !sceneTitle.trim()}
                          onClick={async () => {
-                           if (!activeProject || !sceneTitle.trim()) return;
-                           const nextNum = (activeProject.scenes?.length || 0) + 1;
-                           const { error } = await supabase.from('scenes').insert({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || null, shoot_day: Number(sceneDay) || 1 });
-                           if (error) { toast(error.message || 'Could not add scene', 'error'); return; }
-                           await refreshProject(activeProject.id);
-                           setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
+                           if (!activeProject || !sceneTitle.trim() || adding) return;
+                           setAdding(true);
+                           try {
+                             const nextNum = (activeProject.scenes?.length || 0) + 1;
+                             const { error } = await supabase.from('scenes').insert({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || null, shoot_day: Number(sceneDay) || 1 });
+                             if (error) { toast(error.message || 'Could not add scene', 'error'); return; }
+                             await refreshProject(activeProject.id);
+                             setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
+                           } finally { setAdding(false); }
                          }}
                        >Add Scene</button>
                      </div>
@@ -2200,15 +2213,19 @@ export default function StudioPage() {
                       </select>
                       <button
                         className="link-btn"
+                        disabled={adding || !campaignTitle.trim()}
                         onClick={async () => {
-                          if (!activeProject || !campaignTitle.trim()) return;
-                          const { data: { user } } = await supabase.auth.getUser();
-                          const { error } = await supabase.from('campaigns').insert({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
-                          if (error) { toast(error.message || 'Could not add campaign', 'error'); return; }
-                          await refreshProject(activeProject.id);
-                          setCampaignTitle(''); setShowAddCampaign(false);
+                          if (!activeProject || !campaignTitle.trim() || adding) return;
+                          setAdding(true);
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            const { error } = await supabase.from('campaigns').insert({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                            if (error) { toast(error.message || 'Could not add campaign', 'error'); return; }
+                            await refreshProject(activeProject.id);
+                            setCampaignTitle(''); setShowAddCampaign(false);
+                          } finally { setAdding(false); }
                         }}
-                      >Add</button>
+                      >{adding ? 'Adding…' : 'Add'}</button>
                     </div>
                   )}
 
