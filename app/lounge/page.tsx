@@ -21,6 +21,7 @@ interface Message {
   sender_id?: string;
   mine?: boolean;
   reactions?: Record<string, string[]>;
+  avatar_url?: string | null;
 }
 
 const REACTION_CHOICES = ['👍', '❤️', '🔥', '🎬', '😂', '🎉', '👀', '🙏'];
@@ -95,7 +96,8 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       }}
     >
       {!isMe && (
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+          <Avatar src={msg.avatar_url} name={msg.user} size={20} />
           <span style={{ fontFamily: 'var(--display)', fontSize: 13, letterSpacing: 2, color: 'var(--accent)' }}>
             {msg.user}
           </span>
@@ -230,6 +232,7 @@ export default function LoungePage() {
           timestamp: new Date(m.created_at),
           sender_id: m.sender_id,
           reactions: m.reactions || {},
+          avatar_url: m.profiles?.avatar_url,
         }));
         setMessages(formatted);
         if (!dmTarget) {
