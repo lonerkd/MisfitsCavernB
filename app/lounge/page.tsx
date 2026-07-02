@@ -458,7 +458,7 @@ export default function LoungePage() {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* Channel Sidebar (Slack-style) */}
-        <div style={{
+        <div className="mc-lounge-channels" style={{
           width: 220,
           background: '#0a0a0a',
           borderRight: '1px solid rgba(255,255,255,0.04)',
@@ -632,7 +632,7 @@ export default function LoungePage() {
         </div>
 
         {/* Crew sidebar */}
-        <div style={{
+        <div className="mc-lounge-crew" style={{
           width: 240,
           borderLeft: '1px solid rgba(255,255,255,0.04)',
           background: '#090909',

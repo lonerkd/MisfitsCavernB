@@ -113,6 +113,13 @@ body.custom-cursor-active [contenteditable="true"] {
   .mc-taskbar::-webkit-scrollbar { display: none; }
 }
 
+/* Lounge: reclaim space for the chat on phones — hide the crew column and
+   slim the channel rail so messages aren't crushed. */
+@media (max-width: 760px) {
+  .mc-lounge-crew { display: none !important; }
+  .mc-lounge-channels { width: 132px !important; }
+}
+
 /* Two-column suite layouts collapse to a single column on small screens. */
 @media (max-width: 860px) {
   .mc-collapse { grid-template-columns: 1fr !important; gap: 28px !important; }
