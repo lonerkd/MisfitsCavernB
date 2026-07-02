@@ -11,6 +11,7 @@ import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
+import Avatar from '@/components/Avatar';
 
 interface Message {
   id: string;
@@ -496,13 +497,7 @@ export default function LoungePage() {
           
           <div style={{ marginTop: 'auto', padding: 20, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {myProfile?.avatar_url ? (
-                  <img src={myProfile.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
-                    {(myProfile?.username || currentUser?.email || '?')[0]?.toUpperCase()}
-                  </div>
-                )}
+                <Avatar src={myProfile?.avatar_url} name={myProfile?.username || currentUser?.email} size={28} radius={6} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                    <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{myProfile?.username || 'You'}</div>
                    <div style={{ fontSize: 9, color: myProfile?.status === 'BUSY' ? '#f59e0b' : '#00cc66' }}>● {myProfile?.status === 'BUSY' ? 'Busy' : 'Available'}</div>
