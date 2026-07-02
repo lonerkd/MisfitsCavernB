@@ -71,6 +71,7 @@ export default function ManagePortfolioPage() {
   };
 
   const removeProject = async (id: string) => {
+    if (!confirm('Delete this portfolio project and its media? This cannot be undone.')) return;
     try {
       await deletePortfolioProject(id);
       setProjects(prev => prev.filter(p => p.id !== id));
@@ -99,6 +100,7 @@ export default function ManagePortfolioPage() {
   };
 
   const removeMedia = async (projectId: string, mediaId: string) => {
+    if (!confirm('Remove this media item?')) return;
     try {
       await deletePortfolioMedia(mediaId);
       setProjects(prev => prev.map(p => p.id === projectId ? { ...p, portfolio_media: p.portfolio_media.filter(m => m.id !== mediaId) } : p));

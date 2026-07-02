@@ -672,8 +672,11 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
   };
   const delTask = async (id: string) => {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    const prev = tasks;
     setTasks(p => p.filter(x => x.id !== id));
-    await supabase.from('project_tasks').delete().eq('id', id);
+    const { error } = await supabase.from('project_tasks').delete().eq('id', id);
+    if (error) { setErr(error.message); setTasks(prev); }
   };
 
   const addBudget = async (category: string, amount: number) => {
@@ -683,8 +686,11 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setBudget(p => [...p, data as BudgetRow]);
   };
   const delBudget = async (id: string) => {
+    if (!confirm('Delete this budget line? This cannot be undone.')) return;
+    const prev = budget;
     setBudget(p => p.filter(x => x.id !== id));
-    await supabase.from('budget_items').delete().eq('id', id);
+    const { error } = await supabase.from('budget_items').delete().eq('id', id);
+    if (error) { setErr(error.message); setBudget(prev); }
   };
   const setActual = async (id: string, actual: number | null) => {
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
@@ -743,8 +749,11 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setTimeline(p => [...p, data as TimelineRow]);
   };
   const delTimeline = async (id: string) => {
+    if (!confirm('Delete this milestone? This cannot be undone.')) return;
+    const prev = timeline;
     setTimeline(p => p.filter(x => x.id !== id));
-    await supabase.from('timeline_items').delete().eq('id', id);
+    const { error } = await supabase.from('timeline_items').delete().eq('id', id);
+    if (error) { setErr(error.message); setTimeline(prev); }
   };
 
   const addCrew = async (username: string, role: string) => {
@@ -757,8 +766,11 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     load();
   };
   const delCrew = async (id: string) => {
+    if (!confirm('Remove this crew member from the project?')) return;
+    const prev = crew;
     setCrew(p => p.filter(x => x.id !== id));
-    await supabase.from('project_crew').delete().eq('id', id);
+    const { error } = await supabase.from('project_crew').delete().eq('id', id);
+    if (error) { setErr(error.message); setCrew(prev); }
   };
 
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
