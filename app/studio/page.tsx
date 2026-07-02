@@ -1223,12 +1223,13 @@ export default function StudioPage() {
   };
   const saveScene = async () => {
     if (!editSceneId || !activeProject) return;
-    await supabase.from('scenes').update({
+    const { error } = await supabase.from('scenes').update({
       title: editScene.title.trim(),
       location: editScene.location.trim() || null,
       time_of_day: editScene.time_of_day,
       shoot_day: Number(editScene.shoot_day) || 1,
     }).eq('id', editSceneId);
+    if (error) { toast(error.message || 'Could not save scene', 'error'); return; }
     setEditSceneId(null);
     await refreshProject(activeProject.id);
   };
@@ -1307,7 +1308,8 @@ export default function StudioPage() {
     if (!activeProject) return;
     const order = ['planned', 'shot', 'wrapped'];
     const next = order[(order.indexOf(s.status || 'planned') + 1) % order.length];
-    await supabase.from('scenes').update({ status: next }).eq('id', s.id);
+    const { error } = await supabase.from('scenes').update({ status: next }).eq('id', s.id);
+    if (error) { toast(error.message || 'Could not update status', 'error'); return; }
     await refreshProject(activeProject.id);
   };
 
@@ -1882,7 +1884,7 @@ export default function StudioPage() {
                       index={lightboxIdx}
                       onIndex={setLightboxIdx}
                       onClose={() => setLightboxIdx(null)}
-                      onSetBoard={async (id, board) => { await supabase.from('concept_assets').update({ board }).eq('id', id); await refreshProject(activeProject!.id); }}
+                      onSetBoard={async (id, board) => { const { error } = await supabase.from('concept_assets').update({ board }).eq('id', id); if (error) { toast(error.message || 'Could not move to board', 'error'); return; } await refreshProject(activeProject!.id); toast(board ? `Moved to "${board}"` : 'Removed from board', 'success'); }}
                       boards={boards}
                     />
                   )}
