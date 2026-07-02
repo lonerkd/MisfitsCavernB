@@ -1197,6 +1197,9 @@ export default function EditorPage() {
                     setScripts([...scripts, s]);
                     setCurrentScript(s);
                     setContent('');
+                    toast('New script created', 'success');
+                  } else {
+                    toast('Could not create script — check your connection', 'error');
                   }
                 }} style={{
                   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
@@ -1245,6 +1248,8 @@ export default function EditorPage() {
                         setCurrentScript(s);
                         setContent(TEMPLATES[key]);
                         toast(`Created from "${key}" template`, 'success');
+                      } else {
+                        toast('Could not create script', 'error');
                       }
                     }} style={{
                       fontSize: 8, padding: '4px 9px',
