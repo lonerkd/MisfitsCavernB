@@ -10,6 +10,7 @@ import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggl
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
+import { useToast } from '@/components/Toast';
 
 interface Message {
   id: string;
@@ -173,6 +174,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
 
 export default function LoungePage() {
   useRequireAuth();
+  const { toast } = useToast();
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
   const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
@@ -347,7 +349,7 @@ export default function LoungePage() {
           link: '/lounge',
         }, currentUser.id);
       }
-    } catch (e) { console.error(e); }
+    } catch (e: any) { console.error(e); setThreadInput(text); toast(e?.message || 'Reply failed to send', 'error'); }
   };
 
   const handleSend = async () => {
@@ -379,8 +381,10 @@ export default function LoungePage() {
             link: '/lounge',
           }, currentUser.id));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setInput(text); // restore the unsent message
+      toast(e?.message || 'Message failed to send', 'error');
     }
   };
 
