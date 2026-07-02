@@ -167,6 +167,7 @@ export default function LoungePage() {
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showEmoji, setShowEmoji] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -241,6 +242,19 @@ export default function LoungePage() {
     typingChannelRef.current = { ch, uname };
     return () => { supabase.removeChannel(ch); setTypingUsers([]); };
   }, [activeChannel, myProfile?.username]);
+
+  // Real live presence — who is actually in the Lounge right now (Discord/
+  // Slack style), tracked over a shared Realtime presence channel.
+  useEffect(() => {
+    if (!currentUser) return;
+    const ch = supabase.channel('lounge-presence', { config: { presence: { key: currentUser.id } } });
+    ch.on('presence', { event: 'sync' }, () => {
+      setOnlineIds(new Set(Object.keys(ch.presenceState())));
+    }).subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') await ch.track({ online_at: Date.now() });
+    });
+    return () => { supabase.removeChannel(ch); };
+  }, [currentUser]);
 
   const broadcastTyping = () => {
     const now = Date.now();
@@ -342,7 +356,7 @@ export default function LoungePage() {
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-muted)' }}>
-              {crewList.filter(m => m.online).length} available · {crewList.length} crew
+              {onlineIds.size} online · {crewList.length} crew
             </span>
           </div>
         </div>
@@ -537,12 +551,14 @@ export default function LoungePage() {
             Crew
           </div>
 
-          {crewList.map((member, i) => (
+          {[...crewList].sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id))).map((member, i) => {
+            const isOnline = onlineIds.has(member.id);
+            return (
             <motion.div
-              key={i}
+              key={member.id || i}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.08 }}
+              transition={{ delay: Math.min(i, 8) * 0.05 }}
               style={{
                 padding: '10px 12px',
                 border: '1px solid rgba(255,255,255,0.04)',
@@ -550,21 +566,21 @@ export default function LoungePage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                background: member.online ? 'rgba(0,204,102,0.03)' : 'transparent',
+                background: isOnline ? 'rgba(0,204,102,0.03)' : 'transparent',
               }}
             >
               <div style={{
                 width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: member.online ? '#00cc66' : '#333',
-                boxShadow: member.online ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
+                background: isOnline ? '#00cc66' : '#333',
+                boxShadow: isOnline ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
               }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: member.online ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: isOnline ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
                     {member.name}
                   </div>
-                  {member.online && (
-                    <div style={{ fontSize: 7, color: '#00cc66', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Open</div>
+                  {isOnline && (
+                    <div style={{ fontSize: 7, color: '#00cc66', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
@@ -572,7 +588,7 @@ export default function LoungePage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+          ); })}
         </div>
       </div>
 
