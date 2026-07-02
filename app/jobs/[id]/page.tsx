@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { notify } from '@/lib/supabase/notifications';
+import { useToast } from '@/components/Toast';
 
 interface Job {
   id: string;
@@ -66,6 +67,7 @@ const appStatusStyle = (status: 'pending' | 'accepted' | 'rejected'): React.CSSP
 export default function JobDetailPage() {
   const params = useParams();
   const jobId = params?.id as string;
+  const { toast } = useToast();
 
   const [job, setJob] = useState<Job | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -179,7 +181,9 @@ export default function JobDetailPage() {
       .from('job_applications')
       .update({ status: newStatus })
       .eq('id', appId);
-    if (!error) {
+    if (error) { toast(error.message || 'Could not update application', 'error'); return; }
+    {
+      toast(newStatus === 'accepted' ? 'Applicant accepted' : 'Application declined', 'success');
       setApplications(prev =>
         prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );

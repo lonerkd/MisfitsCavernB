@@ -471,7 +471,10 @@ export default function JobsPage() {
   };
 
   const handleCloseJob = async (jobId: string) => {
-    await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
+    if (!confirm('Close this job posting? It will stop accepting applications.')) return;
+    const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
+    if (error) { toast(error.message || 'Could not close job', 'error'); return; }
+    toast('Job closed', 'success');
     if (user) loadMyJobs(user.id);
     loadJobs();
   };
