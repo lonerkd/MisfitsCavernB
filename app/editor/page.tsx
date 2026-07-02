@@ -957,7 +957,7 @@ export default function EditorPage() {
 
       {/* TOOLBAR */}
       {!focusMode && (
-        <header style={{
+        <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
           background: 'rgba(6,6,6,0.94)',
           backdropFilter: 'blur(24px) saturate(1.4)',

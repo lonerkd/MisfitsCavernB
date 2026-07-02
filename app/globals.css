@@ -113,6 +113,12 @@ body.custom-cursor-active [contenteditable="true"] {
   .mc-taskbar::-webkit-scrollbar { display: none; }
 }
 
+/* ScriptOS toolbar scrolls horizontally on phones rather than overflowing. */
+@media (max-width: 820px) {
+  .mc-editor-header { overflow-x: auto; gap: 10px; scrollbar-width: none; }
+  .mc-editor-header::-webkit-scrollbar { display: none; }
+}
+
 /* Lounge: reclaim space for the chat on phones — hide the crew column and
    slim the channel rail so messages aren't crushed. */
 @media (max-width: 760px) {
