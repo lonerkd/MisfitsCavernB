@@ -17,7 +17,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle } from 'lucide-react';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 
@@ -489,7 +489,45 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-function ConceptCard({ image, index, onRemove, sceneCount = 0 }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number }) {
+// Pinterest-style full-screen pin viewer with keyboard navigation.
+function ConceptLightbox({ images, index, onIndex, onClose }: { images: any[]; index: number; onIndex: (i: number) => void; onClose: () => void }) {
+  const img = images[index];
+  const go = (d: number) => onIndex((index + d + images.length) % images.length);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowRight') go(1);
+      else if (e.key === 'ArrowLeft') go(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!img) return null;
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+      {images.length > 1 && (
+        <>
+          <button onClick={(e) => { e.stopPropagation(); go(-1); }} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(1); }} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
+        </>
+      )}
+      <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <img src={img.image_url} alt={img.title || ''} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(240,236,228,0.7)' }}>
+          <span>{img.title || 'Untitled'}</span>
+          <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
+          <span style={{ color: 'rgba(240,236,228,0.4)' }}>{index + 1} / {images.length}</span>
+          <a href={img.image_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#6366f1', textDecoration: 'none' }}>open original ↗</a>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number; onOpen?: () => void }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -509,7 +547,7 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0 }: { image: { id: 
         background: '#0a0a0a'
       }}
     >
-      <img src={image.url} alt={image.title} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s' }} />
+      <img src={image.url} alt={image.title} onClick={onOpen} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
 
       {sceneCount > 0 && (
         <div style={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#fff', background: 'rgba(99,102,241,0.85)', padding: '2px 7px', borderRadius: 99 }}>
@@ -1140,6 +1178,7 @@ export default function StudioPage() {
   const [showAddConcept, setShowAddConcept] = useState(false);
   const [conceptTitle, setConceptTitle] = useState('');
   const [conceptUrl, setConceptUrl] = useState('');
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const [showAddBeat, setShowAddBeat] = useState(false);
   const [beatTitle, setBeatTitle] = useState('');
@@ -1773,16 +1812,25 @@ export default function StudioPage() {
             )}
 
             {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
-              <div style={{ columnCount: 3, columnGap: 16 }}>
+              <div className="mc-masonry">
                 {activeProject.concept_assets.map((img, i) => {
                   const sceneCount = Object.values(sceneRefs).reduce((n, arr) => n + (arr.some(r => r.concept_asset_id === img.id) ? 1 : 0), 0);
                   return (
-                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} onRemove={async () => { await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject.id); }} />
+                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} onOpen={() => setLightboxIdx(i)} onRemove={async () => { await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject.id); }} />
                   );
                 })}
               </div>
             ) : (
               <EmptyState icon={<Image size={28} />} title="No concept references yet" subtitle="Paste an image URL above to start your visual moodboard. References can be linked to scenes and characters." />
+            )}
+
+            {lightboxIdx !== null && activeProject?.concept_assets?.[lightboxIdx] && (
+              <ConceptLightbox
+                images={activeProject.concept_assets as any[]}
+                index={lightboxIdx}
+                onIndex={setLightboxIdx}
+                onClose={() => setLightboxIdx(null)}
+              />
             )}
           </motion.div>
         )}
