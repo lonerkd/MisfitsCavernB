@@ -41,6 +41,7 @@ export interface ConceptAsset {
   id: string;
   image_url: string;
   title?: string;
+  board?: string | null;
 }
 
 export interface Scene {

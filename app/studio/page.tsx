@@ -490,8 +490,10 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
 }
 
 // Pinterest-style full-screen pin viewer with keyboard navigation.
-function ConceptLightbox({ images, index, onIndex, onClose }: { images: any[]; index: number; onIndex: (i: number) => void; onClose: () => void }) {
+function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards = [] }: { images: any[]; index: number; onIndex: (i: number) => void; onClose: () => void; onSetBoard?: (id: string, board: string | null) => void; boards?: string[] }) {
   const img = images[index];
+  const [boardInput, setBoardInput] = useState('');
+  useEffect(() => { setBoardInput(img?.board || ''); }, [img?.id, img?.board]);
   const go = (d: number) => onIndex((index + d + images.length) % images.length);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -516,18 +518,33 @@ function ConceptLightbox({ images, index, onIndex, onClose }: { images: any[]; i
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <img src={img.image_url} alt={img.title || ''} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(240,236,228,0.7)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(240,236,228,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>{img.title || 'Untitled'}</span>
           <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
           <span style={{ color: 'rgba(240,236,228,0.4)' }}>{index + 1} / {images.length}</span>
           <a href={img.image_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#6366f1', textDecoration: 'none' }}>open original ↗</a>
+          {onSetBoard && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+              <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
+              <input
+                list="mc-lightbox-boards"
+                value={boardInput}
+                placeholder="board…"
+                onChange={(e) => setBoardInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') onSetBoard(img.id, boardInput.trim() || null); }}
+                onBlur={() => { if ((boardInput.trim() || null) !== (img.board || null)) onSetBoard(img.id, boardInput.trim() || null); }}
+                style={{ width: 130, padding: '4px 8px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: 6, color: '#c084fc', fontFamily: 'var(--mono)', fontSize: 10, outline: 'none' }}
+              />
+              <datalist id="mc-lightbox-boards">{boards.map(b => <option key={b} value={b} />)}</datalist>
+            </span>
+          )}
         </div>
       </motion.div>
     </motion.div>
   );
 }
 
-function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number; onOpen?: () => void }) {
+function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number; onOpen?: () => void; board?: string | null }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -552,6 +569,11 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen }: { image
       {sceneCount > 0 && (
         <div style={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#fff', background: 'rgba(99,102,241,0.85)', padding: '2px 7px', borderRadius: 99 }}>
           {sceneCount} {sceneCount === 1 ? 'scene' : 'scenes'}
+        </div>
+      )}
+      {board && (
+        <div style={{ position: 'absolute', top: 8, right: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#c084fc', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', padding: '2px 7px', borderRadius: 99, backdropFilter: 'blur(4px)' }}>
+          {board}
         </div>
       )}
 
@@ -1178,6 +1200,8 @@ export default function StudioPage() {
   const [showAddConcept, setShowAddConcept] = useState(false);
   const [conceptTitle, setConceptTitle] = useState('');
   const [conceptUrl, setConceptUrl] = useState('');
+  const [conceptBoard, setConceptBoard] = useState('');
+  const [activeConceptBoard, setActiveConceptBoard] = useState<string>('All');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const [showAddBeat, setShowAddBeat] = useState(false);
@@ -1795,43 +1819,72 @@ export default function StudioPage() {
             </div>
 
             {showAddConcept && (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 24, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
                 <input placeholder="Title" value={conceptTitle} onChange={e => setConceptTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
                 <input placeholder="Image URL" value={conceptUrl} onChange={e => setConceptUrl(e.target.value)} style={{ flex: 2, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                <input placeholder="Board (e.g. Lighting)" value={conceptBoard} onChange={e => setConceptBoard(e.target.value)} list="mc-board-list" style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
                 <button
                   className="link-btn"
                   onClick={async () => {
                     if (!activeProject || !conceptUrl.trim()) return;
                     const { data: { user } } = await supabase.auth.getUser();
-                    await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), created_by: user?.id });
+                    const board = (conceptBoard.trim() || (activeConceptBoard !== 'All' ? activeConceptBoard : '')) || null;
+                    await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
                     await refreshProject(activeProject.id);
-                    setConceptTitle(''); setConceptUrl(''); setShowAddConcept(false);
+                    setConceptTitle(''); setConceptUrl(''); setConceptBoard(''); setShowAddConcept(false);
                   }}
                 >Add</button>
               </div>
             )}
 
-            {(activeProject?.concept_assets && activeProject.concept_assets.length > 0) ? (
-              <div className="mc-masonry">
-                {activeProject.concept_assets.map((img, i) => {
-                  const sceneCount = Object.values(sceneRefs).reduce((n, arr) => n + (arr.some(r => r.concept_asset_id === img.id) ? 1 : 0), 0);
-                  return (
-                  <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} onOpen={() => setLightboxIdx(i)} onRemove={async () => { await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject.id); }} />
-                  );
-                })}
-              </div>
-            ) : (
-              <EmptyState icon={<Image size={28} />} title="No concept references yet" subtitle="Paste an image URL above to start your visual moodboard. References can be linked to scenes and characters." />
-            )}
+            {(() => {
+              const all = (activeProject?.concept_assets || []) as any[];
+              const boards = Array.from(new Set(all.map(a => (a.board || '').trim()).filter(Boolean))).sort();
+              const filtered = activeConceptBoard === 'All' ? all : activeConceptBoard === 'Unsorted' ? all.filter(a => !a.board) : all.filter(a => a.board === activeConceptBoard);
+              const tabs = ['All', ...boards, ...(all.some(a => !a.board) ? ['Unsorted'] : [])];
+              return (
+                <>
+                  <datalist id="mc-board-list">{boards.map(b => <option key={b} value={b} />)}</datalist>
+                  {all.length > 0 && tabs.length > 1 && (
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+                      {tabs.map(b => {
+                        const count = b === 'All' ? all.length : b === 'Unsorted' ? all.filter(a => !a.board).length : all.filter(a => a.board === b).length;
+                        const on = activeConceptBoard === b;
+                        return (
+                          <button key={b} onClick={() => setActiveConceptBoard(b)} style={{ padding: '6px 14px', borderRadius: 99, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1px solid ${on ? 'rgba(168,85,247,0.5)' : 'rgba(255,255,255,0.1)'}`, background: on ? 'rgba(168,85,247,0.14)' : 'transparent', color: on ? '#c084fc' : 'var(--fg-muted)', fontFamily: 'var(--mono)', letterSpacing: 0.5, display: 'flex', gap: 6, alignItems: 'center' }}>
+                            {b} <span style={{ fontSize: 9, opacity: 0.6 }}>{count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
-            {lightboxIdx !== null && activeProject?.concept_assets?.[lightboxIdx] && (
-              <ConceptLightbox
-                images={activeProject.concept_assets as any[]}
-                index={lightboxIdx}
-                onIndex={setLightboxIdx}
-                onClose={() => setLightboxIdx(null)}
-              />
-            )}
+                  {filtered.length > 0 ? (
+                    <div className="mc-masonry">
+                      {filtered.map((img, i) => {
+                        const sceneCount = Object.values(sceneRefs).reduce((n, arr) => n + (arr.some(r => r.concept_asset_id === img.id) ? 1 : 0), 0);
+                        return (
+                        <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} board={img.board} onOpen={() => setLightboxIdx(i)} onRemove={async () => { await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject!.id); }} />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <EmptyState icon={<Image size={28} />} title={all.length === 0 ? 'No concept references yet' : `Nothing in "${activeConceptBoard}" yet`} subtitle="Paste an image URL above to start your visual moodboard. Group pins into boards like Lighting, Wardrobe or Locations." />
+                  )}
+
+                  {lightboxIdx !== null && filtered[lightboxIdx] && (
+                    <ConceptLightbox
+                      images={filtered}
+                      index={lightboxIdx}
+                      onIndex={setLightboxIdx}
+                      onClose={() => setLightboxIdx(null)}
+                      onSetBoard={async (id, board) => { await supabase.from('concept_assets').update({ board }).eq('id', id); await refreshProject(activeProject!.id); }}
+                      boards={boards}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </motion.div>
         )}
 
