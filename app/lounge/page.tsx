@@ -214,6 +214,7 @@ export default function LoungePage() {
           id: p.id,
           name: p.username || 'User',
           role: p.role || 'Crew',
+          avatar: p.avatar_url,
           online: p.status === 'OPEN'
         })));
       }
@@ -670,11 +671,16 @@ export default function LoungePage() {
                 background: dmTarget?.id === member.id ? 'rgba(16,185,129,0.06)' : isOnline ? 'rgba(0,204,102,0.03)' : 'transparent',
               }}
             >
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: isOnline ? '#00cc66' : '#333',
-                boxShadow: isOnline ? '0 0 10px rgba(0,204,102,0.8)' : 'none',
-              }} />
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <Avatar src={member.avatar} name={member.name} size={26} />
+                <div style={{
+                  position: 'absolute', bottom: -1, right: -1,
+                  width: 8, height: 8, borderRadius: '50%',
+                  border: '1.5px solid #090909',
+                  background: isOnline ? '#00cc66' : '#444',
+                  boxShadow: isOnline ? '0 0 6px rgba(0,204,102,0.8)' : 'none',
+                }} />
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: isOnline ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
