@@ -80,11 +80,39 @@ export async function addReaction(messageId: string, emoji: string, userId: stri
   return data;
 }
 
+// Add or remove the user's reaction to a message (toggle). Cleans up empty
+// emoji buckets so counts stay accurate.
+export async function toggleReaction(messageId: string, emoji: string, userId: string) {
+  const { data: message, error: fetchError } = await supabase
+    .from('messages')
+    .select('reactions')
+    .eq('id', messageId)
+    .single();
+  if (fetchError) throw fetchError;
+
+  const reactions: Record<string, string[]> = { ...(message.reactions || {}) };
+  const users = reactions[emoji] || [];
+  if (users.includes(userId)) {
+    const next = users.filter(u => u !== userId);
+    if (next.length) reactions[emoji] = next; else delete reactions[emoji];
+  } else {
+    reactions[emoji] = [...users, userId];
+  }
+
+  const { error } = await supabase.from('messages').update({ reactions }).eq('id', messageId);
+  if (error) throw error;
+  return reactions;
+}
+
 export function subscribeToChannel(channelId: string, callback: (payload: any) => void) {
   return supabase
     .channel(`channel:${channelId}`)
     .on('postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
+      callback
+    )
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
       callback
     )
     .subscribe();

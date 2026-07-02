@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, sendMessage, subscribeToChannel } from '@/lib/supabase/messages';
+import { getChannelMessages, sendMessage, subscribeToChannel, toggleReaction } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
@@ -18,7 +18,10 @@ interface Message {
   timestamp: Date;
   sender_id?: string;
   mine?: boolean;
+  reactions?: Record<string, string[]>;
 }
+
+const REACTION_CHOICES = ['👍', '❤️', '🔥', '🎬', '😂', '🎉', '👀', '🙏'];
 
 // Live production feed for the active project — surfaces the latest changes
 // across scenes, budget, milestones, crew, concept board, and characters.
@@ -69,13 +72,19 @@ function ProductionFeed({ projectId }: { projectId: string }) {
   );
 }
 
-function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: string }) {
+function MessageBubble({ msg, currentUserId, onReact }: { msg: Message, currentUserId?: string, onReact: (id: string, emoji: string) => void }) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
+  const [hovered, setHovered] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const reactions = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPickerOpen(false); }}
       style={{
         marginBottom: 20,
         display: 'flex',
@@ -93,23 +102,51 @@ function MessageBubble({ msg, currentUserId }: { msg: Message, currentUserId?: s
           </span>
         </div>
       )}
-      <div style={{
-        maxWidth: '75%',
-        padding: '12px 16px',
-        background: isMe ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${isMe ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
-        borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
-      }}>
-        <p style={{
-          fontFamily: 'var(--serif)',
-          fontSize: 14,
-          lineHeight: 1.65,
-          color: 'rgba(240,236,228,0.85)',
-          margin: 0,
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, flexDirection: isMe ? 'row-reverse' : 'row', maxWidth: '80%' }}>
+        <div style={{
+          padding: '12px 16px',
+          background: isMe ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isMe ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
+          borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
         }}>
-          {msg.text}
-        </p>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(240,236,228,0.85)', margin: 0 }}>
+            {msg.text}
+          </p>
+        </div>
+
+        {/* React affordance */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setPickerOpen(o => !o)}
+            aria-label="Add reaction"
+            style={{ opacity: hovered || pickerOpen ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.9)', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Smile size={13} />
+          </button>
+          {pickerOpen && (
+            <div style={{ position: 'absolute', bottom: '100%', [isMe ? 'right' : 'left']: 0, marginBottom: 6, display: 'flex', gap: 2, padding: 5, background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 20 } as React.CSSProperties}>
+              {REACTION_CHOICES.map(e => (
+                <button key={e} onClick={() => { onReact(msg.id, e); setPickerOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 4px', borderRadius: 6 }}>{e}</button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Reaction pills */}
+      {reactions.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+          {reactions.map(([emoji, users]) => {
+            const reacted = !!currentUserId && users.includes(currentUserId);
+            return (
+              <button key={emoji} onClick={() => onReact(msg.id, emoji)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(255,60,0,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
+                <span>{emoji}</span><span>{users.length}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {isMe && (
         <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)', marginTop: 4 }}>
           {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -129,7 +166,11 @@ export default function LoungePage() {
   const [myProfile, setMyProfile] = useState<any>(null);
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const typingChannelRef = useRef<any>(null);
+  const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const lastBroadcast = useRef(0);
 
   useEffect(() => {
     let mounted = true;
@@ -161,7 +202,8 @@ export default function LoungePage() {
           user: m.profiles?.username || 'Unknown',
           text: m.content,
           timestamp: new Date(m.created_at),
-          sender_id: m.sender_id
+          sender_id: m.sender_id,
+          reactions: m.reactions || {},
         }));
         setMessages(formatted);
       } catch (e) {
@@ -183,6 +225,43 @@ export default function LoungePage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Typing indicators over Realtime broadcast (Slack/Discord style). Each
+  // channel gets an ephemeral broadcast room; peers show for ~3s per keypress.
+  useEffect(() => {
+    const uname = myProfile?.username || 'Someone';
+    const ch = supabase.channel(`typing:${activeChannel}`, { config: { broadcast: { self: false } } });
+    ch.on('broadcast', { event: 'typing' }, ({ payload }: any) => {
+      const name = payload?.username;
+      if (!name) return;
+      setTypingUsers(prev => prev.includes(name) ? prev : [...prev, name]);
+      clearTimeout(typingTimers.current[name]);
+      typingTimers.current[name] = setTimeout(() => setTypingUsers(prev => prev.filter(n => n !== name)), 3200);
+    }).subscribe();
+    typingChannelRef.current = { ch, uname };
+    return () => { supabase.removeChannel(ch); setTypingUsers([]); };
+  }, [activeChannel, myProfile?.username]);
+
+  const broadcastTyping = () => {
+    const now = Date.now();
+    if (now - lastBroadcast.current < 1200) return; // throttle
+    lastBroadcast.current = now;
+    typingChannelRef.current?.ch?.send({ type: 'broadcast', event: 'typing', payload: { username: typingChannelRef.current.uname } });
+  };
+
+  const handleReact = async (messageId: string, emoji: string) => {
+    if (!currentUser) return;
+    // Optimistic toggle.
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const r: Record<string, string[]> = { ...(m.reactions || {}) };
+      const users = r[emoji] || [];
+      if (users.includes(currentUser.id)) { const n = users.filter(u => u !== currentUser.id); if (n.length) r[emoji] = n; else delete r[emoji]; }
+      else r[emoji] = [...users, currentUser.id];
+      return { ...m, reactions: r };
+    }));
+    try { await toggleReaction(messageId, emoji, currentUser.id); } catch (e) { console.error(e); }
+  };
 
   const handleSend = async () => {
     const text = input.trim();
@@ -353,7 +432,7 @@ export default function LoungePage() {
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
                   NO MESSAGES IN #{activeChannel.toUpperCase()} YET
                 </div>
-              ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />)}
+              ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} />)}
               <div ref={bottomRef} />
             </div>
           </div>
@@ -365,6 +444,19 @@ export default function LoungePage() {
             background: '#090909',
             flexShrink: 0,
           }}>
+            {/* Typing indicator */}
+            <div style={{ maxWidth: 720, margin: '0 auto', height: 14, marginBottom: 4 }}>
+              {typingUsers.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: '#10b981', letterSpacing: 0.5 }}>
+                  <span style={{ display: 'inline-flex', gap: 2 }}>
+                    {[0, 1, 2].map(i => (
+                      <motion.span key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} style={{ width: 3, height: 3, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                    ))}
+                  </span>
+                  {typingUsers.slice(0, 2).join(', ')}{typingUsers.length > 2 ? ` +${typingUsers.length - 2}` : ''} {typingUsers.length === 1 ? 'is' : 'are'} typing…
+                </div>
+              )}
+            </div>
             <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ position: 'relative', alignSelf: 'center' }}>
                 <button style={{ background: 'none', border: 'none', color: showEmoji ? 'var(--fg)' : 'var(--fg-muted)', padding: 10, cursor: 'pointer', transition: 'color 0.2s' }}
@@ -382,7 +474,7 @@ export default function LoungePage() {
 
               <textarea
                 value={input}
-                onChange={e => setInput(e.target.value)}
+                onChange={e => { setInput(e.target.value); if (e.target.value.trim()) broadcastTyping(); }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder={`Message #${activeChannel}...`}
                 rows={1}
