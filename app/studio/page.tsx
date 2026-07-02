@@ -739,6 +739,7 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
 // (Supabase) so character development is shared across the suite, not trapped
 // in one browser.
 function CharacterBible({ projectId, userId, concepts }: { projectId: string; userId: string | null; concepts: any[] }) {
+  const { toast } = useToast();
   type Bio = { id?: string; name: string; full_name: string; age: string; arc: string; description: string; color?: string };
   type Ref = { id: string; concept_asset_id: string; image_url: string; title: string | null };
   const [bios, setBios] = useState<Bio[]>([]);
@@ -766,8 +767,9 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   };
   const linkLook = async (b: Bio, conceptId: string) => {
     const cid = await ensureRow(b);
-    if (!cid) return;
-    await supabase.from('character_references').insert({ project_id: projectId, character_id: cid, concept_asset_id: conceptId, created_by: userId });
+    if (!cid) { toast('Could not link look', 'error'); return; }
+    const { error } = await supabase.from('character_references').insert({ project_id: projectId, character_id: cid, concept_asset_id: conceptId, created_by: userId });
+    if (error) { toast(error.message || 'Could not link look', 'error'); return; }
     setLookFor(null); loadRefs();
   };
   const unlinkLook = async (refId: string) => { await supabase.from('character_references').delete().eq('id', refId); loadRefs(); };
@@ -799,8 +801,11 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   const save = async () => {
     if (!draft || !scriptId) return;
     const payload: any = { script_id: scriptId, name: draft.name, full_name: draft.full_name || null, age: draft.age || null, arc: draft.arc || null, description: draft.description || null, color: draft.color, updated_by: userId, updated_at: new Date().toISOString() };
-    if (draft.id) await supabase.from('script_characters').update(payload).eq('id', draft.id);
-    else await supabase.from('script_characters').insert(payload);
+    const { error } = draft.id
+      ? await supabase.from('script_characters').update(payload).eq('id', draft.id)
+      : await supabase.from('script_characters').insert(payload);
+    if (error) { toast(error.message || 'Could not save character', 'error'); return; }
+    toast('Character saved', 'success');
     setEditName(null); setDraft(null);
     load();
   };
