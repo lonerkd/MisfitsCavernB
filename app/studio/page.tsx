@@ -12,6 +12,7 @@ import { getUserProjects } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { useEscapeKey } from '@/lib/useEscapeKey';
+import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { saveScript } from '@/lib/scriptos/storage';
@@ -1063,9 +1064,7 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
-      <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent), #ffaa00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#000' }}>
-        {member.avatar ? <img src={member.avatar} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : member.name.charAt(0)}
-      </div>
+      <Avatar src={member.avatar} name={member.name} size={44} />
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
         <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
@@ -1745,8 +1744,8 @@ export default function StudioPage() {
                     {(activeProject.crew && activeProject.crew.length > 0) ? (
                       <div style={{ display: 'flex', gap: 8 }}>
                         {activeProject.crew.slice(0, 3).map((c, i) => (
-                          <div key={c.id} title={`${c.name} — ${c.role}`} style={{ width: 32, height: 32, borderRadius: '50%', background: `hsl(${(i * 97) % 360}, 40%, 30%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, overflow: 'hidden' }}>
-                            {c.avatar ? <img src={c.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : c.name.charAt(0).toUpperCase()}
+                          <div key={c.id} title={`${c.name} — ${c.role}`}>
+                            <Avatar src={c.avatar} name={c.name} size={32} accent={`hsl(${(i * 97) % 360}, 40%, 30%)`} style={{ color: '#fff' }} />
                           </div>
                         ))}
                         {activeProject.crew.length > 3 && (
