@@ -203,6 +203,17 @@ export default function EditorPage() {
   // UI States
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // On phones the fixed-width side panels would crush the writing area, so
+  // collapse them by default and overlay them when opened.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 820px)');
+    const apply = () => { setIsMobile(mq.matches); if (mq.matches) { setShowSidebar(false); setShowRightSidebar(false); } };
+    apply();
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
+  }, []);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
@@ -1155,7 +1166,12 @@ export default function EditorPage() {
       </AnimatePresence>
 
       {/* WORKSPACE */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+
+        {/* Mobile scrim behind an open panel */}
+        {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
+          <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
+        )}
 
         {/* LEFT NAVIGATOR (Scenes & Documents) */}
         <AnimatePresence>
@@ -1167,9 +1183,10 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: 248,
-                background: 'rgba(8,8,8,0.96)',
+                background: 'rgba(8,8,8,0.98)',
                 borderRight: '1px solid rgba(255,255,255,0.05)',
                 display: 'flex', flexDirection: 'column', flexShrink: 0,
+                ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
             >
               {/* Script Controls */}
@@ -1841,7 +1858,7 @@ export default function EditorPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 272, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              style={{ width: 272, background: 'rgba(8,8,8,0.96)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}
+              style={{ width: 272, maxWidth: '86vw', background: 'rgba(8,8,8,0.98)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
               {/* Panel Tabs — pill group */}
               <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
