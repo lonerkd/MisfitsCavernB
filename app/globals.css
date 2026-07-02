@@ -113,6 +113,11 @@ body.custom-cursor-active [contenteditable="true"] {
   .mc-taskbar::-webkit-scrollbar { display: none; }
 }
 
+/* Two-column suite layouts collapse to a single column on small screens. */
+@media (max-width: 860px) {
+  .mc-collapse { grid-template-columns: 1fr !important; gap: 28px !important; }
+}
+
 /* Studio tab bar scrolls horizontally on phones instead of overflowing. */
 @media (max-width: 640px) {
   .mc-studio-tabs { justify-content: flex-start !important; overflow-x: auto; padding: 0 12px; scrollbar-width: none; }
