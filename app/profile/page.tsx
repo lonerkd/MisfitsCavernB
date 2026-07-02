@@ -62,6 +62,7 @@ export default function ProfilePage() {
   };
 
   const handleSignOut = async () => {
+    if (!confirm('Sign out of Misfits Cavern?')) return;
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };
