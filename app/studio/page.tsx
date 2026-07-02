@@ -1660,7 +1660,7 @@ export default function StudioPage() {
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
 
       {/* TABS BAR */}
-      <div style={{
+      <div className="mc-studio-tabs" style={{
         position: 'fixed', top: 62, left: 0, width: '100%',
         height: 52, background: 'rgba(6,6,6,0.88)',
         backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -1671,7 +1671,7 @@ export default function StudioPage() {
           display: 'flex', alignItems: 'center', gap: 2,
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 9999, padding: '4px 6px',
+          borderRadius: 9999, padding: '4px 6px', flexShrink: 0,
         }}>
           {tabs.map(tab => {
             const Icon = tab.icon;
