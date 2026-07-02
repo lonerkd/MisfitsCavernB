@@ -10,6 +10,7 @@ import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
+import { useToast } from '@/components/Toast';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { saveScript } from '@/lib/scriptos/storage';
@@ -1181,6 +1182,7 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 
 export default function StudioPage() {
   useRequireAuth();
+  const { toast } = useToast();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
@@ -1829,8 +1831,10 @@ export default function StudioPage() {
                     if (!activeProject || !conceptUrl.trim()) return;
                     const { data: { user } } = await supabase.auth.getUser();
                     const board = (conceptBoard.trim() || (activeConceptBoard !== 'All' ? activeConceptBoard : '')) || null;
-                    await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
+                    const { error } = await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
+                    if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
                     await refreshProject(activeProject.id);
+                    toast('Reference added', 'success');
                     setConceptTitle(''); setConceptUrl(''); setConceptBoard(''); setShowAddConcept(false);
                   }}
                 >Add</button>
@@ -1915,8 +1919,9 @@ export default function StudioPage() {
                        className="link-btn"
                        onClick={async () => {
                          if (!activeProject || !beatTitle.trim()) return;
-                         await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
-                          await refreshProject(activeProject.id);
+                         const { error } = await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
+                         if (error) { toast(error.message || 'Could not add beat', 'error'); return; }
+                         await refreshProject(activeProject.id);
                          setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
                        }}
                      >Add Beat</button>
@@ -2000,7 +2005,8 @@ export default function StudioPage() {
                          onClick={async () => {
                            if (!activeProject || !sceneTitle.trim()) return;
                            const nextNum = (activeProject.scenes?.length || 0) + 1;
-                           await supabase.from('scenes').insert({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || null, shoot_day: Number(sceneDay) || 1 });
+                           const { error } = await supabase.from('scenes').insert({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || null, shoot_day: Number(sceneDay) || 1 });
+                           if (error) { toast(error.message || 'Could not add scene', 'error'); return; }
                            await refreshProject(activeProject.id);
                            setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
                          }}
@@ -2191,7 +2197,8 @@ export default function StudioPage() {
                         onClick={async () => {
                           if (!activeProject || !campaignTitle.trim()) return;
                           const { data: { user } } = await supabase.auth.getUser();
-                          await supabase.from('campaigns').insert({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          const { error } = await supabase.from('campaigns').insert({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                          if (error) { toast(error.message || 'Could not add campaign', 'error'); return; }
                           await refreshProject(activeProject.id);
                           setCampaignTitle(''); setShowAddCampaign(false);
                         }}
