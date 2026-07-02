@@ -106,6 +106,7 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
 function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isOpen: boolean; onClose: () => void }) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
+  const [copied, setCopied] = useState(false);
   useEscapeKey(onClose, isOpen);
   useEffect(() => {
     if (!asset?.id || !isOpen) { setComments([]); return; }
@@ -149,7 +150,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
            </div>
            <div style={{ display: 'flex', gap: 12 }}>
              <button className="link-btn" onClick={() => { if (asset.url) window.open(asset.url, '_blank'); }} disabled={!asset.url}><Download size={12} /> Download</button>
-             <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { if (asset.url) { navigator.clipboard?.writeText(asset.url); } }}>Share Link</button>
+             <button className="link-btn" style={{ background: copied ? '#10b981' : 'var(--accent)', color: 'var(--bg)' }} disabled={!asset.url} onClick={() => { if (asset.url) { navigator.clipboard?.writeText(asset.url); setCopied(true); setTimeout(() => setCopied(false), 1800); } }}>{copied ? '✓ Copied' : 'Share Link'}</button>
            </div>
         </div>
 
