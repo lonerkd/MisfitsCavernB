@@ -1077,6 +1077,7 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
 }
 function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boolean; onClose: () => void; projectId: string; onSuccess: () => void }) {
   useEscapeKey(onClose, isOpen);
+  const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1096,11 +1097,12 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
     setLoading(true);
     try {
       await inviteToCrew(projectId, selectedUser.id, role);
+      toast(`Invited ${selectedUser.username || 'member'} as ${role || 'crew'}`, 'success');
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to invite.');
+      toast(err?.message || 'Failed to invite', 'error');
     } finally {
       setLoading(false);
     }
