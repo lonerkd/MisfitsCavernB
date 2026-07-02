@@ -476,6 +476,28 @@ export default function EditorPage() {
     }
   }, [currentScript, content, revisions.length, toast]);
 
+  // Toggle dual dialogue (Fountain '^') on the character cue under the cursor —
+  // the parser + preview already render side-by-side dialogue when marked.
+  const toggleDualDialogue = useCallback(() => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+    const le = content.indexOf('\n', cursor);
+    const lineEnd = le === -1 ? content.length : le;
+    const line = content.substring(lineStart, lineEnd);
+    const leading = line.length - line.trimStart().length;
+    const rest = line.slice(leading);
+    const core = rest.replace(/^\^/, '').trim();
+    const isChar = core.length > 1 && core === core.toUpperCase() && /[A-Z]/.test(core) && !/^(INT|EXT|EST|I\/E)[.\s]/.test(core) && !core.endsWith(':');
+    if (!isChar) { toast('Put the cursor on a character name to toggle dual dialogue', 'info'); return; }
+    const has = rest.startsWith('^');
+    const newRest = has ? rest.slice(1) : '^' + rest;
+    const next = content.substring(0, lineStart) + line.slice(0, leading) + newRest + content.substring(lineEnd);
+    setContent(next);
+    toast(has ? 'Dual dialogue removed' : 'Marked as dual dialogue (^)', 'success');
+  }, [content, toast]);
+
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1027,6 +1049,7 @@ export default function EditorPage() {
 
             {[
               { icon: HelpCircle, title: 'Shortcuts', onClick: () => setShowShortcuts(true) },
+              { icon: SplitSquareHorizontal, title: 'Dual Dialogue', onClick: toggleDualDialogue },
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },
               { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
