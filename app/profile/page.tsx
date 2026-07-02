@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import Avatar from '@/components/Avatar';
 
 const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
@@ -120,18 +121,7 @@ export default function ProfilePage() {
         {/* Avatar + name section */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
           <div>
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.username}
-                style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,60,0,0.3)' }} />
-            ) : (
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: 'var(--accent)', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontFamily: 'var(--display)', fontSize: '1.8rem', color: 'var(--bg)',
-              }}>
-                {profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
-              </div>
-            )}
+            <Avatar src={profile.avatar_url} name={profile.username || user.email} size={72} style={{ border: '2px solid rgba(255,60,0,0.3)' }} />
           </div>
           <div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
