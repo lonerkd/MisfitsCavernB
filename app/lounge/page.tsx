@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, sendMessage, subscribeToChannel, toggleReaction } from '@/lib/supabase/messages';
+import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction } from '@/lib/supabase/messages';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
@@ -160,6 +160,7 @@ export default function LoungePage() {
   useRequireAuth();
   const { activeProject, projects, setActiveProject } = useProject();
   const [activeChannel, setActiveChannel] = useState('general');
+  const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -196,7 +197,9 @@ export default function LoungePage() {
 
     const loadMessages = async () => {
       try {
-        const data = await getChannelMessages(activeChannel);
+        const data = dmTarget && currentUser
+          ? await getDMThread(currentUser.id, dmTarget.id)
+          : await getChannelMessages(activeChannel);
         if (!mounted) return;
         const formatted = data.map((m: any) => ({
           id: m.id,
@@ -211,17 +214,29 @@ export default function LoungePage() {
         console.error(e);
       }
     };
+    // In DM mode we need the signed-in user resolved first.
+    if (dmTarget && !currentUser) return () => { mounted = false; };
     loadMessages();
 
-    const channel = subscribeToChannel(activeChannel, () => {
-      loadMessages();
-    });
+    let channel: any;
+    if (dmTarget && currentUser) {
+      const pairKey = [currentUser.id, dmTarget.id].sort().join(':');
+      channel = supabase.channel(`dm:${pairKey}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
+          const m = payload.new;
+          if ((m.sender_id === currentUser.id && m.receiver_id === dmTarget.id) ||
+              (m.sender_id === dmTarget.id && m.receiver_id === currentUser.id)) loadMessages();
+        })
+        .subscribe();
+    } else {
+      channel = subscribeToChannel(activeChannel, () => loadMessages());
+    }
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [activeChannel]);
+  }, [activeChannel, dmTarget, currentUser]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -282,11 +297,21 @@ export default function LoungePage() {
     if (!text || !currentUser) return;
     setInput('');
     try {
+      const from = myProfile?.username || 'Someone';
+      if (dmTarget) {
+        await sendMessage(currentUser.id, text, undefined, dmTarget.id);
+        notify(dmTarget.id, {
+          type: 'reply',
+          title: `Direct message from ${from}`,
+          body: text.length > 90 ? text.slice(0, 90) + '…' : text,
+          link: '/lounge',
+        }, currentUser.id);
+        return;
+      }
       await sendMessage(currentUser.id, text, activeChannel);
       // Notify anyone @mentioned by username (matched against known crew).
       const mentioned = new Set((text.match(/@([a-zA-Z0-9_]+)/g) || []).map(m => m.slice(1).toLowerCase()));
       if (mentioned.size > 0) {
-        const from = myProfile?.username || 'Someone';
         crewList
           .filter(m => m.id !== currentUser.id && mentioned.has(String(m.name).toLowerCase()))
           .forEach(m => notify(m.id, {
@@ -385,11 +410,11 @@ export default function LoungePage() {
                  { id: 'legal', name: 'legal', icon: Lock },
                ].map(ch => {
                  const Icon = ch.icon;
-                 const isActive = activeChannel === ch.id;
+                 const isActive = activeChannel === ch.id && !dmTarget;
                  return (
-                   <button 
+                   <button
                      key={ch.id}
-                     onClick={() => setActiveChannel(ch.id)}
+                     onClick={() => { setActiveChannel(ch.id); setDmTarget(null); }}
                      style={{
                        display: 'flex', alignItems: 'center', gap: 8,
                        padding: '6px 10px', borderRadius: 4,
@@ -430,12 +455,24 @@ export default function LoungePage() {
           {/* Channel Header */}
           <div style={{ padding: '12px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>#{activeChannel}</span>
+               {dmTarget ? (
+                 <>
+                   <span style={{ fontSize: 8, color: '#10b981', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 99 }}>DIRECT</span>
+                   <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>@{dmTarget.name}</span>
+                   {onlineIds.has(dmTarget.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />}
+                 </>
+               ) : (
+                 <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>#{activeChannel}</span>
+               )}
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
                <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{messages.length} message{messages.length === 1 ? '' : 's'}</span>
              </div>
              <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>
-                <Users size={13} color="#666" /> {crewList.length}
+                {dmTarget ? (
+                  <button onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>← CHANNELS</button>
+                ) : (
+                  <><Users size={13} color="#666" /> {crewList.length}</>
+                )}
              </div>
           </div>
 
@@ -444,7 +481,7 @@ export default function LoungePage() {
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
               {messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
-                  NO MESSAGES IN #{activeChannel.toUpperCase()} YET
+                  {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : `NO MESSAGES IN #${activeChannel.toUpperCase()} YET`}
                 </div>
               ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} />)}
               <div ref={bottomRef} />
@@ -490,7 +527,7 @@ export default function LoungePage() {
                 value={input}
                 onChange={e => { setInput(e.target.value); if (e.target.value.trim()) broadcastTyping(); }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder={`Message #${activeChannel}...`}
+                placeholder={dmTarget ? `Message @${dmTarget.name}...` : `Message #${activeChannel}...`}
                 rows={1}
                 style={{
                   flex: 1,
@@ -553,20 +590,24 @@ export default function LoungePage() {
 
           {[...crewList].sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id))).map((member, i) => {
             const isOnline = onlineIds.has(member.id);
+            const isSelf = member.id === currentUser?.id;
             return (
             <motion.div
               key={member.id || i}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: Math.min(i, 8) * 0.05 }}
+              onClick={() => { if (!isSelf) setDmTarget({ id: member.id, name: member.name }); }}
+              title={isSelf ? 'This is you' : `Message ${member.name}`}
               style={{
                 padding: '10px 12px',
-                border: '1px solid rgba(255,255,255,0.04)',
+                border: `1px solid ${dmTarget?.id === member.id ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.04)'}`,
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
-                background: isOnline ? 'rgba(0,204,102,0.03)' : 'transparent',
+                cursor: isSelf ? 'default' : 'pointer',
+                background: dmTarget?.id === member.id ? 'rgba(16,185,129,0.06)' : isOnline ? 'rgba(0,204,102,0.03)' : 'transparent',
               }}
             >
               <div style={{

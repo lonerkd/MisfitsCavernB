@@ -500,3 +500,30 @@ ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planne
 CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC);
+
+-- Direct-message reactions run through a SECURITY DEFINER RPC because the
+-- messages table intentionally has no row-level UPDATE policy. The function
+-- toggles auth.uid() into the reactions JSONB and only for messages the caller
+-- can already see (channel messages or their own DMs).
+CREATE OR REPLACE FUNCTION public.toggle_message_reaction(p_message uuid, p_emoji text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE uid text := auth.uid()::text; r jsonb; arr jsonb; m record;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+  SELECT id, channel_id, sender_id, receiver_id, reactions INTO m FROM messages WHERE id = p_message;
+  IF NOT FOUND THEN RAISE EXCEPTION 'message not found'; END IF;
+  IF NOT (m.channel_id IS NOT NULL OR m.sender_id::text = uid OR m.receiver_id::text = uid) THEN
+    RAISE EXCEPTION 'not permitted';
+  END IF;
+  r := coalesce(m.reactions, '{}'::jsonb);
+  arr := coalesce(r -> p_emoji, '[]'::jsonb);
+  IF arr @> to_jsonb(uid) THEN
+    arr := (SELECT coalesce(jsonb_agg(to_jsonb(e)), '[]'::jsonb) FROM jsonb_array_elements_text(arr) e WHERE e <> uid);
+    IF jsonb_array_length(arr) = 0 THEN r := r - p_emoji; ELSE r := jsonb_set(r, array[p_emoji], arr); END IF;
+  ELSE
+    r := jsonb_set(r, array[p_emoji], arr || to_jsonb(uid), true);
+  END IF;
+  UPDATE messages SET reactions = r WHERE id = p_message;
+  RETURN r;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.toggle_message_reaction(uuid, text) TO authenticated;

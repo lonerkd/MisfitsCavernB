@@ -80,28 +80,15 @@ export async function addReaction(messageId: string, emoji: string, userId: stri
   return data;
 }
 
-// Add or remove the user's reaction to a message (toggle). Cleans up empty
-// emoji buckets so counts stay accurate.
-export async function toggleReaction(messageId: string, emoji: string, userId: string) {
-  const { data: message, error: fetchError } = await supabase
-    .from('messages')
-    .select('reactions')
-    .eq('id', messageId)
-    .single();
-  if (fetchError) throw fetchError;
-
-  const reactions: Record<string, string[]> = { ...(message.reactions || {}) };
-  const users = reactions[emoji] || [];
-  if (users.includes(userId)) {
-    const next = users.filter(u => u !== userId);
-    if (next.length) reactions[emoji] = next; else delete reactions[emoji];
-  } else {
-    reactions[emoji] = [...users, userId];
-  }
-
-  const { error } = await supabase.from('messages').update({ reactions }).eq('id', messageId);
+// Add or remove the user's reaction to a message (toggle). Runs through a
+// SECURITY DEFINER RPC because there is no row-level UPDATE policy on messages
+// (writing reactions client-side would otherwise be blocked by RLS). The
+// function only touches the reactions column and verifies the caller can see
+// the message. userId is unused but kept for call-site compatibility.
+export async function toggleReaction(messageId: string, emoji: string, _userId?: string) {
+  const { data, error } = await supabase.rpc('toggle_message_reaction', { p_message: messageId, p_emoji: emoji });
   if (error) throw error;
-  return reactions;
+  return (data || {}) as Record<string, string[]>;
 }
 
 export function subscribeToChannel(channelId: string, callback: (payload: any) => void) {
