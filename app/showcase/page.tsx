@@ -1,17 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
+import { supabase } from '@/lib/supabase/client';
 
 // Dynamic imports for 3D and particles (client-side only)
 const OrbitGallery = dynamic(() => import('@/components/3D/OrbitGallery'), { ssr: false });
 const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
 
 export default function ShowcasePage() {
+  // Populate the 3D gallery from real concept-board images the user can access.
+  const [photos, setPhotos] = useState<{ id: string; imageUrl: string; title: string }[]>([]);
+  useEffect(() => {
+    supabase.from('concept_assets').select('id, title, image_url').not('image_url', 'is', null).limit(12).then(({ data }) => {
+      setPhotos((data || []).filter((a: any) => a.image_url).map((a: any) => ({ id: a.id, imageUrl: a.image_url, title: a.title || 'Concept' })));
+    });
+  }, []);
+
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
@@ -96,7 +105,7 @@ export default function ShowcasePage() {
               </span>
             </div>
 
-            <OrbitGallery />
+            <OrbitGallery photos={photos} />
 
             <p
               style={{
