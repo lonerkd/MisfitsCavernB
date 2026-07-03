@@ -24,6 +24,7 @@ import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { usePillStage } from '@/lib/context/PillContext';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -930,6 +931,26 @@ export default function EditorPage() {
     }
     return lastScene;
   }, [lines, scenesList, cursorLine]);
+
+  // ── Publish the editor's live state to the Pill ────────────────────────────
+  // The taskbar's context capsule morphs to surface these read-outs and the
+  // Focus toggle — every value is live page state, the toggle flips it for real.
+  usePillStage(
+    {
+      module: 'editor',
+      title: currentScript?.title || 'Untitled',
+      fields: [
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#ff3c00' },
+        { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
+        { label: 'Pages', value: `${pageEst}` },
+        { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
+      ],
+      toggles: [
+        { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
+      ],
+    },
+    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
+  );
 
   // Act structure — properly clamped so it never produces "Sc 4-3" nonsense
   const actStructure = useMemo(() => {
