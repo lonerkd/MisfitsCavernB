@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getUserProjects } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/Confirm';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
@@ -1203,6 +1204,7 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 export default function StudioPage() {
   useRequireAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
   const [filter, setFilter] = useState<string>('all');
@@ -1314,7 +1316,7 @@ export default function StudioPage() {
       }
     }
     if (updates.length === 0) { toast(`Schedule is already optimal — ${day} shoot day${day === 1 ? '' : 's'}, grouped by location.`, 'info'); return; }
-    if (!confirm(`Auto-schedule will reorganise ${scenes.length} scenes into ${day} shoot day${day === 1 ? '' : 's'}, grouped by location to minimise company moves (~5 pages/day). Reassign ${updates.length} scene${updates.length === 1 ? '' : 's'}?`)) return;
+    if (!await confirm(`Auto-schedule will reorganise ${scenes.length} scenes into ${day} shoot day${day === 1 ? '' : 's'}, grouped by location to minimise company moves (~5 pages/day). Reassign ${updates.length} scene${updates.length === 1 ? '' : 's'}?`)) return;
     setAutoScheduling(true);
     try {
       for (const u of updates) await supabase.from('scenes').update({ shoot_day: u.shoot_day }).eq('id', u.id);
@@ -1574,7 +1576,7 @@ export default function StudioPage() {
   };
 
   const handleDeleteBeat = async (id: string) => {
-    if (!confirm('Delete this beat?')) return;
+    if (!await confirm('Delete this beat?')) return;
     try {
       await deleteProjectBeat(id);
       refreshBeats();
@@ -1584,7 +1586,7 @@ export default function StudioPage() {
   };
 
   const handleDeleteAsset = async (id: string) => {
-    if (!confirm('Delete this asset?')) return;
+    if (!await confirm('Delete this asset?')) return;
     try {
       await deleteStudioAsset(id);
       refreshAssets();
@@ -1907,7 +1909,7 @@ export default function StudioPage() {
                       {filtered.map((img, i) => {
                         const sceneCount = Object.values(sceneRefs).reduce((n, arr) => n + (arr.some(r => r.concept_asset_id === img.id) ? 1 : 0), 0);
                         return (
-                        <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} board={img.board} onOpen={() => setLightboxIdx(i)} onRemove={async () => { if (!confirm('Delete this reference from the board?')) return; await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject!.id); }} />
+                        <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} board={img.board} onOpen={() => setLightboxIdx(i)} onRemove={async () => { if (!await confirm('Delete this reference from the board?')) return; await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject!.id); }} />
                         );
                       })}
                     </div>
@@ -1974,7 +1976,7 @@ export default function StudioPage() {
                  {(activeProject?.beats && activeProject.beats.length > 0) ? (
                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                      {activeProject.beats.map((beat, i) => (
-                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={async (id) => { if (!confirm('Delete this beat?')) return; await supabase.from('project_beats').delete().eq('id', id); await refreshProject(activeProject.id); }} onPush={handlePushToScript} />
+                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={async (id) => { if (!await confirm('Delete this beat?')) return; await supabase.from('project_beats').delete().eq('id', id); await refreshProject(activeProject.id); }} onPush={handlePushToScript} />
                      ))}
                    </div>
                  ) : (
@@ -2103,7 +2105,7 @@ export default function StudioPage() {
                                ); })()}
                                <div style={{ width: 54, textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                                  <button onClick={() => startEditScene(s)} aria-label="edit scene" style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer' }}>✎</button>
-                                 <button title="Delete scene" onClick={async () => { if (!confirm(`Delete scene "${s.title || s.scene_number}"? This cannot be undone.`)) return; await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                                 <button title="Delete scene" onClick={async () => { if (!await confirm(`Delete scene "${s.title || s.scene_number}"? This cannot be undone.`)) return; await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
                                </div>
                              </div>
                              )}
@@ -2272,7 +2274,7 @@ export default function StudioPage() {
                             </div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
                          </div>
-                         <button title="Delete campaign" onClick={async () => { if (!confirm(`Delete campaign "${campaign.title}"?`)) return; await supabase.from('campaigns').delete().eq('id', campaign.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                         <button title="Delete campaign" onClick={async () => { if (!await confirm(`Delete campaign "${campaign.title}"?`)) return; await supabase.from('campaigns').delete().eq('id', campaign.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
                       </div>
                     ))
                   ) : (

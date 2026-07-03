@@ -5,6 +5,7 @@ import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Setti
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import Avatar from '@/components/Avatar';
+import { useConfirm } from '@/components/Confirm';
 
 const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
@@ -21,6 +22,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 export default function ProfilePage() {
+  const confirm = useConfirm();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>({});
   const [saving, setSaving] = useState(false);
@@ -63,7 +65,7 @@ export default function ProfilePage() {
   };
 
   const handleSignOut = async () => {
-    if (!confirm('Sign out of Misfits Cavern?')) return;
+    if (!await confirm({ message: 'Sign out of Misfits Cavern?', confirmLabel: 'SIGN OUT', danger: false })) return;
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };

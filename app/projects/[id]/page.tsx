@@ -10,6 +10,7 @@ import {
   Music, Plus, ExternalLink, Circle,
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
+import { useConfirm } from '@/components/Confirm';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
 
@@ -323,6 +324,7 @@ function PortfolioPreview({ published }: { published: number }) {
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ProjectHubPage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const id = String(params.id);
@@ -672,7 +674,7 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
   };
   const delTask = async (id: string) => {
-    if (!confirm('Delete this task? This cannot be undone.')) return;
+    if (!await confirm('Delete this task? This cannot be undone.')) return;
     const prev = tasks;
     setTasks(p => p.filter(x => x.id !== id));
     const { error } = await supabase.from('project_tasks').delete().eq('id', id);
@@ -686,7 +688,7 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setBudget(p => [...p, data as BudgetRow]);
   };
   const delBudget = async (id: string) => {
-    if (!confirm('Delete this budget line? This cannot be undone.')) return;
+    if (!await confirm('Delete this budget line? This cannot be undone.')) return;
     const prev = budget;
     setBudget(p => p.filter(x => x.id !== id));
     const { error } = await supabase.from('budget_items').delete().eq('id', id);
@@ -749,7 +751,7 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setTimeline(p => [...p, data as TimelineRow]);
   };
   const delTimeline = async (id: string) => {
-    if (!confirm('Delete this milestone? This cannot be undone.')) return;
+    if (!await confirm('Delete this milestone? This cannot be undone.')) return;
     const prev = timeline;
     setTimeline(p => p.filter(x => x.id !== id));
     const { error } = await supabase.from('timeline_items').delete().eq('id', id);
@@ -766,7 +768,7 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     load();
   };
   const delCrew = async (id: string) => {
-    if (!confirm('Remove this crew member from the project?')) return;
+    if (!await confirm('Remove this crew member from the project?')) return;
     const prev = crew;
     setCrew(p => p.filter(x => x.id !== id));
     const { error } = await supabase.from('project_crew').delete().eq('id', id);

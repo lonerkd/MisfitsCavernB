@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { Bebas_Neue, DM_Mono, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
+import { ConfirmProvider } from '@/components/Confirm';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
 import { AuthProvider } from '@/lib/context/AuthContext';
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>
           <ToastProvider>
+            <ConfirmProvider>
             <ProjectProvider>
               <CustomCursor />
               <CommandPalette />
@@ -57,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <EcosystemTaskbar />
               {children}
             </ProjectProvider>
+            </ConfirmProvider>
           </ToastProvider>
         </AuthProvider>
       </body>

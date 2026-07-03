@@ -12,6 +12,7 @@ import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/Confirm';
 import Avatar from '@/components/Avatar';
 
 interface Message {
@@ -298,6 +299,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const [postPolicy, setPostPolicy] = useState(channel.post_policy);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const refresh = useCallback(async () => { setLoading(true); setMembers(await listChannelMembers(channel.id)); setLoading(false); }, [channel.id]);
   useEffect(() => { refresh(); }, [refresh]);
@@ -328,7 +330,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   };
   const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };
   const doDelete = async () => {
-    if (!confirm(`Delete #${channel.name}? All its messages will be removed. This cannot be undone.`)) return;
+    if (!await confirm({ title: `Delete #${channel.name}?`, message: 'All its messages will be removed. This cannot be undone.', confirmLabel: 'DELETE' })) return;
     setBusy(true); const e = await deleteChannel(channel.id); setBusy(false);
     if (e) { setErr(e); return; }
     onChanged(); onClose();
