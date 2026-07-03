@@ -271,8 +271,8 @@ export default function EditorPage() {
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supabase Realtime Sync
-  const { isSyncing, lastSyncedAt } = useScriptSync(currentScript?.id || '', content, (newContent) => {
+  // Supabase Realtime Sync (live co-editing: content sync + presence + cursors)
+  const { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
     // Only update if it's different to avoid cursor jumping
     if (newContent !== content) {
       setContent(newContent);
@@ -740,6 +740,8 @@ export default function EditorPage() {
     const val = e.target.value;
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
+    noteLocalEdit();
+    broadcastCursor(e.target.selectionStart);
 
     const ta = e.target;
     const cursor = ta.selectionStart;
@@ -1421,6 +1423,7 @@ export default function EditorPage() {
               value={content}
               onChange={handleEditorChange}
               onKeyDown={handleEditorKeyDown}
+              onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
               placeholder={PLACEHOLDER}
               spellCheck={false}
               style={{
@@ -2407,6 +2410,18 @@ export default function EditorPage() {
           <span>{pageEst} pg</span>
           <span>{scenesList.length} sc</span>
           <span>{wordCount.toLocaleString()} wds</span>
+          {collaborators.length > 0 && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
+              <span style={{ display: 'flex' }}>
+                {collaborators.slice(0, 4).map((c, i) => (
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
+                    {c.username.charAt(0)}
+                  </span>
+                ))}
+              </span>
+              <span style={{ color: 'var(--fg-muted)', fontSize: 10 }}>{collaborators.length} editing</span>
+            </span>
+          )}
           <span style={{
             display: 'flex', alignItems: 'center', gap: 5,
             color: isSyncing ? '#6366f1' : '#10b981',
@@ -2421,6 +2436,19 @@ export default function EditorPage() {
           </span>
         </div>
       </div>
+
+      {conflict.detected && (
+        <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'rgba(17,17,17,0.97)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 520 }}>
+          <div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: '#f59e0b', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
+            <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 7, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>KEEP MINE</button>
+            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 7, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

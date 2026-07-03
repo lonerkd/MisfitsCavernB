@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentUser } from '@/lib/supabase/auth';
 
@@ -6,6 +6,7 @@ export interface Collaborator {
   userId: string;
   username: string;
   color: string;
+  line?: number;      // 1-based caret line, for "editing near line N"
 }
 
 const CURSOR_COLORS = ['#ff6b00', '#00cc66', '#0099ff', '#a855f7', '#ec4899', '#eab308'];
@@ -13,121 +14,126 @@ const colorForUser = (userId: string) => CURSOR_COLORS[Math.abs(userId.split('')
 
 export interface ConflictInfo {
   detected: boolean;
+  remoteContent: string;
   remoteLength: number;
   localLength: number;
   message: string;
 }
 
+const NO_CONFLICT: ConflictInfo = { detected: false, remoteContent: '', remoteLength: 0, localLength: 0, message: '' };
+
 export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string) => void) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
-  const [channel, setChannel] = useState<any>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-  const [conflict, setConflict] = useState<ConflictInfo>({ detected: false, remoteLength: 0, localLength: 0, message: '' });
-  const [lastRemoteContent, setLastRemoteContent] = useState<string>('');
+  const [conflict, setConflict] = useState<ConflictInfo>(NO_CONFLICT);
 
-  // Initialize sync
+  const channelRef = useRef<any>(null);
+  const meRef = useRef<{ id: string; username: string; color: string } | null>(null);
+  // Live values for the subscribe closure (which only binds once per scriptId).
+  const localRef = useRef(localContent);
+  const lastRemoteRef = useRef<string>('');
+  const lastLocalEditRef = useRef<number>(0);   // ms timestamp of last local keystroke
+  const lastCursorSentRef = useRef<number>(0);
+  localRef.current = localContent;
+
+  // Mark that the local user just edited (called from the editor onChange).
+  const noteLocalEdit = useCallback(() => { lastLocalEditRef.current = Date.now(); }, []);
+
   useEffect(() => {
     if (!scriptId) return;
+    let cancelled = false;
 
-    const setupSync = async () => {
+    (async () => {
       const user = await getCurrentUser();
-      if (!user) return; // Only sync if logged in
-
+      if (!user || cancelled) return;
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single();
       const username = profile?.username || user.email?.split('@')[0] || 'Anonymous';
+      meRef.current = { id: user.id, username, color: colorForUser(user.id) };
 
-      // Realtime channel: content broadcast + presence (who's currently editing)
-      const newChannel = supabase.channel(`script_${scriptId}`, {
-        config: { broadcast: { self: false }, presence: { key: user.id } }
+      const channel = supabase.channel(`script_${scriptId}`, {
+        config: { broadcast: { self: false }, presence: { key: user.id } },
       });
 
-      newChannel
+      channel
         .on('broadcast', { event: 'content_update' }, (payload) => {
-          if (payload.payload.content !== undefined) {
-            const remoteContent = payload.payload.content;
+          const remote = payload.payload?.content;
+          if (remote === undefined) return;
+          const local = localRef.current;
+          const base = lastRemoteRef.current;
 
-            // Detect conflicts: if both local and remote have changed significantly
-            if (lastRemoteContent && localContent !== lastRemoteContent && remoteContent !== lastRemoteContent) {
-              const localChanges = Math.abs(localContent.length - lastRemoteContent.length);
-              const remoteChanges = Math.abs(remoteContent.length - lastRemoteContent.length);
-
-              // Flag as conflict if both sides made significant changes (>5 character diff)
-              if (localChanges > 5 && remoteChanges > 5) {
-                setConflict({
-                  detected: true,
-                  remoteLength: remoteContent.length,
-                  localLength: localContent.length,
-                  message: 'Concurrent edits detected. Please review changes.'
-                });
-              }
-            }
-
-            setLastRemoteContent(remoteContent);
-            onRemoteChange(remoteContent);
+          // Concurrent-edit guard: if the local user has typed within the last
+          // second AND both sides diverged from the last shared base, surface a
+          // conflict instead of silently clobbering their in-progress edit.
+          const typingNow = Date.now() - lastLocalEditRef.current < 1000;
+          if (typingNow && base && local !== base && remote !== base &&
+              Math.abs(local.length - base.length) > 5 && Math.abs(remote.length - base.length) > 5) {
+            setConflict({ detected: true, remoteContent: remote, remoteLength: remote.length, localLength: local.length, message: 'A collaborator saved changes while you were typing.' });
+            return; // hold the remote copy; let the user choose (see accept/keep).
           }
+
+          lastRemoteRef.current = remote;
+          if (remote !== local) onRemoteChange(remote);
         })
         .on('presence', { event: 'sync' }, () => {
-          const state = newChannel.presenceState();
+          const state = channel.presenceState();
           const others: Collaborator[] = Object.keys(state)
             .filter(key => key !== user.id)
             .map(key => {
-              const meta = state[key][0] as any;
-              return { userId: key, username: meta.username, color: colorForUser(key) };
+              const meta = (state[key][0] || {}) as any;
+              return { userId: key, username: meta.username || 'Anonymous', color: colorForUser(key), line: meta.line };
             });
           setCollaborators(others);
         })
         .subscribe((status: string) => {
-          if (status === 'SUBSCRIBED') {
-            newChannel.track({ username });
-          }
+          if (status === 'SUBSCRIBED') channel.track({ username, line: 1 });
         });
 
-      setChannel(newChannel);
-    };
-
-    setupSync();
+      channelRef.current = channel;
+    })();
 
     return () => {
-      setChannel((current: any) => {
-        if (current) supabase.removeChannel(current);
-        return null;
-      });
+      cancelled = true;
+      if (channelRef.current) { supabase.removeChannel(channelRef.current); channelRef.current = null; }
       setCollaborators([]);
+      setConflict(NO_CONFLICT);
+      lastRemoteRef.current = '';
     };
   }, [scriptId]);
 
-  // Push local changes
+  // Push local changes: broadcast to peers + debounced DB save.
   useEffect(() => {
-    if (!scriptId || !channel) return;
-
-    const pushChanges = async () => {
+    if (!scriptId || !channelRef.current) return;
+    const timer = setTimeout(async () => {
       setIsSyncing(true);
-
-      // Broadcast to other clients immediately
-      channel.send({
-        type: 'broadcast',
-        event: 'content_update',
-        payload: { content: localContent, timestamp: Date.now() }
-      });
-
-      // Debounce saving to DB (handled by storage.ts or we can do it here)
-      // Let's do DB save here so storage.ts can remain local-first
+      channelRef.current.send({ type: 'broadcast', event: 'content_update', payload: { content: localContent, timestamp: Date.now() } });
+      lastRemoteRef.current = localContent;
       const user = await getCurrentUser();
-      if (user) {
-        await supabase
-          .from('scripts')
-          .update({ content: localContent, updated_at: new Date().toISOString() })
-          .eq('id', scriptId);
-      }
-
+      if (user) await supabase.from('scripts').update({ content: localContent, updated_at: new Date().toISOString(), last_edited_by: user.id }).eq('id', scriptId);
       setLastSyncedAt(new Date());
       setIsSyncing(false);
-    };
-
-    const timer = setTimeout(pushChanges, 1500); // Debounce push
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [localContent, scriptId, channel]);
+  }, [localContent, scriptId]);
 
-  return { isSyncing, lastSyncedAt, collaborators, conflict };
+  // Share caret line via presence (throttled to ~3/sec).
+  const broadcastCursor = useCallback((caretIndex: number) => {
+    const ch = channelRef.current, me = meRef.current;
+    if (!ch || !me) return;
+    const now = Date.now();
+    if (now - lastCursorSentRef.current < 320) return;
+    lastCursorSentRef.current = now;
+    const line = localRef.current.slice(0, caretIndex).split('\n').length;
+    ch.track({ username: me.username, line });
+  }, []);
+
+  const resolveConflict = useCallback((choice: 'accept-remote' | 'keep-mine') => {
+    setConflict(prev => {
+      if (choice === 'accept-remote' && prev.remoteContent) { lastRemoteRef.current = prev.remoteContent; onRemoteChange(prev.remoteContent); }
+      // keep-mine: next debounced push rebroadcasts local as the new base.
+      return NO_CONFLICT;
+    });
+  }, [onRemoteChange]);
+
+  return { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict };
 }
