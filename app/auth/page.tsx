@@ -8,6 +8,7 @@ import { ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
 import { signIn, signUp } from '@/lib/supabase/auth';
+import { checkPasswordWeakness } from '@/lib/password-strength';
 import { supabase } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
@@ -150,6 +151,10 @@ export default function AuthPage() {
     if (form.password.length < 6) {
       setError('Password must be at least 6 characters.');
       return;
+    }
+    if (mode === 'signup') {
+      const weak = checkPasswordWeakness(form.password, form.email, form.username);
+      if (weak) { setError(weak); return; }
     }
 
     setLoading(true);
