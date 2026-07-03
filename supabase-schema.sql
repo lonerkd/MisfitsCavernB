@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   discord_id TEXT,
   discord_username TEXT,
   discord_avatar TEXT,
+  notification_prefs JSONB NOT NULL DEFAULT '{}'::jsonb, -- {replies,jobs,product}
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

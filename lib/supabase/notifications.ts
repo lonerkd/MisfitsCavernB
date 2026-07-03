@@ -11,19 +11,32 @@ export interface Notification {
   created_at: string;
 }
 
-// Per-device notification preferences (mirrors the Settings toggles). A muted
-// type is never surfaced client-side.
-const PREF_KEY: Record<string, string> = {
-  reply: 'mc_notify_replies',
-  comment: 'mc_notify_replies',
-  job: 'mc_notify_jobs',
-  application: 'mc_notify_jobs',
-  product: 'mc_notify_product',
+// Account-level notification preferences, stored on profiles.notification_prefs
+// so they sync across devices (was previously localStorage-only). A muted type
+// is never surfaced client-side. Defaults: replies/jobs on, product off.
+export interface NotificationPrefs { replies: boolean; jobs: boolean; product: boolean }
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = { replies: true, jobs: true, product: false };
+
+const TYPE_PREF: Record<string, keyof NotificationPrefs> = {
+  reply: 'replies', comment: 'replies', job: 'jobs', application: 'jobs', product: 'product',
 };
-export function typeEnabled(type: string): boolean {
-  const key = PREF_KEY[type];
+
+export function typeEnabled(type: string, prefs: NotificationPrefs = DEFAULT_NOTIFICATION_PREFS): boolean {
+  const key = TYPE_PREF[type];
   if (!key) return true;
-  try { return localStorage.getItem(key) !== 'off'; } catch { return true; }
+  return prefs[key] !== false;
+}
+
+export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
+  const { data } = await supabase.from('profiles').select('notification_prefs').eq('id', userId).single();
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...(data?.notification_prefs || {}) };
+}
+
+export async function saveNotificationPrefs(userId: string, patch: Partial<NotificationPrefs>) {
+  const current = await getNotificationPrefs(userId);
+  const next = { ...current, ...patch };
+  await supabase.from('profiles').update({ notification_prefs: next }).eq('id', userId);
+  return next;
 }
 
 // Create a notification for a recipient. No-ops when the recipient is the
@@ -41,13 +54,11 @@ export async function notify(userId: string | null | undefined, n: { type: strin
 }
 
 export async function fetchNotifications(userId: string, limit = 30): Promise<Notification[]> {
-  const { data } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  return ((data as Notification[]) || []).filter(nf => typeEnabled(nf.type));
+  const [{ data }, prefs] = await Promise.all([
+    supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(limit),
+    getNotificationPrefs(userId),
+  ]);
+  return ((data as Notification[]) || []).filter(nf => typeEnabled(nf.type, prefs));
 }
 
 export async function markRead(id: string) {

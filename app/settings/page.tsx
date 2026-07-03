@@ -5,15 +5,14 @@ import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, M
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '@/lib/supabase/notifications';
 
 // Device-level preferences live in localStorage (they describe this browser,
-// not the account) and are read back by the components that honour them.
+// not the account). Notification prefs are account-level and live on the
+// profile (see getNotificationPrefs) so they sync across devices.
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',      // 'on' | 'off'
   motion: 'mc_reduce_motion',      // 'on' | 'off'
-  notifyReplies: 'mc_notify_replies',
-  notifyJobs: 'mc_notify_jobs',
-  notifyProduct: 'mc_notify_product',
 } as const;
 
 const getPref = (k: string, dflt: boolean) => {
@@ -98,18 +97,27 @@ export default function SettingsPage() {
   const [notifyProduct, setNotifyProduct] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.replace('/auth'); return; }
       setUser(data.user);
       setNewEmail(data.user.email || '');
       setLoaded(true);
+      const prefs = await getNotificationPrefs(data.user.id);
+      setNotifyReplies(prefs.replies);
+      setNotifyJobs(prefs.jobs);
+      setNotifyProduct(prefs.product);
     });
     setCursor(getPref(PREF_KEYS.cursor, true));
     setMotion(getPref(PREF_KEYS.motion, false));
-    setNotifyReplies(getPref(PREF_KEYS.notifyReplies, true));
-    setNotifyJobs(getPref(PREF_KEYS.notifyJobs, true));
-    setNotifyProduct(getPref(PREF_KEYS.notifyProduct, false));
   }, [router]);
+
+  // Persist a single notification preference to the profile (cross-device).
+  const setNotifyPref = (key: 'replies' | 'jobs' | 'product', v: boolean) => {
+    if (key === 'replies') setNotifyReplies(v);
+    if (key === 'jobs') setNotifyJobs(v);
+    if (key === 'product') setNotifyProduct(v);
+    if (user) saveNotificationPrefs(user.id, { [key]: v });
+  };
 
   const flash = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };
   const savePref = (key: string, val: boolean) => { try { localStorage.setItem(key, val ? 'on' : 'off'); } catch {} };
@@ -227,9 +235,9 @@ export default function SettingsPage() {
         </Section>
 
         <Section icon={<Bell size={15} />} title="Notifications">
-          <Row label="Comment replies" hint="When someone replies to your notes or reviews." control={<Toggle on={notifyReplies} onChange={v => { setNotifyReplies(v); savePref(PREF_KEYS.notifyReplies, v); }} />} />
-          <Row label="Job & casting alerts" hint="New roles matching your profile." control={<Toggle on={notifyJobs} onChange={v => { setNotifyJobs(v); savePref(PREF_KEYS.notifyJobs, v); }} />} />
-          <Row label="Product updates" hint="Occasional news about new tools and features." control={<Toggle on={notifyProduct} onChange={v => { setNotifyProduct(v); savePref(PREF_KEYS.notifyProduct, v); }} />} />
+          <Row label="Comment replies" hint="When someone replies to your notes or reviews." control={<Toggle on={notifyReplies} onChange={v => setNotifyPref('replies', v)} />} />
+          <Row label="Job & casting alerts" hint="New roles matching your profile." control={<Toggle on={notifyJobs} onChange={v => setNotifyPref('jobs', v)} />} />
+          <Row label="Product updates" hint="Occasional news about new tools and features." control={<Toggle on={notifyProduct} onChange={v => setNotifyPref('product', v)} />} />
         </Section>
 
         <Section icon={<ShieldCheck size={15} />} title="Data & Privacy">
