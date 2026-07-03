@@ -316,8 +316,9 @@ CREATE TABLE IF NOT EXISTS script_metadata (
 );
 ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
 -- can_access_script: owner/editor of a personal script, or creator/member of
--- the owning project. Tighter than script_revisions (personal scripts are NOT
--- open to every authenticated user).
+-- the owning project. Shared by script_metadata and script_revisions (migration
+-- tighten_script_revisions_rls) so personal scripts are NOT open to every
+-- authenticated user.
 CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
