@@ -415,6 +415,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showPost, setShowPost] = useState(false);
@@ -431,14 +432,20 @@ export default function JobsPage() {
 
   const loadJobs = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       let query = supabase
         .from('jobs')
         .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
         .eq('status', 'open')
         .order('created_at', { ascending: false });
-      const { data } = await query;
+      const { data, error } = await query;
+      if (error) throw error;
       setJobs(data || []);
+    } catch (error: any) {
+      console.error(error);
+      setLoadError(error?.message || 'Failed to load job listings');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -677,6 +684,13 @@ export default function JobsPage() {
                     <div key={i} className="skeleton" style={{ height: 88, borderRadius: 14 }} />
                   ))}
                 </div>
+              ) : loadError ? (
+                <EmptyState
+                  icon={<Briefcase size={28} />}
+                  title="Couldn't load job listings"
+                  subtitle={loadError}
+                  action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+                />
               ) : filtered.length === 0 ? (
                 <EmptyState
                   icon={<Briefcase size={28} />}

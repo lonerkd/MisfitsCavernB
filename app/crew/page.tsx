@@ -23,6 +23,7 @@ const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'S
 export default function CrewPage() {
   const [crew, setCrew] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
@@ -40,6 +41,7 @@ export default function CrewPage() {
 
   const loadCrew = async (searchTerm = debouncedSearch) => {
     setLoading(true);
+    setLoadError(null);
     try {
       let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
@@ -59,8 +61,10 @@ export default function CrewPage() {
       const { data, error } = await query;
       if (error) throw error;
       setCrew(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setLoadError(error?.message || 'Failed to load crew directory');
+      setCrew([]);
     } finally {
       setLoading(false);
     }
@@ -122,6 +126,13 @@ export default function CrewPage() {
               <div key={i} className="skeleton" style={{ height: 140, borderRadius: 14 }} />
             ))}
           </div>
+        ) : loadError ? (
+          <EmptyState
+            icon={<User size={28} />}
+            title="Couldn't load the crew directory"
+            subtitle={loadError}
+            action={<button onClick={() => loadCrew()} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+          />
         ) : crew.length === 0 ? (
           <EmptyState
             icon={<User size={28} />}
