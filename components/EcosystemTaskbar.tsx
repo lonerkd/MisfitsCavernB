@@ -180,6 +180,7 @@ export default function EcosystemTaskbar() {
         <div style={{ position: 'relative' }}>
           <motion.button
             onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))}
+            aria-label="Search (Command-K)"
             onHoverStart={() => setHoveredId('search')}
             whileHover={{ scale: 1.18, y: -6 }}
             whileTap={{ scale: 0.93 }}
@@ -215,7 +216,7 @@ export default function EcosystemTaskbar() {
           const Icon = app.icon;
 
           return (
-            <Link key={app.id} href={app.path} style={{ textDecoration: 'none', position: 'relative' }}>
+            <Link key={app.id} href={app.path} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative' }}>
               <motion.div
                 onHoverStart={() => setHoveredId(app.id)}
                 whileHover={{ scale: 1.18, y: -6 }}
@@ -317,6 +318,7 @@ export default function EcosystemTaskbar() {
         <div style={{ position: 'relative' }}>
           <motion.button
             onClick={() => setProjectsOpen(v => !v)}
+            aria-label="Switch project"
             onHoverStart={() => setHoveredId('projects')}
             onHoverEnd={() => setHoveredId(null)}
             whileHover={{ scale: 1.08, y: -3 }}
@@ -431,7 +433,7 @@ export default function EcosystemTaskbar() {
           const isHovered = hoveredId === item.id;
           const Icon = item.icon;
           return (
-            <Link key={item.id} href={item.path} style={{ textDecoration: 'none', position: 'relative' }}>
+            <Link key={item.id} href={item.path} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
               <motion.div
                 onHoverStart={() => setHoveredId(item.id)}
                 whileHover={{ scale: 1.18, y: -6 }}
