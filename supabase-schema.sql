@@ -297,6 +297,9 @@ CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
   ))
 );
+-- Public share links (/s/[token]): shared scripts are readable logged-out.
+-- Without this anon policy, share links 404'd for visitors without accounts.
+CREATE POLICY "Shared scripts publicly viewable" ON scripts FOR SELECT TO anon USING (shared = TRUE);
 CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());
 -- Project crew (not just the owner) can co-write the shared screenplay.
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
