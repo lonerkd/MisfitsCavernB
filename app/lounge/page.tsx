@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2 } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -13,6 +13,7 @@ import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
+import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/Avatar';
 
 interface Message {
@@ -178,50 +179,50 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
 }
 
 // Voice room: live presence of who's in the channel (Discord-style). Audio
-// (WebRTC) is a further layer; this establishes the room + real occupancy.
+// Real WebRTC audio: mesh peer connections signaled over the same Realtime
+// channel that tracks room presence (see lib/webrtc/voice.ts).
 function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: string; avatar?: string } | null }) {
-  const [members, setMembers] = useState<{ id: string; name: string; avatar?: string }[]>([]);
   const [joined, setJoined] = useState(false);
-  const chanRef = useRef<any>(null);
+  const { peers, muted, toggleMute, micError, speaking } = useVoiceRoom(channel.id, me, joined);
 
-  useEffect(() => { setJoined(false); setMembers([]); }, [channel.id]);
+  useEffect(() => { setJoined(false); }, [channel.id]);
 
-  useEffect(() => {
-    if (!joined || !me) return;
-    const ch = supabase.channel(`voice:${channel.id}`, { config: { presence: { key: me.id } } });
-    ch.on('presence', { event: 'sync' }, () => {
-      const state = ch.presenceState() as any;
-      const list = Object.values(state).map((arr: any) => arr[0]).filter(Boolean).map((p: any) => ({ id: p.id, name: p.name, avatar: p.avatar }));
-      setMembers(list);
-    }).subscribe(async (status) => { if (status === 'SUBSCRIBED') await ch.track({ id: me.id, name: me.name, avatar: me.avatar }); });
-    chanRef.current = ch;
-    return () => { supabase.removeChannel(ch); };
-  }, [joined, channel.id, me]);
+  const everyone = joined && me ? [{ id: me.id, name: me.name, avatar: me.avatar, speaking, connected: true }, ...peers] : peers;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: 40 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2 }}>
         <Volume2 size={24} color="var(--accent)" /> {channel.name}
       </div>
-      {members.length > 0 ? (
+      {everyone.length > 0 ? (
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {members.map(m => (
+          {everyone.map(m => (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div style={{ border: '2px solid #10b981', borderRadius: '50%', boxShadow: '0 0 16px rgba(16,185,129,0.5)' }}>
+              <div style={{ border: `2px solid ${m.speaking ? '#10b981' : 'rgba(255,255,255,0.15)'}`, borderRadius: '50%', boxShadow: m.speaking ? '0 0 18px rgba(16,185,129,0.6)' : 'none', transition: 'border-color 0.15s, box-shadow 0.15s' }}>
                 <Avatar src={m.avatar} name={m.name} size={56} />
               </div>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{m.name}{m.id === me?.id ? ' (you)' : ''}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>
+                {m.name}{m.id === me?.id ? ' (you)' : ''}
+                {m.id !== me?.id && !m.connected && <span style={{ color: '#f59e0b' }}> · connecting…</span>}
+              </span>
             </div>
           ))}
         </div>
       ) : (
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
       )}
-      <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(255,60,0,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
-      </button>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', letterSpacing: 1, maxWidth: 320, textAlign: 'center', lineHeight: 1.6 }}>
-        Live room presence is on. In-call audio streaming is the next layer.
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(255,60,0,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
+        </button>
+        {joined && (
+          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={{ padding: 12, borderRadius: '50%', border: `1px solid ${muted ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.15)'}`, cursor: 'pointer', background: muted ? 'rgba(255,60,0,0.15)' : 'rgba(255,255,255,0.05)', color: muted ? '#ff7a4d' : '#fff', display: 'flex' }}>
+            {muted ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
+        )}
+      </div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: micError ? '#f59e0b' : 'var(--fg-dim)', letterSpacing: 1, maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
+        {micError || (joined ? 'Live — peer-to-peer audio with your crew. Green ring = speaking.' : 'Join to talk with everyone in this room.')}
       </div>
     </div>
   );
