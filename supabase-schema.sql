@@ -537,3 +537,16 @@ CREATE INDEX IF NOT EXISTS messages_parent_idx ON messages (parent_message_id);
 -- Concept board organisation into named boards (Pinterest-style).
 ALTER TABLE concept_assets ADD COLUMN IF NOT EXISTS board text;
 CREATE INDEX IF NOT EXISTS concept_assets_project_board_idx ON concept_assets (project_id, board);
+
+-- Bulletproof profile creation: a trigger on auth.users creates the profile
+-- server-side so it never depends on a best-effort client insert.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE uname text;
+BEGIN
+  uname := coalesce(nullif(new.raw_user_meta_data->>'username',''), nullif(split_part(new.email,'@',1),''), 'user_' || substr(new.id::text,1,8));
+  INSERT INTO public.profiles (id, username, status) VALUES (new.id, uname, 'OPEN') ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END; $$;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
