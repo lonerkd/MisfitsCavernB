@@ -550,3 +550,33 @@ BEGIN
 END; $$;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ── Project-connected channels (Discord-style) ──────────────────────────────
+CREATE TABLE IF NOT EXISTS channels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,  -- null = global/community
+  name TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'text' CHECK (type IN ('text','voice')),
+  topic TEXT,
+  position INT DEFAULT 0,
+  is_private BOOLEAN NOT NULL DEFAULT false,
+  post_policy TEXT NOT NULL DEFAULT 'viewers' CHECK (post_policy IN ('viewers','members','managers')),
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS channel_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  can_post BOOLEAN NOT NULL DEFAULT true,
+  can_manage BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(channel_id, user_id)
+);
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES channels(id) ON DELETE CASCADE;
+
+-- SECURITY DEFINER permission helpers: can_view_channel / can_post_channel /
+-- can_manage_channel. View = global, project owner, project crew (public), or
+-- explicit member (private). Post gated by post_policy (viewers/members/
+-- managers). Manage = project owner or channel member with can_manage.
+-- (Full definitions applied via migration project_channels_system.)
