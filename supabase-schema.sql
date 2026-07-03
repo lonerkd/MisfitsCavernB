@@ -286,6 +286,12 @@ CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USIN
   public.is_project_creator(project_id) OR user_id = auth.uid()
 );
 
+-- NOTE (performance): on the live DB, migration
+-- performance_pass_fk_indexes_and_initplan (a) indexed every unindexed foreign
+-- key and (b) rewrote all policies to wrap auth.uid()/auth.role() in a scalar
+-- subquery — (SELECT auth.uid()) — so they evaluate once per statement instead
+-- of per row. Policies below are shown unwrapped for readability.
+
 -- RLS Policies: Scripts
 CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (
   shared = TRUE OR
