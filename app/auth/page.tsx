@@ -164,7 +164,9 @@ export default function AuthPage() {
       // pages read it via supabase.auth.getUser().
 
       toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
-      setTimeout(() => router.push('/profile'), 600);
+      // New users land on the projects board (first-run onboarding); returning
+      // users go to their projects too — the suite's natural home.
+      setTimeout(() => router.push('/projects'), 600);
     } catch (err: any) {
       const code = err.code || '';
       const msg = err.message || '';

@@ -4,10 +4,59 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, ArrowUpRight, Clock, Film, Tv, Video, Music } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
+import { useProject } from '@/lib/context/ProjectContext';
+import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useEscapeKey } from '@/lib/useEscapeKey';
+
+const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
+
+function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (title: string, type: string, logline: string) => Promise<void> }) {
+  useEscapeKey(onClose, open);
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState(PROJECT_TYPES[0]);
+  const [logline, setLogline] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async () => { if (!title.trim()) return; setBusy(true); try { await onCreate(title.trim(), type, logline.trim()); setTitle(''); setLogline(''); } finally { setBusy(false); } };
+  const inp: React.CSSProperties = { width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 14px', color: '#fff', fontSize: 14, outline: 'none' };
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
+            style={{ width: 460, maxWidth: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 28 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Title</label>
+                <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} placeholder="e.g. Femme Fatale" style={inp} />
+              </div>
+              <div>
+                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Format</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {PROJECT_TYPES.map(t => (
+                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(255,60,0,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Logline <span style={{ opacity: 0.5 }}>(optional)</span></label>
+                <textarea value={logline} onChange={e => setLogline(e.target.value)} placeholder="One sentence that sells the story." rows={2} style={{ ...inp, resize: 'vertical' }} />
+              </div>
+              <button onClick={submit} disabled={busy || !title.trim()} style={{ marginTop: 6, padding: 14, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: title.trim() ? 'pointer' : 'default', opacity: busy || !title.trim() ? 0.6 : 1 }}>{busy ? 'Creating…' : 'Create & open studio'}</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
 
@@ -253,13 +302,18 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
 }
 
 export default function ProjectsPage() {
+  useRequireAuth();
   const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [showNew, setShowNew] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const { toast } = useToast();
+  const { setActiveProject } = useProject();
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+      if (!user) { setLoaded(true); return; }
       setUser(user);
       getUserProjects(user.id).then(data => {
         const fetched: Project[] = (data || []).map(p => ({
@@ -278,7 +332,8 @@ export default function ProjectsPage() {
           color: p.accent_color || '#ff3c00',
         }));
         setProjectsList(fetched);
-      }).catch(console.error);
+        setLoaded(true);
+      }).catch(() => setLoaded(true));
     });
   }, []);
 
@@ -290,19 +345,25 @@ export default function ProjectsPage() {
     return map;
   }, [projectsList]);
 
-  const handleNewProject = async () => {
+  const handleNewProject = () => {
     if (!user) { toast('Sign in to create projects', 'error'); return; }
-    const title = prompt('Project title:');
-    if (!title) return;
+    setShowNew(true);
+  };
+
+  const createFromModal = async (title: string, type: string, logline: string) => {
+    if (!user) return;
     try {
-      const p = await createDBProject(user.id, title, 'A new cinematic vision.');
+      const p = await createDBProject(user.id, title, logline, type);
       const newP: Project = {
-        id: p.id, title: p.title, type: 'Feature', phase: 'development',
+        id: p.id, title: p.title, type, phase: 'development',
         progress: 0, deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
-        team: ['CR'], description: p.description, color: '#6366f1',
+        team: ['CR'], description: p.description || '', color: p.accent_color || '#6366f1',
       };
       setProjectsList(prev => [newP, ...prev]);
-      toast('Project created', 'success');
+      setActiveProject(p as any);   // make it the active project across the suite
+      setShowNew(false);
+      toast('Project created — opening studio', 'success');
+      router.push('/studio');
     } catch {
       toast('Failed to create project', 'error');
     }
@@ -314,6 +375,7 @@ export default function ProjectsPage() {
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', overflow: 'hidden' }}>
       <GrainOverlay />
+      <NewProjectModal open={showNew} onClose={() => setShowNew(false)} onCreate={createFromModal} />
 
       {/* Top bar */}
       <div style={{
@@ -451,6 +513,35 @@ export default function ProjectsPage() {
         overflowX: 'auto',
         minHeight: '100vh',
       }}>
+        {!loaded ? (
+          <div style={{ display: 'flex', gap: 18, padding: '4px 2px' }}>
+            {[0, 1, 2, 3].map(c => (
+              <div key={c} style={{ width: 260, flexShrink: 0 }}>
+                <div className="skeleton" style={{ height: 14, width: '50%', borderRadius: 4, marginBottom: 16 }} />
+                {[0, 1].map(r => <div key={r} className="skeleton" style={{ height: 96, borderRadius: 12, marginBottom: 12 }} />)}
+              </div>
+            ))}
+          </div>
+        ) : loaded && user && projectsList.length === 0 ? (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+            style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 4, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Welcome to the cavern</div>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.4rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 1, margin: 0 }}>Start your first<br />production</h1>
+            <p style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', color: 'var(--fg-muted)', maxWidth: 460, lineHeight: 1.6 }}>
+              One project ties your screenplay, schedule, budget, concept board, characters and pitch together. Create one to begin — everything flows from it.
+            </p>
+            <button onClick={() => setShowNew(true)} className="btn-primary" style={{ marginTop: 8, fontSize: 12, letterSpacing: 3, padding: '15px 32px' }}>
+              <Plus size={14} /> Create your first project
+            </button>
+            <div style={{ display: 'flex', gap: 22, marginTop: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {['Write in ScriptOS', 'Auto-build the schedule', 'Plan budget & crew', 'Pitch it'].map((s, i) => (
+                <div key={s} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+                  <span style={{ color: 'var(--accent)' }}>{i + 1}.</span> {s}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -466,6 +557,7 @@ export default function ProjectsPage() {
             <PhaseColumn key={phase.id} phase={phase} projects={byPhase[phase.id]} />
           ))}
         </motion.div>
+        )}
       </div>
 
       {/* Scrollbar style */}

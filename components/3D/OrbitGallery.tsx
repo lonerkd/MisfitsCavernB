@@ -76,16 +76,19 @@ function RotatingGallery({ photos }: { photos: Photo[] }) {
 }
 
 export default function OrbitGallery({ photos = [] }: { photos?: Photo[] }) {
-  const defaultPhotos: Photo[] = [
-    { id: '1', imageUrl: '/placeholder.jpg', title: 'Project 1' },
-    { id: '2', imageUrl: '/placeholder.jpg', title: 'Project 2' },
-    { id: '3', imageUrl: '/placeholder.jpg', title: 'Project 3' },
-    { id: '4', imageUrl: '/placeholder.jpg', title: 'Project 4' },
-    { id: '5', imageUrl: '/placeholder.jpg', title: 'Project 5' },
-    { id: '6', imageUrl: '/placeholder.jpg', title: 'Project 6' },
-  ];
+  // No fabricated placeholders — if there's nothing real to show, say so.
+  if (photos.length === 0) {
+    return (
+      <div style={{ width: '100%', height: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, background: 'rgba(255,255,255,0.01)' }}>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'rgba(240,236,228,0.4)' }}>
+          No gallery images yet.<br />
+          <span style={{ fontSize: 9, color: 'rgba(240,236,228,0.25)' }}>Add concept art in Studio to populate this gallery.</span>
+        </div>
+      </div>
+    );
+  }
 
-  const photosToShow = photos.length > 0 ? photos : defaultPhotos;
+  const photosToShow = photos;
 
   return (
     <div style={{ width: '100%', height: '600px', background: 'transparent' }}>

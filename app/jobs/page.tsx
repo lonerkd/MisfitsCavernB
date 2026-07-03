@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
 
 interface Job {
@@ -410,6 +411,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
 
 export default function JobsPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,7 +473,10 @@ export default function JobsPage() {
   };
 
   const handleCloseJob = async (jobId: string) => {
-    await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
+    if (!await confirm('Close this job posting? It will stop accepting applications.')) return;
+    const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
+    if (error) { toast(error.message || 'Could not close job', 'error'); return; }
+    toast('Job closed', 'success');
     if (user) loadMyJobs(user.id);
     loadJobs();
   };

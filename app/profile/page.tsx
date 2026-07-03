@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase } from 'lucide-react';
+import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import Avatar from '@/components/Avatar';
+import { useConfirm } from '@/components/Confirm';
 
 const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
@@ -20,6 +22,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 export default function ProfilePage() {
+  const confirm = useConfirm();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>({});
   const [saving, setSaving] = useState(false);
@@ -62,6 +65,7 @@ export default function ProfilePage() {
   };
 
   const handleSignOut = async () => {
+    if (!await confirm({ message: 'Sign out of Misfits Cavern?', confirmLabel: 'SIGN OUT', danger: false })) return;
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };
@@ -99,6 +103,12 @@ export default function ProfilePage() {
               opacity: saving ? 0.6 : 1 }}>
             <Save size={12} /> {saving ? 'SAVING...' : 'SAVE'}
           </button>
+          <Link href="/settings" title="Settings"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+              background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)',
+              fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer', textDecoration: 'none' }}>
+            <Settings size={12} />
+          </Link>
           <button onClick={handleSignOut}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
               background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)',
@@ -113,18 +123,7 @@ export default function ProfilePage() {
         {/* Avatar + name section */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
           <div>
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.username}
-                style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,60,0,0.3)' }} />
-            ) : (
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: 'var(--accent)', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontFamily: 'var(--display)', fontSize: '1.8rem', color: 'var(--bg)',
-              }}>
-                {profile.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
-              </div>
-            )}
+            <Avatar src={profile.avatar_url} name={profile.username || user.email} size={72} style={{ border: '2px solid rgba(255,60,0,0.3)' }} />
           </div>
           <div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>

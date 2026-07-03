@@ -5,6 +5,8 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { notify } from '@/lib/supabase/notifications';
+import { useToast } from '@/components/Toast';
 
 interface Job {
   id: string;
@@ -65,6 +67,7 @@ const appStatusStyle = (status: 'pending' | 'accepted' | 'rejected'): React.CSSP
 export default function JobDetailPage() {
   const params = useParams();
   const jobId = params?.id as string;
+  const { toast } = useToast();
 
   const [job, setJob] = useState<Job | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -160,6 +163,13 @@ export default function JobDetailPage() {
       } else {
         setAlreadyApplied(true);
         setCoverNote('');
+        // Notify the job poster of the new application.
+        notify(job.created_by, {
+          type: 'application',
+          title: `New application · ${job.title}`,
+          body: 'Someone applied to your posting.',
+          link: `/jobs/${job.id}`,
+        }, user.id);
       }
     } finally {
       setApplying(false);
@@ -171,10 +181,22 @@ export default function JobDetailPage() {
       .from('job_applications')
       .update({ status: newStatus })
       .eq('id', appId);
-    if (!error) {
+    if (error) { toast(error.message || 'Could not update application', 'error'); return; }
+    {
+      toast(newStatus === 'accepted' ? 'Applicant accepted' : 'Application declined', 'success');
       setApplications(prev =>
         prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );
+      // Notify the applicant that their status changed.
+      const app = applications.find(a => a.id === appId);
+      if (app && job) {
+        notify(app.applicant_id, {
+          type: 'application',
+          title: newStatus === 'accepted' ? `You're in! · ${job.title}` : `Update · ${job.title}`,
+          body: newStatus === 'accepted' ? 'Your application was accepted.' : 'Your application was not selected this time.',
+          link: `/jobs/${job.id}`,
+        }, user?.id);
+      }
     }
   };
 

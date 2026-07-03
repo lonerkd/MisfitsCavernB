@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia } from '@/lib/supabase/portfolio';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
 
 const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
@@ -30,6 +31,7 @@ const fieldStyle: React.CSSProperties = {
 
 export default function ManagePortfolioPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [user, setUser] = useState<any>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,7 @@ export default function ManagePortfolioPage() {
   };
 
   const removeProject = async (id: string) => {
+    if (!await confirm('Delete this portfolio project and its media? This cannot be undone.')) return;
     try {
       await deletePortfolioProject(id);
       setProjects(prev => prev.filter(p => p.id !== id));
@@ -99,6 +102,7 @@ export default function ManagePortfolioPage() {
   };
 
   const removeMedia = async (projectId: string, mediaId: string) => {
+    if (!await confirm('Remove this media item?')) return;
     try {
       await deletePortfolioMedia(mediaId);
       setProjects(prev => prev.map(p => p.id === projectId ? { ...p, portfolio_media: p.portfolio_media.filter(m => m.id !== mediaId) } : p));

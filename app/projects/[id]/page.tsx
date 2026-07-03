@@ -10,7 +10,13 @@ import {
   Music, Plus, ExternalLink, Circle,
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
+import { useConfirm } from '@/components/Confirm';
 import { supabase } from '@/lib/supabase/client';
+import { parseScript } from '@/lib/scriptos/parser';
+
+// Rough indie default rates used to seed budget suggestions from the script
+// breakdown. They are starting points the user edits after inserting.
+const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
 // Map the DB project.status to the production phase used by the header rail.
 function mapStatusToPhase(status?: string): Phase {
@@ -48,69 +54,6 @@ interface Project {
   assetGB?: number;
   publishedWork?: number;
 }
-
-// ─── Project data (mirrors /projects/page.tsx — in production this would come from Supabase) ──
-
-const PROJECTS: Project[] = [
-  {
-    id: '1',
-    title: 'Femme Fatale',
-    type: 'Limited Series',
-    phase: 'pre-production',
-    progress: 85,
-    deadline: '2026-06-30',
-    description: 'Political noir limited series. 133-page screenplay submitted to A24 and Proximity Media.',
-    color: '#ff3c00',
-    scriptPages: 133,
-    scriptDraft: 9,
-    assetCount: 24,
-    assetGB: 4.8,
-    publishedWork: 1,
-    team: [
-      { name: 'Peter Olowude', role: 'Director/Writer', online: true },
-      { name: 'Creative Team', role: 'Development', online: true },
-      { name: 'Production', role: 'Logistics' },
-    ],
-  },
-  {
-    id: '2',
-    title: '10 Million',
-    type: 'Music Video',
-    phase: 'post-production',
-    progress: 95,
-    deadline: '2026-05-15',
-    description: 'High-energy visual rhythm. Final color grade and mix in progress.',
-    color: '#f59e0b',
-    scriptPages: 12,
-    scriptDraft: 3,
-    assetCount: 18,
-    assetGB: 11.3,
-    publishedWork: 0,
-    team: [
-      { name: 'Peter Olowude', role: 'Director', online: true },
-      { name: 'Editor', role: 'Post-Production' },
-    ],
-  },
-  {
-    id: '3',
-    title: 'The Briefcase',
-    type: 'Short Film',
-    phase: 'delivery',
-    progress: 100,
-    deadline: '2024-12-01',
-    description: 'Crime thriller about two couriers and a deal that has to go right.',
-    color: '#10b981',
-    scriptPages: 18,
-    scriptDraft: 5,
-    assetCount: 31,
-    assetGB: 22.6,
-    publishedWork: 3,
-    team: [
-      { name: 'Peter Olowude', role: 'Director/Writer' },
-      { name: 'Cast & Crew', role: 'Full Production' },
-    ],
-  },
-];
 
 // ─── Production phases ───────────────────────────────────────────────────────
 
@@ -225,54 +168,49 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
 
 // ─── Script preview ──────────────────────────────────────────────────────────
 
-function ScriptPreview({ pages, draft }: { pages: number; draft: number }) {
-  const lines = [
-    { type: 'slug',     text: 'INT. MINISTER\'S OFFICE — NIGHT' },
-    { type: 'action',   text: 'Power hasn\'t changed hands here in thirty years. The furniture knows it.' },
-    { type: 'char',     text: 'SENATOR VALE' },
-    { type: 'dialogue', text: 'This isn\'t about loyalty. This is about survival.' },
-    { type: 'action',   text: 'She turns away. Looks out at the city.' },
-    { type: 'char',     text: 'MARA' },
-    { type: 'dialogue', text: 'Those stopped being different things for me a long time ago.' },
-  ];
+// Abstract, data-driven peek — reflects the project's real script counts
+// without fabricating any screenplay content.
+function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: number; scenes: number }) {
+  const bars = Math.min(14, Math.max(scenes || scripts || 0, pages > 0 ? 8 : 0));
   return (
-    <div style={{ padding: '14px 16px', fontFamily: 'Courier New, monospace', fontSize: 10, lineHeight: 1.75 }}>
-      {lines.map((l, i) => (
-        <div key={i} style={{
-          color: l.type === 'slug' ? 'rgba(240,236,228,0.9)' : l.type === 'char' ? '#ffaa00' : 'rgba(240,236,228,0.5)',
-          fontWeight: l.type === 'slug' || l.type === 'char' ? 700 : 400,
-          textTransform: l.type === 'slug' || l.type === 'char' ? 'uppercase' : 'none',
-          paddingLeft: l.type === 'dialogue' ? '28%' : l.type === 'char' ? '38%' : 0,
-          marginTop: (l.type === 'slug' && i > 0) ? 12 : 0,
-        }}>{l.text}</div>
-      ))}
+    <div style={{ padding: '14px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{pages}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
+      </div>
+      {bars > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {Array.from({ length: bars }).map((_, i) => (
+            <div key={i} style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', width: `${40 + ((i * 53) % 60)}%` }} />
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No script yet — open ScriptOS to start.</div>
+      )}
     </div>
   );
 }
 
 // ─── Asset preview ───────────────────────────────────────────────────────────
 
-function AssetPreview({ count, gb }: { count: number; gb: number }) {
-  const items = [
-    { name: 'Draft 9.fdx',         type: 'document', color: '#f59e0b' },
-    { name: 'Final Cut v3.mov',     type: 'video',    color: '#ff3c00' },
-    { name: 'Score_Final.wav',      type: 'audio',    color: '#10b981' },
-    { name: 'Poster_Concept.png',   type: 'image',    color: '#6366f1' },
-    { name: 'Grade_LUT.cube',       type: 'document', color: '#8b5cf6' },
-    { name: 'BRoll_EXT_NIGHT.mp4',  type: 'video',    color: '#ff3c00' },
-  ];
+// Abstract tile grid whose fill reflects the real concept/scene counts — no
+// invented filenames.
+function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }) {
+  const total = concepts + scenes;
+  const filled = Math.min(6, concepts);
+  const palette = ['#6366f1', '#ff3c00', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
-    <div style={{ padding: '10px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-      {items.map((item, i) => (
-        <div key={i} style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-          borderRadius: 8, padding: '8px 10px',
-          display: 'flex', alignItems: 'center', gap: 7,
-        }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(240,236,228,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+    <div style={{ padding: '10px 12px' }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
+      {total > 0 ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ aspectRatio: '1/1', borderRadius: 8, background: i < filled ? `${palette[i]}22` : 'rgba(255,255,255,0.03)', border: `1px solid ${i < filled ? palette[i] + '44' : 'rgba(255,255,255,0.05)'}` }} />
+          ))}
         </div>
-      ))}
+      ) : (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No assets yet — add them in Studio.</div>
+      )}
     </div>
   );
 }
@@ -386,18 +324,17 @@ function PortfolioPreview({ published }: { published: number }) {
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ProjectHubPage() {
+  const confirm = useConfirm();
   const params = useParams();
   const router = useRouter();
   const id = String(params.id);
-  const mockProject = PROJECTS.find(p => p.id === id);
 
   const [realProject, setRealProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(!mockProject);
+  const [loading, setLoading] = useState(true);
 
-  // Demo ids ('1','2','3') keep their rich mock dashboard; any real UUID loads
-  // the actual project from Supabase and shows the live production manager.
+  // Always load the actual project from Supabase and show the live production
+  // manager. Unknown ids redirect back to the projects list.
   useEffect(() => {
-    if (mockProject) return;
     let active = true;
     supabase.from('projects').select('*').eq('id', id).single().then(({ data, error }) => {
       if (!active) return;
@@ -417,21 +354,22 @@ export default function ProjectHubPage() {
       setLoading(false);
     });
     return () => { active = false; };
-  }, [id, mockProject, router]);
+  }, [id, router]);
 
   // Live cross-suite counts for real projects, so the hub tiles reflect the
   // actual scripts / crew / tasks / budget / timeline managed elsewhere.
-  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0 });
+  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0 });
   useEffect(() => {
-    if (mockProject) return;
     let active = true;
     (async () => {
-      const [sc, cr, tk, bd, tl] = await Promise.all([
+      const [sc, cr, tk, bd, tl, scn, cn] = await Promise.all([
         supabase.from('scripts').select('page_count').eq('project_id', id),
         supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
         supabase.from('budget_items').select('amount').eq('project_id', id),
         supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('concept_assets').select('id', { count: 'exact', head: true }).eq('project_id', id),
       ]);
       if (!active) return;
       const tasks = (tk.data as { completed: boolean }[]) || [];
@@ -443,12 +381,14 @@ export default function ProjectHubPage() {
         tasksDone: tasks.filter(t => t.completed).length,
         budget: (bd.data as { amount: number }[] | null)?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0,
         timeline: tl.count || 0,
+        scenes: scn.count || 0,
+        concepts: cn.count || 0,
       });
     })();
     return () => { active = false; };
-  }, [id, mockProject]);
+  }, [id]);
 
-  const project = mockProject || realProject;
+  const project = realProject;
 
   if (loading || !project) {
     return (
@@ -458,7 +398,7 @@ export default function ProjectHubPage() {
     );
   }
 
-  const isRealProject = !mockProject;
+  const isRealProject = true;
   const currentPhaseIdx = phaseIndex(project.phase);
   const onlineCount = project.team.filter(m => m.online).length;
 
@@ -573,7 +513,7 @@ export default function ProjectHubPage() {
           Top row:   [ScriptOS large] [Studio]
           Mid row:   [Crew] [Timeline] [Portfolio]
         */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
 
           {/* ─ ScriptOS ─ */}
           <DeptWindow
@@ -583,10 +523,10 @@ export default function ProjectHubPage() {
             href="/editor"
             delay={0.05}
             stats={[
-              { label: 'Pages', value: isRealProject ? counts.pages : (project.scriptPages ?? 0) },
-              { label: 'Scripts', value: isRealProject ? counts.scripts : `#${project.scriptDraft ?? 1}` },
+              { label: 'Pages', value: counts.pages },
+              { label: 'Scripts', value: counts.scripts },
             ]}
-            preview={<ScriptPreview pages={project.scriptPages ?? 0} draft={project.scriptDraft ?? 1} />}
+            preview={<ScriptPreview pages={counts.pages} scripts={counts.scripts} scenes={counts.scenes} />}
           />
 
           {/* ─ Studio ─ */}
@@ -597,10 +537,10 @@ export default function ProjectHubPage() {
             href="/studio"
             delay={0.1}
             stats={[
-              { label: 'Files',  value: project.assetCount ?? 0 },
-              { label: 'GB',     value: project.assetGB ?? 0 },
+              { label: 'Concepts', value: counts.concepts },
+              { label: 'Scenes',   value: counts.scenes },
             ]}
-            preview={<AssetPreview count={project.assetCount ?? 0} gb={project.assetGB ?? 0} />}
+            preview={<AssetPreview concepts={counts.concepts} scenes={counts.scenes} />}
           />
 
           {/* ─ Lounge / Crew ─ */}
@@ -611,8 +551,8 @@ export default function ProjectHubPage() {
             href="/lounge"
             delay={0.15}
             stats={[
-              { label: 'Crew',  value: isRealProject ? counts.crew : project.team.length },
-              { label: 'Tasks', value: isRealProject ? `${counts.tasksDone}/${counts.tasks}` : onlineCount },
+              { label: 'Crew',  value: counts.crew },
+              { label: 'Tasks', value: `${counts.tasksDone}/${counts.tasks}` },
             ]}
             preview={<CrewPreview team={project.team} />}
           />
@@ -624,12 +564,9 @@ export default function ProjectHubPage() {
             color="#f59e0b"
             href="/projects"
             delay={0.2}
-            stats={isRealProject ? [
+            stats={[
               { label: 'Milestones', value: counts.timeline },
               { label: 'Budget', value: counts.budget > 0 ? `$${(counts.budget / 1000).toFixed(1)}k` : '$0' },
-            ] : [
-              { label: 'Progress', value: `${project.progress}%` },
-              { label: 'Deadline', value: project.deadline ? new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—' },
             ]}
             preview={<TimelinePreview deadline={project.deadline} progress={project.progress} phase={project.phase} />}
           />
@@ -642,10 +579,10 @@ export default function ProjectHubPage() {
             href="/portfolio"
             delay={0.25}
             stats={[
-              { label: 'Published', value: project.publishedWork ?? 0 },
-              { label: 'Type',      value: project.type },
+              { label: 'Phase', value: PHASES[currentPhaseIdx].short },
+              { label: 'Type',  value: project.type },
             ]}
-            preview={<PortfolioPreview published={project.publishedWork ?? 0} />}
+            preview={<PortfolioPreview published={project.progress === 100 ? 2 : currentPhaseIdx >= 3 ? 1 : 0} />}
           />
 
           {/* ─ Jobs / Distribution ─ */}
@@ -662,11 +599,11 @@ export default function ProjectHubPage() {
             preview={
               <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { label: 'Festival Submissions', value: '3 pending', color: '#ec4899' },
-                  { label: 'Press Kit',            value: 'Draft',     color: '#f59e0b' },
-                  { label: 'Trailer Cut',          value: currentPhaseIdx >= 3 ? 'Ready' : 'Not yet', color: currentPhaseIdx >= 3 ? '#10b981' : '#4b5563' },
-                  { label: 'Streaming Pitch',      value: 'In prep',   color: '#6366f1' },
-                ].map(({ label, value, color }) => (
+                  { label: 'Picture Lock', ready: currentPhaseIdx >= 3 },
+                  { label: 'Trailer Cut',  ready: currentPhaseIdx >= 3 },
+                  { label: 'Press Kit',    ready: currentPhaseIdx >= 4 },
+                  { label: 'Delivered',    ready: project.progress === 100 },
+                ].map(({ label, ready }) => ({ label, value: ready ? 'Ready' : 'Not yet', color: ready ? '#10b981' : '#4b5563' })).map(({ label, value, color }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
                     <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
@@ -689,7 +626,7 @@ export default function ProjectHubPage() {
 // ─── Production Manager (live Supabase CRUD: tasks, budget, timeline, crew) ────
 
 interface TaskRow { id: string; title: string; completed: boolean }
-interface BudgetRow { id: string; category: string; amount: number }
+interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
 
@@ -700,12 +637,14 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
   const [crew, setCrew] = useState<CrewRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const load = React.useCallback(async () => {
     try {
       const [t, b, tl, c] = await Promise.all([
         supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
-        supabase.from('budget_items').select('id,category,amount').eq('project_id', projectId).order('created_at'),
+        supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
         supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
       ]);
@@ -735,8 +674,11 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
   };
   const delTask = async (id: string) => {
+    if (!await confirm('Delete this task? This cannot be undone.')) return;
+    const prev = tasks;
     setTasks(p => p.filter(x => x.id !== id));
-    await supabase.from('project_tasks').delete().eq('id', id);
+    const { error } = await supabase.from('project_tasks').delete().eq('id', id);
+    if (error) { setErr(error.message); setTasks(prev); }
   };
 
   const addBudget = async (category: string, amount: number) => {
@@ -746,8 +688,59 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setBudget(p => [...p, data as BudgetRow]);
   };
   const delBudget = async (id: string) => {
+    if (!await confirm('Delete this budget line? This cannot be undone.')) return;
+    const prev = budget;
     setBudget(p => p.filter(x => x.id !== id));
-    await supabase.from('budget_items').delete().eq('id', id);
+    const { error } = await supabase.from('budget_items').delete().eq('id', id);
+    if (error) { setErr(error.message); setBudget(prev); }
+  };
+  const setActual = async (id: string, actual: number | null) => {
+    setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
+    await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
+  };
+
+  // Build budget suggestions from the project's screenplay breakdown.
+  const analyzeBudget = async () => {
+    setAnalyzing(true); setErr(null);
+    try {
+      const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setSuggestions([]); return; }
+      const parsed = parseScript(withContent.content);
+      const uniq = (key: 'props' | 'wardrobe' | 'vehicles' | 'sfx' | 'vfx') => {
+        const set = new Set<string>();
+        parsed.scenes.forEach(sc => (sc.elements?.[key] || []).forEach(v => set.add(v)));
+        return set.size;
+      };
+      const castN = parsed.characters?.length || 0;
+      const pages = Math.max(1, Math.round(parsed.scenes.reduce((s, sc) => s + (sc.eighths || 0), 0) / 8));
+      const props = uniq('props'), wardrobe = uniq('wardrobe'), vehicles = uniq('vehicles'), sfx = uniq('sfx'), vfx = uniq('vfx');
+      const existing = new Set(budget.map(b => b.category.toLowerCase()));
+      const sugg = [
+        castN && { category: `Cast (${castN} roles)`, amount: castN * BUDGET_RATES.cast },
+        props && { category: `Props (${props} items)`, amount: props * BUDGET_RATES.props },
+        wardrobe && { category: `Wardrobe (${wardrobe} items)`, amount: wardrobe * BUDGET_RATES.wardrobe },
+        vehicles && { category: `Vehicles (${vehicles})`, amount: vehicles * BUDGET_RATES.vehicles },
+        sfx && { category: `Special FX (${sfx})`, amount: sfx * BUDGET_RATES.sfx },
+        vfx && { category: `Visual FX (${vfx})`, amount: vfx * BUDGET_RATES.vfx },
+        { category: `Camera & Crew (${pages} pg)`, amount: pages * BUDGET_RATES.perPage },
+      ].filter(Boolean) as { category: string; amount: number }[];
+      setSuggestions(sugg.filter(s => !existing.has(s.category.toLowerCase())));
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const acceptSuggestion = async (s: { category: string; amount: number }) => {
+    await addBudget(s.category, s.amount);
+    setSuggestions(prev => prev ? prev.filter(x => x.category !== s.category) : prev);
+  };
+  const acceptAllSuggestions = async () => {
+    const list = suggestions || [];
+    for (const s of list) await addBudget(s.category, s.amount);
+    setSuggestions([]);
   };
 
   const addTimeline = async (title: string, start: string, end: string) => {
@@ -758,8 +751,11 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setTimeline(p => [...p, data as TimelineRow]);
   };
   const delTimeline = async (id: string) => {
+    if (!await confirm('Delete this milestone? This cannot be undone.')) return;
+    const prev = timeline;
     setTimeline(p => p.filter(x => x.id !== id));
-    await supabase.from('timeline_items').delete().eq('id', id);
+    const { error } = await supabase.from('timeline_items').delete().eq('id', id);
+    if (error) { setErr(error.message); setTimeline(prev); }
   };
 
   const addCrew = async (username: string, role: string) => {
@@ -772,11 +768,16 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     load();
   };
   const delCrew = async (id: string) => {
+    if (!await confirm('Remove this crew member from the project?')) return;
+    const prev = crew;
     setCrew(p => p.filter(x => x.id !== id));
-    await supabase.from('project_crew').delete().eq('id', id);
+    const { error } = await supabase.from('project_crew').delete().eq('id', id);
+    if (error) { setErr(error.message); setCrew(prev); }
   };
 
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
+  const totalActual = budget.reduce((s, b) => s + Number(b.actual_cost || 0), 0);
+  const hasActuals = budget.some(b => b.actual_cost != null);
 
   return (
     <div style={{ marginTop: 40 }}>
@@ -800,14 +801,55 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
         {/* Budget */}
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {budget.length === 0 && <Empty>No budget items</Empty>}
-          {budget.map(b => (
+          {budget.map(b => {
+            const over = b.actual_cost != null && Number(b.actual_cost) > Number(b.amount);
+            return (
             <Row key={b.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{b.category}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>${Number(b.amount).toLocaleString()}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(b.amount).toLocaleString()}</span>
+              <input
+                type="number"
+                defaultValue={b.actual_cost ?? ''}
+                placeholder="actual"
+                onBlur={(e) => { const v = e.target.value.trim(); setActual(b.id, v === '' ? null : Number(v)); }}
+                style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
+              />
               <DelBtn onClick={() => delBudget(b.id)} />
             </Row>
-          ))}
+            );
+          })}
+          {hasActuals && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 10 }}>
+              <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
+              <span style={{ color: totalActual > totalBudget ? '#ff6b6b' : '#10b981' }}>{totalActual > totalBudget ? '+' : ''}{(totalActual - totalBudget).toLocaleString()}</span>
+            </div>
+          )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
+
+          {/* Budget-from-breakdown: suggest line items from the script */}
+          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+            {analyzing ? 'ANALYZING SCRIPT…' : '✦ SUGGEST FROM SCRIPT BREAKDOWN'}
+          </button>
+          {suggestions && suggestions.length > 0 && (
+            <div style={{ marginTop: 8, padding: 8, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', letterSpacing: 1 }}>SUGGESTED — from tagged elements</span>
+                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {suggestions.map(s => (
+                  <Row key={s.category}>
+                    <span style={{ flex: 1, fontSize: 10.5 }}>{s.category}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>${s.amount.toLocaleString()}</span>
+                    <button onClick={() => acceptSuggestion(s)} aria-label="add" style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 4, padding: '0 7px', cursor: 'pointer', fontSize: 12 }}>+</button>
+                  </Row>
+                ))}
+              </div>
+            </div>
+          )}
+          {suggestions && suggestions.length === 0 && !analyzing && (
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
+          )}
         </Panel>
 
         {/* Timeline */}

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   discord_id TEXT,
   discord_username TEXT,
   discord_avatar TEXT,
+  notification_prefs JSONB NOT NULL DEFAULT '{}'::jsonb, -- {replies,jobs,product}
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -297,12 +298,39 @@ CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (
   ))
 );
 CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());
+-- Project crew (not just the owner) can co-write the shared screenplay.
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
   created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
-  project_id IN (SELECT id FROM projects WHERE creator_id = auth.uid())
+  (project_id IS NOT NULL AND (public.is_project_creator(project_id) OR public.is_project_member(project_id)))
 );
 CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
+
+-- Script metadata: shared title page + character bible (was localStorage-only).
+-- Applied live via migration script_metadata_table.
+CREATE TABLE IF NOT EXISTS script_metadata (
+  script_id UUID PRIMARY KEY REFERENCES scripts(id) ON DELETE CASCADE,
+  title_page JSONB NOT NULL DEFAULT '{}'::jsonb,
+  character_bible JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_by UUID REFERENCES auth.users(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
+-- can_access_script: owner/editor of a personal script, or creator/member of
+-- the owning project. Shared by script_metadata and script_revisions (migration
+-- tighten_script_revisions_rls) so personal scripts are NOT open to every
+-- authenticated user.
+CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.scripts s WHERE s.id = sid AND (
+      s.created_by = auth.uid() OR s.last_edited_by = auth.uid()
+      OR (s.project_id IS NOT NULL AND (public.is_project_creator(s.project_id) OR public.is_project_member(s.project_id)))
+    )
+  );
+$$;
+CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (public.can_access_script(script_id));
+CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (public.can_access_script(script_id)) WITH CHECK (public.can_access_script(script_id));
 
 -- RLS Policies: Jobs
 CREATE POLICY "Jobs publicly readable" ON jobs FOR SELECT USING (status = 'open' OR created_by = auth.uid());
@@ -455,3 +483,127 @@ BEGIN
     END IF;
 END
 $$;
+
+-- Scene ↔ concept references: link concept-board images to specific scenes
+CREATE TABLE IF NOT EXISTS scene_references (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  scene_id UUID NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
+  concept_asset_id UUID NOT NULL REFERENCES concept_assets(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(scene_id, concept_asset_id)
+);
+ALTER TABLE scene_references ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "scene_refs view" ON scene_references FOR SELECT TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticated
+  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+
+-- Casting/look references: link concept-board images to characters
+CREATE TABLE IF NOT EXISTS character_references (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  character_id UUID NOT NULL REFERENCES script_characters(id) ON DELETE CASCADE,
+  concept_asset_id UUID NOT NULL REFERENCES concept_assets(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(character_id, concept_asset_id)
+);
+ALTER TABLE character_references ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "char_refs view" ON character_references FOR SELECT TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+CREATE POLICY "char_refs insert" ON character_references FOR INSERT TO authenticated
+  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+
+-- Scene shoot status tracking
+ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
+
+-- Notifications: per-user feed (bell). Insert allowed for any authenticated
+-- user so actors can notify recipients; read/update/delete scoped to owner.
+CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE TO authenticated
+  USING (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC);
+
+-- Direct-message reactions run through a SECURITY DEFINER RPC because the
+-- messages table intentionally has no row-level UPDATE policy. The function
+-- toggles auth.uid() into the reactions JSONB and only for messages the caller
+-- can already see (channel messages or their own DMs).
+CREATE OR REPLACE FUNCTION public.toggle_message_reaction(p_message uuid, p_emoji text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE uid text := auth.uid()::text; r jsonb; arr jsonb; m record;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+  SELECT id, channel_id, sender_id, receiver_id, reactions INTO m FROM messages WHERE id = p_message;
+  IF NOT FOUND THEN RAISE EXCEPTION 'message not found'; END IF;
+  IF NOT (m.channel_id IS NOT NULL OR m.sender_id::text = uid OR m.receiver_id::text = uid) THEN
+    RAISE EXCEPTION 'not permitted';
+  END IF;
+  r := coalesce(m.reactions, '{}'::jsonb);
+  arr := coalesce(r -> p_emoji, '[]'::jsonb);
+  IF arr @> to_jsonb(uid) THEN
+    arr := (SELECT coalesce(jsonb_agg(to_jsonb(e)), '[]'::jsonb) FROM jsonb_array_elements_text(arr) e WHERE e <> uid);
+    IF jsonb_array_length(arr) = 0 THEN r := r - p_emoji; ELSE r := jsonb_set(r, array[p_emoji], arr); END IF;
+  ELSE
+    r := jsonb_set(r, array[p_emoji], arr || to_jsonb(uid), true);
+  END IF;
+  UPDATE messages SET reactions = r WHERE id = p_message;
+  RETURN r;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.toggle_message_reaction(uuid, text) TO authenticated;
+
+-- Chat threads: a message can be a reply to another via parent_message_id.
+-- Top-level channel reads filter parent_message_id IS NULL; replies load per thread.
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS parent_message_id uuid REFERENCES messages(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS messages_parent_idx ON messages (parent_message_id);
+
+-- Concept board organisation into named boards (Pinterest-style).
+ALTER TABLE concept_assets ADD COLUMN IF NOT EXISTS board text;
+CREATE INDEX IF NOT EXISTS concept_assets_project_board_idx ON concept_assets (project_id, board);
+
+-- Bulletproof profile creation: a trigger on auth.users creates the profile
+-- server-side so it never depends on a best-effort client insert.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE uname text;
+BEGIN
+  uname := coalesce(nullif(new.raw_user_meta_data->>'username',''), nullif(split_part(new.email,'@',1),''), 'user_' || substr(new.id::text,1,8));
+  INSERT INTO public.profiles (id, username, status) VALUES (new.id, uname, 'OPEN') ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END; $$;
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ── Project-connected channels (Discord-style) ──────────────────────────────
+CREATE TABLE IF NOT EXISTS channels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,  -- null = global/community
+  name TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'text' CHECK (type IN ('text','voice')),
+  topic TEXT,
+  position INT DEFAULT 0,
+  is_private BOOLEAN NOT NULL DEFAULT false,
+  post_policy TEXT NOT NULL DEFAULT 'viewers' CHECK (post_policy IN ('viewers','members','managers')),
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS channel_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  can_post BOOLEAN NOT NULL DEFAULT true,
+  can_manage BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(channel_id, user_id)
+);
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES channels(id) ON DELETE CASCADE;
+
+-- SECURITY DEFINER permission helpers: can_view_channel / can_post_channel /
+-- can_manage_channel. View = global, project owner, project crew (public), or
+-- explicit member (private). Post gated by post_policy (viewers/members/
+-- managers). Manage = project owner or channel member with can_manage.
+-- (Full definitions applied via migration project_channels_system.)

@@ -3,11 +3,14 @@ import dynamic from 'next/dynamic';
 import { Bebas_Neue, DM_Mono, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
+import { ConfirmProvider } from '@/components/Confirm';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
 import { AuthProvider } from '@/lib/context/AuthContext';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
+const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
+const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
 
 // Self-hosted via next/font: no render-blocking request to Google, no FOUT,
 // and no client-side hit to fonts.googleapis.com (privacy/GDPR-friendly).
@@ -48,11 +51,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>
           <ToastProvider>
+            <ConfirmProvider>
             <ProjectProvider>
               <CustomCursor />
+              <CommandPalette />
+              <ShortcutsOverlay />
               <EcosystemTaskbar />
               {children}
             </ProjectProvider>
+            </ConfirmProvider>
           </ToastProvider>
         </AuthProvider>
       </body>

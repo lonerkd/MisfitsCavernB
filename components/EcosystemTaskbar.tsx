@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen, User, Settings, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
+import NotificationBell from './NotificationBell';
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#ff3c00' },
@@ -155,6 +156,7 @@ export default function EcosystemTaskbar() {
       }}
     >
       <motion.div
+        className="mc-taskbar"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
@@ -174,6 +176,39 @@ export default function EcosystemTaskbar() {
         }}
         onMouseLeave={() => setHoveredId(null)}
       >
+        {/* Command palette trigger */}
+        <div style={{ position: 'relative' }}>
+          <motion.button
+            onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))}
+            aria-label="Search (Command-K)"
+            onHoverStart={() => setHoveredId('search')}
+            whileHover={{ scale: 1.18, y: -6 }}
+            whileTap={{ scale: 0.93 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+            style={{
+              width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: hoveredId === 'search' ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+              color: hoveredId === 'search' ? 'rgba(240,236,228,0.7)' : 'rgba(240,236,228,0.3)', transition: 'background 0.25s, color 0.25s',
+            }}
+          >
+            <Search size={18} strokeWidth={1.5} />
+          </motion.button>
+          <AnimatePresence>
+            {hoveredId === 'search' && (
+              <motion.div
+                initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
+                style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(240,236,228,0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
+              >
+                Search <kbd style={{ fontSize: 7.5, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 4px' }}>⌘K</kbd>
+                <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
+
         {/* App icons */}
         {APPS.map((app) => {
           const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
@@ -181,7 +216,7 @@ export default function EcosystemTaskbar() {
           const Icon = app.icon;
 
           return (
-            <Link key={app.id} href={app.path} style={{ textDecoration: 'none', position: 'relative' }}>
+            <Link key={app.id} href={app.path} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative' }}>
               <motion.div
                 onHoverStart={() => setHoveredId(app.id)}
                 whileHover={{ scale: 1.18, y: -6 }}
@@ -283,6 +318,7 @@ export default function EcosystemTaskbar() {
         <div style={{ position: 'relative' }}>
           <motion.button
             onClick={() => setProjectsOpen(v => !v)}
+            aria-label="Switch project"
             onHoverStart={() => setHoveredId('projects')}
             onHoverEnd={() => setHoveredId(null)}
             whileHover={{ scale: 1.08, y: -3 }}
@@ -381,6 +417,59 @@ export default function EcosystemTaskbar() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
+
+        {/* Notifications */}
+        <NotificationBell />
+
+        {/* Account: profile + settings */}
+        {([
+          { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
+          { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
+        ] as const).map(item => {
+          const isActive = pathname.startsWith(item.path);
+          const isHovered = hoveredId === item.id;
+          const Icon = item.icon;
+          return (
+            <Link key={item.id} href={item.path} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
+              <motion.div
+                onHoverStart={() => setHoveredId(item.id)}
+                whileHover={{ scale: 1.18, y: -6 }}
+                whileTap={{ scale: 0.93 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+                style={{
+                  width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isActive ? 'rgba(255,60,0,0.10)' : isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  color: isActive ? '#ff3c00' : isHovered ? 'rgba(240,236,228,0.7)' : 'rgba(240,236,228,0.3)',
+                  transition: 'background 0.25s, color 0.25s',
+                }}
+              >
+                <Icon size={19} strokeWidth={1.5} />
+              </motion.div>
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.92 }}
+                    animate={{ opacity: 1, y: -10, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.92 }}
+                    transition={{ duration: 0.18 }}
+                    style={{
+                      position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(240,236,228,0.85)',
+                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
+                      padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
+                    }}
+                  >
+                    {item.name}
+                    <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Link>
+          );
+        })}
       </motion.div>
     </div>
   );

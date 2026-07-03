@@ -13,16 +13,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
-import { REVISION_COLORS, getRevisions, createRevision, type Revision } from '@/lib/scriptos/revisions';
+import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
+import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { supabase } from '@/lib/supabase/client';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -128,6 +129,9 @@ She leans back. Takes a long sip of cold coffee.
 
 CUT TO:`;
 
+// Standard screenplay transitions offered by the editor's autocomplete.
+const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
+
 // ============================================================================
 // COMPONENTS
 // ============================================================================
@@ -186,6 +190,7 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 // ============================================================================
 
 export default function EditorPage() {
+  useRequireAuth();
   const { activeProject } = useProject();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -198,6 +203,17 @@ export default function EditorPage() {
   // UI States
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // On phones the fixed-width side panels would crush the writing area, so
+  // collapse them by default and overlay them when opened.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 820px)');
+    const apply = () => { setIsMobile(mq.matches); if (mq.matches) { setShowSidebar(false); setShowRightSidebar(false); } };
+    apply();
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
+  }, []);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
@@ -214,6 +230,9 @@ export default function EditorPage() {
   const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 });
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteItems, setAutocompleteItems] = useState<string[]>([]);
+  const [autocompleteIdx, setAutocompleteIdx] = useState(0);
+  // Range of text (in the full document) the current suggestion will replace.
+  const [completionRange, setCompletionRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
   // Find & Replace
   const [showFindReplace, setShowFindReplace] = useState(false);
@@ -244,13 +263,16 @@ export default function EditorPage() {
   const [showStash, setShowStash] = useState(false);
   const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
+  const [sceneNotes, setSceneNotes] = useState<Record<string, string>>({});
+  const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
+  const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supabase Realtime Sync
-  const { isSyncing, lastSyncedAt } = useScriptSync(currentScript?.id || '', content, (newContent) => {
+  // Supabase Realtime Sync (live co-editing: content sync + presence + cursors)
+  const { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
     // Only update if it's different to avoid cursor jumping
     if (newContent !== content) {
       setContent(newContent);
@@ -259,10 +281,12 @@ export default function EditorPage() {
 
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
-    setContent(script.content || PLACEHOLDER);
-    setTitlePage(loadTitlePage(script.id));
-    setCharProfiles(loadCharacterProfiles(script.id));
-    setSessionStartWords((script.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+    setContent(script.content || '');
+    setTitlePage(loadTitlePageCached(script.id));
+    setCharProfiles(loadCharacterProfilesCached(script.id));
+    loadTitlePage(script.id).then(setTitlePage);
+    loadCharacterProfiles(script.id).then(setCharProfiles);
+    setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
 
@@ -274,17 +298,19 @@ export default function EditorPage() {
       if (all.length > 0) {
         const latest = all[0];
         setCurrentScript(latest);
-        setContent(latest.content || PLACEHOLDER);
-        setTitlePage(loadTitlePage(latest.id));
-        setCharProfiles(loadCharacterProfiles(latest.id));
-        setSessionStartWords((latest.content || PLACEHOLDER).split(/\s+/).filter(Boolean).length);
+        setContent(latest.content || '');
+        setTitlePage(loadTitlePageCached(latest.id));
+        setCharProfiles(loadCharacterProfilesCached(latest.id));
+        loadTitlePage(latest.id).then(setTitlePage);
+        loadCharacterProfiles(latest.id).then(setCharProfiles);
+        setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
       } else {
         const fresh = await createNewScript('My First Screenplay');
         if (fresh) {
           setCurrentScript(fresh);
           setScripts([fresh]);
-          setContent(PLACEHOLDER);
-          setSessionStartWords(PLACEHOLDER.split(/\s+/).filter(Boolean).length);
+          setContent('');
+          setSessionStartWords(0);
         }
       }
     };
@@ -344,11 +370,17 @@ export default function EditorPage() {
     }
   }, [content]);
 
-  // Load revisions when script changes
+  // Load revisions when script changes — from Supabase so locked drafts
+  // persist across devices, with a localStorage fallback while offline.
   useEffect(() => {
-    if (currentScript) {
-      setRevisions(getRevisions(currentScript.id));
-    }
+    if (!currentScript) return;
+    let active = true;
+    (async () => {
+      const remote = await fetchRevisionsDB(currentScript.id);
+      if (!active) return;
+      setRevisions(remote.length > 0 ? remote : getRevisions(currentScript.id));
+    })();
+    return () => { active = false; };
   }, [currentScript]);
 
   // Typewriter Centering Effect
@@ -426,7 +458,11 @@ export default function EditorPage() {
       exportScriptAsPdf({ ...currentScript, content });
       toast('Generating PDF...', 'success');
     } else {
-      toast(`Exporting as ${format.toUpperCase()} (Pro Feature)`, 'info');
+      // Defensive: the export menu only offers the handled formats above, so
+      // this is unreachable in practice. Fall back to plain-text rather than
+      // silently doing nothing if a new format is added to the menu.
+      exportScriptAsText({ ...currentScript, content }, 'txt');
+      toast(`Exported as .txt`, 'success');
     }
     setShowFormatMenu(false);
   }, [currentScript, content, toast]);
@@ -445,12 +481,41 @@ export default function EditorPage() {
     toast('Replaced 1 occurrence', 'success');
   }, [findText, replaceText, toast]);
 
-  const handleLockRevision = useCallback(() => {
+  const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
-    const { revision: rev } = createRevision(currentScript.id, content);
-    setRevisions(prev => [...prev, rev]);
-    toast(`Locked as ${rev.label}`, 'success');
-  }, [currentScript, content, toast]);
+    const rev = await createRevisionDB(currentScript.id, content, revisions.length);
+    if (rev) {
+      setRevisions(prev => [...prev, rev]);
+      toast(`Locked as ${rev.label}`, 'success');
+    } else {
+      // Offline / no access — fall back to a local snapshot so work isn't lost.
+      const { revision } = createRevision(currentScript.id, content);
+      setRevisions(prev => [...prev, revision]);
+      toast(`Locked locally as ${revision.label}`, 'info');
+    }
+  }, [currentScript, content, revisions.length, toast]);
+
+  // Toggle dual dialogue (Fountain '^') on the character cue under the cursor —
+  // the parser + preview already render side-by-side dialogue when marked.
+  const toggleDualDialogue = useCallback(() => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+    const le = content.indexOf('\n', cursor);
+    const lineEnd = le === -1 ? content.length : le;
+    const line = content.substring(lineStart, lineEnd);
+    const leading = line.length - line.trimStart().length;
+    const rest = line.slice(leading);
+    const core = rest.replace(/^\^/, '').trim();
+    const isChar = core.length > 1 && core === core.toUpperCase() && /[A-Z]/.test(core) && !/^(INT|EXT|EST|I\/E)[.\s]/.test(core) && !core.endsWith(':');
+    if (!isChar) { toast('Put the cursor on a character name to toggle dual dialogue', 'info'); return; }
+    const has = rest.startsWith('^');
+    const newRest = has ? rest.slice(1) : '^' + rest;
+    const next = content.substring(0, lineStart) + line.slice(0, leading) + newRest + content.substring(lineEnd);
+    setContent(next);
+    toast(has ? 'Dual dialogue removed' : 'Marked as dual dialogue (^)', 'success');
+  }, [content, toast]);
 
   // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
@@ -520,6 +585,51 @@ export default function EditorPage() {
 
   // Tab key cycling (in the textarea: Tab inserts element type based on context)
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Autocomplete navigation takes priority while the popup is open.
+    if (showAutocomplete && autocompleteItems.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setAutocompleteIdx(i => (i - 1 + autocompleteItems.length) % autocompleteItems.length); return; }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAutocomplete(autocompleteItems[autocompleteIdx]); return; }
+      if (e.key === 'Escape') { e.preventDefault(); setShowAutocomplete(false); return; }
+    }
+    // Auto-close a parenthetical: typing "(" inserts "()" and drops the caret
+    // inside, so wrylies like "(beat)" are one keystroke instead of two.
+    if (e.key === '(') {
+      const editor = textareaRef.current;
+      if (editor) {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const sel = content.substring(start, end);
+        const next = content.substring(0, start) + '(' + sel + ')' + content.substring(end);
+        setContent(next);
+        const caret = start + 1 + sel.length;
+        setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+        return;
+      }
+    }
+    // On Enter, auto-uppercase a scene heading so slugs are always formatted
+    // like Final Draft/WriterDuet — "int. kitchen - day" → "INT. KITCHEN - DAY".
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const editor = textareaRef.current;
+      if (editor && editor.selectionStart === editor.selectionEnd) {
+        const cursor = editor.selectionStart;
+        const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+        const lineEnd = content.indexOf('\n', cursor) === -1 ? content.length : content.indexOf('\n', cursor);
+        const line = content.substring(lineStart, lineEnd);
+        if (/^\s*(int|ext|int\.\/ext|i\/e)\b/i.test(line) && line !== line.toUpperCase()) {
+          e.preventDefault();
+          const upper = line.toUpperCase();
+          const col = cursor - lineStart;
+          // Uppercase the whole slug, then split it at the caret like Enter would.
+          const next = content.substring(0, lineStart) + upper.substring(0, col) + '\n' + upper.substring(col) + content.substring(lineEnd);
+          setContent(next);
+          const caret = cursor + 1; // toUpperCase preserves length
+          setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+          return;
+        }
+      }
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       const editor = textareaRef.current;
@@ -552,7 +662,7 @@ export default function EditorPage() {
         editor.setSelectionRange(cursor + 4, cursor + 4);
       }, 0);
     }
-  }, [content]);
+  }, [content, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
@@ -580,30 +690,85 @@ export default function EditorPage() {
     }, 0);
   };
 
+  // Compute the caret's viewport pixel position by mirroring the textarea into
+  // an off-screen div, so the autocomplete popup can sit right under the caret
+  // instead of a fixed corner.
+  const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
+    const rect = ta.getBoundingClientRect();
+    const style = window.getComputedStyle(ta);
+    const mirror = document.createElement('div');
+    const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderLeftWidth', 'boxSizing'] as const;
+    props.forEach(p => { (mirror.style as any)[p] = style[p as any]; });
+    mirror.style.position = 'absolute';
+    mirror.style.visibility = 'hidden';
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+    mirror.style.width = `${ta.clientWidth}px`;
+    mirror.textContent = ta.value.substring(0, pos);
+    const marker = document.createElement('span');
+    marker.textContent = '​';
+    mirror.appendChild(marker);
+    document.body.appendChild(mirror);
+    const top = rect.top - ta.scrollTop + marker.offsetTop + parseFloat(style.lineHeight || '18');
+    const left = rect.left + marker.offsetLeft;
+    document.body.removeChild(mirror);
+    return { top, left };
+  };
+
+  const openAutocomplete = (items: string[], start: number, end: number, ta: HTMLTextAreaElement) => {
+    setAutocompleteItems(items);
+    setAutocompleteIdx(0);
+    setCompletionRange({ start, end });
+    setCursorPos(caretCoords(ta, end));
+    setShowAutocomplete(true);
+  };
+
+  // Replace the in-progress token with the chosen suggestion and drop the caret
+  // right after it, keeping the writer in flow.
+  const acceptAutocomplete = (item: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const { start, end } = completionRange;
+    const next = content.substring(0, start) + item + content.substring(end);
+    setContent(next);
+    setShowAutocomplete(false);
+    const caret = start + item.length;
+    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+  };
+
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
+    noteLocalEdit();
+    broadcastCursor(e.target.selectionStart);
 
-    const cursor = e.target.selectionStart;
-    const currentLine = val.substring(0, cursor).split('\n').pop() || '';
+    const ta = e.target;
+    const cursor = ta.selectionStart;
+    const lineStart = val.lastIndexOf('\n', cursor - 1) + 1;
+    const currentLine = val.substring(lineStart, cursor);
     const trimmed = currentLine.trim();
-    
+
     if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
-      // Location autocomplete
-      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()))];
-      if (locations.length > 0 && currentLine.length < 15) {
-        setAutocompleteItems(locations);
-        setShowAutocomplete(true);
-        setCursorPos({ top: 100, left: 200 });
+      // Location autocomplete — complete the text after the INT./EXT. prefix.
+      const afterPrefix = currentLine.replace(/^(INT\.|EXT\.)\s*/, '');
+      const typed = afterPrefix.trim().toUpperCase();
+      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()).filter(Boolean))];
+      const matches = locations.filter(l => l.toUpperCase().startsWith(typed) && l.toUpperCase() !== typed);
+      if (matches.length > 0) {
+        openAutocomplete(matches, lineStart + (currentLine.length - afterPrefix.length), cursor, ta);
+      } else {
+        setShowAutocomplete(false);
       }
     } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
-      // Character name autocomplete - suggest known characters matching prefix
+      // Character-cue / transition autocomplete — suggest known characters and
+      // standard transitions matching what's typed.
       const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
-      if (matchingChars.length > 0) {
-        setAutocompleteItems(matchingChars);
-        setShowAutocomplete(true);
-        setCursorPos({ top: 100, left: 200 });
+      const matchingTrans = TRANSITIONS.filter(t => t.startsWith(trimmed) && t !== trimmed);
+      const items = [...matchingChars, ...matchingTrans];
+      if (items.length > 0) {
+        const tokenStart = lineStart + (currentLine.length - currentLine.trimStart().length);
+        openAutocomplete(items, tokenStart, cursor, ta);
       } else {
         setShowAutocomplete(false);
       }
@@ -612,8 +777,75 @@ export default function EditorPage() {
     }
   };
 
+  // Jump from a plot card / outline row straight to that scene in the writing
+  // view (Arc Studio Pro-style board↔script navigation).
+  const jumpToScene = (sceneText: string) => {
+    setActiveView('write');
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const idx = content.toUpperCase().indexOf(sceneText.toUpperCase());
+      if (idx < 0) return;
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      const linesBefore = content.substring(0, idx).split('\n').length;
+      setCursorLine(linesBefore);
+      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
+      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lh);
+    }, 60);
+  };
+
+  // Scene colour tags — persisted per script, keyed by slug text so they
+  // survive re-parsing. Powers the outline's colour-coding (Arc-style).
+  useEffect(() => {
+    if (!currentScript?.id) { setSceneColors({}); setSceneNotes({}); return; }
+    try { const raw = localStorage.getItem(`mc_scene_colors_${currentScript.id}`); setSceneColors(raw ? JSON.parse(raw) : {}); } catch { setSceneColors({}); }
+    try { const raw = localStorage.getItem(`mc_scene_notes_${currentScript.id}`); setSceneNotes(raw ? JSON.parse(raw) : {}); } catch { setSceneNotes({}); }
+  }, [currentScript?.id]);
+
+  // Per-scene beat/summary — a one-line intent the writer sets on the board,
+  // persisted per script and keyed by slug.
+  const setSceneNote = (sceneText: string, note: string) => {
+    const key = sceneText.trim().toUpperCase();
+    setSceneNotes(prev => {
+      const next = { ...prev };
+      if (note.trim()) next[key] = note; else delete next[key];
+      if (currentScript?.id) { try { localStorage.setItem(`mc_scene_notes_${currentScript.id}`, JSON.stringify(next)); } catch {} }
+      return next;
+    });
+  };
+
+  const tagScene = (sceneText: string, color: string) => {
+    const key = sceneText.trim().toUpperCase();
+    setSceneColors(prev => {
+      const next = { ...prev };
+      if (next[key] === color) delete next[key]; else next[key] = color;
+      if (currentScript?.id) { try { localStorage.setItem(`mc_scene_colors_${currentScript.id}`, JSON.stringify(next)); } catch {} }
+      return next;
+    });
+  };
+
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
+
+  // Reorder whole scenes by rewriting the script text — dragging a card on the
+  // board physically moves that scene (heading + body) to the new position.
+  const reorderScenes = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0) return;
+    let cursor = 0;
+    const positions: number[] = [];
+    for (const s of scenesList) {
+      const idx = content.toUpperCase().indexOf(s.text.toUpperCase(), cursor);
+      if (idx < 0) return; // bail if we can't locate a scene cleanly
+      positions.push(idx);
+      cursor = idx + s.text.length;
+    }
+    const preamble = content.substring(0, positions[0]);
+    const blocks = positions.map((p, k) => content.substring(p, k + 1 < positions.length ? positions[k + 1] : content.length));
+    const [moved] = blocks.splice(from, 1);
+    blocks.splice(to, 0, moved);
+    setContent(preamble + blocks.join(''));
+  };
   const filteredScenes = useMemo(() => {
     if (sceneFilter === 'all') return scenesList;
     return scenesList.filter(s => {
@@ -735,7 +967,7 @@ export default function EditorPage() {
 
       {/* TOOLBAR */}
       {!focusMode && (
-        <header style={{
+        <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
           background: 'rgba(6,6,6,0.94)',
           backdropFilter: 'blur(24px) saturate(1.4)',
@@ -838,6 +1070,7 @@ export default function EditorPage() {
 
             {[
               { icon: HelpCircle, title: 'Shortcuts', onClick: () => setShowShortcuts(true) },
+              { icon: SplitSquareHorizontal, title: 'Dual Dialogue', onClick: toggleDualDialogue },
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },
               { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
@@ -943,7 +1176,12 @@ export default function EditorPage() {
       </AnimatePresence>
 
       {/* WORKSPACE */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+
+        {/* Mobile scrim behind an open panel */}
+        {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
+          <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
+        )}
 
         {/* LEFT NAVIGATOR (Scenes & Documents) */}
         <AnimatePresence>
@@ -955,9 +1193,10 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: 248,
-                background: 'rgba(8,8,8,0.96)',
+                background: 'rgba(8,8,8,0.98)',
                 borderRight: '1px solid rgba(255,255,255,0.05)',
                 display: 'flex', flexDirection: 'column', flexShrink: 0,
+                ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
             >
               {/* Script Controls */}
@@ -968,6 +1207,9 @@ export default function EditorPage() {
                     setScripts([...scripts, s]);
                     setCurrentScript(s);
                     setContent('');
+                    toast('New script created', 'success');
+                  } else {
+                    toast('Could not create script — check your connection', 'error');
                   }
                 }} style={{
                   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
@@ -1016,6 +1258,8 @@ export default function EditorPage() {
                         setCurrentScript(s);
                         setContent(TEMPLATES[key]);
                         toast(`Created from "${key}" template`, 'success');
+                      } else {
+                        toast('Could not create script', 'error');
                       }
                     }} style={{
                       fontSize: 8, padding: '4px 9px',
@@ -1179,6 +1423,7 @@ export default function EditorPage() {
               value={content}
               onChange={handleEditorChange}
               onKeyDown={handleEditorKeyDown}
+              onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
               placeholder={PLACEHOLDER}
               spellCheck={false}
               style={{
@@ -1259,26 +1504,41 @@ export default function EditorPage() {
               {scenesList.length === 0 ? (
                  <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
               ) : scenesList.map((scene, i) => {
-                const cardColor = CARD_COLORS[i % CARD_COLORS.length];
+                const cardColor = sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length];
                 const wc = sceneWordCounts[i] || 0;
                 const estMins = Math.max(1, Math.round(wc / 185 * 0.8));
                 return (
                   <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+                    onClick={() => jumpToScene(scene.text)}
+                    title="Drag to reorder · click to open in the script"
+                    draggable
+                    onDragStart={(e: any) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
+                    onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
+                    onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
+                    onDrop={(e) => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
                     style={{
                       width: 272, minHeight: 180,
                       background: 'var(--bg-3)',
-                      border: `1px solid rgba(255,255,255,0.06)`,
+                      border: `1px solid ${dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? cardColor : 'rgba(255,255,255,0.06)'}`,
                       borderTop: `2px solid ${cardColor}`,
                       borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-                      transition: 'box-shadow 0.35s, border-color 0.35s',
+                      opacity: dragSceneIdx === i ? 0.4 : 1,
+                      transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
                     }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
                       <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wc}w · ~{estMins}m</span>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
-                    <div style={{ flex: 1, fontSize: 12, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
+                    <textarea
+                      defaultValue={sceneNotes[scene.text.trim().toUpperCase()] || ''}
+                      onClick={e => e.stopPropagation()}
+                      onBlur={e => setSceneNote(scene.text, e.target.value)}
+                      placeholder="Beat / summary — what has to happen here?"
+                      style={{ width: '100%', minHeight: 44, resize: 'none', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
+                    />
+                    <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                        {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
                     </div>
                     <div style={{ marginTop: 'auto', display: 'flex', gap: 6, paddingTop: 8 }}>
@@ -1321,23 +1581,26 @@ export default function EditorPage() {
                   const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
                   return (
                     <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2 }}>{globalIdx + 1}</div>
+                      {(() => { const tag = sceneColors[scene.text.trim().toUpperCase()]; return (
+                        <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
+                      ); })()}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase' }}>{scene.text}</div>
+                          <div onClick={() => jumpToScene(scene.text)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
                           <div style={{ display: 'flex', gap: 4 }}>
-                            {CARD_COLORS.map(color => (
-                              <button 
-                                key={color} 
-                                onClick={() => {
-                                  // Assign color to scene in local state/storage
-                                  toast(`Scene ${globalIdx + 1} tagged`, 'success');
-                                }}
-                                style={{ width: 10, height: 10, borderRadius: '50%', background: color, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0 }} 
+                            {CARD_COLORS.map(color => {
+                              const active = sceneColors[scene.text.trim().toUpperCase()] === color;
+                              return (
+                              <button
+                                key={color}
+                                title={active ? 'Remove tag' : 'Tag scene'}
+                                onClick={() => tagScene(scene.text, color)}
+                                style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
                               />
-                            ))}
+                            ); })}
                           </div>
                         </div>
+                        {sceneNotes[scene.text.trim().toUpperCase()] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[scene.text.trim().toUpperCase()]}”</div>}
                         {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
@@ -1611,7 +1874,7 @@ export default function EditorPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 272, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              style={{ width: 272, background: 'rgba(8,8,8,0.96)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}
+              style={{ width: 272, maxWidth: '86vw', background: 'rgba(8,8,8,0.98)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
               {/* Panel Tabs — pill group */}
               <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -1922,7 +2185,21 @@ export default function EditorPage() {
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><ClipboardList size={14} /> Script Breakdown</div>
-                      <button className="link-btn" style={{ fontSize: 9 }}>Export</button>
+                      <button className="link-btn" style={{ fontSize: 9 }} onClick={() => {
+                        const entries = Object.entries(elements).filter(([, items]) => (items as string[]).length > 0);
+                        if (entries.length === 0) { toast('No tagged elements to export yet', 'info'); return; }
+                        const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+                        const w = window.open('', '_blank', 'width=820,height=1080');
+                        if (!w) return;
+                        w.document.write(`<!doctype html><html><head><title>${esc(currentScript?.title || 'Script')} — Breakdown</title>
+                          <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:20px;letter-spacing:2px}
+                          h2{font-size:11px;letter-spacing:2px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 8px;text-transform:uppercase}
+                          .chip{display:inline-block;font-size:12px;padding:3px 9px;background:#f3f3f5;border:1px solid #ddd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
+                          <h1>${esc(currentScript?.title || 'SCRIPT')} — BREAKDOWN</h1>
+                          ${entries.map(([cat, items]) => `<h2>${esc(cat)} (${(items as string[]).length})</h2>${(items as string[]).map(i => `<span class="chip">${esc(i)}</span>`).join('')}`).join('')}
+                          <script>window.onload=()=>window.print()</script></body></html>`);
+                        w.document.close();
+                      }}>⎙ Export</button>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 16 }}>Tag production elements per scene.</div>
                     
@@ -1957,16 +2234,22 @@ export default function EditorPage() {
       {/* Autocomplete Popover (Basic implementation) */}
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
-          position: 'absolute', top: cursorPos.top, left: cursorPos.left,
-          background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+          position: 'fixed', top: cursorPos.top, left: cursorPos.left,
+          background: '#111', border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: 6, padding: 4, zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          maxHeight: 200, overflowY: 'auto'
+          maxHeight: 200, overflowY: 'auto', minWidth: 160
         }}>
           {autocompleteItems.map((item, idx) => (
-            <div key={idx} style={{ padding: '6px 12px', fontSize: 12, color: 'var(--fg)', cursor: 'pointer' }}>
+            <div
+              key={idx}
+              onMouseDown={(e) => { e.preventDefault(); acceptAutocomplete(item); }}
+              onMouseEnter={() => setAutocompleteIdx(idx)}
+              style={{ padding: '6px 12px', fontSize: 12, color: idx === autocompleteIdx ? '#fff' : 'var(--fg-muted)', background: idx === autocompleteIdx ? 'rgba(255,255,255,0.08)' : 'transparent', borderRadius: 4, cursor: 'pointer', fontFamily: 'Courier Prime, monospace', letterSpacing: 0.5 }}
+            >
               {item}
             </div>
           ))}
+          <div style={{ padding: '4px 12px 2px', fontSize: 8.5, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
         </div>
       )}
 
@@ -2127,6 +2410,18 @@ export default function EditorPage() {
           <span>{pageEst} pg</span>
           <span>{scenesList.length} sc</span>
           <span>{wordCount.toLocaleString()} wds</span>
+          {collaborators.length > 0 && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
+              <span style={{ display: 'flex' }}>
+                {collaborators.slice(0, 4).map((c, i) => (
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
+                    {c.username.charAt(0)}
+                  </span>
+                ))}
+              </span>
+              <span style={{ color: 'var(--fg-muted)', fontSize: 10 }}>{collaborators.length} editing</span>
+            </span>
+          )}
           <span style={{
             display: 'flex', alignItems: 'center', gap: 5,
             color: isSyncing ? '#6366f1' : '#10b981',
@@ -2141,6 +2436,19 @@ export default function EditorPage() {
           </span>
         </div>
       </div>
+
+      {conflict.detected && (
+        <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'rgba(17,17,17,0.97)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 520 }}>
+          <div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: '#f59e0b', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
+            <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 7, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>KEEP MINE</button>
+            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 7, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

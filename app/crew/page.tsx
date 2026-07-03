@@ -5,6 +5,7 @@ import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
+import Avatar from '@/components/Avatar';
 
 interface Profile {
   id: string;
@@ -147,19 +148,7 @@ export default function CrewPage() {
                   e.currentTarget.style.boxShadow = 'none';
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                  {member.avatar_url ? (
-                    <img src={member.avatar_url} alt={member.username}
-                      style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{
-                      width: 44, height: 44, borderRadius: '50%',
-                      background: 'var(--accent)', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontFamily: 'var(--display)', fontSize: '1.1rem',
-                      color: 'var(--bg)'
-                    }}>
-                      {member.username[0].toUpperCase()}
-                    </div>
-                  )}
+                  <Avatar src={member.avatar_url} name={member.username} size={44} />
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
                     {member.role && <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}

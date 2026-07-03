@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase/client';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
   ArrowRight, PenTool, Layers, Users, Film,
@@ -119,7 +120,27 @@ function PipelineConnector({ index }: { index: number }) {
 
 /* ─── Module Tile — screen-preview cards ─────────────────────────────────── */
 
-function ScriptOSPreview() {
+// When the viewer is signed in we render their real latest screenplay; when
+// logged out we show a representative sample that demonstrates the editor's
+// industry-standard formatting.
+function ScriptOSPreview({ lines }: { lines?: string[] }) {
+  if (lines && lines.length > 0) {
+    return (
+      <div className="screenplay-preview" style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {lines.slice(0, 11).map((l, i) => {
+          const t = l.trim();
+          if (!t) return <div key={i} style={{ height: 4 }} />;
+          const isHead = /^(INT|EXT|EST|I\/E)[.\s]/i.test(t);
+          const isChar = !isHead && t === t.toUpperCase() && t.length > 1 && t.length < 32 && !/[.!?,]$/.test(t);
+          return (
+            <div key={i}
+              className={isHead ? 'screenplay-scene-hdr' : isChar ? 'screenplay-char' : ''}
+              style={{ fontSize: 11, color: isHead || isChar ? undefined : 'rgba(240,236,228,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t}</div>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="screenplay-preview" style={{ padding: '20px 16px' }}>
       <div className="screenplay-scene-hdr">INT. UNDERGROUND STUDIO — NIGHT</div>
@@ -143,14 +164,14 @@ function ScriptOSPreview() {
   );
 }
 
-function StudioPreview() {
-  const items = [
-    { label: 'Opening_v3.mov', type: 'video', color: '#6366f1' },
-    { label: 'Score_Final.wav', type: 'audio', color: '#10b981' },
-    { label: 'Act1_Draft.fdx',  type: 'script', color: '#ff3c00' },
-    { label: 'Cast_Photos.zip', type: 'image', color: '#f59e0b' },
-    { label: 'Budget_R2.xlsx',  type: 'doc',   color: '#8b5cf6' },
-    { label: 'Storyboard.pdf',  type: 'doc',   color: '#06b6d4' },
+function StudioPreview({ items: real }: { items?: { label: string; color: string }[] }) {
+  const items = (real && real.length > 0) ? real : [
+    { label: 'Opening_v3.mov', color: '#6366f1' },
+    { label: 'Score_Final.wav', color: '#10b981' },
+    { label: 'Act1_Draft.fdx',  color: '#ff3c00' },
+    { label: 'Cast_Photos.zip', color: '#f59e0b' },
+    { label: 'Budget_R2.xlsx',  color: '#8b5cf6' },
+    { label: 'Storyboard.pdf',  color: '#06b6d4' },
   ];
   return (
     <div style={{ padding: '16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -186,8 +207,8 @@ function StudioPreview() {
   );
 }
 
-function LoungePreview() {
-  const messages = [
+function LoungePreview({ messages: real }: { messages?: { from: string; text: string; mine: boolean }[] }) {
+  const messages = (real && real.length > 0) ? real : [
     { from: 'Maya',   text: 'Scene 14 is landing perfectly ✓',  mine: false },
     { from: 'You',    text: 'Color grade on act 2 is insane',    mine: true  },
     { from: 'Jordan', text: 'Music cue syncs at 2:34 exactly',   mine: false },
@@ -403,7 +424,57 @@ function StatsTicker() {
 }
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
+interface LiveData {
+  scriptLines: string[];
+  assets: { label: string; color: string }[];
+  messages: { from: string; text: string; mine: boolean }[];
+  activeProject: { id: string; title: string } | null;
+  latestScriptTitle: string | null;
+}
+interface PlatformStats { creators: number; scripts: number; projects: number; concepts: number }
+
 export default function Home() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], activeProject: null, latestScriptTitle: null });
+
+  useEffect(() => {
+    const palette = ['#6366f1', '#10b981', '#ff3c00', '#f59e0b', '#8b5cf6', '#06b6d4'];
+    supabase.auth.getUser().then(async ({ data }) => {
+      const user = data.user;
+      setLoggedIn(!!user);
+      if (!user) return;
+
+      // Live platform stats (RLS scopes reads to authenticated users).
+      const [pc, sc, prc, cc] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('scripts').select('id', { count: 'exact', head: true }),
+        supabase.from('projects').select('id', { count: 'exact', head: true }),
+        supabase.from('concept_assets').select('id', { count: 'exact', head: true }),
+      ]);
+      setStats({ creators: pc.count || 0, scripts: sc.count || 0, projects: prc.count || 0, concepts: cc.count || 0 });
+
+      // The viewer's own latest work, surfaced as real previews.
+      const [scriptRes, assetRes, msgRes, projRes] = await Promise.all([
+        supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
+        supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
+        supabase.from('chat_messages').select('content,sender_id,profiles(username)').order('created_at', { ascending: false }).limit(4),
+        supabase.from('projects').select('id,title').eq('creator_id', user.id).order('created_at', { ascending: false }).limit(1),
+      ]);
+      const script = scriptRes.data?.[0];
+      const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
+      const assets = (assetRes.data || []).map((a: any, i: number) => ({ label: a.title || 'Concept asset', color: palette[i % palette.length] }));
+      const messages = (msgRes.data || []).slice().reverse().map((m: any) => ({ from: m.profiles?.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
+      setLive({
+        scriptLines,
+        assets,
+        messages,
+        activeProject: projRes.data?.[0] ? { id: projRes.data[0].id, title: projRes.data[0].title } : null,
+        latestScriptTitle: script?.title || null,
+      });
+    });
+  }, []);
+
   const { scrollY } = useScroll();
   const springY = useSpring(scrollY, { stiffness: 50, damping: 18 });
   const heroOpacity = useTransform(springY, [0, 500], [1, 0]);
@@ -537,8 +608,8 @@ export default function Home() {
             transition={{ delay: 0.85, duration: 0.9 }}
             style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}
           >
-            <Link href="/editor" className="btn-primary">
-              Enter Studio <ArrowRight size={13} />
+            <Link href={loggedIn ? '/projects' : '/auth'} className="btn-primary">
+              {loggedIn ? 'Enter Studio' : 'Start Creating'} <ArrowRight size={13} />
             </Link>
             <Link href="/portfolio" className="btn-ghost">
               The Work
@@ -564,6 +635,35 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════
+          RESUME BAND — returning creators land back in their studio
+      ══════════════════════════════════════════════ */}
+      {loggedIn && (live.activeProject || live.latestScriptTitle) && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          style={{ maxWidth: 900, margin: '-20px auto 0', padding: '0 24px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(255,60,0,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(255,60,0,0.18)', borderRadius: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,60,0,0.8)', marginBottom: 6 }}>Welcome back</div>
+              <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, lineHeight: 1 }}>
+                {live.activeProject ? `Resume ${live.activeProject.title}` : 'Continue your screenplay'}
+              </div>
+              {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Link href="/editor" className="btn-ghost" style={{ fontSize: 10 }}>Open ScriptOS</Link>
+              <Link href={live.activeProject ? '/studio' : '/projects'} className="btn-primary" style={{ fontSize: 10 }}>
+                Enter Studio <ArrowRight size={12} />
+              </Link>
+            </div>
+          </div>
+        </motion.section>
+      )}
+
+      {/* ══════════════════════════════════════════════
           WORKFLOW PIPELINE
       ══════════════════════════════════════════════ */}
       <section style={{ padding: '80px 40px', maxWidth: 900, margin: '0 auto' }}>
@@ -582,6 +682,32 @@ export default function Home() {
           ))}
         </motion.div>
       </section>
+
+      {/* ══════════════════════════════════════════════
+          LIVE STATS — real platform numbers
+      ══════════════════════════════════════════════ */}
+      {stats && (stats.creators + stats.scripts + stats.projects + stats.concepts) > 0 && (
+        <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
+            {[
+              { n: stats.creators, label: 'Creators', color: '#10b981' },
+              { n: stats.scripts, label: 'Screenplays', color: '#ff3c00' },
+              { n: stats.projects, label: 'Productions', color: '#6366f1' },
+              { n: stats.concepts, label: 'Concept Assets', color: '#f59e0b' },
+            ].map((s, i) => (
+              <motion.div key={s.label}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08, duration: 0.6 }}
+                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14 }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: 1, lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ══════════════════════════════════════════════
           STATS TICKER
@@ -615,9 +741,9 @@ export default function Home() {
                   {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
                     <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: c, opacity: 0.7 }} />
                   ))}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>untitled_script.fdx</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ? `${live.latestScriptTitle}.fdx` : 'untitled_script.fdx'}</span>
                 </div>
-                <ScriptOSPreview />
+                <ScriptOSPreview lines={live.scriptLines} />
               </div>
             }
           />
@@ -630,7 +756,7 @@ export default function Home() {
               color="#6366f1"
               href="/studio"
               index={1}
-              preview={<StudioPreview />}
+              preview={<StudioPreview items={live.assets} />}
             />
             <ModuleTile
               title="Lounge"
@@ -638,7 +764,7 @@ export default function Home() {
               color="#10b981"
               href="/lounge"
               index={2}
-              preview={<LoungePreview />}
+              preview={<LoungePreview messages={live.messages} />}
             />
           </div>
         </div>
