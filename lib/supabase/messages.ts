@@ -29,6 +29,39 @@ export async function sendMessage(senderId: string, content: string, channelId?:
   return data;
 }
 
+// ── UUID-based channels (Discord-style project/community channels) ──────────
+export async function sendChannelMessage(senderId: string, content: string, channelUuid: string, parentMessageId?: string) {
+  const { data, error } = await supabase.from('messages').insert({
+    sender_id: senderId,
+    content,
+    channel_uuid: channelUuid,
+    reactions: {},
+    parent_message_id: parentMessageId ?? null,
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getChannelMessagesByUuid(channelUuid: string, limit = 100) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*, profiles!messages_sender_id_fkey(username, avatar_url)')
+    .eq('channel_uuid', channelUuid)
+    .is('parent_message_id', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.reverse();
+}
+
+export function subscribeToChannelUuid(channelUuid: string, callback: (payload: any) => void) {
+  return supabase
+    .channel(`chan:${channelUuid}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_uuid=eq.${channelUuid}` }, callback)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_uuid=eq.${channelUuid}` }, callback)
+    .subscribe();
+}
+
 // Top-level channel messages only (thread replies are hidden from the main
 // stream and read via getThreadReplies).
 export async function getChannelMessages(channelId: string, limit = 100) {

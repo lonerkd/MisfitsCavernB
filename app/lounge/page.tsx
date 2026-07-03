@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts } from '@/lib/supabase/messages';
+import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
+import { listChannels, createChannel, canPostChannel, canManageChannel, type Channel } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
@@ -175,11 +176,125 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
   );
 }
 
+// Voice room: live presence of who's in the channel (Discord-style). Audio
+// (WebRTC) is a further layer; this establishes the room + real occupancy.
+function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: string; avatar?: string } | null }) {
+  const [members, setMembers] = useState<{ id: string; name: string; avatar?: string }[]>([]);
+  const [joined, setJoined] = useState(false);
+  const chanRef = useRef<any>(null);
+
+  useEffect(() => { setJoined(false); setMembers([]); }, [channel.id]);
+
+  useEffect(() => {
+    if (!joined || !me) return;
+    const ch = supabase.channel(`voice:${channel.id}`, { config: { presence: { key: me.id } } });
+    ch.on('presence', { event: 'sync' }, () => {
+      const state = ch.presenceState() as any;
+      const list = Object.values(state).map((arr: any) => arr[0]).filter(Boolean).map((p: any) => ({ id: p.id, name: p.name, avatar: p.avatar }));
+      setMembers(list);
+    }).subscribe(async (status) => { if (status === 'SUBSCRIBED') await ch.track({ id: me.id, name: me.name, avatar: me.avatar }); });
+    chanRef.current = ch;
+    return () => { supabase.removeChannel(ch); };
+  }, [joined, channel.id, me]);
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: 40 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2 }}>
+        <Volume2 size={24} color="var(--accent)" /> {channel.name}
+      </div>
+      {members.length > 0 ? (
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {members.map(m => (
+            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ border: '2px solid #10b981', borderRadius: '50%', boxShadow: '0 0 16px rgba(16,185,129,0.5)' }}>
+                <Avatar src={m.avatar} name={m.name} size={56} />
+              </div>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{m.name}{m.id === me?.id ? ' (you)' : ''}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
+      )}
+      <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(255,60,0,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
+      </button>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', letterSpacing: 1, maxWidth: 320, textAlign: 'center', lineHeight: 1.6 }}>
+        Live room presence is on. In-call audio streaming is the next layer.
+      </div>
+    </div>
+  );
+}
+
+function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: string; onClose: () => void; onCreate: (v: { name: string; type: 'text' | 'voice'; is_private: boolean; post_policy: 'viewers' | 'members' | 'managers' }) => Promise<void> }) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState<'text' | 'voice'>('text');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [postPolicy, setPostPolicy] = useState<'viewers' | 'members' | 'managers'>('viewers');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
+  const submit = async () => { if (!name.trim() || busy) return; setBusy(true); try { await onCreate({ name, type, is_private: isPrivate, post_policy: postPolicy }); } finally { setBusy(false); } };
+  const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
+        style={{ width: 440, maxWidth: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 26 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>{projectTitle}</div>
+        <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, margin: '0 0 20px' }}>New channel</h2>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={label}>Type</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['text', 'voice'] as const).map(t => (
+              <button key={t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
+                {t === 'text' ? <Hash size={13} /> : <Volume2 size={13} />} {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={label}>Name</label>
+          <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} placeholder="e.g. writers-room" style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '11px 12px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+        </div>
+
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>Only invited members can see it</div></div>
+          <button role="switch" aria-checked={isPrivate} onClick={() => setIsPrivate(v => !v)} style={{ width: 42, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer', background: isPrivate ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative', flexShrink: 0 }}>
+            <span style={{ position: 'absolute', top: 3, left: isPrivate ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+          </button>
+        </div>
+
+        {type === 'text' && (
+          <div style={{ marginBottom: 22 }}>
+            <label style={label}>Who can post</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {([['viewers', 'Everyone who can see it'], ['members', 'Only explicit members'], ['managers', 'Only managers (announcements)']] as const).map(([v, d]) => (
+                <button key={v} onClick={() => setPostPolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1 }}>CANCEL</button>
+          <button onClick={submit} disabled={!name.trim() || busy} style={{ padding: '10px 18px', background: name.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8, color: name.trim() ? 'var(--bg)' : 'var(--fg-muted)', cursor: name.trim() ? 'pointer' : 'not-allowed', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, fontWeight: 600 }}>{busy ? 'CREATING…' : 'CREATE'}</button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function LoungePage() {
   useRequireAuth();
   const { toast } = useToast();
   const { activeProject, projects, setActiveProject } = useProject();
-  const [activeChannel, setActiveChannel] = useState('general');
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
+  const [canPost, setCanPost] = useState(true);
+  const [canManageActive, setCanManageActive] = useState(false);
+  const [showNewChannel, setShowNewChannel] = useState(false);
   const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [threadParent, setThreadParent] = useState<Message | null>(null);
@@ -197,6 +312,29 @@ export default function LoungePage() {
   const typingChannelRef = useRef<any>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastBroadcast = useRef(0);
+
+  // Load the channels this user can see for the active project (+ community),
+  // and keep a valid active channel selected.
+  const reloadChannels = useCallback(async () => {
+    const list = await listChannels(activeProject?.id);
+    setChannels(list);
+    setActiveChannel(prev => {
+      if (prev && list.some(c => c.id === prev.id)) return prev;
+      return list.find(c => c.type === 'text') || list[0] || null;
+    });
+  }, [activeProject?.id]);
+
+  useEffect(() => { reloadChannels(); }, [reloadChannels]);
+
+  // Resolve post/manage permission whenever the active text channel changes.
+  useEffect(() => {
+    if (!activeChannel || activeChannel.type !== 'text') { setCanPost(false); setCanManageActive(false); return; }
+    let active = true;
+    Promise.all([canPostChannel(activeChannel.id), canManageChannel(activeChannel.id)]).then(([p, m]) => {
+      if (active) { setCanPost(p); setCanManageActive(m); }
+    });
+    return () => { active = false; };
+  }, [activeChannel]);
 
   useEffect(() => {
     let mounted = true;
@@ -224,7 +362,9 @@ export default function LoungePage() {
       try {
         const data = dmTarget && currentUser
           ? await getDMThread(currentUser.id, dmTarget.id)
-          : await getChannelMessages(activeChannel);
+          : activeChannel
+          ? await getChannelMessagesByUuid(activeChannel.id)
+          : [];
         if (!mounted) return;
         const formatted = data.map((m: any) => ({
           id: m.id,
@@ -258,8 +398,8 @@ export default function LoungePage() {
               (m.sender_id === dmTarget.id && m.receiver_id === currentUser.id)) loadMessages();
         })
         .subscribe();
-    } else {
-      channel = subscribeToChannel(activeChannel, () => loadMessages());
+    } else if (activeChannel) {
+      channel = subscribeToChannelUuid(activeChannel.id, () => loadMessages());
     }
 
     return () => {
@@ -275,8 +415,9 @@ export default function LoungePage() {
   // Typing indicators over Realtime broadcast (Slack/Discord style). Each
   // channel gets an ephemeral broadcast room; peers show for ~3s per keypress.
   useEffect(() => {
+    if (!activeChannel) return;
     const uname = myProfile?.username || 'Someone';
-    const ch = supabase.channel(`typing:${activeChannel}`, { config: { broadcast: { self: false } } });
+    const ch = supabase.channel(`typing:${activeChannel.id}`, { config: { broadcast: { self: false } } });
     ch.on('broadcast', { event: 'typing' }, ({ payload }: any) => {
       const name = payload?.username;
       if (!name) return;
@@ -343,7 +484,8 @@ export default function LoungePage() {
     if (!text || !currentUser || !threadParent) return;
     setThreadInput('');
     try {
-      await sendMessage(currentUser.id, text, activeChannel, undefined, threadParent.id);
+      if (!activeChannel) return;
+      await sendChannelMessage(currentUser.id, text, activeChannel.id, threadParent.id);
       setReplyCounts(prev => ({ ...prev, [threadParent.id]: (prev[threadParent.id] || 0) + 1 }));
       // Notify the original author of the reply.
       if (threadParent.sender_id && threadParent.sender_id !== currentUser.id) {
@@ -373,7 +515,8 @@ export default function LoungePage() {
         }, currentUser.id);
         return;
       }
-      await sendMessage(currentUser.id, text, activeChannel);
+      if (!activeChannel) return;
+      await sendChannelMessage(currentUser.id, text, activeChannel.id);
       // Notify anyone @mentioned by username (matched against known crew).
       const mentioned = new Set((text.match(/@([a-zA-Z0-9_]+)/g) || []).map(m => m.slice(1).toLowerCase()));
       if (mentioned.size > 0) {
@@ -381,7 +524,7 @@ export default function LoungePage() {
           .filter(m => m.id !== currentUser.id && mentioned.has(String(m.name).toLowerCase()))
           .forEach(m => notify(m.id, {
             type: 'mention',
-            title: `${from} mentioned you in #${activeChannel}`,
+            title: `${from} mentioned you in #${activeChannel.name}`,
             body: text.length > 90 ? text.slice(0, 90) + '…' : text,
             link: '/lounge',
           }, currentUser.id));
@@ -466,37 +609,40 @@ export default function LoungePage() {
           flexDirection: 'column',
           flexShrink: 0
         }}>
-          <div style={{ padding: '20px 16px' }}>
-             <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Channels</div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-               {[
-                 { id: 'general', name: 'general', icon: Hash },
-                 { id: 'script-notes', name: 'script-notes', icon: Hash },
-                 { id: 'production', name: 'production', icon: Lock },
-                 { id: 'dailies', name: 'dailies', icon: Hash },
-                 { id: 'legal', name: 'legal', icon: Lock },
-               ].map(ch => {
-                 const Icon = ch.icon;
-                 const isActive = activeChannel === ch.id && !dmTarget;
-                 return (
-                   <button
-                     key={ch.id}
-                     onClick={() => { setActiveChannel(ch.id); setDmTarget(null); }}
-                     style={{
-                       display: 'flex', alignItems: 'center', gap: 8,
-                       padding: '6px 10px', borderRadius: 4,
-                       background: isActive ? 'rgba(255,60,0,0.1)' : 'transparent',
-                       border: 'none', color: isActive ? '#fff' : '#888',
-                       cursor: 'pointer', transition: 'all 0.2s',
-                       fontFamily: 'var(--mono)', fontSize: 11
-                     }}
-                   >
-                     <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} />
-                     {ch.name}
-                   </button>
-                 );
-               })}
-             </div>
+          <div style={{ padding: '16px 12px', overflowY: 'auto', flex: 1 }}>
+             {(() => {
+               const projectChannels = channels.filter(c => c.project_id && c.project_id === activeProject?.id);
+               const communityChannels = channels.filter(c => !c.project_id);
+               const isOwner = !!(activeProject && currentUser && (activeProject as any).creator_id === currentUser.id);
+               const renderGroup = (label: string, list: Channel[], showAdd: boolean) => (
+                 <div style={{ marginBottom: 18 }}>
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', marginBottom: 8 }}>
+                     <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                     {showAdd && <button aria-label="New channel" title="New channel" onClick={() => setShowNewChannel(true)} style={{ background: 'none', border: 'none', color: 'var(--fg-subtle)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}>+</button>}
+                   </div>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                     {list.length === 0 && showAdd && <div style={{ fontSize: 9.5, color: 'var(--fg-dim)', fontFamily: 'var(--mono)', padding: '2px 6px' }}>No channels yet</div>}
+                     {list.map(ch => {
+                       const isActive = activeChannel?.id === ch.id && !dmTarget;
+                       const Icon = ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : Hash;
+                       return (
+                         <button key={ch.id} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
+                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(255,60,0,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
+                           <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} style={{ flexShrink: 0 }} />
+                           <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.name}</span>
+                         </button>
+                       );
+                     })}
+                   </div>
+                 </div>
+               );
+               return (
+                 <>
+                   {activeProject && renderGroup(activeProject.title, projectChannels, isOwner)}
+                   {renderGroup('Community', communityChannels, false)}
+                 </>
+               );
+             })()}
           </div>
           
           <div style={{ marginTop: 'auto', padding: 20, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
@@ -522,11 +668,17 @@ export default function LoungePage() {
                    <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>@{dmTarget.name}</span>
                    {onlineIds.has(dmTarget.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />}
                  </>
+               ) : activeChannel ? (
+                 <>
+                   {activeChannel.is_private && <Lock size={12} color="#888" />}
+                   <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{activeChannel.type === 'voice' ? '🔊 ' : '#'}{activeChannel.name}</span>
+                   {activeChannel.post_policy === 'managers' && <span style={{ fontSize: 7.5, color: '#f59e0b', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 99 }}>ANNOUNCE</span>}
+                 </>
                ) : (
-                 <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>#{activeChannel}</span>
+                 <span style={{ fontSize: 14, fontWeight: 700, color: '#666' }}>No channels</span>
                )}
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{messages.length} message{messages.length === 1 ? '' : 's'}</span>
+               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{activeChannel?.topic || `${messages.length} message${messages.length === 1 ? '' : 's'}`}</span>
              </div>
              <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>
                 {dmTarget ? (
@@ -537,12 +689,16 @@ export default function LoungePage() {
              </div>
           </div>
 
+          {activeChannel?.type === 'voice' && !dmTarget ? (
+            <VoiceRoom channel={activeChannel} me={currentUser ? { id: currentUser.id, name: myProfile?.username || 'You', avatar: myProfile?.avatar_url } : null} />
+          ) : (
+          <>
           {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
               {messages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
-                  {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : `NO MESSAGES IN #${activeChannel.toUpperCase()} YET`}
+                  {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : activeChannel ? `NO MESSAGES IN #${activeChannel.name.toUpperCase()} YET` : 'SELECT OR CREATE A CHANNEL'}
                 </div>
               ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0} />)}
               <div ref={bottomRef} />
@@ -586,9 +742,10 @@ export default function LoungePage() {
 
               <textarea
                 value={input}
+                disabled={!dmTarget && !canPost}
                 onChange={e => { setInput(e.target.value); if (e.target.value.trim()) broadcastTyping(); }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder={dmTarget ? `Message @${dmTarget.name}...` : `Message #${activeChannel}...`}
+                placeholder={dmTarget ? `Message @${dmTarget.name}...` : !canPost ? `You don't have permission to post in #${activeChannel?.name || ''}` : `Message #${activeChannel?.name || ''}...`}
                 rows={1}
                 style={{
                   flex: 1,
@@ -629,6 +786,8 @@ export default function LoungePage() {
               </motion.button>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         {/* Crew sidebar */}
@@ -734,6 +893,24 @@ export default function LoungePage() {
               <button onClick={handleThreadSend} style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New channel modal */}
+      <AnimatePresence>
+        {showNewChannel && activeProject && (
+          <NewChannelModal
+            projectTitle={activeProject.title}
+            onClose={() => setShowNewChannel(false)}
+            onCreate={async (vals) => {
+              const { channel, error } = await createChannel({ project_id: activeProject.id, ...vals });
+              if (error) { toast(error, 'error'); return; }
+              toast(`Created #${channel?.name}`, 'success');
+              setShowNewChannel(false);
+              await reloadChannels();
+              if (channel) setActiveChannel(channel);
+            }}
+          />
         )}
       </AnimatePresence>
 
