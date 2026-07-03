@@ -1715,7 +1715,18 @@ export default function StudioPage() {
       </div>
 
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '130px 20px 80px' }}>
-        
+
+        {!activeProject && (
+          <div style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 4, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Production Suite</div>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 5vw, 3rem)', letterSpacing: 2, lineHeight: 1, margin: 0 }}>No active project</h2>
+            <p style={{ fontFamily: 'var(--serif)', fontSize: '1rem', color: 'var(--fg-muted)', maxWidth: 420, lineHeight: 1.6 }}>
+              Studio works on your active production — its scenes, schedule, concept board and crew. Pick or create one to get started.
+            </p>
+            <Link href="/projects" className="link-btn" style={{ marginTop: 6 }}>Choose a project →</Link>
+          </div>
+        )}
+
         {activeTab === 'overview' && activeProject && (
           <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
             <div>
