@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
-import { listChannels, createChannel, canPostChannel, canManageChannel, type Channel } from '@/lib/supabase/channels';
+import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/context/ProjectContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
@@ -286,6 +286,132 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
   );
 }
 
+// Manage a channel: roster (add/remove members, toggle post/manage), post
+// policy, and delete. The backend permission model already exists — this is
+// the missing UI for it.
+function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Channel; meId?: string; onClose: () => void; onChanged: () => void }) {
+  const [members, setMembers] = useState<ChannelMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ id: string; username: string }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [postPolicy, setPostPolicy] = useState(channel.post_policy);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => { setLoading(true); setMembers(await listChannelMembers(channel.id)); setLoading(false); }, [channel.id]);
+  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return; }
+    let live = true; setSearching(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase.from('profiles').select('id, username').ilike('username', `%${query.trim()}%`).limit(8);
+      if (live) { setResults((data as any[] || []).filter(u => !members.some(m => m.user_id === u.id))); setSearching(false); }
+    }, 220);
+    return () => { live = false; clearTimeout(t); };
+  }, [query, members]);
+
+  const doAdd = async (u: { id: string; username: string }) => {
+    setBusy(true); setErr(null);
+    const e = await addChannelMember(channel.id, u.id, { can_post: true, can_manage: false });
+    setBusy(false); setQuery(''); setResults([]);
+    if (e) { setErr(e); return; }
+    await refresh(); onChanged();
+  };
+  const doRemove = async (m: ChannelMember) => { setBusy(true); const e = await removeChannelMember(m.id); setBusy(false); if (e) { setErr(e); return; } await refresh(); onChanged(); };
+  const toggle = async (m: ChannelMember, field: 'can_post' | 'can_manage') => {
+    setBusy(true);
+    await supabase.from('channel_members').update({ [field]: !m[field] }).eq('id', m.id);
+    setBusy(false); await refresh();
+  };
+  const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };
+  const doDelete = async () => {
+    if (!confirm(`Delete #${channel.name}? All its messages will be removed. This cannot be undone.`)) return;
+    setBusy(true); const e = await deleteChannel(channel.id); setBusy(false);
+    if (e) { setErr(e); return; }
+    onChanged(); onClose();
+  };
+
+  const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
+        style={{ width: 460, maxWidth: '100%', maxHeight: '86vh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>Manage channel</div>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 1, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {channel.is_private ? <Lock size={15} /> : <Hash size={15} />}{channel.name}
+            </h2>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
+        </div>
+
+        {channel.type === 'text' && (
+          <div style={{ marginBottom: 22 }}>
+            <label style={label}>Who can post</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {([['viewers', 'Everyone who can see it'], ['members', 'Only explicit members'], ['managers', 'Only managers (announcements)']] as const).map(([v, d]) => (
+                <button key={v} onClick={() => savePolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {channel.is_private && (
+          <div style={{ marginBottom: 20 }}>
+            <label style={label}>Add member</label>
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username…" style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+            {(searching || results.length > 0) && (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {searching && <div style={{ fontSize: 10, color: '#555', padding: 6, fontFamily: 'var(--mono)' }}>Searching…</div>}
+                {results.map(u => (
+                  <button key={u.id} disabled={busy} onClick={() => doAdd(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 7, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: '#fff', textAlign: 'left' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{u.username.charAt(0).toUpperCase()}</div>
+                    <span style={{ fontSize: 13 }}>{u.username}</span>
+                    <span style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--accent)' }}>+ ADD</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <label style={label}>{channel.is_private ? `Members (${members.length})` : 'Roster'}</label>
+        {loading ? (
+          <div style={{ fontSize: 10, color: '#555', padding: 12, fontFamily: 'var(--mono)' }}>Loading…</div>
+        ) : members.length === 0 ? (
+          <div style={{ fontSize: 11, color: '#555', padding: 12 }}>{channel.is_private ? 'No explicit members yet — add someone above.' : 'Public channel — everyone with project access can see it.'}</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {members.map(m => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{(m.profiles?.username || '?').charAt(0).toUpperCase()}</div>
+                <span style={{ fontSize: 13, color: '#fff' }}>{m.profiles?.username || 'unknown'}{m.user_id === meId && <span style={{ color: '#555', fontSize: 10 }}> (you)</span>}</span>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <button onClick={() => toggle(m, 'can_post')} disabled={busy} title="Can post" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, padding: '4px 7px', borderRadius: 5, cursor: 'pointer', background: m.can_post ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_post ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_post ? '#34d399' : '#666' }}>POST</button>
+                  <button onClick={() => toggle(m, 'can_manage')} disabled={busy} title="Can manage" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, padding: '4px 7px', borderRadius: 5, cursor: 'pointer', background: m.can_manage ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_manage ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_manage ? '#fbbf24' : '#666' }}>MANAGE</button>
+                  <button onClick={() => doRemove(m)} disabled={busy} title="Remove" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666', display: 'flex' }}><X size={13} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {err && <div style={{ marginTop: 12, fontSize: 11, color: '#f87171' }}>{err}</div>}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button onClick={doDelete} disabled={busy} style={{ padding: '9px 14px', background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', borderRadius: 8, color: '#f87171', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>DELETE CHANNEL</button>
+          <button onClick={onClose} style={{ padding: '9px 16px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>DONE</button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function LoungePage() {
   useRequireAuth();
   const { toast } = useToast();
@@ -295,6 +421,7 @@ export default function LoungePage() {
   const [canPost, setCanPost] = useState(true);
   const [canManageActive, setCanManageActive] = useState(false);
   const [showNewChannel, setShowNewChannel] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [threadParent, setThreadParent] = useState<Message | null>(null);
@@ -686,6 +813,11 @@ export default function LoungePage() {
                 ) : (
                   <><Users size={13} color="#666" /> {crewList.length}</>
                 )}
+                {!dmTarget && activeChannel && canManageActive && (
+                  <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
+                    <SettingsIcon size={12} /> MANAGE
+                  </button>
+                )}
              </div>
           </div>
 
@@ -909,6 +1041,21 @@ export default function LoungePage() {
               setShowNewChannel(false);
               await reloadChannels();
               if (channel) setActiveChannel(channel);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Manage channel modal */}
+      <AnimatePresence>
+        {showManage && activeChannel && (
+          <ManageChannelModal
+            channel={activeChannel}
+            meId={currentUser?.id}
+            onClose={() => setShowManage(false)}
+            onChanged={async () => {
+              await reloadChannels();
+              if (activeChannel) canManageChannel(activeChannel.id).then(setCanManageActive);
             }}
           />
         )}
