@@ -305,6 +305,31 @@ CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
 );
 CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
 
+-- Script metadata: shared title page + character bible (was localStorage-only).
+-- Applied live via migration script_metadata_table.
+CREATE TABLE IF NOT EXISTS script_metadata (
+  script_id UUID PRIMARY KEY REFERENCES scripts(id) ON DELETE CASCADE,
+  title_page JSONB NOT NULL DEFAULT '{}'::jsonb,
+  character_bible JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_by UUID REFERENCES auth.users(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
+-- can_access_script: owner/editor of a personal script, or creator/member of
+-- the owning project. Tighter than script_revisions (personal scripts are NOT
+-- open to every authenticated user).
+CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.scripts s WHERE s.id = sid AND (
+      s.created_by = auth.uid() OR s.last_edited_by = auth.uid()
+      OR (s.project_id IS NOT NULL AND (public.is_project_creator(s.project_id) OR public.is_project_member(s.project_id)))
+    )
+  );
+$$;
+CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (public.can_access_script(script_id));
+CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (public.can_access_script(script_id)) WITH CHECK (public.can_access_script(script_id));
+
 -- RLS Policies: Jobs
 CREATE POLICY "Jobs publicly readable" ON jobs FOR SELECT USING (status = 'open' OR created_by = auth.uid());
 CREATE POLICY "Authenticated users create jobs" ON jobs FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());

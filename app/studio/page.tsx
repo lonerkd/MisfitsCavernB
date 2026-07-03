@@ -229,7 +229,8 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
 
       if (file) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const uid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+        const fileName = `${Date.now()}-${uid}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
         finalUrl = await uploadStudioFile(filePath, file);
       }
@@ -1258,7 +1259,7 @@ export default function StudioPage() {
   const printSchedule = () => {
     if (!activeProject) return;
     const scenes = (activeProject.scenes || []) as any[];
-    if (scenes.length === 0) { alert('No scenes to export yet.'); return; }
+    if (scenes.length === 0) { toast('No scenes to export yet.', 'info'); return; }
     const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
     const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
     const w = window.open('', '_blank', 'width=860,height=1100');
@@ -1286,7 +1287,7 @@ export default function StudioPage() {
   const autoSchedule = async () => {
     if (!activeProject) return;
     const scenes = ((activeProject.scenes || []) as any[]).slice();
-    if (scenes.length === 0) { alert('No scenes to schedule yet — import from the screenplay first.'); return; }
+    if (scenes.length === 0) { toast('No scenes to schedule yet — import from the screenplay first.', 'info'); return; }
     const CAP = 40; // eighths/day ≈ 5 script pages, standard indie pace
     // Group by location (unset locations bucket together at the end).
     const groups = new Map<string, any[]>();
@@ -1312,7 +1313,7 @@ export default function StudioPage() {
         if ((s.shoot_day || 1) !== day) updates.push({ id: s.id, shoot_day: day });
       }
     }
-    if (updates.length === 0) { alert(`Schedule is already optimal — ${day} shoot day${day === 1 ? '' : 's'}, grouped by location.`); return; }
+    if (updates.length === 0) { toast(`Schedule is already optimal — ${day} shoot day${day === 1 ? '' : 's'}, grouped by location.`, 'info'); return; }
     if (!confirm(`Auto-schedule will reorganise ${scenes.length} scenes into ${day} shoot day${day === 1 ? '' : 's'}, grouped by location to minimise company moves (~5 pages/day). Reassign ${updates.length} scene${updates.length === 1 ? '' : 's'}?`)) return;
     setAutoScheduling(true);
     try {
@@ -1343,7 +1344,7 @@ export default function StudioPage() {
     try {
       const { data } = await supabase.from('scripts').select('content').eq('project_id', activeProject.id).order('updated_at', { ascending: false });
       const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
-      if (!withContent) { alert('No script content yet — write one in ScriptOS first.'); return; }
+      if (!withContent) { toast('No script content yet — write one in ScriptOS first.', 'info'); return; }
       const parsed = parseScript(withContent.content);
       const existingNums = new Set((activeProject.scenes || []).map((s: any) => s.scene_number));
       const rows = parsed.scenes
@@ -1360,9 +1361,9 @@ export default function StudioPage() {
           est_duration: `${s.eighths || 1}/8 pg`,
           shoot_day: 1,
         }));
-      if (rows.length === 0) { alert('Schedule is already in sync with the script.'); return; }
+      if (rows.length === 0) { toast('Schedule is already in sync with the script.', 'info'); return; }
       const { error } = await supabase.from('scenes').insert(rows);
-      if (error) { alert(error.message); return; }
+      if (error) { toast(error.message, 'error'); return; }
       await refreshProject(activeProject.id);
     } finally {
       setImportingScenes(false);
@@ -1565,7 +1566,7 @@ export default function StudioPage() {
       });
       
       if (newScript) {
-        alert('Beat pushed to ScriptOS! You can find it in your scripts list.');
+        toast('Beat pushed to ScriptOS! You can find it in your scripts list.', 'success');
       }
     } catch (err) {
       console.error('Error pushing beat to script:', err);

@@ -15,9 +15,9 @@ import { saveScript, getAllScripts, createNewScript, importScriptFromText, type 
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
+import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
@@ -282,8 +282,10 @@ export default function EditorPage() {
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content || '');
-    setTitlePage(loadTitlePage(script.id));
-    setCharProfiles(loadCharacterProfiles(script.id));
+    setTitlePage(loadTitlePageCached(script.id));
+    setCharProfiles(loadCharacterProfilesCached(script.id));
+    loadTitlePage(script.id).then(setTitlePage);
+    loadCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
@@ -297,8 +299,10 @@ export default function EditorPage() {
         const latest = all[0];
         setCurrentScript(latest);
         setContent(latest.content || '');
-        setTitlePage(loadTitlePage(latest.id));
-        setCharProfiles(loadCharacterProfiles(latest.id));
+        setTitlePage(loadTitlePageCached(latest.id));
+        setCharProfiles(loadCharacterProfilesCached(latest.id));
+        loadTitlePage(latest.id).then(setTitlePage);
+        loadCharacterProfiles(latest.id).then(setCharProfiles);
         setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
       } else {
         const fresh = await createNewScript('My First Screenplay');
@@ -454,7 +458,11 @@ export default function EditorPage() {
       exportScriptAsPdf({ ...currentScript, content });
       toast('Generating PDF...', 'success');
     } else {
-      toast(`Exporting as ${format.toUpperCase()} (Pro Feature)`, 'info');
+      // Defensive: the export menu only offers the handled formats above, so
+      // this is unreachable in practice. Fall back to plain-text rather than
+      // silently doing nothing if a new format is added to the menu.
+      exportScriptAsText({ ...currentScript, content }, 'txt');
+      toast(`Exported as .txt`, 'success');
     }
     setShowFormatMenu(false);
   }, [currentScript, content, toast]);
