@@ -81,36 +81,3 @@ export async function deleteProject(projectId: string) {
   return true;
 }
 
-export async function getProjectCrew(projectId: string) {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .select('*, profiles(*)')
-    .eq('project_id', projectId);
-
-  if (error) throw error;
-  return data;
-}
-
-export async function addProjectMember(projectId: string, userId: string, role = 'team member') {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .insert({
-      project_id: projectId,
-      user_id: userId,
-      role
-    })
-    .select();
-
-  if (error) throw error;
-  return data;
-}
-
-export function subscribeToProject(projectId: string, callback: (payload: any) => void) {
-  return supabase
-    .channel(`project:${projectId}`)
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` },
-      callback
-    )
-    .subscribe();
-}

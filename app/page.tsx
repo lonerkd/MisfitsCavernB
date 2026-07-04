@@ -458,7 +458,10 @@ export default function Home() {
       const [scriptRes, assetRes, msgRes, projRes] = await Promise.all([
         supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
         supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
-        supabase.from('chat_messages').select('content,sender_id,profiles(username)').order('created_at', { ascending: false }).limit(4),
+        // Only real channel messages here, never DMs (messages also stores
+        // private 1:1s via receiver_id) — a general activity pulse must not
+        // ever surface someone else's private conversation.
+        supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
         supabase.from('projects').select('id,title').eq('creator_id', user.id).order('created_at', { ascending: false }).limit(1),
       ]);
       const script = scriptRes.data?.[0];

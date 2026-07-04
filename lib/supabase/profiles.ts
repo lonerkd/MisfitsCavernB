@@ -62,23 +62,3 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
   return data;
 }
 
-export async function getProjectCrew(projectId: string) {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .select(`
-      *,
-      profiles:user_id (
-        username,
-        full_name,
-        avatar_url
-      )
-    `)
-    .eq('project_id', projectId);
-
-  if (error) {
-    console.error('Error fetching crew:', error);
-    return [];
-  }
-
-  return data || [];
-}

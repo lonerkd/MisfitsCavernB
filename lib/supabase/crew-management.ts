@@ -166,36 +166,3 @@ export async function updateCrewMemberRole(
     throw error;
   }
 }
-
-/**
- * Get user's projects and their roles
- */
-export async function getUserProjects(userId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('project_crew')
-      .select(`
-        id,
-        project_id,
-        user_id,
-        role,
-        created_at,
-        projects:project_id(id, title, accent_color)
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    return (data || []).map(crew => ({
-      ...crew,
-      joined_at: crew.created_at,
-      project: crew.projects,
-    }));
-  } catch (error) {
-    console.error('Failed to fetch user projects:', error);
-    return [];
-  }
-}

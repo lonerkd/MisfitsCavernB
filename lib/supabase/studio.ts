@@ -89,20 +89,3 @@ export async function deleteProjectBeat(beatId: string) {
   return true;
 }
 
-export async function getMarketingCampaigns(projectId: string) {
-  const { data, error } = await supabase.from('marketing_campaigns').select('*').eq('project_id', projectId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function createMarketingCampaign(campaign: any) {
-  const { data, error } = await supabase.from('marketing_campaigns').insert(campaign).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export async function deleteMarketingCampaign(campaignId: string) {
-  const { error } = await supabase.from('marketing_campaigns').delete().eq('id', campaignId);
-  if (error) throw error;
-  return true;
-}
