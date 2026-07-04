@@ -27,6 +27,7 @@ import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
+import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
@@ -412,7 +413,7 @@ export default function EditorPage() {
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')
-            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: 'screenplay', status: 'draft', created_by: uid, last_edited_by: uid })
+            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
             .select('id,title,content')
             .single();
           row = ins.data || undefined;
@@ -1127,7 +1128,7 @@ export default function EditorPage() {
       module: 'editor',
       title: currentScript?.title || 'Untitled',
       fields: [
-        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#ff3c00' },
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
         { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
         { label: 'Pages', value: `${pageEst}` },
         { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
@@ -1317,7 +1318,7 @@ export default function EditorPage() {
                   border: 'none', cursor: 'pointer',
                   transition: 'box-shadow 0.25s, transform 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,60,0,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
               >
                 <Download size={12} /> Export <ChevronDown size={11} />
@@ -1459,7 +1460,7 @@ export default function EditorPage() {
                   return (
                     <div key={i} style={{
                       color, fontWeight: bold ? 700 : 400,
-                      background: isReadingLine ? 'rgba(255,60,0,0.14)' : undefined,
+                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : undefined,
                       boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : undefined,
                     }}>
                       {lineText.length ? lineText : ' '}
@@ -1505,12 +1506,12 @@ export default function EditorPage() {
                     <button
                       onClick={stopTableRead}
                       title="Stop table read"
-                      style={{ background: 'transparent', border: 'none', color: 'rgba(240,236,228,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      style={{ background: 'transparent', border: 'none', color: 'rgba(224, 221, 174,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(240,236,228,0.4)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
                     Table Read
                   </span>
                 </div>
@@ -1871,7 +1872,7 @@ export default function EditorPage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        textarea::placeholder { color: rgba(240,236,228,0.15); }
+        textarea::placeholder { color: rgba(224, 221, 174,0.15); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }

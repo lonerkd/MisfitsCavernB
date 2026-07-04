@@ -189,7 +189,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
 function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }) {
   const total = concepts + scenes;
   const filled = Math.min(6, concepts);
-  const palette = ['#6366f1', '#ff3c00', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  const palette = ['#6366f1', '#d7340b', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
       <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
@@ -251,7 +251,7 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
   return (
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#ff3c00' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
       </div>
 
@@ -294,7 +294,7 @@ function PortfolioPreview({ published }: { published: number }) {
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 60%, rgba(245,158,11,0.18) 0%, transparent 60%)' }} />
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', bottom: 6, right: 8, fontFamily: 'var(--mono)', fontSize: 6.5, color: 'rgba(240,236,228,0.3)', letterSpacing: 2 }}>2.35:1</div>
+          <div style={{ position: 'absolute', bottom: 6, right: 8, fontFamily: 'var(--mono)', fontSize: 6.5, color: 'rgba(224, 221, 174,0.3)', letterSpacing: 2 }}>2.35:1</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[0, 1].map(i => (
@@ -339,7 +339,7 @@ export default function ProjectHubPage() {
         progress: Math.round((phaseIndex(phase) / (PHASES.length - 1)) * 100),
         deadline: data.end_date || '',
         description: data.description || '',
-        color: data.accent_color || '#ff3c00',
+        color: data.accent_color || '#d7340b',
         team: [],
       });
       setLoading(false);
@@ -449,7 +449,7 @@ export default function ProjectHubPage() {
                   padding: '5px 12px', borderRadius: 9999,
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5, textTransform: 'uppercase',
                   background: isActive ? `${project.color}18` : 'transparent',
-                  color: isActive ? project.color : isDone ? 'rgba(240,236,228,0.4)' : 'rgba(240,236,228,0.2)',
+                  color: isActive ? project.color : isDone ? 'rgba(224, 221, 174,0.4)' : 'rgba(224, 221, 174,0.2)',
                   border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
                   transition: 'all 0.3s', whiteSpace: 'nowrap',
                 }}>
@@ -517,7 +517,7 @@ export default function ProjectHubPage() {
           <DeptWindow
             title="ScriptOS"
             tag="Screenplay"
-            color="#ff3c00"
+            color="#d7340b"
             href="/editor"
             delay={0.05}
             stats={[

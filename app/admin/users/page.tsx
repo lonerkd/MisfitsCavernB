@@ -205,7 +205,7 @@ export default function AdminUsersPage() {
                       key={user.id}
                       style={{
                         borderBottom: '1px solid rgba(255,255,255,0.05)',
-                        background: selectedUser === user.id ? 'rgba(255,60,0,0.05)' : undefined,
+                        background: selectedUser === user.id ? 'rgba(215, 52, 11,0.05)' : undefined,
                       }}
                       onClick={() => setSelectedUser(selectedUser === user.id ? null : user.id)}
                     >
@@ -218,7 +218,7 @@ export default function AdminUsersPage() {
                       <td style={{ padding: 16 }}>
                         <span style={{
                           padding: '4px 8px',
-                          background: user.is_admin ? 'rgba(255,60,0,0.1)' : 'rgba(0,153,255,0.1)',
+                          background: user.is_admin ? 'rgba(215, 52, 11,0.1)' : 'rgba(0,153,255,0.1)',
                           border: `1px solid ${user.is_admin ? 'var(--accent)' : 'rgba(0,153,255,0.3)'}`,
                           borderRadius: 4,
                           color: user.is_admin ? 'var(--accent)' : '#0099ff',
@@ -247,7 +247,7 @@ export default function AdminUsersPage() {
                               alignItems: 'center',
                               padding: '6px 12px',
                               background: 'transparent',
-                              border: '1px solid rgba(255,60,0,0.3)',
+                              border: '1px solid rgba(215, 52, 11,0.3)',
                               color: 'var(--accent)',
                               borderRadius: 4,
                               fontSize: 10,

@@ -253,7 +253,7 @@ export default function CrewMemberPage() {
             </div>
             <p style={{
               fontFamily: 'var(--serif)', fontSize: '1.2rem', lineHeight: 1.75,
-              color: 'rgba(240,236,228,0.82)', margin: 0, maxWidth: 620
+              color: 'rgba(224, 221, 174,0.82)', margin: 0, maxWidth: 620
             }}>
               {profile.bio}
             </p>
@@ -273,7 +273,7 @@ export default function CrewMemberPage() {
                   {c.project_title && (
                     <>
                       <span style={{ opacity: 0.3, fontSize: 11 }}>in</span>
-                      <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(240,236,228,0.8)' }}>{c.project_title}</span>
+                      <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(224, 221, 174,0.8)' }}>{c.project_title}</span>
                     </>
                   )}
                 </div>
@@ -309,7 +309,7 @@ export default function CrewMemberPage() {
                     style={{
                       padding: '20px 22px',
                       background: '#0a0a0a',
-                      border: `1px solid ${hoveredCard === project.id ? 'rgba(255,60,0,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      border: `1px solid ${hoveredCard === project.id ? 'rgba(215, 52, 11,0.3)' : 'rgba(255,255,255,0.06)'}`,
                       boxShadow: hoveredCard === project.id ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
                       transition: 'border-color 0.2s, box-shadow 0.2s',
                       cursor: 'pointer'

@@ -42,7 +42,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
                 <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Format</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {PROJECT_TYPES.map(t => (
-                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(255,60,0,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
+                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(215, 52, 11,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
                   ))}
                 </div>
               </div>
@@ -88,7 +88,7 @@ const PHASES: { id: Phase; label: string; abbr: string }[] = [
 const PHASE_COLORS: Record<Phase, string> = {
   'development':     '#6366f1',
   'pre-production':  '#8b5cf6',
-  'production':      '#ff3c00',
+  'production':      '#d7340b',
   'post-production': '#f59e0b',
   'delivery':        '#10b981',
 };
@@ -178,7 +178,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           fontFamily: 'var(--mono)',
           fontSize: 9.5,
           lineHeight: 1.6,
-          color: 'rgba(240,236,228,0.4)',
+          color: 'rgba(224, 221, 174,0.4)',
           marginBottom: 16,
           display: '-webkit-box',
           WebkitLineClamp: 2,
@@ -223,7 +223,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 4,
             fontFamily: 'var(--mono)', fontSize: 8.5,
-            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'rgba(240,236,228,0.3)',
+            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'rgba(224, 221, 174,0.3)',
           }}>
             <Clock size={9} />
             {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
@@ -255,7 +255,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
         </div>
         <div style={{
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-          color: 'rgba(240,236,228,0.2)',
+          color: 'rgba(224, 221, 174,0.2)',
           paddingLeft: 4,
         }}>
           {phase.label}
@@ -263,7 +263,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
         <div style={{
           marginLeft: 'auto',
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-          color: 'rgba(240,236,228,0.25)',
+          color: 'rgba(224, 221, 174,0.25)',
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 6,
@@ -295,7 +295,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
             border: '1px dashed rgba(255,255,255,0.05)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
-            color: 'rgba(240,236,228,0.12)',
+            color: 'rgba(224, 221, 174,0.12)',
             textTransform: 'uppercase',
           }}>
             No projects
@@ -321,9 +321,9 @@ export default function ProjectsPage() {
     {
       module: 'home',
       title: 'Projects',
-      accent: '#ff3c00',
+      accent: '#d7340b',
       fields: [
-        { label: 'Total', value: `${projectsList.length}`, color: '#ff3c00' },
+        { label: 'Total', value: `${projectsList.length}`, color: '#d7340b' },
       ],
       actions: user ? [
         { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
@@ -346,7 +346,7 @@ export default function ProjectsPage() {
           deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
           team: ['CR'],
           description: p.description || 'No description.',
-          color: p.accent_color || '#ff3c00',
+          color: p.accent_color || '#d7340b',
         }));
         setProjectsList(fetched);
         setLoaded(true);
@@ -418,7 +418,7 @@ export default function ProjectsPage() {
 
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(240,236,228,0.4)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
             Production Board
           </div>
         </div>
@@ -434,7 +434,7 @@ export default function ProjectsPage() {
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, lineHeight: 1 }}>
                   {value}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1.5, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1.5, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
                   {label}
                 </div>
               </div>
@@ -456,7 +456,7 @@ export default function ProjectsPage() {
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(255,60,0,0.35)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.35)';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.transform = '';

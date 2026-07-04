@@ -169,7 +169,7 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         position: 'relative',
         width: '100%',
         minHeight: 'clamp(260px, 38vw, 480px)',
-        background: 'linear-gradient(160deg, #111 0%, #080808 60%, rgba(255,60,0,0.06) 100%)',
+        background: 'linear-gradient(160deg, #111 0%, #080808 60%, rgba(215, 52, 11,0.06) 100%)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         flexDirection: 'column',
@@ -225,8 +225,8 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
               width: 34,
               height: 34,
               borderRadius: '50%',
-              background: profiles.avatar_url ? 'transparent' : 'rgba(255,60,0,0.25)',
-              border: '1px solid rgba(255,60,0,0.3)',
+              background: profiles.avatar_url ? 'transparent' : 'rgba(215, 52, 11,0.25)',
+              border: '1px solid rgba(215, 52, 11,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -454,7 +454,7 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
                 transition: 'background 0.2s',
                 zIndex: 9001,
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,60,0,0.18)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(215, 52, 11,0.18)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
             >
               {/* X icon drawn inline */}
@@ -518,7 +518,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         aspectRatio: '16/9',
         background: '#111',
         border: `1px solid ${hovered ? 'var(--accent)' : 'rgba(255,255,255,0.07)'}`,
-        boxShadow: hovered ? '0 12px 28px rgba(0,0,0,0.5), 0 0 16px rgba(255,60,0,0.25)' : 'none',
+        boxShadow: hovered ? '0 12px 28px rgba(0,0,0,0.5), 0 0 16px rgba(215, 52, 11,0.25)' : 'none',
         cursor: 'pointer',
         overflow: 'hidden',
         position: 'relative',

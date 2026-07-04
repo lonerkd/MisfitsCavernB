@@ -2,7 +2,7 @@ import type { ScriptLine } from '@/types/screenplay';
 
 // Board card colors (cycle through a palette) — shared by the Board, Outline,
 // and Stats views so scene tags/colors stay visually consistent across tabs.
-export const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
+export const CARD_COLORS = ['#d7340b', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
 
 // Scene type classifier — encodes the actual spatial/temporal context of a scene
 export function getSceneType(scene: ScriptLine) {

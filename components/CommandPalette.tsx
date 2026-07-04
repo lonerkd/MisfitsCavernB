@@ -165,7 +165,7 @@ export default function CommandPalette() {
                         onClick={() => c.run()}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8,
-                          background: active ? 'rgba(255,60,0,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+                          background: active ? 'rgba(215, 52, 11,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
                           color: active ? 'var(--fg)' : 'rgba(255,255,255,0.75)', transition: 'background 0.12s',
                         }}
                       >

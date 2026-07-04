@@ -177,7 +177,7 @@ export default function ManagePortfolioPage() {
             const form = mediaForm[project.id] || { title: '', url: '', media_type: 'youtube' };
             return (
               <div key={project.id} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', transition: 'border-color 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(255,60,0,0.15)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(215, 52, 11,0.15)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
@@ -220,7 +220,7 @@ export default function ManagePortfolioPage() {
                   </select>
                   <input type="text" placeholder="Title (optional)" value={form.title} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, title: e.target.value } }))} style={{ ...fieldStyle, flex: 1 }} />
                   <input type="url" placeholder="Media URL" value={form.url} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, url: e.target.value } }))} style={{ ...fieldStyle, flex: 2 }} />
-                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(255,60,0,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
+                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(215, 52, 11,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
                 </div>
               </div>
             );

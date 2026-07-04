@@ -75,7 +75,7 @@ function FloatingInput({
           paddingLeft: 16,
           paddingRight: isPassword ? 48 : 16,
           background: 'rgba(255,255,255,0.02)',
-          border: `1px solid ${focused ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.08)'}`,
+          border: `1px solid ${focused ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.08)'}`,
           borderRadius: 'var(--radius-sm)',
           color: 'var(--fg)',
           fontFamily: 'var(--mono)',
@@ -83,7 +83,7 @@ function FloatingInput({
           letterSpacing: 0.5,
           outline: 'none',
           transition: 'border-color 0.3s, box-shadow 0.3s',
-          boxShadow: focused ? '0 0 0 3px rgba(255,60,0,0.05)' : 'none',
+          boxShadow: focused ? '0 0 0 3px rgba(215, 52, 11,0.05)' : 'none',
         }}
       />
 
@@ -212,7 +212,7 @@ export default function AuthPage() {
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 40%, rgba(255,60,0,0.05) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(215, 52, 11,0.05) 0%, transparent 60%)',
       }} />
 
       {/* Back to home */}
@@ -355,8 +355,8 @@ export default function AuthPage() {
                   exit={{ opacity: 0, y: -8 }}
                   style={{
                     padding: '10px 14px',
-                    background: 'rgba(255,60,0,0.08)',
-                    border: '1px solid rgba(255,60,0,0.2)',
+                    background: 'rgba(215, 52, 11,0.08)',
+                    border: '1px solid rgba(215, 52, 11,0.2)',
                     borderRadius: 'var(--radius-sm)',
                     fontFamily: 'var(--mono)',
                     fontSize: 11,
@@ -379,7 +379,7 @@ export default function AuthPage() {
               style={{
                 width: '100%',
                 padding: '15px',
-                background: loading ? 'rgba(255,60,0,0.6)' : 'var(--accent)',
+                background: loading ? 'rgba(215, 52, 11,0.6)' : 'var(--accent)',
                 border: 'none',
                 color: 'var(--bg)',
                 fontFamily: 'var(--mono)',

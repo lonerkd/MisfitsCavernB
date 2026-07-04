@@ -137,8 +137,8 @@ export default function AdminDashboard() {
                 key={stat.label}
                 style={{
                   padding: 24,
-                  background: 'rgba(255,60,0,0.05)',
-                  border: '1px solid rgba(255,60,0,0.2)',
+                  background: 'rgba(215, 52, 11,0.05)',
+                  border: '1px solid rgba(215, 52, 11,0.2)',
                   borderRadius: 8,
                 }}
               >

@@ -254,7 +254,7 @@ export function StatsView({
         {[
           { label: 'Words',   value: wordCount.toLocaleString(), color: '#6366f1', sub: `${pageEst} pages` },
           { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
-          { label: 'Scenes',  value: `${scenesList.length}`, color: '#ff3c00', sub: `${uniqueLocations.length} locations` },
+          { label: 'Scenes',  value: `${scenesList.length}`, color: '#d7340b', sub: `${uniqueLocations.length} locations` },
           { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
           { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
         ].map(s => (
@@ -402,11 +402,11 @@ export function StatsView({
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
         <div style={{ display: 'flex', gap: 1, borderRadius: 6, overflow: 'hidden', height: 20 }}>
           <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
-          <div style={{ flex: 1, background: '#ff3c00' }} />
+          <div style={{ flex: 1, background: '#d7340b' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
           <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#6366f1' }}>{dialogueRatio}% Dialogue</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#ff3c00' }}>{100 - dialogueRatio}% Action</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#d7340b' }}>{100 - dialogueRatio}% Action</span>
         </div>
       </div>
 

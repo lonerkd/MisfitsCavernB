@@ -68,7 +68,7 @@ export default function SpotifyPlayer() {
                       padding: '6px 11px', borderRadius: 9999,
                       background: active ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)',
                       border: `1px solid ${active ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                      color: active ? '#10b981' : 'rgba(240,236,228,0.4)',
+                      color: active ? '#10b981' : 'rgba(224, 221, 174,0.4)',
                       fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
                       textTransform: 'uppercase', cursor: 'pointer',
                       transition: 'all 0.2s',

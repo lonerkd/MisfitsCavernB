@@ -115,7 +115,7 @@ export function EditorLeftNav({
                       fontFamily: 'var(--mono)', letterSpacing: 1,
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >{key}</button>
                   ))}
@@ -200,7 +200,7 @@ export function EditorLeftNav({
                             }}>{typeLabel}</span>
                             <span style={{
                               fontFamily: 'var(--mono)', fontSize: 9,
-                              color: isActive ? 'var(--fg)' : 'rgba(240,236,228,0.6)',
+                              color: isActive ? 'var(--fg)' : 'rgba(224, 221, 174,0.6)',
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                               textTransform: 'uppercase', flex: 1,
                             }}>

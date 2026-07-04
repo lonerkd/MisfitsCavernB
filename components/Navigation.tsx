@@ -203,7 +203,7 @@ export default function Navigation() {
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,60,0,0.3)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.3)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = '';

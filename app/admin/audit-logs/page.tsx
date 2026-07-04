@@ -234,8 +234,8 @@ export default function AuditLogsPage() {
                 key={stat.label}
                 style={{
                   padding: 16,
-                  background: 'rgba(255,60,0,0.05)',
-                  border: '1px solid rgba(255,60,0,0.2)',
+                  background: 'rgba(215, 52, 11,0.05)',
+                  border: '1px solid rgba(215, 52, 11,0.2)',
                   borderRadius: 8,
                 }}
               >
@@ -387,8 +387,8 @@ export default function AuditLogsPage() {
                 disabled={page === 0}
                 style={{
                   padding: '8px 12px',
-                  background: page === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,60,0,0.1)',
-                  border: '1px solid rgba(255,60,0,0.2)',
+                  background: page === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(215, 52, 11,0.1)',
+                  border: '1px solid rgba(215, 52, 11,0.2)',
                   color: page === 0 ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
@@ -408,8 +408,8 @@ export default function AuditLogsPage() {
                 disabled={page >= totalPages - 1}
                 style={{
                   padding: '8px 12px',
-                  background: page >= totalPages - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(255,60,0,0.1)',
-                  border: '1px solid rgba(255,60,0,0.2)',
+                  background: page >= totalPages - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(215, 52, 11,0.1)',
+                  border: '1px solid rgba(215, 52, 11,0.2)',
                   color: page >= totalPages - 1 ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',

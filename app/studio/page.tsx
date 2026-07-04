@@ -44,7 +44,7 @@ interface Asset {
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
   { id: 'pre', name: 'Pre-Production', color: '#0099ff', icon: ClipboardList },
-  { id: 'prod', name: 'Production', color: '#ff3c00', icon: Video },
+  { id: 'prod', name: 'Production', color: '#d7340b', icon: Video },
   { id: 'post', name: 'Post-Production', color: '#a855f7', icon: Layers },
   { id: 'del', name: 'Delivery', color: '#00cc66', icon: CheckCircle2 },
 ];
@@ -58,7 +58,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 const TYPE_COLORS: Record<string, string> = {
   image: '#0099ff',
-  video: '#ff3c00',
+  video: '#d7340b',
   document: '#ffaa00',
   audio: '#00cc66',
 };
@@ -193,7 +193,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{u}</span>
-                      {comment.timecode && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>}
+                      {comment.timecode && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(215, 52, 11,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.content}</div>
                   </div>
@@ -531,14 +531,14 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <img src={img.image_url} alt={img.title || ''} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(240,236,228,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(224, 221, 174,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>{img.title || 'Untitled'}</span>
-          <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
-          <span style={{ color: 'rgba(240,236,228,0.4)' }}>{index + 1} / {images.length}</span>
+          <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
+          <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{index + 1} / {images.length}</span>
           <a href={img.image_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#6366f1', textDecoration: 'none' }}>open original ↗</a>
           {onSetBoard && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-              <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
+              <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
               <input
                 list="mc-lightbox-boards"
                 value={boardInput}
@@ -848,7 +848,7 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
         ))}
       </div>
 
-      <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ marginTop: 40, padding: 24, background: 'rgba(215, 52, 11,0.05)', border: '1px solid rgba(215, 52, 11,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
         <Info size={20} color="var(--accent)" />
         <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, Concept board, Character Bible, and story beats — update them and this updates.</div>
       </div>
@@ -910,7 +910,7 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   };
   const unlinkLook = async (refId: string) => { await supabase.from('character_references').delete().eq('id', refId); loadRefs(); };
 
-  const palette = ['#ff3c00', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
 
   const load = async () => {
     setLoading(true);
@@ -1133,7 +1133,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
         position: 'relative',
         transition: 'box-shadow 0.3s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(255,60,0,0.08)'}`)}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(215, 52, 11,0.08)'}`)}
       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
     >
       <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
@@ -1205,7 +1205,7 @@ function CrewMemberCard({ member, index, isOnline }: { member: any; index: numbe
         borderRadius: 12,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
       onClick={zoneHandlers.onClick}
     >
@@ -2241,7 +2241,7 @@ export default function StudioPage() {
                        );
                      })()}
                      <div style={{ display: 'flex', gap: 8 }}>
-                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,60,0,0.12)', borderColor: 'rgba(255,60,0,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(215, 52, 11,0.12)', borderColor: 'rgba(215, 52, 11,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                      </div>
@@ -2473,7 +2473,7 @@ export default function StudioPage() {
                       <div
                         key={campaign.id}
                         style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color 0.3s, box-shadow 0.3s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
                       >
                          <div>
