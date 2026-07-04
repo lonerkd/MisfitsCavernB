@@ -8,6 +8,7 @@ import { ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
 import { signIn, signUp } from '@/lib/supabase/auth';
+import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness } from '@/lib/password-strength';
 import { supabase } from '@/lib/supabase/client';
 
@@ -160,10 +161,12 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      // A stalled connection or a Supabase-side incident should never leave
+      // this button stuck on "One moment..." forever with no way out.
       if (mode === 'signin') {
-        await signIn(form.email, form.password);
+        await withTimeout(signIn(form.email, form.password), 12000, 'Sign-in timed out.');
       } else {
-        await signUp(form.email, form.password, form.username);
+        await withTimeout(signUp(form.email, form.password, form.username), 12000, 'Sign-up timed out.');
       }
       // Session is persisted by the Supabase client (persistSession);
       // pages read it via supabase.auth.getUser().
@@ -188,6 +191,8 @@ export default function AuthPage() {
         setError('Confirmation code has expired. Please try again.');
       } else if (msg.includes('Invalid API key') || msg.includes('fetch failed')) {
         setError('Unable to connect. Please try again later.');
+      } else if (msg.includes('timed out')) {
+        setError('This is taking too long — check your connection and try again.');
       } else if (msg.includes('rate limit')) {
         setError('Too many attempts. Please wait a moment and try again.');
       } else {
