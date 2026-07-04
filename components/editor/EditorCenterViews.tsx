@@ -7,6 +7,7 @@ import type { CharacterStats } from '@/lib/scriptos/characters';
 import type { LintIssue } from '@/lib/scriptos/validator';
 import { TYPE_COLORS } from './editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
+import { usePillZone } from '@/lib/context/PillContext';
 
 /* =========================================================================
    ScriptOS editor — the three read-mostly center-stage tabs (Board, Outline,
@@ -46,48 +47,109 @@ export function BoardView({
   }
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
-      {scenesList.map((scene, i) => {
-        const cardColor = sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length];
-        const wc = sceneWordCounts[i] || 0;
-        const estMins = Math.max(1, Math.round(wc / 185 * 0.8));
-        return (
-          <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-            whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
-            onClick={() => jumpToScene(scene.text)}
-            title="Drag to reorder · click to open in the script"
-            draggable
-            onDragStart={(e: any) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
-            onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
-            onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
-            onDrop={(e) => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
-            style={{
-              width: 272, minHeight: 180,
-              background: 'var(--bg-3)',
-              border: `1px solid ${dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? cardColor : 'rgba(255,255,255,0.06)'}`,
-              borderTop: `2px solid ${cardColor}`,
-              borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-              opacity: dragSceneIdx === i ? 0.4 : 1,
-              transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
-            }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
-              <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wc}w · ~{estMins}m</span>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
-            <textarea
-              defaultValue={sceneNotes[scene.text.trim().toUpperCase()] || ''}
-              onClick={e => e.stopPropagation()}
-              onBlur={e => setSceneNote(scene.text, e.target.value)}
-              placeholder="Beat / summary — what has to happen here?"
-              style={{ width: '100%', minHeight: 44, resize: 'none', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
-            />
-            <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-              {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
-            </div>
-          </motion.div>
-        );
-      })}
+      {scenesList.map((scene, i) => (
+        <SceneBoardCard
+          key={i} scene={scene} index={i} lines={lines}
+          cardColor={sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length]}
+          wordCount={sceneWordCounts[i] || 0}
+          note={sceneNotes[scene.text.trim().toUpperCase()] || ''}
+          isDragging={dragSceneIdx === i}
+          isDropTarget={dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i}
+          onJump={() => jumpToScene(scene.text)}
+          onSetNote={note => setSceneNote(scene.text, note)}
+          onDragStart={(e) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
+          onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
+          onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
+          onDrop={(e) => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
+        />
+      ))}
     </div>
+  );
+}
+
+// Individual scene card — its own component (not inlined in the .map above)
+// so it can call usePillZone: hovering it sharpens the Pill's context down
+// from "editor" to this specific scene — cast + word count + a real Jump
+// action — a concrete instance of the zone drill-down the Pill's own code
+// comments describe but that no page had wired up until now.
+function SceneBoardCard({
+  scene, index, lines, cardColor, wordCount, note, isDragging, isDropTarget,
+  onJump, onSetNote, onDragStart, onDragOver, onDragEnd, onDrop,
+}: {
+  scene: ScriptLine;
+  index: number;
+  lines: ScriptLine[];
+  cardColor: string;
+  wordCount: number;
+  note: string;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onJump: () => void;
+  onSetNote: (note: string) => void;
+  onDragStart: (e: any) => void;
+  onDragOver: (e: any) => void;
+  onDragEnd: () => void;
+  onDrop: (e: any) => void;
+}) {
+  const estMins = Math.max(1, Math.round(wordCount / 185 * 0.8));
+  const startIdx = lines.findIndex(l => l.id === scene.id);
+  const sceneCast = React.useMemo(() => {
+    const endIdx = lines.findIndex((l, idx) => idx > startIdx && l.type === 'slug');
+    const body = lines.slice(startIdx + 1, endIdx === -1 ? lines.length : endIdx);
+    return [...new Set(body.filter(l => l.type === 'character').map(l => l.text.trim()))];
+  }, [lines, startIdx, scene.id]);
+
+  const zoneHandlers = usePillZone({
+    module: 'editor',
+    title: scene.text,
+    accent: cardColor,
+    fields: [
+      { label: 'Cast', value: sceneCast.length ? sceneCast.join(', ') : '—' },
+      { label: 'Words', value: `${wordCount}`, color: cardColor },
+    ],
+    actions: [
+      { id: 'jump-scene', label: '→ Jump to Scene', onClick: onJump },
+    ],
+  }, 2);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
+      whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+      onClick={onJump}
+      onMouseEnter={zoneHandlers.onMouseEnter}
+      onMouseLeave={zoneHandlers.onMouseLeave}
+      title="Drag to reorder · click to open in the script"
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
+      style={{
+        width: 272, minHeight: 180,
+        background: 'var(--bg-3)',
+        border: `1px solid ${isDropTarget ? cardColor : 'rgba(255,255,255,0.06)'}`,
+        borderTop: `2px solid ${cardColor}`,
+        borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
+        opacity: isDragging ? 0.4 : 1,
+        transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
+      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {index + 1}</span>
+        <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wordCount}w · ~{estMins}m</span>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
+      <textarea
+        defaultValue={note}
+        onClick={e => e.stopPropagation()}
+        onBlur={e => onSetNote(e.target.value)}
+        placeholder="Beat / summary — what has to happen here?"
+        style={{ width: '100%', minHeight: 44, resize: 'none', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
+      />
+      <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+        {lines.slice(startIdx + 1, startIdx + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
+      </div>
+    </motion.div>
   );
 }
 

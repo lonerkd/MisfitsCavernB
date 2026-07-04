@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { createPortfolioProject } from '@/lib/supabase/portfolio';
+import { usePillZone } from '@/lib/context/PillContext';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -867,39 +868,14 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
         {/* Budget */}
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {budget.length === 0 && <Empty>No budget items</Empty>}
-          {budget.map(b => {
-            const over = b.actual_cost != null && Number(b.actual_cost) > Number(b.amount);
-            return (
-            <Row key={b.id}>
-              <span style={{ flex: 1, fontSize: 11 }}>{b.category}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(b.amount).toLocaleString()}</span>
-              <input
-                type="number"
-                defaultValue={b.actual_cost ?? ''}
-                placeholder="actual"
-                onBlur={(e) => { const v = e.target.value.trim(); setActual(b.id, v === '' ? null : Number(v)); }}
-                style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
-              />
-              <button
-                onClick={() => postJobFromBudget(b)}
-                disabled={postedBudgetIds.has(b.id) || postingBudgetId === b.id}
-                title={postedBudgetIds.has(b.id) ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}
-                aria-label="Post as job"
-                style={{
-                  background: postedBudgetIds.has(b.id) ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${postedBudgetIds.has(b.id) ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: postedBudgetIds.has(b.id) ? 'default' : 'pointer', flexShrink: 0,
-                  color: postedBudgetIds.has(b.id) ? '#10b981' : 'var(--fg-dim)',
-                  opacity: postingBudgetId === b.id ? 0.5 : 1,
-                }}
-              >
-                <Briefcase size={11} />
-              </button>
-              <DelBtn onClick={() => delBudget(b.id)} />
-            </Row>
-            );
-          })}
+          {budget.map(b => (
+            <BudgetRowItem
+              key={b.id} item={b} posted={postedBudgetIds.has(b.id)} posting={postingBudgetId === b.id}
+              onSetActual={actual => setActual(b.id, actual)}
+              onPostJob={() => postJobFromBudget(b)}
+              onDelete={() => delBudget(b.id)}
+            />
+          ))}
           {hasActuals && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 10 }}>
               <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
@@ -1004,6 +980,66 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 function DelBtn({ onClick }: { onClick: () => void }) {
   return <button onClick={onClick} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, opacity: 0.5, flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}>×</button>;
+}
+
+// Its own component (not inlined in budget.map) so it can call usePillZone —
+// hovering a budget line sharpens the Pill down to that line's real spend
+// and, if it hasn't been posted yet, the same "Post as Job" action as the
+// line's own button.
+function BudgetRowItem({
+  item, posted, posting, onSetActual, onPostJob, onDelete,
+}: {
+  item: BudgetRow;
+  posted: boolean;
+  posting: boolean;
+  onSetActual: (actual: number | null) => void;
+  onPostJob: () => void;
+  onDelete: () => void;
+}) {
+  const over = item.actual_cost != null && Number(item.actual_cost) > Number(item.amount);
+  const zoneHandlers = usePillZone({
+    module: 'home',
+    title: item.category,
+    accent: over ? '#ff6b6b' : '#8b5cf6',
+    fields: [
+      { label: 'Planned', value: `$${Number(item.amount).toLocaleString()}` },
+      ...(item.actual_cost != null ? [{ label: 'Actual', value: `$${Number(item.actual_cost).toLocaleString()}`, color: over ? '#ff6b6b' : undefined }] : []),
+    ],
+    actions: posted ? [] : [{ id: 'post-job', label: '→ Post as Job', onClick: onPostJob }],
+  }, 2);
+
+  return (
+    <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave}>
+      <Row>
+        <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
+        <input
+          type="number"
+          defaultValue={item.actual_cost ?? ''}
+          placeholder="actual"
+          onBlur={(e) => { const v = e.target.value.trim(); onSetActual(v === '' ? null : Number(v)); }}
+          style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
+        />
+        <button
+          onClick={onPostJob}
+          disabled={posted || posting}
+          title={posted ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}
+          aria-label="Post as job"
+          style={{
+            background: posted ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${posted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: posted ? 'default' : 'pointer', flexShrink: 0,
+            color: posted ? '#10b981' : 'var(--fg-dim)',
+            opacity: posting ? 0.5 : 1,
+          }}
+        >
+          <Briefcase size={11} />
+        </button>
+        <DelBtn onClick={onDelete} />
+      </Row>
+    </div>
+  );
 }
 
 function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: { placeholder: string; second?: string; fields: string[]; dateLabels?: string[]; onSubmit: (vals: string[]) => void; accent: string }) {

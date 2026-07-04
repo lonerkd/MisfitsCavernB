@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, FolderOpen, Image, Video, FileText, Music, Upload, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -16,7 +17,7 @@ import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
-import { usePillStage } from '@/lib/context/PillContext';
+import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
@@ -1049,6 +1050,23 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
 }
 
 function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
+  const router = useRouter();
+  // Hovering a crew card sharpens the Pill down from "studio" to this person
+  // — their role, live online status, and a real "Message" action that jumps
+  // straight to the Lounge, instead of the page-level context alone.
+  const zoneHandlers = usePillZone(member.userId ? {
+    module: 'studio',
+    title: member.name,
+    accent: isOnline ? '#10b981' : undefined,
+    fields: [
+      { label: 'Role', value: member.role || '—' },
+      { label: 'Status', value: isOnline ? 'Online' : (member.status || 'pending'), color: isOnline ? '#10b981' : undefined },
+    ],
+    actions: [
+      { id: 'message-crew', label: '→ Message in Lounge', onClick: () => router.push('/lounge') },
+    ],
+  } : null, 2);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -1065,8 +1083,8 @@ function CrewMemberCard({ member, index, isOnline }: { member: any; index: numbe
         borderRadius: 12,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
     >
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar src={member.avatar} name={member.name} size={44} />
@@ -2028,7 +2046,8 @@ export default function StudioPage() {
                           name: member.profiles?.username || 'Unknown',
                           role: member.role,
                           status: member.status,
-                          avatar: member.profiles?.avatar_url
+                          avatar: member.profiles?.avatar_url,
+                          userId: member.user_id,
                         }} index={i} isOnline={onlineIds.has(member.user_id)} />
                       )) : (
                         <EmptyState icon={<Users size={28} />} title="No crew members recruited yet" />
