@@ -573,12 +573,17 @@ export default function EditorPage() {
       }
     };
 
-    // PDFs need text extraction with reading-order reconstruction before they
-    // can be parsed as a screenplay; everything else is already plain text.
+    // PDFs need text extraction with reading-order reconstruction, then the
+    // smart normalizer to repair extraction artifacts (stray page numbers,
+    // smart quotes, action mis-joined into dialogue) before they parse cleanly.
     if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
       toast('Extracting PDF…', 'success');
-      import('@/lib/scriptos/pdfImport')
-        .then(({ extractTextFromPdf }) => extractTextFromPdf(file))
+      Promise.all([
+        import('@/lib/scriptos/pdfImport'),
+        import('@/lib/scriptos/normalize'),
+      ])
+        .then(([{ extractTextFromPdf }, { normalizeScreenplay }]) =>
+          extractTextFromPdf(file).then(raw => normalizeScreenplay(raw) || raw))
         .then(finish)
         .catch(err => {
           console.error(err);
