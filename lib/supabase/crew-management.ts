@@ -9,6 +9,7 @@ export interface CrewMember {
   user_id: string;
   role: CrewRole;
   joined_at: string;
+  status: 'pending' | 'confirmed' | 'declined';
   username?: string;
   avatar_url?: string;
 }
@@ -94,6 +95,10 @@ export async function removeCrewMember(
  */
 export async function getProjectCrew(projectId: string): Promise<CrewMember[]> {
   try {
+    // NOTE: the live project_crew table has no joined_at column — it's
+    // created_at. This previously threw on every call (silently swallowed
+    // below), so Studio's crew hub always rendered an empty crew list
+    // regardless of real project_crew data.
     const { data, error } = await supabase
       .from('project_crew')
       .select(`
@@ -101,7 +106,8 @@ export async function getProjectCrew(projectId: string): Promise<CrewMember[]> {
         project_id,
         user_id,
         role,
-        joined_at,
+        status,
+        created_at,
         profiles:user_id(username, avatar_url)
       `)
       .eq('project_id', projectId)
@@ -113,6 +119,7 @@ export async function getProjectCrew(projectId: string): Promise<CrewMember[]> {
 
     return (data || []).map((member: any) => ({
       ...member,
+      joined_at: member.created_at,
       username: member.profiles?.username || (Array.isArray(member.profiles) ? member.profiles[0]?.username : undefined),
       avatar_url: member.profiles?.avatar_url || (Array.isArray(member.profiles) ? member.profiles[0]?.avatar_url : undefined),
     }));
@@ -172,11 +179,11 @@ export async function getUserProjects(userId: string) {
         project_id,
         user_id,
         role,
-        joined_at,
+        created_at,
         projects:project_id(id, title, accent_color)
       `)
       .eq('user_id', userId)
-      .order('joined_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw error;
@@ -184,6 +191,7 @@ export async function getUserProjects(userId: string) {
 
     return (data || []).map(crew => ({
       ...crew,
+      joined_at: crew.created_at,
       project: crew.projects,
     }));
   } catch (error) {
