@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
+import { assignCrewMember } from '@/lib/supabase/crew-management';
 
 interface Job {
   id: string;
@@ -183,12 +184,26 @@ export default function JobDetailPage() {
       .eq('id', appId);
     if (error) { toast(error.message || 'Could not update application', 'error'); return; }
     {
-      toast(newStatus === 'accepted' ? 'Applicant accepted' : 'Application declined', 'success');
       setApplications(prev =>
         prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );
       // Notify the applicant that their status changed.
       const app = applications.find(a => a.id === appId);
+
+      // Accepting an applicant makes them real project crew immediately — no
+      // separate manual "add crew member" step. Contributor is the safe
+      // default access level for a hired role; the job's own `role` (e.g.
+      // "Director") is what actually describes what they were hired to do.
+      if (newStatus === 'accepted' && app && job?.project_id && user) {
+        try {
+          await assignCrewMember(job.project_id, app.applicant_id, 'contributor', user.id);
+        } catch (e: any) {
+          toast(e.message || 'Accepted, but could not add them to the crew', 'error');
+        }
+      }
+
+      toast(newStatus === 'accepted' ? 'Applicant accepted and added to crew' : 'Application declined', 'success');
+
       if (app && job) {
         notify(app.applicant_id, {
           type: 'application',

@@ -11,8 +11,10 @@ import {
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
+import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -631,6 +633,7 @@ interface TimelineRow { id: string; title: string; start_date: string | null; en
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
 
 function ProductionManager({ projectId, accent }: { projectId: string; accent: string }) {
+  const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
@@ -639,6 +642,10 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const [err, setErr] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  // Budget line items that already have a job posted from them, so the
+  // "Post as Job" action can't be fired twice for the same line by accident.
+  const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
+  const [postingBudgetId, setPostingBudgetId] = useState<string | null>(null);
 
   const load = React.useCallback(async () => {
     try {
@@ -652,6 +659,7 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
       setBudget((b.data as BudgetRow[]) || []);
       setTimeline((tl.data as TimelineRow[]) || []);
       setCrew((c.data as unknown as CrewRow[]) || []);
+      setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
     } catch (e: any) {
       setErr(e.message);
     }
@@ -693,6 +701,23 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     setBudget(p => p.filter(x => x.id !== id));
     const { error } = await supabase.from('budget_items').delete().eq('id', id);
     if (error) { setErr(error.message); setBudget(prev); }
+  };
+  // Turn a budget line ("Director fee", $2,000) straight into an open Jobs
+  // posting — the category becomes both the title and the role, the amount
+  // becomes the rate. This is the first link in the Jobs <-> Crew <-> Budget
+  // chain: post from budget, accept an applicant, they become real crew.
+  const postJobFromBudget = async (b: BudgetRow) => {
+    if (!userId || postedBudgetIds.has(b.id)) return;
+    setPostingBudgetId(b.id);
+    try {
+      await createJob(projectId, userId, b.category, b.category, '', Number(b.amount) || undefined, b.id);
+      setPostedBudgetIds(prev => new Set(prev).add(b.id));
+      toast(`Posted "${b.category}" to the Jobs board`, 'success');
+    } catch (e: any) {
+      toast(e.message || 'Could not post this as a job', 'error');
+    } finally {
+      setPostingBudgetId(null);
+    }
   };
   const setActual = async (id: string, actual: number | null) => {
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
@@ -814,6 +839,22 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
                 onBlur={(e) => { const v = e.target.value.trim(); setActual(b.id, v === '' ? null : Number(v)); }}
                 style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
               />
+              <button
+                onClick={() => postJobFromBudget(b)}
+                disabled={postedBudgetIds.has(b.id) || postingBudgetId === b.id}
+                title={postedBudgetIds.has(b.id) ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}
+                aria-label="Post as job"
+                style={{
+                  background: postedBudgetIds.has(b.id) ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${postedBudgetIds.has(b.id) ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: postedBudgetIds.has(b.id) ? 'default' : 'pointer', flexShrink: 0,
+                  color: postedBudgetIds.has(b.id) ? '#10b981' : 'var(--fg-dim)',
+                  opacity: postingBudgetId === b.id ? 0.5 : 1,
+                }}
+              >
+                <Briefcase size={11} />
+              </button>
               <DelBtn onClick={() => delBudget(b.id)} />
             </Row>
             );
