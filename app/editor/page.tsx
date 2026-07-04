@@ -555,14 +555,15 @@ export default function EditorPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts]);
 
-  // Import .fountain / .txt file
+  // Import .fountain / .txt / .fdx / .pdf file
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = ev.target?.result as string;
-      const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
+    e.target.value = ''; // reset input immediately so re-picking the same file fires
+
+    const title = file.name.replace(/\.(fountain|txt|fdx|pdf)$/i, '');
+
+    const finish = async (text: string) => {
       const imported = await importScriptFromText(text, title);
       if (imported) {
         setScripts(prev => [...prev, imported]);
@@ -571,8 +572,24 @@ export default function EditorPage() {
         toast(`Imported "${title}"`, 'success');
       }
     };
+
+    // PDFs need text extraction with reading-order reconstruction before they
+    // can be parsed as a screenplay; everything else is already plain text.
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+      toast('Extracting PDF…', 'success');
+      import('@/lib/scriptos/pdfImport')
+        .then(({ extractTextFromPdf }) => extractTextFromPdf(file))
+        .then(finish)
+        .catch(err => {
+          console.error(err);
+          toast('Could not read that PDF.', 'error');
+        });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => { finish(ev.target?.result as string); };
     reader.readAsText(file);
-    e.target.value = ''; // reset input
   }, [toast]);
 
   // Title page save
@@ -1266,7 +1283,7 @@ export default function EditorPage() {
                   ))}
                 </div>
 
-                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx" onChange={handleImportFile} style={{ display: 'none' }} />
+                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx,.pdf" onChange={handleImportFile} style={{ display: 'none' }} />
 
                 {/* Templates */}
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 3, marginTop: 14, marginBottom: 7 }}>Templates</div>
