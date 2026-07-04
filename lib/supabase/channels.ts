@@ -41,19 +41,41 @@ export async function createChannel(input: {
   topic?: string;
 }): Promise<{ channel: Channel | null; error: string | null }> {
   const { data: { user } } = await supabase.auth.getUser();
-  const { data, error } = await supabase.from('channels').insert({
+  const name = input.name.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 40);
+
+  // NOTE: this insert deliberately does NOT chain .select() (i.e. no
+  // RETURNING). Postgres re-evaluates the table's SELECT RLS policy
+  // (can_view_channel, which re-queries `channels` by id) to satisfy a
+  // RETURNING clause, and that re-query happens within the SAME command as
+  // the INSERT — the just-inserted row isn't visible to it under Postgres's
+  // MVCC command-counter rules, so INSERT ... RETURNING always failed here
+  // even though the exact same policy check passes an instant later as its
+  // own statement. Splitting into an insert then a separate fetch sidesteps
+  // the issue entirely (confirmed against the live DB).
+  const { error } = await supabase.from('channels').insert({
     project_id: input.project_id,
-    name: input.name.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 40),
+    name,
     type: input.type || 'text',
     is_private: input.is_private || false,
     post_policy: input.post_policy || 'viewers',
     topic: input.topic || null,
     created_by: user?.id,
-  }).select('*').single();
+  });
   if (error) return { channel: null, error: error.message };
+
+  const { data, error: fetchError } = await supabase
+    .from('channels')
+    .select('*')
+    .eq('project_id', input.project_id)
+    .eq('name', name)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (fetchError || !data) return { channel: null, error: fetchError?.message || 'Channel created but could not be re-fetched' };
+
   // The creator (project owner) is implicitly a manager, but for private
   // channels we also add them as an explicit member so they show in the roster.
-  if (input.is_private && data) {
+  if (input.is_private) {
     await supabase.from('channel_members').insert({ channel_id: data.id, user_id: user?.id, can_post: true, can_manage: true });
   }
   return { channel: data as Channel, error: null };
