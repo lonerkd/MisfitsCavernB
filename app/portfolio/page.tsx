@@ -7,7 +7,8 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
+import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { supabase } from '@/lib/supabase/client';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/permissions/access-control';
 import { usePillStage } from '@/lib/context/PillContext';
@@ -257,22 +258,35 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPortfolioData().then(data => {
-      const fetchedVideos: Video[] = (data || []).map((p: any) => {
-        const media = p.portfolio_media?.[0] || p.media?.[0];
-        return {
-          id: p.id,
-          title: p.title,
-          category: p.category || 'Video',
-          role: p.role || 'Creator',
-          description: p.description || '',
-          driveId: media?.url?.split('id=')?.[1] || media?.url || '',
-          year: p.year?.toString() || '',
-          featured: true,
-        };
-      });
-      setVideosList(fetchedVideos);
-    }).catch(console.error).finally(() => setLoading(false));
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+        // Read the curated `portfolio_projects` table — the one "Publish to
+        // Portfolio" (Studio/project hub) actually writes to — instead of
+        // auto-listing every production project regardless of whether it was
+        // ever published.
+        const data = await getPortfolioProjects(user.id);
+        const fetchedVideos: Video[] = (data || []).map((p: any) => {
+          const media = p.portfolio_media?.[0];
+          return {
+            id: p.id,
+            title: p.title,
+            category: p.category || 'Video',
+            role: p.role || 'Creator',
+            description: p.description || '',
+            driveId: media?.url?.split('id=')?.[1] || media?.url || '',
+            year: p.year?.toString() || '',
+            featured: true,
+          };
+        });
+        setVideosList(fetchedVideos);
+      } catch (err) {
+        console.error('Failed to load portfolio:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const featured = videosList.filter(v => v.featured);
