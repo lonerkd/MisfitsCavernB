@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import Avatar from '@/components/Avatar';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 
 interface Profile {
   id: string;
@@ -28,6 +29,12 @@ export default function CrewPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [availFilter, setAvailFilter] = useState<'all' | 'OPEN' | 'BUSY'>('all');
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const onlineIds = useOnlinePresence(viewerId);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
+  }, []);
 
   // Debounce search to avoid hammering Supabase on every keystroke
   useEffect(() => {
@@ -159,7 +166,12 @@ export default function CrewPage() {
                   e.currentTarget.style.boxShadow = 'none';
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                  <Avatar src={member.avatar_url} name={member.username} size={44} />
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <Avatar src={member.avatar_url} name={member.username} size={44} />
+                    {onlineIds.has(member.id) && (
+                      <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #050a14', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+                    )}
+                  </div>
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
                     {member.role && <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}

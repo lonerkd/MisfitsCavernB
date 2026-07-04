@@ -16,6 +16,7 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/Avatar';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 
 interface Message {
   id: string;
@@ -438,7 +439,7 @@ export default function LoungePage() {
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showEmoji, setShowEmoji] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const onlineIds = useOnlinePresence(currentUser?.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -576,19 +577,6 @@ export default function LoungePage() {
     typingChannelRef.current = { ch, uname };
     return () => { supabase.removeChannel(ch); setTypingUsers([]); };
   }, [activeChannel, myProfile?.username]);
-
-  // Real live presence — who is actually in the Lounge right now (Discord/
-  // Slack style), tracked over a shared Realtime presence channel.
-  useEffect(() => {
-    if (!currentUser) return;
-    const ch = supabase.channel('lounge-presence', { config: { presence: { key: currentUser.id } } });
-    ch.on('presence', { event: 'sync' }, () => {
-      setOnlineIds(new Set(Object.keys(ch.presenceState())));
-    }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') await ch.track({ online_at: Date.now() });
-    });
-    return () => { supabase.removeChannel(ch); };
-  }, [currentUser]);
 
   const broadcastTyping = () => {
     const now = Date.now();

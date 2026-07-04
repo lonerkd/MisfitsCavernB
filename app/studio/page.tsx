@@ -17,6 +17,7 @@ import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
 import { usePillStage } from '@/lib/context/PillContext';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
@@ -1047,7 +1048,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
   );
 }
 
-function CrewMemberCard({ member, index }: { member: any; index: number }) {
+function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -1067,7 +1068,12 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
-      <Avatar src={member.avatar} name={member.name} size={44} />
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <Avatar src={member.avatar} name={member.name} size={44} />
+        {isOnline && (
+          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+        )}
+      </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
         <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
@@ -1221,6 +1227,7 @@ export default function StudioPage() {
   const [beats, setBeats] = useState<any[]>([]);
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showRecruit, setShowRecruit] = useState(false);
+  const onlineIds = useOnlinePresence(user?.id);
 
   // Publish the studio's live context to the Pill: the active project, the tab
   // you're in, and its real crew/asset counts, with a one-tap tab cycle.
@@ -2022,7 +2029,7 @@ export default function StudioPage() {
                           role: member.role,
                           status: member.status,
                           avatar: member.profiles?.avatar_url
-                        }} index={i} />
+                        }} index={i} isOnline={onlineIds.has(member.user_id)} />
                       )) : (
                         <EmptyState icon={<Users size={28} />} title="No crew members recruited yet" />
                       )}

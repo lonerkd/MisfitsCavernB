@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 
 interface Profile {
   id: string;
@@ -46,6 +47,13 @@ export default function CrewMemberPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const onlineIds = useOnlinePresence(viewerId);
+  const isOnline = !!profile && onlineIds.has(profile.id);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -214,6 +222,12 @@ export default function CrewMemberPage() {
               }}>
                 {profile.status}
               </span>
+              {isOnline && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, color: '#10b981' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
+                  Online now
+                </span>
+              )}
             </div>
 
             {/* Meta row */}
