@@ -34,6 +34,7 @@ import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels } from '@/components/editor/EditorSidePanels';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
 // ============================================================================
 // CONSTANTS & HELPERS
@@ -1597,26 +1598,34 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: 272, maxWidth: '86vw', background: 'rgba(8,8,8,0.98)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
-              <EditorRightPanels
-                rightPanel={rightPanel} setRightPanel={setRightPanel}
-                activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
-                getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
-                sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
-                insertElement={insertElement}
-                sprintActive={sprintActive} setSprintActive={setSprintActive} sprintTime={sprintTime}
-                wordCount={wordCount} dailyGoal={dailyGoal} goalProgress={goalProgress}
-                pageEst={pageEst} dialogueRatio={dialogueRatio}
-                typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
-                nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
-                elements={elements} chars={chars} charStats={charStats}
-                handleLockRevision={handleLockRevision} revisions={revisions}
-                setContent={setContent} toast={toast}
-                showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
-                showWatermark={showWatermark} setShowWatermark={setShowWatermark}
-                lintIssues={lintIssues}
-                stashItems={stashItems} setStashItems={setStashItems} textareaRef={textareaRef}
-                currentScript={currentScript}
-              />
+              {/* Scoped tightly around just this panel: if a runaway effect in
+                  one of its many tabs (sprint timer, revisions, stats) throws,
+                  only the sidebar unmounts — the write surface and content
+                  state are untouched and the writer never loses a draft. */}
+              <EditorErrorBoundary onCrash={() => {
+                try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+              }}>
+                <EditorRightPanels
+                  rightPanel={rightPanel} setRightPanel={setRightPanel}
+                  activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
+                  getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
+                  sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
+                  insertElement={insertElement}
+                  sprintActive={sprintActive} setSprintActive={setSprintActive} sprintTime={sprintTime}
+                  wordCount={wordCount} dailyGoal={dailyGoal} goalProgress={goalProgress}
+                  pageEst={pageEst} dialogueRatio={dialogueRatio}
+                  typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
+                  nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
+                  elements={elements} chars={chars} charStats={charStats}
+                  handleLockRevision={handleLockRevision} revisions={revisions}
+                  setContent={setContent} toast={toast}
+                  showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
+                  showWatermark={showWatermark} setShowWatermark={setShowWatermark}
+                  lintIssues={lintIssues}
+                  stashItems={stashItems} setStashItems={setStashItems} textareaRef={textareaRef}
+                  currentScript={currentScript}
+                />
+              </EditorErrorBoundary>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1740,28 +1749,32 @@ export default function EditorPage() {
         )}
       </AnimatePresence>
 
-      {/* KEYBOARD SHORTCUTS MODAL */}
-      <AnimatePresence>
-        {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
-      </AnimatePresence>
+      <EditorErrorBoundary onCrash={() => {
+        try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+      }}>
+        {/* KEYBOARD SHORTCUTS MODAL */}
+        <AnimatePresence>
+          {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+        </AnimatePresence>
 
-      {/* GO TO SCENE DIALOG */}
-      <AnimatePresence>
-        {showGoToScene && (
-          <GoToSceneModal
-            sceneCount={scenesList.length}
-            value={goToSceneNum}
-            onChange={setGoToSceneNum}
-            onJump={(num) => {
-              setActiveView('write');
-              setShowGoToScene(false);
-              setGoToSceneNum('');
-              toast(`Jumped to Scene ${num}`, 'success');
-            }}
-            onClose={() => setShowGoToScene(false)}
-          />
-        )}
-      </AnimatePresence>
+        {/* GO TO SCENE DIALOG */}
+        <AnimatePresence>
+          {showGoToScene && (
+            <GoToSceneModal
+              sceneCount={scenesList.length}
+              value={goToSceneNum}
+              onChange={setGoToSceneNum}
+              onJump={(num) => {
+                setActiveView('write');
+                setShowGoToScene(false);
+                setGoToSceneNum('');
+                toast(`Jumped to Scene ${num}`, 'success');
+              }}
+              onClose={() => setShowGoToScene(false)}
+            />
+          )}
+        </AnimatePresence>
+      </EditorErrorBoundary>
 
       {/* STATUS BAR */}
       <div style={{
