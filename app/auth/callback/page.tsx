@@ -58,40 +58,44 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    const handleAuth = async () => {
-      // Handle hash-based auth (implicit flow)
-      if (window.location.hash) {
-        // Supabase client auto-detects hash fragments when detectSessionInUrl is true
-        const { data: { session } } = await supabase.auth.getSession();
+    // Hash-based (implicit) and code-based (PKCE) OAuth both eventually land
+    // on a real session, but racing sequential getSession()/code-exchange
+    // calls could resolve before the client's own detectSessionInUrl
+    // processing finishes, bouncing the user back to /auth. Listen for the
+    // SIGNED_IN event as the primary signal, keep the manual code-exchange
+    // path as a parallel attempt, and guard both (plus a timeout fallback)
+    // behind one idempotent `finish` so only the first resolution wins.
+    let done = false;
+    const finish = (path: string, session?: Session) => {
+      if (done) return;
+      done = true;
+      (async () => {
         if (session) {
-          await ensureProfile(session);
-          router.push('/profile');
-          return;
+          try { await ensureProfile(session); } catch (e) { console.error('Failed to ensure profile:', e); }
         }
-      }
+        router.push(path);
+      })();
+    };
 
-      // Handle code-based auth (PKCE flow)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) finish('/profile', session);
+    });
+
+    (async () => {
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code');
       if (code) {
         const { data } = await supabase.auth.exchangeCodeForSession(code);
-        if (data?.session) {
-          await ensureProfile(data.session);
-          router.push('/profile');
-          return;
-        }
+        if (data?.session) { finish('/profile', data.session); return; }
       }
-
-      // Fallback: try getting existing session
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/profile');
-      } else {
-        router.push('/auth');
-      }
-    };
+      if (session) finish('/profile', session);
+    })();
 
-    handleAuth();
+    // Fallback: if nothing resolves, send back to sign in instead of hanging.
+    const timeout = setTimeout(() => finish('/auth'), 5000);
+
+    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
   }, [router]);
 
   return (

@@ -1,14 +1,27 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface Photo {
   id: string;
   imageUrl: string;
   title: string;
+}
+
+// The actual photo, rendered as a textured plane on the frame's face — without
+// this the frame was just a solid-color box regardless of imageUrl, so every
+// gallery entry looked like an empty dark void even with real photos.
+function PhotoPlane({ imageUrl }: { imageUrl: string }) {
+  const texture = useTexture(imageUrl);
+  return (
+    <mesh position={[0, 0, 0.03]}>
+      <planeGeometry args={[1.86, 1.26]} />
+      <meshBasicMaterial map={texture} toneMapped={false} />
+    </mesh>
+  );
 }
 
 function PhotoFrame({ position, imageUrl, rotation }: { position: [number, number, number]; imageUrl: string; rotation: [number, number, number] }) {
@@ -32,7 +45,11 @@ function PhotoFrame({ position, imageUrl, rotation }: { position: [number, numbe
     >
       <boxGeometry args={[2, 1.4, 0.05]} />
       <meshStandardMaterial color={hovered ? '#ff3c00' : '#1a1a1a'} metalness={0.8} roughness={0.2} />
-      
+
+      <Suspense fallback={null}>
+        <PhotoPlane imageUrl={imageUrl} />
+      </Suspense>
+
       {/* Frame border */}
       <lineSegments>
         <edgesGeometry args={[new THREE.BoxGeometry(2, 1.4, 0.05)]} />
