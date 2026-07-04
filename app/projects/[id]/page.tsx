@@ -15,6 +15,7 @@ import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
+import { createPortfolioProject } from '@/lib/supabase/portfolio';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -360,11 +361,11 @@ export default function ProjectHubPage() {
 
   // Live cross-suite counts for real projects, so the hub tiles reflect the
   // actual scripts / crew / tasks / budget / timeline managed elsewhere.
-  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0 });
+  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, portfolioPublished: 0 });
   useEffect(() => {
     let active = true;
     (async () => {
-      const [sc, cr, tk, bd, tl, scn, cn] = await Promise.all([
+      const [sc, cr, tk, bd, tl, scn, cn, pf] = await Promise.all([
         supabase.from('scripts').select('page_count').eq('project_id', id),
         supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
@@ -372,6 +373,7 @@ export default function ProjectHubPage() {
         supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('concept_assets').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('portfolio_projects').select('id', { count: 'exact', head: true }).eq('source_project_id', id),
       ]);
       if (!active) return;
       const tasks = (tk.data as { completed: boolean }[]) || [];
@@ -385,6 +387,7 @@ export default function ProjectHubPage() {
         timeline: tl.count || 0,
         scenes: scn.count || 0,
         concepts: cn.count || 0,
+        portfolioPublished: pf.count || 0,
       });
     })();
     return () => { active = false; };
@@ -584,7 +587,7 @@ export default function ProjectHubPage() {
               { label: 'Phase', value: PHASES[currentPhaseIdx].short },
               { label: 'Type',  value: project.type },
             ]}
-            preview={<PortfolioPreview published={project.progress === 100 ? 2 : currentPhaseIdx >= 3 ? 1 : 0} />}
+            preview={<PortfolioPreview published={counts.portfolioPublished} />}
           />
 
           {/* ─ Jobs / Distribution ─ */}
@@ -617,7 +620,7 @@ export default function ProjectHubPage() {
 
         </div>
 
-        {isRealProject && <ProductionManager projectId={id} accent={project.color} />}
+        {isRealProject && <ProductionManager projectId={id} accent={project.color} projectTitle={project.title} projectType={project.type} />}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
@@ -631,8 +634,9 @@ interface TaskRow { id: string; title: string; completed: boolean }
 interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
+interface PortfolioRow { id: string; title: string; share_token: string }
 
-function ProductionManager({ projectId, accent }: { projectId: string; accent: string }) {
+function ProductionManager({ projectId, accent, projectTitle, projectType }: { projectId: string; accent: string; projectTitle: string; projectType: string }) {
   const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
@@ -646,19 +650,25 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   // "Post as Job" action can't be fired twice for the same line by accident.
   const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
   const [postingBudgetId, setPostingBudgetId] = useState<string | null>(null);
+  // This project's real portfolio entries (source_project_id-linked), and
+  // whether a publish is in flight.
+  const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
+  const [publishing, setPublishing] = useState(false);
 
   const load = React.useCallback(async () => {
     try {
-      const [t, b, tl, c] = await Promise.all([
+      const [t, b, tl, c, pf] = await Promise.all([
         supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
         supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
         supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+        supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
       ]);
       setTasks((t.data as TaskRow[]) || []);
       setBudget((b.data as BudgetRow[]) || []);
       setTimeline((tl.data as TimelineRow[]) || []);
       setCrew((c.data as unknown as CrewRow[]) || []);
+      setPortfolio((pf.data as PortfolioRow[]) || []);
       setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
     } catch (e: any) {
       setErr(e.message);
@@ -722,6 +732,37 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const setActual = async (id: string, actual: number | null) => {
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
     await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
+  };
+
+  // Publish this production to Portfolio, real row + real source_project_id
+  // link — not a fabricated "published" count. A manual button rather than an
+  // automatic phase-transition trigger: publishing is a one-way, visible act
+  // that the owner should choose, not something that silently fires because
+  // a status dropdown changed.
+  //
+  // NOTE: portfolio_projects has no is_public column live (despite the static
+  // schema file claiming one) and no app code anywhere reads/writes one, so
+  // there is currently no real public/private distinction for portfolio rows
+  // at all — visibility is effectively open to any signed-in user. That's a
+  // pre-existing gap independent of this feature; not something to silently
+  // paper over here.
+  const publishToPortfolio = async () => {
+    if (!userId || publishing) return;
+    setPublishing(true);
+    try {
+      const created = await createPortfolioProject({
+        user_id: userId,
+        title: projectTitle,
+        category: projectType,
+        source_project_id: projectId,
+      });
+      setPortfolio(p => [created as PortfolioRow, ...p]);
+      toast('Published to Portfolio', 'success');
+    } catch (e: any) {
+      toast(e.message || 'Could not publish to Portfolio', 'error');
+    } finally {
+      setPublishing(false);
+    }
   };
 
   // Build budget suggestions from the project's screenplay breakdown.
@@ -917,6 +958,26 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
             </Row>
           ))}
           <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />
+        </Panel>
+
+        {/* Portfolio */}
+        <Panel title="Portfolio" accent={accent}>
+          {portfolio.length === 0 ? (
+            <>
+              <Empty>Not published yet</Empty>
+              <button onClick={publishToPortfolio} disabled={publishing} style={{ marginTop: 4, width: '100%', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: 6, padding: '6px 10px', cursor: publishing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+                {publishing ? 'PUBLISHING…' : '✦ PUBLISH TO PORTFOLIO'}
+              </button>
+            </>
+          ) : (
+            portfolio.map(p => (
+              <Row key={p.id}>
+                <span style={{ flex: 1, fontSize: 11 }}>{p.title}</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#10b981' }}>PUBLISHED</span>
+                <Link href={`/p/${p.share_token}`} aria-label="view" style={{ color: 'var(--fg-dim)', display: 'flex' }}><ExternalLink size={12} /></Link>
+              </Row>
+            ))
+          )}
         </Panel>
       </div>
     </div>
