@@ -9,20 +9,8 @@ import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
-
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  role: string;
-  rate?: number;
-  status: 'open' | 'in-progress' | 'closed';
-  created_by: string;
-  created_at: string;
-  projects?: { title: string };
-  profiles?: { username: string };
-  application_count?: number;
-}
+import { usePillStage } from '@/lib/context/PillContext';
+import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 
 const ROLES = [
   'Director', 'DP / Cinematographer', 'Editor', 'Sound Designer',
@@ -30,7 +18,7 @@ const ROLES = [
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  'Director':            '#ff3c00',
+  'Director':            '#d7340b',
   'DP / Cinematographer':'#f59e0b',
   'Editor':              '#6366f1',
   'Sound Designer':      '#10b981',
@@ -107,7 +95,7 @@ function PostModal({ onClose, onCreated, userId }: {
               Post a Position
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(240,236,228,0.3)', padding: 4 }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(224, 221, 174,0.3)', padding: 4 }}>
             <X size={16} />
           </button>
         </div>
@@ -115,7 +103,7 @@ function PostModal({ onClose, onCreated, userId }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Role selector */}
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {ROLES.map(r => {
                 const active = form.role === r;
@@ -128,7 +116,7 @@ function PostModal({ onClose, onCreated, userId }: {
                       padding: '6px 12px', borderRadius: 9999,
                       background: active ? `${color}18` : 'rgba(255,255,255,0.03)',
                       border: `1px solid ${active ? color + '55' : 'rgba(255,255,255,0.06)'}`,
-                      color: active ? color : 'rgba(240,236,228,0.4)',
+                      color: active ? color : 'rgba(224, 221, 174,0.4)',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
                       transition: 'all 0.2s',
@@ -143,7 +131,7 @@ function PostModal({ onClose, onCreated, userId }: {
 
           {/* Title */}
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Position Title</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Position Title</div>
             <input
               type="text"
               value={form.title}
@@ -165,7 +153,7 @@ function PostModal({ onClose, onCreated, userId }: {
 
           {/* Description */}
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Brief</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Brief</div>
             <textarea
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -187,9 +175,9 @@ function PostModal({ onClose, onCreated, userId }: {
 
           {/* Rate */}
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
-              <DollarSign size={12} color="rgba(240,236,228,0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+              <DollarSign size={12} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="number"
                 value={form.rate}
@@ -213,7 +201,7 @@ function PostModal({ onClose, onCreated, userId }: {
             style={{
               marginTop: 6, padding: '14px',
               background: form.title ? '#8b5cf6' : 'rgba(255,255,255,0.05)',
-              color: form.title ? '#fff' : 'rgba(240,236,228,0.3)',
+              color: form.title ? '#fff' : 'rgba(224, 221, 174,0.3)',
               border: 'none', borderRadius: 12,
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
@@ -272,7 +260,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
               {job.role}
             </div>
             {job.projects?.title && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'rgba(240,236,228,0.25)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'rgba(224, 221, 174,0.25)' }}>
                 {job.projects.title}
               </div>
             )}
@@ -287,7 +275,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           {job.description && (
             <div style={{
               fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.65,
-              color: 'rgba(240,236,228,0.45)',
+              color: 'rgba(224, 221, 174,0.45)',
               display: '-webkit-box', WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical', overflow: 'hidden',
               marginBottom: 16,
@@ -303,7 +291,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
                 <DollarSign size={10} /> {job.rate}/hr
               </div>
             )}
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(240,236,228,0.25)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(224, 221, 174,0.25)' }}>
               {job.profiles?.username ?? 'creator'} · {daysAgo === 0 ? 'today' : `${daysAgo}d ago`}
             </div>
           </div>
@@ -362,13 +350,13 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
               border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
               fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
-              color: job.status === 'open' ? '#10b981' : 'rgba(240,236,228,0.3)',
+              color: job.status === 'open' ? '#10b981' : 'rgba(224, 221, 174,0.3)',
               textTransform: 'uppercase',
             }}>
               {job.status}
             </div>
             {(job.application_count ?? 0) > 0 && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(240,236,228,0.3)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(224, 221, 174,0.3)' }}>
                 {job.application_count} applicant{job.application_count !== 1 ? 's' : ''}
               </div>
             )}
@@ -387,7 +375,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               padding: '7px 14px', borderRadius: 9999,
               background: 'transparent',
               border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(240,236,228,0.3)',
+              color: 'rgba(224, 221, 174,0.3)',
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
               textTransform: 'uppercase', cursor: 'pointer',
               transition: 'border-color 0.2s, color 0.2s',
@@ -398,7 +386,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
-              (e.currentTarget as HTMLElement).style.color = 'rgba(240,236,228,0.3)';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.3)';
             }}
           >
             {closing ? 'Closing…' : 'Close'}
@@ -415,6 +403,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [showPost, setShowPost] = useState(false);
@@ -431,14 +420,20 @@ export default function JobsPage() {
 
   const loadJobs = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       let query = supabase
         .from('jobs')
         .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
         .eq('status', 'open')
         .order('created_at', { ascending: false });
-      const { data } = await query;
+      const { data, error } = await query;
+      if (error) throw error;
       setJobs(data || []);
+    } catch (error: any) {
+      console.error(error);
+      setLoadError(error?.message || 'Failed to load job listings');
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -487,6 +482,24 @@ export default function JobsPage() {
     const matchRole = !roleFilter || j.role === roleFilter;
     return matchSearch && matchRole;
   });
+
+  // Publish the jobs board's live state to the Pill's context capsule.
+  usePillStage(
+    {
+      module: 'portfolio',
+      title: tab === 'mine' ? 'My Jobs' : 'Jobs Board',
+      accent: '#8b5cf6',
+      fields: [
+        { label: 'Open', value: `${jobs.length}`, color: '#8b5cf6' },
+        ...(roleFilter ? [{ label: 'Shown', value: `${filtered.length}` }] : []),
+        ...(user ? [{ label: 'Mine', value: `${myJobs.length}` }] : []),
+      ],
+      actions: user ? [
+        { id: 'post-job', label: '+ Post Position', onClick: () => setShowPost(true) },
+      ] : [],
+    },
+    [tab, jobs.length, filtered.length, myJobs.length, roleFilter, user],
+  );
 
   const roleCounts = ROLES.reduce<Record<string, number>>((acc, r) => {
     acc[r] = jobs.filter(j => j.role === r).length;
@@ -592,7 +605,7 @@ export default function JobsPage() {
           height: 'calc(100vh - 58px)', overflowY: 'auto',
           background: 'rgba(6,6,6,0.6)',
         }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'rgba(240,236,228,0.25)', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'rgba(224, 221, 174,0.25)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
           </div>
 
@@ -603,14 +616,14 @@ export default function JobsPage() {
               width: '100%', padding: '8px 10px', borderRadius: 8,
               background: !roleFilter ? 'rgba(255,255,255,0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
-              color: !roleFilter ? 'var(--fg)' : 'rgba(240,236,228,0.35)',
+              color: !roleFilter ? 'var(--fg)' : 'rgba(224, 221, 174,0.35)',
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
               textTransform: 'uppercase', textAlign: 'left',
               transition: 'background 0.2s, color 0.2s',
             }}
           >
             All Roles
-            <span style={{ fontSize: 8, color: 'rgba(240,236,228,0.25)' }}>{jobs.length}</span>
+            <span style={{ fontSize: 8, color: 'rgba(224, 221, 174,0.25)' }}>{jobs.length}</span>
           </button>
 
           {ROLES.map(r => {
@@ -626,19 +639,19 @@ export default function JobsPage() {
                   width: '100%', padding: '8px 10px', borderRadius: 8,
                   background: active ? `${color}12` : 'transparent',
                   border: 'none', cursor: 'pointer', marginBottom: 2,
-                  color: active ? color : 'rgba(240,236,228,0.35)',
+                  color: active ? color : 'rgba(224, 221, 174,0.35)',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
                   textTransform: 'uppercase', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
                 }}
-                onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(240,236,228,0.7)')}
-                onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(240,236,228,0.35)')}
+                onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.7)')}
+                onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.35)')}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'rgba(255,255,255,0.15)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
                   {r}
                 </div>
-                {count > 0 && <span style={{ fontSize: 8, color: active ? color : 'rgba(240,236,228,0.2)' }}>{count}</span>}
+                {count > 0 && <span style={{ fontSize: 8, color: active ? color : 'rgba(224, 221, 174,0.2)' }}>{count}</span>}
               </button>
             );
           })}
@@ -651,7 +664,7 @@ export default function JobsPage() {
             <>
               {/* Search */}
               <div style={{ position: 'relative', marginBottom: 28 }}>
-                <Search size={13} color="rgba(240,236,228,0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                <Search size={13} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
                   value={search}
@@ -677,6 +690,13 @@ export default function JobsPage() {
                     <div key={i} className="skeleton" style={{ height: 88, borderRadius: 14 }} />
                   ))}
                 </div>
+              ) : loadError ? (
+                <EmptyState
+                  icon={<Briefcase size={28} />}
+                  title="Couldn't load job listings"
+                  subtitle={loadError}
+                  action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+                />
               ) : filtered.length === 0 ? (
                 <EmptyState
                   icon={<Briefcase size={28} />}
@@ -753,7 +773,7 @@ export default function JobsPage() {
       </AnimatePresence>
 
       <style>{`
-        input::placeholder, textarea::placeholder { color: rgba(240,236,228,0.18); }
+        input::placeholder, textarea::placeholder { color: rgba(224, 221, 174,0.18); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
     </main>

@@ -25,7 +25,7 @@ export interface CharacterProfile {
 const PROFILE_KEY = 'scriptos_char_profiles';
 
 const PROFILE_COLORS = [
-  '#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b',
+  '#d7340b', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b',
   '#a855f7', '#f97316', '#06b6d4', '#ec4899', '#84cc16',
 ];
 

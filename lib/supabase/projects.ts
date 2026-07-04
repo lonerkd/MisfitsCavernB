@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { createChannel } from './channels';
 
 export interface DBProject {
   id: string;
@@ -28,6 +29,16 @@ export async function createProject(userId: string, title: string, description =
     .single();
 
   if (error) throw error;
+
+  // Give the project a home in the Lounge from minute one, instead of every
+  // project needing someone to remember to create a channel by hand. Best
+  // effort: a failure here shouldn't undo the project that was just created.
+  try {
+    await createChannel({ project_id: data.id, name: 'general', topic: `${title} — general discussion` });
+  } catch (channelError) {
+    console.error('Failed to auto-create default channel for new project:', channelError);
+  }
+
   return data;
 }
 
@@ -70,36 +81,3 @@ export async function deleteProject(projectId: string) {
   return true;
 }
 
-export async function getProjectCrew(projectId: string) {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .select('*, profiles(*)')
-    .eq('project_id', projectId);
-
-  if (error) throw error;
-  return data;
-}
-
-export async function addProjectMember(projectId: string, userId: string, role = 'team member') {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .insert({
-      project_id: projectId,
-      user_id: userId,
-      role
-    })
-    .select();
-
-  if (error) throw error;
-  return data;
-}
-
-export function subscribeToProject(projectId: string, callback: (payload: any) => void) {
-  return supabase
-    .channel(`project:${projectId}`)
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` },
-      callback
-    )
-    .subscribe();
-}

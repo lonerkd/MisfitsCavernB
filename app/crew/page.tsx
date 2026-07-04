@@ -6,27 +6,25 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import Avatar from '@/components/Avatar';
-
-interface Profile {
-  id: string;
-  username: string;
-  avatar_url?: string;
-  bio?: string;
-  role?: string;
-  location?: string;
-  status: 'OPEN' | 'BUSY';
-  discord_username?: string;
-}
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import type { Profile } from '@/lib/supabase/profiles';
 
 const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor'];
 
 export default function CrewPage() {
   const [crew, setCrew] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [availFilter, setAvailFilter] = useState<'all' | 'OPEN' | 'BUSY'>('all');
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const onlineIds = useOnlinePresence(viewerId);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
+  }, []);
 
   // Debounce search to avoid hammering Supabase on every keystroke
   useEffect(() => {
@@ -40,6 +38,7 @@ export default function CrewPage() {
 
   const loadCrew = async (searchTerm = debouncedSearch) => {
     setLoading(true);
+    setLoadError(null);
     try {
       let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
@@ -59,8 +58,10 @@ export default function CrewPage() {
       const { data, error } = await query;
       if (error) throw error;
       setCrew(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setLoadError(error?.message || 'Failed to load crew directory');
+      setCrew([]);
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,7 @@ export default function CrewPage() {
           <div style={{ display: 'flex', gap: 8 }}>
             {(['all', 'OPEN', 'BUSY'] as const).map(a => (
               <button key={a} onClick={() => setAvailFilter(a)}
-                style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(215, 52, 11,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 {a === 'all' ? 'ALL' : a}
               </button>
             ))}
@@ -122,6 +123,13 @@ export default function CrewPage() {
               <div key={i} className="skeleton" style={{ height: 140, borderRadius: 14 }} />
             ))}
           </div>
+        ) : loadError ? (
+          <EmptyState
+            icon={<User size={28} />}
+            title="Couldn't load the crew directory"
+            subtitle={loadError}
+            action={<button onClick={() => loadCrew()} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+          />
         ) : crew.length === 0 ? (
           <EmptyState
             icon={<User size={28} />}
@@ -138,9 +146,9 @@ export default function CrewPage() {
                 borderRadius: 14,
               }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)';
+                  e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(255,60,0,0.06)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(215, 52, 11,0.06)';
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
@@ -148,7 +156,12 @@ export default function CrewPage() {
                   e.currentTarget.style.boxShadow = 'none';
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                  <Avatar src={member.avatar_url} name={member.username} size={44} />
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <Avatar src={member.avatar_url} name={member.username} size={44} />
+                    {onlineIds.has(member.id) && (
+                      <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #050a14', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+                    )}
+                  </div>
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
                     {member.role && <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}

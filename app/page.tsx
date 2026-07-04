@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { getPlatformStats } from '@/lib/supabase/stats';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
   ArrowRight, PenTool, Layers, Users, Film,
@@ -13,7 +14,7 @@ import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
-function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: number; color?: string }) {
+function Viewfinder({ size = 20, color = 'rgba(224, 221, 174,0.3)' }: { size?: number; color?: string }) {
   const s = `${size}px`;
   const corner = { width: s, height: s, position: 'absolute' as const, borderColor: color };
   return (
@@ -28,7 +29,7 @@ function Viewfinder({ size = 20, color = 'rgba(240,236,228,0.3)' }: { size?: num
 
 /* ─── Workflow Pipeline ───────────────────────────────────────────────────── */
 const STAGES = [
-  { id: 'write',     label: 'Write',       icon: PenTool,   color: '#ff3c00', href: '/editor'    },
+  { id: 'write',     label: 'Write',       icon: PenTool,   color: '#d7340b', href: '/editor'    },
   { id: 'organize',  label: 'Organize',    icon: Layers,    color: '#6366f1', href: '/studio'    },
   { id: 'crew',      label: 'Crew',        icon: Users,     color: '#10b981', href: '/lounge'    },
   { id: 'showcase',  label: 'Showcase',    icon: Film,      color: '#f59e0b', href: '/portfolio' },
@@ -61,7 +62,7 @@ function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: numbe
             justifyContent: 'center',
             background: hovered ? `${stage.color}18` : 'rgba(255,255,255,0.03)',
             border: `1px solid ${hovered ? stage.color + '45' : 'rgba(255,255,255,0.07)'}`,
-            color: hovered ? stage.color : 'rgba(240,236,228,0.45)',
+            color: hovered ? stage.color : 'rgba(224, 221, 174,0.45)',
             transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
             boxShadow: hovered ? `0 8px 28px ${stage.color}22` : 'none',
             position: 'relative',
@@ -111,7 +112,7 @@ function PipelineConnector({ index }: { index: number }) {
         top: 0, left: '-60%',
         width: '60%',
         height: '100%',
-        background: 'linear-gradient(90deg, transparent, rgba(255,60,0,0.6), transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(215, 52, 11,0.6), transparent)',
         animation: `travel ${3 + index * 0.4}s ease-in-out ${index * 0.6}s infinite`,
       }} />
     </motion.div>
@@ -135,7 +136,7 @@ function ScriptOSPreview({ lines }: { lines?: string[] }) {
           return (
             <div key={i}
               className={isHead ? 'screenplay-scene-hdr' : isChar ? 'screenplay-char' : ''}
-              style={{ fontSize: 11, color: isHead || isChar ? undefined : 'rgba(240,236,228,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t}</div>
+              style={{ fontSize: 11, color: isHead || isChar ? undefined : 'rgba(224, 221, 174,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t}</div>
           );
         })}
       </div>
@@ -145,7 +146,7 @@ function ScriptOSPreview({ lines }: { lines?: string[] }) {
     <div className="screenplay-preview" style={{ padding: '20px 16px' }}>
       <div className="screenplay-scene-hdr">INT. UNDERGROUND STUDIO — NIGHT</div>
       <br />
-      <div style={{ color: 'rgba(240,236,228,0.55)', fontSize: 11 }}>
+      <div style={{ color: 'rgba(224, 221, 174,0.55)', fontSize: 11 }}>
         The room hums with electricity. Monitors cast blue light across stacks of handwritten notes.
       </div>
       <br />
@@ -154,7 +155,7 @@ function ScriptOSPreview({ lines }: { lines?: string[] }) {
       <br />
       <div className="screenplay-scene-hdr">EXT. CITY ROOFTOP — GOLDEN HOUR</div>
       <br />
-      <div style={{ color: 'rgba(240,236,228,0.55)', fontSize: 11 }}>
+      <div style={{ color: 'rgba(224, 221, 174,0.55)', fontSize: 11 }}>
         A city that never stops moving. She lights a cigarette and stares at the horizon.
       </div>
       <br />
@@ -168,7 +169,7 @@ function StudioPreview({ items: real }: { items?: { label: string; color: string
   const items = (real && real.length > 0) ? real : [
     { label: 'Opening_v3.mov', color: '#6366f1' },
     { label: 'Score_Final.wav', color: '#10b981' },
-    { label: 'Act1_Draft.fdx',  color: '#ff3c00' },
+    { label: 'Act1_Draft.fdx',  color: '#d7340b' },
     { label: 'Cast_Photos.zip', color: '#f59e0b' },
     { label: 'Budget_R2.xlsx',  color: '#8b5cf6' },
     { label: 'Storyboard.pdf',  color: '#06b6d4' },
@@ -196,7 +197,7 @@ function StudioPreview({ items: real }: { items?: { label: string; color: string
           <span style={{
             fontFamily: 'var(--mono)',
             fontSize: 8.5,
-            color: 'rgba(240,236,228,0.5)',
+            color: 'rgba(224, 221, 174,0.5)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -226,13 +227,13 @@ function LoungePreview({ messages: real }: { messages?: { from: string; text: st
             <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: '#10b981', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
-            background: m.mine ? 'rgba(255,60,0,0.15)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${m.mine ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.07)'}`,
+            background: m.mine ? 'rgba(215, 52, 11,0.15)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${m.mine ? 'rgba(215, 52, 11,0.2)' : 'rgba(255,255,255,0.07)'}`,
             borderRadius: m.mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
             padding: '7px 12px',
             maxWidth: '80%',
           }}>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(240,236,228,0.75)' }}>{m.text}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(224, 221, 174,0.75)' }}>{m.text}</span>
           </div>
         </div>
       ))}
@@ -278,7 +279,7 @@ function PortfolioPreview() {
         fontSize: 7,
         letterSpacing: 3,
         textTransform: 'uppercase',
-        color: 'rgba(240,236,228,0.25)',
+        color: 'rgba(224, 221, 174,0.25)',
       }}>
         CAVERN · 2026
       </div>
@@ -439,26 +440,24 @@ export default function Home() {
   const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], activeProject: null, latestScriptTitle: null });
 
   useEffect(() => {
-    const palette = ['#6366f1', '#10b981', '#ff3c00', '#f59e0b', '#8b5cf6', '#06b6d4'];
+    const palette = ['#6366f1', '#10b981', '#d7340b', '#f59e0b', '#8b5cf6', '#06b6d4'];
     supabase.auth.getUser().then(async ({ data }) => {
       const user = data.user;
       setLoggedIn(!!user);
       if (!user) return;
 
       // Live platform stats (RLS scopes reads to authenticated users).
-      const [pc, sc, prc, cc] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('scripts').select('id', { count: 'exact', head: true }),
-        supabase.from('projects').select('id', { count: 'exact', head: true }),
-        supabase.from('concept_assets').select('id', { count: 'exact', head: true }),
-      ]);
-      setStats({ creators: pc.count || 0, scripts: sc.count || 0, projects: prc.count || 0, concepts: cc.count || 0 });
+      const platformStats = await getPlatformStats();
+      setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
 
       // The viewer's own latest work, surfaced as real previews.
       const [scriptRes, assetRes, msgRes, projRes] = await Promise.all([
         supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
         supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
-        supabase.from('chat_messages').select('content,sender_id,profiles(username)').order('created_at', { ascending: false }).limit(4),
+        // Only real channel messages here, never DMs (messages also stores
+        // private 1:1s via receiver_id) — a general activity pulse must not
+        // ever surface someone else's private conversation.
+        supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
         supabase.from('projects').select('id,title').eq('creator_id', user.id).order('created_at', { ascending: false }).limit(1),
       ]);
       const script = scriptRes.data?.[0];
@@ -507,7 +506,7 @@ export default function Home() {
           maxHeight: 800,
           borderRadius: '50%',
           pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(255,60,0,0.10) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(215, 52, 11,0.10) 0%, transparent 65%)',
           animation: 'orb-breathe 10s ease-in-out infinite',
         }} />
         <div style={{
@@ -535,16 +534,16 @@ export default function Home() {
               alignItems: 'center',
               gap: 8,
               padding: '7px 16px',
-              background: 'rgba(255,60,0,0.08)',
-              border: '1px solid rgba(255,60,0,0.20)',
+              background: 'rgba(215, 52, 11,0.08)',
+              border: '1px solid rgba(215, 52, 11,0.20)',
               borderRadius: 9999,
               fontFamily: 'var(--mono)',
               fontSize: 8.5,
               letterSpacing: 3,
               textTransform: 'uppercase',
-              color: 'rgba(255,60,0,0.85)',
+              color: 'rgba(215, 52, 11,0.85)',
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff3c00', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#d7340b', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
               Digital Film Studio
             </div>
           </motion.div>
@@ -565,7 +564,7 @@ export default function Home() {
               }}
             >
               <span style={{
-                WebkitTextStroke: '2px rgba(240,236,228,0.85)',
+                WebkitTextStroke: '2px rgba(224, 221, 174,0.85)',
                 color: 'transparent',
                 display: 'block',
               }}>
@@ -574,13 +573,13 @@ export default function Home() {
               <span style={{
                 color: 'var(--accent)',
                 display: 'block',
-                textShadow: '0 0 80px rgba(255,60,0,0.25)',
+                textShadow: '0 0 80px rgba(215, 52, 11,0.25)',
               }}>
                 CAVERN
               </span>
 
               {/* Viewfinder corners */}
-              <Viewfinder size={22} color="rgba(255,60,0,0.45)" />
+              <Viewfinder size={22} color="rgba(215, 52, 11,0.45)" />
             </motion.div>
           </div>
 
@@ -629,7 +628,7 @@ export default function Home() {
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
           >
-            <div style={{ width: 1, height: 36, background: 'linear-gradient(180deg, transparent, rgba(240,236,228,0.4))' }} />
+            <div style={{ width: 1, height: 36, background: 'linear-gradient(180deg, transparent, rgba(224, 221, 174,0.4))' }} />
           </motion.div>
         </motion.div>
       </section>
@@ -645,9 +644,9 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           style={{ maxWidth: 900, margin: '-20px auto 0', padding: '0 24px' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(255,60,0,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(255,60,0,0.18)', borderRadius: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(215, 52, 11,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(215, 52, 11,0.18)', borderRadius: 16 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,60,0,0.8)', marginBottom: 6 }}>Welcome back</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(215, 52, 11,0.8)', marginBottom: 6 }}>Welcome back</div>
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, lineHeight: 1 }}>
                 {live.activeProject ? `Resume ${live.activeProject.title}` : 'Continue your screenplay'}
               </div>
@@ -691,7 +690,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
             {[
               { n: stats.creators, label: 'Creators', color: '#10b981' },
-              { n: stats.scripts, label: 'Screenplays', color: '#ff3c00' },
+              { n: stats.scripts, label: 'Screenplays', color: '#d7340b' },
               { n: stats.projects, label: 'Productions', color: '#6366f1' },
               { n: stats.concepts, label: 'Concept Assets', color: '#f59e0b' },
             ].map((s, i) => (
@@ -726,7 +725,7 @@ export default function Home() {
           <ModuleTile
             title="ScriptOS"
             tag="Screenplay Editor"
-            color="#ff3c00"
+            color="#d7340b"
             href="/editor"
             index={0}
             preview={
@@ -789,7 +788,7 @@ export default function Home() {
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at 50% 60%, rgba(255,60,0,0.07) 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse at 50% 60%, rgba(215, 52, 11,0.07) 0%, transparent 60%)',
           pointerEvents: 'none',
         }} />
 
@@ -799,7 +798,7 @@ export default function Home() {
               <div style={{
                 width: 1,
                 height: 64,
-                background: 'linear-gradient(180deg, transparent, rgba(255,60,0,0.5))',
+                background: 'linear-gradient(180deg, transparent, rgba(215, 52, 11,0.5))',
               }} />
             </div>
 
@@ -811,7 +810,7 @@ export default function Home() {
               marginBottom: 44,
             }}>
               BEGIN YOUR<br />
-              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(255,60,0,0.2)' }}>FILM</span>
+              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(215, 52, 11,0.2)' }}>FILM</span>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>

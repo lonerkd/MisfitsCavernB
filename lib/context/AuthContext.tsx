@@ -56,6 +56,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               permissions,
               error: null,
             }));
+          } else {
+            // Authenticated but no profile row (missing/blocked by RLS): fall
+            // back to guest permissions rather than leaving stale state — and
+            // still clear isLoading below so the UI never hangs.
+            setState(prev => ({
+              ...prev,
+              isAuthenticated: false,
+              userRole: 'guest',
+              permissions: getPermissionsForRole('guest'),
+            }));
           }
         } else {
           setState(prev => ({
@@ -73,6 +83,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           error: 'Failed to initialize authentication',
         }));
       } finally {
+        // Clear BOTH loading flags. state.isLoading gates ProtectedPage and
+        // useAuthState across the suite; if we only cleared isLoadingAuth
+        // (as before), every guarded page hung on "LOADING…" forever because
+        // initAuth never reset state.isLoading from its initial `true`.
+        setState(prev => ({ ...prev, isLoading: false }));
         setIsLoadingAuth(false);
       }
     };
@@ -97,10 +112,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               user: profile,
               userRole,
               permissions: getPermissionsForRole(userRole),
+              isLoading: false,
+            }));
+          } else {
+            setState(prev => ({
+              ...prev,
+              isAuthenticated: false,
+              userRole: 'guest',
+              permissions: getPermissionsForRole('guest'),
+              isLoading: false,
             }));
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
+          // Never leave the UI hung on a profile-fetch failure.
+          setState(prev => ({ ...prev, isLoading: false }));
         }
       } else {
         setState(prev => ({
@@ -110,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userRole: 'guest',
           permissions: getPermissionsForRole('guest'),
           projectAccess: {},
+          isLoading: false,
         }));
       }
     });

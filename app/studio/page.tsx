@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, FolderOpen, Image, Video, FileText, Music, Upload, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -16,12 +17,16 @@ import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePillStage, usePillZone } from '@/lib/context/PillContext';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
-import { searchProfiles, inviteToCrew, getProjectCrew } from '@/lib/supabase/profiles';
+import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
+import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 
@@ -39,7 +44,7 @@ interface Asset {
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
   { id: 'pre', name: 'Pre-Production', color: '#0099ff', icon: ClipboardList },
-  { id: 'prod', name: 'Production', color: '#ff3c00', icon: Video },
+  { id: 'prod', name: 'Production', color: '#d7340b', icon: Video },
   { id: 'post', name: 'Post-Production', color: '#a855f7', icon: Layers },
   { id: 'del', name: 'Delivery', color: '#00cc66', icon: CheckCircle2 },
 ];
@@ -53,7 +58,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 const TYPE_COLORS: Record<string, string> = {
   image: '#0099ff',
-  video: '#ff3c00',
+  video: '#d7340b',
   document: '#ffaa00',
   audio: '#00cc66',
 };
@@ -188,7 +193,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
                   <div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{u}</span>
-                      {comment.timecode && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(255,60,0,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>}
+                      {comment.timecode && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(215, 52, 11,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.content}</div>
                   </div>
@@ -526,14 +531,14 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <img src={img.image_url} alt={img.title || ''} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(240,236,228,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(224, 221, 174,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>{img.title || 'Untitled'}</span>
-          <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
-          <span style={{ color: 'rgba(240,236,228,0.4)' }}>{index + 1} / {images.length}</span>
+          <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
+          <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{index + 1} / {images.length}</span>
           <a href={img.image_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#6366f1', textDecoration: 'none' }}>open original ↗</a>
           {onSetBoard && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-              <span style={{ color: 'rgba(240,236,228,0.3)' }}>·</span>
+              <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
               <input
                 list="mc-lightbox-boards"
                 value={boardInput}
@@ -625,6 +630,126 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: 
         )}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+// Pinterest/ShotDeck-style reference search → pin straight to the project moodboard.
+function ReferenceSearchModal({
+  isOpen, onClose, projectTitle, addedUrls, onAdd,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  projectTitle?: string;
+  addedUrls: Set<string>;
+  onAdd: (ref: ReferenceResult) => Promise<void>;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ReferenceResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  const runSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!query.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    try {
+      const res = await searchReferences(query, 1);
+      setResults(res.results);
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async (ref: ReferenceResult) => {
+    setPending(prev => new Set(prev).add(ref.id));
+    try { await onAdd(ref); } finally {
+      setPending(prev => { const n = new Set(prev); n.delete(ref.id); return n; });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 1500, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+          onClick={e => e.stopPropagation()}
+          style={{ width: '100%', maxWidth: 900, maxHeight: '85vh', background: '#0c0c0c', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(224,221,174,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Reference Search</div>
+              <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
+          </div>
+
+          <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 8, padding: '0 12px' }}>
+              <Search size={15} color="#888" />
+              <input
+                autoFocus value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="e.g. neon noir, blade runner, golden hour rooftop…"
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 13, padding: '12px 0' }}
+              />
+            </div>
+            <button type="submit" disabled={loading || !query.trim()}
+              style={{ padding: '0 20px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, cursor: loading ? 'default' : 'pointer', opacity: loading || !query.trim() ? 0.5 : 1 }}>
+              {loading ? 'Searching…' : 'Search'}
+            </button>
+          </form>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            {!searched ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>
+                Search a mood, film, location, or look to find references.
+              </div>
+            ) : loading ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>Searching…</div>
+            ) : results.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>No references found. Try a different term.</div>
+            ) : (
+              <div style={{ columnCount: 3, columnGap: 12 }}>
+                {results.map(ref => {
+                  const added = addedUrls.has(ref.url);
+                  const isPending = pending.has(ref.id);
+                  return (
+                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#050a14' }}>
+                      <img src={ref.thumbnail} alt={ref.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
+                      <div
+                        style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                      >
+                        <div style={{ fontSize: 9, color: '#ccc', fontFamily: 'var(--mono)' }}>{ref.creator ? `${ref.creator} · ` : ''}{ref.source}</div>
+                        <button
+                          disabled={added || isPending}
+                          onClick={() => handleAdd(ref)}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', background: added ? 'rgba(0,204,102,0.2)' : 'var(--accent)', color: added ? '#00cc66' : '#000', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: added || isPending ? 'default' : 'pointer' }}
+                        >
+                          {added ? 'Added ✓' : isPending ? 'Adding…' : <><Plus size={12} /> Add to Board</>}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -723,7 +848,7 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
         ))}
       </div>
 
-      <div style={{ marginTop: 40, padding: 24, background: 'rgba(255,60,0,0.05)', border: '1px solid rgba(255,60,0,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ marginTop: 40, padding: 24, background: 'rgba(215, 52, 11,0.05)', border: '1px solid rgba(215, 52, 11,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
         <Info size={20} color="var(--accent)" />
         <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, Concept board, Character Bible, and story beats — update them and this updates.</div>
       </div>
@@ -785,7 +910,7 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   };
   const unlinkLook = async (refId: string) => { await supabase.from('character_references').delete().eq('id', refId); loadRefs(); };
 
-  const palette = ['#ff3c00', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
 
   const load = async () => {
     setLoading(true);
@@ -1008,7 +1133,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
         position: 'relative',
         transition: 'box-shadow 0.3s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(255,60,0,0.08)'}`)}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(215, 52, 11,0.08)'}`)}
       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
     >
       <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
@@ -1046,7 +1171,24 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
   );
 }
 
-function CrewMemberCard({ member, index }: { member: any; index: number }) {
+function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
+  const router = useRouter();
+  // Hovering a crew card sharpens the Pill down from "studio" to this person
+  // — their role, live online status, and a real "Message" action that jumps
+  // straight to the Lounge, instead of the page-level context alone.
+  const zoneHandlers = usePillZone(member.userId ? {
+    module: 'studio',
+    title: member.name,
+    accent: isOnline ? '#10b981' : undefined,
+    fields: [
+      { label: 'Role', value: member.role || '—' },
+      { label: 'Status', value: isOnline ? 'Online' : (member.status || 'pending'), color: isOnline ? '#10b981' : undefined },
+    ],
+    actions: [
+      { id: 'message-crew', label: '→ Message in Lounge', onClick: () => router.push('/lounge') },
+    ],
+  } : null, 2);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -1063,10 +1205,16 @@ function CrewMemberCard({ member, index }: { member: any; index: number }) {
         borderRadius: 12,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
+      onClick={zoneHandlers.onClick}
     >
-      <Avatar src={member.avatar} name={member.name} size={44} />
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <Avatar src={member.avatar} name={member.name} size={44} />
+        {isOnline && (
+          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+        )}
+      </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
         <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
@@ -1220,12 +1368,60 @@ export default function StudioPage() {
   const [beats, setBeats] = useState<any[]>([]);
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showRecruit, setShowRecruit] = useState(false);
+  const onlineIds = useOnlinePresence(user?.id);
+
+  // Publish the studio's live context to the Pill: the active project, the tab
+  // you're in, and its real crew/asset counts, with a one-tap tab cycle.
+  const STUDIO_TABS = ['overview', 'concept', 'production', 'assets', 'marketing', 'pitch'] as const;
+  usePillStage(
+    {
+      module: 'studio',
+      title: activeProject?.title || 'Studio',
+      accent: activeProject?.accent_color || '#6366f1',
+      fields: [
+        { label: 'Tab', value: activeTab, color: '#6366f1' },
+        { label: 'Crew', value: `${crewList.length}` },
+        { label: 'Assets', value: `${assetsList.length}` },
+      ],
+      actions: [
+        {
+          id: 'next-tab',
+          label: 'Next Tab →',
+          onClick: () => setActiveTab(STUDIO_TABS[(STUDIO_TABS.indexOf(activeTab) + 1) % STUDIO_TABS.length]),
+        },
+      ],
+    },
+    [activeProject?.title, activeProject?.accent_color, activeTab, crewList.length, assetsList.length],
+  );
 
   const [showAddConcept, setShowAddConcept] = useState(false);
   const [conceptTitle, setConceptTitle] = useState('');
   const [conceptUrl, setConceptUrl] = useState('');
   const [conceptBoard, setConceptBoard] = useState('');
+  const [showRefSearch, setShowRefSearch] = useState(false);
   const [activeConceptBoard, setActiveConceptBoard] = useState<string>('All');
+
+  // Pin a searched reference straight into the real Concept board
+  // (concept_assets — the same table the "Paste an image URL" flow writes
+  // to), so results actually show up on the board instead of a disconnected
+  // media table nothing else reads.
+  const addReferenceToBoard = async (ref: ReferenceResult) => {
+    if (!user || !activeProject) return;
+    const existing = (activeProject.concept_assets || []) as any[];
+    if (existing.some(c => c.image_url === ref.url)) return;
+    try {
+      const { error } = await supabase.from('concept_assets').insert({
+        project_id: activeProject.id,
+        title: ref.title || null,
+        image_url: ref.url,
+        board: activeConceptBoard !== 'All' ? activeConceptBoard : null,
+        created_by: user.id,
+      });
+      if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
+      await refreshProject(activeProject.id);
+      toast('Reference added', 'success');
+    } catch { /* keep board state unchanged on failure */ }
+  };
   const [adding, setAdding] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
@@ -1663,6 +1859,13 @@ export default function StudioPage() {
         onSuccess={refreshCrew}
       />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
+      <ReferenceSearchModal
+        isOpen={showRefSearch}
+        onClose={() => setShowRefSearch(false)}
+        projectTitle={activeProject?.title}
+        addedUrls={new Set(((activeProject?.concept_assets || []) as any[]).map(c => c.image_url))}
+        onAdd={addReferenceToBoard}
+      />
 
       {/* TABS BAR */}
       <div className="mc-studio-tabs" style={{
@@ -1854,7 +2057,12 @@ export default function StudioPage() {
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
               </div>
-              <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="link-btn" onClick={() => setShowRefSearch(true)}>
+                  <Search size={12} style={{ marginRight: 4, verticalAlign: -2 }} /> Search References
+                </button>
+                <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
+              </div>
             </div>
 
             {showAddConcept && (
@@ -1996,8 +2204,9 @@ export default function StudioPage() {
                           name: member.profiles?.username || 'Unknown',
                           role: member.role,
                           status: member.status,
-                          avatar: member.profiles?.avatar_url
-                        }} index={i} />
+                          avatar: member.profiles?.avatar_url,
+                          userId: member.user_id,
+                        }} index={i} isOnline={onlineIds.has(member.user_id)} />
                       )) : (
                         <EmptyState icon={<Users size={28} />} title="No crew members recruited yet" />
                       )}
@@ -2032,7 +2241,7 @@ export default function StudioPage() {
                        );
                      })()}
                      <div style={{ display: 'flex', gap: 8 }}>
-                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,60,0,0.12)', borderColor: 'rgba(255,60,0,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(215, 52, 11,0.12)', borderColor: 'rgba(215, 52, 11,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                      </div>
@@ -2264,7 +2473,7 @@ export default function StudioPage() {
                       <div
                         key={campaign.id}
                         style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color 0.3s, box-shadow 0.3s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
                       >
                          <div>

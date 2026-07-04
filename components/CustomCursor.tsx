@@ -124,10 +124,10 @@ export default function CustomCursor() {
     switch (mode) {
       case 'action': return { size: 44, border: `1px solid ${accent}`, radius: '50%', dash: false, bg: 'transparent' };
       case 'grab': return { size: 40, border: `1.5px dashed ${accent}`, radius: '10px', dash: true, bg: 'transparent' };
-      case 'view': return { size: 58, border: '1px solid rgba(240,236,228,0.5)', radius: '50%', dash: false, bg: 'rgba(240,236,228,0.04)' };
+      case 'view': return { size: 58, border: '1px solid rgba(224, 221, 174,0.5)', radius: '50%', dash: false, bg: 'rgba(224, 221, 174,0.04)' };
       case 'disabled': return { size: 30, border: '1.5px solid #ff5c5c', radius: '50%', dash: false, bg: 'transparent' };
       case 'text': return { size: 0, border: '1px solid transparent', radius: '50%', dash: false, bg: 'transparent' };
-      default: return { size: clicking ? 28 : 36, border: '1px solid rgba(240,236,228,0.35)', radius: '50%', dash: false, bg: 'transparent' };
+      default: return { size: clicking ? 28 : 36, border: '1px solid rgba(224, 221, 174,0.35)', radius: '50%', dash: false, bg: 'transparent' };
     }
   })();
 
@@ -176,7 +176,7 @@ export default function CustomCursor() {
         }}
       >
         {label && (
-          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? accent : 'rgba(240,236,228,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
+          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? accent : 'rgba(224, 221, 174,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
         )}
       </div>
     </>

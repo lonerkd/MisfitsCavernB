@@ -5,16 +5,19 @@ import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import SpotifyPlayer from '@/components/SpotifyPlayer';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/Avatar';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 
 interface Message {
   id: string;
@@ -112,11 +115,11 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, flexDirection: isMe ? 'row-reverse' : 'row', maxWidth: '80%' }}>
         <div style={{
           padding: '12px 16px',
-          background: isMe ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${isMe ? 'rgba(255,60,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
+          background: isMe ? 'rgba(215, 52, 11,0.12)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isMe ? 'rgba(215, 52, 11,0.2)' : 'rgba(255,255,255,0.06)'}`,
           borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
         }}>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(240,236,228,0.85)', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(224, 221, 174,0.85)', margin: 0 }}>
             {msg.text}
           </p>
         </div>
@@ -161,7 +164,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
             const reacted = !!currentUserId && users.includes(currentUserId);
             return (
               <button key={emoji} onClick={() => onReact(msg.id, emoji)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(255,60,0,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(215, 52, 11,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(215, 52, 11,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
                 <span>{emoji}</span><span>{users.length}</span>
               </button>
             );
@@ -212,11 +215,11 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(255,60,0,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(215, 52, 11,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
         </button>
         {joined && (
-          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={{ padding: 12, borderRadius: '50%', border: `1px solid ${muted ? 'rgba(255,60,0,0.5)' : 'rgba(255,255,255,0.15)'}`, cursor: 'pointer', background: muted ? 'rgba(255,60,0,0.15)' : 'rgba(255,255,255,0.05)', color: muted ? '#ff7a4d' : '#fff', display: 'flex' }}>
+          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={{ padding: 12, borderRadius: '50%', border: `1px solid ${muted ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.15)'}`, cursor: 'pointer', background: muted ? 'rgba(215, 52, 11,0.15)' : 'rgba(255,255,255,0.05)', color: muted ? '#ff7a4d' : '#fff', display: 'flex' }}>
             {muted ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
         )}
@@ -249,7 +252,7 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
           <label style={label}>Type</label>
           <div style={{ display: 'flex', gap: 8 }}>
             {(['text', 'voice'] as const).map(t => (
-              <button key={t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(255,60,0,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(255,60,0,0.4)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
+              <button key={t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(215, 52, 11,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(215, 52, 11,0.4)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
                 {t === 'text' ? <Hash size={13} /> : <Volume2 size={13} />} {t}
               </button>
             ))}
@@ -437,7 +440,7 @@ export default function LoungePage() {
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showEmoji, setShowEmoji] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+  const onlineIds = useOnlinePresence(currentUser?.id);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingChannelRef = useRef<any>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -455,6 +458,23 @@ export default function LoungePage() {
   }, [activeProject?.id]);
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
+
+  // Publish the lounge's live state to the Pill's context capsule: which
+  // channel you're in, how many crew are online (real presence), and message
+  // count — the same state the sidebar already drives.
+  const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
+  usePillStage(
+    {
+      module: 'lounge',
+      title: activeChannel ? `#${activeChannel.name}` : 'Lounge',
+      accent: '#10b981',
+      fields: [
+        { label: 'Online', value: `${onlineCrew}/${crewList.length}`, color: onlineCrew > 0 ? '#10b981' : undefined },
+        { label: 'Msgs', value: `${messages.length}` },
+      ],
+    },
+    [activeChannel?.name, onlineCrew, crewList.length, messages.length],
+  );
 
   // Resolve post/manage permission whenever the active text channel changes.
   useEffect(() => {
@@ -558,19 +578,6 @@ export default function LoungePage() {
     typingChannelRef.current = { ch, uname };
     return () => { supabase.removeChannel(ch); setTypingUsers([]); };
   }, [activeChannel, myProfile?.username]);
-
-  // Real live presence — who is actually in the Lounge right now (Discord/
-  // Slack style), tracked over a shared Realtime presence channel.
-  useEffect(() => {
-    if (!currentUser) return;
-    const ch = supabase.channel('lounge-presence', { config: { presence: { key: currentUser.id } } });
-    ch.on('presence', { event: 'sync' }, () => {
-      setOnlineIds(new Set(Object.keys(ch.presenceState())));
-    }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') await ch.track({ online_at: Date.now() });
-    });
-    return () => { supabase.removeChannel(ch); };
-  }, [currentUser]);
 
   const broadcastTyping = () => {
     const now = Date.now();
@@ -724,6 +731,9 @@ export default function LoungePage() {
               {onlineIds.size} online · {crewList.length} crew
             </span>
           </div>
+
+          {/* Music player */}
+          <SpotifyPlayer />
         </div>
       </nav>
 
@@ -757,7 +767,7 @@ export default function LoungePage() {
                        const Icon = ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : Hash;
                        return (
                          <button key={ch.id} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
-                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(255,60,0,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
+                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(215, 52, 11,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
                            <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} style={{ flexShrink: 0 }} />
                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.name}</span>
                          </button>
@@ -896,7 +906,7 @@ export default function LoungePage() {
                   transition: 'border-color 0.3s',
                   lineHeight: 1.5,
                 }}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.35)')}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.35)')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
 
@@ -1008,7 +1018,7 @@ export default function LoungePage() {
               {/* Parent message */}
               <div style={{ paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: 12, letterSpacing: 1, color: 'var(--accent)', marginBottom: 4 }}>{threadParent.user}</div>
-                <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(240,236,228,0.85)' }}>{threadParent.text}</div>
+                <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.85)' }}>{threadParent.text}</div>
               </div>
               {threadReplies.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#444', marginTop: 40, fontFamily: 'var(--mono)', fontSize: 9.5 }}>No replies yet — start the thread.</div>
@@ -1018,7 +1028,7 @@ export default function LoungePage() {
                     <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: r.sender_id === currentUser?.id ? '#ff7a4d' : '#10b981', fontWeight: 600 }}>{r.sender_id === currentUser?.id ? 'You' : r.user}</span>
                     <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-subtle)' }}>{r.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.6, color: 'rgba(240,236,228,0.82)' }}>{r.text}</div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.82)' }}>{r.text}</div>
                 </div>
               ))}
             </div>
@@ -1065,7 +1075,7 @@ export default function LoungePage() {
       </AnimatePresence>
 
       <style>{`
-        textarea::placeholder { color: rgba(240,236,228,0.18); }
+        textarea::placeholder { color: rgba(224, 221, 174,0.18); }
       `}</style>
     </main>
   );

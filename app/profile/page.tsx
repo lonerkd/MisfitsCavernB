@@ -28,10 +28,11 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [stats, setStats] = useState({ scripts: 0, projects: 0, jobs: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
       setUser(user);
 
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -44,8 +45,10 @@ export default function ProfilePage() {
         supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
       ]);
       setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
+      setLoading(false);
     }).catch((err) => {
       console.error('Failed to load profile:', err);
+      setLoading(false);
     });
   }, []);
 
@@ -69,6 +72,14 @@ export default function ProfilePage() {
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5 }}>Loading…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -123,7 +134,7 @@ export default function ProfilePage() {
         {/* Avatar + name section */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
           <div>
-            <Avatar src={profile.avatar_url} name={profile.username || user.email} size={72} style={{ border: '2px solid rgba(255,60,0,0.3)' }} />
+            <Avatar src={profile.avatar_url} name={profile.username || user.email} size={72} style={{ border: '2px solid rgba(215, 52, 11,0.3)' }} />
           </div>
           <div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
@@ -155,7 +166,7 @@ export default function ProfilePage() {
             <Link key={label} href={href} style={{ textDecoration: 'none' }}>
               <div style={{ padding: 16, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center',
                 transition: 'border-color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
@@ -215,7 +226,7 @@ export default function ProfilePage() {
                 <button key={s} onClick={() => setProfile({ ...profile, status: s })}
                   style={{
                     flex: 1, padding: 12,
-                    background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(255,60,0,0.08)') : 'transparent',
+                    background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(215, 52, 11,0.08)') : 'transparent',
                     border: `1px solid ${profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(255,255,255,0.1)'}`,
                     color: profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(255,255,255,0.4)',
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer',

@@ -11,34 +11,25 @@ import {
 } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
+import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
+import { createPortfolioProject } from '@/lib/supabase/portfolio';
+import { usePillZone } from '@/lib/context/PillContext';
+import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType } from '@/lib/context/ProjectContext';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
 const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
-// Map the DB project.status to the production phase used by the header rail.
-function mapStatusToPhase(status?: string): Phase {
-  switch (status) {
-    case 'concept': return 'development';
-    case 'pre-prod':
-    case 'pre-production': return 'pre-production';
-    case 'production': return 'production';
-    case 'post':
-    case 'post-production': return 'post-production';
-    case 'released':
-    case 'completed':
-    case 'delivery': return 'delivery';
-    default: return 'development';
-  }
-}
-
 // ─── Types ──────────────────────────────────────────────────────────────────
+// ProjectHubViewModel is a card/hub display shape (formatted color, deadline
+// as a string, team as display objects) — distinct from the raw hydrated
+// lib/context/ProjectContext.tsx:Project entity it's derived from. Was named
+// bare "Project" before this consolidation, shadowing the real Project type.
 
-type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
-
-interface Project {
+interface ProjectHubViewModel {
   id: string;
   title: string;
   type: string;
@@ -198,7 +189,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
 function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }) {
   const total = concepts + scenes;
   const filled = Math.min(6, concepts);
-  const palette = ['#6366f1', '#ff3c00', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  const palette = ['#6366f1', '#d7340b', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
       <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
@@ -217,7 +208,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
 
 // ─── Crew preview ─────────────────────────────────────────────────────────────
 
-function CrewPreview({ team }: { team: Project['team'] }) {
+function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {team.map((member, i) => (
@@ -260,7 +251,7 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
   return (
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#ff3c00' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
       </div>
 
@@ -303,7 +294,7 @@ function PortfolioPreview({ published }: { published: number }) {
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 60%, rgba(245,158,11,0.18) 0%, transparent 60%)' }} />
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', bottom: 6, right: 8, fontFamily: 'var(--mono)', fontSize: 6.5, color: 'rgba(240,236,228,0.3)', letterSpacing: 2 }}>2.35:1</div>
+          <div style={{ position: 'absolute', bottom: 6, right: 8, fontFamily: 'var(--mono)', fontSize: 6.5, color: 'rgba(224, 221, 174,0.3)', letterSpacing: 2 }}>2.35:1</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {[0, 1].map(i => (
@@ -329,7 +320,7 @@ export default function ProjectHubPage() {
   const router = useRouter();
   const id = String(params.id);
 
-  const [realProject, setRealProject] = useState<Project | null>(null);
+  const [realProject, setRealProject] = useState<ProjectHubViewModel | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Always load the actual project from Supabase and show the live production
@@ -348,7 +339,7 @@ export default function ProjectHubPage() {
         progress: Math.round((phaseIndex(phase) / (PHASES.length - 1)) * 100),
         deadline: data.end_date || '',
         description: data.description || '',
-        color: data.accent_color || '#ff3c00',
+        color: data.accent_color || '#d7340b',
         team: [],
       });
       setLoading(false);
@@ -358,11 +349,11 @@ export default function ProjectHubPage() {
 
   // Live cross-suite counts for real projects, so the hub tiles reflect the
   // actual scripts / crew / tasks / budget / timeline managed elsewhere.
-  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0 });
+  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, portfolioPublished: 0 });
   useEffect(() => {
     let active = true;
     (async () => {
-      const [sc, cr, tk, bd, tl, scn, cn] = await Promise.all([
+      const [sc, cr, tk, bd, tl, scn, cn, pf] = await Promise.all([
         supabase.from('scripts').select('page_count').eq('project_id', id),
         supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
@@ -370,6 +361,7 @@ export default function ProjectHubPage() {
         supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('concept_assets').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('portfolio_projects').select('id', { count: 'exact', head: true }).eq('source_project_id', id),
       ]);
       if (!active) return;
       const tasks = (tk.data as { completed: boolean }[]) || [];
@@ -383,6 +375,7 @@ export default function ProjectHubPage() {
         timeline: tl.count || 0,
         scenes: scn.count || 0,
         concepts: cn.count || 0,
+        portfolioPublished: pf.count || 0,
       });
     })();
     return () => { active = false; };
@@ -401,6 +394,11 @@ export default function ProjectHubPage() {
   const isRealProject = true;
   const currentPhaseIdx = phaseIndex(project.phase);
   const onlineCount = project.team.filter(m => m.online).length;
+  // Type-aware phase rail (labels + which stages are even shown) — the
+  // generic PHASES/phaseIndex above stay as-is for TimelinePreview's fixed
+  // milestone checklist and the progress-percent calc.
+  const typePhases = getPhasesForType(project.type);
+  const typePhaseIdx = phaseIndexForType(project.type, project.phase);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -439,26 +437,26 @@ export default function ProjectHubPage() {
           </div>
         </div>
 
-        {/* Phase rail */}
+        {/* Phase rail — labels/stage-count adapt to the project's type */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          {PHASES.map((phase, i) => {
-            const isDone   = i < currentPhaseIdx;
-            const isActive = i === currentPhaseIdx;
-            const isFuture = i > currentPhaseIdx;
+          {typePhases.map((phase, i) => {
+            const isDone   = i < typePhaseIdx;
+            const isActive = i === typePhaseIdx;
+            const isFuture = i > typePhaseIdx;
             return (
               <React.Fragment key={phase.id}>
                 <div style={{
                   padding: '5px 12px', borderRadius: 9999,
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5, textTransform: 'uppercase',
                   background: isActive ? `${project.color}18` : 'transparent',
-                  color: isActive ? project.color : isDone ? 'rgba(240,236,228,0.4)' : 'rgba(240,236,228,0.2)',
+                  color: isActive ? project.color : isDone ? 'rgba(224, 221, 174,0.4)' : 'rgba(224, 221, 174,0.2)',
                   border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
                   transition: 'all 0.3s', whiteSpace: 'nowrap',
                 }}>
                   {isDone && <span style={{ marginRight: 4 }}>✓</span>}
-                  {phase.short}
+                  {phase.abbr}
                 </div>
-                {i < PHASES.length - 1 && (
+                {i < typePhases.length - 1 && (
                   <div style={{
                     width: 16, height: 1,
                     background: isDone ? `${project.color}60` : 'rgba(255,255,255,0.08)',
@@ -519,7 +517,7 @@ export default function ProjectHubPage() {
           <DeptWindow
             title="ScriptOS"
             tag="Screenplay"
-            color="#ff3c00"
+            color="#d7340b"
             href="/editor"
             delay={0.05}
             stats={[
@@ -579,10 +577,10 @@ export default function ProjectHubPage() {
             href="/portfolio"
             delay={0.25}
             stats={[
-              { label: 'Phase', value: PHASES[currentPhaseIdx].short },
+              { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
               { label: 'Type',  value: project.type },
             ]}
-            preview={<PortfolioPreview published={project.progress === 100 ? 2 : currentPhaseIdx >= 3 ? 1 : 0} />}
+            preview={<PortfolioPreview published={counts.portfolioPublished} />}
           />
 
           {/* ─ Jobs / Distribution ─ */}
@@ -593,7 +591,7 @@ export default function ProjectHubPage() {
             href="/jobs"
             delay={0.3}
             stats={[
-              { label: 'Phase',  value: PHASES[currentPhaseIdx].short },
+              { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
               { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
             ]}
             preview={
@@ -615,7 +613,7 @@ export default function ProjectHubPage() {
 
         </div>
 
-        {isRealProject && <ProductionManager projectId={id} accent={project.color} />}
+        {isRealProject && <ProductionManager projectId={id} accent={project.color} projectTitle={project.title} projectType={project.type} />}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
@@ -629,8 +627,10 @@ interface TaskRow { id: string; title: string; completed: boolean }
 interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
+interface PortfolioRow { id: string; title: string; share_token: string }
 
-function ProductionManager({ projectId, accent }: { projectId: string; accent: string }) {
+function ProductionManager({ projectId, accent, projectTitle, projectType }: { projectId: string; accent: string; projectTitle: string; projectType: string }) {
+  const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
@@ -639,19 +639,30 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
   const [err, setErr] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  // Budget line items that already have a job posted from them, so the
+  // "Post as Job" action can't be fired twice for the same line by accident.
+  const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
+  const [postingBudgetId, setPostingBudgetId] = useState<string | null>(null);
+  // This project's real portfolio entries (source_project_id-linked), and
+  // whether a publish is in flight.
+  const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
+  const [publishing, setPublishing] = useState(false);
 
   const load = React.useCallback(async () => {
     try {
-      const [t, b, tl, c] = await Promise.all([
+      const [t, b, tl, c, pf] = await Promise.all([
         supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
         supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
         supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+        supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
       ]);
       setTasks((t.data as TaskRow[]) || []);
       setBudget((b.data as BudgetRow[]) || []);
       setTimeline((tl.data as TimelineRow[]) || []);
       setCrew((c.data as unknown as CrewRow[]) || []);
+      setPortfolio((pf.data as PortfolioRow[]) || []);
+      setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
     } catch (e: any) {
       setErr(e.message);
     }
@@ -694,9 +705,57 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
     const { error } = await supabase.from('budget_items').delete().eq('id', id);
     if (error) { setErr(error.message); setBudget(prev); }
   };
+  // Turn a budget line ("Director fee", $2,000) straight into an open Jobs
+  // posting — the category becomes both the title and the role, the amount
+  // becomes the rate. This is the first link in the Jobs <-> Crew <-> Budget
+  // chain: post from budget, accept an applicant, they become real crew.
+  const postJobFromBudget = async (b: BudgetRow) => {
+    if (!userId || postedBudgetIds.has(b.id)) return;
+    setPostingBudgetId(b.id);
+    try {
+      await createJob(projectId, userId, b.category, b.category, '', Number(b.amount) || undefined, b.id);
+      setPostedBudgetIds(prev => new Set(prev).add(b.id));
+      toast(`Posted "${b.category}" to the Jobs board`, 'success');
+    } catch (e: any) {
+      toast(e.message || 'Could not post this as a job', 'error');
+    } finally {
+      setPostingBudgetId(null);
+    }
+  };
   const setActual = async (id: string, actual: number | null) => {
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
     await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
+  };
+
+  // Publish this production to Portfolio, real row + real source_project_id
+  // link — not a fabricated "published" count. A manual button rather than an
+  // automatic phase-transition trigger: publishing is a one-way, visible act
+  // that the owner should choose, not something that silently fires because
+  // a status dropdown changed.
+  //
+  // NOTE: portfolio_projects has no is_public column live (despite the static
+  // schema file claiming one) and no app code anywhere reads/writes one, so
+  // there is currently no real public/private distinction for portfolio rows
+  // at all — visibility is effectively open to any signed-in user. That's a
+  // pre-existing gap independent of this feature; not something to silently
+  // paper over here.
+  const publishToPortfolio = async () => {
+    if (!userId || publishing) return;
+    setPublishing(true);
+    try {
+      const created = await createPortfolioProject({
+        user_id: userId,
+        title: projectTitle,
+        category: projectType,
+        source_project_id: projectId,
+      });
+      setPortfolio(p => [created as PortfolioRow, ...p]);
+      toast('Published to Portfolio', 'success');
+    } catch (e: any) {
+      toast(e.message || 'Could not publish to Portfolio', 'error');
+    } finally {
+      setPublishing(false);
+    }
   };
 
   // Build budget suggestions from the project's screenplay breakdown.
@@ -801,23 +860,14 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
         {/* Budget */}
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {budget.length === 0 && <Empty>No budget items</Empty>}
-          {budget.map(b => {
-            const over = b.actual_cost != null && Number(b.actual_cost) > Number(b.amount);
-            return (
-            <Row key={b.id}>
-              <span style={{ flex: 1, fontSize: 11 }}>{b.category}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(b.amount).toLocaleString()}</span>
-              <input
-                type="number"
-                defaultValue={b.actual_cost ?? ''}
-                placeholder="actual"
-                onBlur={(e) => { const v = e.target.value.trim(); setActual(b.id, v === '' ? null : Number(v)); }}
-                style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
-              />
-              <DelBtn onClick={() => delBudget(b.id)} />
-            </Row>
-            );
-          })}
+          {budget.map(b => (
+            <BudgetRowItem
+              key={b.id} item={b} posted={postedBudgetIds.has(b.id)} posting={postingBudgetId === b.id}
+              onSetActual={actual => setActual(b.id, actual)}
+              onPostJob={() => postJobFromBudget(b)}
+              onDelete={() => delBudget(b.id)}
+            />
+          ))}
           {hasActuals && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 10 }}>
               <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
@@ -877,6 +927,26 @@ function ProductionManager({ projectId, accent }: { projectId: string; accent: s
           ))}
           <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />
         </Panel>
+
+        {/* Portfolio */}
+        <Panel title="Portfolio" accent={accent}>
+          {portfolio.length === 0 ? (
+            <>
+              <Empty>Not published yet</Empty>
+              <button onClick={publishToPortfolio} disabled={publishing} style={{ marginTop: 4, width: '100%', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: 6, padding: '6px 10px', cursor: publishing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+                {publishing ? 'PUBLISHING…' : '✦ PUBLISH TO PORTFOLIO'}
+              </button>
+            </>
+          ) : (
+            portfolio.map(p => (
+              <Row key={p.id}>
+                <span style={{ flex: 1, fontSize: 11 }}>{p.title}</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#10b981' }}>PUBLISHED</span>
+                <Link href={`/p/${p.share_token}`} aria-label="view" style={{ color: 'var(--fg-dim)', display: 'flex' }}><ExternalLink size={12} /></Link>
+              </Row>
+            ))
+          )}
+        </Panel>
       </div>
     </div>
   );
@@ -902,6 +972,66 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 function DelBtn({ onClick }: { onClick: () => void }) {
   return <button onClick={onClick} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, opacity: 0.5, flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}>×</button>;
+}
+
+// Its own component (not inlined in budget.map) so it can call usePillZone —
+// hovering a budget line sharpens the Pill down to that line's real spend
+// and, if it hasn't been posted yet, the same "Post as Job" action as the
+// line's own button.
+function BudgetRowItem({
+  item, posted, posting, onSetActual, onPostJob, onDelete,
+}: {
+  item: BudgetRow;
+  posted: boolean;
+  posting: boolean;
+  onSetActual: (actual: number | null) => void;
+  onPostJob: () => void;
+  onDelete: () => void;
+}) {
+  const over = item.actual_cost != null && Number(item.actual_cost) > Number(item.amount);
+  const zoneHandlers = usePillZone({
+    module: 'home',
+    title: item.category,
+    accent: over ? '#ff6b6b' : '#8b5cf6',
+    fields: [
+      { label: 'Planned', value: `$${Number(item.amount).toLocaleString()}` },
+      ...(item.actual_cost != null ? [{ label: 'Actual', value: `$${Number(item.actual_cost).toLocaleString()}`, color: over ? '#ff6b6b' : undefined }] : []),
+    ],
+    actions: posted ? [] : [{ id: 'post-job', label: '→ Post as Job', onClick: onPostJob }],
+  }, 2);
+
+  return (
+    <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave} onClick={zoneHandlers.onClick}>
+      <Row>
+        <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
+        <input
+          type="number"
+          defaultValue={item.actual_cost ?? ''}
+          placeholder="actual"
+          onBlur={(e) => { const v = e.target.value.trim(); onSetActual(v === '' ? null : Number(v)); }}
+          style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
+        />
+        <button
+          onClick={onPostJob}
+          disabled={posted || posting}
+          title={posted ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}
+          aria-label="Post as job"
+          style={{
+            background: posted ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${posted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: posted ? 'default' : 'pointer', flexShrink: 0,
+            color: posted ? '#10b981' : 'var(--fg-dim)',
+            opacity: posting ? 0.5 : 1,
+          }}
+        >
+          <Briefcase size={11} />
+        </button>
+        <DelBtn onClick={onDelete} />
+      </Row>
+    </div>
+  );
 }
 
 function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: { placeholder: string; second?: string; fields: string[]; dateLabels?: string[]; onSubmit: (vals: string[]) => void; accent: string }) {

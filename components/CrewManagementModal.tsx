@@ -173,7 +173,7 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
 
           {/* Add Member Section */}
           <IfAccess permission="manage_crew">
-            <div style={{ marginBottom: 24, padding: 16, background: 'rgba(255,60,0,0.05)', borderRadius: 8 }}>
+            <div style={{ marginBottom: 24, padding: 16, background: 'rgba(215, 52, 11,0.05)', borderRadius: 8 }}>
               <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, margin: '0 0 12px 0', opacity: 0.7 }}>
                 ADD NEW MEMBER
               </h3>

@@ -116,7 +116,7 @@ export function UserStatusBadge() {
   if (!user) return null;
 
   const roleColors: Record<string, string> = {
-    admin: '#ff3c00',
+    admin: '#d7340b',
     project_creator: '#0099ff',
     crew_member: '#00cc66',
     guest: '#999999',

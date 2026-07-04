@@ -18,26 +18,28 @@ import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/character
 import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
+import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
+import { getDefaultScriptFormat } from '@/lib/projectTypes';
+import { usePillStage } from '@/lib/context/PillContext';
+import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
+import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
+import { TYPE_COLORS } from '@/components/editor/editorConstants';
+import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
+import { EditorRightPanels } from '@/components/editor/EditorSidePanels';
+import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
 // ============================================================================
 // CONSTANTS & HELPERS
 // ============================================================================
-
-const TYPE_COLORS: Record<string, string> = {
-  slug: '#fff',
-  character: '#ffaa00',
-  dialogue: 'var(--fg)',
-  parenthetical: 'rgba(240,236,228,0.5)',
-  transition: '#888',
-  action: 'rgba(240,236,228,0.75)',
-  note: '#eab308'
-};
 
 const PRINT_COLORS: Record<string, string> = {
   slug: '#000',
@@ -132,6 +134,39 @@ CUT TO:`;
 // Standard screenplay transitions offered by the editor's autocomplete.
 const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
 
+// Undo/redo history depth.
+const MAX_HISTORY = 50;
+
+// Tab cycles a line's element type in this order, transforming its text so the
+// parser re-classifies it — mirrors the reference editor's Tab-to-cycle-type
+// instead of the single "empty line → scene template" heuristic it replaces.
+const TAB_TYPE_CYCLE: LineType[] = ['action', 'character', 'parenthetical', 'dialogue', 'transition'];
+
+function stripLineDecoration(text: string): string {
+  return text.trim().replace(/^\(/, '').replace(/\)$/, '').replace(/\s+TO:$/i, '').trim();
+}
+
+function toSentenceCase(text: string): string {
+  const wasAllCaps = text === text.toUpperCase() && /[A-Z]/.test(text);
+  return wasAllCaps ? text.charAt(0) + text.slice(1).toLowerCase() : text;
+}
+
+function transformLineForType(text: string, type: LineType): string {
+  const bare = stripLineDecoration(text);
+  switch (type) {
+    case 'character':
+      return bare.toUpperCase();
+    case 'parenthetical':
+      return `(${bare.toLowerCase()})`;
+    case 'transition':
+      return /\bTO:$/i.test(bare) ? bare.toUpperCase() : `${bare.toUpperCase()} TO:`;
+    case 'dialogue':
+    case 'action':
+    default:
+      return toSentenceCase(bare);
+  }
+}
+
 // ============================================================================
 // COMPONENTS
 // ============================================================================
@@ -194,6 +229,7 @@ export default function EditorPage() {
   const { activeProject } = useProject();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
@@ -254,6 +290,10 @@ export default function EditorPage() {
   const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
+  // Casting: links a screenplay character to a real project_crew member, so
+  // "who's playing MARA" is a real, queryable fact — not a name in a text box.
+  const [castings, setCastings] = useState<Record<string, Casting>>({});
+  const [projectCrew, setProjectCrew] = useState<CrewMember[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
@@ -268,6 +308,15 @@ export default function EditorPage() {
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
+  const [tableReadPlaying, setTableReadPlaying] = useState(false);
+  const [tableReadLineIdx, setTableReadLineIdx] = useState<number | null>(null);
+  const tableReadEngineRef = useRef<TableReadEngine | null>(null);
+  // Real undo/redo history — snapshots of `content` coalesced at typing pauses
+  // (not one entry per keystroke), capped at 50 like the reference editor.
+  // Replaces reliance on the browser's native, per-keystroke textarea undo.
+  const [history, setHistory] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
+  const historyPushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSnapshotRef = useRef<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -289,6 +338,33 @@ export default function EditorPage() {
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
+
+  // Casting is project-scoped (not per-script), so it loads independently of
+  // which draft is open — the crew list and who's cast stay stable across
+  // script switches within the same project.
+  useEffect(() => {
+    if (!activeProject?.id) { setCastings({}); setProjectCrew([]); return; }
+    getCastingsForProject(activeProject.id).then(setCastings).catch(console.error);
+    getProjectCrew(activeProject.id).then(setProjectCrew).catch(console.error);
+  }, [activeProject?.id]);
+
+  const handleCastCharacter = useCallback(async (characterName: string, crewUserId: string) => {
+    if (!activeProject?.id) return;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      if (!crewUserId) {
+        await removeCasting(activeProject.id, characterName);
+        setCastings(prev => { const next = { ...prev }; delete next[characterName.toUpperCase()]; return next; });
+        return;
+      }
+      await setCasting(activeProject.id, characterName, crewUserId, auth.user.id);
+      const updated = await getCastingsForProject(activeProject.id);
+      setCastings(updated);
+    } catch (e: any) {
+      toast(e.message || 'Could not update casting', 'error');
+    }
+  }, [activeProject?.id, toast]);
 
   // Init
   useEffect(() => {
@@ -337,7 +413,7 @@ export default function EditorPage() {
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')
-            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: 'screenplay', status: 'draft', created_by: uid, last_edited_by: uid })
+            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
             .select('id,title,content')
             .single();
           row = ins.data || undefined;
@@ -353,6 +429,91 @@ export default function EditorPage() {
     })();
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Table Read — reads the parsed lines aloud, voicing each character
+  // distinctly, and scrolls/highlights the currently-spoken line. Stop on
+  // unmount or script switch so it never keeps talking over a page change.
+  const startTableRead = useCallback((fromIndex = 0) => {
+    if (!isTableReadSupported()) { toast('Table read isn’t supported in this browser', 'error'); return; }
+    tableReadEngineRef.current?.stop();
+    const engine = getTableReadEngine(lines, {
+      onLineStart: setTableReadLineIdx,
+      onComplete: () => { setTableReadPlaying(false); setTableReadLineIdx(null); },
+      rate: 1,
+    });
+    tableReadEngineRef.current = engine;
+    setTableReadPlaying(true);
+    engine.play(fromIndex);
+  }, [lines, toast]);
+
+  const pauseTableRead = useCallback(() => {
+    tableReadEngineRef.current?.pause();
+    setTableReadPlaying(false);
+  }, []);
+
+  const resumeTableRead = useCallback(() => {
+    tableReadEngineRef.current?.resume();
+    setTableReadPlaying(true);
+  }, []);
+
+  const stopTableRead = useCallback(() => {
+    tableReadEngineRef.current?.stop();
+    setTableReadPlaying(false);
+    setTableReadLineIdx(null);
+  }, []);
+
+  useEffect(() => () => { tableReadEngineRef.current?.stop(); }, []);
+  useEffect(() => { stopTableRead(); }, [currentScript?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Note that an edit happened, coalescing rapid keystrokes into one snapshot
+  // of what the script looked like right before the burst started — so undo
+  // reverts a sentence/edit at a time, not one character at a time.
+  const noteHistoryEdit = useCallback((prevContent: string) => {
+    if (pendingSnapshotRef.current == null) pendingSnapshotRef.current = prevContent;
+    if (historyPushTimer.current) clearTimeout(historyPushTimer.current);
+    historyPushTimer.current = setTimeout(() => {
+      const snapshot = pendingSnapshotRef.current;
+      pendingSnapshotRef.current = null;
+      if (snapshot == null) return;
+      setHistory(h => ({ past: [...h.past, snapshot].slice(-MAX_HISTORY), future: [] }));
+    }, 600);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyPushTimer.current) { clearTimeout(historyPushTimer.current); historyPushTimer.current = null; }
+    setHistory(h => {
+      const pending = pendingSnapshotRef.current;
+      pendingSnapshotRef.current = null;
+      const past = pending != null ? [...h.past, pending] : h.past;
+      if (!past.length) return h;
+      const prev = past[past.length - 1];
+      setContent(prev);
+      return { past: past.slice(0, -1), future: [content, ...h.future].slice(0, MAX_HISTORY) };
+    });
+  }, [content]);
+
+  const redo = useCallback(() => {
+    setHistory(h => {
+      if (!h.future.length) return h;
+      const next = h.future[0];
+      setContent(next);
+      return { past: [...h.past, content].slice(-MAX_HISTORY), future: h.future.slice(1) };
+    });
+  }, [content]);
+
+  useEffect(() => {
+    setHistory({ past: [], future: [] });
+    pendingSnapshotRef.current = null;
+  }, [currentScript?.id]);
+
+  // Keep the write surface scrolled to whatever line is currently being read.
+  useEffect(() => {
+    if (tableReadLineIdx == null || !textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const lineHeight = 26;
+    const targetScroll = (tableReadLineIdx * lineHeight) - (window.innerHeight * 0.3);
+    textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+  }, [tableReadLineIdx]);
 
   // Parser hook
   useEffect(() => {
@@ -455,7 +616,7 @@ export default function EditorPage() {
       exportScriptAsFdx({ ...currentScript, content });
       toast('Exported as .fdx (Final Draft)', 'success');
     } else if (format === 'pdf') {
-      exportScriptAsPdf({ ...currentScript, content });
+      exportScriptAsPdf({ ...currentScript, content }, titlePage);
       toast('Generating PDF...', 'success');
     } else {
       // Defensive: the export menu only offers the handled formats above, so
@@ -549,19 +710,31 @@ export default function EditorPage() {
         if (showGoToScene) setShowGoToScene(false);
         if (showShortcuts) setShowShortcuts(false);
       }
+      // Undo/redo the script content specifically (our own history stack, not
+      // the browser's native per-keystroke textarea undo) while the write
+      // surface is focused.
+      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+      }
+      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts]);
+  }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
 
-  // Import .fountain / .txt file
+  // Import .fountain / .txt / .fdx / .pdf file
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = ev.target?.result as string;
-      const title = file.name.replace(/\.(fountain|txt|fdx)$/i, '');
+    e.target.value = ''; // reset input immediately so re-picking the same file fires
+
+    const title = file.name.replace(/\.(fountain|txt|fdx|pdf)$/i, '');
+
+    const finish = async (text: string) => {
       const imported = await importScriptFromText(text, title);
       if (imported) {
         setScripts(prev => [...prev, imported]);
@@ -570,8 +743,49 @@ export default function EditorPage() {
         toast(`Imported "${title}"`, 'success');
       }
     };
+
+    // PDFs need text extraction with reading-order reconstruction, then the
+    // smart normalizer to repair extraction artifacts (stray page numbers,
+    // smart quotes, action mis-joined into dialogue) before they parse cleanly.
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+      toast('Extracting PDF…', 'success');
+      Promise.all([
+        import('@/lib/scriptos/pdfImport'),
+        import('@/lib/scriptos/normalize'),
+      ])
+        .then(([{ extractTextFromPdf }, { normalizeScreenplay }]) =>
+          extractTextFromPdf(file).then(raw => normalizeScreenplay(raw) || raw))
+        .then(finish)
+        .catch(err => {
+          console.error(err);
+          toast('Could not read that PDF.', 'error');
+        });
+      return;
+    }
+
+    // .fdx (Final Draft XML) carries an explicit element type per paragraph,
+    // so it's parsed losslessly instead of being dumped in as raw XML text;
+    // .fountain gets its forced-element markers (., !, @, >) translated
+    // before the normalizer sees it.
+    if (/\.(fdx|fountain)$/i.test(file.name)) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const raw = ev.target?.result as string;
+        import('@/lib/scriptos/import')
+          .then(({ importToContent }) => importToContent(raw, file.name))
+          .then(({ content }) => finish(content))
+          .catch(err => {
+            console.error(err);
+            toast(`Could not read that ${file.name.split('.').pop()} file.`, 'error');
+          });
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => { finish(ev.target?.result as string); };
     reader.readAsText(file);
-    e.target.value = ''; // reset input
   }, [toast]);
 
   // Title page save
@@ -635,34 +849,33 @@ export default function EditorPage() {
       const editor = textareaRef.current;
       if (!editor) return;
       const cursor = editor.selectionStart;
-      const currentLine = content.substring(0, cursor).split('\n').pop() || '';
+      const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+      const lineEnd = content.indexOf('\n', cursor) === -1 ? content.length : content.indexOf('\n', cursor);
+      const currentLine = content.substring(lineStart, lineEnd);
       const trimmed = currentLine.trim();
 
-      // If empty line, insert a scene heading template
+      // Empty line: no type to cycle, so start a scene heading template.
       if (!trimmed) {
         insertElement('scene');
         return;
       }
-      // If uppercase short text (likely a character), insert dialogue below
-      if (trimmed === trimmed.toUpperCase() && trimmed.length > 1 && trimmed.length < 40) {
-        const after = content.substring(cursor);
-        setContent(content.substring(0, cursor) + '\n' + after);
-        setTimeout(() => {
-          editor.focus();
-          editor.setSelectionRange(cursor + 1, cursor + 1);
-        }, 0);
-        return;
-      }
-      // Default: insert 4 spaces (standard tab)
-      const before = content.substring(0, cursor);
-      const after = content.substring(editor.selectionEnd);
-      setContent(before + '    ' + after);
-      setTimeout(() => {
-        editor.focus();
-        editor.setSelectionRange(cursor + 4, cursor + 4);
-      }, 0);
+
+      // Cycle the line's element type — action → character → parenthetical →
+      // dialogue → transition → action — by transforming its text so the
+      // parser reclassifies it as the next (or, with Shift, previous) type.
+      const lineIdx = content.substring(0, lineStart).split('\n').length - 1;
+      const currentType = lines[lineIdx]?.type;
+      const cycleIdx = currentType ? TAB_TYPE_CYCLE.indexOf(currentType) : -1;
+      const base = cycleIdx === -1 ? 0 : cycleIdx;
+      const step = e.shiftKey ? -1 : 1;
+      const nextType = TAB_TYPE_CYCLE[(base + step + TAB_TYPE_CYCLE.length) % TAB_TYPE_CYCLE.length];
+      const transformed = transformLineForType(currentLine, nextType);
+      const next = content.substring(0, lineStart) + transformed + content.substring(lineEnd);
+      setContent(next);
+      const caret = lineStart + transformed.length;
+      setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
     }
-  }, [content, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
+  }, [content, lines, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
@@ -738,6 +951,7 @@ export default function EditorPage() {
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
+    noteHistoryEdit(content);
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
     noteLocalEdit();
@@ -878,32 +1092,7 @@ export default function EditorPage() {
     return counts;
   }, [lines, scenesList]);
 
-  // Board card colors (cycle through a palette)
-  const CARD_COLORS = ['#ff3c00', '#0099ff', '#00cc66', '#ff6b9d', '#ffd43b', '#a855f7', '#f97316', '#06b6d4'];
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
-
-  // Scene type classifier — encodes the actual spatial/temporal context of a scene
-  const getSceneType = (scene: ScriptLine) => {
-    const u = scene.text.toUpperCase();
-    return {
-      isInt:   u.startsWith('INT'),
-      isExt:   u.startsWith('EXT'),
-      isDay:   u.includes('DAY')   || u.includes('MORNING') || u.includes('AFTERNOON'),
-      isNight: u.includes('NIGHT') || u.includes('DUSK')    || u.includes('DAWN'),
-    };
-  };
-
-  // Scene type → visual color
-  const sceneTypeColor = (scene: ScriptLine) => {
-    const { isInt, isExt, isDay, isNight } = getSceneType(scene);
-    if (isInt  && isDay)   return '#6366f1';   // INT/DAY  — indigo
-    if (isInt  && isNight) return '#4338ca';   // INT/NIGHT — deep indigo
-    if (isExt  && isDay)   return '#d97706';   // EXT/DAY  — amber
-    if (isExt  && isNight) return '#92400e';   // EXT/NIGHT — dark amber
-    if (isInt)             return '#7c3aed';   // INT/? — violet
-    if (isExt)             return '#b45309';   // EXT/? — warm brown
-    return '#4b5563';                           // unknown  — slate
-  };
 
   // Per-scene character presence map
   const sceneCharMap = useMemo(() => {
@@ -930,6 +1119,26 @@ export default function EditorPage() {
     }
     return lastScene;
   }, [lines, scenesList, cursorLine]);
+
+  // ── Publish the editor's live state to the Pill ────────────────────────────
+  // The taskbar's context capsule morphs to surface these read-outs and the
+  // Focus toggle — every value is live page state, the toggle flips it for real.
+  usePillStage(
+    {
+      module: 'editor',
+      title: currentScript?.title || 'Untitled',
+      fields: [
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
+        { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
+        { label: 'Pages', value: `${pageEst}` },
+        { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
+      ],
+      toggles: [
+        { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
+      ],
+    },
+    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
+  );
 
   // Act structure — properly clamped so it never produces "Sc 4-3" nonsense
   const actStructure = useMemo(() => {
@@ -1109,7 +1318,7 @@ export default function EditorPage() {
                   border: 'none', cursor: 'pointer',
                   transition: 'box-shadow 0.25s, transform 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,60,0,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
               >
                 <Download size={12} /> Export <ChevronDown size={11} />
@@ -1163,15 +1372,14 @@ export default function EditorPage() {
       {/* FIND & REPLACE BAR */}
       <AnimatePresence>
         {showFindReplace && (
-          <motion.div initial={{ y: -32, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -32, opacity: 0 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ background: 'rgba(8,8,8,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <Search size={14} style={{ color: 'var(--fg-muted)' }} />
-            <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '6px 10px', color: '#fff', fontSize: 12, outline: 'none' }} />
-            <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{findCount} found</span>
-            <button onClick={handleFindReplaceOne} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Replace</button>
-            <button onClick={handleFindReplace} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>All</button>
-            <button onClick={() => setShowFindReplace(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={14} /></button>
-          </motion.div>
+          <FindReplaceBar
+            findText={findText} setFindText={setFindText}
+            replaceText={replaceText} setReplaceText={setReplaceText}
+            findCount={findCount}
+            onReplaceOne={handleFindReplaceOne}
+            onReplaceAll={handleFindReplace}
+            onClose={() => setShowFindReplace(false)}
+          />
         )}
       </AnimatePresence>
 
@@ -1199,207 +1407,16 @@ export default function EditorPage() {
                 ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
             >
-              {/* Script Controls */}
-              <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <button onClick={async () => {
-                  const s = await createNewScript('Untitled Script');
-                  if (s) {
-                    setScripts([...scripts, s]);
-                    setCurrentScript(s);
-                    setContent('');
-                    toast('New script created', 'success');
-                  } else {
-                    toast('Could not create script — check your connection', 'error');
-                  }
-                }} style={{
-                  width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                  padding: '8px 12px', borderRadius: 9, color: 'var(--fg-muted)',
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
-                  cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
-                >
-                  <Plus size={12} /> New Script
-                </button>
-
-                <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
-                  {[
-                    { icon: FileUp, label: 'Import', onClick: () => fileInputRef.current?.click() },
-                    { icon: Book,   label: 'Title',  onClick: () => setShowTitleEditor(!showTitleEditor) },
-                  ].map(({ icon: Icon, label, onClick }) => (
-                    <button key={label} onClick={onClick} style={{
-                      flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      background: 'transparent', border: '1px solid rgba(255,255,255,0.06)',
-                      padding: '6px', borderRadius: 7,
-                      color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 8.5,
-                      letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
-                      transition: 'border-color 0.2s, color 0.2s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
-                    >
-                      <Icon size={11} /> {label}
-                    </button>
-                  ))}
-                </div>
-
-                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx" onChange={handleImportFile} style={{ display: 'none' }} />
-
-                {/* Templates */}
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 3, marginTop: 14, marginBottom: 7 }}>Templates</div>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {Object.keys(TEMPLATES).filter(k => k !== 'blank').map(key => (
-                    <button key={key} onClick={async () => {
-                      const s = await createNewScript(key.charAt(0).toUpperCase() + key.slice(1));
-                      if (s) {
-                        setScripts(prev => [...prev, s]);
-                        setCurrentScript(s);
-                        setContent(TEMPLATES[key]);
-                        toast(`Created from "${key}" template`, 'success');
-                      } else {
-                        toast('Could not create script', 'error');
-                      }
-                    }} style={{
-                      fontSize: 8, padding: '4px 9px',
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      borderRadius: 6, color: 'var(--fg-dim)',
-                      cursor: 'pointer', textTransform: 'capitalize',
-                      fontFamily: 'var(--mono)', letterSpacing: 1,
-                      transition: 'border-color 0.2s, color 0.2s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
-                    >{key}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* STORY MAP — proportional scene navigator */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 20px' }}>
-                <div style={{
-                  fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)',
-                  textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10, paddingLeft: 4,
-                  display: 'flex', justifyContent: 'space-between',
-                }}>
-                  <span>Story Map</span>
-                  <span style={{ opacity: 0.5 }}>{scenesList.length} sc</span>
-                </div>
-
-                {scenesList.length === 0 && (
-                  <div style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--serif)', fontStyle: 'italic', padding: '8px 4px' }}>
-                    Start writing to see your story map.
-                  </div>
-                )}
-
-                {(() => {
-                  const maxWc = Math.max(...sceneWordCounts, 1);
-                  return scenesList.map((scene, i) => {
-                    const isActive = i === currentSceneIdx;
-                    const wc = sceneWordCounts[i] || 0;
-                    const barPct = Math.max(8, Math.round((wc / maxWc) * 100));
-                    const color = sceneTypeColor(scene);
-                    const { isInt, isExt, isDay, isNight } = getSceneType(scene);
-                    const chars = sceneCharMap[i] || [];
-                    const typeLabel = `${isInt ? 'I' : isExt ? 'E' : '?'}/${isDay ? 'D' : isNight ? 'N' : '?'}`;
-
-                    // Act boundary lines
-                    const isAct2Start = i + 1 === actStructure.act2Start && scenesList.length > 2;
-                    const isAct3Start = i + 1 === actStructure.act3Start && scenesList.length > 2;
-
-                    return (
-                      <React.Fragment key={scene.id}>
-                        {(isAct2Start || isAct3Start) && (
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            margin: '6px 0 4px', paddingLeft: 4,
-                          }}>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', flexShrink: 0 }}>
-                              Act {isAct2Start ? 'II' : 'III'}
-                            </span>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            const textarea = textareaRef.current;
-                            if (!textarea) return;
-                            const sceneText = scene.text;
-                            const idx = content.toUpperCase().indexOf(sceneText.toUpperCase());
-                            if (idx >= 0) {
-                              textarea.focus();
-                              textarea.setSelectionRange(idx, idx);
-                              const linesBefore = content.substring(0, idx).split('\n').length;
-                              setCursorLine(linesBefore);
-                            }
-                          }}
-                          style={{
-                            width: '100%', textAlign: 'left', padding: '8px 4px 8px 8px',
-                            marginBottom: 2, background: 'transparent',
-                            border: 'none', borderRadius: 8, cursor: 'pointer',
-                            borderLeft: `2px solid ${isActive ? color : 'transparent'}`,
-                            transition: 'border-color 0.25s, background 0.18s',
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          {/* Scene header row */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
-                            <span style={{
-                              fontFamily: 'var(--mono)', fontSize: 8, color: color,
-                              flexShrink: 0, opacity: 0.8,
-                            }}>{typeLabel}</span>
-                            <span style={{
-                              fontFamily: 'var(--mono)', fontSize: 9,
-                              color: isActive ? 'var(--fg)' : 'rgba(240,236,228,0.6)',
-                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                              textTransform: 'uppercase', flex: 1,
-                            }}>
-                              {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
-                            </span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', flexShrink: 0 }}>
-                              {wc > 0 ? `${wc}w` : ''}
-                            </span>
-                          </div>
-
-                          {/* Word count bar */}
-                          <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1, marginBottom: 5, overflow: 'hidden' }}>
-                            <div style={{
-                              height: '100%', width: `${barPct}%`,
-                              background: isActive ? color : `${color}88`,
-                              borderRadius: 1, transition: 'width 0.4s',
-                            }} />
-                          </div>
-
-                          {/* Character dots */}
-                          {chars.length > 0 && (
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                              {chars.slice(0, 4).map(c => (
-                                <span key={c} style={{
-                                  fontFamily: 'var(--mono)', fontSize: 7,
-                                  color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)',
-                                  padding: '1px 5px', borderRadius: 3,
-                                  overflow: 'hidden', maxWidth: 56,
-                                  textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                }}>
-                                  {c.split(' ')[0]}
-                                </span>
-                              ))}
-                              {chars.length > 4 && (
-                                <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)' }}>+{chars.length - 4}</span>
-                              )}
-                            </div>
-                          )}
-                        </button>
-                      </React.Fragment>
-                    );
-                  });
-                })()}
-              </div>
+              <EditorLeftNav
+                scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
+                setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
+                fileInputRef={fileInputRef} handleImportFile={handleImportFile}
+                showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
+                templates={TEMPLATES}
+                scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
+                sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
+                actStructure={actStructure} textareaRef={textareaRef} content={content} setCursorLine={setCursorLine}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1418,22 +1435,88 @@ export default function EditorPage() {
           )}
 
           {activeView === 'write' && (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleEditorChange}
-              onKeyDown={handleEditorKeyDown}
-              onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
-              placeholder={PLACEHOLDER}
-              spellCheck={false}
-              style={{
-                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
-                background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
-                fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
-                resize: 'none', outline: 'none',
-                position: 'relative'
-              }}
-            />
+            <div style={{ flex: 1, position: 'relative', width: '100%', maxWidth: 900, margin: '0 auto' }}>
+              {/* Highlight layer — mirrors the textarea's text per-line, colored
+                  by parsed screenplay type (slug/character/dialogue/etc.), so the
+                  live writing surface isn't just undifferentiated monospace text.
+                  Kept pixel-identical (same font/line-height/padding, no per-line
+                  indentation) to the textarea beneath it so the invisible caret
+                  always lands where the colored text appears. */}
+              <div
+                ref={highlightRef}
+                aria-hidden
+                style={{
+                  position: 'absolute', inset: 0, overflow: 'hidden',
+                  padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none',
+                }}
+              >
+                {content.split('\n').map((lineText, i) => {
+                  const type = lines[i]?.type;
+                  const color = (type && TYPE_COLORS[type]) || (revisionMode ? '#0099ff' : '#e0e0e0');
+                  const bold = type === 'slug' || type === 'character' || type === 'transition';
+                  const isReadingLine = tableReadLineIdx === i;
+                  return (
+                    <div key={i} style={{
+                      color, fontWeight: bold ? 700 : 400,
+                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : undefined,
+                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : undefined,
+                    }}>
+                      {lineText.length ? lineText : ' '}
+                    </div>
+                  );
+                })}
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleEditorChange}
+                onKeyDown={handleEditorKeyDown}
+                onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
+                onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                placeholder={PLACEHOLDER}
+                spellCheck={false}
+                style={{
+                  position: 'absolute', inset: 0,
+                  padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
+                  background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : '#e0e0e0',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  resize: 'none', outline: 'none',
+                }}
+              />
+
+              {/* Table Read control — plays the script aloud, voicing each
+                  character distinctly, and scrolls/highlights the live line. */}
+              {!focusMode && (
+                <div style={{
+                  position: 'absolute', top: 16, right: 16, zIndex: 5,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 20, padding: '6px 10px', backdropFilter: 'blur(12px)',
+                }}>
+                  <button
+                    onClick={() => (tableReadPlaying ? pauseTableRead() : (tableReadLineIdx != null ? resumeTableRead() : startTableRead(0)))}
+                    title={tableReadPlaying ? 'Pause table read' : 'Play table read'}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    {tableReadPlaying ? <Pause size={15} /> : <Play size={15} />}
+                  </button>
+                  {tableReadLineIdx != null && (
+                    <button
+                      onClick={stopTableRead}
+                      title="Stop table read"
+                      style={{ background: 'transparent', border: 'none', color: 'rgba(224, 221, 174,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
+                    Table Read
+                  </span>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Structure Lines (Visual Act Markers) */}
@@ -1500,369 +1583,29 @@ export default function EditorPage() {
           )}
 
           {activeView === 'board' && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
-              {scenesList.length === 0 ? (
-                 <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
-              ) : scenesList.map((scene, i) => {
-                const cardColor = sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length];
-                const wc = sceneWordCounts[i] || 0;
-                const estMins = Math.max(1, Math.round(wc / 185 * 0.8));
-                return (
-                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
-                    onClick={() => jumpToScene(scene.text)}
-                    title="Drag to reorder · click to open in the script"
-                    draggable
-                    onDragStart={(e: any) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
-                    onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
-                    onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
-                    onDrop={(e) => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
-                    style={{
-                      width: 272, minHeight: 180,
-                      background: 'var(--bg-3)',
-                      border: `1px solid ${dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? cardColor : 'rgba(255,255,255,0.06)'}`,
-                      borderTop: `2px solid ${cardColor}`,
-                      borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
-                      opacity: dragSceneIdx === i ? 0.4 : 1,
-                      transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
-                    }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {i + 1}</span>
-                      <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wc}w · ~{estMins}m</span>
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
-                    <textarea
-                      defaultValue={sceneNotes[scene.text.trim().toUpperCase()] || ''}
-                      onClick={e => e.stopPropagation()}
-                      onBlur={e => setSceneNote(scene.text, e.target.value)}
-                      placeholder="Beat / summary — what has to happen here?"
-                      style={{ width: '100%', minHeight: 44, resize: 'none', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
-                    />
-                    <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                       {lines.slice(lines.findIndex(l => l.id === scene.id) + 1, lines.findIndex(l => l.id === scene.id) + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
-                    </div>
-                    <div style={{ marginTop: 'auto', display: 'flex', gap: 6, paddingTop: 8 }}>
-                      {/* Show characters in this scene */}
-                      {(() => {
-                        const startIdx = lines.findIndex(l => l.id === scene.id);
-                        const endIdx = i + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[i + 1].id) : lines.length;
-                        const sceneChars = [...new Set(lines.slice(startIdx, endIdx).filter(l => l.type === 'character').map(l => l.text.trim()))];
-                        return sceneChars.slice(0, 3).map(c => (
-                          <span key={c} style={{ fontSize: 8, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 5px', borderRadius: 3, fontWeight: 600 }}>{c}</span>
-                        ));
-                      })()}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
+            <BoardView
+              scenesList={scenesList} lines={lines} sceneColors={sceneColors} sceneNotes={sceneNotes}
+              sceneWordCounts={sceneWordCounts} dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
+              dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx} jumpToScene={jumpToScene}
+              setSceneNote={setSceneNote} reorderScenes={reorderScenes}
+            />
           )}
 
           {activeView === 'outline' && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
-              {/* Scene Filter Bar */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-                {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
-                  <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: sceneFilter === f ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
-                ))}
-                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
-              </div>
-              {/* Outline List */}
-              {filteredScenes.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#666', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
-              ) : (
-                filteredScenes.map((scene, i) => {
-                  const globalIdx = scenesList.indexOf(scene);
-                  const startIdx = lines.findIndex(l => l.id === scene.id);
-                  const endIdx = globalIdx + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[globalIdx + 1].id) : lines.length;
-                  const sceneLines = lines.slice(startIdx, endIdx);
-                  const sceneChars = [...new Set(sceneLines.filter(l => l.type === 'character').map(l => l.text.trim()))];
-                  const wc = sceneLines.reduce((s, l) => s + l.text.split(/\s+/).filter(Boolean).length, 0);
-                  const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
-                  return (
-                    <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      {(() => { const tag = sceneColors[scene.text.trim().toUpperCase()]; return (
-                        <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
-                      ); })()}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div onClick={() => jumpToScene(scene.text)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
-                          <div style={{ display: 'flex', gap: 4 }}>
-                            {CARD_COLORS.map(color => {
-                              const active = sceneColors[scene.text.trim().toUpperCase()] === color;
-                              return (
-                              <button
-                                key={color}
-                                title={active ? 'Remove tag' : 'Tag scene'}
-                                onClick={() => tagScene(scene.text, color)}
-                                style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
-                              />
-                            ); })}
-                          </div>
-                        </div>
-                        {sceneNotes[scene.text.trim().toUpperCase()] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[scene.text.trim().toUpperCase()]}”</div>}
-                        {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </div>
+            <OutlineView
+              sceneFilter={sceneFilter} setSceneFilter={setSceneFilter} filteredScenes={filteredScenes}
+              scenesList={scenesList} lines={lines} sceneColors={sceneColors} sceneNotes={sceneNotes}
+              jumpToScene={jumpToScene} tagScene={tagScene}
+            />
           )}
 
-          {/* ANALYTICS DASHBOARD */}
           {activeView === 'stats' && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '36px 40px', maxWidth: 1000, margin: '0 auto', width: '100%' }}>
-
-              {/* ── Header ── */}
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 36 }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg)' }}>SCRIPT ANALYTICS</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{currentScript?.title}</div>
-              </div>
-
-              {/* ── 5 Pulse Stats ── */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
-                {[
-                  { label: 'Words',   value: wordCount.toLocaleString(), color: '#6366f1', sub: `${pageEst} pages` },
-                  { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
-                  { label: 'Scenes',  value: `${scenesList.length}`, color: '#ff3c00', sub: `${uniqueLocations.length} locations` },
-                  { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
-                  { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
-                ].map(s => (
-                  <div key={s.label} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 14px', transition: 'border-color 0.3s' }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = s.color + '40'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-                  >
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: 6 }}>{s.value}</div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 3 }}>{s.label}</div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.6 }}>{s.sub}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* ── Scene Timeline — proportional, type-encoded ── */}
-              {scenesList.length > 0 && (() => {
-                const totalWc = sceneWordCounts.reduce((a, b) => a + b, 0) || 1;
-                const { act1End, act2End } = actStructure;
-                return (
-                  <div style={{ marginBottom: 40 }}>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Timeline</div>
-
-                    {/* Color legend */}
-                    <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
-                      {[
-                        { label: 'INT/Day', color: '#6366f1' }, { label: 'INT/Night', color: '#4338ca' },
-                        { label: 'EXT/Day', color: '#d97706' }, { label: 'EXT/Night', color: '#92400e' },
-                      ].map(({ label, color }) => (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 1 }}>{label}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Timeline bar */}
-                    <div style={{ display: 'flex', height: 32, borderRadius: 6, overflow: 'hidden', gap: 1, background: 'var(--bg-3)', padding: 4 }}>
-                      {scenesList.map((scene, i) => {
-                        const wc = sceneWordCounts[i] || 0;
-                        const w = Math.max(4, (wc / totalWc) * 100);
-                        const color = sceneTypeColor(scene);
-                        const chars = sceneCharMap[i] || [];
-                        return (
-                          <div
-                            key={scene.id}
-                            title={`Scene ${i + 1}: ${scene.text} · ${wc}w · ${chars.join(', ')}`}
-                            style={{
-                              flex: `0 0 ${w}%`, background: color,
-                              borderRadius: 3, cursor: 'pointer', opacity: 0.85,
-                              minWidth: 4, position: 'relative',
-                              transition: 'opacity 0.15s, transform 0.15s',
-                              border: i === currentSceneIdx ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scaleY(1.15)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = ''; }}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    {/* Act divisions */}
-                    {scenesList.length > 2 && (() => {
-                      const act1Pct = sceneWordCounts.slice(0, act1End).reduce((a, b) => a + b, 0) / totalWc * 100;
-                      const act2Pct = sceneWordCounts.slice(0, act2End).reduce((a, b) => a + b, 0) / totalWc * 100;
-                      return (
-                        <div style={{ position: 'relative', height: 20, marginTop: 2 }}>
-                          {[
-                            { pct: 0,       label: 'ACT I' },
-                            { pct: act1Pct, label: 'ACT II' },
-                            { pct: act2Pct, label: 'ACT III' },
-                          ].map(({ pct, label }) => (
-                            <div key={label} style={{ position: 'absolute', left: `${pct}%`, transform: pct > 0 ? 'translateX(-50%)' : '', top: 2 }}>
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Scene numbers below */}
-                    <div style={{ display: 'flex', marginTop: 2 }}>
-                      {scenesList.map((scene, i) => {
-                        const wc = sceneWordCounts[i] || 0;
-                        const w = Math.max(4, (wc / totalWc) * 100);
-                        return (
-                          <div key={scene.id} style={{ flex: `0 0 ${w}%`, minWidth: 4, display: 'flex', justifyContent: 'center' }}>
-                            {w > 3 && (
-                              <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', opacity: 0.5 }}>{i + 1}</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── Character Presence Grid ── */}
-              {charStats.length > 0 && scenesList.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Character Presence</div>
-                  <div style={{ overflowX: 'auto' }}>
-                    <div style={{ minWidth: Math.max(400, scenesList.length * 22) }}>
-                      {charStats.slice(0, 8).map((cs, ci) => {
-                        const charColor = CARD_COLORS[ci % CARD_COLORS.length];
-                        return (
-                          <div key={cs.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                            <div style={{ width: 76, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, color: charColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                              {cs.name}
-                            </div>
-                            <div style={{ display: 'flex', gap: 2, flex: 1 }}>
-                              {scenesList.map((scene, si) => {
-                                const appearsHere = (sceneCharMap[si] || []).includes(cs.name);
-                                return (
-                                  <div
-                                    key={si}
-                                    title={appearsHere ? `${cs.name} in Scene ${si + 1}` : `Not in Scene ${si + 1}`}
-                                    style={{
-                                      flex: 1, height: 14, borderRadius: 2, minWidth: 8,
-                                      background: appearsHere ? charColor : 'rgba(255,255,255,0.04)',
-                                      opacity: appearsHere ? 0.85 : 1,
-                                      transition: 'opacity 0.15s',
-                                    }}
-                                    onMouseEnter={e => { if (appearsHere) e.currentTarget.style.opacity = '1'; }}
-                                    onMouseLeave={e => { if (appearsHere) e.currentTarget.style.opacity = '0.85'; }}
-                                  />
-                                );
-                              })}
-                            </div>
-                            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', flexShrink: 0, width: 30, textAlign: 'right' }}>
-                              {cs.scenesIn.length}sc
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {/* Scene number axis */}
-                      <div style={{ display: 'flex', gap: 2, marginLeft: 84 }}>
-                        {scenesList.map((_, si) => (
-                          <div key={si} style={{ flex: 1, minWidth: 8 }}>
-                            {(si + 1) % Math.max(1, Math.floor(scenesList.length / 8)) === 0 && (
-                              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', opacity: 0.4, textAlign: 'center' }}>{si + 1}</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Dialogue / Action ratio ── */}
-              <div style={{ marginBottom: 40 }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
-                <div style={{ display: 'flex', gap: 1, borderRadius: 6, overflow: 'hidden', height: 20 }}>
-                  <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
-                  <div style={{ flex: 1, background: '#ff3c00' }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#6366f1' }}>{dialogueRatio}% Dialogue</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#ff3c00' }}>{100 - dialogueRatio}% Action</span>
-                </div>
-              </div>
-
-              {/* ── Scene breakdown table ── */}
-              {scenesList.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
-                  <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-                    {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      {['#', 'Scene', 'Type', 'Cast', 'Words', 'Time'].map(h => (
-                        <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</div>
-                      ))}
-                    </div>
-                    {scenesList.map((scene, i) => {
-                      const { isInt, isExt, isDay, isNight } = getSceneType(scene);
-                      const color = sceneTypeColor(scene);
-                      const wc = sceneWordCounts[i] || 0;
-                      const sceneCast = sceneCharMap[i] || [];
-                      const estSecs = Math.round(wc / 185 * 60);
-                      const timeStr = estSecs >= 60 ? `${Math.floor(estSecs/60)}m${estSecs%60}s` : `${estSecs}s`;
-                      const isActive = i === currentSceneIdx;
-                      return (
-                        <div
-                          key={scene.id}
-                          style={{
-                            display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px',
-                            gap: 0, padding: '9px 14px',
-                            background: isActive ? `${color}0d` : 'transparent',
-                            borderLeft: isActive ? `2px solid ${color}` : '2px solid transparent',
-                            borderBottom: '1px solid rgba(255,255,255,0.04)',
-                            transition: 'background 0.2s',
-                          }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{i + 1}</div>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8, textTransform: 'uppercase' }}>
-                            {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
-                          </div>
-                          <div>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color, background: `${color}18`, padding: '1px 5px', borderRadius: 3 }}>
-                              {isInt?'INT':isExt?'EXT':'?'}/{isDay?'D':isNight?'N':'?'}
-                            </span>
-                          </div>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{sceneCast.length}</div>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>{wc.toLocaleString()}</div>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{timeStr}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ── Script Health ── */}
-              <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 12 }}>Script Health</div>
-                <div style={{ display: 'flex', gap: 20 }}>
-                  {[
-                    { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: '#ef4444' },
-                    { count: lintIssues.filter(i => i.type === 'warning').length, label: 'Warnings', color: '#eab308' },
-                    { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: '#6366f1' },
-                  ].map(({ count, label, color }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? '#10b981' : color, lineHeight: 1 }}>{count}</span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
+            <StatsView
+              currentScriptTitle={currentScript?.title} wordCount={wordCount} pageEst={pageEst}
+              scenesList={scenesList} uniqueLocations={uniqueLocations} chars={chars} charStats={charStats}
+              dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
+              sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
+            />
           )}
         </div>
 
@@ -1876,355 +1619,34 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: 272, maxWidth: '86vw', background: 'rgba(8,8,8,0.98)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
-              {/* Panel Tabs — pill group */}
-              <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                {([['tools', Wand2], ['characters', Users], ['revisions', History], ['lint', AlertCircle], ['stash', Bookmark], ['breakdown', ClipboardList]] as const).map(([key, Icon]) => (
-                  <button key={key} onClick={() => setRightPanel(key as any)} style={{
-                    flex: 1, padding: '7px 0', background: 'transparent', border: 'none',
-                    borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',
-                    color: rightPanel === key ? 'var(--fg)' : 'var(--fg-dim)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'color 0.2s, border-color 0.2s',
-                  }}
-                  onMouseEnter={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-muted)'; }}
-                  onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
-                  >
-                    <Icon size={13} />
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 22, flex: 1, overflowY: 'auto' }}>
-                {/* TOOLS PANEL */}
-                {rightPanel === 'tools' && (
-                  <>
-                    {/* ── CURRENT SCENE CONTEXT ── */}
-                    {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {
-                      const scene = scenesList[currentSceneIdx];
-                      const { isInt, isExt, isDay, isNight } = getSceneType(scene);
-                      const color = sceneTypeColor(scene);
-                      const wc = sceneWordCounts[currentSceneIdx] || 0;
-                      const chars = sceneCharMap[currentSceneIdx] || [];
-                      const estSecs = Math.max(1, Math.round(wc / 185 * 60));
-                      const estTime = estSecs >= 60 ? `${Math.floor(estSecs/60)}m ${estSecs%60}s` : `${estSecs}s`;
-                      const typeTag = `${isInt?'INT':isExt?'EXT':'?'} · ${isDay?'DAY':isNight?'NIGHT':'?'}`;
-                      return (
-                        <div style={{
-                          background: `${color}0d`,
-                          border: `1px solid ${color}28`,
-                          borderRadius: 10,
-                          padding: '12px 14px',
-                        }}>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 3, textTransform: 'uppercase', color: color, marginBottom: 7, opacity: 0.85 }}>
-                            Now Writing · Scene {currentSceneIdx + 1}
-                          </div>
-                          <div style={{
-                            fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg)',
-                            textTransform: 'uppercase', marginBottom: 10,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                          }}>
-                            {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
-                          </div>
-                          <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: color, background: `${color}18`, padding: '2px 7px', borderRadius: 4 }}>{typeTag}</span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{wc}w · {estTime}</span>
-                          </div>
-                          {chars.length > 0 && (
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                              {chars.slice(0, 5).map(c => (
-                                <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>{c}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Quick Insert */}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
-                        <Wand2 size={14} /> Quick Insert
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
-                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 11, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Sprint Timer */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
-                        <button onClick={() => setSprintActive(!sprintActive)} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#ff3c00' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
-                    </div>
-                    {/* Goal Tracker */}
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}><span>Daily Goal</span><span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{wordCount} / {dailyGoal}</span></div>
-                      <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#0099ff', transition: 'width 0.5s' }} /></div>
-                    </div>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    {/* Breakdown Analytics */}
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Breakdown</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Scenes</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{scenesList.length}</span></div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Characters</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{chars.length}</span></div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Est. Runtime</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>~{Math.ceil(pageEst * 0.8)} min</span></div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Pages</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{pageEst}</span></div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
-                      </div>
-                    </div>
-                    {/* View Options */}
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                          <span>Typewriter Mode</span>
-                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: '#0099ff' }} />
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                          <span>Dark Mode (Preview)</span>
-                          <input type="checkbox" checked={nightModePreview} onChange={e => setNightModePreview(e.target.checked)} style={{ accentColor: '#0099ff' }} />
-                        </label>
-                      </div>
-                    </div>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    {/* Breakdown Tags */}
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Tags size={14} /> Elements</div>
-                      {Object.keys(elements).length === 0 ? (
-                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No elements detected yet.</div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          {Object.entries(elements).map(([category, items]) => (
-                            <div key={category}>
-                              <div style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{category}</div>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                {items.map(item => (<span key={item} style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#fff' }}>{item}</span>))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {/* CHARACTER STATS PANEL */}
-                {rightPanel === 'characters' && (
-                  <>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><BarChart3 size={14} /> Character Report</div>
-                    {charStats.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No characters detected yet.</div>
-                    ) : (
-                      charStats.slice(0, 15).map((cs, i) => (
-                        <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
-                            <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
-                          </div>
-                          {/* Dialogue bar */}
-                          <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 8 }}>
-                            <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: TYPE_COLORS.character, borderRadius: 2 }} />
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 10, color: 'var(--fg-muted)' }}>
-                            <span>{cs.dialogueLines} lines</span>
-                            <span>{cs.dialogueWords} words</span>
-                            <span>{cs.scenesIn.length} scenes</span>
-                            <span>~{cs.avgWordsPerLine} w/line</span>
-                          </div>
-                          {/* Top relationships */}
-                          {Object.keys(cs.speaksTo).length > 0 && (
-                            <div style={{ marginTop: 8, fontSize: 10, color: '#666' }}>Shares scenes with: {Object.entries(cs.speaksTo).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name]) => name).join(', ')}</div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </>
-                )}
-
-                {/* REVISION HISTORY PANEL */}
-                {rightPanel === 'revisions' && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><History size={14} /> Revisions</div>
-                      <button onClick={handleLockRevision} style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
-                    </div>
-                    {revisions.length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No revisions locked yet. Lock your first draft to start tracking changes.</div>
-                    ) : (
-                      revisions.map((rev, i) => {
-                        const revColor = REVISION_COLORS[rev.colorIndex];
-                        return (
-                          <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: revColor.color }}>{rev.label}</span>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
-                            </div>
-                            <div style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{new Date(rev.date).toLocaleString()}</div>
-                            <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${revColor.color}22` }}>
-                              <button 
-                                onClick={() => {
-                                  setContent(rev.snapshot);
-                                  toast(`Restored to ${rev.label}`, 'success');
-                                }}
-                                style={{ fontSize: 9, background: 'transparent', border: 'none', color: revColor.color, cursor: 'pointer', fontWeight: 600 }}
-                              >
-                                Restore
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  alert("Snapshot Content:\n\n" + rev.snapshot.substring(0, 1000) + "...");
-                                }}
-                                style={{ fontSize: 9, background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}
-                              >
-                                View
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </>
-                )}
-
-                {/* LINT / VALIDATION PANEL */}
-                {rightPanel === 'lint' && (
-                  <>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><AlertCircle size={14} /> Script Validation</div>
-                    {/* Toggles */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                        <span>Scene Numbers</span>
-                        <input type="checkbox" checked={showSceneNumbers} onChange={e => setShowSceneNumbers(e.target.checked)} style={{ accentColor: '#0099ff' }} />
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                        <span>DRAFT Watermark</span>
-                        <input type="checkbox" checked={showWatermark} onChange={e => setShowWatermark(e.target.checked)} style={{ accentColor: '#0099ff' }} />
-                      </label>
-                    </div>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    {/* Issue summary */}
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{lintIssues.filter(i => i.type === 'error').length} errors</span>
-                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>{lintIssues.filter(i => i.type === 'warning').length} warnings</span>
-                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
-                    </div>
-                    {lintIssues.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#00cc66', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {lintIssues.slice(0, 30).map((issue, idx) => (
-                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <span style={{ fontSize: 9, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
-                              <span style={{ fontSize: 9, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
-                            </div>
-                            <div style={{ fontSize: 11, color: '#ccc' }}>{issue.message}</div>
-                            <div style={{ fontSize: 9, color: '#666', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* THE STASH PANEL */}
-                {rightPanel === 'stash' && (
-                  <>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Bookmark size={14} /> The Stash</div>
-                      <button onClick={() => {
-                        const sel = textareaRef.current?.value.substring(textareaRef.current.selectionStart, textareaRef.current.selectionEnd);
-                        if (sel) {
-                          setStashItems(prev => [{ id: Math.random().toString(), text: sel, date: Date.now() }, ...prev]);
-                          toast('Added to stash', 'success');
-                        } else {
-                          toast('Select text to stash', 'error');
-                        }
-                      }} style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginBottom: 12, lineHeight: 1.4 }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
-                    
-                    {stashItems.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click "+ Add Selected" to save it here.</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {stashItems.map(item => (
-                          <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
-                            <div style={{ fontSize: 11, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                              <span style={{ fontSize: 9, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <button onClick={() => {
-                                  if (textareaRef.current) {
-                                    const val = textareaRef.current.value;
-                                    const start = textareaRef.current.selectionStart;
-                                    const end = textareaRef.current.selectionEnd;
-                                    setContent(val.substring(0, start) + item.text + val.substring(end));
-                                    toast('Inserted from stash', 'success');
-                                  }
-                                }} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
-                                <button onClick={() => setStashItems(prev => prev.filter(i => i.id !== item.id))} style={{ fontSize: 9, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* BREAKDOWN PANEL */}
-                {rightPanel === 'breakdown' && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><ClipboardList size={14} /> Script Breakdown</div>
-                      <button className="link-btn" style={{ fontSize: 9 }} onClick={() => {
-                        const entries = Object.entries(elements).filter(([, items]) => (items as string[]).length > 0);
-                        if (entries.length === 0) { toast('No tagged elements to export yet', 'info'); return; }
-                        const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
-                        const w = window.open('', '_blank', 'width=820,height=1080');
-                        if (!w) return;
-                        w.document.write(`<!doctype html><html><head><title>${esc(currentScript?.title || 'Script')} — Breakdown</title>
-                          <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:20px;letter-spacing:2px}
-                          h2{font-size:11px;letter-spacing:2px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 8px;text-transform:uppercase}
-                          .chip{display:inline-block;font-size:12px;padding:3px 9px;background:#f3f3f5;border:1px solid #ddd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
-                          <h1>${esc(currentScript?.title || 'SCRIPT')} — BREAKDOWN</h1>
-                          ${entries.map(([cat, items]) => `<h2>${esc(cat)} (${(items as string[]).length})</h2>${(items as string[]).map(i => `<span class="chip">${esc(i)}</span>`).join('')}`).join('')}
-                          <script>window.onload=()=>window.print()</script></body></html>`);
-                        w.document.close();
-                      }}>⎙ Export</button>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic', marginBottom: 16 }}>Tag production elements per scene.</div>
-                    
-                    {[
-                      { category: 'Props', items: ['The Map', 'Briefcase'], color: '#ffaa00' },
-                      { category: 'VFX', items: ['Glowing Portal', 'Digital Rain'], color: '#0099ff' },
-                      { category: 'Wardrobe', items: ['Officer Uniform', 'Trench Coat'], color: '#ff3c00' },
-                    ].map(group => (
-                      <div key={group.category} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: group.color, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                          {group.category}
-                          <Plus size={10} style={{ cursor: 'pointer' }} />
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {group.items.map(item => (
-                            <span key={item} style={{ fontSize: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${group.color}33`, padding: '4px 10px', borderRadius: 4, color: '#fff', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              {item} <X size={8} style={{ opacity: 0.5 }} />
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
+              {/* Scoped tightly around just this panel: if a runaway effect in
+                  one of its many tabs (sprint timer, revisions, stats) throws,
+                  only the sidebar unmounts — the write surface and content
+                  state are untouched and the writer never loses a draft. */}
+              <EditorErrorBoundary onCrash={() => {
+                try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+              }}>
+                <EditorRightPanels
+                  rightPanel={rightPanel} setRightPanel={setRightPanel}
+                  activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
+                  getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
+                  sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
+                  insertElement={insertElement}
+                  sprintActive={sprintActive} setSprintActive={setSprintActive} sprintTime={sprintTime}
+                  wordCount={wordCount} dailyGoal={dailyGoal} goalProgress={goalProgress}
+                  pageEst={pageEst} dialogueRatio={dialogueRatio}
+                  typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
+                  nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
+                  elements={elements} chars={chars} charStats={charStats}
+                  handleLockRevision={handleLockRevision} revisions={revisions}
+                  setContent={setContent} toast={toast}
+                  showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
+                  showWatermark={showWatermark} setShowWatermark={setShowWatermark}
+                  lintIssues={lintIssues}
+                  stashItems={stashItems} setStashItems={setStashItems} textareaRef={textareaRef}
+                  currentScript={currentScript}
+                />
+              </EditorErrorBoundary>
             </motion.div>
           )}
         </AnimatePresence>
@@ -2290,17 +1712,40 @@ export default function EditorPage() {
                     const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
                     const isSelected = selectedCharProfile === name;
                     const stat = charStats.find(cs => cs.name === name);
+                    const cast = castings[name.toUpperCase()];
                     return (
                       <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
                         <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
+                            {cast?.username && (
+                              <span style={{ fontSize: 9, color: '#10b981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
+                                Playing: {cast.username}
+                              </span>
+                            )}
                           </div>
                           <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} lines · ${stat.scenesIn.length} scenes` : ''}</span>
                         </button>
                         {isSelected && (
                           <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Cast as</label>
+                              <select
+                                value={cast?.crew_user_id || ''}
+                                onChange={e => handleCastCharacter(name, e.target.value)}
+                                disabled={projectCrew.length === 0}
+                                style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}
+                              >
+                                <option value="">— Not cast —</option>
+                                {projectCrew.map(m => (
+                                  <option key={m.user_id} value={m.user_id}>{m.username || m.user_id}</option>
+                                ))}
+                              </select>
+                              {projectCrew.length === 0 && (
+                                <div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 4, fontStyle: 'italic' }}>No crew on this project yet — hire from the Jobs board or add crew in Studio.</div>
+                              )}
+                            </div>
                             {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
                               <div key={field}>
                                 <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>
@@ -2325,57 +1770,32 @@ export default function EditorPage() {
         )}
       </AnimatePresence>
 
-      {/* KEYBOARD SHORTCUTS MODAL */}
-      <AnimatePresence>
-        {showShortcuts && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowShortcuts(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 420, boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Keyboard Shortcuts</h2>
-                <button onClick={() => setShowShortcuts(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  ['Ctrl + S', 'Save script'],
-                  ['Ctrl + F', 'Find & Replace'],
-                  ['Ctrl + E', 'Toggle Focus Mode'],
-                  ['Ctrl + G', 'Go to Scene'],
-                  ['Ctrl + /', 'Show Shortcuts'],
-                  ['Tab', 'Smart element insert'],
-                  ['Escape', 'Close panels / Exit focus'],
-                ].map(([key, desc]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontSize: 12, color: '#ccc' }}>{desc}</span>
-                    <kbd style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 4, color: '#fff', fontWeight: 600 }}>{key}</kbd>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <EditorErrorBoundary onCrash={() => {
+        try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+      }}>
+        {/* KEYBOARD SHORTCUTS MODAL */}
+        <AnimatePresence>
+          {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+        </AnimatePresence>
 
-      {/* GO TO SCENE DIALOG */}
-      <AnimatePresence>
-        {showGoToScene && (
-          <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 16, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>Go to Scene</div>
-            <input autoFocus type="number" min={1} max={scenesList.length} value={goToSceneNum} onChange={e => setGoToSceneNum(e.target.value)} onKeyDown={e => {
-              if (e.key === 'Enter') {
-                const num = parseInt(goToSceneNum);
-                if (num >= 1 && num <= scenesList.length) {
-                  setActiveView('write');
-                  setShowGoToScene(false);
-                  setGoToSceneNum('');
-                  toast(`Jumped to Scene ${num}`, 'success');
-                }
-              }
-              if (e.key === 'Escape') setShowGoToScene(false);
-            }} placeholder={`1 - ${scenesList.length}`} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
-            <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{scenesList.length} scenes · Press Enter to jump</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* GO TO SCENE DIALOG */}
+        <AnimatePresence>
+          {showGoToScene && (
+            <GoToSceneModal
+              sceneCount={scenesList.length}
+              value={goToSceneNum}
+              onChange={setGoToSceneNum}
+              onJump={(num) => {
+                setActiveView('write');
+                setShowGoToScene(false);
+                setGoToSceneNum('');
+                toast(`Jumped to Scene ${num}`, 'success');
+              }}
+              onClose={() => setShowGoToScene(false)}
+            />
+          )}
+        </AnimatePresence>
+      </EditorErrorBoundary>
 
       {/* STATUS BAR */}
       <div style={{
@@ -2452,7 +1872,7 @@ export default function EditorPage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        textarea::placeholder { color: rgba(240,236,228,0.15); }
+        textarea::placeholder { color: rgba(224, 221, 174,0.15); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }

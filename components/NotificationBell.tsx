@@ -92,13 +92,13 @@ export default function NotificationBell() {
         title="Notifications"
         style={{
           width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: open ? 'rgba(255,60,0,0.10)' : hovered ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-          color: open ? '#ff3c00' : hovered ? 'rgba(240,236,228,0.7)' : 'rgba(240,236,228,0.3)', transition: 'background 0.25s, color 0.25s', position: 'relative',
+          background: open ? 'rgba(215, 52, 11,0.10)' : hovered ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+          color: open ? '#d7340b' : hovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s', position: 'relative',
         }}
       >
         <Bell size={19} strokeWidth={1.5} />
         {unread > 0 && (
-          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 999, background: '#ff3c00', color: '#fff', fontSize: 8.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(255,60,0,0.6)' }}>
+          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 999, background: '#d7340b', color: '#fff', fontSize: 8.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(215, 52, 11,0.6)' }}>
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -131,9 +131,9 @@ export default function NotificationBell() {
                 <div
                   key={n.id}
                   onClick={() => openItem(n)}
-                  style={{ display: 'flex', gap: 10, padding: '11px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: n.link ? 'pointer' : 'default', background: n.read ? 'transparent' : 'rgba(255,60,0,0.05)', position: 'relative' }}
+                  style={{ display: 'flex', gap: 10, padding: '11px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: n.link ? 'pointer' : 'default', background: n.read ? 'transparent' : 'rgba(215, 52, 11,0.05)', position: 'relative' }}
                 >
-                  {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: '#ff3c00' }} />}
+                  {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: '#d7340b' }} />}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
                     <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
                     {n.body && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}

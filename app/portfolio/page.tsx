@@ -7,9 +7,11 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
+import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { supabase } from '@/lib/supabase/client';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/permissions/access-control';
+import { usePillStage } from '@/lib/context/PillContext';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -105,12 +107,12 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: hover ? 'rgba(255,60,0,0.12)' : 'rgba(0,0,0,0.3)',
+          background: hover ? 'rgba(215, 52, 11,0.12)' : 'rgba(0,0,0,0.3)',
           backdropFilter: 'blur(6px)',
           transition: 'border-color 0.4s, background 0.4s',
         }}
       >
-        <Play size={16} fill={hover ? '#ff3c00' : '#fff'} color={hover ? '#ff3c00' : '#fff'} style={{ marginLeft: 2 }} />
+        <Play size={16} fill={hover ? '#d7340b' : '#fff'} color={hover ? '#d7340b' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
 
       {/* Info */}
@@ -256,26 +258,53 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPortfolioData().then(data => {
-      const fetchedVideos: Video[] = (data || []).map((p: any) => {
-        const media = p.portfolio_media?.[0] || p.media?.[0];
-        return {
-          id: p.id,
-          title: p.title,
-          category: p.category || 'Video',
-          role: p.role || 'Creator',
-          description: p.description || '',
-          driveId: media?.url?.split('id=')?.[1] || media?.url || '',
-          year: p.year?.toString() || '',
-          featured: true,
-        };
-      });
-      setVideosList(fetchedVideos);
-    }).catch(console.error).finally(() => setLoading(false));
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setLoading(false); return; }
+        // Read the curated `portfolio_projects` table — the one "Publish to
+        // Portfolio" (Studio/project hub) actually writes to — instead of
+        // auto-listing every production project regardless of whether it was
+        // ever published.
+        const data = await getPortfolioProjects(user.id);
+        const fetchedVideos: Video[] = (data || []).map((p: any) => {
+          const media = p.portfolio_media?.[0];
+          return {
+            id: p.id,
+            title: p.title,
+            category: p.category || 'Video',
+            role: p.role || 'Creator',
+            description: p.description || '',
+            driveId: media?.url?.split('id=')?.[1] || media?.url || '',
+            year: p.year?.toString() || '',
+            featured: true,
+          };
+        });
+        setVideosList(fetchedVideos);
+      } catch (err) {
+        console.error('Failed to load portfolio:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const featured = videosList.filter(v => v.featured);
   const rest = videosList.filter(v => !v.featured);
+
+  // Publish the portfolio's live counts to the Pill's context capsule.
+  usePillStage(
+    {
+      module: 'portfolio',
+      title: 'The Cavern Collection',
+      accent: '#f59e0b',
+      fields: [
+        { label: 'Works', value: `${videosList.length}`, color: '#f59e0b' },
+        { label: 'Featured', value: `${featured.length}` },
+      ],
+    },
+    [videosList.length, featured.length],
+  );
 
   return (
     <ProtectedPage requiredPermission="manage_portfolio">
@@ -303,7 +332,7 @@ export default function PortfolioPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(240,236,228,0.3)', textTransform: 'uppercase' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
           {videosList.length} Projects
         </span>
       </nav>
@@ -311,7 +340,7 @@ export default function PortfolioPage() {
       {/* Hero Section */}
       <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(255,60,0,0.08), transparent 55%), #060606' }} />
+           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(215, 52, 11,0.08), transparent 55%), #060606' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', width: '100%' }}>

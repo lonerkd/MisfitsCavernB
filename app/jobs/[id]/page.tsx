@@ -7,20 +7,8 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
-
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  role: string;
-  rate?: number;
-  status: 'open' | 'in-progress' | 'closed';
-  created_by: string;
-  created_at: string;
-  project_id?: string;
-  profiles?: { username: string; role: string };
-  projects?: { title: string };
-}
+import { assignCrewMember } from '@/lib/supabase/crew-management';
+import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 
 interface Application {
   id: string;
@@ -47,9 +35,9 @@ const statusBadgeStyle = (status: string): React.CSSProperties => {
     case 'in-progress':
       return { ...base, color: '#facc15', borderColor: '#facc15', background: 'rgba(250,204,21,0.08)' };
     case 'closed':
-      return { ...base, color: 'rgba(240,236,228,0.4)', borderColor: 'rgba(240,236,228,0.2)', background: 'transparent' };
+      return { ...base, color: 'rgba(224, 221, 174,0.4)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
     default:
-      return { ...base, color: 'rgba(240,236,228,0.4)', borderColor: 'rgba(240,236,228,0.2)', background: 'transparent' };
+      return { ...base, color: 'rgba(224, 221, 174,0.4)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
   }
 };
 
@@ -183,12 +171,26 @@ export default function JobDetailPage() {
       .eq('id', appId);
     if (error) { toast(error.message || 'Could not update application', 'error'); return; }
     {
-      toast(newStatus === 'accepted' ? 'Applicant accepted' : 'Application declined', 'success');
       setApplications(prev =>
         prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );
       // Notify the applicant that their status changed.
       const app = applications.find(a => a.id === appId);
+
+      // Accepting an applicant makes them real project crew immediately — no
+      // separate manual "add crew member" step. Contributor is the safe
+      // default access level for a hired role; the job's own `role` (e.g.
+      // "Director") is what actually describes what they were hired to do.
+      if (newStatus === 'accepted' && app && job?.project_id && user) {
+        try {
+          await assignCrewMember(job.project_id, app.applicant_id, 'contributor', user.id);
+        } catch (e: any) {
+          toast(e.message || 'Accepted, but could not add them to the crew', 'error');
+        }
+      }
+
+      toast(newStatus === 'accepted' ? 'Applicant accepted and added to crew' : 'Application declined', 'success');
+
       if (app && job) {
         notify(app.applicant_id, {
           type: 'application',
@@ -366,8 +368,8 @@ export default function JobDetailPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                           width: 32, height: 32,
-                          background: 'rgba(255,60,0,0.15)',
-                          border: '1px solid rgba(255,60,0,0.3)',
+                          background: 'rgba(215, 52, 11,0.15)',
+                          border: '1px solid rgba(215, 52, 11,0.3)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0,
                         }}>
@@ -406,7 +408,7 @@ export default function JobDetailPage() {
                           </span>
                         )}
                         {app.status === 'rejected' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(240,236,228,0.3)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174,0.3)' }}>
                             <XCircle size={10} /> REJECTED
                           </span>
                         )}
@@ -423,7 +425,7 @@ export default function JobDetailPage() {
                       <div style={{
                         marginTop: 12, padding: '12px 16px',
                         background: 'rgba(255,255,255,0.03)',
-                        borderLeft: '2px solid rgba(255,60,0,0.3)',
+                        borderLeft: '2px solid rgba(215, 52, 11,0.3)',
                       }}>
                         <p style={{
                           fontFamily: 'var(--serif)', fontSize: '1rem', lineHeight: 1.65,
@@ -456,16 +458,16 @@ export default function JobDetailPage() {
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)',
-                            color: 'rgba(240,236,228,0.5)', fontFamily: 'var(--mono)', fontSize: 9,
+                            color: 'rgba(224, 221, 174,0.5)', fontFamily: 'var(--mono)', fontSize: 9,
                             letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = 'rgba(255,60,0,0.5)';
-                            e.currentTarget.style.color = 'rgba(255,60,0,0.8)';
+                            e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.5)';
+                            e.currentTarget.style.color = 'rgba(215, 52, 11,0.8)';
                           }}
                           onMouseLeave={e => {
                             e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                            e.currentTarget.style.color = 'rgba(240,236,228,0.5)';
+                            e.currentTarget.style.color = 'rgba(224, 221, 174,0.5)';
                           }}
                         >
                           REJECT
@@ -481,15 +483,15 @@ export default function JobDetailPage() {
                           marginTop: 16,
                           padding: '6px 14px',
                           background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                          color: 'rgba(240,236,228,0.3)', fontFamily: 'var(--mono)', fontSize: 9,
+                          color: 'rgba(224, 221, 174,0.3)', fontFamily: 'var(--mono)', fontSize: 9,
                           letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                         }}
                         onMouseEnter={e => {
-                          e.currentTarget.style.color = 'rgba(240,236,228,0.7)';
+                          e.currentTarget.style.color = 'rgba(224, 221, 174,0.7)';
                           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.color = 'rgba(240,236,228,0.3)';
+                          e.currentTarget.style.color = 'rgba(224, 221, 174,0.3)';
                           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
                         }}
                       >
@@ -570,7 +572,7 @@ export default function JobDetailPage() {
                       lineHeight: 1.65, resize: 'vertical', outline: 'none',
                       transition: 'border-color 0.15s', boxSizing: 'border-box',
                     }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,60,0,0.4)')}
+                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.4)')}
                     onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
                   />
                 </div>
@@ -587,7 +589,7 @@ export default function JobDetailPage() {
                   style={{
                     alignSelf: 'flex-start',
                     padding: '12px 36px',
-                    background: applying ? 'rgba(255,60,0,0.3)' : 'var(--accent)',
+                    background: applying ? 'rgba(215, 52, 11,0.3)' : 'var(--accent)',
                     color: 'var(--bg)', border: 'none',
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
                     cursor: applying ? 'not-allowed' : 'pointer',

@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu } from 'lucide-react';
+import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/permissions/usePermissions';
+import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [
   { label: 'Editor',    href: '/editor'    },
@@ -16,8 +18,18 @@ const NAV_LINKS = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { user, isGuest } = useCurrentUser();
+  const { isLoading } = useAuthState();
+  const { signOut } = useAuthActions();
+  const displayName = user?.username || 'Account';
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/');
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 48);
@@ -133,34 +145,74 @@ export default function Navigation() {
             })}
           </div>
 
-          {/* Sign In — separate from pill group */}
-          <Link
-            href="/auth"
-            style={{
-              marginLeft: 10,
-              fontFamily: 'var(--mono)',
-              fontSize: 8.5,
-              letterSpacing: 2.5,
-              textTransform: 'uppercase',
-              padding: '9px 18px',
-              background: 'var(--accent)',
-              color: '#060606',
-              textDecoration: 'none',
-              borderRadius: 9999,
-              fontWeight: 600,
-              transition: 'transform 0.25s, box-shadow 0.3s, opacity 0.2s',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,60,0,0.3)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = '';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            Sign In
-          </Link>
+          {/* Notification bell — only meaningful once signed in */}
+          {!isLoading && !isGuest && <NotificationBell />}
+
+          {/* Auth — reflects real session state instead of always saying "Sign In" */}
+          {!isLoading && !isGuest ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
+              <Link
+                href="/profile"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  textTransform: 'uppercase', padding: '7px 12px',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'var(--fg)', textDecoration: 'none', borderRadius: 9999,
+                }}
+              >
+                <span style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'var(--accent)', color: '#060606',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 9, fontWeight: 700,
+                }}>
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+                {displayName}
+              </Link>
+              <button
+                onClick={handleSignOut}
+                style={{
+                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  textTransform: 'uppercase', padding: '8px 14px',
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.10)',
+                  color: 'var(--fg-dim)', borderRadius: 9999, cursor: 'pointer',
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/auth"
+              style={{
+                marginLeft: 10,
+                fontFamily: 'var(--mono)',
+                fontSize: 8.5,
+                letterSpacing: 2.5,
+                textTransform: 'uppercase',
+                padding: '9px 18px',
+                background: 'var(--accent)',
+                color: '#060606',
+                textDecoration: 'none',
+                borderRadius: 9999,
+                fontWeight: 600,
+                transition: 'transform 0.25s, box-shadow 0.3s, opacity 0.2s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.3)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = '';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              Sign In
+            </Link>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -225,27 +277,57 @@ export default function Navigation() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.36 }}
-              style={{ marginTop: 'auto' }}
+              style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}
             >
-              <Link
-                href="/auth"
-                style={{
-                  display: 'block',
-                  textAlign: 'center',
-                  padding: '14px',
-                  background: 'var(--accent)',
-                  color: '#060606',
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  letterSpacing: 3,
-                  textTransform: 'uppercase',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  borderRadius: 9999,
-                }}
-              >
-                Sign In
-              </Link>
+              {!isLoading && !isGuest ? (
+                <>
+                  <Link
+                    href="/profile"
+                    style={{
+                      display: 'block', textAlign: 'center', padding: '14px',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10,
+                      letterSpacing: 3, textTransform: 'uppercase',
+                      textDecoration: 'none', fontWeight: 600, borderRadius: 9999,
+                    }}
+                  >
+                    {displayName}
+                  </Link>
+                  <button
+                    onClick={() => { handleSignOut(); setOpen(false); }}
+                    style={{
+                      padding: '14px', background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.10)', color: 'var(--fg-dim)',
+                      fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
+                      textTransform: 'uppercase', fontWeight: 600, borderRadius: 9999,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/auth"
+                  style={{
+                    display: 'block',
+                    textAlign: 'center',
+                    padding: '14px',
+                    background: 'var(--accent)',
+                    color: '#060606',
+                    fontFamily: 'var(--mono)',
+                    fontSize: 10,
+                    letterSpacing: 3,
+                    textTransform: 'uppercase',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    borderRadius: 9999,
+                  }}
+                >
+                  Sign In
+                </Link>
+              )}
             </motion.div>
           </motion.div>
         )}

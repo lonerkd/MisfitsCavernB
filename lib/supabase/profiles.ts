@@ -1,12 +1,27 @@
 import { supabase } from './client';
 
+// Canonical Profile shape, matching the live `profiles` table exactly (there
+// is no full_name column despite an earlier version of this type claiming
+// one — verified directly against the live DB). Every page that needs a
+// profile shape should import this instead of hand-rolling its own; five
+// divergent local copies existed before this consolidation.
 export interface Profile {
   id: string;
   username: string;
-  full_name?: string;
   avatar_url?: string;
   bio?: string;
+  role?: string;
+  location?: string;
+  status?: 'OPEN' | 'BUSY';
+  discord_username?: string;
+  created_at?: string;
+  is_admin?: boolean;
 }
+
+// The minimal public-facing shape used where a profile is joined in purely
+// for display (portfolio share pages) — a Pick of the canonical type rather
+// than a separately hand-maintained interface.
+export type PublicProfile = Pick<Profile, 'username' | 'role' | 'avatar_url'>;
 
 export async function searchProfiles(query: string): Promise<Profile[]> {
   const { data, error } = await supabase
@@ -62,23 +77,3 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
   return data;
 }
 
-export async function getProjectCrew(projectId: string) {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .select(`
-      *,
-      profiles:user_id (
-        username,
-        full_name,
-        avatar_url
-      )
-    `)
-    .eq('project_id', projectId);
-
-  if (error) {
-    console.error('Error fetching crew:', error);
-    return [];
-  }
-
-  return data || [];
-}

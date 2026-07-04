@@ -6,18 +6,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
-
-interface Profile {
-  id: string;
-  username: string;
-  avatar_url?: string;
-  bio?: string;
-  role?: string;
-  location?: string;
-  status: 'OPEN' | 'BUSY';
-  discord_username?: string;
-  created_at: string;
-}
+import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import type { Profile } from '@/lib/supabase/profiles';
 
 interface MediaItem {
   id: string;
@@ -41,9 +32,17 @@ export default function CrewMemberPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [castings, setCastings] = useState<CastingWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const onlineIds = useOnlinePresence(viewerId);
+  const isOnline = !!profile && onlineIds.has(profile.id);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -71,6 +70,12 @@ export default function CrewMemberPage() {
           .order('created_at', { ascending: false });
 
         setProjects((projectData as PortfolioProject[]) || []);
+
+        // What this person is cast as, across every project they're crew on —
+        // only visible to viewers who are themselves creator/crew on at least
+        // one shared project (RLS-scoped), so this can quietly return empty
+        // for a stranger browsing the directory rather than erroring.
+        getCastingsForUser(id).then(setCastings).catch(() => setCastings([]));
       } catch (err) {
         // Network failure — surface not-found instead of an infinite spinner
         console.error('Failed to load crew member:', err);
@@ -206,6 +211,12 @@ export default function CrewMemberPage() {
               }}>
                 {profile.status}
               </span>
+              {isOnline && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, color: '#10b981' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
+                  Online now
+                </span>
+              )}
             </div>
 
             {/* Meta row */}
@@ -242,10 +253,32 @@ export default function CrewMemberPage() {
             </div>
             <p style={{
               fontFamily: 'var(--serif)', fontSize: '1.2rem', lineHeight: 1.75,
-              color: 'rgba(240,236,228,0.82)', margin: 0, maxWidth: 620
+              color: 'rgba(224, 221, 174,0.82)', margin: 0, maxWidth: 620
             }}>
               {profile.bio}
             </p>
+          </div>
+        )}
+
+        {/* ── Casting Section ───────────────────────────────────────────────────── */}
+        {castings.length > 0 && (
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, opacity: 0.4, marginBottom: 16, textTransform: 'uppercase' }}>
+              Playing
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {castings.map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#10b981' }}>{c.character_name}</span>
+                  {c.project_title && (
+                    <>
+                      <span style={{ opacity: 0.3, fontSize: 11 }}>in</span>
+                      <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(224, 221, 174,0.8)' }}>{c.project_title}</span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -276,7 +309,7 @@ export default function CrewMemberPage() {
                     style={{
                       padding: '20px 22px',
                       background: '#0a0a0a',
-                      border: `1px solid ${hoveredCard === project.id ? 'rgba(255,60,0,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      border: `1px solid ${hoveredCard === project.id ? 'rgba(215, 52, 11,0.3)' : 'rgba(255,255,255,0.06)'}`,
                       boxShadow: hoveredCard === project.id ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
                       transition: 'border-color 0.2s, box-shadow 0.2s',
                       cursor: 'pointer'
