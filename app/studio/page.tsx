@@ -26,6 +26,7 @@ import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoar
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 
@@ -629,6 +630,126 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: 
         )}
       </AnimatePresence>
     </motion.div>
+  );
+}
+
+// Pinterest/ShotDeck-style reference search → pin straight to the project moodboard.
+function ReferenceSearchModal({
+  isOpen, onClose, projectTitle, addedUrls, onAdd,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  projectTitle?: string;
+  addedUrls: Set<string>;
+  onAdd: (ref: ReferenceResult) => Promise<void>;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ReferenceResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  const runSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!query.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    try {
+      const res = await searchReferences(query, 1);
+      setResults(res.results);
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async (ref: ReferenceResult) => {
+    setPending(prev => new Set(prev).add(ref.id));
+    try { await onAdd(ref); } finally {
+      setPending(prev => { const n = new Set(prev); n.delete(ref.id); return n; });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 1500, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+          onClick={e => e.stopPropagation()}
+          style={{ width: '100%', maxWidth: 900, maxHeight: '85vh', background: '#0c0c0c', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(224,221,174,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Reference Search</div>
+              <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
+          </div>
+
+          <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 8, padding: '0 12px' }}>
+              <Search size={15} color="#888" />
+              <input
+                autoFocus value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="e.g. neon noir, blade runner, golden hour rooftop…"
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 13, padding: '12px 0' }}
+              />
+            </div>
+            <button type="submit" disabled={loading || !query.trim()}
+              style={{ padding: '0 20px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, cursor: loading ? 'default' : 'pointer', opacity: loading || !query.trim() ? 0.5 : 1 }}>
+              {loading ? 'Searching…' : 'Search'}
+            </button>
+          </form>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+            {!searched ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>
+                Search a mood, film, location, or look to find references.
+              </div>
+            ) : loading ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>Searching…</div>
+            ) : results.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>No references found. Try a different term.</div>
+            ) : (
+              <div style={{ columnCount: 3, columnGap: 12 }}>
+                {results.map(ref => {
+                  const added = addedUrls.has(ref.url);
+                  const isPending = pending.has(ref.id);
+                  return (
+                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#050a14' }}>
+                      <img src={ref.thumbnail} alt={ref.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
+                      <div
+                        style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                      >
+                        <div style={{ fontSize: 9, color: '#ccc', fontFamily: 'var(--mono)' }}>{ref.creator ? `${ref.creator} · ` : ''}{ref.source}</div>
+                        <button
+                          disabled={added || isPending}
+                          onClick={() => handleAdd(ref)}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', background: added ? 'rgba(0,204,102,0.2)' : 'var(--accent)', color: added ? '#00cc66' : '#000', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: added || isPending ? 'default' : 'pointer' }}
+                        >
+                          {added ? 'Added ✓' : isPending ? 'Adding…' : <><Plus size={12} /> Add to Board</>}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -1277,7 +1398,30 @@ export default function StudioPage() {
   const [conceptTitle, setConceptTitle] = useState('');
   const [conceptUrl, setConceptUrl] = useState('');
   const [conceptBoard, setConceptBoard] = useState('');
+  const [showRefSearch, setShowRefSearch] = useState(false);
   const [activeConceptBoard, setActiveConceptBoard] = useState<string>('All');
+
+  // Pin a searched reference straight into the real Concept board
+  // (concept_assets — the same table the "Paste an image URL" flow writes
+  // to), so results actually show up on the board instead of a disconnected
+  // media table nothing else reads.
+  const addReferenceToBoard = async (ref: ReferenceResult) => {
+    if (!user || !activeProject) return;
+    const existing = (activeProject.concept_assets || []) as any[];
+    if (existing.some(c => c.image_url === ref.url)) return;
+    try {
+      const { error } = await supabase.from('concept_assets').insert({
+        project_id: activeProject.id,
+        title: ref.title || null,
+        image_url: ref.url,
+        board: activeConceptBoard !== 'All' ? activeConceptBoard : null,
+        created_by: user.id,
+      });
+      if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
+      await refreshProject(activeProject.id);
+      toast('Reference added', 'success');
+    } catch { /* keep board state unchanged on failure */ }
+  };
   const [adding, setAdding] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
@@ -1715,6 +1859,13 @@ export default function StudioPage() {
         onSuccess={refreshCrew}
       />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
+      <ReferenceSearchModal
+        isOpen={showRefSearch}
+        onClose={() => setShowRefSearch(false)}
+        projectTitle={activeProject?.title}
+        addedUrls={new Set(((activeProject?.concept_assets || []) as any[]).map(c => c.image_url))}
+        onAdd={addReferenceToBoard}
+      />
 
       {/* TABS BAR */}
       <div className="mc-studio-tabs" style={{
@@ -1906,7 +2057,12 @@ export default function StudioPage() {
                 <SectionLabel text="Visual Research" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
               </div>
-              <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="link-btn" onClick={() => setShowRefSearch(true)}>
+                  <Search size={12} style={{ marginRight: 4, verticalAlign: -2 }} /> Search References
+                </button>
+                <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
+              </div>
             </div>
 
             {showAddConcept && (
