@@ -26,6 +26,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
+import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
@@ -272,6 +273,9 @@ export default function EditorPage() {
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
+  const [tableReadPlaying, setTableReadPlaying] = useState(false);
+  const [tableReadLineIdx, setTableReadLineIdx] = useState<number | null>(null);
+  const tableReadEngineRef = useRef<TableReadEngine | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -384,6 +388,50 @@ export default function EditorPage() {
     })();
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Table Read — reads the parsed lines aloud, voicing each character
+  // distinctly, and scrolls/highlights the currently-spoken line. Stop on
+  // unmount or script switch so it never keeps talking over a page change.
+  const startTableRead = useCallback((fromIndex = 0) => {
+    if (!isTableReadSupported()) { toast('Table read isn’t supported in this browser', 'error'); return; }
+    tableReadEngineRef.current?.stop();
+    const engine = getTableReadEngine(lines, {
+      onLineStart: setTableReadLineIdx,
+      onComplete: () => { setTableReadPlaying(false); setTableReadLineIdx(null); },
+      rate: 1,
+    });
+    tableReadEngineRef.current = engine;
+    setTableReadPlaying(true);
+    engine.play(fromIndex);
+  }, [lines, toast]);
+
+  const pauseTableRead = useCallback(() => {
+    tableReadEngineRef.current?.pause();
+    setTableReadPlaying(false);
+  }, []);
+
+  const resumeTableRead = useCallback(() => {
+    tableReadEngineRef.current?.resume();
+    setTableReadPlaying(true);
+  }, []);
+
+  const stopTableRead = useCallback(() => {
+    tableReadEngineRef.current?.stop();
+    setTableReadPlaying(false);
+    setTableReadLineIdx(null);
+  }, []);
+
+  useEffect(() => () => { tableReadEngineRef.current?.stop(); }, []);
+  useEffect(() => { stopTableRead(); }, [currentScript?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep the write surface scrolled to whatever line is currently being read.
+  useEffect(() => {
+    if (tableReadLineIdx == null || !textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const lineHeight = 26;
+    const targetScroll = (tableReadLineIdx * lineHeight) - (window.innerHeight * 0.3);
+    textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+  }, [tableReadLineIdx]);
 
   // Parser hook
   useEffect(() => {
@@ -1295,8 +1343,13 @@ export default function EditorPage() {
                   const type = lines[i]?.type;
                   const color = (type && TYPE_COLORS[type]) || (revisionMode ? '#0099ff' : '#e0e0e0');
                   const bold = type === 'slug' || type === 'character' || type === 'transition';
+                  const isReadingLine = tableReadLineIdx === i;
                   return (
-                    <div key={i} style={{ color, fontWeight: bold ? 700 : 400 }}>
+                    <div key={i} style={{
+                      color, fontWeight: bold ? 700 : 400,
+                      background: isReadingLine ? 'rgba(255,60,0,0.14)' : undefined,
+                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : undefined,
+                    }}>
                       {lineText.length ? lineText : ' '}
                     </div>
                   );
@@ -1319,6 +1372,37 @@ export default function EditorPage() {
                   resize: 'none', outline: 'none',
                 }}
               />
+
+              {/* Table Read control — plays the script aloud, voicing each
+                  character distinctly, and scrolls/highlights the live line. */}
+              {!focusMode && (
+                <div style={{
+                  position: 'absolute', top: 16, right: 16, zIndex: 5,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 20, padding: '6px 10px', backdropFilter: 'blur(12px)',
+                }}>
+                  <button
+                    onClick={() => (tableReadPlaying ? pauseTableRead() : (tableReadLineIdx != null ? resumeTableRead() : startTableRead(0)))}
+                    title={tableReadPlaying ? 'Pause table read' : 'Play table read'}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  >
+                    {tableReadPlaying ? <Pause size={15} /> : <Play size={15} />}
+                  </button>
+                  {tableReadLineIdx != null && (
+                    <button
+                      onClick={stopTableRead}
+                      title="Stop table read"
+                      style={{ background: 'transparent', border: 'none', color: 'rgba(240,236,228,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(240,236,228,0.4)', textTransform: 'uppercase' }}>
+                    Table Read
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
