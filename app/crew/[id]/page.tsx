@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
+import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
 
 interface Profile {
   id: string;
@@ -41,6 +42,7 @@ export default function CrewMemberPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [castings, setCastings] = useState<CastingWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -71,6 +73,12 @@ export default function CrewMemberPage() {
           .order('created_at', { ascending: false });
 
         setProjects((projectData as PortfolioProject[]) || []);
+
+        // What this person is cast as, across every project they're crew on —
+        // only visible to viewers who are themselves creator/crew on at least
+        // one shared project (RLS-scoped), so this can quietly return empty
+        // for a stranger browsing the directory rather than erroring.
+        getCastingsForUser(id).then(setCastings).catch(() => setCastings([]));
       } catch (err) {
         // Network failure — surface not-found instead of an infinite spinner
         console.error('Failed to load crew member:', err);
@@ -246,6 +254,28 @@ export default function CrewMemberPage() {
             }}>
               {profile.bio}
             </p>
+          </div>
+        )}
+
+        {/* ── Casting Section ───────────────────────────────────────────────────── */}
+        {castings.length > 0 && (
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, opacity: 0.4, marginBottom: 16, textTransform: 'uppercase' }}>
+              Playing
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {castings.map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#10b981' }}>{c.character_name}</span>
+                  {c.project_title && (
+                    <>
+                      <span style={{ opacity: 0.3, fontSize: 11 }}>in</span>
+                      <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(240,236,228,0.8)' }}>{c.project_title}</span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

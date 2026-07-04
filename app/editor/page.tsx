@@ -24,6 +24,8 @@ import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
+import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
@@ -251,6 +253,10 @@ export default function EditorPage() {
   const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
+  // Casting: links a screenplay character to a real project_crew member, so
+  // "who's playing MARA" is a real, queryable fact — not a name in a text box.
+  const [castings, setCastings] = useState<Record<string, Casting>>({});
+  const [projectCrew, setProjectCrew] = useState<CrewMember[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
@@ -286,6 +292,33 @@ export default function EditorPage() {
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
+
+  // Casting is project-scoped (not per-script), so it loads independently of
+  // which draft is open — the crew list and who's cast stay stable across
+  // script switches within the same project.
+  useEffect(() => {
+    if (!activeProject?.id) { setCastings({}); setProjectCrew([]); return; }
+    getCastingsForProject(activeProject.id).then(setCastings).catch(console.error);
+    getProjectCrew(activeProject.id).then(setProjectCrew).catch(console.error);
+  }, [activeProject?.id]);
+
+  const handleCastCharacter = useCallback(async (characterName: string, crewUserId: string) => {
+    if (!activeProject?.id) return;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      if (!crewUserId) {
+        await removeCasting(activeProject.id, characterName);
+        setCastings(prev => { const next = { ...prev }; delete next[characterName.toUpperCase()]; return next; });
+        return;
+      }
+      await setCasting(activeProject.id, characterName, crewUserId, auth.user.id);
+      const updated = await getCastingsForProject(activeProject.id);
+      setCastings(updated);
+    } catch (e: any) {
+      toast(e.message || 'Could not update casting', 'error');
+    }
+  }, [activeProject?.id, toast]);
 
   // Init
   useEffect(() => {
@@ -1443,17 +1476,40 @@ export default function EditorPage() {
                     const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
                     const isSelected = selectedCharProfile === name;
                     const stat = charStats.find(cs => cs.name === name);
+                    const cast = castings[name.toUpperCase()];
                     return (
                       <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
                         <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
+                            {cast?.username && (
+                              <span style={{ fontSize: 9, color: '#10b981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
+                                Playing: {cast.username}
+                              </span>
+                            )}
                           </div>
                           <span style={{ fontSize: 10, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} lines · ${stat.scenesIn.length} scenes` : ''}</span>
                         </button>
                         {isSelected && (
                           <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div>
+                              <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Cast as</label>
+                              <select
+                                value={cast?.crew_user_id || ''}
+                                onChange={e => handleCastCharacter(name, e.target.value)}
+                                disabled={projectCrew.length === 0}
+                                style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}
+                              >
+                                <option value="">— Not cast —</option>
+                                {projectCrew.map(m => (
+                                  <option key={m.user_id} value={m.user_id}>{m.username || m.user_id}</option>
+                                ))}
+                              </select>
+                              {projectCrew.length === 0 && (
+                                <div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 4, fontStyle: 'italic' }}>No crew on this project yet — hire from the Jobs board or add crew in Studio.</div>
+                              )}
+                            </div>
                             {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
                               <div key={field}>
                                 <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>
