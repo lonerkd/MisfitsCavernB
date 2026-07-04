@@ -762,6 +762,26 @@ export default function EditorPage() {
       return;
     }
 
+    // .fdx (Final Draft XML) carries an explicit element type per paragraph,
+    // so it's parsed losslessly instead of being dumped in as raw XML text;
+    // .fountain gets its forced-element markers (., !, @, >) translated
+    // before the normalizer sees it.
+    if (/\.(fdx|fountain)$/i.test(file.name)) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const raw = ev.target?.result as string;
+        import('@/lib/scriptos/import')
+          .then(({ importToContent }) => importToContent(raw, file.name))
+          .then(({ content }) => finish(content))
+          .catch(err => {
+            console.error(err);
+            toast(`Could not read that ${file.name.split('.').pop()} file.`, 'error');
+          });
+      };
+      reader.readAsText(file);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => { finish(ev.target?.result as string); };
     reader.readAsText(file);
