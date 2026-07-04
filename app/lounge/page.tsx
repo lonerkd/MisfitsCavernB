@@ -5,6 +5,7 @@ import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import SpotifyPlayer from '@/components/SpotifyPlayer';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
@@ -730,6 +731,9 @@ export default function LoungePage() {
               {onlineIds.size} online · {crewList.length} crew
             </span>
           </div>
+
+          {/* Music player */}
+          <SpotifyPlayer />
         </div>
       </nav>
 
