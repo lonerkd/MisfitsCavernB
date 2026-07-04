@@ -80,6 +80,11 @@ interface PillContextValue {
   pushZone: (z: PillZone) => void;
   updateZone: (id: string, descriptor: PillDescriptor) => void;
   popZone: (id: string) => void;
+  /** The last zone that was clicked — stays live after the mouse leaves, so
+   *  the Caps-Lock hotkey layer can act on "what you clicked" even when
+   *  nothing is currently hovered (the Pill isn't only usable via hover). */
+  pinZone: (z: PillZone) => void;
+  clearPin: () => void;
   transient: PillTransient | null;
   /** Flash a Dynamic-Island-style live activity that morphs in then collapses. */
   emit: (label: string, tone?: PillTransient['tone']) => void;
@@ -90,6 +95,7 @@ const Ctx = createContext<PillContextValue | null>(null);
 export function PillProvider({ children }: { children: React.ReactNode }) {
   const [descriptor, setDescriptor] = useState<PillDescriptor | null>(null);
   const [zones, setZones] = useState<PillZone[]>([]);
+  const [pinnedZone, setPinnedZone] = useState<PillZone | null>(null);
   const [transient, setTransient] = useState<PillTransient | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,15 +136,21 @@ export function PillProvider({ children }: { children: React.ReactNode }) {
     setZones(prev => prev.filter(p => p.id !== id));
   }, []);
 
-  // Deepest wins; ties break toward the most recently pushed (end of array).
+  const pinZone = useCallback((z: PillZone) => { setPinnedZone(z); }, []);
+  const clearPin = useCallback(() => { setPinnedZone(null); }, []);
+
+  // Deepest hovered zone wins; if nothing's hovered, fall back to whatever was
+  // last clicked (the pin), then the page-level descriptor. This is what makes
+  // the keyboard-hotkey layer usable without a mouse parked over anything.
   const topZone = zones.length
     ? zones.reduce((best, z) => (z.depth >= best.depth ? z : best), zones[0])
     : null;
-  const activeDescriptor = topZone?.descriptor ?? descriptor;
+  const activeDescriptor = topZone?.descriptor ?? pinnedZone?.descriptor ?? descriptor;
 
   const zoneChain: { depth: number; title: string }[] = [];
   if (descriptor?.title) zoneChain.push({ depth: 0, title: descriptor.title });
-  [...zones]
+  const chainZones = zones.length ? zones : pinnedZone ? [pinnedZone] : [];
+  [...chainZones]
     .sort((a, b) => a.depth - b.depth)
     .forEach(z => {
       const title = z.descriptor.title || z.descriptor.module;
@@ -150,7 +162,7 @@ export function PillProvider({ children }: { children: React.ReactNode }) {
       kbActive,
       descriptor, setDescriptor,
       activeDescriptor, zoneChain, zoneActive: zones.length > 0,
-      pushZone, updateZone, popZone,
+      pushZone, updateZone, popZone, pinZone, clearPin,
       transient, emit,
     }}>
       {children}
@@ -190,9 +202,13 @@ let zoneSeq = 0;
  *
  * The descriptor is kept live while hovered, so action callbacks and read-outs
  * never go stale even as the underlying element's data changes.
+ *
+ * Also returns `onClick`: clicking the element *pins* its descriptor, so the
+ * Caps-Lock hotkey layer keeps acting on it even after the mouse moves away —
+ * the Pill isn't only usable while something happens to be hovered.
  */
 export function usePillZone(descriptor: PillDescriptor | null, depth = 1) {
-  const { pushZone, updateZone, popZone } = usePill();
+  const { pushZone, updateZone, popZone, pinZone } = usePill();
   const idRef = useRef<string>(`zone-${++zoneSeq}`);
   const hovered = useRef(false);
   const latest = useRef(descriptor);
@@ -220,7 +236,12 @@ export function usePillZone(descriptor: PillDescriptor | null, depth = 1) {
     popZone(idRef.current);
   }, [popZone]);
 
-  return { onMouseEnter, onMouseLeave };
+  const onClick = useCallback(() => {
+    if (!latest.current) return;
+    pinZone({ id: idRef.current, depth, descriptor: latest.current });
+  }, [pinZone, depth]);
+
+  return { onMouseEnter, onMouseLeave, onClick };
 }
 
 /** Convenience accessor for firing transient activities from anywhere. */

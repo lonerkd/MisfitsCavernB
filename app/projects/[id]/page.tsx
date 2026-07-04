@@ -996,7 +996,7 @@ function BudgetRowItem({
   }, 2);
 
   return (
-    <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave}>
+    <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave} onClick={zoneHandlers.onClick}>
       <Row>
         <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>

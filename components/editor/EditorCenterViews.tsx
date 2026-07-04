@@ -116,7 +116,7 @@ function SceneBoardCard({
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
       whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
-      onClick={onJump}
+      onClick={() => { onJump(); zoneHandlers.onClick(); }}
       onMouseEnter={zoneHandlers.onMouseEnter}
       onMouseLeave={zoneHandlers.onMouseLeave}
       title="Drag to reorder · click to open in the script"

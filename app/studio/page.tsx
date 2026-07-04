@@ -1086,6 +1086,7 @@ function CrewMemberCard({ member, index, isOnline }: { member: any; index: numbe
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,60,0,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
+      onClick={zoneHandlers.onClick}
     >
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar src={member.avatar} name={member.name} size={44} />

@@ -193,6 +193,7 @@ export default function EditorPage() {
   const { activeProject } = useProject();
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
@@ -1273,22 +1274,52 @@ export default function EditorPage() {
           )}
 
           {activeView === 'write' && (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleEditorChange}
-              onKeyDown={handleEditorKeyDown}
-              onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
-              placeholder={PLACEHOLDER}
-              spellCheck={false}
-              style={{
-                flex: 1, padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%', maxWidth: 900, margin: '0 auto',
-                background: 'transparent', border: 'none', color: revisionMode ? '#0099ff' : '#e0e0e0',
-                fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
-                resize: 'none', outline: 'none',
-                position: 'relative'
-              }}
-            />
+            <div style={{ flex: 1, position: 'relative', width: '100%', maxWidth: 900, margin: '0 auto' }}>
+              {/* Highlight layer — mirrors the textarea's text per-line, colored
+                  by parsed screenplay type (slug/character/dialogue/etc.), so the
+                  live writing surface isn't just undifferentiated monospace text.
+                  Kept pixel-identical (same font/line-height/padding, no per-line
+                  indentation) to the textarea beneath it so the invisible caret
+                  always lands where the colored text appears. */}
+              <div
+                ref={highlightRef}
+                aria-hidden
+                style={{
+                  position: 'absolute', inset: 0, overflow: 'hidden',
+                  padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none',
+                }}
+              >
+                {content.split('\n').map((lineText, i) => {
+                  const type = lines[i]?.type;
+                  const color = (type && TYPE_COLORS[type]) || (revisionMode ? '#0099ff' : '#e0e0e0');
+                  const bold = type === 'slug' || type === 'character' || type === 'transition';
+                  return (
+                    <div key={i} style={{ color, fontWeight: bold ? 700 : 400 }}>
+                      {lineText.length ? lineText : ' '}
+                    </div>
+                  );
+                })}
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleEditorChange}
+                onKeyDown={handleEditorKeyDown}
+                onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
+                onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                placeholder={PLACEHOLDER}
+                spellCheck={false}
+                style={{
+                  position: 'absolute', inset: 0,
+                  padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
+                  background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : '#e0e0e0',
+                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  resize: 'none', outline: 'none',
+                }}
+              />
+            </div>
           )}
 
           {/* Structure Lines (Visual Act Markers) */}

@@ -368,7 +368,7 @@ export default function EcosystemTaskbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { activeProject } = useProject();
-  const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, emit } = usePill();
+  const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
   const activeColor = activeProject?.accent_color || '#ff3c00';
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [projectsOpen, setProjectsOpen] = useState(false);
@@ -395,8 +395,9 @@ export default function EcosystemTaskbar() {
   useEffect(() => { if (!kbActive) setKbFocusIndex(-1); }, [kbActive]);
   useEffect(() => { setKbFocusIndex(-1); }, [hotkeyItems.length]);
 
-  // Close switcher on route change
-  useEffect(() => { setProjectsOpen(false); }, [pathname]);
+  // Close switcher and drop any clicked-and-pinned zone on route change —
+  // a pin from the previous page shouldn't keep steering hotkeys on the new one.
+  useEffect(() => { setProjectsOpen(false); clearPin(); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close on outside click
   useEffect(() => {
