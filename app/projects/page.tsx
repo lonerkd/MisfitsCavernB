@@ -9,7 +9,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject, type Phase, mapStatusToPhase } from '@/lib/context/ProjectContext';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useEscapeKey } from '@/lib/useEscapeKey';
@@ -59,9 +59,13 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
   );
 }
 
-type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
-
-interface Project {
+// ProjectCardViewModel: this list page's card display shape (formatted color,
+// deadline as a string, team as plain initials strings) — distinct from the
+// raw hydrated lib/context/ProjectContext.tsx:Project entity. Was named bare
+// "Project" before this consolidation, shadowing the real Project type (and
+// diverging in shape from app/projects/[id]/page.tsx's own local "Project",
+// which used `team: {name,role,online?}[]` instead of `team: string[]`).
+interface ProjectCardViewModel {
   id: string;
   title: string;
   type: string;
@@ -101,7 +105,7 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project }: { project: ProjectCardViewModel }) {
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
   const Icon = TYPE_ICONS[project.type] ?? Film;
@@ -230,7 +234,7 @@ function ProjectCard({ project }: { project: Project }) {
   );
 }
 
-function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: Project[] }) {
+function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: ProjectCardViewModel[] }) {
   const color = PHASE_COLORS[phase.id];
 
   return (
@@ -304,7 +308,7 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
 
 export default function ProjectsPage() {
   useRequireAuth();
-  const [projectsList, setProjectsList] = useState<Project[]>([]);
+  const [projectsList, setProjectsList] = useState<ProjectCardViewModel[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -333,15 +337,11 @@ export default function ProjectsPage() {
       if (!user) { setLoaded(true); return; }
       setUser(user);
       getUserProjects(user.id).then(data => {
-        const fetched: Project[] = (data || []).map(p => ({
+        const fetched: ProjectCardViewModel[] = (data || []).map(p => ({
           id: p.id,
           title: p.title,
           type: p.project_type || 'Project',
-          phase: (p.status === 'released' || p.status === 'completed' ? 'delivery' :
-                  p.status === 'production' ? 'production' :
-                  p.status === 'post' || p.status === 'post-production' ? 'post-production' :
-                  p.status === 'pre-prod' || p.status === 'pre-production' ? 'pre-production' :
-                  'development') as Phase,
+          phase: mapStatusToPhase(p.status),
           progress: 0,
           deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
           team: ['CR'],
@@ -355,7 +355,7 @@ export default function ProjectsPage() {
   }, []);
 
   const byPhase = useMemo(() => {
-    const map: Record<Phase, Project[]> = {
+    const map: Record<Phase, ProjectCardViewModel[]> = {
       development: [], 'pre-production': [], production: [], 'post-production': [], delivery: [],
     };
     projectsList.forEach(p => map[p.phase].push(p));
@@ -371,7 +371,7 @@ export default function ProjectsPage() {
     if (!user) return;
     try {
       const p = await createDBProject(user.id, title, logline, type);
-      const newP: Project = {
+      const newP: ProjectCardViewModel = {
         id: p.id, title: p.title, type, phase: 'development',
         progress: 0, deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
         team: ['CR'], description: p.description || '', color: p.accent_color || '#6366f1',

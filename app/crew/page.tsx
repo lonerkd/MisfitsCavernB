@@ -7,17 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
-
-interface Profile {
-  id: string;
-  username: string;
-  avatar_url?: string;
-  bio?: string;
-  role?: string;
-  location?: string;
-  status: 'OPEN' | 'BUSY';
-  discord_username?: string;
-}
+import type { Profile } from '@/lib/supabase/profiles';
 
 const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor'];
 

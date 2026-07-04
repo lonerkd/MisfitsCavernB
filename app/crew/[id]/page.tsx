@@ -8,18 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
-
-interface Profile {
-  id: string;
-  username: string;
-  avatar_url?: string;
-  bio?: string;
-  role?: string;
-  location?: string;
-  status: 'OPEN' | 'BUSY';
-  discord_username?: string;
-  created_at: string;
-}
+import type { Profile } from '@/lib/supabase/profiles';
 
 interface MediaItem {
   id: string;

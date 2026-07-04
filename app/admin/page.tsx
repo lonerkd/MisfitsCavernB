@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { getPlatformStats } from '@/lib/supabase/stats';
 import { ProtectedPage } from '@/lib/permissions/access-control';
 import { useCurrentUser } from '@/lib/permissions/usePermissions';
 import { BarChart3, Users, Settings, Activity } from 'lucide-react';
@@ -23,18 +24,13 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const [users, projects, scripts, jobs] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('projects').select('id', { count: 'exact', head: true }),
-        supabase.from('scripts').select('id', { count: 'exact', head: true }),
-        supabase.from('jobs').select('id', { count: 'exact', head: true }),
-      ]);
+      const platformStats = await getPlatformStats();
 
       setStats({
-        totalUsers: users.count || 0,
-        totalProjects: projects.count || 0,
-        totalScripts: scripts.count || 0,
-        totalJobs: jobs.count || 0,
+        totalUsers: platformStats.users,
+        totalProjects: platformStats.projects,
+        totalScripts: platformStats.scripts,
+        totalJobs: platformStats.jobs,
       });
     } catch (error) {
       console.error('Failed to load stats:', error);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { getPlatformStats } from '@/lib/supabase/stats';
 import { ProtectedPage } from '@/lib/permissions/access-control';
 import { ArrowLeft, TrendingUp, Users, Zap, Clock } from 'lucide-react';
 
@@ -36,20 +37,22 @@ export default function AdminAnalyticsPage() {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const [users, projects, scripts, jobs] = await Promise.all([
-        supabase.from('profiles').select('id, created_at', { count: 'exact', head: true }),
-        supabase.from('projects').select('id, status, created_at', { count: 'exact', head: true }),
-        supabase.from('scripts').select('id', { count: 'exact', head: true }),
-        supabase.from('jobs').select('id', { count: 'exact', head: true }),
-      ]);
+      // NOTE: activeUsers/completedProjects/avgProjectDuration below are NOT
+      // real computed values -- they're fabricated as arbitrary multipliers
+      // of the real counts (0.65x, 0.35x) or a hardcoded constant (45). This
+      // predates this consolidation pass; flagging rather than fixing here,
+      // since a real fix needs an actual product definition of "active" and
+      // "completed" (e.g. a last-seen timestamp, a status field) and that's
+      // a feature decision, not a duplicate-query cleanup.
+      const platformStats = await getPlatformStats();
 
       setAnalytics({
-        totalUsers: users.count || 0,
-        activeUsers: Math.floor((users.count || 0) * 0.65),
-        totalProjects: projects.count || 0,
-        completedProjects: Math.floor((projects.count || 0) * 0.35),
-        totalScripts: scripts.count || 0,
-        totalJobs: jobs.count || 0,
+        totalUsers: platformStats.users,
+        activeUsers: Math.floor(platformStats.users * 0.65),
+        totalProjects: platformStats.projects,
+        completedProjects: Math.floor(platformStats.projects * 0.35),
+        totalScripts: platformStats.scripts,
+        totalJobs: platformStats.jobs,
         avgProjectDuration: 45,
       });
     } catch (error) {

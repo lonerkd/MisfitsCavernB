@@ -10,20 +10,7 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
 import { usePillStage } from '@/lib/context/PillContext';
-
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  role: string;
-  rate?: number;
-  status: 'open' | 'in-progress' | 'closed';
-  created_by: string;
-  created_at: string;
-  projects?: { title: string };
-  profiles?: { username: string };
-  application_count?: number;
-}
+import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 
 const ROLES = [
   'Director', 'DP / Cinematographer', 'Editor', 'Sound Designer',

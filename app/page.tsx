@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { getPlatformStats } from '@/lib/supabase/stats';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
   ArrowRight, PenTool, Layers, Users, Film,
@@ -446,13 +447,8 @@ export default function Home() {
       if (!user) return;
 
       // Live platform stats (RLS scopes reads to authenticated users).
-      const [pc, sc, prc, cc] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('scripts').select('id', { count: 'exact', head: true }),
-        supabase.from('projects').select('id', { count: 'exact', head: true }),
-        supabase.from('concept_assets').select('id', { count: 'exact', head: true }),
-      ]);
-      setStats({ creators: pc.count || 0, scripts: sc.count || 0, projects: prc.count || 0, concepts: cc.count || 0 });
+      const platformStats = await getPlatformStats();
+      setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
 
       // The viewer's own latest work, surfaced as real previews.
       const [scriptRes, assetRes, msgRes, projRes] = await Promise.all([

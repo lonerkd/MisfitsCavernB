@@ -8,20 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { assignCrewMember } from '@/lib/supabase/crew-management';
-
-interface Job {
-  id: string;
-  title: string;
-  description: string;
-  role: string;
-  rate?: number;
-  status: 'open' | 'in-progress' | 'closed';
-  created_by: string;
-  created_at: string;
-  project_id?: string;
-  profiles?: { username: string; role: string };
-  projects?: { title: string };
-}
+import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 
 interface Application {
   id: string;

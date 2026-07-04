@@ -77,6 +77,27 @@ export interface Project {
   campaigns?: Campaign[];
 }
 
+// The production-phase model shared by the projects list and hub pages.
+// Both files independently implemented the identical status->phase mapping
+// before this consolidation (one as a named function, one as an inline
+// ternary chain) — same logic, two copies that could silently drift.
+export type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
+
+export function mapStatusToPhase(status?: string): Phase {
+  switch (status) {
+    case 'concept': return 'development';
+    case 'pre-prod':
+    case 'pre-production': return 'pre-production';
+    case 'production': return 'production';
+    case 'post':
+    case 'post-production': return 'post-production';
+    case 'released':
+    case 'completed':
+    case 'delivery': return 'delivery';
+    default: return 'development';
+  }
+}
+
 interface ProjectContextType {
   activeProject: Project | null;
   setActiveProject: (project: Project | null) => void;

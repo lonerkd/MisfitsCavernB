@@ -17,32 +17,19 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { createPortfolioProject } from '@/lib/supabase/portfolio';
 import { usePillZone } from '@/lib/context/PillContext';
+import { type Phase, mapStatusToPhase } from '@/lib/context/ProjectContext';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
 const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
-// Map the DB project.status to the production phase used by the header rail.
-function mapStatusToPhase(status?: string): Phase {
-  switch (status) {
-    case 'concept': return 'development';
-    case 'pre-prod':
-    case 'pre-production': return 'pre-production';
-    case 'production': return 'production';
-    case 'post':
-    case 'post-production': return 'post-production';
-    case 'released':
-    case 'completed':
-    case 'delivery': return 'delivery';
-    default: return 'development';
-  }
-}
-
 // ─── Types ──────────────────────────────────────────────────────────────────
+// ProjectHubViewModel is a card/hub display shape (formatted color, deadline
+// as a string, team as display objects) — distinct from the raw hydrated
+// lib/context/ProjectContext.tsx:Project entity it's derived from. Was named
+// bare "Project" before this consolidation, shadowing the real Project type.
 
-type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
-
-interface Project {
+interface ProjectHubViewModel {
   id: string;
   title: string;
   type: string;
@@ -221,7 +208,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
 
 // ─── Crew preview ─────────────────────────────────────────────────────────────
 
-function CrewPreview({ team }: { team: Project['team'] }) {
+function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {team.map((member, i) => (
@@ -333,7 +320,7 @@ export default function ProjectHubPage() {
   const router = useRouter();
   const id = String(params.id);
 
-  const [realProject, setRealProject] = useState<Project | null>(null);
+  const [realProject, setRealProject] = useState<ProjectHubViewModel | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Always load the actual project from Supabase and show the live production

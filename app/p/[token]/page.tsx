@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Film } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
+import type { PublicProfile } from '@/lib/supabase/profiles';
 
 interface MediaItem {
   id: string;
@@ -12,12 +13,6 @@ interface MediaItem {
   media_type: string;
   url: string;
   thumbnail_url?: string;
-}
-
-interface Profile {
-  username: string;
-  role: string | null;
-  avatar_url: string | null;
 }
 
 interface Project {
@@ -29,7 +24,7 @@ interface Project {
   share_token: string;
   created_at: string;
   portfolio_media: MediaItem[];
-  profiles: Profile | null;
+  profiles: PublicProfile | null;
 }
 
 export default function PublicPortfolioPage({ params }: { params: { token: string } }) {

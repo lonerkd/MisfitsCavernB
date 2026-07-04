@@ -5,12 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
 import type { ScriptLine } from '@/types/screenplay';
-
-interface Profile {
-  username: string;
-  role: string | null;
-  avatar_url: string | null;
-}
+import type { PublicProfile } from '@/lib/supabase/profiles';
 
 interface SharedScript {
   id: string;
@@ -18,7 +13,7 @@ interface SharedScript {
   content: string;
   updated_at: string;
   created_by: string | null;
-  profile: Profile | null;
+  profile: PublicProfile | null;
 }
 
 const PRINT_COLORS: Record<string, string> = {
@@ -82,7 +77,7 @@ export default function PublicScriptPage({ params }: { params: { token: string }
         return;
       }
 
-      let profile: Profile | null = null;
+      let profile: PublicProfile | null = null;
       if (data.created_by) {
         const { data: profileData } = await supabase
           .from('profiles')
