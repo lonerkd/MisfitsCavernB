@@ -18,7 +18,7 @@ import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/character
 import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
@@ -131,6 +131,39 @@ CUT TO:`;
 
 // Standard screenplay transitions offered by the editor's autocomplete.
 const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
+
+// Undo/redo history depth.
+const MAX_HISTORY = 50;
+
+// Tab cycles a line's element type in this order, transforming its text so the
+// parser re-classifies it — mirrors the reference editor's Tab-to-cycle-type
+// instead of the single "empty line → scene template" heuristic it replaces.
+const TAB_TYPE_CYCLE: LineType[] = ['action', 'character', 'parenthetical', 'dialogue', 'transition'];
+
+function stripLineDecoration(text: string): string {
+  return text.trim().replace(/^\(/, '').replace(/\)$/, '').replace(/\s+TO:$/i, '').trim();
+}
+
+function toSentenceCase(text: string): string {
+  const wasAllCaps = text === text.toUpperCase() && /[A-Z]/.test(text);
+  return wasAllCaps ? text.charAt(0) + text.slice(1).toLowerCase() : text;
+}
+
+function transformLineForType(text: string, type: LineType): string {
+  const bare = stripLineDecoration(text);
+  switch (type) {
+    case 'character':
+      return bare.toUpperCase();
+    case 'parenthetical':
+      return `(${bare.toLowerCase()})`;
+    case 'transition':
+      return /\bTO:$/i.test(bare) ? bare.toUpperCase() : `${bare.toUpperCase()} TO:`;
+    case 'dialogue':
+    case 'action':
+    default:
+      return toSentenceCase(bare);
+  }
+}
 
 // ============================================================================
 // COMPONENTS
@@ -276,6 +309,12 @@ export default function EditorPage() {
   const [tableReadPlaying, setTableReadPlaying] = useState(false);
   const [tableReadLineIdx, setTableReadLineIdx] = useState<number | null>(null);
   const tableReadEngineRef = useRef<TableReadEngine | null>(null);
+  // Real undo/redo history — snapshots of `content` coalesced at typing pauses
+  // (not one entry per keystroke), capped at 50 like the reference editor.
+  // Replaces reliance on the browser's native, per-keystroke textarea undo.
+  const [history, setHistory] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
+  const historyPushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSnapshotRef = useRef<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -423,6 +462,47 @@ export default function EditorPage() {
 
   useEffect(() => () => { tableReadEngineRef.current?.stop(); }, []);
   useEffect(() => { stopTableRead(); }, [currentScript?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Note that an edit happened, coalescing rapid keystrokes into one snapshot
+  // of what the script looked like right before the burst started — so undo
+  // reverts a sentence/edit at a time, not one character at a time.
+  const noteHistoryEdit = useCallback((prevContent: string) => {
+    if (pendingSnapshotRef.current == null) pendingSnapshotRef.current = prevContent;
+    if (historyPushTimer.current) clearTimeout(historyPushTimer.current);
+    historyPushTimer.current = setTimeout(() => {
+      const snapshot = pendingSnapshotRef.current;
+      pendingSnapshotRef.current = null;
+      if (snapshot == null) return;
+      setHistory(h => ({ past: [...h.past, snapshot].slice(-MAX_HISTORY), future: [] }));
+    }, 600);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyPushTimer.current) { clearTimeout(historyPushTimer.current); historyPushTimer.current = null; }
+    setHistory(h => {
+      const pending = pendingSnapshotRef.current;
+      pendingSnapshotRef.current = null;
+      const past = pending != null ? [...h.past, pending] : h.past;
+      if (!past.length) return h;
+      const prev = past[past.length - 1];
+      setContent(prev);
+      return { past: past.slice(0, -1), future: [content, ...h.future].slice(0, MAX_HISTORY) };
+    });
+  }, [content]);
+
+  const redo = useCallback(() => {
+    setHistory(h => {
+      if (!h.future.length) return h;
+      const next = h.future[0];
+      setContent(next);
+      return { past: [...h.past, content].slice(-MAX_HISTORY), future: h.future.slice(1) };
+    });
+  }, [content]);
+
+  useEffect(() => {
+    setHistory({ past: [], future: [] });
+    pendingSnapshotRef.current = null;
+  }, [currentScript?.id]);
 
   // Keep the write surface scrolled to whatever line is currently being read.
   useEffect(() => {
@@ -628,10 +708,21 @@ export default function EditorPage() {
         if (showGoToScene) setShowGoToScene(false);
         if (showShortcuts) setShowShortcuts(false);
       }
+      // Undo/redo the script content specifically (our own history stack, not
+      // the browser's native per-keystroke textarea undo) while the write
+      // surface is focused.
+      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+      }
+      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts]);
+  }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
 
   // Import .fountain / .txt / .fdx / .pdf file
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -736,34 +827,33 @@ export default function EditorPage() {
       const editor = textareaRef.current;
       if (!editor) return;
       const cursor = editor.selectionStart;
-      const currentLine = content.substring(0, cursor).split('\n').pop() || '';
+      const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
+      const lineEnd = content.indexOf('\n', cursor) === -1 ? content.length : content.indexOf('\n', cursor);
+      const currentLine = content.substring(lineStart, lineEnd);
       const trimmed = currentLine.trim();
 
-      // If empty line, insert a scene heading template
+      // Empty line: no type to cycle, so start a scene heading template.
       if (!trimmed) {
         insertElement('scene');
         return;
       }
-      // If uppercase short text (likely a character), insert dialogue below
-      if (trimmed === trimmed.toUpperCase() && trimmed.length > 1 && trimmed.length < 40) {
-        const after = content.substring(cursor);
-        setContent(content.substring(0, cursor) + '\n' + after);
-        setTimeout(() => {
-          editor.focus();
-          editor.setSelectionRange(cursor + 1, cursor + 1);
-        }, 0);
-        return;
-      }
-      // Default: insert 4 spaces (standard tab)
-      const before = content.substring(0, cursor);
-      const after = content.substring(editor.selectionEnd);
-      setContent(before + '    ' + after);
-      setTimeout(() => {
-        editor.focus();
-        editor.setSelectionRange(cursor + 4, cursor + 4);
-      }, 0);
+
+      // Cycle the line's element type — action → character → parenthetical →
+      // dialogue → transition → action — by transforming its text so the
+      // parser reclassifies it as the next (or, with Shift, previous) type.
+      const lineIdx = content.substring(0, lineStart).split('\n').length - 1;
+      const currentType = lines[lineIdx]?.type;
+      const cycleIdx = currentType ? TAB_TYPE_CYCLE.indexOf(currentType) : -1;
+      const base = cycleIdx === -1 ? 0 : cycleIdx;
+      const step = e.shiftKey ? -1 : 1;
+      const nextType = TAB_TYPE_CYCLE[(base + step + TAB_TYPE_CYCLE.length) % TAB_TYPE_CYCLE.length];
+      const transformed = transformLineForType(currentLine, nextType);
+      const next = content.substring(0, lineStart) + transformed + content.substring(lineEnd);
+      setContent(next);
+      const caret = lineStart + transformed.length;
+      setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
     }
-  }, [content, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
+  }, [content, lines, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
@@ -839,6 +929,7 @@ export default function EditorPage() {
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
+    noteHistoryEdit(content);
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
     noteLocalEdit();
