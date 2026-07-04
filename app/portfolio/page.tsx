@@ -10,6 +10,7 @@ import AnimatedSection from '@/components/AnimatedSection';
 import { getAllProjects as getPortfolioData } from '@/lib/storage/portfolio';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/permissions/access-control';
+import { usePillStage } from '@/lib/context/PillContext';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -276,6 +277,20 @@ export default function PortfolioPage() {
 
   const featured = videosList.filter(v => v.featured);
   const rest = videosList.filter(v => !v.featured);
+
+  // Publish the portfolio's live counts to the Pill's context capsule.
+  usePillStage(
+    {
+      module: 'portfolio',
+      title: 'The Cavern Collection',
+      accent: '#f59e0b',
+      fields: [
+        { label: 'Works', value: `${videosList.length}`, color: '#f59e0b' },
+        { label: 'Featured', value: `${featured.length}` },
+      ],
+    },
+    [videosList.length, featured.length],
+  );
 
   return (
     <ProtectedPage requiredPermission="manage_portfolio">

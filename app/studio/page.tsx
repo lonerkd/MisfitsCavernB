@@ -16,6 +16,7 @@ import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePillStage } from '@/lib/context/PillContext';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
@@ -1220,6 +1221,30 @@ export default function StudioPage() {
   const [beats, setBeats] = useState<any[]>([]);
   const [crewList, setCrewList] = useState<any[]>([]);
   const [showRecruit, setShowRecruit] = useState(false);
+
+  // Publish the studio's live context to the Pill: the active project, the tab
+  // you're in, and its real crew/asset counts, with a one-tap tab cycle.
+  const STUDIO_TABS = ['overview', 'concept', 'production', 'assets', 'marketing', 'pitch'] as const;
+  usePillStage(
+    {
+      module: 'studio',
+      title: activeProject?.title || 'Studio',
+      accent: activeProject?.accent_color || '#6366f1',
+      fields: [
+        { label: 'Tab', value: activeTab, color: '#6366f1' },
+        { label: 'Crew', value: `${crewList.length}` },
+        { label: 'Assets', value: `${assetsList.length}` },
+      ],
+      actions: [
+        {
+          id: 'next-tab',
+          label: 'Next Tab →',
+          onClick: () => setActiveTab(STUDIO_TABS[(STUDIO_TABS.indexOf(activeTab) + 1) % STUDIO_TABS.length]),
+        },
+      ],
+    },
+    [activeProject?.title, activeProject?.accent_color, activeTab, crewList.length, assetsList.length],
+  );
 
   const [showAddConcept, setShowAddConcept] = useState(false);
   const [conceptTitle, setConceptTitle] = useState('');

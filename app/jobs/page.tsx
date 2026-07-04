@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
+import { usePillStage } from '@/lib/context/PillContext';
 
 interface Job {
   id: string;
@@ -494,6 +495,24 @@ export default function JobsPage() {
     const matchRole = !roleFilter || j.role === roleFilter;
     return matchSearch && matchRole;
   });
+
+  // Publish the jobs board's live state to the Pill's context capsule.
+  usePillStage(
+    {
+      module: 'portfolio',
+      title: tab === 'mine' ? 'My Jobs' : 'Jobs Board',
+      accent: '#8b5cf6',
+      fields: [
+        { label: 'Open', value: `${jobs.length}`, color: '#8b5cf6' },
+        ...(roleFilter ? [{ label: 'Shown', value: `${filtered.length}` }] : []),
+        ...(user ? [{ label: 'Mine', value: `${myJobs.length}` }] : []),
+      ],
+      actions: user ? [
+        { id: 'post-job', label: '+ Post Position', onClick: () => setShowPost(true) },
+      ] : [],
+    },
+    [tab, jobs.length, filtered.length, myJobs.length, roleFilter, user],
+  );
 
   const roleCounts = ROLES.reduce<Record<string, number>>((acc, r) => {
     acc[r] = jobs.filter(j => j.role === r).length;

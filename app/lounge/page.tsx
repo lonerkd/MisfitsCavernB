@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
@@ -455,6 +456,23 @@ export default function LoungePage() {
   }, [activeProject?.id]);
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
+
+  // Publish the lounge's live state to the Pill's context capsule: which
+  // channel you're in, how many crew are online (real presence), and message
+  // count — the same state the sidebar already drives.
+  const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
+  usePillStage(
+    {
+      module: 'lounge',
+      title: activeChannel ? `#${activeChannel.name}` : 'Lounge',
+      accent: '#10b981',
+      fields: [
+        { label: 'Online', value: `${onlineCrew}/${crewList.length}`, color: onlineCrew > 0 ? '#10b981' : undefined },
+        { label: 'Msgs', value: `${messages.length}` },
+      ],
+    },
+    [activeChannel?.name, onlineCrew, crewList.length, messages.length],
+  );
 
   // Resolve post/manage permission whenever the active text channel changes.
   useEffect(() => {

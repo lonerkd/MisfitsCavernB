@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 
@@ -310,6 +311,22 @@ export default function ProjectsPage() {
   const { toast } = useToast();
   const { setActiveProject } = useProject();
   const router = useRouter();
+
+  // Publish the projects hub's live state to the Pill's context capsule.
+  usePillStage(
+    {
+      module: 'home',
+      title: 'Projects',
+      accent: '#ff3c00',
+      fields: [
+        { label: 'Total', value: `${projectsList.length}`, color: '#ff3c00' },
+      ],
+      actions: user ? [
+        { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
+      ] : [],
+    },
+    [projectsList.length, user],
+  );
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
