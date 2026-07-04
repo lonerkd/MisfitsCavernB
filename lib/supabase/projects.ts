@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { createChannel } from './channels';
 
 export interface DBProject {
   id: string;
@@ -28,6 +29,16 @@ export async function createProject(userId: string, title: string, description =
     .single();
 
   if (error) throw error;
+
+  // Give the project a home in the Lounge from minute one, instead of every
+  // project needing someone to remember to create a channel by hand. Best
+  // effort: a failure here shouldn't undo the project that was just created.
+  try {
+    await createChannel({ project_id: data.id, name: 'general', topic: `${title} — general discussion` });
+  } catch (channelError) {
+    console.error('Failed to auto-create default channel for new project:', channelError);
+  }
+
   return data;
 }
 
