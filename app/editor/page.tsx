@@ -615,7 +615,7 @@ export default function EditorPage() {
       exportScriptAsFdx({ ...currentScript, content });
       toast('Exported as .fdx (Final Draft)', 'success');
     } else if (format === 'pdf') {
-      exportScriptAsPdf({ ...currentScript, content });
+      exportScriptAsPdf({ ...currentScript, content }, titlePage);
       toast('Generating PDF...', 'success');
     } else {
       // Defensive: the export menu only offers the handled formats above, so
