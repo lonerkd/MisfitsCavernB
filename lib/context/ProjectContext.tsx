@@ -98,6 +98,77 @@ export function mapStatusToPhase(status?: string): Phase {
   }
 }
 
+// Per-type relabeling (+ optional stage-skipping) layered on top of the same
+// 5 canonical phases above — the persisted `status` column and Phase model
+// are never touched, only what's *displayed* differs, so this has zero
+// migration risk against existing project data. Used by the single-project
+// hub's phase rail, where exactly one type is in scope; the cross-project
+// Kanban board on the projects list intentionally keeps the generic labels
+// since it shows every type side by side in shared columns.
+const ALL_PHASES: { id: Phase; label: string; abbr: string }[] = [
+  { id: 'development',     label: 'Development',     abbr: 'DEV'  },
+  { id: 'pre-production',  label: 'Pre-Production',  abbr: 'PRE'  },
+  { id: 'production',      label: 'Production',      abbr: 'PROD' },
+  { id: 'post-production', label: 'Post-Production', abbr: 'POST' },
+  { id: 'delivery',        label: 'Delivery',        abbr: 'DEL'  },
+];
+
+const TYPE_PHASE_LABELS: Record<string, Partial<Record<Phase, { label: string; abbr: string }>>> = {
+  'Music Video': {
+    production: { label: 'Shoot', abbr: 'SHOOT' },
+    'post-production': { label: 'Edit', abbr: 'EDIT' },
+    delivery: { label: 'Released', abbr: 'OUT' },
+  },
+  Commercial: {
+    production: { label: 'Shoot', abbr: 'SHOOT' },
+    delivery: { label: 'Delivered', abbr: 'OUT' },
+  },
+  Podcast: {
+    development: { label: 'Planning', abbr: 'PLAN' },
+    production: { label: 'Recording', abbr: 'REC' },
+    'post-production': { label: 'Editing', abbr: 'EDIT' },
+    delivery: { label: 'Published', abbr: 'OUT' },
+  },
+  Series: {
+    delivery: { label: 'Released', abbr: 'OUT' },
+  },
+  'Limited Series': {
+    delivery: { label: 'Released', abbr: 'OUT' },
+  },
+};
+
+// Which canonical phases a type's pipeline visually skips (still valid if
+// `status` is ever set to one — the rail just clamps to the nearest earlier
+// visible stage rather than showing a pip for it).
+const TYPE_SKIPPED_PHASES: Record<string, Phase[]> = {
+  'Music Video': ['pre-production'],
+  Podcast: ['pre-production'],
+};
+
+export function getPhasesForType(projectType?: string | null): { id: Phase; label: string; abbr: string }[] {
+  const type = projectType || '';
+  const skip = new Set(TYPE_SKIPPED_PHASES[type] || []);
+  const overrides = TYPE_PHASE_LABELS[type] || {};
+  return ALL_PHASES
+    .filter(p => !skip.has(p.id))
+    .map(p => ({ ...p, ...(overrides[p.id] || {}) }));
+}
+
+export function phaseIndexForType(projectType: string | null | undefined, phase: Phase): number {
+  const phases = getPhasesForType(projectType);
+  const visibleIds = phases.map(p => p.id);
+  const idx = visibleIds.indexOf(phase);
+  if (idx !== -1) return idx;
+  // This type skips `phase` visually — clamp to the nearest earlier stage
+  // it does show, so an edge-case status never produces a missing pip.
+  const allIds = ALL_PHASES.map(p => p.id);
+  for (let i = allIds.indexOf(phase) - 1; i >= 0; i--) {
+    const j = visibleIds.indexOf(allIds[i]);
+    if (j !== -1) return j;
+  }
+  return 0;
+}
+
 interface ProjectContextType {
   activeProject: Project | null;
   setActiveProject: (project: Project | null) => void;

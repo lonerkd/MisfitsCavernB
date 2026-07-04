@@ -17,7 +17,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { createPortfolioProject } from '@/lib/supabase/portfolio';
 import { usePillZone } from '@/lib/context/PillContext';
-import { type Phase, mapStatusToPhase } from '@/lib/context/ProjectContext';
+import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType } from '@/lib/context/ProjectContext';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -394,6 +394,11 @@ export default function ProjectHubPage() {
   const isRealProject = true;
   const currentPhaseIdx = phaseIndex(project.phase);
   const onlineCount = project.team.filter(m => m.online).length;
+  // Type-aware phase rail (labels + which stages are even shown) — the
+  // generic PHASES/phaseIndex above stay as-is for TimelinePreview's fixed
+  // milestone checklist and the progress-percent calc.
+  const typePhases = getPhasesForType(project.type);
+  const typePhaseIdx = phaseIndexForType(project.type, project.phase);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -432,12 +437,12 @@ export default function ProjectHubPage() {
           </div>
         </div>
 
-        {/* Phase rail */}
+        {/* Phase rail — labels/stage-count adapt to the project's type */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          {PHASES.map((phase, i) => {
-            const isDone   = i < currentPhaseIdx;
-            const isActive = i === currentPhaseIdx;
-            const isFuture = i > currentPhaseIdx;
+          {typePhases.map((phase, i) => {
+            const isDone   = i < typePhaseIdx;
+            const isActive = i === typePhaseIdx;
+            const isFuture = i > typePhaseIdx;
             return (
               <React.Fragment key={phase.id}>
                 <div style={{
@@ -449,9 +454,9 @@ export default function ProjectHubPage() {
                   transition: 'all 0.3s', whiteSpace: 'nowrap',
                 }}>
                   {isDone && <span style={{ marginRight: 4 }}>✓</span>}
-                  {phase.short}
+                  {phase.abbr}
                 </div>
-                {i < PHASES.length - 1 && (
+                {i < typePhases.length - 1 && (
                   <div style={{
                     width: 16, height: 1,
                     background: isDone ? `${project.color}60` : 'rgba(255,255,255,0.08)',
@@ -572,7 +577,7 @@ export default function ProjectHubPage() {
             href="/portfolio"
             delay={0.25}
             stats={[
-              { label: 'Phase', value: PHASES[currentPhaseIdx].short },
+              { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
               { label: 'Type',  value: project.type },
             ]}
             preview={<PortfolioPreview published={counts.portfolioPublished} />}
@@ -586,7 +591,7 @@ export default function ProjectHubPage() {
             href="/jobs"
             delay={0.3}
             stats={[
-              { label: 'Phase',  value: PHASES[currentPhaseIdx].short },
+              { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
               { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
             ]}
             preview={
