@@ -7,6 +7,7 @@ import { ConfirmProvider } from '@/components/Confirm';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
 import { AuthProvider } from '@/lib/context/AuthContext';
 import { PillProvider } from '@/lib/context/PillContext';
+import PageTransition from '@/components/PageTransition';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
@@ -59,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <CommandPalette />
                   <ShortcutsOverlay />
                   <EcosystemTaskbar />
-                  {children}
+                  <PageTransition>{children}</PageTransition>
                 </PillProvider>
               </ProjectProvider>
             </ConfirmProvider>
