@@ -13,6 +13,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 import { Button } from '@/components/ui/Button';
+import { useProject } from '@/lib/context/ProjectContext';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
 function Viewfinder({ size = 20, color = 'rgba(224, 221, 174,0.3)' }: { size?: number; color?: string }) {
@@ -430,7 +431,6 @@ interface LiveData {
   scriptLines: string[];
   assets: { label: string; color: string }[];
   messages: { from: string; text: string; mine: boolean }[];
-  activeProject: { id: string; title: string } | null;
   latestScriptTitle: string | null;
 }
 interface PlatformStats { creators: number; scripts: number; projects: number; concepts: number }
@@ -438,7 +438,15 @@ interface PlatformStats { creators: number; scripts: number; projects: number; c
 export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], activeProject: null, latestScriptTitle: null });
+  const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], latestScriptTitle: null });
+  // The one real "active project" — same shared context the taskbar's
+  // switcher and every other module (Editor/Studio/Lounge) read from, so
+  // "Resume X" here always names whatever project actually opens elsewhere.
+  // This page used to run its own separate query (most-recently-created
+  // project), which could silently disagree with what the user had actually
+  // selected as active — "Resume Femme Fatale" while Studio opened something
+  // else entirely.
+  const { activeProject } = useProject();
 
   useEffect(() => {
     const palette = ['#6366f1', '#10b981', '#d7340b', '#f59e0b', '#8b5cf6', '#06b6d4'];
@@ -452,14 +460,13 @@ export default function Home() {
       setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
 
       // The viewer's own latest work, surfaced as real previews.
-      const [scriptRes, assetRes, msgRes, projRes] = await Promise.all([
+      const [scriptRes, assetRes, msgRes] = await Promise.all([
         supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
         supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
         // Only real channel messages here, never DMs (messages also stores
         // private 1:1s via receiver_id) — a general activity pulse must not
         // ever surface someone else's private conversation.
         supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
-        supabase.from('projects').select('id,title').eq('creator_id', user.id).order('created_at', { ascending: false }).limit(1),
       ]);
       const script = scriptRes.data?.[0];
       const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
@@ -469,7 +476,6 @@ export default function Home() {
         scriptLines,
         assets,
         messages,
-        activeProject: projRes.data?.[0] ? { id: projRes.data[0].id, title: projRes.data[0].title } : null,
         latestScriptTitle: script?.title || null,
       });
     });
@@ -638,7 +644,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════
           RESUME BAND — returning creators land back in their studio
       ══════════════════════════════════════════════ */}
-      {loggedIn && (live.activeProject || live.latestScriptTitle) && (
+      {loggedIn && (activeProject || live.latestScriptTitle) && (
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -650,13 +656,13 @@ export default function Home() {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(215, 52, 11,0.8)', marginBottom: 6 }}>Welcome back</div>
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, lineHeight: 1 }}>
-                {live.activeProject ? `Resume ${live.activeProject.title}` : 'Continue your screenplay'}
+                {activeProject ? `Resume ${activeProject.title}` : 'Continue your screenplay'}
               </div>
               {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <Button href="/editor" variant="ghost" size="sm">Open ScriptOS</Button>
-              <Button href={live.activeProject ? '/studio' : '/projects'} variant="solid" size="sm">
+              <Button href={activeProject ? '/studio' : '/projects'} variant="solid" size="sm">
                 Open Studio
               </Button>
             </div>

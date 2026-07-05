@@ -12,6 +12,7 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
 import { usePillStage } from '@/lib/context/PillContext';
+import { useProject } from '@/lib/context/ProjectContext';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 
 const ROLES = [
@@ -36,10 +37,12 @@ function roleColor(role: string) {
   return ROLE_COLORS[role] ?? '#737373';
 }
 
-function PostModal({ onClose, onCreated, userId }: {
+function PostModal({ onClose, onCreated, userId, projectId, projectTitle }: {
   onClose: () => void;
   onCreated: () => void;
   userId: string;
+  projectId: string | null;
+  projectTitle: string | null;
 }) {
   const [form, setForm] = useState({ title: '', description: '', role: 'Director', rate: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +55,7 @@ function PostModal({ onClose, onCreated, userId }: {
       description: form.description,
       role: form.role,
       rate: form.rate ? parseFloat(form.rate) : null,
+      project_id: projectId,
       created_by: userId,
       status: 'open',
     });
@@ -100,6 +104,21 @@ function PostModal({ onClose, onCreated, userId }: {
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(224, 221, 174,0.3)', padding: 4 }}>
             <X size={16} />
           </button>
+        </div>
+
+        {/* Which project this posting belongs to — matches whatever's
+            selected in the taskbar's switcher, so it's never a silent
+            orphan job disconnected from the project it's actually for. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
+          padding: '8px 12px', borderRadius: 8,
+          background: projectId ? 'rgba(16,185,129,0.06)' : 'rgba(245,158,11,0.06)',
+          border: `1px solid ${projectId ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: projectId ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)' }}>
+            {projectId ? <>Posting for <strong style={{ color: 'var(--fg)' }}>{projectTitle}</strong></> : 'No active project selected — this posting won’t be linked to a project'}
+          </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -375,6 +394,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
 export default function JobsPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const { activeProject } = useProject();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -743,6 +763,8 @@ export default function JobsPage() {
             onClose={() => setShowPost(false)}
             onCreated={() => { loadJobs(); if (user) loadMyJobs(user.id); }}
             userId={user.id}
+            projectId={activeProject?.id ?? null}
+            projectTitle={activeProject?.title ?? null}
           />
         )}
       </AnimatePresence>
