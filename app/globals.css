@@ -209,6 +209,26 @@ p {
   color: var(--fg-muted);
 }
 
+/* Lightweight typography utilities — a shorthand for pages that lean on
+   Tailwind classes instead of full inline style objects. Used on elements
+   (span/button/div) that don't get the tag-based h1-h6/p rules above, so
+   they need their own explicit font-family instead of inheriting one. */
+.mc-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+}
+.mc-title {
+  font-family: var(--display);
+  letter-spacing: 2px;
+  line-height: 1.1;
+  color: var(--fg);
+}
+.mc-text {
+  font-family: var(--mono);
+  color: var(--fg-muted);
+}
+
 /* ═══════════════════════════════
    GLASS SURFACES
 ═══════════════════════════════ */

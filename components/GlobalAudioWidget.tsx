@@ -29,21 +29,46 @@ export default function GlobalAudioWidget() {
 
   const [expanded, setExpanded] = useState(false);
   const [activeId, setActiveId] = useState(PLAYLISTS[0].id);
+  const [hovered, setHovered] = useState(false);
 
   if (!isAuthenticated) {
+    // Icon-only, matching every other dock button's size/hover treatment —
+    // a bordered text pill here reads far louder than search/home/profile/etc.
     return (
-      <button
-        onClick={redirectToSpotifyAuth}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '7px 14px', borderRadius: 9999,
-          background: 'rgba(30,215,96,0.1)', border: '1px solid rgba(30,215,96,0.3)',
-          color: '#1ed760', fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
-          textTransform: 'uppercase', cursor: 'pointer',
-        }}
-      >
-        <Disc size={11} /> Connect Audio
-      </button>
+      <div style={{ position: 'relative' }}>
+        <motion.button
+          onClick={redirectToSpotifyAuth}
+          aria-label="Connect Spotify"
+          onHoverStart={() => setHovered(true)}
+          onHoverEnd={() => setHovered(false)}
+          whileHover={{ scale: 1.18, y: -6 }}
+          whileTap={{ scale: 0.93 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+          style={{
+            width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: hovered ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+            color: hovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s',
+          }}
+        >
+          <Disc size={18} strokeWidth={1.5} />
+        </motion.button>
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
+              style={{
+                position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224,221,174,0.85)',
+                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
+                padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
+              }}
+            >
+              Connect Spotify
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     );
   }
 
@@ -84,7 +109,7 @@ export default function GlobalAudioWidget() {
         <button onClick={prevTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipBack size={18} /></button>
         <button 
           onClick={togglePlay}
-          style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--fg)', color: 'var(--bg-main)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--fg)', color: 'var(--bg)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
           {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
         </button>
