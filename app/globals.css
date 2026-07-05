@@ -159,7 +159,9 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 @media (max-width: 760px)  { .mc-masonry { column-count: 2; } }
 @media (max-width: 460px)  { .mc-masonry { column-count: 1; } }
 
-/* Reduce-motion preference (toggled from Settings) and OS-level setting. */
+/* Reduce-motion preference — the Settings toggle (body.reduce-motion) and the
+   real OS-level media query both land here; this comment previously claimed
+   OS-level support but only the manual class was ever actually implemented. */
 body.reduce-motion *,
 body.reduce-motion *::before,
 body.reduce-motion *::after {
@@ -167,6 +169,15 @@ body.reduce-motion *::after {
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 ::selection {
