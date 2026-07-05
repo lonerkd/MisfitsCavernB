@@ -6,6 +6,7 @@ import { Film } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import type { PublicProfile } from '@/lib/supabase/profiles';
+import type { PortfolioBlock } from '@/lib/supabase/portfolio';
 
 interface MediaItem {
   id: string;
@@ -24,6 +25,7 @@ interface Project {
   share_token: string;
   created_at: string;
   portfolio_media: MediaItem[];
+  portfolio_blocks: PortfolioBlock[];
   profiles: PublicProfile | null;
 }
 
@@ -39,8 +41,9 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
       try {
         const { data, error } = await supabase
           .from('portfolio_projects')
-          .select('*, portfolio_media(*), profiles(username, role, avatar_url)')
+          .select('*, portfolio_media(*), portfolio_blocks(*), profiles(username, role, avatar_url)')
           .eq('share_token', params.token)
+          .order('position', { foreignTable: 'portfolio_blocks' })
           .single();
 
         if (error || !data) {
@@ -159,6 +162,14 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
 
   const { title, year, role, description, portfolio_media, profiles } = project;
   const avatarInitial = profiles?.username?.[0]?.toUpperCase() ?? '?';
+
+  // Pitch-board blocks (already ordered by `position` from the query).
+  // The cover block's body is this deck's write-up when the portfolio row
+  // itself has no description — the builder seeds it from the source
+  // project, so it's usually the real content, not the row column.
+  const blocks = (project.portfolio_blocks || []).filter(b => b.block_type !== 'cover');
+  const coverBlock = (project.portfolio_blocks || []).find(b => b.block_type === 'cover');
+  const effectiveDescription = description || coverBlock?.body || null;
 
   // ── Main Page ─────────────────────────────────────────────────────────────────
   return (
@@ -338,7 +349,7 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         )}
 
         {/* Description */}
-        {description && (
+        {effectiveDescription && (
           <p style={{
             fontFamily: 'var(--serif)',
             fontSize: 'clamp(1rem, 2vw, 1.2rem)',
@@ -348,13 +359,27 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
             maxWidth: 720,
             marginTop: (year || role) ? 0 : 0,
           }}>
-            {description}
+            {effectiveDescription}
           </p>
         )}
       </section>
 
-      {/* ── Video Grid ── */}
-      {portfolio_media.length > 0 && (
+      {/* ── Pitch Deck (blocks assembled from the source project) ── */}
+      {blocks.length > 0 && (
+        <section style={{
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: '0 clamp(20px, 5vw, 64px) clamp(40px, 6vw, 72px)',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {blocks.map(b => <DeckBlock key={b.id} block={b} />)}
+          </div>
+        </section>
+      )}
+
+      {/* ── Video Grid — only when there's no assembled deck, so media isn't
+          shown twice (deck blocks of type 'media' already cover it) ── */}
+      {blocks.length === 0 && portfolio_media.length > 0 && (
         <section style={{
           maxWidth: 1200,
           margin: '0 auto',
@@ -386,7 +411,7 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         </section>
       )}
 
-      {portfolio_media.length === 0 && (
+      {blocks.length === 0 && portfolio_media.length === 0 && (
         <div style={{
           maxWidth: 900,
           margin: '0 auto',
@@ -499,6 +524,138 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+// Renders one pitch-board block for the anonymous public visitor. Every field
+// here comes from the block's own snapshot columns — never a join back to the
+// source project's protected tables (concept_assets/scenes/budget_items/
+// project_crew), which anon can't read anyway.
+function DeckBlock({ block }: { block: PortfolioBlock }) {
+  const label: React.CSSProperties = {
+    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, opacity: 0.3, marginBottom: 8, textTransform: 'uppercase',
+  };
+  const wrap: React.CSSProperties = {
+    padding: 'clamp(16px, 3vw, 24px)', borderRadius: 12,
+    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+  };
+  const heading: React.CSSProperties = { fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 1, margin: 0 };
+  const body: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.7, opacity: 0.75, marginTop: 8 };
+
+  switch (block.block_type) {
+    case 'concept':
+      return (
+        <div style={wrap}>
+          <div style={label}>Concept</div>
+          {block.image_url && (
+            <img src={block.image_url} alt={block.title || ''} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+          )}
+          {block.title && <h3 style={{ ...heading, marginTop: 10 }}>{block.title}</h3>}
+        </div>
+      );
+
+    case 'scene': {
+      const loc = [block.meta?.location, block.meta?.time_of_day].filter(Boolean).join(' · ');
+      return (
+        <div style={wrap}>
+          <div style={label}>Scene</div>
+          <h3 style={heading}>{block.title}</h3>
+          {loc && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, marginTop: 4 }}>{loc}</div>}
+        </div>
+      );
+    }
+
+    case 'budget': {
+      const total = block.meta?.total ?? 0;
+      const lines: { category: string; amount: number }[] = block.meta?.lines || [];
+      return (
+        <div style={wrap}>
+          <div style={label}>Budget</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2 }}>${Number(total).toLocaleString()}</div>
+          {lines.length > 0 && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {lines.map((l, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 10.5, opacity: 0.6 }}>
+                  <span>{l.category}</span>
+                  <span>${Number(l.amount).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'crew':
+      return (
+        <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 14 }}>
+          {block.image_url ? (
+            <img src={block.image_url} alt={block.title || ''} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(215,52,11,0.15)', flexShrink: 0 }} />
+          )}
+          <div>
+            <div style={label}>Crew</div>
+            <h3 style={{ ...heading, marginTop: -6 }}>{block.title}</h3>
+            {block.body && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.5, marginTop: 2 }}>{block.body}</div>}
+          </div>
+        </div>
+      );
+
+    case 'script':
+      return (
+        <div style={wrap}>
+          <div style={label}>Script Excerpt</div>
+          <h3 style={heading}>{block.title}</h3>
+          {block.body && <pre style={{ ...body, whiteSpace: 'pre-wrap', fontFamily: 'var(--mono)', fontSize: 11.5 }}>{block.body}</pre>}
+        </div>
+      );
+
+    case 'media': {
+      const isYt = block.meta?.media_type === 'youtube';
+      const url = block.meta?.url;
+      if (isYt && url) {
+        return (
+          <div style={wrap}>
+            <div style={label}>Media</div>
+            <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: 8, overflow: 'hidden' }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${extractYouTubeId(url)}?rel=0&modestbranding=1`}
+                width="100%" height="100%" style={{ border: 'none', display: 'block' }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen title={block.title || 'Video'}
+              />
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div style={wrap}>
+          <div style={label}>Media</div>
+          {url && <img src={url} alt={block.title || ''} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />}
+        </div>
+      );
+    }
+
+    case 'text':
+    default:
+      if (!block.title && !block.body) return null;
+      return (
+        <div style={wrap}>
+          {block.title && <h3 style={heading}>{block.title}</h3>}
+          {block.body && <p style={body}>{block.body}</p>}
+        </div>
+      );
+  }
+}
+
+function extractYouTubeId(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+    return u.searchParams.get('v') || url;
+  } catch {
+    return url;
+  }
+}
 
 function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }) {
   const [hovered, setHovered] = useState(false);

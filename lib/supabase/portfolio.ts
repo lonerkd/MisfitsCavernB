@@ -64,3 +64,61 @@ export async function deletePortfolioMedia(id: string) {
   const { error } = await supabase.from('portfolio_media').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ── Pitch-board blocks ──────────────────────────────────────────────────────
+// Blocks are ordered snapshots of a project's real assets (see the
+// portfolio_blocks migration for why snapshots, not references). Each carries
+// its own displayable content so the anonymous share page never has to read a
+// protected project table.
+
+export type PortfolioBlockType = 'cover' | 'concept' | 'scene' | 'budget' | 'crew' | 'script' | 'text' | 'media';
+
+export interface PortfolioBlock {
+  id: string;
+  portfolio_project_id: string;
+  position: number;
+  block_type: PortfolioBlockType;
+  title: string | null;
+  body: string | null;
+  image_url: string | null;
+  meta: any | null;
+  source_ref_id: string | null;
+  created_at: string;
+}
+
+export async function getPortfolioBlocks(portfolioProjectId: string): Promise<PortfolioBlock[]> {
+  const { data, error } = await supabase
+    .from('portfolio_blocks')
+    .select('*')
+    .eq('portfolio_project_id', portfolioProjectId)
+    .order('position', { ascending: true });
+  if (error) throw error;
+  return (data as PortfolioBlock[]) || [];
+}
+
+export async function addPortfolioBlock(block: Partial<PortfolioBlock> & { portfolio_project_id: string; block_type: PortfolioBlockType }): Promise<PortfolioBlock> {
+  const { data, error } = await supabase.from('portfolio_blocks').insert(block).select().single();
+  if (error) throw error;
+  return data as PortfolioBlock;
+}
+
+export async function updatePortfolioBlock(id: string, patch: Partial<PortfolioBlock>): Promise<PortfolioBlock> {
+  const { data, error } = await supabase.from('portfolio_blocks').update(patch).eq('id', id).select().single();
+  if (error) throw error;
+  return data as PortfolioBlock;
+}
+
+export async function deletePortfolioBlock(id: string) {
+  const { error } = await supabase.from('portfolio_blocks').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Persist a new ordering by writing each block's index as its position. Called
+// after a drag-reorder on the board.
+export async function reorderPortfolioBlocks(orderedIds: string[]): Promise<void> {
+  await Promise.all(
+    orderedIds.map((id, i) =>
+      supabase.from('portfolio_blocks').update({ position: i }).eq('id', id)
+    )
+  );
+}
