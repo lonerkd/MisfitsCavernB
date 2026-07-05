@@ -33,14 +33,10 @@ CREATE INDEX IF NOT EXISTS portfolio_blocks_project_idx
 
 ALTER TABLE portfolio_blocks ENABLE ROW LEVEL SECURITY;
 
--- Read/write policies mirror portfolio_media's exactly (same public-read via a
--- public-or-owner parent, same owner-only write), so blocks behave identically
--- to media rows on the anonymous share page.
-CREATE POLICY "Portfolio blocks readable if public or owner" ON portfolio_blocks FOR SELECT USING (
-  portfolio_project_id IN (
-    SELECT id FROM portfolio_projects WHERE is_public = true OR user_id = auth.uid()
-  )
-);
+-- Read/write policies mirror portfolio_media's exactly: portfolio_projects has
+-- no is_public column (sharing is gated in-app by the unguessable share_token),
+-- so read is open like portfolio_media's, and write is owner-only.
+CREATE POLICY "Portfolio blocks readable" ON portfolio_blocks FOR SELECT USING (true);
 CREATE POLICY "Portfolio blocks owner write" ON portfolio_blocks FOR ALL USING (
   portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
