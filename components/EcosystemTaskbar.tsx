@@ -412,6 +412,7 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
+  const restTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const setWidth = apps.length * (APP_ICON + APP_GAP);
   const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
 
@@ -420,12 +421,31 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
   }, [setWidth]);
+  useEffect(() => () => { if (restTimer.current) clearTimeout(restTimer.current); }, []);
 
   const normalize = () => {
     const el = scrollRef.current;
     if (!el || setWidth === 0) return;
     if (el.scrollLeft < setWidth * 0.5) el.scrollLeft += setWidth;
     else if (el.scrollLeft > setWidth * 1.5) el.scrollLeft -= setWidth;
+  };
+
+  // Cinematic return-to-rest: once scroll/drag activity has been quiet for a
+  // beat, glide the strip back to its original centered layout. Live
+  // scrolling always wins — every scroll event re-arms this timer, and the
+  // fired callback bails if a drag is still in progress, so the auto-return
+  // never fights an in-flight interaction.
+  const scheduleReturnHome = () => {
+    if (restTimer.current) clearTimeout(restTimer.current);
+    restTimer.current = setTimeout(() => {
+      if (dragRef.current || !scrollRef.current) return;
+      scrollRef.current.scrollTo({ left: setWidth, behavior: 'smooth' });
+    }, 900);
+  };
+
+  const onScroll = () => {
+    normalize();
+    scheduleReturnHome();
   };
 
   const onWheel = (e: React.WheelEvent) => {
@@ -443,6 +463,7 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   // dragged past a few px is treated as a swipe, not a click on whatever
   // icon happens to be under the pointer when it's released.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (restTimer.current) clearTimeout(restTimer.current);
     dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -452,7 +473,11 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
     if (Math.abs(dx) > 3) dragRef.current.moved = true;
     scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
   };
-  const onPointerUp = () => normalize();
+  const onPointerUp = () => {
+    dragRef.current = null;
+    normalize();
+    scheduleReturnHome();
+  };
 
   return (
     <motion.div
@@ -463,7 +488,7 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
     >
       <div
         ref={scrollRef}
-        onScroll={normalize}
+        onScroll={onScroll}
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
