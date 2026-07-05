@@ -6,10 +6,12 @@ import { motion } from 'framer-motion';
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
+  /** A leading icon (e.g. a search glyph) — shifts the label/text to make room. */
+  icon?: React.ReactNode;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, onFocus, onBlur, onChange, className = '', ...props }, ref) => {
+  ({ label, error, icon, onFocus, onBlur, onChange, className = '', ...props }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [hasValue, setHasValue] = useState(Boolean(props.value || props.defaultValue));
     const [showPw, setShowPw] = useState(false);
@@ -34,8 +36,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className={`relative mb-6 ${className}`}>
+        {icon && (
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--fg-muted)] opacity-60">
+            {icon}
+          </span>
+        )}
+
         <motion.div
-          className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${
+          className={`absolute top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${icon ? 'left-10' : 'left-4'} ${
             isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
@@ -57,9 +65,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           onBlur={handleBlur}
           onChange={handleChange}
           className={`
-            w-full bg-[rgba(0,0,0,0.3)] 
+            w-full bg-[rgba(0,0,0,0.3)]
             border ${error ? 'border-red-500/50' : isFocused ? 'border-[var(--accent)]' : 'border-[rgba(255,255,255,0.08)]'}
-            rounded-lg px-4 py-4
+            rounded-lg py-4
+            ${icon ? 'pl-10 pr-4' : 'px-4'}
             text-[var(--fg)] font-mono text-sm
             outline-none transition-all duration-300
             hover:border-[rgba(255,255,255,0.2)]

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Filter, Download, Search, Clock, User, Zap } from 'lucide-react';
 import { ProtectedPage } from '@/lib/permissions/access-control';
+import { Input } from '@/components/ui/Input';
 import { getAuditLogs, getActivitySummary, getMostActiveUsers, type AuditLog, type AuditAction } from '@/lib/supabase/audit';
 
 const ACTIONS: AuditAction[] = [
@@ -252,26 +253,15 @@ export default function AuditLogsPage() {
 
           {/* Filters */}
           <div style={{ marginBottom: 24, display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-              <input
-                type="text"
+            <div style={{ flex: 1 }}>
+              <Input
+                icon={<Search size={16} />}
+                label="Search"
                 placeholder="Search by user, action, or resource..."
                 value={searchTerm}
                 onChange={e => {
                   setSearchTerm(e.target.value);
                   setPage(0);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 40px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 4,
-                  fontFamily: 'var(--mono)',
-                  fontSize: 11,
-                  color: 'var(--fg)',
-                  outline: 'none',
                 }}
               />
             </div>
