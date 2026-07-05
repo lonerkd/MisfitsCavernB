@@ -31,16 +31,20 @@ export interface EditorLeftNavProps {
   getSceneType: (scene: ScriptLine) => { isInt: boolean; isExt: boolean; isDay: boolean; isNight: boolean };
   sceneCharMap: string[][];
   actStructure: { act2Start: number; act3Start: number; [k: string]: number };
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
-  content: string;
-  setCursorLine: (n: number) => void;
+  jumpToScene: (sceneIndex: number) => void;
+  reorderScenes: (from: number, to: number) => void;
+  dragSceneIdx: number | null;
+  setDragSceneIdx: (i: number | null) => void;
+  dropSceneIdx: number | null;
+  setDropSceneIdx: (i: number | null) => void;
 }
 
 export function EditorLeftNav({
   scripts, setScripts, createNewScript, setCurrentScript, setContent, toast,
   fileInputRef, handleImportFile, showTitleEditor, setShowTitleEditor, templates: TEMPLATES,
   scenesList, sceneWordCounts, currentSceneIdx, sceneTypeColor, getSceneType,
-  sceneCharMap, actStructure, textareaRef, content, setCursorLine,
+  sceneCharMap, actStructure,
+  jumpToScene, reorderScenes, dragSceneIdx, setDragSceneIdx, dropSceneIdx, setDropSceneIdx,
 }: EditorLeftNavProps) {
   return (
     <>
@@ -170,24 +174,21 @@ export function EditorLeftNav({
                         )}
 
                         <button
-                          onClick={() => {
-                            const textarea = textareaRef.current;
-                            if (!textarea) return;
-                            const sceneText = scene.text;
-                            const idx = content.toUpperCase().indexOf(sceneText.toUpperCase());
-                            if (idx >= 0) {
-                              textarea.focus();
-                              textarea.setSelectionRange(idx, idx);
-                              const linesBefore = content.substring(0, idx).split('\n').length;
-                              setCursorLine(linesBefore);
-                            }
-                          }}
+                          onClick={() => jumpToScene(i)}
+                          draggable
+                          title="Drag to reorder · click to jump to this scene"
+                          onDragStart={e => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
+                          onDragOver={e => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
+                          onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
+                          onDrop={e => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
                           style={{
                             width: '100%', textAlign: 'left', padding: '8px 4px 8px 8px',
-                            marginBottom: 2, background: 'transparent',
-                            border: 'none', borderRadius: 8, cursor: 'pointer',
-                            borderLeft: `2px solid ${isActive ? color : 'transparent'}`,
-                            transition: 'border-color 0.25s, background 0.18s',
+                            marginBottom: 2,
+                            background: dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? 'rgba(255,255,255,0.05)' : 'transparent',
+                            border: 'none', borderRadius: 8, cursor: 'grab',
+                            borderLeft: `2px solid ${isActive ? color : dropSceneIdx === i && dragSceneIdx !== i ? color : 'transparent'}`,
+                            opacity: dragSceneIdx === i ? 0.4 : 1,
+                            transition: 'border-color 0.25s, background 0.18s, opacity 0.2s',
                           }}
                           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

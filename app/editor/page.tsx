@@ -1004,24 +1004,6 @@ export default function EditorPage() {
     }
   };
 
-  // Jump from a plot card / outline row straight to that scene in the writing
-  // view (Arc Studio Pro-style board↔script navigation).
-  const jumpToScene = (sceneText: string) => {
-    setActiveView('write');
-    setTimeout(() => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-      const idx = content.toUpperCase().indexOf(sceneText.toUpperCase());
-      if (idx < 0) return;
-      textarea.focus();
-      textarea.setSelectionRange(idx, idx);
-      const linesBefore = content.substring(0, idx).split('\n').length;
-      setCursorLine(linesBefore);
-      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
-      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lh);
-    }, 60);
-  };
-
   // Scene colour tags — persisted per script, keyed by slug text so they
   // survive re-parsing. Powers the outline's colour-coding (Arc-style).
   useEffect(() => {
@@ -1055,18 +1037,49 @@ export default function EditorPage() {
   // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
-  // Reorder whole scenes by rewriting the script text — dragging a card on the
-  // board physically moves that scene (heading + body) to the new position.
-  const reorderScenes = (from: number, to: number) => {
-    if (from === to || from < 0 || to < 0) return;
+  // Each scene slug's real character offset in `content`, found once via a
+  // single forward pass (cursor only ever advances) — the single source of
+  // truth both jumpToScene and reorderScenes key off, so a repeated slug
+  // (a flashback returning to "INT. COFFEE SHOP - DAY") always resolves to
+  // its own occurrence instead of whichever one text search happens to hit.
+  const scenePositions = useMemo(() => {
     let cursor = 0;
     const positions: number[] = [];
     for (const s of scenesList) {
       const idx = content.toUpperCase().indexOf(s.text.toUpperCase(), cursor);
-      if (idx < 0) return; // bail if we can't locate a scene cleanly
+      if (idx < 0) { positions.push(-1); continue; }
       positions.push(idx);
       cursor = idx + s.text.length;
     }
+    return positions;
+  }, [scenesList, content]);
+
+  // Jump from a plot card / outline row / Story Map rail straight to that
+  // scene in the writing view (Arc Studio Pro-style board↔script navigation).
+  // Keyed by scene index (via scenePositions), not by re-searching for the
+  // slug's text, so a repeated scene heading always opens its own occurrence.
+  const jumpToScene = (sceneIndex: number) => {
+    setActiveView('write');
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      const idx = scenePositions[sceneIndex];
+      if (!textarea || idx == null || idx < 0) return;
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      const linesBefore = content.substring(0, idx).split('\n').length;
+      setCursorLine(linesBefore);
+      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
+      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lh);
+    }, 60);
+  };
+
+  // Reorder whole scenes by rewriting the script text — dragging a card on the
+  // board (or the always-visible Story Map rail) physically moves that scene
+  // (heading + body) to the new position.
+  const reorderScenes = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0) return;
+    if (scenePositions.some(p => p < 0)) return; // bail if any scene couldn't be located cleanly
+    const positions = scenePositions;
     const preamble = content.substring(0, positions[0]);
     const blocks = positions.map((p, k) => content.substring(p, k + 1 < positions.length ? positions[k + 1] : content.length));
     const [moved] = blocks.splice(from, 1);
@@ -1428,7 +1441,10 @@ export default function EditorPage() {
                 templates={TEMPLATES}
                 scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
                 sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
-                actStructure={actStructure} textareaRef={textareaRef} content={content} setCursorLine={setCursorLine}
+                actStructure={actStructure}
+                jumpToScene={jumpToScene} reorderScenes={reorderScenes}
+                dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
+                dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
               />
             </motion.div>
           )}
