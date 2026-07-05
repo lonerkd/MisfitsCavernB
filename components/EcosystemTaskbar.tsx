@@ -8,6 +8,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 import NotificationBell from './NotificationBell';
+import dynamic from 'next/dynamic';
+
+const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#d7340b' },
@@ -727,6 +730,11 @@ export default function EcosystemTaskbar() {
 
           {/* Notifications */}
           <NotificationBell />
+
+          {/* Audio Engine */}
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
+            <GlobalAudioWidget />
+          </div>
 
           {/* Account: profile + settings */}
           {([

@@ -63,7 +63,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <CommandPalette />
                     <ShortcutsOverlay />
                     <EcosystemTaskbar />
-                    <GlobalAudioWidget />
                     <PageTransition>{children}</PageTransition>
                   </SpotifyProvider>
                 </PillProvider>

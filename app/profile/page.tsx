@@ -31,18 +31,22 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) { setLoading(false); return; }
-      setUser(user);
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session?.user) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      setUser(data.session.user);
 
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (data) setProfile(data);
+      const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).single();
+      if (prof) setProfile(prof);
 
       // Load quick stats
       const [{ count: scripts }, { count: projects }, { count: jobs }] = await Promise.all([
-        supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', user.id),
-        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', user.id),
-        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
+        supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', data.session.user.id),
+        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', data.session.user.id),
+        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', data.session.user.id),
       ]);
       setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
       setLoading(false);

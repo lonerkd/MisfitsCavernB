@@ -17,8 +17,8 @@ const CHARACTER_COLOR = '#ffaa00';
    ========================================================================= */
 
 export interface EditorRightPanelsProps {
-  rightPanel: 'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown';
-  setRightPanel: (p: 'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown') => void;
+  rightPanel: 'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown' | 'audio';
+  setRightPanel: (p: 'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown' | 'audio') => void;
   activeView: string;
   currentSceneIdx: number;
   scenesList: ScriptLine[];
@@ -54,7 +54,9 @@ export interface EditorRightPanelsProps {
   stashItems: { id: string; text: string; date: number }[];
   setStashItems: React.Dispatch<React.SetStateAction<{ id: string; text: string; date: number }[]>>;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
-  currentScript: { title?: string } | null;
+  currentScript: { title?: string, id?: string } | null;
+  projectAudioRefs?: any[];
+  playAudioRef?: (ref: any) => void;
 }
 
 export function EditorRightPanels({
@@ -64,14 +66,16 @@ export function EditorRightPanels({
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
   setNightModePreview, elements, chars, charStats, handleLockRevision, revisions,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript,
+  stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
+  const currentSceneHeading = currentSceneIdx >= 0 && scenesList[currentSceneIdx] ? scenesList[currentSceneIdx].text : null;
+
   return (
     <>
               {/* Panel Tabs — pill group */}
-              <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                {([['tools', Wand2], ['characters', Users], ['revisions', History], ['lint', AlertCircle], ['stash', Bookmark], ['breakdown', ClipboardList]] as const).map(([key, Icon]) => (
+              <div style={{ padding: '10px 10px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
+                {([['tools', Wand2], ['characters', Users], ['revisions', History], ['lint', AlertCircle], ['audio', Play], ['stash', Bookmark], ['breakdown', ClipboardList]] as const).map(([key, Icon]) => (
                   <button key={key} onClick={() => setRightPanel(key as any)} style={{
                     flex: 1, padding: '7px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',

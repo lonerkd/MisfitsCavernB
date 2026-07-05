@@ -77,9 +77,9 @@ export default function AuthPage() {
       // A stalled connection or a Supabase-side incident should never leave
       // this button stuck on "One moment..." forever with no way out.
       if (mode === 'signin') {
-        await withTimeout(signIn(form.email, form.password), 12000, 'Sign-in timed out.');
+        await withTimeout(signIn(form.email, form.password), 30000, 'Sign-in timed out.');
       } else {
-        await withTimeout(signUp(form.email, form.password, form.username), 12000, 'Sign-up timed out.');
+        await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
       }
       // Session is persisted by the Supabase client (persistSession);
       // pages read it via supabase.auth.getUser().

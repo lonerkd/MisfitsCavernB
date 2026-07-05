@@ -97,12 +97,12 @@ export default function SettingsPage() {
   const [notifyProduct, setNotifyProduct] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { router.replace('/auth'); return; }
-      setUser(data.user);
-      setNewEmail(data.user.email || '');
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session?.user) { router.replace('/auth'); return; }
+      setUser(data.session.user);
+      setNewEmail(data.session.user.email || '');
       setLoaded(true);
-      const prefs = await getNotificationPrefs(data.user.id);
+      const prefs = await getNotificationPrefs(data.session.user.id);
       setNotifyReplies(prefs.replies);
       setNotifyJobs(prefs.jobs);
       setNotifyProduct(prefs.product);

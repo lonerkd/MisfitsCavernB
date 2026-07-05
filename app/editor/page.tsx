@@ -22,6 +22,7 @@ import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
+import { useSpotify } from '@/lib/context/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
@@ -215,6 +216,28 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 export default function EditorPage() {
   useRequireAuth();
   const { activeProject } = useProject();
+  const { playUri } = useSpotify();
+  
+  const [projectAudioRefs, setProjectAudioRefs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (activeProject?.id) {
+      supabase.from('project_audio_references')
+        .select('*')
+        .eq('project_id', activeProject.id)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => setProjectAudioRefs(data || []));
+    }
+  }, [activeProject?.id]);
+
+  const playAudioRef = useCallback((ref: any) => {
+    if (ref.reference_type === 'spotify') playUri(ref.uri);
+    else if (ref.reference_type === 'custom_upload') {
+      const url = supabase.storage.from('sfx_library').getPublicUrl(ref.uri).data.publicUrl;
+      new Audio(url).play();
+    }
+  }, [playUri]);
+
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -1633,6 +1656,8 @@ export default function EditorPage() {
                   lintIssues={lintIssues}
                   stashItems={stashItems} setStashItems={setStashItems} textareaRef={textareaRef}
                   currentScript={currentScript}
+                  projectAudioRefs={projectAudioRefs}
+                  playAudioRef={playAudioRef}
                 />
               </EditorErrorBoundary>
             </motion.div>
