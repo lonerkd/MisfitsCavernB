@@ -83,11 +83,26 @@ export default function SoundtrackPage() {
   };
 
   const handleMagicSearch = async () => {
-    // In a real app, this extracts text from active script. For MVP, we mock context.
-    const mockContext = "dark shadows creeping fast explosion fight";
+    if (!activeProject?.id) {
+      toast('Select an active project in the Hub first', 'error');
+      return;
+    }
     setIsSearching(true);
     try {
-      const results = await contextAwareSearch(mockContext);
+      // Pull the real, most-recently-edited script for this project and read
+      // its actual content for mood/keyword extraction -- not a fixed string.
+      const { data: scripts } = await supabase
+        .from('scripts')
+        .select('content')
+        .eq('project_id', activeProject.id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      const content = scripts?.[0]?.content;
+      if (!content || !content.trim()) {
+        toast('This project has no script content yet to read mood from', 'error');
+        return;
+      }
+      const results = await contextAwareSearch(content);
       setSearchResults(results || []);
     } catch (err: any) {
       toast('Magic search failed: ' + err.message, 'error');

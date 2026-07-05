@@ -84,7 +84,7 @@ export default function GlobalAudioWidget() {
         <button onClick={prevTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipBack size={18} /></button>
         <button 
           onClick={togglePlay}
-          style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--fg)', color: 'var(--bg-main)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--fg)', color: 'var(--bg)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
           {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
         </button>

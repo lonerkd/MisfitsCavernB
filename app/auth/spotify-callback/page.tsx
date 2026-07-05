@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAccessToken } from '@/lib/spotify/auth';
+import { withTimeout } from '@/lib/supabase/withTimeout';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
 
 export default function SpotifyCallback() {
   const router = useRouter();
@@ -12,13 +14,15 @@ export default function SpotifyCallback() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    
+
     if (!code) {
       setError('No authorization code found in URL.');
       return;
     }
 
-    getAccessToken(code)
+    // A stalled token exchange (Spotify-side hiccup, dropped connection)
+    // should never leave this page stuck on "Connecting..." forever.
+    withTimeout(getAccessToken(code), 15000, 'Spotify token exchange timed out.')
       .then(() => {
         // Dispatch an event so the SpotifyContext picks up the new token immediately
         window.dispatchEvent(new Event('spotify-auth-changed'));
@@ -37,7 +41,7 @@ export default function SpotifyCallback() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--bg-main)',
+      background: 'var(--bg)',
       color: 'var(--fg)',
       fontFamily: 'var(--mono)',
       fontSize: 12,
@@ -48,16 +52,9 @@ export default function SpotifyCallback() {
         <div style={{ color: '#d7340b', textAlign: 'center' }}>
           <p style={{ marginBottom: 16 }}>Authentication Failed</p>
           <p style={{ fontSize: 10, opacity: 0.7, maxWidth: 400, textTransform: 'none' }}>{error}</p>
-          <button 
-            onClick={() => router.push('/')}
-            style={{
-              marginTop: 24, padding: '8px 16px', background: '#d7340b', color: '#050a14',
-              border: 'none', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 10,
-              textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700
-            }}
-          >
+          <Button onClick={() => router.push('/')} style={{ marginTop: 24 }}>
             Return to Hub
-          </button>
+          </Button>
         </div>
       ) : (
         <motion.div
