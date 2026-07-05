@@ -288,7 +288,7 @@ export default function EditorPage() {
   const [findCount, setFindCount] = useState(0);
 
   // Panels
-  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown'>('tools');
+  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown' | 'audio'>('tools');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);

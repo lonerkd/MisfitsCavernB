@@ -66,7 +66,7 @@ export function EditorRightPanels({
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
   setNightModePreview, elements, chars, charStats, handleLockRevision, revisions,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
+  setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
   const currentSceneHeading = currentSceneIdx >= 0 && scenesList[currentSceneIdx] ? scenesList[currentSceneIdx].text : null;
