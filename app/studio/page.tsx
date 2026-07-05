@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import ParticleBackground from '@/components/ParticleBackground';
+import { useColorExtractor } from '@/hooks/useColorExtractor';
+import { AmbientGradient } from '@/components/ui/AmbientGradient';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
@@ -560,6 +563,7 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
 function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number; onOpen?: () => void; board?: string | null }) {
   const [isHovered, setIsHovered] = useState(false);
   const [broken, setBroken] = useState(false);
+  const dominantColor = useColorExtractor(image.url);
 
   return (
     <motion.div
@@ -575,7 +579,9 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: 
         borderRadius: 8,
         overflow: 'hidden',
         border: '1px solid rgba(255,255,255,0.05)',
-        background: '#0a0a0a'
+        background: '#0a0a0a',
+        boxShadow: isHovered && dominantColor ? `0 16px 40px ${dominantColor}66` : 'none',
+        transition: 'box-shadow 0.4s ease-out'
       }}
     >
       {broken ? (

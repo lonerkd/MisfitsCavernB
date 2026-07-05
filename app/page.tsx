@@ -12,6 +12,7 @@ import {
 import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
+import { Button } from '@/components/ui/Button';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
 function Viewfinder({ size = 20, color = 'rgba(224, 221, 174,0.3)' }: { size?: number; color?: string }) {
@@ -605,14 +606,15 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.85, duration: 0.9 }}
-            style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 40, flexWrap: 'wrap' }}
           >
-            <Link href={loggedIn ? '/projects' : '/auth'} className="btn-primary">
-              {loggedIn ? 'Enter Studio' : 'Start Creating'} <ArrowRight size={13} />
-            </Link>
-            <Link href="/portfolio" className="btn-ghost">
-              The Work
-            </Link>
+           <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 40 }}>
+            <Button href={loggedIn ? '/projects' : '/auth'} variant="solid" size="lg">
+              {loggedIn ? 'Enter Studio' : 'Enter Cavern'}
+            </Button>
+            <Button href="/portfolio" variant="ghost" size="lg">
+              View Work
+            </Button>
+          </div>
           </motion.div>
         </motion.div>
 
@@ -652,11 +654,11 @@ export default function Home() {
               </div>
               {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
             </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link href="/editor" className="btn-ghost" style={{ fontSize: 10 }}>Open ScriptOS</Link>
-              <Link href={live.activeProject ? '/studio' : '/projects'} className="btn-primary" style={{ fontSize: 10 }}>
-                Enter Studio <ArrowRight size={12} />
-              </Link>
+            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+              <Button href="/editor" variant="ghost" size="sm">Open ScriptOS</Button>
+              <Button href={live.activeProject ? '/studio' : '/projects'} variant="solid" size="sm">
+                Open Studio
+              </Button>
             </div>
           </div>
         </motion.section>
@@ -813,14 +815,14 @@ export default function Home() {
               <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(215, 52, 11,0.2)' }}>FILM</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/auth" className="btn-primary" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
-                Join The Cavern
-              </Link>
-              <a href="mailto:peterolowude@icloud.com" className="btn-ghost" style={{ fontSize: 11, letterSpacing: 4, padding: '15px 36px' }}>
-                Say Hello
-              </a>
-            </div>
+            <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginTop: 16 }}>
+            <Button href="/auth" variant="solid" size="lg">
+              Start Writing
+            </Button>
+            <Button href="mailto:peterolowude@icloud.com" variant="ghost" size="lg" external>
+              Contact Crew
+            </Button>
+          </div>
           </AnimatedSection>
         </div>
       </section>

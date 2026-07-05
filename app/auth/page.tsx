@@ -4,7 +4,9 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Eye, EyeOff, Loader } from 'lucide-react';
+import { ArrowLeft, Loader } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
 import { signIn, signUp } from '@/lib/supabase/auth';
@@ -22,96 +24,7 @@ interface Field {
   show?: boolean;
 }
 
-function FloatingInput({
-  name,
-  label,
-  type,
-  value,
-  onChange,
-  isPassword = false,
-}: {
-  name: string;
-  label: string;
-  type: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isPassword?: boolean;
-}) {
-  const [focused, setFocused] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-  const elevated = focused || value.length > 0;
 
-  return (
-    <div style={{ position: 'relative', marginBottom: 24 }}>
-      {/* Floating label */}
-      <label
-        style={{
-          position: 'absolute',
-          left: 16,
-          top: elevated ? 8 : 16,
-          fontSize: elevated ? 8 : 12,
-          letterSpacing: elevated ? 3 : 1,
-          fontFamily: 'var(--mono)',
-          textTransform: 'uppercase',
-          color: focused ? 'var(--accent)' : 'var(--fg-muted)',
-          pointerEvents: 'none',
-          transition: 'all 0.25s var(--ease-expo)',
-        }}
-      >
-        {label}
-      </label>
-
-      <input
-        name={name}
-        type={isPassword ? (showPw ? 'text' : 'password') : type}
-        value={value}
-        onChange={onChange}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        autoComplete={isPassword ? 'current-password' : name}
-        style={{
-          width: '100%',
-          paddingTop: elevated ? 24 : 16,
-          paddingBottom: elevated ? 8 : 16,
-          paddingLeft: 16,
-          paddingRight: isPassword ? 48 : 16,
-          background: 'rgba(255,255,255,0.02)',
-          border: `1px solid ${focused ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.08)'}`,
-          borderRadius: 'var(--radius-sm)',
-          color: 'var(--fg)',
-          fontFamily: 'var(--mono)',
-          fontSize: 13,
-          letterSpacing: 0.5,
-          outline: 'none',
-          transition: 'border-color 0.3s, box-shadow 0.3s',
-          boxShadow: focused ? '0 0 0 3px rgba(215, 52, 11,0.05)' : 'none',
-        }}
-      />
-
-      {isPassword && (
-        <button
-          type="button"
-          onClick={() => setShowPw(!showPw)}
-          style={{
-            position: 'absolute',
-            right: 14,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            color: 'var(--fg-muted)',
-            padding: 4,
-            transition: 'color 0.2s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
-        >
-          {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-      )}
-    </div>
-  );
-}
 
 export default function AuthPage() {
   const router = useRouter();
@@ -314,7 +227,7 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <FloatingInput
+            <Input
               name="email"
               label="Email"
               type="email"
@@ -331,7 +244,7 @@ export default function AuthPage() {
                   transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <FloatingInput
+                  <Input
                     name="username"
                     label="Username"
                     type="text"
@@ -342,13 +255,12 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            <FloatingInput
+            <Input
               name="password"
               label="Password"
               type="password"
               value={form.password}
               onChange={handleChange}
-              isPassword
             />
 
             {/* Error */}
@@ -376,33 +288,14 @@ export default function AuthPage() {
             </AnimatePresence>
 
             {/* Submit */}
-            <motion.button
+            <Button
               type="submit"
-              disabled={loading}
-              whileHover={!loading ? { y: -2, scale: 1.01 } : {}}
-              whileTap={!loading ? { scale: 0.98 } : {}}
-              style={{
-                width: '100%',
-                padding: '15px',
-                background: loading ? 'rgba(215, 52, 11,0.6)' : 'var(--accent)',
-                border: 'none',
-                color: 'var(--bg)',
-                fontFamily: 'var(--mono)',
-                fontSize: 10,
-                letterSpacing: 4,
-                textTransform: 'uppercase',
-                fontWeight: 600,
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                transition: 'background 0.3s',
-              }}
+              fullWidth
+              isLoading={loading}
+              variant="solid"
             >
-              {loading && <Loader size={13} style={{ animation: 'spin 0.8s linear infinite' }} />}
-              {loading ? 'One moment...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-            </motion.button>
+              {mode === 'signin' ? 'Sign In' : 'Create Account'}
+            </Button>
           </form>
 
           {/* Divider */}

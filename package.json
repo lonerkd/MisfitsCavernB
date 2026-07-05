@@ -16,6 +16,7 @@
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
+    "fast-average-color": "^9.5.2",
     "framer-motion": "^12.35.2",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.562.0",

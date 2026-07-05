@@ -10,6 +10,9 @@ import { supabase } from '@/lib/supabase/client';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { useProject, type Phase, mapStatusToPhase } from '@/lib/context/ProjectContext';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -553,9 +556,9 @@ export default function ProjectsPage() {
             <p style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', color: 'var(--fg-muted)', maxWidth: 460, lineHeight: 1.6 }}>
               One project ties your screenplay, schedule, budget, concept board, characters and pitch together. Create one to begin — everything flows from it.
             </p>
-            <button onClick={() => setShowNew(true)} className="btn-primary" style={{ marginTop: 8, fontSize: 12, letterSpacing: 3, padding: '15px 32px' }}>
-              <Plus size={14} /> Create your first project
-            </button>
+            <Button onClick={() => setShowNew(true)} variant="solid" size="lg" className="mt-2">
+              Start Project
+            </Button>
             <div style={{ display: 'flex', gap: 22, marginTop: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
               {['Write in ScriptOS', 'Auto-build the schedule', 'Plan budget & crew', 'Pitch it'].map((s, i) => (
                 <div key={s} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, color: 'var(--fg-dim)' }}>
