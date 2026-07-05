@@ -40,7 +40,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         left: '50%',
         transform: 'translateX(-50%)',
         marginBottom: 10,
-        background: 'rgba(10,10,10,0.96)',
+        background: 'rgba(5, 10, 18, 0.96)',
         backdropFilter: 'blur(28px)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 16,
@@ -532,7 +532,7 @@ export default function EcosystemTaskbar() {
               {hoveredId === 'search' && (
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
-                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
+                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
                 >
                   Search <kbd style={{ fontSize: 7.5, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 4px' }}>⌘K</kbd>
                   <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
@@ -612,7 +612,7 @@ export default function EcosystemTaskbar() {
                         bottom: '100%',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        background: 'rgba(14,14,14,0.96)',
+                        background: 'rgba(5, 10, 18, 0.96)',
                         border: '1px solid rgba(255,255,255,0.1)',
                         color: 'rgba(224, 221, 174,0.85)',
                         fontFamily: 'var(--mono)',
@@ -717,7 +717,7 @@ export default function EcosystemTaskbar() {
                     bottom: '100%',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: 'rgba(14,14,14,0.96)',
+                    background: 'rgba(5, 10, 18, 0.96)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     color: 'rgba(224, 221, 174,0.85)',
                     fontFamily: 'var(--mono)',
@@ -792,7 +792,7 @@ export default function EcosystemTaskbar() {
                       transition={{ duration: 0.18 }}
                       style={{
                         position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                        background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
+                        background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
                         fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
                         padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
                       }}
