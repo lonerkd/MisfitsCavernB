@@ -77,6 +77,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ${error ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}
           `}
           {...props}
+          placeholder={isActive ? props.placeholder : undefined}
         />
 
         {props.type === 'password' && (
