@@ -34,7 +34,7 @@ export function BoardView({
   setDragSceneIdx: (i: number | null) => void;
   dropSceneIdx: number | null;
   setDropSceneIdx: (i: number | null) => void;
-  jumpToScene: (sceneText: string) => void;
+  jumpToScene: (sceneIndex: number) => void;
   setSceneNote: (sceneText: string, note: string) => void;
   reorderScenes: (from: number, to: number) => void;
 }) {
@@ -55,7 +55,7 @@ export function BoardView({
           note={sceneNotes[scene.text.trim().toUpperCase()] || ''}
           isDragging={dragSceneIdx === i}
           isDropTarget={dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i}
-          onJump={() => jumpToScene(scene.text)}
+          onJump={() => jumpToScene(i)}
           onSetNote={note => setSceneNote(scene.text, note)}
           onDragStart={(e) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
           onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
@@ -165,7 +165,7 @@ export function OutlineView({
   lines: ScriptLine[];
   sceneColors: Record<string, string>;
   sceneNotes: Record<string, string>;
-  jumpToScene: (sceneText: string) => void;
+  jumpToScene: (sceneIndex: number) => void;
   tagScene: (sceneText: string, color: string) => void;
 }) {
   return (
@@ -194,7 +194,7 @@ export function OutlineView({
               ); })()}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <div onClick={() => jumpToScene(scene.text)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
+                  <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {CARD_COLORS.map(color => {
                       const active = sceneColors[scene.text.trim().toUpperCase()] === color;
