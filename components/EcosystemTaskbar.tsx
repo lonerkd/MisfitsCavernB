@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
@@ -354,6 +354,23 @@ export default function EcosystemTaskbar() {
   const [contextExpanded, setContextExpanded] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
+  // Dock can shrink to a small handle so it doesn't sit as a full bar across
+  // the bottom of every page. Collapsed state persists across pages/reloads;
+  // the toggle lives inside the same layout-animated flex row as the context
+  // capsule, so collapsing/expanding the dock's width also slides the capsule
+  // over in sync (framer-motion's `layout` prop on both, no extra wiring).
+  const [dockCollapsed, setDockCollapsed] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('mc_taskbar_collapsed') === '1') setDockCollapsed(true);
+  }, []);
+  const toggleDock = () => {
+    setDockCollapsed(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') localStorage.setItem('mc_taskbar_collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
+
   // Flatten the active descriptor's toggles + actions into one orderable list
   // — this is the order the hotkeys and Tab-focus ring walk through.
   const hotkeyItems = React.useMemo(() => {
@@ -488,6 +505,37 @@ export default function EcosystemTaskbar() {
           }}
           onMouseLeave={() => setHoveredId(null)}
         >
+          {/* Collapse handle — shrinks the dock to a small pill so it stops
+              covering page content underneath; the active module's color
+              stays visible as a dot even when collapsed. */}
+          <motion.button
+            onClick={toggleDock}
+            aria-label={dockCollapsed ? 'Expand taskbar' : 'Collapse taskbar'}
+            title={dockCollapsed ? 'Expand taskbar' : 'Collapse taskbar'}
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            style={{
+              width: 22, height: 40, borderRadius: 12, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+            }}
+          >
+            {dockCollapsed ? <ChevronUp size={14} color="rgba(224, 221, 174,0.4)" /> : <ChevronDown size={14} color="rgba(224, 221, 174,0.4)" />}
+            {dockCollapsed && (
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: moduleColor, boxShadow: `0 0 6px ${moduleColor}` }} />
+            )}
+          </motion.button>
+
+          <AnimatePresence initial={false}>
+          {!dockCollapsed && (
+          <motion.div
+            key="dock-content"
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: 'auto' }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={MORPH}
+            style={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}
+          >
           {/* Command palette trigger */}
           <div style={{ position: 'relative' }}>
             <motion.button
@@ -787,6 +835,9 @@ export default function EcosystemTaskbar() {
               </Link>
             );
           })}
+          </motion.div>
+          )}
+          </AnimatePresence>
         </motion.div>
 
         {/* ── Context capsule: the live module context, budded off the dock.
