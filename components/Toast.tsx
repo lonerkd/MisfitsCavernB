@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const colors = {
     success: '#00cc66',
     error: 'var(--accent)',
-    info: 'rgba(255,255,255,0.6)',
+    info: 'rgba(224, 221, 174, 0.6)',
   };
 
   return (
@@ -67,9 +67,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 alignItems: 'center',
                 gap: 10,
                 padding: '12px 18px',
-                background: '#111',
+                background: 'var(--glass)',
                 border: `1px solid ${colors[t.type]}30`,
-                backdropFilter: 'blur(10px)',
+                borderRadius: 'var(--r-sm)',
+                backdropFilter: 'blur(20px) saturate(1.4)',
+                WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+                boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
                 letterSpacing: 1,
