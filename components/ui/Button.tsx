@@ -141,7 +141,7 @@ export function Button({
     </>
   );
 
-  const MotionLink = motion(Link);
+  const MotionLink = motion.create(Link);
 
   if (href) {
     if (external) {
