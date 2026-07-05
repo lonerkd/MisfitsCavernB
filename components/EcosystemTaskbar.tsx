@@ -20,11 +20,6 @@ const APPS = [
 const SPRING = { type: 'spring', stiffness: 380, damping: 30 } as const;
 const MORPH = { duration: 0.4, ease: [0.16, 1, 0.3, 1] } as const;
 
-// Caps-Lock hotkey layer: number row then QWERTY row map, in order, onto the
-// toggles + actions the Pill is currently showing — so "123…qwerty…" become
-// direct triggers with no mouse, matching the Dynamic-Island keyboard layer.
-const HOTKEYS = ['1', '2', '3', '4', '5', '6', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'];
-
 function ProjectSwitcher({ onClose }: { onClose: () => void }) {
   const { projects, activeProject, setActiveProject } = useProject();
   const router = useRouter();
@@ -118,23 +113,6 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Keycap badge — shown beside a toggle/action while Caps Lock arms the
-// hotkey layer, so the mapped key is always visible, never guessed.
-function Keycap({ char, accent, active }: { char: string; accent: string; active: boolean }) {
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: 13, height: 13, borderRadius: 4, flexShrink: 0,
-      fontFamily: 'var(--mono)', fontSize: 7, fontWeight: 700, textTransform: 'uppercase',
-      color: active ? '#050a14' : accent,
-      background: active ? accent : `${accent}1f`,
-      border: `1px solid ${accent}55`,
-    }}>
-      {char}
-    </span>
-  );
-}
-
 // ── Transient activity (Dynamic-Island live event) ────────────────────────
 function TransientView({ label, tone }: { label: string; tone: 'default' | 'success' | 'accent' }) {
   const color = tone === 'success' ? '#10b981' : tone === 'accent' ? '#d7340b' : 'rgba(224, 221, 174,0.8)';
@@ -168,14 +146,13 @@ function TransientView({ label, tone }: { label: string; tone: 'default' | 'succ
 // into the full strip of live fields, real toggles and real actions. Every
 // control here is wired — a toggle flips genuine page state, never decoration.
 function ContextCapsule({
-  descriptor, accent, expanded, zoneChain, kbActive, keycaps, focusedId,
+  descriptor, accent, expanded, zoneChain, kbActive, focusedId,
 }: {
   descriptor: PillDescriptor;
   accent: string;
   expanded: boolean;
   zoneChain: { depth: number; title: string }[];
   kbActive: boolean;
-  keycaps: Map<string, string>;
   focusedId: string | null;
 }) {
   const { title, fields = [], toggles = [], actions = [] } = descriptor;
@@ -311,9 +288,6 @@ function ContextCapsule({
                     outlineOffset: 2,
                   }}
                 >
-                  {kbActive && keycaps.has(t.id) && (
-                    <Keycap char={keycaps.get(t.id)!} accent={accent} active={focusedId === t.id} />
-                  )}
                   <span style={{
                     width: 15, height: 15, borderRadius: 5,
                     border: `1px solid ${t.active ? accent : 'rgba(255,255,255,0.18)'}`,
@@ -350,9 +324,6 @@ function ContextCapsule({
                     outlineOffset: 2,
                   }}
                 >
-                  {kbActive && keycaps.has(a.id) && (
-                    <Keycap char={keycaps.get(a.id)!} accent={accent} active={focusedId === a.id} />
-                  )}
                   {a.label}
                 </motion.button>
               ))}
@@ -386,12 +357,6 @@ export default function EcosystemTaskbar() {
     ];
   }, [activeDescriptor]);
 
-  const keycaps = React.useMemo(() => {
-    const m = new Map<string, string>();
-    hotkeyItems.forEach((item, i) => { if (HOTKEYS[i]) m.set(item.id, HOTKEYS[i]); });
-    return m;
-  }, [hotkeyItems]);
-
   useEffect(() => { if (!kbActive) setKbFocusIndex(-1); }, [kbActive]);
   useEffect(() => { setKbFocusIndex(-1); }, [hotkeyItems.length]);
 
@@ -419,17 +384,17 @@ export default function EcosystemTaskbar() {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
 
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      if (e.key >= '1' && e.key <= '5') {
         e.preventDefault();
-        const idx = APPS.findIndex(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
-        const base = idx === -1 ? 0 : idx;
-        const next = e.key === 'ArrowRight' ? (base + 1) % APPS.length : (base - 1 + APPS.length) % APPS.length;
-        router.push(APPS[next].path);
+        const idx = parseInt(e.key, 10) - 1;
+        if (APPS[idx]) router.push(APPS[idx].path);
         return;
       }
+
       if (e.key === 'ArrowUp') { e.preventDefault(); setContextExpanded(true); return; }
       if (e.key === 'ArrowDown') { e.preventDefault(); setContextExpanded(false); return; }
-      if (e.key === 'Tab') {
+
+      if (e.key === 'Tab' || e.key === ']' || e.key === 'ArrowRight') {
         if (!hotkeyItems.length) return;
         e.preventDefault();
         setKbFocusIndex(i => {
@@ -438,19 +403,23 @@ export default function EcosystemTaskbar() {
         });
         return;
       }
-      if (e.key === 'Enter') {
+      
+      if (e.key === '[' || e.key === 'ArrowLeft') {
+        if (!hotkeyItems.length) return;
+        e.preventDefault();
+        setKbFocusIndex(i => {
+          const n = hotkeyItems.length;
+          return (i - 1 + n) % n;
+        });
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === 'Control') {
         if (kbFocusIndex >= 0 && hotkeyItems[kbFocusIndex]) {
           e.preventDefault();
           hotkeyItems[kbFocusIndex].run();
         }
         return;
-      }
-
-      const k = e.key.toLowerCase();
-      const hIdx = HOTKEYS.indexOf(k);
-      if (hIdx >= 0 && hotkeyItems[hIdx]) {
-        e.preventDefault();
-        hotkeyItems[hIdx].run();
       }
     };
     window.addEventListener('keydown', handler);
@@ -842,7 +811,6 @@ export default function EcosystemTaskbar() {
                   expanded={contextOpen}
                   zoneChain={zoneChain}
                   kbActive={kbActive}
-                  keycaps={keycaps}
                   focusedId={focusedId}
                 />
               ) : null}
