@@ -18,6 +18,9 @@ import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { createPortfolioProject } from '@/lib/supabase/portfolio';
 import { usePillZone } from '@/lib/context/PillContext';
 import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/context/ProjectContext';
+import type { ProjectSettings } from '@/lib/types/settings';
+import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
+import type { ScriptFormat } from '@/lib/scriptos/parser';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -44,6 +47,7 @@ interface ProjectHubViewModel {
   assetCount?: number;
   assetGB?: number;
   publishedWork?: number;
+  settings?: ProjectSettings;
 }
 
 // ─── Production phases ───────────────────────────────────────────────────────
@@ -346,6 +350,7 @@ export default function ProjectHubPage() {
         description: data.description || '',
         color: data.accent_color || '#d7340b',
         team: [],
+        settings: data.settings,
       });
       setLoading(false);
       if (activeProject?.id !== data.id) refreshProject(data.id);
@@ -405,6 +410,7 @@ export default function ProjectHubPage() {
   // milestone checklist and the progress-percent calc.
   const typePhases = getPhasesForType(project.type);
   const typePhaseIdx = phaseIndexForType(project.type, project.phase);
+  const modules = getProjectModules(project.settings);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -520,46 +526,52 @@ export default function ProjectHubPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
 
           {/* ─ ScriptOS ─ */}
-          <DeptWindow
-            title="ScriptOS"
-            tag="Screenplay"
-            color="#d7340b"
-            href="/editor"
-            delay={0.05}
-            stats={[
-              { label: 'Pages', value: counts.pages },
-              { label: 'Scripts', value: counts.scripts },
-            ]}
-            preview={<ScriptPreview pages={counts.pages} scripts={counts.scripts} scenes={counts.scenes} />}
-          />
+          {modules.scriptos && (
+            <DeptWindow
+              title="ScriptOS"
+              tag="Screenplay"
+              color="#d7340b"
+              href="/editor"
+              delay={0.05}
+              stats={[
+                { label: 'Pages', value: counts.pages },
+                { label: 'Scripts', value: counts.scripts },
+              ]}
+              preview={<ScriptPreview pages={counts.pages} scripts={counts.scripts} scenes={counts.scenes} />}
+            />
+          )}
 
           {/* ─ Studio ─ */}
-          <DeptWindow
-            title="Studio"
-            tag="Assets"
-            color="#6366f1"
-            href="/studio"
-            delay={0.1}
-            stats={[
-              { label: 'Concepts', value: counts.concepts },
-              { label: 'Scenes',   value: counts.scenes },
-            ]}
-            preview={<AssetPreview concepts={counts.concepts} scenes={counts.scenes} />}
-          />
+          {modules.studio && (
+            <DeptWindow
+              title="Studio"
+              tag="Assets"
+              color="#6366f1"
+              href="/studio"
+              delay={0.1}
+              stats={[
+                { label: 'Concepts', value: counts.concepts },
+                { label: 'Scenes',   value: counts.scenes },
+              ]}
+              preview={<AssetPreview concepts={counts.concepts} scenes={counts.scenes} />}
+            />
+          )}
 
           {/* ─ Lounge / Crew ─ */}
-          <DeptWindow
-            title="Lounge"
-            tag="Crew"
-            color="#10b981"
-            href="/lounge"
-            delay={0.15}
-            stats={[
-              { label: 'Crew',  value: counts.crew },
-              { label: 'Tasks', value: `${counts.tasksDone}/${counts.tasks}` },
-            ]}
-            preview={<CrewPreview team={project.team} />}
-          />
+          {modules.lounge && (
+            <DeptWindow
+              title="Lounge"
+              tag="Crew"
+              color="#10b981"
+              href="/lounge"
+              delay={0.15}
+              stats={[
+                { label: 'Crew',  value: counts.crew },
+                { label: 'Tasks', value: `${counts.tasksDone}/${counts.tasks}` },
+              ]}
+              preview={<CrewPreview team={project.team} />}
+            />
+          )}
 
           {/* ─ Timeline ─ */}
           <DeptWindow
@@ -576,46 +588,50 @@ export default function ProjectHubPage() {
           />
 
           {/* ─ Portfolio ─ */}
-          <DeptWindow
-            title="Portfolio"
-            tag="Showcase"
-            color="#8b5cf6"
-            href="/portfolio"
-            delay={0.25}
-            stats={[
-              { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
-              { label: 'Type',  value: project.type },
-            ]}
-            preview={<PortfolioPreview published={counts.portfolioPublished} />}
-          />
+          {modules.portfolio && (
+            <DeptWindow
+              title="Portfolio"
+              tag="Showcase"
+              color="#8b5cf6"
+              href="/portfolio"
+              delay={0.25}
+              stats={[
+                { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
+                { label: 'Type',  value: project.type },
+              ]}
+              preview={<PortfolioPreview published={counts.portfolioPublished} />}
+            />
+          )}
 
           {/* ─ Jobs / Distribution ─ */}
-          <DeptWindow
-            title="Distribution"
-            tag="Launch"
-            color="#ec4899"
-            href="/jobs"
-            delay={0.3}
-            stats={[
-              { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
-              { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
-            ]}
-            preview={
-              <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {[
-                  { label: 'Picture Lock', ready: currentPhaseIdx >= 3 },
-                  { label: 'Trailer Cut',  ready: currentPhaseIdx >= 3 },
-                  { label: 'Press Kit',    ready: currentPhaseIdx >= 4 },
-                  { label: 'Delivered',    ready: project.progress === 100 },
-                ].map(({ label, ready }) => ({ label, value: ready ? 'Ready' : 'Not yet', color: ready ? '#10b981' : '#4b5563' })).map(({ label, value, color }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            }
-          />
+          {modules.distribution && (
+            <DeptWindow
+              title="Distribution"
+              tag="Launch"
+              color="#ec4899"
+              href="/jobs"
+              delay={0.3}
+              stats={[
+                { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
+                { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
+              ]}
+              preview={
+                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    { label: 'Picture Lock', ready: currentPhaseIdx >= 3 },
+                    { label: 'Trailer Cut',  ready: currentPhaseIdx >= 3 },
+                    { label: 'Press Kit',    ready: currentPhaseIdx >= 4 },
+                    { label: 'Delivered',    ready: project.progress === 100 },
+                  ].map(({ label, ready }) => ({ label, value: ready ? 'Ready' : 'Not yet', color: ready ? '#10b981' : '#4b5563' })).map(({ label, value, color }) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              }
+            />
+          )}
 
         </div>
 
@@ -634,6 +650,13 @@ interface BudgetRow { id: string; category: string; amount: number; actual_cost?
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
 interface PortfolioRow { id: string; title: string; share_token: string }
+interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
+
+const SCRIPT_FORMATS: ScriptFormat[] = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline'];
+const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
+const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
+  planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',
+};
 
 function ProductionManager({ projectId, accent, projectTitle, projectType }: { projectId: string; accent: string; projectTitle: string; projectType: string }) {
   const { toast } = useToast();
@@ -653,15 +676,18 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   // whether a publish is in flight.
   const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
   const [publishing, setPublishing] = useState(false);
+  const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
+  const [festivals, setFestivals] = useState<FestivalRow[]>([]);
 
   const load = React.useCallback(async () => {
     try {
-      const [t, b, tl, c, pf] = await Promise.all([
+      const [t, b, tl, c, pf, proj] = await Promise.all([
         supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
         supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
         supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
         supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
+        supabase.from('projects').select('settings,festival_submissions').eq('id', projectId).single(),
       ]);
       setTasks((t.data as TaskRow[]) || []);
       setBudget((b.data as BudgetRow[]) || []);
@@ -669,6 +695,8 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
       setCrew((c.data as unknown as CrewRow[]) || []);
       setPortfolio((pf.data as PortfolioRow[]) || []);
       setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
+      if (proj.data?.settings) setSettings(proj.data.settings as ProjectSettings);
+      setFestivals((proj.data?.festival_submissions as FestivalRow[]) || []);
     } catch (e: any) {
       setErr(e.message);
     }
@@ -840,6 +868,39 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     if (error) { setErr(error.message); setCrew(prev); }
   };
 
+  // Settings: format override + ecosystem module toggles, persisted straight
+  // to the projects row so the hub grid / taskbar nav pick it up immediately.
+  const saveSettings = async (next: ProjectSettings) => {
+    setSettings(next);
+    const { error } = await supabase.from('projects').update({ settings: next }).eq('id', projectId);
+    if (error) setErr(error.message);
+  };
+  const setDefaultFormat = (format: ScriptFormat | '') => {
+    saveSettings({ ...settings, defaultScriptFormat: format || undefined });
+  };
+  const toggleModule = (key: keyof ProjectSettings['modules']) => {
+    saveSettings({ ...settings, modules: { ...settings.modules, [key]: !settings.modules[key] } });
+  };
+
+  const addFestival = async (name: string, deadline: string) => {
+    if (!name.trim()) return;
+    const next = [...festivals, { id: crypto.randomUUID(), name: name.trim(), deadline: deadline || undefined, status: 'planned' as const }];
+    setFestivals(next);
+    const { error } = await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+    if (error) setErr(error.message);
+  };
+  const setFestivalStatus = async (id: string, status: FestivalRow['status']) => {
+    const next = festivals.map(f => f.id === id ? { ...f, status } : f);
+    setFestivals(next);
+    await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+  };
+  const delFestival = async (id: string) => {
+    if (!await confirm('Remove this festival submission?')) return;
+    const next = festivals.filter(f => f.id !== id);
+    setFestivals(next);
+    await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+  };
+
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
   const totalActual = budget.reduce((s, b) => s + Number(b.actual_cost || 0), 0);
   const hasActuals = budget.some(b => b.actual_cost != null);
@@ -952,6 +1013,65 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
               </Row>
             ))
           )}
+        </Panel>
+
+        {/* Festival Submissions */}
+        <Panel title="Festival Submissions" accent={accent}>
+          {festivals.length === 0 && <Empty>No submissions tracked yet</Empty>}
+          {festivals.map(f => (
+            <Row key={f.id}>
+              <span style={{ flex: 1, fontSize: 11 }}>{f.name}</span>
+              {f.deadline && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{new Date(f.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              <select
+                value={f.status}
+                onChange={e => setFestivalStatus(f.id, e.target.value as FestivalRow['status'])}
+                aria-label={`${f.name} submission status`}
+                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 8.5, textTransform: 'uppercase' }}
+              >
+                {FESTIVAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <DelBtn onClick={() => delFestival(f.id)} />
+            </Row>
+          ))}
+          <AddForm placeholder="Festival name" fields={['text', 'date']} dateLabels={['Deadline']} onSubmit={(v) => v[0] && addFestival(v[0], v[1])} accent={accent} />
+        </Panel>
+
+        {/* Settings: script format override + per-project ecosystem module toggles */}
+        <Panel title="Settings" accent={accent}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
+          <select
+            value={settings.defaultScriptFormat || ''}
+            onChange={e => setDefaultFormat(e.target.value as ScriptFormat | '')}
+            aria-label="Default script format"
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}
+          >
+            <option value="">Use project-type default</option>
+            {SCRIPT_FORMATS.map(f => <option key={f} value={f}>{SCRIPT_FORMAT_LABELS[f]}</option>)}
+          </select>
+
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 6 }}>Ecosystem modules</div>
+          {([
+            ['scriptos', 'ScriptOS'], ['studio', 'Studio'], ['lounge', 'Lounge'],
+            ['portfolio', 'Portfolio'], ['distribution', 'Distribution'],
+          ] as [keyof ProjectSettings['modules'], string][]).map(([key, label]) => (
+            <Row key={key}>
+              <span style={{ flex: 1, fontSize: 11 }}>{label}</span>
+              <button
+                onClick={() => toggleModule(key)}
+                aria-label={`toggle ${label}`}
+                style={{
+                  width: 32, height: 18, borderRadius: 9999, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                  background: settings.modules[key] ? `${accent}40` : 'rgba(255,255,255,0.08)',
+                  border: `1px solid ${settings.modules[key] ? accent : 'rgba(255,255,255,0.15)'}`,
+                }}
+              >
+                <div style={{
+                  width: 12, height: 12, borderRadius: '50%', background: settings.modules[key] ? accent : 'var(--fg-dim)',
+                  position: 'absolute', top: 2, left: settings.modules[key] ? 17 : 2, transition: 'left 0.18s',
+                }} />
+              </button>
+            </Row>
+          ))}
         </Panel>
       </div>
     </div>

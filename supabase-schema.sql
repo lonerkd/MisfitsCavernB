@@ -915,3 +915,26 @@ CREATE POLICY "Portfolio blocks readable" ON portfolio_blocks FOR SELECT USING (
 CREATE POLICY "Portfolio blocks owner write" ON portfolio_blocks FOR ALL USING (
   portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
+
+-- Per-project settings (default script format override + ecosystem module
+-- visibility toggles — ScriptOS/Studio/Lounge/Portfolio/Distribution can
+-- each be switched off per project, hiding that department's hub tile and
+-- taskbar icon without touching its underlying data) and a lightweight
+-- festival-submissions tracker. Both are JSONB on `projects` rather than
+-- new relational tables — settings is a small fixed shape read as a whole,
+-- and festival submissions have no cross-table relations of their own, so
+-- either a real table would be pure ceremony.
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{"modules":{"scriptos":true,"studio":true,"lounge":true,"portfolio":true,"distribution":true}}'::jsonb;
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS festival_submissions JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- Campaign budget tracking: target demographic + planned budget/actual spend
+-- + a flight window, so the Studio Promos tab's Campaign Overview can show
+-- real spend-vs-budget instead of just counts.
+ALTER TABLE campaigns
+  ADD COLUMN IF NOT EXISTS target_demographic TEXT,
+  ADD COLUMN IF NOT EXISTS budget NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS spend NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS start_date DATE,
+  ADD COLUMN IF NOT EXISTS end_date DATE;

@@ -682,7 +682,11 @@ export default function JobsPage() {
               {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="skeleton" style={{ height: 88, borderRadius: 14 }} />
+                    <div key={i} style={{ padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, height: 120 }}>
+                      <div className="skeleton" style={{ width: 120, height: 14, borderRadius: 4, marginBottom: 16 }} />
+                      <div className="skeleton" style={{ width: '40%', height: 10, borderRadius: 4, marginBottom: 8 }} />
+                      <div className="skeleton" style={{ width: '30%', height: 10, borderRadius: 4 }} />
+                    </div>
                   ))}
                 </div>
               ) : loadError ? (

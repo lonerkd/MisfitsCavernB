@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import type { ProjectSettings } from '@/lib/types/settings';
 
 export interface Beat {
   id: string;
@@ -59,6 +60,19 @@ export interface Campaign {
   title: string;
   platform: string;
   status: string;
+  target_demographic?: string;
+  budget?: number;
+  spend?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface FestivalSubmission {
+  id: string;
+  name: string;
+  deadline?: string;
+  status: 'planned' | 'submitted' | 'accepted' | 'rejected';
+  notes?: string;
 }
 
 export interface Project {
@@ -75,6 +89,8 @@ export interface Project {
   concept_assets?: ConceptAsset[];
   scenes?: Scene[];
   campaigns?: Campaign[];
+  settings?: ProjectSettings;
+  festival_submissions?: FestivalSubmission[];
 }
 
 // The production-phase model shared by the projects list and hub pages.
