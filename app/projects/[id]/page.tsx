@@ -17,7 +17,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { createPortfolioProject } from '@/lib/supabase/portfolio';
 import { usePillZone } from '@/lib/context/PillContext';
-import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType } from '@/lib/context/ProjectContext';
+import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/context/ProjectContext';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -319,12 +319,17 @@ export default function ProjectHubPage() {
   const params = useParams();
   const router = useRouter();
   const id = String(params.id);
+  const { activeProject, setActiveProject, refreshProject } = useProject();
 
   const [realProject, setRealProject] = useState<ProjectHubViewModel | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Always load the actual project from Supabase and show the live production
-  // manager. Unknown ids redirect back to the projects list.
+  // manager. Unknown ids redirect back to the projects list. Also syncs the
+  // shared ProjectContext to whatever project is being viewed here, so a
+  // direct link or refresh on this page doesn't leave the taskbar switcher
+  // and every other module (Studio/Lounge/Editor/Soundtrack) pointed at a
+  // stale, unrelated project.
   useEffect(() => {
     let active = true;
     supabase.from('projects').select('*').eq('id', id).single().then(({ data, error }) => {
@@ -343,6 +348,7 @@ export default function ProjectHubPage() {
         team: [],
       });
       setLoading(false);
+      if (activeProject?.id !== data.id) refreshProject(data.id);
     });
     return () => { active = false; };
   }, [id, router]);
