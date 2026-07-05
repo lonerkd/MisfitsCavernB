@@ -31,6 +31,8 @@ import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
@@ -1698,10 +1700,12 @@ export default function EditorPage() {
                 <button onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
               </div>
               {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
-                <div key={field} style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{field.replace(/([A-Z])/g, ' $1').trim()}</label>
-                  <input value={titlePage[field]} onChange={e => handleTitlePageChange(field, e.target.value)} style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Courier Prime, monospace' }} />
-                </div>
+                <Input
+                  key={field}
+                  label={field.replace(/([A-Z])/g, ' $1').trim()}
+                  value={titlePage[field]}
+                  onChange={e => handleTitlePageChange(field, e.target.value)}
+                />
               ))}
             </motion.div>
           </motion.div>
@@ -1760,16 +1764,19 @@ export default function EditorPage() {
                               )}
                             </div>
                             {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
-                              <div key={field}>
-                                <label style={{ display: 'block', fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{field}</label>
-                                <textarea value={profile?.[field] || ''} onChange={e => {
+                              <Textarea
+                                key={field}
+                                label={field}
+                                value={profile?.[field] || ''}
+                                rows={2}
+                                onChange={e => {
                                   const updated = mergeProfiles(chars, charProfiles);
                                   const idx = updated.findIndex(p => p.name.toUpperCase() === name.toUpperCase());
                                   if (idx >= 0) updated[idx] = { ...updated[idx], [field]: e.target.value };
                                   setCharProfiles(updated);
                                   if (currentScript) saveCharacterProfiles(currentScript.id, updated);
-                                }} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none', resize: 'vertical', minHeight: 40, fontFamily: 'inherit' }} />
-                              </div>
+                                }}
+                              />
                             ))}
                           </div>
                         )}
