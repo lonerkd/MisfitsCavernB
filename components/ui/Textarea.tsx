@@ -89,6 +89,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             ${(error || isOverLimit) ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}
           `}
           {...props}
+          placeholder={isActive ? props.placeholder : undefined}
         />
 
         <div className="absolute -bottom-6 left-1 right-1 flex justify-between items-center text-[0.65rem] font-mono tracking-widest uppercase">

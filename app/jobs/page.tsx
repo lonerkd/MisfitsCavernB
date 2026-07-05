@@ -5,6 +5,8 @@ import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-rea
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
@@ -130,48 +132,21 @@ function PostModal({ onClose, onCreated, userId }: {
           </div>
 
           {/* Title */}
-          <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Position Title</div>
-            <input
-              type="text"
-              value={form.title}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              placeholder="e.g. Lead Editor for short film"
-              style={{
-                width: '100%', padding: '12px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 10, color: 'var(--fg)',
-                fontFamily: 'var(--mono)', fontSize: 12,
-                outline: 'none', boxSizing: 'border-box',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = `${roleColor(form.role)}55`)}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-            />
-          </div>
+          <Input
+            label="Position Title"
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="e.g. Lead Editor for short film"
+          />
 
           {/* Description */}
-          <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Brief</div>
-            <textarea
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Project context, schedule, what you're looking for…"
-              rows={3}
-              style={{
-                width: '100%', padding: '12px 14px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 10, color: 'var(--fg)',
-                fontFamily: 'var(--serif)', fontSize: 13,
-                outline: 'none', resize: 'none', boxSizing: 'border-box',
-                lineHeight: 1.6, transition: 'border-color 0.2s',
-              }}
-              onFocus={e => (e.currentTarget.style.borderColor = `${roleColor(form.role)}55`)}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-            />
-          </div>
+          <Textarea
+            label="Brief"
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder="Project context, schedule, what you're looking for…"
+            rows={3}
+          />
 
           {/* Rate */}
           <div>

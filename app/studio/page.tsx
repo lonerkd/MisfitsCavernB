@@ -9,6 +9,8 @@ import GrainOverlay from '@/components/GrainOverlay';
 import ParticleBackground from '@/components/ParticleBackground';
 import { useColorExtractor } from '@/hooks/useColorExtractor';
 import { AmbientGradient } from '@/components/ui/AmbientGradient';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import AnimatedSection from '@/components/AnimatedSection';
 import SectionLabel from '@/components/SectionLabel';
 import { supabase } from '@/lib/supabase/client';
@@ -289,15 +291,12 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Title</label>
-                <input
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="Asset Title"
-                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
-                />
-              </div>
+              <Input
+                label="Title"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="Asset Title"
+              />
 
               <div>
                 <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Upload File</label>
@@ -337,18 +336,15 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
 
               <div style={{ textAlign: 'center', fontSize: 10, color: '#444' }}>— OR —</div>
 
-              <div>
-                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>External URL</label>
-                <input
-                  value={url}
-                  onChange={e => {
-                    setUrl(e.target.value);
-                    if (e.target.value) setFile(null);
-                  }}
-                  placeholder="https://..."
-                  style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
-                />
-              </div>
+              <Input
+                label="External URL"
+                value={url}
+                onChange={e => {
+                  setUrl(e.target.value);
+                  if (e.target.value) setFile(null);
+                }}
+                placeholder="https://..."
+              />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
@@ -381,13 +377,15 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
 
               {error && <div style={{ fontSize: 11, color: '#ef4444' }}>{error}</div>}
 
-              <button
+              <Button
                 onClick={handleSubmit}
                 disabled={loading || (!url && !file)}
-                style={{ marginTop: 12, padding: 14, background: loading ? '#333' : 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: loading ? 'not-allowed' : 'pointer' }}
+                isLoading={loading}
+                fullWidth
+                style={{ marginTop: 12 }}
               >
-                {loading ? 'Processing...' : 'Complete Intake'}
-              </button>
+                Complete Intake
+              </Button>
             </div>
           </motion.div>
         </motion.div>
@@ -1341,10 +1339,10 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
                  </div>
 
                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button onClick={() => setSelectedUser(null)} style={{ flex: 1, padding: 14, background: 'transparent', border: '1px solid #333', color: '#fff', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}>Back</button>
-                    <button onClick={handleInvite} disabled={loading} style={{ flex: 2, padding: 14, background: 'var(--accent)', border: 'none', color: '#000', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                      {loading ? 'Sending...' : 'Send Invitation'}
-                    </button>
+                    <Button variant="outline" onClick={() => setSelectedUser(null)} style={{ flex: 1 }}>Back</Button>
+                    <Button onClick={handleInvite} disabled={loading} isLoading={loading} style={{ flex: 2 }}>
+                      Send Invitation
+                    </Button>
                  </div>
               </div>
             )}

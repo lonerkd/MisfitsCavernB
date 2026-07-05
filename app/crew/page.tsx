@@ -5,6 +5,7 @@ import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
+import { Input } from '@/components/ui/Input';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import type { Profile } from '@/lib/supabase/profiles';
@@ -85,12 +86,14 @@ export default function CrewPage() {
       <div style={{ marginTop: 60, padding: 24, maxWidth: 1100, margin: '60px auto 0' }}>
         {/* Search + Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
-            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-            <input type="text" placeholder="Search by name, skill, bio..." value={search}
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <Input
+              icon={<Search size={14} />}
+              label="Search"
+              placeholder="Search by name, skill, bio..."
+              value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box' }} />
+            />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {(['all', 'OPEN', 'BUSY'] as const).map(a => (

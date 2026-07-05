@@ -8,6 +8,9 @@ import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, delete
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 
 const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
 
@@ -149,17 +152,17 @@ export default function ManagePortfolioPage() {
       <div style={{ marginTop: 60, maxWidth: 720, margin: '60px auto 0', padding: '40px 24px 80px' }}>
         {showNew && (
           <div style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
-            <input type="text" placeholder="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} style={fieldStyle} />
+            <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <select value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
                 <option value="">Category...</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <input type="number" placeholder="Year" value={newProject.year} onChange={e => setNewProject({ ...newProject, year: e.target.value })} style={fieldStyle} />
-              <input type="text" placeholder="Your role" value={newProject.role} onChange={e => setNewProject({ ...newProject, role: e.target.value })} style={fieldStyle} />
+              <Input type="number" label="Year" value={newProject.year} onChange={e => setNewProject({ ...newProject, year: e.target.value })} />
+              <Input label="Your role" value={newProject.role} onChange={e => setNewProject({ ...newProject, role: e.target.value })} />
             </div>
-            <textarea placeholder="Description" value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} style={{ ...fieldStyle, height: 70, resize: 'vertical' }} />
-            <button onClick={createProject} style={{ padding: 10, background: 'var(--accent)', color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer' }}>ADD PROJECT</button>
+            <Textarea label="Description" value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} rows={3} />
+            <Button onClick={createProject}>ADD PROJECT</Button>
           </div>
         )}
 

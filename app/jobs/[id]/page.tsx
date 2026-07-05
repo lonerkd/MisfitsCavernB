@@ -5,6 +5,7 @@ import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { Textarea } from '@/components/ui/Textarea';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { assignCrewMember } from '@/lib/supabase/crew-management';
@@ -553,29 +554,13 @@ export default function JobDetailPage() {
             {/* Apply form */}
             {user && !alreadyApplied && (
               <div style={{ display: 'grid', gap: 16 }}>
-                <div>
-                  <label style={{
-                    display: 'block', fontFamily: 'var(--mono)', fontSize: 9,
-                    letterSpacing: 2, opacity: 0.5, marginBottom: 8,
-                  }}>
-                    COVER NOTE <span style={{ opacity: 0.5 }}>(optional)</span>
-                  </label>
-                  <textarea
-                    value={coverNote}
-                    onChange={e => setCoverNote(e.target.value)}
-                    placeholder="Tell the creator why you're the right fit..."
-                    rows={6}
-                    style={{
-                      width: '100%', padding: 16,
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'var(--fg)', fontFamily: 'var(--serif)', fontSize: '1rem',
-                      lineHeight: 1.65, resize: 'vertical', outline: 'none',
-                      transition: 'border-color 0.15s', boxSizing: 'border-box',
-                    }}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.4)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
-                  />
-                </div>
+                <Textarea
+                  label="Cover Note (optional)"
+                  value={coverNote}
+                  onChange={e => setCoverNote(e.target.value)}
+                  placeholder="Tell the creator why you're the right fit..."
+                  rows={6}
+                />
 
                 {applyError && (
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', opacity: 0.8 }}>

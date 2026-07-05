@@ -27,7 +27,6 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
   const [logline, setLogline] = useState('');
   const [busy, setBusy] = useState(false);
   const submit = async () => { if (!title.trim()) return; setBusy(true); try { await onCreate(title.trim(), type, logline.trim()); setTitle(''); setLogline(''); } finally { setBusy(false); } };
-  const inp: React.CSSProperties = { width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 14px', color: '#fff', fontSize: 14, outline: 'none' };
   return (
     <AnimatePresence>
       {open && (
@@ -38,10 +37,14 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Title</label>
-                <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} placeholder="e.g. Femme Fatale" style={inp} />
-              </div>
+              <Input
+                autoFocus
+                label="Title"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+                placeholder="e.g. Femme Fatale"
+              />
               <div>
                 <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Format</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -50,11 +53,16 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
                   ))}
                 </div>
               </div>
-              <div>
-                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Logline <span style={{ opacity: 0.5 }}>(optional)</span></label>
-                <textarea value={logline} onChange={e => setLogline(e.target.value)} placeholder="One sentence that sells the story." rows={2} style={{ ...inp, resize: 'vertical' }} />
-              </div>
-              <button onClick={submit} disabled={busy || !title.trim()} style={{ marginTop: 6, padding: 14, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, cursor: title.trim() ? 'pointer' : 'default', opacity: busy || !title.trim() ? 0.6 : 1 }}>{busy ? 'Creating…' : 'Create & open studio'}</button>
+              <Textarea
+                label="Logline (optional)"
+                value={logline}
+                onChange={e => setLogline(e.target.value)}
+                placeholder="One sentence that sells the story."
+                rows={2}
+              />
+              <Button onClick={submit} disabled={busy || !title.trim()} isLoading={busy} fullWidth style={{ marginTop: 6 }}>
+                Create &amp; open studio
+              </Button>
             </div>
           </motion.div>
         </motion.div>

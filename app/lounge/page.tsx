@@ -5,6 +5,8 @@ import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
@@ -258,10 +260,14 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
           </div>
         </div>
 
-        <div style={{ marginBottom: 16 }}>
-          <label style={label}>Name</label>
-          <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} placeholder="e.g. writers-room" style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '11px 12px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-        </div>
+        <Input
+          autoFocus
+          label="Name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          placeholder="e.g. writers-room"
+        />
 
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>Only invited members can see it</div></div>
@@ -282,8 +288,8 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1 }}>CANCEL</button>
-          <button onClick={submit} disabled={!name.trim() || busy} style={{ padding: '10px 18px', background: name.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8, color: name.trim() ? 'var(--bg)' : 'var(--fg-muted)', cursor: name.trim() ? 'pointer' : 'not-allowed', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, fontWeight: 600 }}>{busy ? 'CREATING…' : 'CREATE'}</button>
+          <Button variant="outline" size="sm" onClick={onClose}>CANCEL</Button>
+          <Button size="sm" onClick={submit} disabled={!name.trim() || busy} isLoading={busy}>CREATE</Button>
         </div>
       </motion.div>
     </motion.div>
@@ -368,8 +374,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 
         {channel.is_private && (
           <div style={{ marginBottom: 20 }}>
-            <label style={label}>Add member</label>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username…" style={{ width: '100%', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 12px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+            <Input label="Add member" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username…" />
             {(searching || results.length > 0) && (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {searching && <div style={{ fontSize: 10, color: '#555', padding: 6, fontFamily: 'var(--mono)' }}>Searching…</div>}
@@ -409,8 +414,8 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
         {err && <div style={{ marginTop: 12, fontSize: 11, color: '#f87171' }}>{err}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <button onClick={doDelete} disabled={busy} style={{ padding: '9px 14px', background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', borderRadius: 8, color: '#f87171', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>DELETE CHANNEL</button>
-          <button onClick={onClose} style={{ padding: '9px 16px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>DONE</button>
+          <Button variant="danger" size="sm" onClick={doDelete} disabled={busy}>DELETE CHANNEL</Button>
+          <Button size="sm" onClick={onClose}>DONE</Button>
         </div>
       </motion.div>
     </motion.div>
