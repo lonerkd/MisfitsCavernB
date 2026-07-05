@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
+import { withTimeout } from '@/lib/supabase/withTimeout';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { useProject, type Phase, mapStatusToPhase } from '@/lib/context/ProjectContext';
@@ -333,7 +334,9 @@ export default function ProjectsPage() {
   );
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // A stalled/failed getUser() call must never leave the board stuck on
+    // skeleton loaders forever — always resolve `loaded`, even on failure.
+    withTimeout(supabase.auth.getUser(), 12000, 'getUser timed out').then(({ data: { user } }) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
       getUserProjects(user.id).then(data => {
@@ -351,6 +354,9 @@ export default function ProjectsPage() {
         setProjectsList(fetched);
         setLoaded(true);
       }).catch(() => setLoaded(true));
+    }).catch(err => {
+      console.error('Failed to load current user:', err);
+      setLoaded(true);
     });
   }, []);
 

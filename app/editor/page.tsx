@@ -112,24 +112,12 @@ END COLD OPEN
 `,
 };
 
-const PLACEHOLDER = `FADE IN:
-
-INT. COFFEE SHOP - DAY
-
-The kind of place that hasn't changed in forty years. Good.
-
-JANE (30s, sharp eyes, cheap suit) sits at a corner table,
-typing furiously on a laptop that's seen better days.
-
-JANE
-(to herself)
-Got it. The perfect opening line.
-
-[[NOTE: Ensure Jane's coffee looks untouched.]]
-
-She leans back. Takes a long sip of cold coffee.
-
-CUT TO:`;
+// Deliberately short and clearly instructional, not a full fake scene — an
+// earlier version was a complete multi-paragraph sample screenplay, elaborate
+// enough that a writer opening a genuinely-empty new script could mistake the
+// faint placeholder text for real saved content, then "lose" it the instant
+// they typed a single character (placeholders vanish on any real input).
+const PLACEHOLDER = `Start writing — try "FADE IN:" or "INT. LOCATION - DAY"`;
 
 // Standard screenplay transitions offered by the editor's autocomplete.
 const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
