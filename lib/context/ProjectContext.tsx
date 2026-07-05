@@ -75,6 +75,8 @@ export interface Project {
   concept_assets?: ConceptAsset[];
   scenes?: Scene[];
   campaigns?: Campaign[];
+  settings?: any;
+  festival_submissions?: any[];
 }
 
 // The production-phase model shared by the projects list and hub pages.

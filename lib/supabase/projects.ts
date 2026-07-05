@@ -11,6 +11,8 @@ export interface DBProject {
   budget?: number;
   start_date?: string;
   end_date?: string;
+  settings?: any;
+  festival_submissions?: any[];
   created_at: string;
   updated_at: string;
 }

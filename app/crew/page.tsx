@@ -233,7 +233,17 @@ export default function CrewPage() {
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {[0, 1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="skeleton" style={{ height: 140, borderRadius: 14 }} />
+              <div key={i} style={{ padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, height: 160 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                  <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%' }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton" style={{ width: '60%', height: 12, borderRadius: 4, marginBottom: 6 }} />
+                    <div className="skeleton" style={{ width: '40%', height: 8, borderRadius: 4 }} />
+                  </div>
+                </div>
+                <div className="skeleton" style={{ width: '100%', height: 10, borderRadius: 4, marginBottom: 8 }} />
+                <div className="skeleton" style={{ width: '80%', height: 10, borderRadius: 4 }} />
+              </div>
             ))}
           </div>
         ) : loadError ? (
