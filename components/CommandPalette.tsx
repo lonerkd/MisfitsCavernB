@@ -130,7 +130,7 @@ export default function CommandPalette() {
             initial={{ opacity: 0, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={e => e.stopPropagation()}
-            style={{ width: 'min(92vw, 560px)', background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
+            style={{ width: 'min(92vw, 560px)', background: 'rgba(5, 10, 18, 0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
           >
             {/* Search input */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -152,7 +152,7 @@ export default function CommandPalette() {
                 <div style={{ padding: '28px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>
               ) : groups.map(g => (
                 <div key={g.group} style={{ marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', padding: '6px 10px 4px' }}>{g.group}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(224, 221, 174, 0.3)', padding: '6px 10px 4px' }}>{g.group}</div>
                   {g.items.map(c => {
                     flatIdx++;
                     const idx = flatIdx;
@@ -171,7 +171,7 @@ export default function CommandPalette() {
                       >
                         <span style={{ color: active ? 'var(--accent)' : 'rgba(255,255,255,0.4)', display: 'flex' }}>{c.icon}</span>
                         <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
-                        {c.hint && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
+                        {c.hint && <span style={{ fontSize: 10, color: 'rgba(224, 221, 174, 0.3)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
                         {active && <CornerDownLeft size={13} color="rgba(255,255,255,0.4)" />}
                       </button>
                     );
