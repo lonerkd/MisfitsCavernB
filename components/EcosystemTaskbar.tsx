@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
+import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
 
@@ -14,10 +15,10 @@ const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget')
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#d7340b' },
-  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#d7340b' },
-  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: '#6366f1' },
-  { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: '#10b981' },
-  { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b' },
+  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#d7340b', module: 'scriptos' as const },
+  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: '#6366f1', module: 'studio' as const },
+  { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: '#10b981', module: 'lounge' as const },
+  { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b', module: 'portfolio' as const },
 ];
 
 const SPRING = { type: 'spring', stiffness: 380, damping: 30 } as const;
@@ -344,6 +345,10 @@ export default function EcosystemTaskbar() {
   const { activeProject } = useProject();
   const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
   const activeColor = activeProject?.accent_color || '#d7340b';
+  // Per-project module toggles hide a dock icon entirely when its department
+  // is switched off for the active project — 'home' has no toggle of its own.
+  const modules = getProjectModules(activeProject?.settings);
+  const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [contextExpanded, setContextExpanded] = useState(false);
@@ -390,7 +395,7 @@ export default function EcosystemTaskbar() {
       if (e.key >= '1' && e.key <= '5') {
         e.preventDefault();
         const idx = parseInt(e.key, 10) - 1;
-        if (APPS[idx]) router.push(APPS[idx].path);
+        if (visibleApps[idx]) router.push(visibleApps[idx].path);
         return;
       }
 
@@ -517,7 +522,7 @@ export default function EcosystemTaskbar() {
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
           {/* App icons */}
-          {APPS.map((app) => {
+          {visibleApps.map((app) => {
             const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
             const isHovered = hoveredId === app.id;
             const Icon = app.icon;

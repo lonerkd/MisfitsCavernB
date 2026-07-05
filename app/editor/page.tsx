@@ -426,7 +426,7 @@ export default function EditorPage() {
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')
-            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
+            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
             .select('id,title,content')
             .single();
           row = ins.data || undefined;
@@ -1223,6 +1223,31 @@ export default function EditorPage() {
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
               <ArrowLeft size={18} />
             </Link>
+
+            {/* Persistent active-project indicator — a direct nav to /editor
+                (bookmark, new tab) has no route param of its own, so without
+                this there's no always-visible confirmation of which
+                project's script is loaded (only a transient toast on
+                switch). Click jumps to that project's hub, where the
+                taskbar's own project switcher lives if you need to change it. */}
+            {activeProject && (
+              <Link
+                href={`/projects/${activeProject.id}`}
+                title="Open this project's hub"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1,
+                  color: activeProject.accent_color || '#d7340b',
+                  background: `${activeProject.accent_color || '#d7340b'}14`,
+                  border: `1px solid ${activeProject.accent_color || '#d7340b'}30`,
+                  padding: '4px 10px', borderRadius: 9999, textDecoration: 'none',
+                  maxWidth: 160, overflow: 'hidden',
+                }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: activeProject.accent_color || '#d7340b', flexShrink: 0 }} />
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeProject.title}</span>
+              </Link>
+            )}
 
             <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
 
