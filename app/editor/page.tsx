@@ -36,7 +36,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
-import { EditorRightPanels } from '@/components/editor/EditorSidePanels';
+import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
@@ -290,7 +290,7 @@ export default function EditorPage() {
   const [findCount, setFindCount] = useState(0);
 
   // Panels
-  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown' | 'audio'>('tools');
+  const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
