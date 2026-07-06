@@ -53,6 +53,9 @@ export interface Scene {
   time_of_day?: string;
   shoot_day?: number;
   status?: string;
+  cast_list?: string;
+  est_duration?: string;
+  elements?: { props?: string[]; wardrobe?: string[]; vehicles?: string[]; sfx?: string[]; vfx?: string[] };
 }
 
 export interface Campaign {

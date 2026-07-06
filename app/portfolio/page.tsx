@@ -27,6 +27,10 @@ interface Video {
   featured?: boolean;
   laurels?: string[];
   stills?: string[];
+  // Showcase entries are frozen snapshots, not a live view of the source
+  // project (anon visitors can't read the underlying tables under RLS) —
+  // surfaced on the card so nobody mistakes this for a live project view.
+  frozenAt?: string;
 }
 
 function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video) => void; span?: 'wide' | 'tall' }) {
@@ -139,6 +143,11 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
           {video.role} · {video.year}
         </div>
+        {video.frozenAt && (
+          <div title="This showcase entry is a frozen snapshot — it does not reflect the live project" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginTop: 3 }}>
+            ❄ frozen {new Date(video.frozenAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+        )}
         {hover && (
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -322,6 +331,7 @@ export default function PortfolioPage() {
             driveId: media?.url?.split('id=')?.[1] || media?.url || '',
             year: p.year?.toString() || '',
             featured: true,
+            frozenAt: p.created_at,
           };
         });
         setVideosList(fetchedVideos);

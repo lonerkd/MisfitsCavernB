@@ -26,6 +26,7 @@ import { useSpotify } from '@/lib/context/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
@@ -125,6 +126,19 @@ const PLACEHOLDER = `Start writing — try "FADE IN:" or "INT. LOCATION - DAY"`;
 // Standard screenplay transitions offered by the editor's autocomplete.
 const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
 
+// Status bar copy: names the current line's element and hints at the
+// conventional next keystroke, the way Highland/Fountain-style editors do.
+const ELEMENT_STATUS: Record<string, { label: string; hint: string }> = {
+  slug: { label: 'Scene Heading', hint: 'Enter → Action' },
+  action: { label: 'Action', hint: 'Enter → Action · Tab → Character' },
+  character: { label: 'Character', hint: 'Enter → Dialogue' },
+  dialogue: { label: 'Dialogue', hint: 'Enter → Character · Tab → Parenthetical' },
+  parenthetical: { label: 'Parenthetical', hint: 'Enter → Dialogue' },
+  transition: { label: 'Transition', hint: 'Enter → Scene Heading' },
+  shot: { label: 'Shot', hint: 'Enter → Action' },
+  empty: { label: 'New Line', hint: 'Tab → cycle element type' },
+};
+
 // Undo/redo history depth.
 const MAX_HISTORY = 50;
 
@@ -162,7 +176,7 @@ function transformLineForType(text: string, type: LineType): string {
 // COMPONENTS
 // ============================================================================
 
-function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; index: number; nightModePreview: boolean }) {
+function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean }) {
   const style: React.CSSProperties = {
     fontFamily: 'Courier Prime, Courier, monospace',
     fontSize: 14,
@@ -192,7 +206,18 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
   const contd = line.meta?.isContinued;
   
   if (line.type === 'slug') {
-    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>{displayContent}</div>;
+    return (
+      <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
+        {/* Scene numbers in both margins — real screenplay convention */}
+        {showSceneNumbers && sceneNumber != null && (
+          <>
+            <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
+            <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
+          </>
+        )}
+        {displayContent}
+      </div>
+    );
   }
   if (line.type === 'character') {
     const name = line.meta?.isDualDialogue ? displayContent.replace(/^\^/, '') : displayContent;
@@ -232,6 +257,15 @@ export default function EditorPage() {
     }
   }, [activeProject?.id]);
 
+  // Margin gutter: typed, line-anchored annotations (shot/beat/note/revision/
+  // reference/todo) tied to the current script, each conceptually routing to
+  // its owning department elsewhere in the suite.
+  const [annotations, setAnnotations] = useState<ScriptAnnotation[]>([]);
+  const [annotationDraft, setAnnotationDraft] = useState<{ line: number; type: AnnotationType; text: string } | null>(null);
+  const reloadAnnotations = useCallback((scriptId: string) => {
+    listAnnotations(scriptId).then(setAnnotations).catch(() => setAnnotations([]));
+  }, []);
+
   const playAudioRef = useCallback((ref: any) => {
     if (ref.reference_type === 'spotify') playUri(ref.uri);
     else if (ref.reference_type === 'custom_upload') {
@@ -245,6 +279,30 @@ export default function EditorPage() {
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+  useEffect(() => {
+    if (currentScript?.id) reloadAnnotations(currentScript.id);
+    else setAnnotations([]);
+  }, [currentScript?.id, reloadAnnotations]);
+
+  const submitAnnotation = useCallback(async () => {
+    if (!annotationDraft || !currentScript?.id || !activeProject?.id || !annotationDraft.text.trim()) return;
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    try {
+      await addAnnotation({ scriptId: currentScript.id, projectId: activeProject.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), createdBy: auth.user.id });
+      reloadAnnotations(currentScript.id);
+      setAnnotationDraft(null);
+    } catch (e: any) {
+      console.error('Failed to add annotation:', e);
+    }
+  }, [annotationDraft, currentScript?.id, activeProject?.id, reloadAnnotations]);
+
+  const removeAnnotation = useCallback(async (id: string) => {
+    if (!currentScript?.id) return;
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+    try { await deleteAnnotation(id); } catch (e) { console.error('Failed to delete annotation:', e); reloadAnnotations(currentScript.id); }
+  }, [currentScript?.id, reloadAnnotations]);
+
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
@@ -1511,13 +1569,79 @@ export default function EditorPage() {
                   const color = (type && TYPE_COLORS[type]) || (revisionMode ? '#0099ff' : '#e0e0e0');
                   const bold = type === 'slug' || type === 'character' || type === 'transition';
                   const isReadingLine = tableReadLineIdx === i;
+                  const isCurrentLine = i === cursorLine;
+                  const lineAnnotations = annotations.filter(a => a.line_index === i);
                   return (
                     <div key={i} style={{
+                      position: 'relative',
                       color, fontWeight: bold ? 700 : 400,
-                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : undefined,
-                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : undefined,
+                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
+                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : isCurrentLine ? 'inset 2px 0 0 rgba(255,255,255,0.25)' : undefined,
                     }}>
                       {lineText.length ? lineText : ' '}
+                      {lineAnnotations.map((a, ai) => {
+                        const meta = ANNOTATION_META[a.type];
+                        return (
+                          <span
+                            key={a.id}
+                            title={`${meta.label}: ${a.text}\nRoutes to: ${meta.routesTo}\n(click to remove)`}
+                            onClick={() => removeAnnotation(a.id)}
+                            style={{
+                              position: 'absolute', left: -22 - ai * 14, top: 3, width: 9, height: 9, borderRadius: '50%',
+                              background: meta.color, boxShadow: `0 0 6px ${meta.color}99`, cursor: 'pointer', pointerEvents: 'auto',
+                            }}
+                          />
+                        );
+                      })}
+                      {isCurrentLine && !annotationDraft && (
+                        <span
+                          onClick={() => setAnnotationDraft({ line: i, type: 'note', text: '' })}
+                          title="Add margin note"
+                          style={{
+                            position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
+                            border: '1px dashed rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.5)',
+                            fontSize: 9, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
+                          }}
+                        >+</span>
+                      )}
+                      {isCurrentLine && annotationDraft?.line === i && (
+                        <div
+                          style={{
+                            position: 'absolute', left: -22, top: 18, zIndex: 30, width: 220,
+                            background: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                            padding: 10, pointerEvents: 'auto', boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                          }}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                            {ANNOTATION_TYPES.map(t => (
+                              <button
+                                key={t}
+                                onClick={() => setAnnotationDraft(d => d ? { ...d, type: t } : d)}
+                                style={{
+                                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase',
+                                  padding: '3px 7px', borderRadius: 99, cursor: 'pointer',
+                                  background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(255,255,255,0.04)',
+                                  border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.1)'}`,
+                                  color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.5)',
+                                }}
+                              >{ANNOTATION_META[t].label}</button>
+                            ))}
+                          </div>
+                          <input
+                            autoFocus
+                            value={annotationDraft.text}
+                            onChange={e => setAnnotationDraft(d => d ? { ...d, text: e.target.value } : d)}
+                            onKeyDown={e => { if (e.key === 'Enter') submitAnnotation(); if (e.key === 'Escape') setAnnotationDraft(null); }}
+                            placeholder={`Routes to ${ANNOTATION_META[annotationDraft.type].routesTo}...`}
+                            style={{ width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, marginBottom: 8 }}
+                          />
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px', cursor: 'pointer', fontSize: 10 }}>Add</button>
+                            <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 10 }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1527,7 +1651,11 @@ export default function EditorPage() {
                 value={content}
                 onChange={handleEditorChange}
                 onKeyDown={handleEditorKeyDown}
-                onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
+                onSelect={e => {
+                  const ta = e.target as HTMLTextAreaElement;
+                  broadcastCursor(ta.selectionStart);
+                  setCursorLine(ta.value.substring(0, ta.selectionStart).split('\n').length - 1);
+                }}
                 onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
                 placeholder={PLACEHOLDER}
                 spellCheck={false}
@@ -1570,30 +1698,86 @@ export default function EditorPage() {
                   </span>
                 </div>
               )}
+
+              {/* Status bar — names the current element and hints the
+                  conventional next keystroke, so the writer never has to
+                  guess what Tab/Enter will do mid-scene. */}
+              {!focusMode && (() => {
+                const currentType = lines[cursorLine]?.type || 'empty';
+                const status = ELEMENT_STATUS[currentType] || ELEMENT_STATUS.empty;
+                const color = TYPE_COLORS[currentType] || 'rgba(224, 221, 174,0.6)';
+                return (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '6px 16px', background: 'rgba(8,8,8,0.9)', borderTop: '1px solid rgba(255,255,255,0.06)',
+                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 0.5,
+                  }}>
+                    <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
+                    <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{status.hint}</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
-          {/* Structure Lines (Visual Act Markers) */}
+          {/* Live structure rail — Save-the-Cat-style milestone overlay, a
+              pacing flag, and where the current scene sits, surfaced in the
+              margin instead of buried in a Stats tab. */}
           {activeView === 'write' && !focusMode && (
             <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
               {scenesList.map((s, idx) => {
                 const pos = (idx / scenesList.length) * 100;
                 const isActBreak = s.text.includes('ACT');
                 return (
-                  <div 
-                    key={s.id} 
-                    style={{ 
-                      position: 'absolute', 
-                      top: `${pos}%`, 
-                      left: -4, 
-                      width: 10, 
-                      height: 2, 
+                  <div
+                    key={s.id}
+                    style={{
+                      position: 'absolute',
+                      top: `${pos}%`,
+                      left: -4,
+                      width: 10,
+                      height: 2,
                       background: isActBreak ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
-                    }} 
+                    }}
                     title={s.text}
                   />
                 );
               })}
+
+              {/* Save-the-Cat milestone labels */}
+              {[
+                { pct: 10, label: 'Setup' },
+                { pct: 25, label: 'Break into Two' },
+                { pct: 50, label: 'Midpoint' },
+                { pct: 75, label: 'Break into Three' },
+                { pct: 90, label: 'Finale' },
+              ].map(m => (
+                <div key={m.label} title={m.label} style={{ position: 'absolute', top: `${m.pct}%`, left: -1, width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', transform: 'translateY(-50%)' }}>
+                  <span style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 0.5, color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap' }}>{m.label}</span>
+                </div>
+              ))}
+
+              {/* Where the cursor currently sits */}
+              {scenesList.length > 0 && currentSceneIdx >= 0 && (
+                <div style={{ position: 'absolute', top: `${(currentSceneIdx / scenesList.length) * 100}%`, left: -5, width: 12, height: 12, marginTop: -6, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} title={`Now writing: ${scenesList[currentSceneIdx]?.text}`} />
+              )}
+
+              {/* Pacing flag — Act II (25%-75%) word share vs. the rest */}
+              {(() => {
+                if (scenesList.length < 4) return null;
+                const inAct2 = (idx: number) => { const p = (idx / scenesList.length) * 100; return p >= 25 && p < 75; };
+                let act2Words = 0, totalWords = 0;
+                sceneWordCounts.forEach((wc, idx) => { totalWords += wc; if (inAct2(idx)) act2Words += wc; });
+                if (totalWords === 0) return null;
+                const act2Share = act2Words / totalWords;
+                if (act2Share < 0.55) return null;
+                return (
+                  <div style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 0.5, color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
+                    Act II lagging · {Math.round(act2Share * 100)}% of words
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1628,7 +1812,7 @@ export default function EditorPage() {
                           <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
                         </div>
                       )}
-                      <LinePreview line={line} index={i} nightModePreview={nightModePreview} />
+                      <LinePreview line={line} index={i} nightModePreview={nightModePreview} sceneNumber={line.type === 'slug' ? scenesList.indexOf(line) + 1 : undefined} showSceneNumbers={showSceneNumbers} />
                     </React.Fragment>
                   );
                 })

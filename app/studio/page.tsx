@@ -32,7 +32,8 @@ import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoar
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { syncSceneElementsFromScript, syncBudgetFromSceneElements, ELEMENT_CATEGORIES, type ElementCategory } from '@/lib/supabase/breakdown';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X, Tags } from 'lucide-react';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -1903,6 +1904,7 @@ export default function StudioPage() {
           cast_list: (s.characters || []).join(', ') || null,
           est_duration: `${s.eighths || 1}/8 pg`,
           shoot_day: 1,
+          elements: s.elements || {},
         }));
       if (rows.length === 0) { toast('Schedule is already in sync with the script.', 'info'); return; }
       const { error } = await supabase.from('scenes').insert(rows);
@@ -1910,6 +1912,28 @@ export default function StudioPage() {
       await refreshProject(activeProject.id);
     } finally {
       setImportingScenes(false);
+    }
+  };
+
+  // The real breakdown hinge: re-tag every scene's production elements from
+  // the current script, then roll the unique counts per category into
+  // budget_items — replacing the fake hardcoded breakdown with a live sync.
+  const [syncingBreakdown, setSyncingBreakdown] = useState(false);
+  const syncBreakdown = async () => {
+    if (!activeProject) return;
+    const scenes = (activeProject.scenes || []) as any[];
+    if (scenes.length === 0) { toast('No scenes scheduled yet — import from the screenplay first.', 'info'); return; }
+    setSyncingBreakdown(true);
+    try {
+      const elementsById = await syncSceneElementsFromScript(activeProject.id, scenes);
+      const withElements = scenes.map(s => ({ ...s, elements: elementsById[s.id] ?? s.elements ?? {} }));
+      const synced = await syncBudgetFromSceneElements(activeProject.id, withElements, (activeProject.budget_items || []) as any[]);
+      await refreshProject(activeProject.id);
+      toast(synced.length > 0 ? `Breakdown synced — ${synced.length} budget categor${synced.length === 1 ? 'y' : 'ies'} updated` : 'Breakdown synced — no production elements detected', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Could not sync breakdown', 'error');
+    } finally {
+      setSyncingBreakdown(false);
     }
   };
 
@@ -2642,6 +2666,7 @@ export default function StudioPage() {
                      <div style={{ display: 'flex', gap: 8 }}>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(215, 52, 11,0.12)', borderColor: 'rgba(215, 52, 11,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(99,102,241,0.12)', borderColor: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }} onClick={syncBreakdown} disabled={syncingBreakdown} title="Re-tag every scene's production elements from the script and roll them into the budget by category"><Tags size={12}/> {syncingBreakdown ? 'Syncing…' : 'Sync Breakdown → Budget'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                      </div>
                    </div>
@@ -2735,6 +2760,20 @@ export default function StudioPage() {
                                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.5 }}>add concept images to link references</span>
                                )}
                              </div>
+                             {/* Tagged production elements — synced from the script via "Sync Breakdown → Budget" */}
+                             {(() => {
+                               const els = s.elements || {};
+                               const chips = ELEMENT_CATEGORIES.flatMap((cat: ElementCategory) => (els[cat] || []).map((name: string) => ({ cat, name })));
+                               if (chips.length === 0) return null;
+                               const catColor: Record<ElementCategory, string> = { props: '#ffaa00', wardrobe: '#d7340b', vehicles: '#0099ff', sfx: '#a855f7', vfx: '#6366f1' };
+                               return (
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
+                                   {chips.map(({ cat, name }) => (
+                                     <span key={`${cat}-${name}`} title={cat} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: catColor[cat], background: `${catColor[cat]}14`, border: `1px solid ${catColor[cat]}33`, borderRadius: 4, padding: '2px 6px' }}>{name}</span>
+                                   ))}
+                                 </div>
+                               );
+                             })()}
                              {/* Concept picker */}
                              {picking && (
                                <div style={{ marginTop: 8, marginLeft: 60, padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>

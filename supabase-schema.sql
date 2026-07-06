@@ -532,6 +532,33 @@ CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authentic
 -- Scene shoot status tracking
 ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
 
+-- Per-scene production elements (props/wardrobe/vehicles/sfx/vfx tagged from the
+-- script) — the real script -> schedule -> budget breakdown hinge.
+ALTER TABLE scenes ADD COLUMN IF NOT EXISTS elements JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- ScriptOS margin gutter: typed, line-anchored annotations on a script. Each
+-- one conceptually "routes to" its owning department (shot -> shot list,
+-- beat -> board, todo -> call sheet/props) — the routing is a label for now,
+-- not yet a write into those tables.
+CREATE TABLE IF NOT EXISTS script_annotations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  line_index INT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('shot', 'beat', 'note', 'revision', 'reference', 'todo')),
+  text TEXT NOT NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_script_annotations_script ON script_annotations(script_id);
+ALTER TABLE script_annotations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "script_annotations view" ON script_annotations FOR SELECT TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+CREATE POLICY "script_annotations insert" ON script_annotations FOR INSERT TO authenticated
+  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "script_annotations delete" ON script_annotations FOR DELETE TO authenticated
+  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+
 -- Notifications: per-user feed (bell). Insert allowed for any authenticated
 -- user so actors can notify recipients; read/update/delete scoped to owner.
 CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE TO authenticated
@@ -742,6 +769,9 @@ CREATE TABLE IF NOT EXISTS scenes (
   cast_list TEXT,
   est_duration TEXT,
   shoot_day INT DEFAULT 1,
+  -- Per-scene production elements ({ props: string[], wardrobe: string[], vehicles: string[],
+  -- sfx: string[], vfx: string[] }), the real script -> schedule -> budget breakdown hinge.
+  elements JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS campaigns (
@@ -938,3 +968,33 @@ ALTER TABLE campaigns
   ADD COLUMN IF NOT EXISTS spend NUMERIC DEFAULT 0,
   ADD COLUMN IF NOT EXISTS start_date DATE,
   ADD COLUMN IF NOT EXISTS end_date DATE;
+
+-- Schema debt cleanup (redesign spec section 3): the codebase ended up with
+-- two duplicate-purpose table pairs from earlier passes. Checked every call
+-- site in app/ and lib/ before touching either:
+--   - `beats` vs `project_beats`      -> project_beats is the one every
+--     Studio/Editor code path reads and writes (getProjectBeats/
+--     createProjectBeat/deleteProjectBeat in lib/supabase/studio.ts,
+--     ProjectContext's beats field). `beats` has zero references anywhere
+--     in app/ or lib/ — dead since whichever earlier pass introduced
+--     project_beats without migrating off the original.
+--   - `campaigns` vs `marketing_campaigns` -> campaigns is the one Studio's
+--     Promos tab and the Portfolio Distribution view both read/write.
+--     marketing_campaigns has zero references anywhere in app/ or lib/.
+-- Both dead tables have no rows referencing them from other tables (no
+-- inbound foreign keys), so dropping is safe with no migration step needed.
+DROP TABLE IF EXISTS beats;
+DROP TABLE IF EXISTS marketing_campaigns;
+
+-- NOT done here, deliberately: consolidating studio_assets/studio_boards
+-- (owner-scoped moodboards, lib/supabase/studio.ts) onto concept_assets
+-- (project-shared, used by Studio's scene/character reference pickers)
+-- is real product behavior change, not a rename — it would make every
+-- existing Concept Board visible to the whole crew instead of just its
+-- creator, which may or may not be wanted for personal moodboards vs
+-- shared references. Needs a product decision, not a silent migration.
+-- Character data (script_characters bible + character_castings +
+-- character_references) is NOT orphaned as originally reported — the
+-- Casting Board and Character Bible added in this pass wire all three
+-- together for their distinct purposes (bible content, cast assignment,
+-- look-board images), so no further consolidation is needed there.

@@ -12,6 +12,7 @@ import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
 
 const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
+const LoungeDock = dynamic(() => import('@/components/LoungeDock'), { ssr: false });
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#d7340b' },
@@ -871,6 +872,9 @@ export default function EcosystemTaskbar() {
 
           {/* Notifications */}
           <NotificationBell />
+
+          {/* Lounge — docked beside active work instead of a full-page nav */}
+          <LoungeDock />
 
           {/* Audio Engine */}
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
