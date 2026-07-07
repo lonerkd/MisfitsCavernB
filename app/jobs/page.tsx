@@ -14,6 +14,7 @@ import EmptyState from '@/components/EmptyState';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useProject } from '@/lib/context/ProjectContext';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
+import { logAuditAction } from '@/lib/supabase/audit';
 
 const ROLES = [
   'Director', 'DP / Cinematographer', 'Editor', 'Sound Designer',
@@ -50,7 +51,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle }: {
   const handleSubmit = async () => {
     if (!form.title || !form.role) return;
     setSubmitting(true);
-    const { error } = await supabase.from('jobs').insert({
+    const { data, error } = await supabase.from('jobs').insert({
       title: form.title,
       description: form.description,
       role: form.role,
@@ -58,9 +59,12 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle }: {
       project_id: projectId,
       created_by: userId,
       status: 'open',
-    });
+    }).select('id').single();
     setSubmitting(false);
-    if (!error) { onCreated(); onClose(); }
+    if (!error) {
+      if (data) logAuditAction(userId, 'job_created', 'job', data.id, { title: form.title, role: form.role });
+      onCreated(); onClose();
+    }
   };
 
   return (
@@ -466,6 +470,7 @@ export default function JobsPage() {
     if (!await confirm('Close this job posting? It will stop accepting applications.')) return;
     const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
     if (error) { toast(error.message || 'Could not close job', 'error'); return; }
+    if (user) logAuditAction(user.id, 'job_closed', 'job', jobId);
     toast('Job closed', 'success');
     if (user) loadMyJobs(user.id);
     loadJobs();

@@ -27,6 +27,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
+import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
@@ -488,6 +489,7 @@ export default function EditorPage() {
             .select('id,title,content')
             .single();
           row = ins.data || undefined;
+          if (row && uid) logAuditAction(uid, 'script_created', 'script', row.id, { title: row.title, project_id: activeProject.id });
         }
         if (cancelled || !row) return;
         if (currentScript?.id === row.id) return;
