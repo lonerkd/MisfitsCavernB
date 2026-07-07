@@ -258,13 +258,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Read inside the realtime callbacks below via a ref instead of the
-  // `activeProject` state directly — the effect that owns the subscription
-  // intentionally never re-runs once mounted (see why below), so a plain
-  // closure over `activeProject` would always see its value from the first
-  // render, not the current one.
+  // Read inside the realtime callbacks below via refs instead of state
+  // directly — the subscription effect intentionally runs only once (see why
+  // below), so plain closures would capture stale values.
   const activeProjectRef = useRef(activeProject);
+  const refreshProjectRef = useRef(refreshProject);
   useEffect(() => { activeProjectRef.current = activeProject; }, [activeProject]);
+  useEffect(() => { refreshProjectRef.current = refreshProject; }, [refreshProject]);
 
   // Load the initial project list once per session, not on every
   // activeProject change (setting the active project below used to be a
@@ -317,20 +317,20 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
         const item = (payload.new || payload.old) as any;
-        if (activeProjectRef.current?.id === item.project_id) {
-          refreshProject(item.project_id);
+        if (activeProjectRef.current?.id === item.project_id && refreshProjectRef.current) {
+          refreshProjectRef.current(item.project_id);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'timeline_items' }, (payload) => {
         const item = (payload.new || payload.old) as any;
-        if (activeProjectRef.current?.id === item.project_id) {
-          refreshProject(item.project_id);
+        if (activeProjectRef.current?.id === item.project_id && refreshProjectRef.current) {
+          refreshProjectRef.current(item.project_id);
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(projectSubscription); };
-  }, [refreshProject]);
+  }, []);
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const { error } = await supabase
