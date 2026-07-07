@@ -60,7 +60,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         <input
           ref={ref}
-          type={props.type === 'password' && showPw ? 'text' : props.type}
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChange={handleChange}
@@ -77,6 +76,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ${error ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}
           `}
           {...props}
+          // Must come after {...props} — props.type is always the caller's
+          // original "password", and JSX spread order means whichever type
+          // prop appears LAST on this element wins. With {...props} spread
+          // after this line (the previous order), the eye-icon toggle below
+          // updated showPw's state correctly but the input's actual type
+          // attribute got silently reset to "password" by the spread on
+          // every render, so the field never visually revealed the text.
+          type={props.type === 'password' && showPw ? 'text' : props.type}
           placeholder={isActive ? props.placeholder : undefined}
         />
 

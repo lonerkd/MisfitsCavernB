@@ -310,10 +310,17 @@ export default function AuthPage() {
           <button
             type="button"
             onClick={async () => {
-              await supabase.auth.signInWithOAuth({
+              // signInWithOAuth's result was previously discarded entirely —
+              // if Discord isn't enabled/configured as an OAuth provider in
+              // Supabase's dashboard, or the redirect URI doesn't match what's
+              // registered in Discord's own application settings, this call
+              // fails immediately with zero visible feedback: no redirect, no
+              // error, the button just appears to do nothing.
+              const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'discord',
                 options: { redirectTo: `${window.location.origin}/auth/callback` }
               });
+              if (error) toast(error.message || 'Could not start Discord sign-in.', 'error');
             }}
             style={{ width: '100%', padding: '14px', background: 'rgba(88,101,242,0.12)', border: '1px solid rgba(88,101,242,0.4)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'all 0.2s', marginTop: 24, borderRadius: 'var(--radius-sm)' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(88,101,242,0.22)'}

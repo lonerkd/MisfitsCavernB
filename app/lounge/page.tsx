@@ -343,9 +343,27 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   };
   const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };
   const saveDiscordWebhook = async () => {
-    if (!discordInput.trim()) return;
+    const url = discordInput.trim();
+    if (!url) return;
     setDiscordBusy(true);
-    const e = await setDiscordWebhook(channel.id, discordInput.trim());
+    setErr(null);
+    // Validate + live-test the webhook before ever saving it. Without this,
+    // a typo'd URL, a non-Discord URL, or a webhook already deleted on
+    // Discord's side would all save successfully and show "● Connected" —
+    // then every message would silently fail to bridge forever, since
+    // app/api/discord/notify's failures only ever reach a server log, with
+    // nothing surfaced back to whoever sent the message.
+    try {
+      const testRes = await fetch('/api/discord/test', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookUrl: url }),
+      });
+      const test = await testRes.json();
+      if (!test.ok) { setErr(test.error || 'Could not verify that webhook.'); setDiscordBusy(false); return; }
+    } catch {
+      setErr('Could not reach the server to verify that webhook.'); setDiscordBusy(false); return;
+    }
+    const e = await setDiscordWebhook(channel.id, url);
     setDiscordBusy(false);
     if (e) { setErr(e); return; }
     setDiscordInput(''); setDiscordConnected(true);

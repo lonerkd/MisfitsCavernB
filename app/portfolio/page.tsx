@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Play, X, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
@@ -279,7 +280,11 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   // Showcase = the public collection; Distribution = the campaign + festival
   // pipeline that used to be scattered across the project hub and Studio.
-  const [view, setView] = useState<'showcase' | 'distribution'>('showcase');
+  // ?tab=distribution lets other pages (e.g. the Projects Hub's Distribution
+  // tile) deep-link straight into this view instead of always landing on
+  // Showcase and leaving the user to find it themselves.
+  const searchParams = useSearchParams();
+  const [view, setView] = useState<'showcase' | 'distribution'>(searchParams.get('tab') === 'distribution' ? 'distribution' : 'showcase');
   const [festivals, setFestivals] = useState<FestivalEntry[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignEntry[]>([]);
 

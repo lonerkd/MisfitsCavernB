@@ -578,7 +578,7 @@ export default function ProjectHubPage() {
             title="Timeline"
             tag="Schedule"
             color="#f59e0b"
-            href="/projects"
+            href="#timeline"
             delay={0.2}
             stats={[
               { label: 'Milestones', value: counts.timeline },
@@ -603,13 +603,13 @@ export default function ProjectHubPage() {
             />
           )}
 
-          {/* ─ Jobs / Distribution ─ */}
+          {/* ─ Distribution ─ */}
           {modules.distribution && (
             <DeptWindow
               title="Distribution"
               tag="Launch"
               color="#ec4899"
-              href="/jobs"
+              href="/portfolio?tab=distribution"
               delay={0.3}
               stats={[
                 { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
@@ -969,7 +969,10 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           )}
         </Panel>
 
-        {/* Timeline */}
+        {/* Timeline — id lets the Timeline DeptWindow tile's "Open" link
+            scroll straight here instead of to the generic /projects list,
+            since this page has no per-section route to link to instead. */}
+        <div id="timeline">
         <Panel title="Timeline" accent={accent}>
           {timeline.length === 0 && <Empty>No milestones</Empty>}
           {timeline.map(tl => (
@@ -981,6 +984,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           ))}
           <AddForm placeholder="Milestone" fields={['text', 'date', 'date']} dateLabels={['Start', 'End']} onSubmit={(v) => v[0] && addTimeline(v[0], v[1], v[2])} accent={accent} />
         </Panel>
+        </div>
 
         {/* Crew */}
         <Panel title="Crew" accent={accent}>

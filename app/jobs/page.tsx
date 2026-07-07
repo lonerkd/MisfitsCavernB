@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { Input } from '@/components/ui/Input';
@@ -38,14 +39,16 @@ function roleColor(role: string) {
   return ROLE_COLORS[role] ?? '#737373';
 }
 
-function PostModal({ onClose, onCreated, userId, projectId, projectTitle }: {
+function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole }: {
   onClose: () => void;
   onCreated: () => void;
   userId: string;
   projectId: string | null;
   projectTitle: string | null;
+  initialTitle?: string;
+  initialRole?: string;
 }) {
-  const [form, setForm] = useState({ title: '', description: '', role: 'Director', rate: '' });
+  const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || 'Director', rate: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -399,6 +402,7 @@ export default function JobsPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const { activeProject } = useProject();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -408,6 +412,13 @@ export default function JobsPage() {
   const [showPost, setShowPost] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [tab, setTab] = useState<'open' | 'mine'>('open');
+  // ?title=&role= let another page (e.g. Studio's Casting Board "Post to
+  // Jobs" for a specific character) deep-link straight into a prefilled
+  // Post Position modal instead of dumping the user on this list with the
+  // casting context silently dropped.
+  const prefillTitle = searchParams.get('title') || '';
+  const prefillRole = searchParams.get('role') || '';
+  useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -774,6 +785,8 @@ export default function JobsPage() {
             userId={user.id}
             projectId={activeProject?.id ?? null}
             projectTitle={activeProject?.title ?? null}
+            initialTitle={prefillTitle}
+            initialRole={prefillRole}
           />
         )}
       </AnimatePresence>

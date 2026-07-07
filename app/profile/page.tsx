@@ -244,7 +244,7 @@ export default function ProfilePage() {
 
           {/* Quick links */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link href="/portfolio" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
+            <Link href="/portfolio/manage" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
               → MANAGE PORTFOLIO
             </Link>
             <Link href="/editor" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
