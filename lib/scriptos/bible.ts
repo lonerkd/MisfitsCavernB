@@ -1,15 +1,18 @@
 // ============================================================================
 // SCRIPTOS CHARACTER BIBLE
 // Manage character profiles, backstories, and notes.
-// Persisted in Supabase (script_metadata.character_bible) so every collaborator
-// on a script shares one character bible. localStorage is an offline cache only,
-// mirroring lib/scriptos/revisions.ts and titlepage.ts.
+// Persisted in Supabase (script_characters) so every collaborator on a script
+// shares one character bible — and so Studio's Casting Board (which reads/
+// writes this same table for casting slots and look-board references) stays
+// in sync with what's written here instead of drifting apart. localStorage is
+// an offline cache only, mirroring lib/scriptos/revisions.ts and titlepage.ts.
 // ============================================================================
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
 
 export interface CharacterProfile {
+  id?: string;
   name: string;
   fullName: string;
   age: string;
@@ -44,6 +47,22 @@ export function getDefaultProfile(name: string, index: number): CharacterProfile
   };
 }
 
+function rowToProfile(row: any): CharacterProfile {
+  return {
+    id: row.id,
+    name: row.name,
+    fullName: row.full_name || '',
+    age: row.age || '',
+    description: row.description || '',
+    backstory: row.backstory || '',
+    motivation: row.motivation || '',
+    arc: row.arc || '',
+    relationships: row.relationships || '',
+    notes: row.notes || '',
+    color: row.color || PROFILE_COLORS[0],
+  };
+}
+
 // Synchronous cache read for instant first paint.
 export function loadCharacterProfilesCached(scriptId: string): CharacterProfile[] {
   if (typeof window === 'undefined') return [];
@@ -56,15 +75,15 @@ export function loadCharacterProfilesCached(scriptId: string): CharacterProfile[
 export async function loadCharacterProfiles(scriptId: string): Promise<CharacterProfile[]> {
   const cached = loadCharacterProfilesCached(scriptId);
   try {
-    const { data } = await supabase
-      .from('script_metadata')
-      .select('character_bible')
+    const { data, error } = await supabase
+      .from('script_characters')
+      .select('*')
       .eq('script_id', scriptId)
-      .maybeSingle();
-    if (data?.character_bible && Array.isArray(data.character_bible)) {
-      setCacheItem(`${PROFILE_KEY}_${scriptId}`, data.character_bible);
-      return data.character_bible as CharacterProfile[];
-    }
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    const profiles = (data || []).map(rowToProfile);
+    setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
+    return profiles;
   } catch { /* offline — fall back to cache */ }
   return cached;
 }
@@ -73,10 +92,39 @@ export async function saveCharacterProfiles(scriptId: string, profiles: Characte
   if (typeof window !== 'undefined') setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('script_metadata').upsert(
-      { script_id: scriptId, character_bible: profiles, updated_by: user?.id, updated_at: new Date().toISOString() },
-      { onConflict: 'script_id' }
-    );
+    const { data: existing } = await supabase.from('script_characters').select('id,name').eq('script_id', scriptId);
+    const existingByName = new Map((existing || []).map((r: any) => [r.name, r.id]));
+
+    await Promise.all(profiles.map(async (p) => {
+      const id = p.id || existingByName.get(p.name);
+      const payload = {
+        script_id: scriptId,
+        name: p.name,
+        full_name: p.fullName || null,
+        age: p.age || null,
+        description: p.description || null,
+        backstory: p.backstory || null,
+        motivation: p.motivation || null,
+        arc: p.arc || null,
+        relationships: p.relationships || null,
+        notes: p.notes || null,
+        color: p.color,
+        updated_by: user?.id,
+        updated_at: new Date().toISOString(),
+      };
+      if (id) {
+        await supabase.from('script_characters').update(payload).eq('id', id);
+      } else {
+        await supabase.from('script_characters').insert(payload);
+      }
+    }));
+
+    // Characters detected in an earlier pass but no longer present in the
+    // script (renamed/removed) are left in place rather than deleted here —
+    // Studio's look-board references (character_references) point at these
+    // rows by id, so a silent delete would orphan any linked casting/look
+    // references. Removing a character from the bible is a deliberate,
+    // explicit action, not a side effect of a script edit.
   } catch { /* offline — cache already written */ }
 }
 

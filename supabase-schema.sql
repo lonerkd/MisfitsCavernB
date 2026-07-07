@@ -523,6 +523,42 @@ CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticate
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
   USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
+-- Character Bible: one row per character, shared by ScriptOS's Character
+-- Report (lib/scriptos/bible.ts) and Studio's Casting Board/look-board
+-- (app/studio/page.tsx) — both read and write this same table so a
+-- character developed in either surface shows up in the other, instead of
+-- silently diverging into two separate bibles. Applied live directly against
+-- Supabase; backfilled here since this file had never caught up with it.
+CREATE TABLE IF NOT EXISTS script_characters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  full_name TEXT,
+  age TEXT,
+  description TEXT,
+  backstory TEXT,
+  motivation TEXT,
+  arc TEXT,
+  relationships TEXT,
+  notes TEXT,
+  color TEXT DEFAULT '#ff3c00',
+  updated_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Script members can manage characters" ON script_characters FOR ALL
+  USING (script_id IN (
+    SELECT scripts.id FROM scripts WHERE (
+      scripts.project_id IS NULL
+      OR scripts.project_id IN (
+        SELECT projects.id FROM projects WHERE projects.creator_id = auth.uid()
+        UNION
+        SELECT project_crew.project_id FROM project_crew WHERE project_crew.user_id = auth.uid()
+      )
+    )
+  ));
+
 -- Casting/look references: link concept-board images to characters
 CREATE TABLE IF NOT EXISTS character_references (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -870,13 +906,15 @@ ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS budget_item_id UUID REFERENCES budget_items(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_jobs_budget_item ON jobs(budget_item_id);
 
--- Real casting links between screenplay characters and crew members. The old
--- script_characters/character_references tables model a relational Character
--- Bible that was superseded by the JSONB-based one in
--- script_metadata.character_bible (see lib/scriptos/bible.ts) and are unused
--- (0 rows, no app code reads/writes them). So casting gets its own small,
--- purpose-built table instead: cheap to join both directions, doesn't touch
--- the JSONB bible, and doesn't resurrect the orphaned tables.
+-- Real casting links between screenplay characters and crew members. This is
+-- a separate, non-overlapping concept from script_characters (character
+-- development data) and character_references (look-board images) above —
+-- casting is "who plays this role," keyed by character_name rather than
+-- character_id, so it stays valid even before a character has a bible row.
+-- (Earlier revisions of this file incorrectly claimed script_characters/
+-- character_references were dead JSONB-superseded tables with 0 rows; they
+-- were live in the database the whole time, just missing their CREATE TABLE
+-- statements here — see script_characters above for the correction.)
 CREATE TABLE IF NOT EXISTS character_castings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -1006,7 +1044,12 @@ DROP TABLE IF EXISTS marketing_campaigns;
 -- creator, which may or may not be wanted for personal moodboards vs
 -- shared references. Needs a product decision, not a silent migration.
 -- Character data (script_characters bible + character_castings +
--- character_references) is NOT orphaned as originally reported — the
--- Casting Board and Character Bible added in this pass wire all three
--- together for their distinct purposes (bible content, cast assignment,
--- look-board images), so no further consolidation is needed there.
+-- character_references) previously had a real split: ScriptOS's Character
+-- Report wrote profiles into script_metadata.character_bible (JSONB) while
+-- Studio's Casting Board read/wrote script_characters (relational) — two
+-- bibles that never saw each other's data, with script_characters sitting
+-- empty in production despite Studio's UI acting like it was populated.
+-- Fixed by moving lib/scriptos/bible.ts onto script_characters so both
+-- surfaces share the one table; character_castings (cast assignment) and
+-- character_references (look-board images) were already correctly scoped
+-- to their distinct purposes and needed no change.
