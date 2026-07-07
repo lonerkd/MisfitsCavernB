@@ -28,7 +28,9 @@ import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
-import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
+import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, updateStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
+import { PannableCanvas, type PannableCanvasHandle } from '@/components/canvas/PannableCanvas';
+import { CanvasPin } from '@/components/canvas/CanvasPin';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
@@ -46,6 +48,12 @@ interface Asset {
   size: string;
   dateAdded: string;
   url?: string;
+  // Free-canvas position/size, from studio_assets.position_x/y/width/height —
+  // only meaningful in the canvas view; the grid view ignores them entirely.
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 
@@ -1707,6 +1715,11 @@ export default function StudioPage() {
   // shooting schedule and the people no longer share one crowded grid.
   const [prodTab, setProdTab] = useState<'story' | 'schedule' | 'crew'>('story');
   const [filter, setFilter] = useState<string>('all');
+  // Library tab has a grid (default, matches every other list in the suite)
+  // and a free-canvas view (pan/zoom, drag pins to arbitrary positions) —
+  // the first proof point for a suite-wide pannable-canvas pattern.
+  const [libraryView, setLibraryView] = useState<'grid' | 'canvas'>('grid');
+  const [canvasScale, setCanvasScale] = useState(1);
   const [user, setUser] = useState<any>(null);
   const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [showIntake, setShowIntake] = useState(false);
@@ -2031,7 +2044,8 @@ export default function StudioPage() {
             category: a.category || 'Studio',
             url: a.asset_url,
             size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+            dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+            x: a.position_x ?? 0, y: a.position_y ?? 0, width: a.width ?? 300, height: a.height ?? 300,
           })));
 
         } catch (err) {
@@ -2091,7 +2105,8 @@ export default function StudioPage() {
           category: a.category || 'Studio',
           url: a.asset_url,
           size: 'Unknown',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+          x: (a as any).position_x ?? 0, y: (a as any).position_y ?? 0, width: (a as any).width ?? 300, height: (a as any).height ?? 300,
         })));
       }
     } catch (err) {
@@ -2826,6 +2841,22 @@ export default function StudioPage() {
                 <SectionLabel text="Asset Library" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Digital Assets</h2>
               </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {(['grid', 'canvas'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setLibraryView(v)}
+                    style={{
+                      padding: '7px 16px',
+                      background: libraryView === v ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${libraryView === v ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
+                      color: libraryView === v ? 'var(--bg)' : 'var(--fg-muted)',
+                      fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                      borderRadius: 'var(--radius-full)', cursor: 'pointer', transition: 'all 0.3s',
+                    }}
+                  >{v === 'grid' ? 'Grid' : 'Canvas'}</button>
+                ))}
+              </div>
             </div>
 
             {/* Filter tabs */}
@@ -2864,6 +2895,33 @@ export default function StudioPage() {
                 title={assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
                 subtitle={assetsList.length === 0 ? 'Use Intake above to track files hosted elsewhere' : undefined}
               />
+            ) : libraryView === 'canvas' ? (
+              <div style={{ height: '70vh', minHeight: 480, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, position: 'relative' }}>
+                <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 99 }}>
+                  {Math.round(canvasScale * 100)}% · scroll to zoom, drag background to pan, drag a pin to move it, double-click to open
+                </div>
+                <PannableCanvas onScaleChange={setCanvasScale}>
+                  {filtered.filter(a => a.type === 'image' && a.url).map(asset => (
+                    <CanvasPin
+                      key={asset.id}
+                      pin={{ id: asset.id, url: asset.url!, title: asset.name, x: asset.x ?? 0, y: asset.y ?? 0, width: asset.width ?? 300, height: asset.height ?? 300 }}
+                      scale={canvasScale}
+                      onMove={(id, x, y) => {
+                        // Local-only, fires every drag frame — no network
+                        // write here, or dragging one pin would fire dozens
+                        // of Supabase updates per second.
+                        setAssetsList(prev => prev.map(a => a.id === id ? { ...a, x, y } : a));
+                      }}
+                      onMoveEnd={(id, x, y) => {
+                        setAssetsList(prev => prev.map(a => a.id === id ? { ...a, x, y } : a));
+                        updateStudioAsset(id, { position_x: Math.round(x), position_y: Math.round(y) }).catch(() => toast('Could not save pin position', 'error'));
+                      }}
+                      onOpen={(id) => { const a = assetsList.find(x => x.id === id); if (a) setReviewAsset(a); }}
+                      onRemove={(id) => { deleteStudioAsset(id).then(refreshAssets); }}
+                    />
+                  ))}
+                </PannableCanvas>
+              </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
                 {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
