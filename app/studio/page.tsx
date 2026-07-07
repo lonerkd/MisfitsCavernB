@@ -894,7 +894,12 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   const [lookFor, setLookFor] = useState<string | null>(null);
 
   const loadRefs = async () => {
-    const { data } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
+    // concept_asset_id must be selected explicitly (not just implied by the
+    // concept_assets(...) join) — omitting it left every Ref's
+    // concept_asset_id undefined, so the "already linked" filter below
+    // (a Set built from this field) never matched anything and the
+    // look-board picker let the same concept image get linked repeatedly.
+    const { data } = await supabase.from('character_references').select('id,character_id,concept_asset_id,concept_assets(image_url,title)').eq('project_id', projectId);
     const map: Record<string, Ref[]> = {};
     (data || []).forEach((r: any) => { (map[r.character_id] ||= []).push({ id: r.id, concept_asset_id: r.concept_asset_id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
     setRefs(map);
@@ -2099,6 +2104,12 @@ export default function StudioPage() {
     try {
       const projectBeats = await getProjectBeats(activeProject.id);
       setBeats(projectBeats);
+      // The Story tab reads activeProject.beats from ProjectContext, not this
+      // component's local `beats` state (which only feeds the Pitch Deck) —
+      // without this, a beat added/deleted here updated the Pitch Deck's
+      // Story Engine slide but left the Story tab itself showing stale data
+      // until some unrelated action happened to call refreshProject().
+      refreshProject(activeProject.id);
     } catch (err) {
       console.error('Error refreshing beats:', err);
     }

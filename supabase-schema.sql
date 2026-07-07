@@ -544,7 +544,15 @@ CREATE TABLE IF NOT EXISTS script_characters (
   color TEXT DEFAULT '#ff3c00',
   updated_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  -- Also live in production under this exact name, confirmed via
+  -- pg_constraint — backfilled here for the same reason as the table
+  -- itself. This is the hard backstop for saveCharacterProfiles's
+  -- per-script save-chain serialization (lib/scriptos/bible.ts): if
+  -- anything ever races an insert for the same (script_id, name) despite
+  -- the serialization, this constraint turns a silent duplicate row into
+  -- a 23505 error the caller already knows how to recover from.
+  CONSTRAINT script_characters_script_id_name_key UNIQUE (script_id, name)
 );
 ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Script members can manage characters" ON script_characters FOR ALL

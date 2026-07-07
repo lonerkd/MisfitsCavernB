@@ -187,8 +187,13 @@ export async function getMostActiveUsers(limit: number = 10) {
 
     (data || []).forEach((log: any) => {
       const userId = log.user_id;
-      const username = log.profiles?.[0]?.username || 'Unknown';
-      const avatar = log.profiles?.[0]?.avatar_url;
+      // profiles:user_id(...) is a single-row FK join, so Supabase/PostgREST
+      // returns it as a plain object, not an array — the same shape
+      // getAuditLogs above reads correctly via (log.profiles as any)?.username.
+      // The array-indexed form here always missed, so this widget showed
+      // "Unknown" for every user regardless of real activity.
+      const username = log.profiles?.username || 'Unknown';
+      const avatar = log.profiles?.avatar_url;
 
       if (userCounts.has(userId)) {
         const existing = userCounts.get(userId)!;

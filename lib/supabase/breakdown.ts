@@ -37,6 +37,23 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
 
   const parsed = parseScript(withContent.content);
   const parsedScenes = parsed.scenes.filter((s: any) => !s.omitted);
+
+  // Both this function and importScenesFromScript (app/studio/page.tsx)
+  // number scenes by their position in the same "!omitted" filtered list, so
+  // re-syncing stays aligned as long as which scenes are omitted hasn't
+  // changed since the schedule was imported. If a later script revision
+  // marks a previously-real scene OMITTED (or un-omits one), every scene
+  // number after that point shifts — and without this check, the update
+  // below would silently write one scene's breakdown tags onto a different
+  // scene's row (same failure mode a page-eighths/DOOD recount would want
+  // caught too). Bail with a clear error instead of misassigning data.
+  const existingNums = new Set(existingScenes.map(s => s.scene_number));
+  const parsedNums = new Set(parsedScenes.map((_: any, i: number) => i + 1));
+  const numsMatch = existingNums.size === parsedNums.size && [...existingNums].every(n => parsedNums.has(n));
+  if (!numsMatch) {
+    throw new Error('The script\'s scene numbering no longer matches the imported schedule (a scene was likely marked OMITTED or restored since the schedule was imported). Re-import the schedule from ScriptOS before syncing the breakdown, so scenes don\'t get mismatched.');
+  }
+
   const byNumber = new Map(existingScenes.map(s => [s.scene_number, s.id]));
 
   const updates: { id: string; elements: SceneElements }[] = [];
