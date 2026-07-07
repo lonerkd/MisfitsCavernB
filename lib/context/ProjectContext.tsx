@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import type { ProjectSettings } from '@/lib/types/settings';
@@ -258,15 +258,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    let projectSubscription: RealtimeChannel;
+  // Read inside the realtime callbacks below via a ref instead of the
+  // `activeProject` state directly — the effect that owns the subscription
+  // intentionally never re-runs once mounted (see why below), so a plain
+  // closure over `activeProject` would always see its value from the first
+  // render, not the current one.
+  const activeProjectRef = useRef(activeProject);
+  useEffect(() => { activeProjectRef.current = activeProject; }, [activeProject]);
 
-    async function loadProjects() {
+  // Load the initial project list once per session, not on every
+  // activeProject change (setting the active project below used to be a
+  // dependency of this same effect, which re-ran it every time — redundant
+  // at best).
+  useEffect(() => {
+    (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!user) { setLoading(false); return; }
 
       const { data, error } = await supabase
         .from('projects')
@@ -275,7 +282,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
       if (!error && data) {
         setProjects(data);
-        if (data.length > 0 && !activeProject) {
+        if (data.length > 0) {
           const savedId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_KEY) : null;
           const target = (savedId && data.find(p => p.id === savedId)) || data[0];
           const full = await fetchProjectDetails(target.id);
@@ -283,40 +290,47 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setLoading(false);
+    })();
+  }, []);
 
-      // Realtime Sync
-      projectSubscription = supabase
-        .channel('project-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as Project;
-            setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
-            if (activeProject?.id === updated.id) {
-              setActiveProjectState(prev => prev ? { ...prev, ...updated } : null);
-            }
+  // Realtime sync — set up exactly once. The previous version rebuilt this
+  // subscription on every `activeProject` change while reusing the same
+  // static channel name ('project-changes'); activeProject changes at least
+  // once immediately after the initial load (null -> the loaded project),
+  // so on every page load a second channel with the identical topic name
+  // was opened while the first was still tearing down asynchronously —
+  // Supabase Realtime rejects that as a duplicate join, throwing during a
+  // render/effect phase where nothing caught it, which is what was tripping
+  // the app-wide error boundary on the home page (and anywhere else this
+  // provider mounts, i.e. everywhere).
+  useEffect(() => {
+    const projectSubscription: RealtimeChannel = supabase
+      .channel('project-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as Project;
+          setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
+          if (activeProjectRef.current?.id === updated.id) {
+            setActiveProjectState(prev => prev ? { ...prev, ...updated } : null);
           }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
-          const item = (payload.new || payload.old) as any;
-          if (activeProject?.id === item.project_id) {
-            refreshProject(item.project_id);
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'timeline_items' }, (payload) => {
-          const item = (payload.new || payload.old) as any;
-          if (activeProject?.id === item.project_id) {
-            refreshProject(item.project_id);
-          }
-        })
-        .subscribe();
-    }
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
+        const item = (payload.new || payload.old) as any;
+        if (activeProjectRef.current?.id === item.project_id) {
+          refreshProject(item.project_id);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'timeline_items' }, (payload) => {
+        const item = (payload.new || payload.old) as any;
+        if (activeProjectRef.current?.id === item.project_id) {
+          refreshProject(item.project_id);
+        }
+      })
+      .subscribe();
 
-    loadProjects();
-
-    return () => {
-      if (projectSubscription) projectSubscription.unsubscribe();
-    };
-  }, [activeProject?.id, refreshProject]);
+    return () => { supabase.removeChannel(projectSubscription); };
+  }, [refreshProject]);
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const { error } = await supabase
