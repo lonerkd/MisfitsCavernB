@@ -27,6 +27,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
+import { resolveLineToSceneId } from '@/lib/supabase/breakdown';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
@@ -291,12 +292,45 @@ export default function EditorPage() {
     if (!auth.user) return;
     try {
       await addAnnotation({ scriptId: currentScript.id, projectId: activeProject.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), createdBy: auth.user.id });
+
+      // shot/todo annotations claim (via ANNOTATION_META.routesTo) to reach a
+      // real Shot List / Call Sheet elsewhere in the suite — this is what
+      // actually makes that true, instead of the annotation being the only
+      // place the note ever lives. Best-effort: if the scene can't be
+      // resolved (script/schedule drifted, or the scene isn't imported into
+      // the schedule yet), the margin annotation itself still saved above,
+      // so this never blocks or fails the user's actual action.
+      const scenes = (activeProject.scenes || []) as { id: string; scene_number: number; shoot_day?: number }[];
+      if ((annotationDraft.type === 'shot' || annotationDraft.type === 'todo') && scenes.length > 0) {
+        const sceneId = await resolveLineToSceneId(activeProject.id, annotationDraft.line, scenes);
+        if (sceneId) {
+          if (annotationDraft.type === 'shot') {
+            const { count } = await supabase.from('shots').select('id', { count: 'exact', head: true }).eq('scene_id', sceneId);
+            await supabase.from('shots').insert({
+              project_id: activeProject.id, scene_id: sceneId, shot_number: String((count || 0) + 1),
+              description: annotationDraft.text.trim(), order_index: count || 0, created_by: auth.user.id,
+            });
+            toast('Shot added to the Shot List', 'success');
+          } else {
+            const scene = scenes.find(s => s.id === sceneId);
+            const day = scene?.shoot_day || 1;
+            const { data: existingSheet } = await supabase.from('call_sheets').select('id,notes').eq('project_id', activeProject.id).eq('shoot_day', day).maybeSingle();
+            const combinedNotes = existingSheet?.notes ? `${existingSheet.notes}\n${annotationDraft.text.trim()}` : annotationDraft.text.trim();
+            await supabase.from('call_sheets').upsert(
+              { project_id: activeProject.id, shoot_day: day, notes: combinedNotes, updated_by: auth.user.id, updated_at: new Date().toISOString() },
+              { onConflict: 'project_id,shoot_day' }
+            );
+            toast(`Added to Day ${day}'s call sheet notes`, 'success');
+          }
+        }
+      }
+
       reloadAnnotations(currentScript.id);
       setAnnotationDraft(null);
     } catch (e: any) {
       console.error('Failed to add annotation:', e);
     }
-  }, [annotationDraft, currentScript?.id, activeProject?.id, reloadAnnotations]);
+  }, [annotationDraft, currentScript?.id, activeProject, reloadAnnotations, toast]);
 
   const removeAnnotation = useCallback(async (id: string) => {
     if (!currentScript?.id) return;

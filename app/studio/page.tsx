@@ -1380,10 +1380,166 @@ function Stripboard({ scenes }: { scenes: any[] }) {
   );
 }
 
+// Shot List: per-scene camera setups. This is the real destination for
+// ScriptOS's "shot" margin annotations (see resolveLineToSceneId in
+// lib/supabase/breakdown.ts) — previously that annotation type claimed to
+// "route to" a Shot List that didn't exist anywhere in the app.
+function ShotList({ projectId, scenes }: { projectId: string; scenes: any[] }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const [shots, setShots] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openScene, setOpenScene] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ shot_number: string; shot_size: string; angle: string; movement: string; lens: string; description: string }>({ shot_number: '', shot_size: '', angle: '', movement: '', lens: '', description: '' });
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase.from('shots').select('*').eq('project_id', projectId).order('order_index');
+    setShots(data || []);
+    setLoading(false);
+  }, [projectId]);
+  useEffect(() => { load(); }, [load]);
+
+  const shotsByScene = React.useMemo(() => {
+    const map: Record<string, any[]> = {};
+    shots.forEach(s => { (map[s.scene_id] ||= []).push(s); });
+    return map;
+  }, [shots]);
+
+  const addShot = async (sceneId: string) => {
+    if (!draft.shot_number.trim()) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    const orderIndex = (shotsByScene[sceneId]?.length || 0);
+    const { error } = await supabase.from('shots').insert({
+      project_id: projectId, scene_id: sceneId, shot_number: draft.shot_number.trim(),
+      shot_size: draft.shot_size || null, angle: draft.angle || null, movement: draft.movement || null,
+      lens: draft.lens || null, description: draft.description || null, order_index: orderIndex, created_by: user?.id,
+    });
+    if (error) { toast(error.message || 'Could not add shot', 'error'); return; }
+    setDraft({ shot_number: '', shot_size: '', angle: '', movement: '', lens: '', description: '' });
+    load();
+  };
+
+  const cycleStatus = async (shot: any) => {
+    const next = shot.status === 'planned' ? 'shot' : shot.status === 'shot' ? 'omitted' : 'planned';
+    await supabase.from('shots').update({ status: next }).eq('id', shot.id);
+    load();
+  };
+
+  const removeShot = async (id: string) => {
+    if (!await confirm('Delete this shot?')) return;
+    await supabase.from('shots').delete().eq('id', id);
+    load();
+  };
+
+  const statusColor: Record<string, string> = { planned: 'var(--fg-dim)', shot: '#10b981', omitted: '#6b7280' };
+
+  if (scenes.length === 0) return null;
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shot List</div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{shots.length} shot{shots.length === 1 ? '' : 's'} across {Object.keys(shotsByScene).length} scene{Object.keys(shotsByScene).length === 1 ? '' : 's'}</span>
+      </div>
+
+      {loading ? (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Loading…</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {scenes.slice().sort((a, b) => a.scene_number - b.scene_number).map(scene => {
+            const sceneShots = (shotsByScene[scene.id] || []).slice().sort((a, b) => a.order_index - b.order_index);
+            const open = openScene === scene.id;
+            return (
+              <div key={scene.id} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
+                <button
+                  onClick={() => setOpenScene(open ? null : scene.id)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: '#6366f1', width: 28 }}>{scene.scene_number}</span>
+                  <span style={{ flex: 1, fontSize: 12, color: '#fff' }}>{scene.title || 'Untitled'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{sceneShots.length} shot{sceneShots.length === 1 ? '' : 's'}</span>
+                </button>
+                {open && (
+                  <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {sceneShots.map(shot => (
+                      <div key={shot.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                        <button onClick={() => cycleStatus(shot)} title="Cycle status" style={{ fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, width: 24, background: 'none', border: 'none', color: statusColor[shot.status], cursor: 'pointer' }}>{shot.shot_number}</button>
+                        <span style={{ flex: 1, fontSize: 11, color: '#ddd' }}>
+                          {[shot.shot_size, shot.angle, shot.movement, shot.lens].filter(Boolean).join(' · ') || <span style={{ opacity: 0.4 }}>No details</span>}
+                          {shot.description && <span style={{ display: 'block', fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>{shot.description}</span>}
+                        </span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: statusColor[shot.status], textTransform: 'uppercase' }}>{shot.status}</span>
+                        <button onClick={() => removeShot(shot.id)} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 11 }}>✕</button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: sceneShots.length > 0 ? 4 : 0 }}>
+                      <input placeholder="#" value={draft.shot_number} onChange={e => setDraft(d => ({ ...d, shot_number: e.target.value }))} style={{ width: 44, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Size (WS/MS/CU)" value={draft.shot_size} onChange={e => setDraft(d => ({ ...d, shot_size: e.target.value }))} style={{ width: 100, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Angle" value={draft.angle} onChange={e => setDraft(d => ({ ...d, angle: e.target.value }))} style={{ width: 90, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Movement" value={draft.movement} onChange={e => setDraft(d => ({ ...d, movement: e.target.value }))} style={{ width: 90, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Lens" value={draft.lens} onChange={e => setDraft(d => ({ ...d, lens: e.target.value }))} style={{ width: 70, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Description" value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} style={{ flex: 1, minWidth: 140, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <button className="link-btn" disabled={!draft.shot_number.trim()} onClick={() => addShot(scene.id)}>+ Add</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Real call sheets generated by grouping the schedule's scenes by shoot day.
-function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
+function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: string; scenes: any[]; crew: any[]; projectTitle: string }) {
+  const { toast } = useToast();
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+
+  // The header fields (call times, weather, notes) were previously nowhere
+  // to be saved — this whole component was a derived, read-only view over
+  // scenes grouped by shoot_day, regenerated fresh on every render with no
+  // persistence at all. call_sheets adds the one real row per shoot day this
+  // was always missing.
+  const [sheets, setSheets] = useState<Record<number, any>>({});
+  const [draft, setDraft] = useState<{ general_call: string; shooting_call: string; estimated_wrap: string; weather: string; notes: string }>({ general_call: '', shooting_call: '', estimated_wrap: '', weather: '', notes: '' });
+  const [saving, setSaving] = useState(false);
+
+  const loadSheets = React.useCallback(async () => {
+    const { data } = await supabase.from('call_sheets').select('*').eq('project_id', projectId);
+    const byDay: Record<number, any> = {};
+    (data || []).forEach((s: any) => { byDay[s.shoot_day] = s; });
+    setSheets(byDay);
+  }, [projectId]);
+  useEffect(() => { loadSheets(); }, [loadSheets]);
+
+  const openDayFor = (day: number) => {
+    const existing = sheets[day];
+    setDraft({
+      general_call: existing?.general_call || '', shooting_call: existing?.shooting_call || '',
+      estimated_wrap: existing?.estimated_wrap || '', weather: existing?.weather || '', notes: existing?.notes || '',
+    });
+    setOpenDay(day);
+  };
+
+  const saveSheet = async (day: number) => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const payload = {
+      project_id: projectId, shoot_day: day,
+      general_call: draft.general_call || null, shooting_call: draft.shooting_call || null,
+      estimated_wrap: draft.estimated_wrap || null, weather: draft.weather || null, notes: draft.notes || null,
+      updated_by: user?.id, updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('call_sheets').upsert(payload, { onConflict: 'project_id,shoot_day' });
+    setSaving(false);
+    if (error) { toast(error.message || 'Could not save call sheet', 'error'); return; }
+    toast('Call sheet saved', 'success');
+    loadSheets();
+  };
 
   const dayData = (day: number) => {
     const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
@@ -1396,6 +1552,7 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
   const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
   const printDay = (day: number) => {
     const d = dayData(day);
+    const sheet = sheets[day];
     const w = window.open('', '_blank', 'width=820,height=1060');
     if (!w) return;
     w.document.write(`<!doctype html><html><head><title>${esc(projectTitle)} — Call Sheet Day ${day}</title>
@@ -1404,11 +1561,18 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
       h3{font-size:10px;letter-spacing:2px;color:#666;border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
       .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:#999}</style></head><body>
       <h1>${esc(projectTitle).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}</h2>
+      ${sheet && (sheet.general_call || sheet.shooting_call || sheet.estimated_wrap || sheet.weather) ? `<div class="row" style="margin-bottom:16px">
+        ${sheet.general_call ? `<div class="col"><h3>GENERAL CALL</h3>${esc(sheet.general_call)}</div>` : ''}
+        ${sheet.shooting_call ? `<div class="col"><h3>SHOOTING CALL</h3>${esc(sheet.shooting_call)}</div>` : ''}
+        ${sheet.estimated_wrap ? `<div class="col"><h3>EST. WRAP</h3>${esc(sheet.estimated_wrap)}</div>` : ''}
+        ${sheet.weather ? `<div class="col"><h3>WEATHER</h3>${esc(sheet.weather)}</div>` : ''}
+      </div>` : ''}
       <div class="row"><div class="col"><h3>SCENES (${d.dayScenes.length}${d.pages ? ` · ${d.pages} pg` : ''})</h3>
       ${d.dayScenes.map((s: any) => `<div class="sc"><span class="num">${s.scene_number}.</span> ${esc(s.title)} ${s.time_of_day ? `<span class="num">(${esc(s.time_of_day)})</span>` : ''}</div>`).join('')}</div>
       <div class="col"><h3>LOCATIONS</h3>${d.locations.length ? d.locations.map((l: any) => `<div>${esc(l)}</div>`).join('') : '—'}
       <h3>CAST</h3>${d.cast.length ? esc(d.cast.join(', ')) : '—'}</div>
       <div class="col"><h3>CREW</h3>${crew.length ? crew.map((c: any) => `<div>${esc(c.name || c.profiles?.username || 'Crew')}${c.role ? ` — ${esc(c.role)}` : ''}</div>`).join('') : 'No crew assigned'}</div></div>
+      ${sheet?.notes ? `<h3>NOTES</h3><div>${esc(sheet.notes)}</div>` : ''}
       <script>window.onload=()=>{window.print()}</script></body></html>`);
     w.document.close();
   };
@@ -1424,7 +1588,7 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
           const open = openDay === day;
           return (
             <div key={day} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14, gridColumn: open ? '1 / -1' : 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpenDay(open ? null : day)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => open ? setOpenDay(null) : openDayFor(day)}>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>DAY {day}</span>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{d.dayScenes.length} sc · {d.cast.length} cast{d.pages ? ` · ${d.pages} pg` : ''}</span>
               </div>
@@ -1439,6 +1603,16 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
                     <div style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: 1 }}>{projectTitle.toUpperCase()} — CALL SHEET · DAY {day}</div>
                     <button onClick={() => printDay(day)} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#ddd', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', letterSpacing: 1 }}>⎙ PRINT / PDF</button>
                   </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+                    <input placeholder="General call (e.g. 06:00)" value={draft.general_call} onChange={e => setDraft(dr => ({ ...dr, general_call: e.target.value }))} style={{ width: 140, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Shooting call" value={draft.shooting_call} onChange={e => setDraft(dr => ({ ...dr, shooting_call: e.target.value }))} style={{ width: 120, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Est. wrap" value={draft.estimated_wrap} onChange={e => setDraft(dr => ({ ...dr, estimated_wrap: e.target.value }))} style={{ width: 100, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Weather" value={draft.weather} onChange={e => setDraft(dr => ({ ...dr, weather: e.target.value }))} style={{ width: 120, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Notes" value={draft.notes} onChange={e => setDraft(dr => ({ ...dr, notes: e.target.value }))} style={{ flex: 1, minWidth: 140, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <button className="link-btn" disabled={saving} onClick={() => saveSheet(day)} style={{ fontSize: 9 }}>{saving ? 'Saving…' : 'Save'}</button>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
                     <div>
                       <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 }}>SCENES</div>
@@ -2827,7 +3001,10 @@ export default function StudioPage() {
                  <Stripboard scenes={activeProject.scenes as any[]} />
                )}
                {activeProject?.scenes && activeProject.scenes.length > 0 && (
-                 <CallSheets scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
+                 <ShotList projectId={activeProject.id} scenes={activeProject.scenes as any[]} />
+               )}
+               {activeProject?.scenes && activeProject.scenes.length > 0 && (
+                 <CallSheets projectId={activeProject.id} scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
                )}
              </div>
             )}

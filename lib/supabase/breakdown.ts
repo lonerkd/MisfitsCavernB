@@ -72,6 +72,35 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   return elementsById;
 }
 
+// Resolve a script line (as recorded on a margin annotation, script_annotations
+// .line_index) to the real scenes.id it falls inside — the missing link that
+// let "shot" and "todo" annotations claim to route to a Shot List / Call
+// Sheet without ever actually reaching one. Reuses the exact same
+// !omitted-filtered positional numbering as syncSceneElementsFromScript and
+// importScenesFromScript, and the same drift guard: if the script's scene
+// count/numbering no longer matches the imported schedule, this returns null
+// rather than guessing at a scene and risking a shot/note landing on the
+// wrong one.
+export async function resolveLineToSceneId(projectId: string, lineIndex: number, existingScenes: { id: string; scene_number: number }[]): Promise<string | null> {
+  const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
+  const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+  if (!withContent) return null;
+
+  const parsed = parseScript(withContent.content);
+  const parsedScenes = parsed.scenes.filter((s: any) => !s.omitted);
+
+  const existingNums = new Set(existingScenes.map(s => s.scene_number));
+  const parsedNums = new Set(parsedScenes.map((_: any, i: number) => i + 1));
+  const numsMatch = existingNums.size === parsedNums.size && [...existingNums].every(n => parsedNums.has(n));
+  if (!numsMatch) return null;
+
+  const idx = parsedScenes.findIndex((s: any) => lineIndex >= s.startIndex && lineIndex <= s.endIndex);
+  if (idx === -1) return null;
+
+  const byNumber = new Map(existingScenes.map(s => [s.scene_number, s.id]));
+  return byNumber.get(idx + 1) ?? null;
+}
+
 // Aggregate unique element names per category across every scene, then
 // upsert one budget_items row per non-empty category — matching by category
 // prefix so a re-sync updates the existing row instead of duplicating it.

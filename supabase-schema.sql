@@ -972,6 +972,88 @@ CREATE POLICY "Castings writable by project creator or crew" ON character_castin
   USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
   WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
+-- Shot List: per-scene camera setups. The redesign spec's ScriptOS margin
+-- annotations (script_annotations, type='shot') claimed to "route to" a
+-- Shot List that never existed anywhere in the app -- this is that
+-- destination. shot_number is a free-form label (e.g. "12A") rather than a
+-- strict integer since shot renumbering/insertion during scouting is normal
+-- shorthand practice (12, 12A, 12B...), same reasoning as scene numbering
+-- elsewhere in this schema.
+CREATE TABLE IF NOT EXISTS shots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  scene_id UUID NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
+  shot_number TEXT NOT NULL,
+  shot_size TEXT,
+  angle TEXT,
+  movement TEXT,
+  lens TEXT,
+  description TEXT,
+  status TEXT DEFAULT 'planned' CHECK (status IN ('planned', 'shot', 'omitted')),
+  order_index INT DEFAULT 0,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_shots_scene ON shots(scene_id);
+CREATE INDEX IF NOT EXISTS idx_shots_project ON shots(project_id);
+ALTER TABLE shots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Shots viewable by project creator or crew" ON shots FOR SELECT
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "Shots writable by project creator or crew" ON shots FOR ALL
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+
+-- Call Sheet: previously a fully derived, read-only view in Studio's
+-- Schedule tab (grouping scenes by shoot_day with no persistence at all) --
+-- this adds the real per-day header (call times, weather, notes) and
+-- per-person call times the derived view never had anywhere to save. One
+-- call_sheets row per shoot day; call_sheet_calls holds individual crew/cast
+-- call times for that day, cross-referencing project_crew (crew) and
+-- character_castings (cast, via character_name -> crew_user_id).
+CREATE TABLE IF NOT EXISTS call_sheets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  shoot_day INT NOT NULL,
+  shoot_date DATE,
+  general_call TIME,
+  shooting_call TIME,
+  estimated_wrap TIME,
+  location_address TEXT,
+  weather TEXT,
+  notes TEXT,
+  updated_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, shoot_day)
+);
+CREATE TABLE IF NOT EXISTS call_sheet_calls (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  call_sheet_id UUID NOT NULL REFERENCES call_sheets(id) ON DELETE CASCADE,
+  crew_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  character_name TEXT,
+  role_label TEXT,
+  call_time TIME,
+  remarks TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_call_sheets_project ON call_sheets(project_id);
+CREATE INDEX IF NOT EXISTS idx_call_sheet_calls_sheet ON call_sheet_calls(call_sheet_id);
+ALTER TABLE call_sheets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE call_sheet_calls ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Call sheets viewable by project creator or crew" ON call_sheets FOR SELECT
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "Call sheets writable by project creator or crew" ON call_sheets FOR ALL
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+-- call_sheet_calls has no project_id of its own -- gate through the parent
+-- call_sheets row's project, same indirection pattern as scene_references
+-- gating through scenes elsewhere in this file.
+CREATE POLICY "Call sheet calls viewable by project creator or crew" ON call_sheet_calls FOR SELECT
+  USING (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
+CREATE POLICY "Call sheet calls writable by project creator or crew" ON call_sheet_calls FOR ALL
+  USING (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
+  WITH CHECK (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
+
 -- Link portfolio_projects back to their originating production project.
 -- Without this, the Showcase tab on a project has no real table to
 -- read/write to — portfolio_projects exists only as a standalone per-user
