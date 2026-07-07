@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { supabase } from '@/lib/supabase/client';
 import { AuthState, UserProfile, ProjectAccess, AccessContext, Permission, UserRole } from '@/lib/context/types';
 import { getPermissionsForRole, determineUserRole, hasPermission } from '@/lib/permissions/role-permissions';
+import { logAuditAction } from '@/lib/supabase/audit';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
@@ -96,6 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Only a real new sign-in fires 'SIGNED_IN' — a page refresh with an
+      // existing session fires 'INITIAL_SESSION' instead, so this can't
+      // double-log every reload the way logging on `session?.user` truthy
+      // would have.
+      if (event === 'SIGNED_IN' && session?.user) {
+        logAuditAction(session.user.id, 'user_login', 'auth', session.user.id);
+      }
       if (session?.user) {
         try {
           const { data: profile } = await supabase
@@ -198,9 +206,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const loggedOutUserId = state.user?.id;
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
       await supabase.auth.signOut();
+      if (loggedOutUserId) logAuditAction(loggedOutUserId, 'user_logout', 'auth', loggedOutUserId);
     } catch (error: any) {
       setState(prev => ({
         ...prev,
@@ -210,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  }, []);
+  }, [state.user?.id]);
 
   const loadProjectAccess = useCallback(async (projectId: string) => {
     if (!state.user) return;

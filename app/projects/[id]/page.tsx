@@ -118,7 +118,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: color, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: color, letterSpacing: 2, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
       </div>
 
       {/* Preview content */}
@@ -138,7 +138,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
           {stats.map(s => (
             <div key={s.label}>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -147,7 +147,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
             whileHover={{ scale: 1.06, x: 2 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
               textTransform: 'uppercase', color: color,
               padding: '6px 12px', borderRadius: 9999,
               background: `${color}12`, border: `1px solid ${color}28`,
@@ -171,7 +171,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{pages}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
       </div>
       {bars > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -180,7 +180,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No script yet — open ScriptOS to start.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>No script yet — open ScriptOS to start.</div>
       )}
     </div>
   );
@@ -196,7 +196,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
   const palette = ['#6366f1', '#d7340b', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
       {total > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -204,7 +204,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No assets yet — add them in Studio.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>No assets yet — add them in Studio.</div>
       )}
     </div>
   );
@@ -228,7 +228,7 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>{member.role}</div>
           </div>
           {member.online && (
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
@@ -256,7 +256,7 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase' }}>days to deadline</span>
       </div>
 
       {/* Progress rail */}
@@ -277,7 +277,7 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
               width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
               background: m.done ? '#10b981' : 'rgba(255,255,255,0.1)',
             }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: m.done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: m.done ? 'line-through' : 'none', opacity: m.done ? 0.5 : 1 }}>{m.label}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: m.done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: m.done ? 'line-through' : 'none', opacity: m.done ? 0.5 : 1 }}>{m.label}</span>
           </div>
         ))}
       </div>
@@ -907,7 +907,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
 
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
       {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
@@ -944,14 +944,14 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
           {/* Budget-from-breakdown: suggest line items from the script */}
-          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
             {analyzing ? 'ANALYZING SCRIPT…' : '✦ SUGGEST FROM SCRIPT BREAKDOWN'}
           </button>
           {suggestions && suggestions.length > 0 && (
             <div style={{ marginTop: 8, padding: 8, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', letterSpacing: 1 }}>SUGGESTED — from tagged elements</span>
-                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#a5b4fc', letterSpacing: 0.5 }}>SUGGESTED — from tagged elements</span>
+                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {suggestions.map(s => (
@@ -965,7 +965,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
             </div>
           )}
           {suggestions && suggestions.length === 0 && !analyzing && (
-            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
           )}
         </Panel>
 

@@ -27,6 +27,10 @@ interface Video {
   featured?: boolean;
   laurels?: string[];
   stills?: string[];
+  // Showcase entries are frozen snapshots, not a live view of the source
+  // project (anon visitors can't read the underlying tables under RLS) —
+  // surfaced on the card so nobody mistakes this for a live project view.
+  frozenAt?: string;
 }
 
 function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video) => void; span?: 'wide' | 'tall' }) {
@@ -139,6 +143,11 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
           {video.role} · {video.year}
         </div>
+        {video.frozenAt && (
+          <div title="This showcase entry is a frozen snapshot — it does not reflect the live project" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginTop: 3 }}>
+            ❄ frozen {new Date(video.frozenAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+        )}
         {hover && (
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -252,10 +261,54 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
   );
 }
 
+// Status treatment for festival submissions — shared with the project hub's
+// FESTIVAL_STATUS_COLOR so a submission reads the same colour everywhere.
+const FEST_COLOR: Record<string, string> = {
+  planned: '#6b7280',
+  submitted: '#f59e0b',
+  accepted: '#10b981',
+  rejected: '#ef4444',
+};
+
+interface FestivalEntry { id: string; name: string; status: string; deadline?: string; projectTitle: string; }
+interface CampaignEntry { id: string; title: string; platform?: string; budget?: number | null; projectTitle: string; }
+
 export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [videosList, setVideosList] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  // Showcase = the public collection; Distribution = the campaign + festival
+  // pipeline that used to be scattered across the project hub and Studio.
+  const [view, setView] = useState<'showcase' | 'distribution'>('showcase');
+  const [festivals, setFestivals] = useState<FestivalEntry[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignEntry[]>([]);
+
+  // Aggregate the distribution pipeline across every project the viewer can
+  // reach — festival submissions live on projects.festival_submissions, and
+  // campaigns in their own table. Both are RLS-scoped to the viewer.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const [projRes, campRes] = await Promise.all([
+          supabase.from('projects').select('id,title,festival_submissions'),
+          supabase.from('campaigns').select('id,title,platform,budget,project_id'),
+        ]);
+        const titleById = new Map((projRes.data || []).map((p: any) => [p.id, p.title]));
+        const fests: FestivalEntry[] = [];
+        (projRes.data || []).forEach((p: any) => {
+          (p.festival_submissions || []).forEach((f: any) => {
+            fests.push({ id: f.id || `${p.id}-${f.name}`, name: f.name, status: f.status || 'planned', deadline: f.deadline, projectTitle: p.title });
+          });
+        });
+        setFestivals(fests);
+        setCampaigns((campRes.data || []).map((c: any) => ({ id: c.id, title: c.title, platform: c.platform, budget: c.budget, projectTitle: titleById.get(c.project_id) || 'Untitled' })));
+      } catch (err) {
+        console.error('Failed to load distribution:', err);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -278,6 +331,7 @@ export default function PortfolioPage() {
             driveId: media?.url?.split('id=')?.[1] || media?.url || '',
             year: p.year?.toString() || '',
             featured: true,
+            frozenAt: p.created_at,
           };
         });
         setVideosList(fetchedVideos);
@@ -352,6 +406,73 @@ export default function PortfolioPage() {
         </div>
       </div>
 
+      {/* Showcase / Distribution tab set */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 4, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {([['showcase', 'Showcase'], ['distribution', 'Distribution']] as const).map(([key, label]) => {
+          const active = view === key;
+          return (
+            <button key={key} onClick={() => setView(key)} style={{
+              padding: '18px 22px', background: 'transparent', border: 'none', cursor: 'pointer',
+              borderBottom: active ? '2px solid #f59e0b' : '2px solid transparent', marginBottom: -1,
+              color: active ? 'var(--fg)' : 'var(--fg-dim)', fontFamily: 'var(--mono)',
+              fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--fg-muted)'; }}
+            onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--fg-dim)'; }}
+            >{label}</button>
+          );
+        })}
+      </div>
+
+      {view === 'distribution' && (
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 20px 80px' }}>
+          <AnimatedSection>
+            <SectionLabel text="Festival Circuit" />
+            <p style={{ fontFamily: 'var(--serif)', fontSize: 15, color: 'var(--fg-muted)', maxWidth: 560, lineHeight: 1.6, marginBottom: 28 }}>
+              Where the finished work is going — festival submissions and promotional campaigns across every production.
+            </p>
+          </AnimatedSection>
+          {festivals.length === 0 ? (
+            <div style={{ padding: '48px 0', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-dim)', letterSpacing: 1 }}>No festival submissions tracked yet — add them from a project&rsquo;s Distribution panel.</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14, marginBottom: 64 }}>
+              {festivals.map(f => {
+                const col = FEST_COLOR[f.status] || '#6b7280';
+                return (
+                  <div key={f.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${col}`, borderRadius: 10, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                      <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{f.name}</span>
+                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 99, padding: '3px 9px' }}>{f.status}</span>
+                    </div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{f.projectTitle}{f.deadline ? ` · ${f.deadline}` : ''}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <AnimatedSection>
+            <SectionLabel text="Campaigns" />
+          </AnimatedSection>
+          {campaigns.length === 0 ? (
+            <div style={{ padding: '32px 0', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-dim)', letterSpacing: 1 }}>No campaigns planned yet — build them in Studio&rsquo;s Promos tab.</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+              {campaigns.map(c => (
+                <div key={c.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                    <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{c.title}</span>
+                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: '#8b5cf6', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 99, padding: '3px 9px' }}>{c.platform}</span>}
+                  </div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{c.projectTitle}{c.budget ? ` · $${Number(c.budget).toLocaleString()}` : ''}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {view === 'showcase' && (<>
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 20px 80px' }}>
         <AnimatedSection>
           <SectionLabel text={`The Work — ${videosList.length} Projects`} />
@@ -413,6 +534,7 @@ export default function PortfolioPage() {
           ))}
         </div>
       </div>
+      </>)}
 
       <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
       </main>

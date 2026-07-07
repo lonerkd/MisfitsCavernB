@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { logAuditAction } from './audit';
 
 export interface DBScript {
   id: string;
@@ -33,6 +34,9 @@ export async function createScript(projectId: string, title: string, format: 'sc
     .single();
 
   if (error) throw error;
+
+  logAuditAction(user.id, 'script_created', 'script', data.id, { title, project_id: projectId });
+
   return data;
 }
 

@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { createChannel } from './channels';
+import { logAuditAction } from './audit';
 
 export interface DBProject {
   id: string;
@@ -41,6 +42,8 @@ export async function createProject(userId: string, title: string, description =
     console.error('Failed to auto-create default channel for new project:', channelError);
   }
 
+  logAuditAction(userId, 'project_created', 'project', data.id, { title });
+
   return data;
 }
 
@@ -74,12 +77,18 @@ export async function updateProject(projectId: string, updates: Partial<DBProjec
 }
 
 export async function deleteProject(projectId: string) {
+  const { data: existing } = await supabase.from('projects').select('title').eq('id', projectId).single();
+
   const { error } = await supabase
     .from('projects')
     .delete()
     .eq('id', projectId);
 
   if (error) throw error;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) logAuditAction(user.id, 'project_deleted', 'project', projectId, { title: existing?.title });
+
   return true;
 }
 

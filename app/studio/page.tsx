@@ -31,7 +31,9 @@ import { getActivities, subscribeToActivities, type Activity } from '@/lib/supab
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { syncSceneElementsFromScript, syncBudgetFromSceneElements, ELEMENT_CATEGORIES, type ElementCategory } from '@/lib/supabase/breakdown';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X, Tags } from 'lucide-react';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -1029,6 +1031,342 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
 }
 const inputMini: React.CSSProperties = { width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none' };
 
+// Casting board: the roster of characters (pulled straight from the ScriptOS
+// bible — never re-typed), each with a casting slot that either names a crew
+// member or is left "Open — Post to Jobs", a look-board of concept images, and
+// the character's footprint across the shooting schedule.
+function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId: string; userId: string | null; concepts: any[]; scenes: any[]; crew: any[] }) {
+  const { toast } = useToast();
+  type Char = { id?: string; name: string; color: string };
+  type Look = { id: string; image_url: string; title: string | null };
+  const [chars, setChars] = useState<Char[]>([]);
+  const [castings, setCastings] = useState<Record<string, Casting>>({});
+  const [looks, setLooks] = useState<Record<string, Look[]>>({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+
+  const loadCastings = async () => {
+    try { setCastings(await getCastingsForProject(projectId)); } catch { /* table may be empty */ }
+  };
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
+      const parsedNames: string[] = withContent?.content ? parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean) : [];
+      const savedById = new Map<string, any>();
+      if (withContent) {
+        const { data: saved } = await supabase.from('script_characters').select('id,name,color').eq('script_id', withContent.id);
+        (saved || []).forEach((r: any) => savedById.set(r.name, r));
+      }
+      const names = Array.from(new Set([...parsedNames, ...Array.from(savedById.keys())]));
+      const list = names.map((name, i) => { const r = savedById.get(name); return { id: r?.id, name, color: r?.color || palette[i % palette.length] }; });
+      setChars(list);
+      setSelected(prev => prev && names.includes(prev) ? prev : names[0] || null);
+      // Look-board references keyed by character_id
+      const { data: refData } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
+      const lookMap: Record<string, Look[]> = {};
+      (refData || []).forEach((r: any) => { (lookMap[r.character_id] ||= []).push({ id: r.id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
+      setLooks(lookMap);
+      await loadCastings();
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId, scenes.length]);
+
+  // Footprint of a character across the shooting schedule, matched on cast_list.
+  const footprint = (name: string) => {
+    const up = name.toUpperCase();
+    const inScenes = scenes.filter(s => String(s.cast_list || '').toUpperCase().split(',').map((c: string) => c.trim()).includes(up));
+    const days = Array.from(new Set(inScenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+    return { sceneNums: inScenes.map(s => s.scene_number).sort((a, b) => a - b), days };
+  };
+
+  const assign = async (crewUserId: string) => {
+    if (!selected || !userId) { toast('Sign in to cast', 'error'); return; }
+    try {
+      await setCasting(projectId, selected, crewUserId, userId);
+      await loadCastings();
+      setAssigning(false);
+      toast(`Cast ${selected}`, 'success');
+    } catch (e: any) { toast(e?.message || 'Could not cast', 'error'); }
+  };
+  const clearCasting = async (name: string) => {
+    try { await removeCasting(projectId, name); await loadCastings(); toast(`${name} reopened`, 'info'); }
+    catch (e: any) { toast(e?.message || 'Could not update', 'error'); }
+  };
+
+  const sel = chars.find(c => c.name === selected) || null;
+  const castCount = chars.filter(c => castings[c.name.toUpperCase()]).length;
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+        <Users size={16} /> Casting Board
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', fontWeight: 400 }}>· {castCount}/{chars.length} cast · from ScriptOS</span>
+      </div>
+      {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Loading…</div>}
+      {!loading && chars.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the casting board.</div>}
+      {chars.length > 0 && (
+        <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 }}>
+          {/* Character roster */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {chars.map(c => {
+              const cast = castings[c.name.toUpperCase()];
+              const active = selected === c.name;
+              return (
+                <button key={c.name} onClick={() => { setSelected(c.name); setAssigning(false); }} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', textAlign: 'left',
+                  background: active ? `${c.color}18` : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${active ? `${c.color}55` : 'rgba(255,255,255,0.06)'}`,
+                  borderLeft: `3px solid ${c.color}`, borderRadius: 8, cursor: 'pointer',
+                }}>
+                  <span style={{ flex: 1, fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, color: active ? c.color : 'var(--fg)' }}>{c.name}</span>
+                  {cast ? (
+                    <span title={`Cast: ${cast.username || 'crew'}`} style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+                  ) : (
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>open</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detail panel */}
+          {sel && (() => {
+            const cast = castings[sel.name.toUpperCase()];
+            const looksFor = sel.id ? (looks[sel.id] || []) : [];
+            const fp = footprint(sel.name);
+            return (
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${sel.color}33`, borderRadius: 12, padding: 24 }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: sel.color, marginBottom: 20 }}>{sel.name}</div>
+
+                {/* Casting slot */}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
+                {cast ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, marginBottom: 24 }}>
+                    <Avatar src={cast.avatar_url} name={cast.username || 'Crew'} size={38} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{cast.username || 'Crew member'}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#34d399', textTransform: 'uppercase', letterSpacing: 1 }}>Cast</div>
+                    </div>
+                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Recast</button>
+                    <button onClick={() => clearCasting(sel.name)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#ef4444', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Remove</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: assigning ? 12 : 24 }}>
+                    <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
+                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: sel.color, background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
+                    <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
+                  </div>
+                )}
+
+                {/* Crew picker */}
+                {assigning && (
+                  <div style={{ marginBottom: 24, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 10 }}>
+                    {crew.length === 0 ? (
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No crew recruited yet — recruit talent in the Crew tab or post the role to Jobs.</span>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {crew.map((m: any) => (
+                          <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
+                            <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
+                            <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{m.role}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Look-board */}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
+                {looksFor.length > 0 ? (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
+                    {looksFor.map(l => (
+                      <div key={l.id} style={{ width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: `1px solid ${sel.color}44` }} title={l.title || 'look'}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={l.image_url} alt={l.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginBottom: 24 }}>No look references yet — link concept images to this character in the Character Bible.</div>
+                )}
+
+                {/* Scene footprint */}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
+                {fp.sceneNums.length > 0 ? (
+                  <div>
+                    <div style={{ display: 'flex', gap: 20, marginBottom: 10, fontFamily: 'var(--mono)', fontSize: 12 }}>
+                      <span><span style={{ color: sel.color, fontSize: 18, fontWeight: 700 }}>{fp.sceneNums.length}</span> <span style={{ color: 'var(--fg-dim)' }}>scenes</span></span>
+                      <span><span style={{ color: sel.color, fontSize: 18, fontWeight: 700 }}>{fp.days.length}</span> <span style={{ color: 'var(--fg-dim)' }}>shoot day{fp.days.length === 1 ? '' : 's'}</span></span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {fp.sceneNums.map(n => (
+                        <span key={n} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 7px' }}>#{n}</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Not tagged into any scene yet — add this character to scene cast lists in the schedule.</div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Stripboard + Day-Out-of-Days. The stripboard colours each scene by shoot
+// condition (INT/EXT × day/night, the Movie Magic convention), sizes it by
+// page eighths and groups the strips under their shoot day. The DOOD grid
+// derives each actor's Start/Work/Hold/Finish pattern from the scene cast
+// lists — all read straight off the same `scenes` rows the schedule edits.
+function Stripboard({ scenes }: { scenes: any[] }) {
+  const [view, setView] = useState<'strips' | 'dood'>('strips');
+
+  // Movie Magic strip colours: white = INT day, yellow = EXT day,
+  // blue = INT night, green = EXT night.
+  const stripColor = (s: any) => {
+    const head = `${s.title || ''} ${s.location || ''}`.toUpperCase();
+    const isExt = /\bEXT\b/.test(head) || (!/\bINT\b/.test(head) && false);
+    const tod = String(s.time_of_day || 'DAY').toUpperCase();
+    const isNight = tod === 'NIGHT' || tod === 'DUSK' || tod === 'EVENING';
+    if (isExt && isNight) return { bg: 'rgba(16,185,129,0.16)', bar: '#10b981', label: 'EXT · NIGHT' };
+    if (isExt) return { bg: 'rgba(245,158,11,0.16)', bar: '#f59e0b', label: 'EXT · DAY' };
+    if (isNight) return { bg: 'rgba(59,130,246,0.16)', bar: '#3b82f6', label: 'INT · NIGHT' };
+    return { bg: 'rgba(255,255,255,0.05)', bar: 'rgba(255,255,255,0.5)', label: 'INT · DAY' };
+  };
+  const eighths = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\/8/); return m ? Number(m[1]) : 1; };
+
+  const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+
+  // Day-Out-of-Days: for every actor, the span of shoot days they touch.
+  const castRows = (() => {
+    const map: Record<string, Set<number>> = {};
+    scenes.forEach(s => {
+      const day = s.shoot_day || 1;
+      String(s.cast_list || '').split(',').map((c: string) => c.trim()).filter(Boolean).forEach(name => {
+        (map[name.toUpperCase()] ||= new Set()).add(day);
+      });
+    });
+    return Object.entries(map).map(([name, set]) => {
+      const dset = set as Set<number>;
+      const worked = Array.from(dset).sort((a, b) => a - b);
+      const start = worked[0]; const finish = worked[worked.length - 1];
+      // cell state per shoot day: S start, W work, H hold (between), F finish, · idle
+      const cells = days.map(d => {
+        if (!dset.has(d)) return d > start && d < finish ? 'H' : '·';
+        if (d === start && d === finish) return 'SF';
+        if (d === start) return 'S';
+        if (d === finish) return 'F';
+        return 'W';
+      });
+      const total = worked.length;
+      return { name, cells, total };
+    }).sort((a, b) => b.total - a.total);
+  })();
+
+  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#d7340b', SF: '#10b981', '·': 'rgba(255,255,255,0.12)' };
+
+  if (scenes.length === 0) return null;
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{view === 'strips' ? 'Stripboard' : 'Day Out of Days'}</div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['strips', 'dood'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)} style={{
+              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
+              padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+              background: view === v ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${view === v ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: view === v ? '#a5b4fc' : 'var(--fg-muted)',
+            }}>{v === 'strips' ? 'Strips' : 'DOOD'}</button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'strips' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 480 }}>
+          {days.map(day => {
+            const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
+            const dayEighths = dayScenes.reduce((t, s) => t + eighths(s), 0);
+            return (
+              <div key={day}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#6366f1' }}>DAY {day}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{dayScenes.length} scene{dayScenes.length === 1 ? '' : 's'} · {(dayEighths / 8).toFixed(1)} pg</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {dayScenes.map(s => {
+                    const c = stripColor(s);
+                    const e = eighths(s);
+                    return (
+                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: c.bg, borderLeft: `4px solid ${c.bar}`, borderRadius: 4, padding: '7px 10px', minHeight: 22 + Math.min(e, 8) * 3 }}>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, width: 28, flexShrink: 0 }}>{s.scene_number}</span>
+                        <span style={{ flex: 1, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title || 'Untitled'}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: c.bar, letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', width: 32, textAlign: 'right', flexShrink: 0 }}>{e}/8</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            {[['#10b981', 'EXT Night'], ['#f59e0b', 'EXT Day'], ['#3b82f6', 'INT Night'], ['rgba(255,255,255,0.5)', 'INT Day']].map(([col, lbl]) => (
+              <span key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: col }} /> {lbl}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : (
+        castRows.length === 0 ? (
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No cast tagged into scenes yet — add actors to scene cast lists to build the Day Out of Days.</div>
+        ) : (
+          <div style={{ minWidth: 120 + days.length * 34 }}>
+            <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 6, marginBottom: 6 }}>
+              <div style={{ width: 120, fontFamily: 'var(--mono)', fontSize: 9, color: '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Actor</div>
+              {days.map(d => <div key={d} style={{ width: 30, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: '#888' }}>{d}</div>)}
+              <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 9, color: '#888' }}>Days</div>
+            </div>
+            {castRows.map(row => (
+              <div key={row.name} style={{ display: 'flex', alignItems: 'center', padding: '4px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                <div style={{ width: 120, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 6 }}>{row.name}</div>
+                {row.cells.map((cell, i) => (
+                  <div key={i} style={{ width: 30, textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: cell === '·' ? codeColor['·'] : codeColor[cell] }}>{cell === 'SF' ? 'SF' : cell}</span>
+                  </div>
+                ))}
+                <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{row.total}</div>
+              </div>
+            ))}
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              {[['S', 'Start'], ['W', 'Work'], ['H', 'Hold'], ['F', 'Finish']].map(([code, lbl]) => (
+                <span key={code} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
+                  <span style={{ fontWeight: 700, color: codeColor[code] }}>{code}</span> {lbl}
+                </span>
+              ))}
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 // Real call sheets generated by grouping the schedule's scenes by shoot day.
 function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
   const [openDay, setOpenDay] = useState<number | null>(null);
@@ -1360,6 +1698,9 @@ export default function StudioPage() {
   const confirm = useConfirm();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
+  // Production suite is split into three sub-surfaces so the story work, the
+  // shooting schedule and the people no longer share one crowded grid.
+  const [prodTab, setProdTab] = useState<'story' | 'schedule' | 'crew'>('story');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
   const [assetsList, setAssetsList] = useState<Asset[]>([]);
@@ -1563,6 +1904,7 @@ export default function StudioPage() {
           cast_list: (s.characters || []).join(', ') || null,
           est_duration: `${s.eighths || 1}/8 pg`,
           shoot_day: 1,
+          elements: s.elements || {},
         }));
       if (rows.length === 0) { toast('Schedule is already in sync with the script.', 'info'); return; }
       const { error } = await supabase.from('scenes').insert(rows);
@@ -1570,6 +1912,28 @@ export default function StudioPage() {
       await refreshProject(activeProject.id);
     } finally {
       setImportingScenes(false);
+    }
+  };
+
+  // The real breakdown hinge: re-tag every scene's production elements from
+  // the current script, then roll the unique counts per category into
+  // budget_items — replacing the fake hardcoded breakdown with a live sync.
+  const [syncingBreakdown, setSyncingBreakdown] = useState(false);
+  const syncBreakdown = async () => {
+    if (!activeProject) return;
+    const scenes = (activeProject.scenes || []) as any[];
+    if (scenes.length === 0) { toast('No scenes scheduled yet — import from the screenplay first.', 'info'); return; }
+    setSyncingBreakdown(true);
+    try {
+      const elementsById = await syncSceneElementsFromScript(activeProject.id, scenes);
+      const withElements = scenes.map(s => ({ ...s, elements: elementsById[s.id] ?? s.elements ?? {} }));
+      const synced = await syncBudgetFromSceneElements(activeProject.id, withElements, (activeProject.budget_items || []) as any[]);
+      await refreshProject(activeProject.id);
+      toast(synced.length > 0 ? `Breakdown synced — ${synced.length} budget categor${synced.length === 1 ? 'y' : 'ies'} updated` : 'Breakdown synced — no production elements detected', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Could not sync breakdown', 'error');
+    } finally {
+      setSyncingBreakdown(false);
     }
   };
 
@@ -1900,12 +2264,12 @@ export default function StudioPage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 style={{
                   position: 'relative',
-                  height: 32, padding: '0 16px',
+                  height: 34, padding: '0 16px',
                   background: 'transparent', border: 'none', borderRadius: 9999,
                   display: 'flex', alignItems: 'center', gap: 6,
                   color: isActive ? 'var(--fg)' : 'var(--fg-dim)',
                   cursor: 'pointer', transition: 'color 0.25s',
-                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
                   textTransform: 'uppercase',
                 }}
                 whileHover={{ color: 'var(--fg-muted)' } as any}
@@ -2153,19 +2517,46 @@ export default function StudioPage() {
 
         {activeTab === 'production' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
               <div>
                 <SectionLabel text="Pre-Production" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="link-btn" onClick={printSchedule}>⎙ Export Schedule</button>
-                <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>
+                {prodTab === 'schedule' && <button className="link-btn" onClick={printSchedule}>⎙ Export Schedule</button>}
+                {prodTab === 'story' && <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>}
+                {prodTab === 'crew' && <button className="link-btn" onClick={() => setShowRecruit(true)}>+ Recruit Crew</button>}
               </div>
             </div>
 
-            <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
-               {/* Beat Board */}
+            {/* Production sub-tabs — Story / Schedule / Crew */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 36, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              {([
+                ['story', 'Story', BookOpen],
+                ['schedule', 'Schedule', Calendar],
+                ['crew', 'Crew', Users],
+              ] as const).map(([key, label, Icon]) => {
+                const active = prodTab === key;
+                return (
+                  <button key={key} onClick={() => setProdTab(key)} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
+                    color: active ? 'var(--fg)' : 'var(--fg-dim)', marginBottom: -1,
+                    fontSize: 13, fontWeight: 600, letterSpacing: 0.5, transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                  >
+                    <Icon size={15} /> {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── STORY ── beat board + character bible */}
+            {prodTab === 'story' && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                <div>
                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                    <BookOpen size={16} /> Beat Board / Outline
@@ -2192,7 +2583,7 @@ export default function StudioPage() {
                  )}
 
                  {(activeProject?.beats && activeProject.beats.length > 0) ? (
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
                      {activeProject.beats.map((beat, i) => (
                        <BeatCard key={beat.id} beat={beat} index={i} onDelete={async (id) => { if (!await confirm('Delete this beat?')) return; await supabase.from('project_beats').delete().eq('id', id); await refreshProject(activeProject.id); }} onPush={handlePushToScript} />
                      ))}
@@ -2202,10 +2593,15 @@ export default function StudioPage() {
                  )}
                </div>
 
-               {/* Staffing & Casting */}
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-                 <div>
-                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
+               {activeProject && <CharacterBible projectId={activeProject.id} userId={user?.id ?? null} concepts={(activeProject.concept_assets || []) as any[]} />}
+             </div>
+            )}
+
+            {/* ── CREW ── cast & crew hub + casting board */}
+            {prodTab === 'crew' && (
+               <div>
+                 <div style={{ maxWidth: 720 }}>
+                   <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                      <Users size={16} /> Cast & Crew Hub
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -2222,13 +2618,30 @@ export default function StudioPage() {
                       )}
                       <button
                         onClick={() => setShowRecruit(true)}
-                        style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}
+                        style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}
                       >
                         + Recruit Crew / Invite Talent
                       </button>
                     </div>
                  </div>
 
+                 {activeProject && (
+                   <div style={{ marginTop: 44, maxWidth: 'none' }}>
+                     <CastingBoard
+                       projectId={activeProject.id}
+                       userId={user?.id ?? null}
+                       concepts={(activeProject.concept_assets || []) as any[]}
+                       scenes={(activeProject.scenes || []) as any[]}
+                       crew={crewList}
+                     />
+                   </div>
+                 )}
+               </div>
+            )}
+
+            {/* ── SCHEDULE ── scene gantt + call sheets */}
+            {prodTab === 'schedule' && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                  {/* Scene Gantt Timeline (StudioBinder style) */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -2253,6 +2666,7 @@ export default function StudioPage() {
                      <div style={{ display: 'flex', gap: 8 }}>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(215, 52, 11,0.12)', borderColor: 'rgba(215, 52, 11,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(99,102,241,0.12)', borderColor: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }} onClick={syncBreakdown} disabled={syncingBreakdown} title="Re-tag every scene's production elements from the script and roll them into the budget by category"><Tags size={12}/> {syncingBreakdown ? 'Syncing…' : 'Sync Breakdown → Budget'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                      </div>
                    </div>
@@ -2346,6 +2760,20 @@ export default function StudioPage() {
                                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.5 }}>add concept images to link references</span>
                                )}
                              </div>
+                             {/* Tagged production elements — synced from the script via "Sync Breakdown → Budget" */}
+                             {(() => {
+                               const els = s.elements || {};
+                               const chips = ELEMENT_CATEGORIES.flatMap((cat: ElementCategory) => (els[cat] || []).map((name: string) => ({ cat, name })));
+                               if (chips.length === 0) return null;
+                               const catColor: Record<ElementCategory, string> = { props: '#ffaa00', wardrobe: '#d7340b', vehicles: '#0099ff', sfx: '#a855f7', vfx: '#6366f1' };
+                               return (
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
+                                   {chips.map(({ cat, name }) => (
+                                     <span key={`${cat}-${name}`} title={cat} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: catColor[cat], background: `${catColor[cat]}14`, border: `1px solid ${catColor[cat]}33`, borderRadius: 4, padding: '2px 6px' }}>{name}</span>
+                                   ))}
+                                 </div>
+                               );
+                             })()}
                              {/* Concept picker */}
                              {picking && (
                                <div style={{ marginTop: 8, marginLeft: 60, padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -2368,13 +2796,15 @@ export default function StudioPage() {
                      <EmptyState icon={<Calendar size={28} />} title="No scenes scheduled yet" />
                    )}
                  </div>
-               </div>
 
+               {activeProject?.scenes && activeProject.scenes.length > 0 && (
+                 <Stripboard scenes={activeProject.scenes as any[]} />
+               )}
                {activeProject?.scenes && activeProject.scenes.length > 0 && (
                  <CallSheets scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
                )}
-               {activeProject && <CharacterBible projectId={activeProject.id} userId={user?.id ?? null} concepts={(activeProject.concept_assets || []) as any[]} />}
-            </div>
+             </div>
+            )}
           </motion.div>
         )}
 
