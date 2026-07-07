@@ -28,6 +28,7 @@ import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
 import { resolveLineToSceneId } from '@/lib/supabase/breakdown';
+import { getProjectBeats, createProjectBeat } from '@/lib/supabase/studio';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
@@ -323,6 +324,23 @@ export default function EditorPage() {
             toast(`Added to Day ${day}'s call sheet notes`, 'success');
           }
         }
+      }
+
+      // beat annotations claim to route to Studio's Beat Board
+      // (project_beats) — unlike shot/todo, beats aren't scene-scoped, so
+      // this doesn't need resolveLineToSceneId at all; it just creates the
+      // beat directly. Title is a short lead-in from the note text so the
+      // Beat Board card has something to show in its title row.
+      if (annotationDraft.type === 'beat') {
+        const text = annotationDraft.text.trim();
+        const existing = await getProjectBeats(activeProject.id);
+        await createProjectBeat({
+          project_id: activeProject.id,
+          title: text.length > 40 ? `${text.slice(0, 40)}…` : text,
+          content: text,
+          order_index: (existing || []).length,
+        });
+        toast('Beat added to the Beat Board', 'success');
       }
 
       reloadAnnotations(currentScript.id);
