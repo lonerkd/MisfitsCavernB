@@ -412,7 +412,7 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   shrunk: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean; pointerId: number } | null>(null);
   const restTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const setWidth = apps.length * (APP_ICON + APP_GAP);
   const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
@@ -465,17 +465,17 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   // icon happens to be under the pointer when it's released.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (restTimer.current) clearTimeout(restTimer.current);
-    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false, pointerId: e.pointerId };
+    
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current || !scrollRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 3) dragRef.current.moved = true;
+    if (Math.abs(dx) > 3 && !dragRef.current.moved) { dragRef.current.moved = true; try { e.currentTarget.setPointerCapture(dragRef.current.pointerId); } catch (err) {} }
     scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
   };
-  const onPointerUp = () => {
-    dragRef.current = null;
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.moved) { try { e.currentTarget.releasePointerCapture(dragRef.current.pointerId); } catch (err) {} } dragRef.current = null;
     normalize();
     scheduleReturnHome();
   };
@@ -718,7 +718,7 @@ export default function EcosystemTaskbar() {
             animate={{ opacity: 1, width: 'auto' }}
             exit={{ opacity: 0, width: 0 }}
             transition={MORPH}
-            style={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'visible' }}
           >
           {/* Command palette trigger */}
           <div style={{ position: 'relative' }}>
