@@ -248,7 +248,19 @@ CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid(
 -- Membership-check helpers. SECURITY DEFINER bypasses RLS on the referenced
 -- tables, which prevents the projects <-> project_crew policies from recursing
 -- into each other (Postgres error 42P17: infinite recursion).
-CREATE OR REPLACE FUNCTION public.is_project_creator(pid uuid)
+--
+-- Defined in `internal`, not `public`: PostgREST auto-exposes every function
+-- granted EXECUTE in an exposed schema as a `/rest/v1/rpc/<fn>` endpoint, and
+-- these two (plus can_access_script below) exist purely to be called from
+-- inside RLS policy USING/WITH CHECK clauses, never from the client — left
+-- in `public` they'd let any signed-in caller probe arbitrary project IDs
+-- directly. Moving schema doesn't affect existing policies (Postgres
+-- resolves policy expressions by function OID, not by re-parsing a
+-- schema-qualified name), and EXECUTE stays granted to `authenticated`
+-- since RLS evaluation still needs it.
+CREATE SCHEMA IF NOT EXISTS internal;
+
+CREATE OR REPLACE FUNCTION internal.is_project_creator(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public
@@ -256,7 +268,7 @@ AS $$
   SELECT EXISTS (SELECT 1 FROM projects WHERE id = pid AND creator_id = auth.uid());
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_project_member(pid uuid)
+CREATE OR REPLACE FUNCTION internal.is_project_member(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public
@@ -266,7 +278,7 @@ $$;
 
 -- RLS Policies: Projects
 CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
-  creator_id = auth.uid() OR public.is_project_member(id)
+  creator_id = auth.uid() OR internal.is_project_member(id)
 );
 CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
@@ -274,16 +286,16 @@ CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_i
 
 -- RLS Policies: Project crew (uses is_project_creator to avoid recursion)
 CREATE POLICY "Project crew viewable by project members" ON project_crew FOR SELECT USING (
-  user_id = auth.uid() OR public.is_project_creator(project_id)
+  user_id = auth.uid() OR internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can manage crew" ON project_crew FOR INSERT WITH CHECK (
-  public.is_project_creator(project_id)
+  internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can update crew" ON project_crew FOR UPDATE USING (
-  public.is_project_creator(project_id)
+  internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USING (
-  public.is_project_creator(project_id) OR user_id = auth.uid()
+  internal.is_project_creator(project_id) OR user_id = auth.uid()
 );
 
 -- NOTE (performance): on the live DB, migration
@@ -311,7 +323,7 @@ CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CH
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
   created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
-  (project_id IS NOT NULL AND (public.is_project_creator(project_id) OR public.is_project_member(project_id)))
+  (project_id IS NOT NULL AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
 );
 CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
 
@@ -329,17 +341,17 @@ ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
 -- the owning project. Shared by script_metadata and script_revisions (migration
 -- tighten_script_revisions_rls) so personal scripts are NOT open to every
 -- authenticated user.
-CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
+CREATE OR REPLACE FUNCTION internal.can_access_script(sid uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.scripts s WHERE s.id = sid AND (
       s.created_by = auth.uid() OR s.last_edited_by = auth.uid()
-      OR (s.project_id IS NOT NULL AND (public.is_project_creator(s.project_id) OR public.is_project_member(s.project_id)))
+      OR (s.project_id IS NOT NULL AND (internal.is_project_creator(s.project_id) OR internal.is_project_member(s.project_id)))
     )
   );
 $$;
-CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (public.can_access_script(script_id));
-CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (public.can_access_script(script_id)) WITH CHECK (public.can_access_script(script_id));
+CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (internal.can_access_script(script_id));
+CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (internal.can_access_script(script_id)) WITH CHECK (internal.can_access_script(script_id));
 
 -- RLS Policies: Jobs
 CREATE POLICY "Jobs publicly readable" ON jobs FOR SELECT USING (status = 'open' OR created_by = auth.uid());
@@ -505,11 +517,11 @@ CREATE TABLE IF NOT EXISTS scene_references (
 );
 ALTER TABLE scene_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "scene_refs view" ON scene_references FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Casting/look references: link concept-board images to characters
 CREATE TABLE IF NOT EXISTS character_references (
@@ -523,11 +535,11 @@ CREATE TABLE IF NOT EXISTS character_references (
 );
 ALTER TABLE character_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "char_refs view" ON character_references FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "char_refs insert" ON character_references FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Scene shoot status tracking
 ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
@@ -553,11 +565,11 @@ CREATE TABLE IF NOT EXISTS script_annotations (
 CREATE INDEX IF NOT EXISTS idx_script_annotations_script ON script_annotations(script_id);
 ALTER TABLE script_annotations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "script_annotations view" ON script_annotations FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "script_annotations insert" ON script_annotations FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "script_annotations delete" ON script_annotations FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Notifications: per-user feed (bell). Insert allowed for any authenticated
 -- user so actors can notify recipients; read/update/delete scoped to owner.
@@ -671,7 +683,7 @@ DROP POLICY IF EXISTS "channels create by project owner" ON channels;
 CREATE POLICY "channels create by project creator or crew" ON channels FOR INSERT
   WITH CHECK (
     project_id IS NOT NULL
-    AND (public.is_project_creator(project_id) OR public.is_project_member(project_id))
+    AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
   );
 
 -- Timeline and budget: ProjectContext.tsx queried these since the project hub
@@ -878,10 +890,10 @@ CREATE INDEX IF NOT EXISTS idx_character_castings_project ON character_castings(
 CREATE INDEX IF NOT EXISTS idx_character_castings_crew_user ON character_castings(crew_user_id);
 ALTER TABLE character_castings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Castings viewable by project creator or crew" ON character_castings FOR SELECT
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "Castings writable by project creator or crew" ON character_castings FOR ALL
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id))
-  WITH CHECK (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Link portfolio_projects back to their originating production project.
 -- Without this, the Showcase tab on a project has no real table to
