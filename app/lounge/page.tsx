@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
-import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
+import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/context/ProjectContext';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -308,10 +308,14 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const [postPolicy, setPostPolicy] = useState(channel.post_policy);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [discordConnected, setDiscordConnected] = useState(false);
+  const [discordInput, setDiscordInput] = useState('');
+  const [discordBusy, setDiscordBusy] = useState(false);
   const confirm = useConfirm();
 
   const refresh = useCallback(async () => { setLoading(true); setMembers(await listChannelMembers(channel.id)); setLoading(false); }, [channel.id]);
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { hasDiscordWebhook(channel.id).then(setDiscordConnected); }, [channel.id]);
   useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
 
   useEffect(() => {
@@ -338,6 +342,21 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     setBusy(false); await refresh();
   };
   const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };
+  const saveDiscordWebhook = async () => {
+    if (!discordInput.trim()) return;
+    setDiscordBusy(true);
+    const e = await setDiscordWebhook(channel.id, discordInput.trim());
+    setDiscordBusy(false);
+    if (e) { setErr(e); return; }
+    setDiscordInput(''); setDiscordConnected(true);
+  };
+  const clearDiscordWebhook = async () => {
+    setDiscordBusy(true);
+    const e = await removeDiscordWebhook(channel.id);
+    setDiscordBusy(false);
+    if (e) { setErr(e); return; }
+    setDiscordConnected(false);
+  };
   const doDelete = async () => {
     if (!await confirm({ title: `Delete #${channel.name}?`, message: 'All its messages will be removed. This cannot be undone.', confirmLabel: 'DELETE' })) return;
     setBusy(true); const e = await deleteChannel(channel.id); setBusy(false);
@@ -369,6 +388,26 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
                 <button key={v} onClick={() => savePolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
               ))}
             </div>
+          </div>
+        )}
+
+        {channel.type === 'text' && (
+          <div style={{ marginBottom: 22 }}>
+            <label style={label}>Discord bridge</label>
+            <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 8 }}>
+              One-way: messages posted here also get sent to a Discord channel via webhook. The webhook URL is write-only once set — it can be replaced but never viewed again.
+            </div>
+            {discordConnected ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <span style={{ fontSize: 12, color: '#34d399' }}>● Connected</span>
+                <Button variant="outline" size="sm" onClick={clearDiscordWebhook} disabled={discordBusy} style={{ marginLeft: 'auto' }}>DISCONNECT</Button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}><Input label="Webhook URL" value={discordInput} onChange={e => setDiscordInput(e.target.value)} type="password" /></div>
+                <Button size="sm" onClick={saveDiscordWebhook} disabled={discordBusy || !discordInput.trim()} isLoading={discordBusy}>CONNECT</Button>
+              </div>
+            )}
           </div>
         )}
 

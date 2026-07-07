@@ -39,6 +39,19 @@ export async function sendChannelMessage(senderId: string, content: string, chan
     parent_message_id: parentMessageId ?? null,
   }).select().single();
   if (error) throw error;
+
+  // Mirror to Discord if this channel has a webhook configured. Fire-and-
+  // forget: the Lounge message already sent successfully above, so a slow or
+  // failed Discord post must never block or fail the sender's own send.
+  // senderId (not a username) is passed since the client has no cheap access
+  // to the sender's profile here — the route resolves it server-side, in the
+  // same request that already needs a DB round-trip for the webhook lookup.
+  fetch('/api/discord/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelId: channelUuid, senderId, content }),
+  }).catch(() => { /* best-effort only */ });
+
   return data;
 }
 

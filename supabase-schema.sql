@@ -686,6 +686,37 @@ CREATE TABLE IF NOT EXISTS channel_members (
 );
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES channels(id) ON DELETE CASCADE;
 
+-- Discord webhook bridge: one-way (Lounge -> Discord) announce mirror for a
+-- channel. The webhook URL is a bearer credential — anyone holding it can
+-- post to the Discord channel as the configured bot, so it must never reach
+-- a browser. Deliberately has NO select policy at all: a manager can set or
+-- replace the webhook (insert/update) but can't read it back, and no other
+-- code path selects from this table except the server-side API route
+-- (app/api/discord/notify), which uses the service-role key to bypass RLS
+-- entirely rather than relying on a policy that would otherwise have to
+-- grant some authenticated role read access.
+CREATE TABLE IF NOT EXISTS discord_integrations (
+  channel_id UUID PRIMARY KEY REFERENCES channels(id) ON DELETE CASCADE,
+  webhook_url TEXT NOT NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE discord_integrations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "discord webhook set by channel managers" ON discord_integrations FOR INSERT TO authenticated
+  WITH CHECK (can_manage_channel(channel_id) AND created_by = auth.uid());
+CREATE POLICY "discord webhook updated by channel managers" ON discord_integrations FOR UPDATE TO authenticated
+  USING (can_manage_channel(channel_id)) WITH CHECK (can_manage_channel(channel_id));
+CREATE POLICY "discord webhook removed by channel managers" ON discord_integrations FOR DELETE TO authenticated
+  USING (can_manage_channel(channel_id));
+-- Existence-only check so the UI can show "Connected" / "Not connected"
+-- without ever selecting the webhook_url column itself.
+CREATE OR REPLACE FUNCTION has_discord_webhook(cid uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM discord_integrations WHERE channel_id = cid);
+$$;
+GRANT EXECUTE ON FUNCTION has_discord_webhook(uuid) TO authenticated;
+
 -- SECURITY DEFINER permission helpers: can_view_channel / can_post_channel /
 -- can_manage_channel. View = global, project owner, project crew (public), or
 -- explicit member (private). Post gated by post_policy (viewers/members/
