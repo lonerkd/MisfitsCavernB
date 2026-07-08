@@ -395,7 +395,7 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
               padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
             }}
           >
-            {app.name}
+            {app.name} <span style={{ opacity: 0.5, marginLeft: 4 }}>[Alt+{isActive ? '✓' : (APPS.findIndex(a => a.id === app.id) + 1)}]</span>
             <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
           </motion.div>
         )}
@@ -635,6 +635,19 @@ export default function EcosystemTaskbar() {
     return () => window.removeEventListener('keydown', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
+
+  // Global Alt+[1-5] fast-switching
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key >= '1' && e.key <= '5') {
+        e.preventDefault();
+        const idx = parseInt(e.key, 10) - 1;
+        if (visibleApps[idx]) router.push(visibleApps[idx].path);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [visibleApps, router]);
 
   if (pathname === '/login' || pathname === '/auth') return null;
 

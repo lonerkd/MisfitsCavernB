@@ -12,16 +12,22 @@ export interface StoredScript {
   project_id?: string;
 }
 
-// Get all scripts for the current user
-export async function getAllScripts(): Promise<StoredScript[]> {
+// Get all scripts for the current user (optionally scoped to project)
+export async function getAllScripts(projectId?: string): Promise<StoredScript[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('scripts')
     .select('*')
     .eq('created_by', user.id)
     .order('updated_at', { ascending: false });
+    
+  if (projectId) {
+    query = query.eq('project_id', projectId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error loading scripts:', error);
@@ -126,8 +132,8 @@ export async function deleteScript(id: string): Promise<boolean> {
 }
 
 // Create new script
-export async function createNewScript(title: string = 'Untitled'): Promise<StoredScript | null> {
-  return saveScript({ title, content: '' });
+export async function createNewScript(title: string = 'Untitled', projectId?: string): Promise<StoredScript | null> {
+  return saveScript({ title, content: '', project_id: projectId });
 }
 
 // Current Script ID management (Still local for UX state)
@@ -143,9 +149,10 @@ export function setCurrentScriptId(id: string): void {
 }
 
 // Import script from text
-export async function importScriptFromText(text: string, title: string): Promise<StoredScript | null> {
+export async function importScriptFromText(text: string, title: string, projectId?: string): Promise<StoredScript | null> {
   return saveScript({
     title,
-    content: text
+    content: text,
+    project_id: projectId
   });
 }

@@ -490,68 +490,60 @@ export default function EditorPage() {
     }
   }, [activeProject?.id, toast]);
 
-  // Init
+  // Unified initialization and project sync
   useEffect(() => {
-    const init = async () => {
-      const all = await getAllScripts();
-      setScripts(all);
-      if (all.length > 0) {
-        const latest = all[0];
-        setCurrentScript(latest);
-        setContent(latest.content || '');
-        setTitlePage(loadTitlePageCached(latest.id));
-        setCharProfiles(loadCharacterProfilesCached(latest.id));
-        loadTitlePage(latest.id).then(setTitlePage);
-        loadCharacterProfiles(latest.id).then(setCharProfiles);
-        setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
-      } else {
-        const fresh = await createNewScript('My First Screenplay');
-        if (fresh) {
-          setCurrentScript(fresh);
-          setScripts([fresh]);
-          setContent('');
-          setSessionStartWords(0);
-        }
-      }
-    };
-    init();
-  }, []);
-
-  // Load (or create) the ACTIVE PROJECT's screenplay from Supabase, so the
-  // editor edits the same script row Studio/Production/Pitch read. Using the
-  // real Supabase id means useScriptSync persists edits straight to that row.
-  useEffect(() => {
-    if (!activeProject?.id) return;
     let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from('scripts')
-          .select('id,title,content')
-          .eq('project_id', activeProject.id)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        let row = data?.[0];
+    const init = async () => {
+      const projectId = activeProject?.id;
+      const all = await getAllScripts(projectId);
+      if (cancelled) return;
+      setScripts(all);
+
+      if (projectId) {
+        // We have an active project — ensure a script exists for it and load it
+        let row = all.find(s => s.project_id === projectId);
         if (!row) {
           const { data: auth } = await supabase.auth.getUser();
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')
-            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
-            .select('id,title,content')
+            .insert({ project_id: projectId, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || 'feature', status: 'draft', created_by: uid, last_edited_by: uid })
+            .select('*')
             .single();
-          row = ins.data || undefined;
-          if (row && uid) logAuditAction(uid, 'script_created', 'script', row.id, { title: row.title, project_id: activeProject.id });
+          if (ins.data) {
+            row = {
+              id: ins.data.id, title: ins.data.title, content: ins.data.content,
+              createdAt: ins.data.created_at, updatedAt: ins.data.updated_at, project_id: ins.data.project_id
+            };
+            setScripts(prev => [row!, ...prev]);
+            if (uid) console.log('Script created for project');
+          }
         }
+        
         if (cancelled || !row) return;
-        if (currentScript?.id === row.id) return;
-        const now = new Date().toISOString();
-        handleLoadScript({ id: row.id, title: row.title || activeProject.title, content: row.content || '', createdAt: now, updatedAt: now, project_id: activeProject.id });
+        if (currentScript?.id === row.id) return; // already loaded
+        
+        handleLoadScript(row);
         toast(`Editing “${activeProject.title}” screenplay`, 'info');
-      } catch (e) {
-        console.error('Failed to load project script:', e);
+      } else {
+        // No active project (rare but possible) — just load latest or create empty
+        if (all.length > 0) {
+          const latest = all[0];
+          if (currentScript?.id !== latest.id) {
+             handleLoadScript(latest);
+          }
+        } else {
+          const fresh = await createNewScript('My First Screenplay');
+          if (fresh) {
+            setCurrentScript(fresh);
+            setScripts([fresh]);
+            setContent('');
+            setSessionStartWords(0);
+          }
+        }
       }
-    })();
+    };
+    init();
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
