@@ -668,6 +668,8 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   const [err, setErr] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [taskSuggestions, setTaskSuggestions] = useState<string[] | null>(null);
+  const [analyzingTasks, setAnalyzingTasks] = useState(false);
   // Budget line items that already have a job posted from them, so the
   // "Post as Job" action can't be fired twice for the same line by accident.
   const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
@@ -836,6 +838,41 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     setSuggestions([]);
   };
 
+  // Build task suggestions from the project's screenplay breakdown (Props and Wardrobe)
+  const analyzeTasks = async () => {
+    setAnalyzingTasks(true); setErr(null);
+    try {
+      const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setTaskSuggestions([]); return; }
+      const parsed = parseScript(withContent.content);
+      
+      const sugg = new Set<string>();
+      parsed.scenes.forEach(sc => {
+        (sc.elements?.props || []).forEach(p => sugg.add(`Source Prop: ${p}`));
+        (sc.elements?.wardrobe || []).forEach(w => sugg.add(`Source Wardrobe: ${w}`));
+        (sc.elements?.vehicles || []).forEach(v => sugg.add(`Source Vehicle: ${v}`));
+      });
+      
+      const existing = new Set(tasks.map(t => t.title.toLowerCase()));
+      setTaskSuggestions(Array.from(sugg).filter(s => !existing.has(s.toLowerCase())));
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setAnalyzingTasks(false);
+    }
+  };
+
+  const acceptTaskSuggestion = async (title: string) => {
+    await addTask(title);
+    setTaskSuggestions(prev => prev ? prev.filter(x => x !== title) : prev);
+  };
+  const acceptAllTaskSuggestions = async () => {
+    const list = taskSuggestions || [];
+    for (const s of list) await addTask(s);
+    setTaskSuggestions([]);
+  };
+
   const addTimeline = async (title: string, start: string, end: string) => {
     const { data, error } = await supabase.from('timeline_items')
       .insert({ project_id: projectId, title, start_date: start || null, end_date: end || null, created_by: userId })
@@ -922,6 +959,30 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
             </Row>
           ))}
           <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
+
+          {/* Tasks-from-breakdown: suggest art department tasks from the script */}
+          <button onClick={analyzeTasks} disabled={analyzingTasks} style={{ marginTop: 8, width: '100%', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', borderRadius: 6, padding: '6px 10px', cursor: analyzingTasks ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
+            {analyzingTasks ? 'ANALYZING SCRIPT…' : '✦ AUTO-GENERATE FROM SCRIPT'}
+          </button>
+          {taskSuggestions && taskSuggestions.length > 0 && (
+            <div style={{ marginTop: 8, padding: 8, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#34d399', letterSpacing: 0.5 }}>SUGGESTED — from tagged elements</span>
+                <button onClick={acceptAllTaskSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#34d399', background: 'none', border: '1px solid rgba(16,185,129,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {taskSuggestions.map(s => (
+                  <Row key={s}>
+                    <span style={{ flex: 1, fontSize: 10.5 }}>{s}</span>
+                    <button onClick={() => acceptTaskSuggestion(s)} aria-label="add" style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 4, padding: '0 7px', cursor: 'pointer', fontSize: 12 }}>+</button>
+                  </Row>
+                ))}
+              </div>
+            </div>
+          )}
+          {taskSuggestions && taskSuggestions.length === 0 && !analyzingTasks && (
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No new suggestions — all items already added.</div>
+          )}
         </Panel>
 
         {/* Budget */}

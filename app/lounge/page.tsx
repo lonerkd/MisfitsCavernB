@@ -395,7 +395,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
               {channel.is_private ? <Lock size={15} /> : <Hash size={15} />}{channel.name}
             </h2>
           </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close manage channel" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
         </div>
 
         {channel.type === 'text' && (
@@ -1070,7 +1070,7 @@ export default function LoungePage() {
           >
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#10b981' }}>Thread</span>
-              <button onClick={() => setThreadParent(null)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
+              <button onClick={() => setThreadParent(null)} aria-label="Close thread" style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
               {/* Parent message */}
@@ -1093,7 +1093,7 @@ export default function LoungePage() {
             <div style={{ padding: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8 }}>
               <input value={threadInput} onChange={e => setThreadInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleThreadSend(); } }}
                 placeholder="Reply…" style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--fg)', fontFamily: 'var(--serif)', fontSize: 13, outline: 'none' }} />
-              <button onClick={handleThreadSend} style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
+              <button onClick={handleThreadSend} aria-label="Send message" style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
             </div>
           </motion.div>
         )}

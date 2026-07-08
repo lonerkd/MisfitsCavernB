@@ -167,7 +167,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
+             <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name} <span style={{ color: '#666', marginLeft: 8 }}>V2</span></div>
              <div style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(0,204,102,0.1)', color: '#00cc66', borderRadius: 4, textTransform: 'uppercase' }}>Approved</div>
            </div>
@@ -534,11 +534,11 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+      <button onClick={onClose} aria-label="Close lightbox" style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
       {images.length > 1 && (
         <>
-          <button onClick={(e) => { e.stopPropagation(); go(-1); }} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
-          <button onClick={(e) => { e.stopPropagation(); go(1); }} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous image" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next image" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
         </>
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
@@ -707,7 +707,7 @@ function ReferenceSearchModal({
                 Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
+            <button onClick={onClose} aria-label="Close schedule edit" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
           </div>
 
           <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
@@ -1470,7 +1470,7 @@ function ShotList({ projectId, scenes }: { projectId: string; scenes: any[] }) {
                           {shot.description && <span style={{ display: 'block', fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>{shot.description}</span>}
                         </span>
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: statusColor[shot.status], textTransform: 'uppercase' }}>{shot.status}</span>
-                        <button onClick={() => removeShot(shot.id)} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 11 }}>✕</button>
+                        <button onClick={() => removeShot(shot.id)} aria-label="Remove shot" style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 11 }}>✕</button>
                       </div>
                     ))}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: sceneShots.length > 0 ? 4 : 0 }}>
@@ -2923,7 +2923,7 @@ export default function StudioPage() {
                                  </select>
                                  <input type="number" min="1" value={editScene.shoot_day} onChange={e => setEditScene(p => ({ ...p, shoot_day: e.target.value }))} style={{ width: 56, padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
                                  <button onClick={saveScene} style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 10 }}>Save</button>
-                                 <button onClick={() => setEditSceneId(null)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                                 <button onClick={() => setEditSceneId(null)} aria-label="Cancel edit" style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
                                </div>
                              ) : (
                              <div style={{ display: 'flex', alignItems: 'center' }}>

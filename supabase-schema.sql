@@ -1174,3 +1174,27 @@ DROP TABLE IF EXISTS marketing_campaigns;
 -- surfaces share the one table; character_castings (cast assignment) and
 -- character_references (look-board images) were already correctly scoped
 -- to their distinct purposes and needed no change.
+
+-- SFX Library (Soundtrack)
+CREATE TABLE IF NOT EXISTS sfx_assets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  audio_url TEXT NOT NULL,
+  duration INT,
+  tags TEXT[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE sfx_assets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ""SFX assets viewable by everyone"" ON sfx_assets FOR SELECT USING (true);
+CREATE POLICY ""SFX assets owner only insert"" ON sfx_assets FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY ""SFX assets owner only update"" ON sfx_assets FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY ""SFX assets owner only delete"" ON sfx_assets FOR DELETE USING (user_id = auth.uid());
+
+INSERT INTO storage.buckets (id, name, public) VALUES ('sfx-library', 'sfx-library', true) ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY ""SFX files viewable by everyone"" ON storage.objects FOR SELECT USING (bucket_id = 'sfx-library');
+CREATE POLICY ""SFX files insertable by authenticated users"" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'sfx-library' AND auth.role() = 'authenticated');
