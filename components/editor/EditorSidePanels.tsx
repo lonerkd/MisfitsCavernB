@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2, 
-  Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
-  Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
-  Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
-  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive, ChevronRight, Music, Lightbulb, LayoutGrid
+  ChevronDown, Wand2, AlertCircle, Settings, History,
+  Target, Play, Pause, Tags, Bookmark, MessageSquare,
+  BarChart3, ClipboardList, ChevronRight, Music, Lightbulb, LayoutGrid
 } from 'lucide-react';
 import { StashItem } from '@/types/screenplay';
 import { supabase } from '@/lib/supabase/client';

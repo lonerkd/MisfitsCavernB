@@ -107,7 +107,8 @@ export function mapStatusToPhase(status?: string): Phase {
     case 'concept': return 'development';
     case 'pre-prod':
     case 'pre-production': return 'pre-production';
-    case 'production': return 'production';
+    case 'production':
+    case 'in-production': return 'production';
     case 'post':
     case 'post-production': return 'post-production';
     case 'released':
