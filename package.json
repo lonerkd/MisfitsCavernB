@@ -16,6 +16,8 @@
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
+    "@types/diff": "^7.0.2",
+    "diff": "^9.0.0",
     "fast-average-color": "^9.5.2",
     "framer-motion": "^12.35.2",
     "idb-keyval": "^6.3.0",

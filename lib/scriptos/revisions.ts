@@ -5,6 +5,7 @@
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
+import * as DiffLib from 'diff';
 
 export const REVISION_COLORS = [
   { name: 'White',     color: '#ffffff', bg: 'rgba(255,255,255,0.05)' },
@@ -117,20 +118,33 @@ export async function createRevision(scriptId: string, content: string, label?: 
   return { revision, result };
 }
 
-// Compare two text snapshots and return changed line indices
-export function diffSnapshots(oldText: string, newText: string): RevisionMark[] {
-  const oldLines = oldText.split('\n');
-  const newLines = newText.split('\n');
-  const marks: RevisionMark[] = [];
-  const maxLen = Math.max(oldLines.length, newLines.length);
+// Compare two text snapshots and return changed line indices using Myers diff algorithm.
+// Uses the `diff` package (diffLines) for O(ND) LCS-based accuracy instead of the
+// previous naïve O(N) index-matched comparison that missed insertions/deletions.
 
-  for (let i = 0; i < maxLen; i++) {
-    if (i >= oldLines.length) {
-      marks.push({ lineIndex: i, revisionId: '', type: 'added' });
-    } else if (i >= newLines.length) {
-      marks.push({ lineIndex: i, revisionId: '', type: 'deleted' });
-    } else if (oldLines[i] !== newLines[i]) {
-      marks.push({ lineIndex: i, revisionId: '', type: 'modified' });
+export function diffSnapshots(oldText: string, newText: string): RevisionMark[] {
+  const changes = DiffLib.diffLines(oldText, newText);
+  const marks: RevisionMark[] = [];
+  let lineIndex = 0;
+
+  for (const change of changes) {
+    const lineCount = change.value.split('\n').filter((_, i, arr) =>
+      // don't count trailing empty string from split
+      i < arr.length - 1 || change.value.endsWith('\n') ? true : change.value !== ''
+    ).length;
+
+    if (change.added) {
+      for (let i = 0; i < lineCount; i++) {
+        marks.push({ lineIndex: lineIndex + i, revisionId: '', type: 'added' });
+      }
+      lineIndex += lineCount;
+    } else if (change.removed) {
+      for (let i = 0; i < lineCount; i++) {
+        marks.push({ lineIndex: lineIndex + i, revisionId: '', type: 'deleted' });
+      }
+      // removed lines don't advance the new-text index
+    } else {
+      lineIndex += lineCount;
     }
   }
 
