@@ -25,10 +25,14 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Refresh the session cookie on every request
+  // Refresh the session cookie on every request.
+  // Using getSession() instead of getUser() because getUser() makes an
+  // outbound API call that fails silently in the Edge Runtime, causing
+  // signed-in users to be redirected to /auth in a redirect loop.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   const path = request.nextUrl.pathname;
 

@@ -129,16 +129,26 @@ function PipelineConnector({ index }: { index: number }) {
 function ScriptOSPreview({ lines }: { lines?: string[] }) {
   if (lines && lines.length > 0) {
     return (
-      <div className="screenplay-preview" style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-        {lines.slice(0, 11).map((l, i) => {
+      <div className="screenplay-preview" style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 260, overflow: 'hidden' }}>
+        {lines.slice(0, 9).map((l, i) => {
           const t = l.trim();
-          if (!t) return <div key={i} style={{ height: 4 }} />;
+          if (!t) return <div key={i} style={{ height: 3 }} />;
           const isHead = /^(INT|EXT|EST|I\/E)[.\s]/i.test(t);
           const isChar = !isHead && t === t.toUpperCase() && t.length > 1 && t.length < 32 && !/[.!?,]$/.test(t);
+          // Truncate long action lines so the preview never overflows its card
+          const display = isHead || isChar ? t : t.length > 80 ? t.slice(0, 80) + '…' : t;
           return (
             <div key={i}
               className={isHead ? 'screenplay-scene-hdr' : isChar ? 'screenplay-char' : ''}
-              style={{ fontSize: 11, color: isHead || isChar ? undefined : 'rgba(224, 221, 174,0.55)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t}</div>
+              style={{
+                fontSize: 10.5,
+                color: isHead ? undefined : isChar ? undefined : 'rgba(224, 221, 174,0.55)',
+                lineHeight: 1.45,
+                whiteSpace: isHead || isChar ? 'nowrap' : 'normal',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxHeight: isHead || isChar ? undefined : 32,
+              }}>{display}</div>
           );
         })}
       </div>
