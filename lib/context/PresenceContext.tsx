@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useProject } from '@/lib/context/ProjectContext';
 
@@ -29,17 +29,18 @@ const PRESENCE_COLORS = [
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const { activeProject } = useProject();
   const [onlineUsers, setOnlineUsers] = useState<PresenceState[]>([]);
-  const [channel, setChannel] = useState<any>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!activeProject?.id || typeof window === 'undefined') return;
 
     let myUserId = '';
     let myEmail = '';
+    let cancelled = false;
 
     const setupPresence = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
       
       myUserId = user.id;
       myEmail = user.email || 'Unknown';
@@ -48,6 +49,9 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
       const room = supabase.channel(`presence:project_${activeProject.id}`, {
         config: { presence: { key: myUserId } }
       });
+
+      // Store in ref immediately so cleanup can access it even before subscribe resolves
+      channelRef.current = room;
 
       room
         .on('presence', { event: 'sync' }, () => {
@@ -63,7 +67,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
           setOnlineUsers(users.filter(u => u.userId !== myUserId)); // Exclude self
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
+          if (status === 'SUBSCRIBED' && !cancelled) {
             await room.track({
               userId: myUserId,
               email: myEmail,
@@ -73,26 +77,29 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
             });
           }
         });
-
-      setChannel(room);
     };
 
     setupPresence();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      cancelled = true;
+      const room = channelRef.current;
+      if (room) {
+        channelRef.current = null;
+        supabase.removeChannel(room);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProject?.id]);
 
   const updateScenePresence = async (sceneIdx: number | null) => {
-    if (channel && channel.state === 'joined') {
+    const currentChannel = channelRef.current;
+    if (currentChannel && currentChannel.state === 'joined') {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const myColor = PRESENCE_COLORS[(user.id.charCodeAt(0) + user.id.charCodeAt(user.id.length - 1)) % PRESENCE_COLORS.length];
       
-      await channel.track({
+      await currentChannel.track({
         userId: user.id,
         email: user.email || 'Unknown',
         color: myColor,

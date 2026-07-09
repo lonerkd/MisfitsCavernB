@@ -1,6 +1,6 @@
 // Hook to track and respond to network status changes
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export interface NetworkStatusInfo {
   isOnline: boolean;
@@ -38,10 +38,11 @@ export function useNetworkStatus(): NetworkStatusInfo {
 
     // Monitor connection speed (if available)
     let connectionMonitor: any;
+    let updateConnection: (() => void) | null = null;
     if ('connection' in navigator) {
       const connection = (navigator as any).connection;
       if (connection) {
-        const updateConnection = () => {
+        updateConnection = () => {
           const effectiveType = connection.effectiveType;
           const isSlowConnection = effectiveType === 'slow-2g' || effectiveType === '2g' || effectiveType === '3g';
           setStatus(prev => ({
@@ -58,8 +59,8 @@ export function useNetworkStatus(): NetworkStatusInfo {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      if (connectionMonitor && 'removeEventListener' in connectionMonitor) {
-        connectionMonitor.removeEventListener('change', () => {});
+      if (connectionMonitor && updateConnection) {
+        connectionMonitor.removeEventListener('change', updateConnection);
       }
     };
   }, []);
