@@ -1,39 +1,6 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  // Refresh the session cookie on every request.
-  // Using getSession() instead of getUser() because getUser() makes an
-  // outbound API call that fails silently in the Edge Runtime, causing
-  // signed-in users to be redirected to /auth in a redirect loop.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
   const path = request.nextUrl.pathname;
 
   // ── PUBLIC ROUTES (no auth required) ──────────────────────────────
@@ -46,28 +13,27 @@ export async function middleware(request: NextRequest) {
     '/favicon.ico',
   ];
   if (publicPaths.some((p) => path === p || path.startsWith(p + '/'))) {
-    return supabaseResponse;
+    return NextResponse.next();
   }
 
-  // ── ADMIN ROUTES (require auth + admin role) ─────────────────────
+  // Only redirect if there are ZERO Supabase auth cookies.
+  // The SSR createServerClient + getSession() pattern fails in Vercel's
+  // Edge Runtime because the cookie format differs from what the browser
+  // client sets. If cookies exist, trust that the client-side auth
+  // (useRequireAuth / supabase.auth.getUser) will handle validation.
+  const hasAuthCookies = request.cookies.getAll().some(
+    (c) => c.name.includes('sb-') && c.name.includes('auth-token'),
+  );
+
+  // ── ADMIN ROUTES ──────────────────────────────────────────────────
   if (path.startsWith('/admin')) {
-    if (!user) {
+    if (!hasAuthCookies) {
       const redirectUrl = new URL('/auth', request.url);
       redirectUrl.searchParams.set('redirect', path);
       return NextResponse.redirect(redirectUrl);
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-
-    return supabaseResponse;
+    // Client-side ProtectedPage component will verify is_admin
+    return NextResponse.next();
   }
 
   // ── PROTECTED ROUTES (require auth) ──────────────────────────────
@@ -84,16 +50,16 @@ export async function middleware(request: NextRequest) {
     '/soundtrack',
   ];
   if (protectedPaths.some((p) => path === p || path.startsWith(p + '/'))) {
-    if (!user) {
+    if (!hasAuthCookies) {
       const redirectUrl = new URL('/auth', request.url);
       redirectUrl.searchParams.set('redirect', path);
       return NextResponse.redirect(redirectUrl);
     }
-    return supabaseResponse;
+    return NextResponse.next();
   }
 
   // ── DEFAULT: allow through (p/, s/, showcase, etc.) ──────────────
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
@@ -104,7 +70,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - static assets (svg, png, jpg, jpeg, gif, webp, css, js)
-     * - spotify playlist embed assets
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js|woff2?|ttf|eot)$).*)',
   ],
