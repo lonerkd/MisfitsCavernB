@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
 
 // One-way Lounge -> Discord announce bridge. The webhook URL for a channel
 // lives in discord_integrations, which has no SELECT RLS policy at all — the
@@ -13,6 +14,16 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 30 requests per 60s per IP
+  const ip = getClientIp(req);
+  const rateLimit = checkRateLimit(ip, { maxRequests: 30, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'Too many requests' },
+      { status: 429, headers: { 'X-RateLimit-Reset': rateLimit.resetAt.toString() } },
+    );
+  }
+
   let body: { channelId?: string; senderId?: string; content?: string };
   try {
     body = await req.json();
