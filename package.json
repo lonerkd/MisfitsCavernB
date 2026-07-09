@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "node scripts/copy-pdf-worker.js"
+    "postinstall": "node scripts/copy-pdf-worker.js",
+    "sync-intel": "node scripts/sync-intel.js"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
