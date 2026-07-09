@@ -36,27 +36,27 @@ export interface RevisionMark {
 
 const REVISIONS_KEY = 'scriptos_revisions';
 
-export function getRevisions(scriptId: string): Revision[] {
+export async function getRevisions(scriptId: string): Promise<Revision[]> {
   if (typeof window === 'undefined') return [];
   try {
-    const data = getCacheItem(`${REVISIONS_KEY}_${scriptId}`, 'revisions');
+    const data = await getCacheItem(`${REVISIONS_KEY}_${scriptId}`, 'revisions');
     if (Array.isArray(data)) return data;
     return [];
   } catch { return []; }
 }
 
-export function saveRevision(scriptId: string, revision: Revision): { success: boolean; error?: string } {
+export async function saveRevision(scriptId: string, revision: Revision): Promise<{ success: boolean; error?: string }> {
   try {
-    const revisions = getRevisions(scriptId);
+    const revisions = await getRevisions(scriptId);
     revisions.push(revision);
 
     try {
-      setCacheItem(`${REVISIONS_KEY}_${scriptId}`, revisions);
+      await setCacheItem(`${REVISIONS_KEY}_${scriptId}`, revisions);
       return { success: true };
     } catch (e: any) {
       if (e.name === 'QuotaExceededError') {
         const limited = revisions.slice(-10);
-        setCacheItem(`${REVISIONS_KEY}_${scriptId}`, limited);
+        await setCacheItem(`${REVISIONS_KEY}_${scriptId}`, limited);
         return {
           success: false,
           error: 'Revision storage quota exceeded. Kept only the 10 most recent revisions.'
@@ -103,8 +103,8 @@ export async function deleteRevisionDB(id: string): Promise<void> {
   await supabase.from('script_revisions').delete().eq('id', id);
 }
 
-export function createRevision(scriptId: string, content: string, label?: string): { revision: Revision; result: { success: boolean; error?: string } } {
-  const revisions = getRevisions(scriptId);
+export async function createRevision(scriptId: string, content: string, label?: string): Promise<{ revision: Revision; result: { success: boolean; error?: string } }> {
+  const revisions = await getRevisions(scriptId);
   const colorIndex = revisions.length % REVISION_COLORS.length;
   const revision: Revision = {
     id: `rev-${Date.now()}`,
@@ -113,7 +113,7 @@ export function createRevision(scriptId: string, content: string, label?: string
     label: label || `${REVISION_COLORS[colorIndex].name} Revision`,
     snapshot: content,
   };
-  const result = saveRevision(scriptId, revision);
+  const result = await saveRevision(scriptId, revision);
   return { revision, result };
 }
 

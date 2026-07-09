@@ -17,6 +17,7 @@ import { useProject, type Phase, mapStatusToPhase } from '@/lib/context/ProjectC
 import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useEscapeKey } from '@/lib/useEscapeKey';
+import { logActivity } from '@/lib/supabase/activity';
 
 const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
 
@@ -127,6 +128,11 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
   return (
     <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <motion.div
+        draggable
+        onDragStart={e => {
+          (e as any).dataTransfer.setData('projectId', project.id);
+          (e as any).dataTransfer.effectAllowed = 'move';
+        }}
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
         animate={{ y: hovered ? -3 : 0 }}
@@ -140,7 +146,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           overflow: 'hidden',
           boxShadow: hovered ? `0 16px 48px rgba(0,0,0,0.7), 0 0 32px ${phase}12` : '0 2px 12px rgba(0,0,0,0.4)',
           transition: 'border-color 0.3s, box-shadow 0.3s',
-          cursor: 'pointer',
+          cursor: 'grab',
         }}
       >
         {/* Ambient corner glow */}
@@ -246,8 +252,9 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
   );
 }
 
-function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: ProjectCardViewModel[] }) {
+function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[0]; projects: ProjectCardViewModel[]; onDropProject: (projectId: string, targetPhase: Phase) => void }) {
   const color = PHASE_COLORS[phase.id];
+  const [dragOver, setDragOver] = useState(false);
 
   return (
     <div style={{ minWidth: 260, flex: '0 0 260px' }}>
@@ -286,7 +293,24 @@ function PhaseColumn({ phase, projects }: { phase: typeof PHASES[0]; projects: P
       </div>
 
       {/* Drop zone */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 120 }}>
+      <div
+        onDragOver={e => { e.preventDefault(); if (!dragOver) setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => {
+          e.preventDefault();
+          setDragOver(false);
+          const pid = e.dataTransfer.getData('projectId');
+          if (pid) onDropProject(pid, phase.id);
+        }}
+        style={{
+          display: 'flex', flexDirection: 'column', gap: 10, minHeight: '60vh',
+          background: dragOver ? 'rgba(255,255,255,0.015)' : 'transparent',
+          border: dragOver ? `1px dashed ${color}33` : '1px solid transparent',
+          borderRadius: 16,
+          padding: 8,
+          transition: 'background 0.25s, border-color 0.25s'
+        }}
+      >
         <AnimatePresence>
           {projects.map((p, i) => (
             <motion.div
@@ -397,9 +421,43 @@ export default function ProjectsPage() {
       setActiveProject(p as any);   // make it the active project across the suite
       setShowNew(false);
       toast('Project created — opening studio', 'success');
+      
+      // Log recent activity
+      await logActivity(`started project "${title}"`, 'project', p.id);
+
       router.push('/studio');
     } catch {
       toast('Failed to create project', 'error');
+    }
+  };
+
+  const handleDropProject = async (projectId: string, targetPhase: Phase) => {
+    const oldList = [...projectsList];
+    const targetProj = projectsList.find(p => p.id === projectId);
+    setProjectsList(prev => prev.map(p => p.id === projectId ? { ...p, phase: targetPhase } : p));
+
+    try {
+      const statusMap: Record<Phase, any> = {
+        'development': 'concept',
+        'pre-production': 'pre-production',
+        'production': 'production',
+        'post-production': 'post-production',
+        'delivery': 'completed'
+      };
+      const dbStatus = statusMap[targetPhase];
+      
+      const { error } = await supabase.from('projects').update({ status: dbStatus }).eq('id', projectId);
+      if (error) throw error;
+      toast(`Project moved to ${targetPhase}`, 'success');
+
+      // Log recent activity
+      if (targetProj) {
+        await logActivity(`moved project "${targetProj.title}" to ${targetPhase}`, 'project', projectId);
+      }
+    } catch (err: any) {
+      console.error('Failed to move project:', err);
+      toast('Failed to move project', 'error');
+      setProjectsList(oldList);
     }
   };
 
@@ -541,7 +599,7 @@ export default function ProjectsPage() {
       {/* Board — horizontal scroll */}
       <div style={{
         paddingTop: 90 + 32,
-        paddingBottom: 100,
+        paddingBottom: 'calc(var(--taskbar-height, 94px) + 20px)',
         paddingLeft: 24,
         paddingRight: 24,
         overflowX: 'auto',
@@ -588,7 +646,7 @@ export default function ProjectsPage() {
           }}
         >
           {PHASES.map(phase => (
-            <PhaseColumn key={phase.id} phase={phase} projects={byPhase[phase.id]} />
+            <PhaseColumn key={phase.id} phase={phase} projects={byPhase[phase.id]} onDropProject={handleDropProject} />
           ))}
         </motion.div>
         )}

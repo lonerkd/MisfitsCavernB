@@ -1,5 +1,7 @@
-// Cache versioning and migration system for localStorage
-// Prevents stale data when schema changes
+// Cache versioning and migration system for IndexedDB
+// Prevents stale data when schema changes and avoids localStorage limits
+
+import { get, set, keys, del } from 'idb-keyval';
 
 const CACHE_VERSION_KEY = 'app_cache_version';
 const CURRENT_CACHE_VERSION = 1;
@@ -17,9 +19,7 @@ interface MigrationRule {
 }
 
 const migrations: Record<string, MigrationRule[]> = {
-  'revisions': [
-    // Add migrations here when schema changes
-  ],
+  'revisions': [],
   'titlepage': [],
   'profiles': [],
   'projects': [],
@@ -27,50 +27,57 @@ const migrations: Record<string, MigrationRule[]> = {
   'studio': [],
 };
 
-export function setCacheItem(key: string, data: any): void {
+// Migrate old localStorage data to IndexedDB
+async function migrateLocalStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('scriptos_') || key.startsWith('title_') || key.startsWith('profile_') || key.startsWith('app_cache_'))) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          try {
+            const parsed = JSON.parse(val);
+            await set(key, parsed);
+          } catch {
+            await set(key, val);
+          }
+        }
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to migrate localStorage to IDB:", e);
+  }
+}
+
+// Call it once
+if (typeof window !== 'undefined') {
+  migrateLocalStorage().catch(console.error);
+}
+
+export async function setCacheItem(key: string, data: any): Promise<void> {
   try {
     const entry: CacheEntry = {
       version: CURRENT_CACHE_VERSION,
       timestamp: Date.now(),
       data,
     };
-    localStorage.setItem(key, JSON.stringify(entry));
+    await set(key, entry);
   } catch (e: any) {
-    if (e.name === 'QuotaExceededError') {
-      console.warn('localStorage quota exceeded, clearing old items');
-      clearOldCacheItems();
-      try {
-        const entry: CacheEntry = {
-          version: CURRENT_CACHE_VERSION,
-          timestamp: Date.now(),
-          data,
-        };
-        localStorage.setItem(key, JSON.stringify(entry));
-      } catch (retryError) {
-        console.error('Failed to set cache item after cleanup:', retryError);
-      }
-    } else {
-      console.error('Failed to set cache item:', e);
-    }
+    console.error('Failed to set cache item:', e);
   }
 }
 
-export function getCacheItem(key: string, namespace?: string): any {
+export async function getCacheItem(key: string, namespace?: string): Promise<any> {
   try {
-    const stored = localStorage.getItem(key);
-    if (!stored) return null;
-
-    let entry: CacheEntry;
-    try {
-      entry = JSON.parse(stored);
-    } catch {
-      // Handle legacy format (non-versioned data)
-      return stored;
-    }
+    let entry = await get<CacheEntry>(key);
+    
+    if (!entry) return null;
 
     if (!entry.version) {
       // Migrate legacy data
-      return entry.data || stored;
+      return (entry as any).data || entry;
     }
 
     if (entry.version < CURRENT_CACHE_VERSION && namespace && migrations[namespace]) {
@@ -93,72 +100,20 @@ export function getCacheItem(key: string, namespace?: string): any {
   }
 }
 
-export function clearOldCacheItems(maxAgeMs: number = 24 * 60 * 60 * 1000): void {
+export async function clearOldCacheItems(maxAgeMs: number = 24 * 60 * 60 * 1000): Promise<void> {
   try {
     const now = Date.now();
-    const keysToDelete: string[] = [];
+    const allKeys = await keys();
 
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key) continue;
-
-      try {
-        const stored = localStorage.getItem(key);
-        if (!stored) continue;
-
-        const entry = JSON.parse(stored);
-        if (entry.timestamp && now - entry.timestamp > maxAgeMs) {
-          keysToDelete.push(key);
+    for (const key of allKeys) {
+      if (typeof key === 'string' && (key.startsWith('scriptos_') || key.startsWith('title_') || key.startsWith('profile_'))) {
+        const entry = await get<CacheEntry>(key);
+        if (entry && entry.timestamp && (now - entry.timestamp > maxAgeMs)) {
+          await del(key);
         }
-      } catch {
-        // Skip items that can't be parsed
       }
     }
-
-    keysToDelete.forEach(key => localStorage.removeItem(key));
   } catch (error) {
     console.error('Failed to clear old cache items:', error);
-  }
-}
-
-export function getCacheStats(): { totalSize: number; itemCount: number } {
-  try {
-    let totalSize = 0;
-    let itemCount = 0;
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key) continue;
-
-      const value = localStorage.getItem(key);
-      if (value) {
-        totalSize += key.length + value.length;
-        itemCount++;
-      }
-    }
-
-    return { totalSize, itemCount };
-  } catch (error) {
-    console.error('Failed to get cache stats:', error);
-    return { totalSize: 0, itemCount: 0 };
-  }
-}
-
-export function invalidateCache(pattern?: RegExp): void {
-  try {
-    const keysToDelete: string[] = [];
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key) continue;
-
-      if (!pattern || pattern.test(key)) {
-        keysToDelete.push(key);
-      }
-    }
-
-    keysToDelete.forEach(key => localStorage.removeItem(key));
-  } catch (error) {
-    console.error('Failed to invalidate cache:', error);
   }
 }

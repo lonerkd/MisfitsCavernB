@@ -3,8 +3,12 @@ import { supabase } from '../supabase/client';
 const CLIENT_ID = '488c7b9a4ad043d8a93a1dc829598aae';
 
 function getRedirectUri() {
-  if (typeof window === 'undefined') return '';
-  return `${window.location.origin}/auth/spotify-callback`;
+  if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
+    return `${window.location.origin}/auth/spotify-callback`;
+  }
+  // Force production domain because Spotify restricts redirects to exact whitelisted URIs.
+  // Using dynamic window.location on Vercel preview branches causes auth rejection.
+  return `https://misfitscavern.vercel.app/auth/spotify-callback`;
 }
 
 function generateRandomString(length: number) {

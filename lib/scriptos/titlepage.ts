@@ -35,18 +35,25 @@ export function getDefaultTitlePage(): TitlePage {
   };
 }
 
+const DEFAULT_TITLE_PAGE = getDefaultTitlePage();
+
 // Synchronous cache read for instant first paint; the async loader below
 // reconciles with the shared DB copy.
-export function loadTitlePageCached(scriptId: string): TitlePage {
-  if (typeof window === 'undefined') return getDefaultTitlePage();
+export async function getTitlePage(scriptId: string): Promise<TitlePage> {
+  if (typeof window === 'undefined') return DEFAULT_TITLE_PAGE;
   try {
-    const stored = getCacheItem(`${TITLE_KEY}_${scriptId}`, 'titlepage');
-    return stored ? { ...getDefaultTitlePage(), ...stored } : getDefaultTitlePage();
-  } catch { return getDefaultTitlePage(); }
+    const data = await getCacheItem(`${TITLE_KEY}_${scriptId}`, 'titlepage');
+    if (data) {
+      return { ...DEFAULT_TITLE_PAGE, ...data };
+    }
+    return DEFAULT_TITLE_PAGE;
+  } catch {
+    return DEFAULT_TITLE_PAGE;
+  }
 }
 
 export async function loadTitlePage(scriptId: string): Promise<TitlePage> {
-  const cached = loadTitlePageCached(scriptId);
+  const cached = await getTitlePage(scriptId);
   try {
     const { data } = await supabase
       .from('script_metadata')
@@ -54,23 +61,30 @@ export async function loadTitlePage(scriptId: string): Promise<TitlePage> {
       .eq('script_id', scriptId)
       .maybeSingle();
     if (data?.title_page && Object.keys(data.title_page).length > 0) {
-      const merged = { ...getDefaultTitlePage(), ...data.title_page };
-      setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
+      const merged = { ...DEFAULT_TITLE_PAGE, ...data.title_page };
+      await setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
       return merged;
     }
   } catch { /* offline — fall back to cache */ }
   return cached;
 }
 
-export async function saveTitlePage(scriptId: string, titlePage: TitlePage): Promise<void> {
-  if (typeof window !== 'undefined') setCacheItem(`${TITLE_KEY}_${scriptId}`, titlePage);
+export async function saveTitlePage(scriptId: string, updates: Partial<TitlePage>): Promise<{ success: boolean; error?: string }> {
   try {
+    const current = await getTitlePage(scriptId);
+    const merged = { ...current, ...updates };
+
+    await setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
+    
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('script_metadata').upsert(
-      { script_id: scriptId, title_page: titlePage, updated_by: user?.id, updated_at: new Date().toISOString() },
+      { script_id: scriptId, title_page: merged, updated_by: user?.id, updated_at: new Date().toISOString() },
       { onConflict: 'script_id' }
     );
-  } catch { /* offline — cache already written, will reconcile on next save */ }
+    return { success: true };
+  } catch { /* offline — cache already written, will reconcile on next save */
+    return { success: true };
+  }
 }
 
 // Generate Fountain title page block from TitlePage object

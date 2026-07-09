@@ -29,6 +29,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [stats, setStats] = useState({ scripts: 0, projects: 0, jobs: 0 });
+  const [scriptsList, setScriptsList] = useState<any[]>([]);
+  const [projectsList, setProjectsList] = useState<any[]>([]);
+  const [jobsList, setJobsList] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'scripts' | 'projects' | 'jobs' | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,13 +47,23 @@ export default function ProfilePage() {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).single();
       if (prof) setProfile(prof);
 
-      // Load quick stats
-      const [{ count: scripts }, { count: projects }, { count: jobs }] = await Promise.all([
-        supabase.from('scripts').select('id', { count: 'exact', head: true }).eq('last_edited_by', data.session.user.id),
-        supabase.from('projects').select('id', { count: 'exact', head: true }).eq('creator_id', data.session.user.id),
-        supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('created_by', data.session.user.id),
+      // Load quick stats and actual items
+      const userId = data.session.user.id;
+      const [scriptsRes, projectsRes, jobsRes] = await Promise.all([
+        supabase.from('scripts').select('id, title, updated_at').or(`created_by.eq.${userId},last_edited_by.eq.${userId}`).order('updated_at', { ascending: false }),
+        supabase.from('projects').select('id, title, status, accent_color').eq('creator_id', userId).order('updated_at', { ascending: false }),
+        supabase.from('jobs').select('id, title, company, location, created_at').eq('created_by', userId).order('created_at', { ascending: false }),
       ]);
-      setStats({ scripts: scripts || 0, projects: projects || 0, jobs: jobs || 0 });
+
+      const sData = scriptsRes.data || [];
+      const pData = projectsRes.data || [];
+      const jData = jobsRes.data || [];
+
+      setScriptsList(sData);
+      setProjectsList(pData);
+      setJobsList(jData);
+
+      setStats({ scripts: sData.length, projects: pData.length, jobs: jData.length });
       setLoading(false);
     }).catch((err) => {
       console.error('Failed to load profile:', err);
@@ -162,24 +176,141 @@ export default function ProfilePage() {
         </div>
 
         {/* Quick stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: activeTab ? 12 : 40 }}>
           {[
-            { icon: <FileText size={14} />, count: stats.scripts, label: 'Scripts', href: '/editor' },
-            { icon: <Film size={14} />, count: stats.projects, label: 'Projects', href: '/projects' },
-            { icon: <Briefcase size={14} />, count: stats.jobs, label: 'Jobs Posted', href: '/jobs' },
-          ].map(({ icon, count, label, href }) => (
-            <Link key={label} href={href} style={{ textDecoration: 'none' }}>
-              <div style={{ padding: 16, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center',
-                transition: 'border-color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}>
+            { id: 'scripts', icon: <FileText size={14} />, count: stats.scripts, label: 'Scripts' },
+            { id: 'projects', icon: <Film size={14} />, count: stats.projects, label: 'Projects' },
+            { id: 'jobs', icon: <Briefcase size={14} />, count: stats.jobs, label: 'Jobs Posted' },
+          ].map(({ id, icon, count, label }) => {
+            const isTabActive = activeTab === id;
+            return (
+              <div key={label} onClick={() => setActiveTab(activeTab === id ? null : (id as any))}
+                style={{
+                  padding: 16, background: isTabActive ? 'rgba(215, 52, 11, 0.05)' : '#0a0a0a',
+                  border: `1px solid ${isTabActive ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
+                  textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s',
+                  borderRadius: 8
+                }}
+                onMouseEnter={e => { if (!isTabActive) e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'; }}
+                onMouseLeave={e => { if (!isTabActive) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
                 <div style={{ fontSize: 8, letterSpacing: 2, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 4 }}>{label.toUpperCase()}</div>
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
+
+        {/* Expanded list section */}
+        {activeTab && (
+          <div style={{
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 8,
+            padding: 16,
+            marginBottom: 40,
+          }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 10, marginBottom: 12
+            }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                {activeTab === 'scripts' ? 'My Screenplays' : activeTab === 'projects' ? 'My Productions' : 'My Posted Jobs'}
+              </span>
+              <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+                [CLOSE]
+              </button>
+            </div>
+
+            {activeTab === 'scripts' && (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {scriptsList.length === 0 ? (
+                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 12, opacity: 0.4 }}>No scripts created yet.</div>
+                ) : (
+                  scriptsList.map(s => (
+                    <Link
+                      key={s.id}
+                      href="/editor"
+                      onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('misfits_cavern_current_script', s.id); }}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    >
+                      <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{s.title}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'rgba(255,255,255,0.25)' }}>
+                        EDITED {new Date(s.updated_at).toLocaleDateString()}
+                      </span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'projects' && (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {projectsList.length === 0 ? (
+                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 12, opacity: 0.4 }}>No projects created yet.</div>
+                ) : (
+                  projectsList.map(p => (
+                    <Link
+                      key={p.id}
+                      href={`/projects/${p.id}`}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    >
+                      <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.accent_color || '#d7340b' }} />
+                        {p.title}
+                      </span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {p.status || 'production'}
+                      </span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'jobs' && (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {jobsList.length === 0 ? (
+                  <div style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 12, opacity: 0.4 }}>No jobs posted yet.</div>
+                ) : (
+                  jobsList.map(j => (
+                    <Link
+                      key={j.id}
+                      href="/jobs"
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{j.title}</span>
+                        {j.company && <span style={{ fontSize: 8, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 2 }}>{j.company}</span>}
+                      </div>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'rgba(255,255,255,0.25)' }}>
+                        {j.location || 'REMOTE'}
+                      </span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Form fields */}
         <div style={{ display: 'grid', gap: 20 }}>

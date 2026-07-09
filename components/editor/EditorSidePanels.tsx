@@ -1,10 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2, 
+  Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
+  Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
+  Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
+  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive, ChevronRight, Music, Lightbulb, LayoutGrid
+} from 'lucide-react';
+import { StashItem } from '@/types/screenplay';
+import { supabase } from '@/lib/supabase/client';
+import type { ScriptMetadata } from '@/types/screenplay';
 import type { ScriptLine } from '@/types/screenplay';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
+import { generateScreenplayPDF } from '@/lib/scriptos/pdfGenerator';
+import { DiffModal } from './DiffModal';
 
 const CHARACTER_COLOR = '#ffaa00';
 
@@ -21,6 +32,7 @@ const CHARACTER_COLOR = '#ffaa00';
                   sections (analysis that used to be three separate tabs)
      • History  — Revisions and the Stash, side by side
      • Audio    — project audio references (previously a dead tab)
+     • Studio   — Studio assets attached to scene
 
    The type scale was also lifted off the 7–9px floor to a legible 11–14px.
    Still pure presentation: every piece of state, every handler and the
@@ -28,7 +40,7 @@ const CHARACTER_COLOR = '#ffaa00';
    ephemeral open/closed flags for the collapsible Insights/History sections.
    ========================================================================= */
 
-export type RightPanelTab = 'write' | 'insights' | 'history' | 'audio';
+export type RightPanelTab = 'write' | 'insights' | 'history' | 'audio' | 'studio';
 
 export interface EditorRightPanelsProps {
   rightPanel: RightPanelTab;
@@ -57,18 +69,21 @@ export interface EditorRightPanelsProps {
   chars: string[];
   charStats: CharacterStats[];
   handleLockRevision: () => void;
+  handleRestoreRevision: (text: string) => void;
   revisions: Revision[];
+  content: string;
   setContent: (v: string) => void;
   toast: (msg: string, kind?: any) => void;
   showSceneNumbers: boolean;
   setShowSceneNumbers: (v: boolean) => void;
   showWatermark: boolean;
   setShowWatermark: (v: boolean) => void;
-  lintIssues: { type: string; message: string; rule?: string; line?: number }[];
-  stashItems: { id: string; text: string; date: number }[];
-  setStashItems: React.Dispatch<React.SetStateAction<{ id: string; text: string; date: number }[]>>;
+  lintIssues: any[];
+  stashItems: StashItem[];
+  setStashItems: React.Dispatch<React.SetStateAction<StashItem[]>>;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
-  currentScript: { title?: string, id?: string } | null;
+  currentScript: { title?: string, id?: string, project_id?: string, content?: string, metadata?: ScriptMetadata } | null;
+  updateScriptMetadata?: (meta: Partial<ScriptMetadata>) => void;
   projectAudioRefs?: any[];
   playAudioRef?: (ref: any) => void;
 }
@@ -110,23 +125,142 @@ function SectionHeader({
   );
 }
 
+function RevisionsPanel({ revisions, onLock, onRestore, onCompare }: any) {
+  return (
+    <div style={{ padding: '0 8px' }}>
+      <button onClick={onLock} className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 16 }}>Lock New Draft</button>
+      {revisions.length === 0 ? (
+        <div style={{ color: 'var(--fg-dim)', fontSize: 11, fontStyle: 'italic', textAlign: 'center' }}>No locked drafts yet.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {revisions.map((r: any) => (
+            <div key={r.id} style={{ padding: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>{r.label}</div>
+                <div style={{ fontSize: 10, color: 'var(--fg-dim)' }}>{new Date(r.date || r.created_at).toLocaleDateString()}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => onCompare(r)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', padding: '4px 8px', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}>Compare</button>
+                <button onClick={() => onRestore(r.snapshot || r.content)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', padding: '4px 8px', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}>Restore</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudioAssetsPanel({ currentScript, currentSceneIdx, scenesList, updateScriptMetadata }: any) {
+  const [allAssets, setAllAssets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    async function fetchAssets() {
+      if (!currentScript?.project_id) return setLoading(false);
+      const { data } = await supabase.from('assets').select('*').eq('project_id', currentScript.project_id);
+      if (data) setAllAssets(data);
+      setLoading(false);
+    }
+    fetchAssets();
+  }, [currentScript?.project_id]);
+
+  const activeScene = scenesList[currentSceneIdx];
+  const activeHeading = activeScene?.type === 'slug' ? activeScene.text.trim() : null;
+  const currentSceneAssets = activeHeading && currentScript?.metadata?.sceneAssets ? currentScript.metadata.sceneAssets[activeHeading] || [] : [];
+
+  const toggleAsset = (assetId: string) => {
+    if (!activeHeading || !updateScriptMetadata || !currentScript) return;
+    const sceneAssets = currentScript.metadata?.sceneAssets || {};
+    const existing = sceneAssets[activeHeading] || [];
+    
+    let next: string[];
+    if (existing.includes(assetId)) next = existing.filter(id => id !== assetId);
+    else next = [...existing, assetId];
+
+    updateScriptMetadata({ sceneAssets: { ...sceneAssets, [activeHeading]: next } });
+  };
+
+  if (!currentScript?.project_id) {
+    return <div style={{ color: 'var(--fg-dim)', fontSize: 11, textAlign: 'center', padding: 20 }}>Please attach this script to a Project to access Studio Assets.</div>;
+  }
+
+  const filteredAssets = allAssets.filter(a => (a.name || '').toLowerCase().includes(search.toLowerCase()));
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: 12, background: 'rgba(215, 52, 11, 0.05)', border: '1px solid rgba(215, 52, 11, 0.2)', borderRadius: 8 }}>
+        <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Active Scene</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>{activeHeading || 'No Scene Selected'}</div>
+      </div>
+
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Search project assets..."
+        style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', borderRadius: 6, fontSize: 11, outline: 'none' }}
+      />
+
+      {loading ? (
+        <div style={{ color: 'var(--fg-dim)', fontSize: 11, textAlign: 'center' }}>Loading assets...</div>
+      ) : filteredAssets.length === 0 ? (
+        <div style={{ color: 'var(--fg-dim)', fontSize: 11, textAlign: 'center' }}>No assets found.</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {filteredAssets.map(asset => {
+            const isAttached = currentSceneAssets.includes(asset.id);
+            return (
+              <div
+                key={asset.id}
+                onClick={() => toggleAsset(asset.id)}
+                style={{
+                  position: 'relative',
+                  aspectRatio: '1',
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  border: isAttached ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(0,0,0,0.5)'
+                }}
+              >
+                {asset.asset_type === 'image' ? (
+                  <img src={asset.asset_url} alt={asset.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isAttached ? 1 : 0.6 }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-dim)', fontSize: 10 }}>{asset.asset_type}</div>
+                )}
+                {isAttached && (
+                  <div style={{ position: 'absolute', top: 4, right: 4, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)', border: '2px solid #000' }} />
+                )}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '4px 6px', background: 'rgba(0,0,0,0.8)', fontSize: 9, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {asset.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function EditorRightPanels({
   rightPanel, setRightPanel, activeView, currentSceneIdx, scenesList,
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
   sprintActive, setSprintActive, sprintTime, wordCount, dailyGoal, goalProgress,
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
-  setNightModePreview, elements, chars, charStats, handleLockRevision, revisions,
+  setNightModePreview, elements, chars, charStats, handleLockRevision, handleRestoreRevision, revisions, content,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
+  setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, updateScriptMetadata, projectAudioRefs = [], playAudioRef,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
-  // Ephemeral open/closed flags for the collapsible sections.
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
   const [lintOpen, setLintOpen] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(true);
   const [stashOpen, setStashOpen] = useState(false);
+  const [diffRev, setDiffRev] = useState<Revision | null>(null);
 
   const errorCount = lintIssues.filter(i => i.type === 'error').length;
   const warnCount = lintIssues.filter(i => i.type === 'warning').length;
@@ -136,11 +270,11 @@ export function EditorRightPanels({
     ['insights', Lightbulb, 'Insights'],
     ['history', History, 'History'],
     ['audio', Music, 'Audio'],
+    ['studio', LayoutGrid, 'Studio'],
   ];
 
   return (
     <>
-              {/* Panel Tabs — labelled pill group */}
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 {TABS.map(([key, Icon, label]) => (
                   <button key={key} onClick={() => setRightPanel(key)} style={{
@@ -160,63 +294,108 @@ export function EditorRightPanels({
               </div>
 
               <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 22, flex: 1, overflowY: 'auto' }}>
-                {/* ============================= WRITE ============================= */}
                 {rightPanel === 'write' && (
                   <>
-                    {/* ── CURRENT SCENE CONTEXT ── */}
-                    {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {
-                      const scene = scenesList[currentSceneIdx];
-                      const { isInt, isExt, isDay, isNight } = getSceneType(scene);
-                      const color = sceneTypeColor(scene);
-                      const wc = sceneWordCounts[currentSceneIdx] || 0;
-                      const chars = sceneCharMap[currentSceneIdx] || [];
-                      const estSecs = Math.max(1, Math.round(wc / 185 * 60));
-                      const estTime = estSecs >= 60 ? `${Math.floor(estSecs/60)}m ${estSecs%60}s` : `${estSecs}s`;
-                      const typeTag = `${isInt?'INT':isExt?'EXT':'?'} · ${isDay?'DAY':isNight?'NIGHT':'?'}`;
-                      return (
-                        <div style={{
-                          background: `${color}0d`,
-                          border: `1px solid ${color}28`,
-                          borderRadius: 10,
-                          padding: '12px 14px',
-                        }}>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: color, marginBottom: 8, opacity: 0.85 }}>
-                            Now Writing · Scene {currentSceneIdx + 1}
-                          </div>
+                    <div style={{
+                      position: 'sticky',
+                      top: 0,
+                      marginTop: -18,
+                      zIndex: 10,
+                      background: 'rgba(8, 8, 8, 0.98)',
+                      paddingTop: 18,
+                      paddingBottom: 16,
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 16,
+                    }}>
+                      {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {
+                        const scene = scenesList[currentSceneIdx];
+                        const { isInt, isExt, isDay, isNight } = getSceneType(scene);
+                        const color = sceneTypeColor(scene);
+                        const wc = sceneWordCounts[currentSceneIdx] || 0;
+                        const chars = sceneCharMap[currentSceneIdx] || [];
+                        const estSecs = Math.max(1, Math.round(wc / 185 * 60));
+                        const estTime = estSecs >= 60 ? `${Math.floor(estSecs/60)}m ${estSecs%60}s` : `${estSecs}s`;
+                        const typeTag = `${isInt?'INT':isExt?'EXT':'?'} · ${isDay?'DAY':isNight?'NIGHT':'?'}`;
+                        return (
                           <div style={{
-                            fontFamily: 'var(--mono)', fontSize: 12.5, color: 'var(--fg)',
-                            textTransform: 'uppercase', marginBottom: 10,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            background: `${color}0d`,
+                            border: `1px solid ${color}28`,
+                            borderRadius: 10,
+                            padding: '12px 14px',
                           }}>
-                            {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
-                          </div>
-                          <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: color, background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{wc}w · {estTime}</span>
-                          </div>
-                          {chars.length > 0 && (
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                              {chars.slice(0, 5).map(c => (
-                                <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: 4 }}>{c}</span>
-                              ))}
+                            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: color, marginBottom: 8, opacity: 0.85 }}>
+                              Now Writing · Scene {currentSceneIdx + 1}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })()}
+                            <div style={{
+                              fontFamily: 'var(--mono)', fontSize: 12.5, color: 'var(--fg)',
+                              textTransform: 'uppercase', marginBottom: 10,
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>
+                              {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: color, background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
+                              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{wc}w · {estTime}</span>
+                            </div>
+                            {chars.length > 0 && (
+                              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                {chars.slice(0, 5).map(c => (
+                                  <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: 4 }}>{c}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
-                    {/* Quick Insert */}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
-                        <Wand2 size={14} /> Quick Insert
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
-                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 12, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
-                        ))}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
+                          <Wand2 size={14} /> Quick Insert
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
+                            <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 12, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
+                          ))}
+                        </div>
+
+                        <div style={{ marginTop: 16 }}>
+                          <button
+                            className="btn-primary"
+                            style={{ width: '100%', justifyContent: 'center' }}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const text = textareaRef.current;
+                              if (!text) return;
+                              const sel = text.value.substring(text.selectionStart, text.selectionEnd);
+                              if (!sel || sel.trim().length === 0) {
+                                toast('Select some text in the editor first to leave a note.', 'error');
+                                return;
+                              }
+                              const note = window.prompt(`Leave a note on:\n\n"${sel}"\n\nYour note:`);
+                              if (!note || note.trim().length === 0) return;
+                              
+                              if (currentScript?.id && currentScript?.project_id) {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (user) {
+                                  await supabase.from('script_notes').insert({
+                                    script_id: currentScript.id,
+                                    project_id: currentScript.project_id,
+                                    user_id: user.id,
+                                    selected_text: sel,
+                                    note: note
+                                  });
+                                  toast('Note added to Lounge', 'success');
+                                }
+                              }
+                            }}
+                          >
+                            <MessageSquare size={14} style={{ marginRight: 6 }} /> Leave Note on Selection
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    {/* Sprint Timer */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
@@ -286,21 +465,34 @@ export function EditorRightPanels({
                           {/* Production element tags, derived from detected elements */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                             <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>Production elements per scene.</div>
-                            <button className="link-btn" style={{ fontSize: 11 }} onClick={() => {
-                              const entries = Object.entries(elements).filter(([, items]) => (items as string[]).length > 0);
-                              if (entries.length === 0) { toast('No tagged elements to export yet', 'info'); return; }
-                              const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
-                              const w = window.open('', '_blank', 'width=820,height=1080');
-                              if (!w) return;
-                              w.document.write(`<!doctype html><html><head><title>${esc(currentScript?.title || 'Script')} — Breakdown</title>
-                                <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:20px;letter-spacing:2px}
-                                h2{font-size:11px;letter-spacing:2px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 8px;text-transform:uppercase}
-                                .chip{display:inline-block;font-size:12px;padding:3px 9px;background:#f3f3f5;border:1px solid #ddd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
-                                <h1>${esc(currentScript?.title || 'SCRIPT')} — BREAKDOWN</h1>
-                                ${entries.map(([cat, items]) => `<h2>${esc(cat)} (${(items as string[]).length})</h2>${(items as string[]).map(i => `<span class="chip">${esc(i)}</span>`).join('')}`).join('')}
-                                <script>window.onload=()=>window.print()</script></body></html>`);
-                              w.document.close();
-                            }}>⎙ Export</button>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button className="link-btn" style={{ fontSize: 11 }} onClick={() => {
+                                if (currentScript?.content) {
+                                  generateScreenplayPDF(currentScript.content, currentScript.title);
+                                  toast('Generating PDF...', 'success');
+                                } else if (textareaRef?.current?.value) {
+                                  generateScreenplayPDF(textareaRef.current.value, currentScript?.title);
+                                  toast('Generating PDF...', 'success');
+                                } else {
+                                  toast('No content to export', 'error');
+                                }
+                              }}>📄 Export PDF</button>
+                              <button className="link-btn" style={{ fontSize: 11 }} onClick={() => {
+                                const entries = Object.entries(elements).filter(([, items]) => (items as string[]).length > 0);
+                                if (entries.length === 0) { toast('No tagged elements to export yet', 'info'); return; }
+                                const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
+                                const w = window.open('', '_blank', 'width=820,height=1080');
+                                if (!w) return;
+                                w.document.write(`<!doctype html><html><head><title>${esc(currentScript?.title || 'Script')} — Breakdown</title>
+                                  <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:20px;letter-spacing:2px}
+                                  h2{font-size:11px;letter-spacing:2px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 8px;text-transform:uppercase}
+                                  .chip{display:inline-block;font-size:12px;padding:3px 9px;background:#f3f3f5;border:1px solid #ddd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
+                                  <h1>${esc(currentScript?.title || 'SCRIPT')} — BREAKDOWN</h1>
+                                  ${entries.map(([cat, items]) => `<h2>${esc(cat)} (${(items as string[]).length})</h2>${(items as string[]).map(i => `<span class="chip">${esc(i)}</span>`).join('')}`).join('')}
+                                  <script>window.onload=()=>window.print()</script></body></html>`);
+                                w.document.close();
+                              }}>⎙ Export Breakdown</button>
+                            </div>
                           </div>
                           {Object.keys(elements).length === 0 ? (
                             <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic', padding: '4px' }}>No production elements detected yet. Tag elements in your script to populate the breakdown.</div>
@@ -385,16 +577,21 @@ export function EditorRightPanels({
                             <div style={{ fontSize: 12, color: '#00cc66', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              {lintIssues.slice(0, 30).map((issue, idx) => (
-                                <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                              {lintIssues.slice(0, 30).map((issue, idx) => {
+                                const isAST = issue.rule?.endsWith('-ast');
+                                const cardBg = isAST ? 'rgba(99, 102, 241, 0.05)' : 'rgba(255,255,255,0.02)';
+                                const cardBorder = isAST ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255,255,255,0.05)';
+                                const indicatorColor = issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : isAST ? '#6366f1' : '#3b82f6';
+                                return (
+                                <div key={idx} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${indicatorColor}` }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <span style={{ fontSize: 11, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
+                                    <span style={{ fontSize: 11, color: indicatorColor, textTransform: 'uppercase', fontWeight: 700 }}>{isAST ? 'Cinematic Polish' : issue.type}</span>
                                     <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
                                   </div>
                                   <div style={{ fontSize: 12, color: '#ccc' }}>{issue.message}</div>
                                   <div style={{ fontSize: 11, color: '#888', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           )}
                         </>
@@ -414,42 +611,14 @@ export function EditorRightPanels({
                         count={revisions.length || null}
                         open={revisionsOpen}
                         onToggle={() => setRevisionsOpen(o => !o)}
-                        right={(
-                          <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
-                        )}
                       />
                       {revisionsOpen && (
-                        revisions.length === 0 ? (
-                          <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic', padding: '0 4px' }}>No revisions locked yet. Lock your first draft to start tracking changes.</div>
-                        ) : (
-                          revisions.map((rev) => {
-                            const revColor = REVISION_COLORS[rev.colorIndex];
-                            return (
-                              <div key={rev.id} style={{ background: revColor.bg, border: `1px solid ${revColor.color}33`, borderRadius: 8, padding: 12 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                  <span style={{ fontSize: 13, fontWeight: 700, color: revColor.color }}>{rev.label}</span>
-                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
-                                </div>
-                                <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(rev.date).toLocaleString()}</div>
-                                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${revColor.color}22` }}>
-                                  <button
-                                    onClick={() => { setContent(rev.snapshot); toast(`Restored to ${rev.label}`, 'success'); }}
-                                    style={{ fontSize: 11, background: 'transparent', border: 'none', color: revColor.color, cursor: 'pointer', fontWeight: 600 }}
-                                  >
-                                    Restore
-                                  </button>
-                                  <button
-                                    onClick={() => { alert("Snapshot Content:\n\n" + rev.snapshot.substring(0, 1000) + "..."); }}
-                                    style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}
-                                  >
-                                    View
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )
+                        <RevisionsPanel 
+                          revisions={revisions} 
+                          onLock={handleLockRevision} 
+                          onRestore={handleRestoreRevision} 
+                          onCompare={(r: Revision) => setDiffRev(r)}
+                        />
                       )}
                     </div>
 
@@ -540,7 +709,22 @@ export function EditorRightPanels({
                     )}
                   </>
                 )}
+                {rightPanel === 'studio' && (
+                  <StudioAssetsPanel 
+                    currentScript={currentScript} 
+                    currentSceneIdx={currentSceneIdx} 
+                    scenesList={scenesList} 
+                    updateScriptMetadata={updateScriptMetadata} 
+                  />
+                )}
               </div>
+              <DiffModal
+                isOpen={!!diffRev}
+                onClose={() => setDiffRev(null)}
+                originalText={diffRev?.snapshot || ''}
+                modifiedText={content}
+                label={diffRev?.label || 'Draft'}
+              />
     </>
   );
 }

@@ -455,30 +455,34 @@ export default function Home() {
       setLoggedIn(!!user);
       if (!user) return;
 
-      // Live platform stats (RLS scopes reads to authenticated users).
-      const platformStats = await getPlatformStats();
-      setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
+      try {
+        // Live platform stats (RLS scopes reads to authenticated users).
+        const platformStats = await getPlatformStats();
+        setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
 
-      // The viewer's own latest work, surfaced as real previews.
-      const [scriptRes, assetRes, msgRes] = await Promise.all([
-        supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
-        supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
-        // Only real channel messages here, never DMs (messages also stores
-        // private 1:1s via receiver_id) — a general activity pulse must not
-        // ever surface someone else's private conversation.
-        supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
-      ]);
-      const script = scriptRes.data?.[0];
-      const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
-      const assets = (assetRes.data || []).map((a: any, i: number) => ({ label: a.title || 'Concept asset', color: palette[i % palette.length] }));
-      const messages = (msgRes.data || []).slice().reverse().map((m: any) => ({ from: m.profiles?.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
-      setLive({
-        scriptLines,
-        assets,
-        messages,
-        latestScriptTitle: script?.title || null,
-      });
-    });
+        // The viewer's own latest work, surfaced as real previews.
+        const [scriptRes, assetRes, msgRes] = await Promise.all([
+          supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
+          supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
+          // Only real channel messages here, never DMs (messages also stores
+          // private 1:1s via receiver_id) — a general activity pulse must not
+          // ever surface someone else's private conversation.
+          supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
+        ]);
+        const script = scriptRes.data?.[0];
+        const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
+        const assets = (assetRes.data || []).map((a: any, i: number) => ({ label: a.title || 'Concept asset', color: palette[i % palette.length] }));
+        const messages = (msgRes.data || []).slice().reverse().map((m: any) => ({ from: m.profiles?.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
+        setLive({
+          scriptLines,
+          assets,
+          messages,
+          latestScriptTitle: script?.title || null,
+        });
+      } catch (err) {
+        console.error('Home data load failed:', err);
+      }
+    }).catch(err => console.error('Auth check failed:', err));
   }, []);
 
   const { scrollY } = useScroll();
@@ -693,6 +697,29 @@ export default function Home() {
       {/* ══════════════════════════════════════════════
           LIVE STATS — real platform numbers
       ══════════════════════════════════════════════ */}
+      {loggedIn && !stats && (
+        <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
+            {[
+              { label: 'Creators', color: '#10b981' },
+              { label: 'Screenplays', color: '#d7340b' },
+              { label: 'Productions', color: '#6366f1' },
+              { label: 'Concept Assets', color: '#f59e0b' },
+            ].map((s, i) => (
+              <div key={s.label}
+                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14 }}>
+                <motion.div
+                  animate={{ opacity: [0.15, 0.45, 0.15] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+                  style={{ height: 42, width: 80, margin: '0 auto', background: s.color, borderRadius: 8, filter: 'blur(4px)' }}
+                />
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {stats && (stats.creators + stats.scripts + stats.projects + stats.concepts) > 0 && (
         <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>

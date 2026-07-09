@@ -10,7 +10,27 @@ export type LineType =
   | 'shot' 
   | 'text' 
   | 'title' 
+  | 'centered'
+  | 'scene'
   | 'empty';
+
+export interface ScriptLineMeta {
+  sceneId?: string;
+  sceneNumber?: string;
+  timeOfDay?: string;
+  isDualDialogue?: boolean;
+  isContinued?: boolean;
+  visualDensity?: number; // 0-100 score
+  classifiedAsShot?: boolean;
+  // Smart formatter extended fields
+  fromSmartFormat?: boolean;
+  isDialogueContinued?: boolean;
+  sceneHeading?: string;
+  intExt?: string;
+  location?: string;
+  characterName?: string;
+  [key: string]: unknown; // allow parser to attach arbitrary metadata
+}
 
 export interface ScriptLine {
   id: string;
@@ -18,22 +38,11 @@ export interface ScriptLine {
   text: string;
   type: LineType;
   confidence: number;
-  
-  // Reasoning for classification
-  reasoning: string[];
-  
-  // Raw scores for debugging
-  scores: Record<LineType, number>;
-  
-  meta: {
-    characterName?: string;
-    sceneNumber?: string;
-    timeOfDay?: string;
-    isDualDialogue?: boolean;
-    isContinued?: boolean;
-    visualDensity?: number; // 0-100 score
-    classifiedAsShot?: boolean;
-  };
+  // Parser extended fields — present after full parse
+  scores?: Record<string, number>;
+  reasoning?: string;
+  meta?: ScriptLineMeta;
+  metadata?: ScriptLineMeta; // alias used by some older callers
 }
 
 export interface Scene {
@@ -76,6 +85,7 @@ export interface ScriptMetadata {
   wordCount?: number;
   sceneCount?: number;
   characterCount?: number;
+  sceneAssets?: Record<string, string[]>; // sceneHeading -> array of studio_asset IDs
 }
 
 export interface ScreenplayDocument {
@@ -95,4 +105,10 @@ export interface ParseResult {
   scenes: Scene[];
   characters: Character[];
   elements?: Record<string, string[]>;
+}
+
+export interface StashItem {
+  id: string;
+  text: string;
+  date: number; // unix timestamp
 }

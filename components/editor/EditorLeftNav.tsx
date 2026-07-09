@@ -15,7 +15,7 @@ import type { StoredScript } from '@/lib/scriptos/storage';
 export interface EditorLeftNavProps {
   scripts: StoredScript[];
   setScripts: React.Dispatch<React.SetStateAction<StoredScript[]>>;
-  createNewScript: (title: string) => Promise<StoredScript | null>;
+  createNewScript: (title: string, initialContent?: string) => Promise<StoredScript | null>;
   setCurrentScript: (s: StoredScript) => void;
   setContent: (v: string) => void;
   toast: (msg: string, kind?: any) => void;
@@ -101,7 +101,7 @@ export function EditorLeftNav({
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {Object.keys(TEMPLATES).filter(k => k !== 'blank').map(key => (
                     <button key={key} onClick={async () => {
-                      const s = await createNewScript(key.charAt(0).toUpperCase() + key.slice(1));
+                      const s = await createNewScript(key.charAt(0).toUpperCase() + key.slice(1), TEMPLATES[key]);
                       if (s) {
                         setScripts(prev => [...prev, s]);
                         setCurrentScript(s);
@@ -182,61 +182,66 @@ export function EditorLeftNav({
                           onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
                           onDrop={e => { e.preventDefault(); if (dragSceneIdx !== null && dragSceneIdx !== i) reorderScenes(dragSceneIdx, i); setDragSceneIdx(null); setDropSceneIdx(null); }}
                           style={{
-                            width: '100%', textAlign: 'left', padding: '8px 4px 8px 8px',
-                            marginBottom: 2,
-                            background: dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? 'rgba(255,255,255,0.05)' : 'transparent',
-                            border: 'none', borderRadius: 8, cursor: 'grab',
-                            borderLeft: `2px solid ${isActive ? color : dropSceneIdx === i && dragSceneIdx !== i ? color : 'transparent'}`,
+                            width: '100%', textAlign: 'left', padding: '10px',
+                            marginBottom: 4,
+                            background: isActive ? 'rgba(255,255,255,0.04)' : dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? 'rgba(255,255,255,0.05)' : 'transparent',
+                            border: '1px solid',
+                            borderColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                            borderRadius: 10, cursor: 'grab',
+                            borderLeft: `3px solid ${isActive ? color : dropSceneIdx === i && dragSceneIdx !== i ? color : 'transparent'}`,
+                            boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
                             opacity: dragSceneIdx === i ? 0.4 : 1,
-                            transition: 'border-color 0.25s, background 0.18s, opacity 0.2s',
+                            transition: 'border-color 0.25s, background 0.18s, opacity 0.2s, box-shadow 0.2s',
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                         >
                           {/* Scene header row */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                             <span style={{
-                              fontFamily: 'var(--mono)', fontSize: 8, color: color,
-                              flexShrink: 0, opacity: 0.8,
+                              fontFamily: 'var(--mono)', fontSize: 9, color: color,
+                              flexShrink: 0, opacity: 0.9, fontWeight: 600
                             }}>{typeLabel}</span>
                             <span style={{
-                              fontFamily: 'var(--mono)', fontSize: 9,
-                              color: isActive ? 'var(--fg)' : 'rgba(224, 221, 174,0.6)',
+                              fontFamily: 'var(--mono)', fontSize: 10.5,
+                              color: isActive ? 'var(--fg)' : 'rgba(224, 221, 174,0.7)',
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                              textTransform: 'uppercase', flex: 1,
+                              textTransform: 'uppercase', flex: 1, letterSpacing: 0.5
                             }}>
                               {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                             </span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', flexShrink: 0 }}>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', flexShrink: 0, opacity: 0.8 }}>
                               {wc > 0 ? `${wc}w` : ''}
                             </span>
                           </div>
 
                           {/* Word count bar */}
-                          <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1, marginBottom: 5, overflow: 'hidden' }}>
+                          <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 1.5, marginBottom: 8, overflow: 'hidden' }}>
                             <div style={{
                               height: '100%', width: `${barPct}%`,
                               background: isActive ? color : `${color}88`,
-                              borderRadius: 1, transition: 'width 0.4s',
+                              borderRadius: 1.5, transition: 'width 0.4s',
+                              boxShadow: isActive ? `0 0 6px ${color}` : 'none'
                             }} />
                           </div>
 
                           {/* Character dots */}
                           {chars.length > 0 && (
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                               {chars.slice(0, 4).map(c => (
                                 <span key={c} style={{
-                                  fontFamily: 'var(--mono)', fontSize: 7,
-                                  color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)',
-                                  padding: '1px 5px', borderRadius: 3,
-                                  overflow: 'hidden', maxWidth: 56,
+                                  fontFamily: 'var(--mono)', fontSize: 8,
+                                  color: isActive ? 'var(--fg)' : 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)',
+                                  padding: '2px 6px', borderRadius: 4,
+                                  overflow: 'hidden', maxWidth: 65,
                                   textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                  border: '1px solid rgba(255,255,255,0.03)'
                                 }}>
                                   {c.split(' ')[0]}
                                 </span>
                               ))}
                               {chars.length > 4 && (
-                                <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)' }}>+{chars.length - 4}</span>
+                                <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>+{chars.length - 4}</span>
                               )}
                             </div>
                           )}

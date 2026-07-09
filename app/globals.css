@@ -97,12 +97,7 @@ body.custom-cursor-active * {
   cursor: none !important;
 }
 
-/* Text fields keep a native caret even with the custom cursor active. */
-body.custom-cursor-active input,
-body.custom-cursor-active textarea,
-body.custom-cursor-active [contenteditable="true"] {
-  cursor: text !important;
-}
+
 
 /* On phones the taskbar can hold more items than fit — let it scroll
    horizontally (tooltips are hover-only, so clipping them on touch is fine)
@@ -690,4 +685,91 @@ section { padding: 90px 18px; }
   transition: border-color 0.3s, background 0.5s;
   position: relative;
   overflow: hidden;
+}
+
+/* ═══════════════════════════════
+   THEMES
+   ═══════════════════════════════ */
+body.theme-cyberpunk {
+  --bg: #0b0114;
+  --bg-2: #120121;
+  --bg-3: #18022a;
+  --bg-4: #200238;
+  --fg: #ff007f;
+  --fg-muted: rgba(255, 0, 127, 0.65);
+  --fg-dim: rgba(255, 0, 127, 0.35);
+  --fg-ghost: rgba(255, 0, 127, 0.15);
+  --accent: #00ffff;
+  --accent-dim: rgba(0, 255, 255, 0.2);
+  --accent-glow: rgba(0, 255, 255, 0.1);
+  --secondary: #ff00ff;
+  --secondary-dim: rgba(255, 0, 255, 0.2);
+  --border: rgba(255, 0, 127, 0.15);
+  --border-2: rgba(255, 0, 127, 0.25);
+  --border-accent: rgba(0, 255, 255, 0.4);
+  --script-color: #00ffff;
+  --studio-color: #ff00ff;
+}
+
+body.theme-forest {
+  --bg: #090c0a;
+  --bg-2: #0f1410;
+  --bg-3: #151d18;
+  --bg-4: #1c2720;
+  --fg: #f4ebd0;
+  --fg-muted: rgba(244, 235, 208, 0.65);
+  --fg-dim: rgba(244, 235, 208, 0.35);
+  --fg-ghost: rgba(244, 235, 208, 0.15);
+  --accent: #4d8076;
+  --accent-dim: rgba(77, 128, 118, 0.2);
+  --accent-glow: rgba(77, 128, 118, 0.1);
+  --secondary: #d4a373;
+  --secondary-dim: rgba(212, 163, 115, 0.2);
+  --border: rgba(244, 235, 208, 0.1);
+  --border-2: rgba(244, 235, 208, 0.2);
+  --border-accent: rgba(77, 128, 118, 0.4);
+  --script-color: #4d8076;
+  --studio-color: #d4a373;
+}
+
+body.theme-obsidian {
+  --bg: #000000;
+  --bg-2: #090909;
+  --bg-3: #121212;
+  --bg-4: #181818;
+  --fg: #f5f5f7;
+  --fg-muted: rgba(245, 245, 247, 0.65);
+  --fg-dim: rgba(245, 245, 247, 0.35);
+  --fg-ghost: rgba(245, 245, 247, 0.15);
+  --accent: #ffffff;
+  --accent-dim: rgba(255, 255, 255, 0.2);
+  --accent-glow: rgba(255, 255, 255, 0.1);
+  --secondary: #7e7e82;
+  --secondary-dim: rgba(126, 126, 130, 0.2);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-2: rgba(255, 255, 255, 0.2);
+  --border-accent: rgba(255, 255, 255, 0.4);
+  --script-color: #ffffff;
+  --studio-color: #7e7e82;
+}
+
+body.theme-vampire {
+  --bg: #090101;
+  --bg-2: #120303;
+  --bg-3: #1a0505;
+  --bg-4: #230808;
+  --fg: #f5eedc;
+  --fg-muted: rgba(245, 238, 220, 0.65);
+  --fg-dim: rgba(245, 238, 220, 0.35);
+  --fg-ghost: rgba(245, 238, 220, 0.15);
+  --accent: #a30000;
+  --accent-dim: rgba(163, 0, 0, 0.2);
+  --accent-glow: rgba(163, 0, 0, 0.1);
+  --secondary: #6e00b3;
+  --secondary-dim: rgba(110, 0, 179, 0.2);
+  --border: rgba(245, 238, 220, 0.1);
+  --border-2: rgba(245, 238, 220, 0.2);
+  --border-accent: rgba(163, 0, 0, 0.4);
+  --script-color: #a30000;
+  --studio-color: #6e00b3;
 }

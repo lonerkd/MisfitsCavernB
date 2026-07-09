@@ -27,7 +27,7 @@ import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
-import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
+import { getActivities, subscribeToActivities, logActivity, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, updateStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { PannableCanvas, type PannableCanvasHandle } from '@/components/canvas/PannableCanvas';
 import { CanvasPin } from '@/components/canvas/CanvasPin';
@@ -240,8 +240,12 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if ((!url && !file) || !boardId || !userId) {
-      setError('Add a file or a link before submitting');
+    if (!url && !file) {
+      setError('Please add a file or enter an external link first.');
+      return;
+    }
+    if (!userId) {
+      setError('Session expired or user not logged in. Please log in again.');
       return;
     }
     setLoading(true);
@@ -257,7 +261,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
         finalUrl = await uploadStudioFile(filePath, file);
       }
 
-      await addStudioAsset({
+      const newAsset = await addStudioAsset({
         board_id: boardId,
         user_id: userId,
         title: title || (file ? file.name : 'Untitled Asset'),
@@ -265,6 +269,9 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
         asset_type: type,
         category: category
       });
+      if (newAsset) {
+        await logActivity(`uploaded ${type} reference "${newAsset.title}"`, 'studio_asset', newAsset.id);
+      }
       onSuccess();
       onClose();
       // Reset form
@@ -1104,10 +1111,16 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
       await loadCastings();
       setAssigning(false);
       toast(`Cast ${selected}`, 'success');
+      await logActivity(`cast character "${selected}"`, 'casting', projectId);
     } catch (e: any) { toast(e?.message || 'Could not cast', 'error'); }
   };
   const clearCasting = async (name: string) => {
-    try { await removeCasting(projectId, name); await loadCastings(); toast(`${name} reopened`, 'info'); }
+    try {
+      await removeCasting(projectId, name);
+      await loadCastings();
+      toast(`${name} reopened`, 'info');
+      await logActivity(`removed casting for character "${name}"`, 'casting', projectId);
+    }
     catch (e: any) { toast(e?.message || 'Could not update', 'error'); }
   };
 
@@ -2310,12 +2323,15 @@ export default function StudioPage() {
     if (!title) return;
     const content = prompt('Beat Content:');
     try {
-      await createProjectBeat({
+      const b = await createProjectBeat({
         project_id: activeProject.id,
         title,
         content,
         order_index: beats.length
       });
+      if (b) {
+        await logActivity(`created beat card "${title}"`, 'beat', b.id);
+      }
       refreshBeats();
     } catch (err) {
       console.error('Error adding beat:', err);

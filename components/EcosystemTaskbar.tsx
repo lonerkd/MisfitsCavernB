@@ -2,12 +2,31 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, WifiOff } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useProject } from '@/lib/context/ProjectContext';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
+
+function useOnline() {
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOnline(navigator.onLine);
+      const handleOnline = () => setOnline(true);
+      const handleOffline = () => setOnline(false);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+  return online;
+}
+
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
 
@@ -22,8 +41,10 @@ const APPS = [
   { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b', module: 'portfolio' as const },
 ];
 
-const SPRING = { type: 'spring', stiffness: 380, damping: 30 } as const;
-const MORPH = { duration: 0.4, ease: [0.16, 1, 0.3, 1] } as const;
+const SPRING = { type: 'spring', stiffness: 260, damping: 28, mass: 1 } as const;
+const MORPH = { type: 'spring', stiffness: 150, damping: 22, mass: 0.9 } as const;
+const NAV_ANIM = { type: 'spring', stiffness: 450, damping: 35 } as const;
+const PANEL_TRANSITION = { type: 'spring', stiffness: 400, damping: 30 } as const;
 
 function ProjectSwitcher({ onClose }: { onClose: () => void }) {
   const { projects, activeProject, setActiveProject } = useProject();
@@ -213,7 +234,6 @@ function ContextCapsule({
       >
         {/* Live beacon — the "active" pulse */}
         <motion.span
-          layout
           animate={{ scale: [1, 1.3, 1], opacity: [0.65, 1, 0.65] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           style={{
@@ -306,7 +326,16 @@ function ContextCapsule({
                     fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1,
                     textTransform: 'uppercase', color: t.active ? 'var(--fg)' : 'rgba(224, 221, 174,0.5)',
                   }}>
-                    {t.label}
+                    {kbActive && 'qwertyuiop'[i] ? (
+                      <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <kbd style={{ fontSize: 7, border: '1px solid currentColor', borderRadius: 3, padding: '1px 3px', opacity: 0.7 }}>
+                          {'qwertyuiop'[i].toUpperCase()}
+                        </kbd>
+                        {t.label}
+                      </span>
+                    ) : (
+                      t.label
+                    )}
                   </span>
                 </motion.button>
               ))}
@@ -329,7 +358,16 @@ function ContextCapsule({
                     outlineOffset: 2,
                   }}
                 >
-                  {a.label}
+                  {kbActive && 'qwertyuiop'[toggles.length + i] ? (
+                    <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <kbd style={{ fontSize: 7, border: '1px solid currentColor', borderRadius: 3, padding: '1px 3px', opacity: 0.7 }}>
+                        {'qwertyuiop'[toggles.length + i].toUpperCase()}
+                      </kbd>
+                      {a.label}
+                    </span>
+                  ) : (
+                    a.label
+                  )}
                 </motion.button>
               ))}
             </motion.div>
@@ -392,7 +430,7 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
               position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
               background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
               fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-              padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
+              padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', zIndex: 10,
             }}
           >
             {app.name} <span style={{ opacity: 0.5, marginLeft: 4 }}>[Alt+{isActive ? '✓' : (APPS.findIndex(a => a.id === app.id) + 1)}]</span>
@@ -417,31 +455,66 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   const setWidth = apps.length * (APP_ICON + APP_GAP);
   const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
 
-  // Start scrolled into the middle copy so a full set is available to
-  // scroll into in either direction before a loop-reset needs to fire.
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
-  }, [setWidth]);
-  useEffect(() => () => { if (restTimer.current) clearTimeout(restTimer.current); }, []);
+  const targetScroll = useRef(0);
+  const currentScroll = useRef(0);
+  const isScrolling = useRef(false);
 
   const normalize = () => {
     const el = scrollRef.current;
     if (!el || setWidth === 0) return;
-    if (el.scrollLeft < setWidth * 0.5) el.scrollLeft += setWidth;
-    else if (el.scrollLeft > setWidth * 1.5) el.scrollLeft -= setWidth;
+    if (el.scrollLeft < setWidth * 0.5) {
+      const diff = setWidth;
+      el.scrollLeft += diff;
+      targetScroll.current += diff;
+      currentScroll.current += diff;
+    } else if (el.scrollLeft > setWidth * 1.5) {
+      const diff = setWidth;
+      el.scrollLeft -= diff;
+      targetScroll.current -= diff;
+      currentScroll.current -= diff;
+    }
   };
 
+  // Start scrolled into the middle copy so a full set is available to
+  // scroll into in either direction before a loop-reset needs to fire.
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = setWidth;
+      targetScroll.current = setWidth;
+      currentScroll.current = setWidth;
+    }
+  }, [setWidth]);
+
+  useEffect(() => () => { if (restTimer.current) clearTimeout(restTimer.current); }, []);
+
   // Cinematic return-to-rest: once scroll/drag activity has been quiet for a
-  // beat, glide the strip back to its original centered layout. Live
-  // scrolling always wins — every scroll event re-arms this timer, and the
-  // fired callback bails if a drag is still in progress, so the auto-return
-  // never fights an in-flight interaction.
+  // beat, glide the strip back to its original centered layout.
   const scheduleReturnHome = () => {
     if (restTimer.current) clearTimeout(restTimer.current);
     restTimer.current = setTimeout(() => {
       if (dragRef.current || !scrollRef.current) return;
-      scrollRef.current.scrollTo({ left: setWidth, behavior: 'smooth' });
-    }, 900);
+      targetScroll.current = setWidth;
+      if (!isScrolling.current) {
+        isScrolling.current = true;
+        const update = () => {
+          const el = scrollRef.current;
+          if (!el) return;
+          const diff = targetScroll.current - currentScroll.current;
+          if (Math.abs(diff) > 0.5) {
+            currentScroll.current += diff * 0.08;
+            el.scrollLeft = currentScroll.current;
+            normalize();
+            requestAnimationFrame(update);
+          } else {
+            currentScroll.current = targetScroll.current;
+            el.scrollLeft = targetScroll.current;
+            normalize();
+            isScrolling.current = false;
+          }
+        };
+        requestAnimationFrame(update);
+      }
+    }, 1500);
   };
 
   const onScroll = () => {
@@ -449,33 +522,75 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
     scheduleReturnHome();
   };
 
-  const onWheel = (e: React.WheelEvent) => {
+  // Passive: false listener for preventing page scroll & weighted custom momentum
+  useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (delta === 0) return;
-    e.preventDefault();
-    el.scrollLeft += delta;
-    normalize();
-  };
 
-  // Desktop mouse drag-to-scroll (touch already scrolls natively). A click
-  // that ends without meaningfully moving still navigates normally; one that
-  // dragged past a few px is treated as a swipe, not a click on whatever
-  // icon happens to be under the pointer when it's released.
+    let rafId: number;
+
+    const update = () => {
+      const element = scrollRef.current;
+      if (!element) return;
+      const diff = targetScroll.current - currentScroll.current;
+      if (Math.abs(diff) > 0.5) {
+        currentScroll.current += diff * 0.08; // smooth cinematic transition speed
+        element.scrollLeft = currentScroll.current;
+        normalize();
+        rafId = requestAnimationFrame(update);
+      } else {
+        currentScroll.current = targetScroll.current;
+        element.scrollLeft = targetScroll.current;
+        normalize();
+        isScrolling.current = false;
+      }
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (restTimer.current) clearTimeout(restTimer.current);
+
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const direction = (e.deltaX + e.deltaY) > 0 ? 1 : -1;
+      
+      // Cinematic weighted scroll multiplier
+      targetScroll.current += direction * Math.max(Math.abs(delta) * 1.5, 45);
+
+      if (!isScrolling.current) {
+        isScrolling.current = true;
+        rafId = requestAnimationFrame(update);
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      cancelAnimationFrame(rafId);
+    };
+  }, [setWidth]);
+
+  // Desktop mouse drag-to-scroll
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (restTimer.current) clearTimeout(restTimer.current);
     dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false, pointerId: e.pointerId };
-    
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current || !scrollRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 3 && !dragRef.current.moved) { dragRef.current.moved = true; try { e.currentTarget.setPointerCapture(dragRef.current.pointerId); } catch (err) {} }
-    scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
+    if (Math.abs(dx) > 3 && !dragRef.current.moved) {
+      dragRef.current.moved = true;
+      try { e.currentTarget.setPointerCapture(dragRef.current.pointerId); } catch (err) {}
+    }
+    const nextScroll = dragRef.current.startScroll - dx;
+    scrollRef.current.scrollLeft = nextScroll;
+    targetScroll.current = nextScroll;
+    currentScroll.current = nextScroll;
   };
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.moved) { try { e.currentTarget.releasePointerCapture(dragRef.current.pointerId); } catch (err) {} } dragRef.current = null;
+    if (dragRef.current?.moved) { try { e.currentTarget.releasePointerCapture(dragRef.current.pointerId); } catch (err) {} }
+    dragRef.current = null;
     normalize();
     scheduleReturnHome();
   };
@@ -485,19 +600,27 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
       layout
       animate={{ width: shrunk ? APP_ICON * 2 + APP_GAP : setWidth }}
       transition={MORPH}
-      style={{ position: 'relative', height: 52, overflow: 'hidden', flexShrink: 0 }}
+      style={{
+        position: 'relative',
+        height: 88,
+        marginTop: -36,
+        marginBottom: -6,
+        overflow: 'hidden',
+        flexShrink: 0,
+        pointerEvents: 'auto'
+      }}
     >
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
         className="mc-app-carousel"
         style={{
-          display: 'flex', alignItems: 'center', gap: APP_GAP, height: '100%',
+          display: 'flex', alignItems: 'flex-end', gap: APP_GAP, height: '100%',
+          paddingBottom: 6,
           overflowX: 'auto', overflowY: 'hidden', cursor: 'grab', touchAction: 'pan-x',
           scrollbarWidth: 'none', msOverflowStyle: 'none' as any,
         }}
@@ -512,11 +635,13 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
         })}
       </div>
 
-      {/* Edge fade masks — the strip loops infinitely both ways, so both
-          edges always have more to scroll to; the fade reads as "more here"
-          instead of an abrupt clip. */}
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 14, background: 'linear-gradient(to right, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 14, background: 'linear-gradient(to left, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
+      {/* Edge fade masks — disabled when shrunk to avoid visual artifacts/black borders, and shifted to cover only the bottom icon track */}
+      {!shrunk && (
+        <>
+          <div style={{ position: 'absolute', top: 36, bottom: 6, left: 0, width: 14, background: 'linear-gradient(to right, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: 36, bottom: 6, right: 0, width: 14, background: 'linear-gradient(to left, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
+        </>
+      )}
 
       <style>{`.mc-app-carousel::-webkit-scrollbar { display: none; }`}</style>
     </motion.div>
@@ -537,6 +662,7 @@ export default function EcosystemTaskbar() {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [contextExpanded, setContextExpanded] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
+  const isOnline = useOnline();
 
   // Dock can shrink to a small handle so it doesn't sit as a full bar across
   // the bottom of every page. Collapsed state persists across pages/reloads;
@@ -544,9 +670,21 @@ export default function EcosystemTaskbar() {
   // capsule, so collapsing/expanding the dock's width also slides the capsule
   // over in sync (framer-motion's `layout` prop on both, no extra wiring).
   const [dockCollapsed, setDockCollapsed] = useState(false);
+  const [taskbarScale, setTaskbarScale] = useState(1);
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('mc_taskbar_collapsed') === '1') setDockCollapsed(true);
-  }, []);
+    if (typeof window !== 'undefined') {
+      if (localStorage.getItem('mc_taskbar_collapsed') === '1') setDockCollapsed(true);
+      const updateScale = () => {
+        const scaleVal = parseFloat(localStorage.getItem('mc_taskbar_scale') || '1');
+        setTaskbarScale(scaleVal);
+        const height = dockCollapsed ? 68 : 94;
+        document.documentElement.style.setProperty('--taskbar-height', `${height * scaleVal}px`);
+      };
+      updateScale();
+      window.addEventListener('mc-taskbar-scale-change', updateScale);
+      return () => window.removeEventListener('mc-taskbar-scale-change', updateScale);
+    }
+  }, [dockCollapsed]);
   const toggleDock = () => {
     setDockCollapsed(prev => {
       const next = !prev;
@@ -630,6 +768,13 @@ export default function EcosystemTaskbar() {
         }
         return;
       }
+
+      const qIndex = 'qwertyuiop'.indexOf(e.key.toLowerCase());
+      if (qIndex >= 0 && qIndex < hotkeyItems.length) {
+        e.preventDefault();
+        hotkeyItems[qIndex].run();
+        return;
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -668,7 +813,8 @@ export default function EcosystemTaskbar() {
         position: 'fixed',
         bottom: 28,
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: `translateX(-50%) scale(${taskbarScale})`,
+        transformOrigin: 'bottom center',
         zIndex: 9999,
         pointerEvents: 'none',
       }}
@@ -762,19 +908,6 @@ export default function EcosystemTaskbar() {
               )}
             </AnimatePresence>
           </div>
-
-          {/* Divider */}
-          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
-
-          {/* App icons — shrinks into an infinite-loop scroll carousel while
-              the context pill is expanded, instead of relayouting the dock. */}
-          <AppIconCarousel apps={visibleApps} pathname={pathname} hoveredId={hoveredId} setHoveredId={setHoveredId} shrunk={contextOpen} />
-
-          {/* Divider */}
-          <div style={{
-            width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
-            margin: '0 4px', flexShrink: 0,
-          }} />
 
           {/* Project switcher button */}
           <div style={{ position: 'relative' }}>
@@ -883,6 +1016,13 @@ export default function EcosystemTaskbar() {
           {/* Divider */}
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
+          {/* App icons — shrinks into an infinite-loop scroll carousel while
+              the context pill is expanded, instead of relayouting the dock. */}
+          <AppIconCarousel apps={visibleApps} pathname={pathname} hoveredId={hoveredId} setHoveredId={setHoveredId} shrunk={contextOpen} />
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
+
           {/* Notifications */}
           <NotificationBell />
 
@@ -893,6 +1033,29 @@ export default function EcosystemTaskbar() {
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
             <GlobalAudioWidget />
           </div>
+
+          {/* Offline Indicator */}
+          <AnimatePresence>
+            {!isOnline && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, width: 0 }}
+                animate={{ opacity: 1, scale: 1, width: 'auto' }}
+                exit={{ opacity: 0, scale: 0.5, width: 0 }}
+                title="Offline Mode — Changes will sync when reconnected"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444',
+                  borderRadius: 16, padding: '0 12px', height: 46,
+                  border: '1px solid rgba(239, 68, 68, 0.2)', gap: 6,
+                  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
+                  overflow: 'hidden', whiteSpace: 'nowrap'
+                }}
+              >
+                <WifiOff size={14} />
+                Offline
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Account: profile + settings */}
           {([

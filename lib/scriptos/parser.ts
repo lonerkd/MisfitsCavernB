@@ -248,7 +248,7 @@ export class ScriptParser {
         type: analysis.type,
         confidence: analysis.confidence,
         scores: analysis.scores,
-        reasoning: analysis.reasoning,
+        reasoning: analysis.reasoning.join('; '),
         meta: analysis.meta || {}
       });
     }
@@ -320,7 +320,8 @@ export class ScriptParser {
     const reasoning: string[] = [];
     const scores: Record<LineType, number> = {
       slug: 0, action: 0, character: 0, dialogue: 0,
-      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0
+      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0,
+      centered: 0, scene: 0
     };
 
     if (this.format === 'podcast') {
@@ -392,7 +393,8 @@ export class ScriptParser {
   } {
     const scores: Record<LineType, number> = {
       slug: 0, action: 0, character: 0, dialogue: 0, 
-      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0
+      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0,
+      centered: 0, scene: 0
     };
     const reasoning: string[] = [];
     const upper = text.toUpperCase();
@@ -562,7 +564,7 @@ export class ScriptParser {
       text,
       type,
       confidence,
-      reasoning,
+      reasoning: reasoning.join('; '),
       scores: {} as any,
       meta: {}
     };

@@ -63,17 +63,18 @@ function rowToProfile(row: any): CharacterProfile {
   };
 }
 
-// Synchronous cache read for instant first paint.
-export function loadCharacterProfilesCached(scriptId: string): CharacterProfile[] {
+// Synchronous cache read for instant first paint; the async loader below
+// reconciles with the shared DB copy.
+export async function getCharacterProfiles(scriptId: string): Promise<CharacterProfile[]> {
   if (typeof window === 'undefined') return [];
   try {
-    const stored = getCacheItem(`${PROFILE_KEY}_${scriptId}`, 'profiles');
+    const stored = await getCacheItem(`${PROFILE_KEY}_${scriptId}`, 'profiles');
     return Array.isArray(stored) ? stored : [];
   } catch { return []; }
 }
 
 export async function loadCharacterProfiles(scriptId: string): Promise<CharacterProfile[]> {
-  const cached = loadCharacterProfilesCached(scriptId);
+  const cached = await getCharacterProfiles(scriptId);
   try {
     const { data, error } = await supabase
       .from('script_characters')
@@ -82,7 +83,7 @@ export async function loadCharacterProfiles(scriptId: string): Promise<Character
       .order('created_at', { ascending: true });
     if (error) throw error;
     const profiles = (data || []).map(rowToProfile);
-    setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
+    await setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
     return profiles;
   } catch { /* offline — fall back to cache */ }
   return cached;
@@ -102,7 +103,7 @@ export async function loadCharacterProfiles(scriptId: string): Promise<Character
 const saveChains = new Map<string, Promise<void>>();
 
 export async function saveCharacterProfiles(scriptId: string, profiles: CharacterProfile[]): Promise<void> {
-  if (typeof window !== 'undefined') setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
+  if (typeof window !== 'undefined') await setCacheItem(`${PROFILE_KEY}_${scriptId}`, profiles);
   const prior = saveChains.get(scriptId) || Promise.resolve();
   const next = prior.then(() => doSaveCharacterProfiles(scriptId, profiles)).catch(() => { /* offline — cache already written */ });
   saveChains.set(scriptId, next);
