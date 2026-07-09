@@ -106,7 +106,7 @@ export default function GlobalAudioWidget() {
 
       {/* Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-        <button onClick={prevTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipBack size={18} /></button>
+        <button onClick={prevTrack} aria-label="Previous track" style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipBack size={18} /></button>
         <button 
           onClick={togglePlay}
           style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--fg)', color: 'var(--bg)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}

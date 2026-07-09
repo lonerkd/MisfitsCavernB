@@ -240,7 +240,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           name: c.profiles?.username || 'Unknown',
           role: c.role,
           avatar: c.profiles?.avatar_url || null,
-          status: 'confirmed'
+          status: c.status || 'confirmed'
         })),
         beats: beatsRes.data || [],
         concept_assets: conceptRes.data || [],

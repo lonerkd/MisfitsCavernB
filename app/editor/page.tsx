@@ -246,8 +246,9 @@ function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumb
 // ============================================================================
 
 export default function EditorPage() {
-  useRequireAuth();
+  const { isLoading } = useRequireAuth();
   const { activeProject } = useProject();
+  if (isLoading) return null;
   const { updateScenePresence } = usePresence();
   const { playUri } = useSpotify();
   

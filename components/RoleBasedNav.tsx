@@ -145,8 +145,6 @@ export function UserStatusBadge() {
  * Role-aware breadcrumb navigation
  */
 export function RoleBreadcrumb({ pages }: { pages: Array<{ label: string; href?: string }> }) {
-  const { canPerformAction } = useAuth();
-
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, opacity: 0.6 }}>
       {pages.map((page, idx) => (

@@ -482,8 +482,9 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 }
 
 export default function LoungePage() {
-  useRequireAuth();
+  const { isLoading } = useRequireAuth();
   const { toast } = useToast();
+  if (isLoading) return null;
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
