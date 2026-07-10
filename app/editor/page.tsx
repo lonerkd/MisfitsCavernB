@@ -15,9 +15,9 @@ import { saveScript, getAllScripts, createNewScript, importScriptFromText, type 
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
+import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
@@ -403,8 +403,6 @@ export default function EditorPage() {
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content || '');
-    setTitlePage(loadTitlePageCached(script.id));
-    setCharProfiles(loadCharacterProfilesCached(script.id));
     loadTitlePage(script.id).then(setTitlePage);
     loadCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
@@ -447,8 +445,6 @@ export default function EditorPage() {
         const latest = all[0];
         setCurrentScript(latest);
         setContent(latest.content || '');
-        setTitlePage(loadTitlePageCached(latest.id));
-        setCharProfiles(loadCharacterProfilesCached(latest.id));
         loadTitlePage(latest.id).then(setTitlePage);
         loadCharacterProfiles(latest.id).then(setCharProfiles);
         setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
@@ -612,7 +608,7 @@ export default function EditorPage() {
     (async () => {
       const remote = await fetchRevisionsDB(currentScript.id);
       if (!active) return;
-      setRevisions(remote.length > 0 ? remote : getRevisions(currentScript.id));
+      setRevisions(remote.length > 0 ? remote : await getRevisions(currentScript.id));
     })();
     return () => { active = false; };
   }, [currentScript]);
@@ -723,7 +719,7 @@ export default function EditorPage() {
       toast(`Locked as ${rev.label}`, 'success');
     } else {
       // Offline / no access — fall back to a local snapshot so work isn't lost.
-      const { revision } = createRevision(currentScript.id, content);
+      const { revision } = await createRevision(currentScript.id, content);
       setRevisions(prev => [...prev, revision]);
       toast(`Locked locally as ${revision.label}`, 'info');
     }
