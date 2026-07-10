@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
-import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, type Channel, type ChannelMember } from '@/lib/supabase/channels';
+import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/context/ProjectContext';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -41,12 +41,13 @@ function ProductionFeed({ projectId }: { projectId: string }) {
   useEffect(() => {
     let on = true;
     (async () => {
-      const [sc, bd, tl, cr, ca] = await Promise.all([
+      const [sc, bd, tl, cr, ca, sn] = await Promise.all([
         supabase.from('scenes').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('concept_assets').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('script_notes').select('note,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
       ]);
       if (!on) return;
       const merged = [
@@ -55,6 +56,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#6366f1' })),
         ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
         ...(ca.data || []).map((x: any) => ({ label: `Concept — ${x.title || 'image'}`, t: x.created_at, color: '#a855f7' })),
+        ...(sn.data || []).map((x: any) => ({ label: `Script Note — "${x.note}"`, t: x.created_at, color: '#ef4444' })),
       ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
       setItems(merged);
     })();
@@ -308,10 +310,14 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const [postPolicy, setPostPolicy] = useState(channel.post_policy);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [discordConnected, setDiscordConnected] = useState(false);
+  const [discordInput, setDiscordInput] = useState('');
+  const [discordBusy, setDiscordBusy] = useState(false);
   const confirm = useConfirm();
 
   const refresh = useCallback(async () => { setLoading(true); setMembers(await listChannelMembers(channel.id)); setLoading(false); }, [channel.id]);
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { hasDiscordWebhook(channel.id).then(setDiscordConnected); }, [channel.id]);
   useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
 
   useEffect(() => {
@@ -338,6 +344,39 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     setBusy(false); await refresh();
   };
   const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };
+  const saveDiscordWebhook = async () => {
+    const url = discordInput.trim();
+    if (!url) return;
+    setDiscordBusy(true);
+    setErr(null);
+    // Validate + live-test the webhook before ever saving it. Without this,
+    // a typo'd URL, a non-Discord URL, or a webhook already deleted on
+    // Discord's side would all save successfully and show "● Connected" —
+    // then every message would silently fail to bridge forever, since
+    // app/api/discord/notify's failures only ever reach a server log, with
+    // nothing surfaced back to whoever sent the message.
+    try {
+      const testRes = await fetch('/api/discord/test', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhookUrl: url }),
+      });
+      const test = await testRes.json();
+      if (!test.ok) { setErr(test.error || 'Could not verify that webhook.'); setDiscordBusy(false); return; }
+    } catch {
+      setErr('Could not reach the server to verify that webhook.'); setDiscordBusy(false); return;
+    }
+    const e = await setDiscordWebhook(channel.id, url);
+    setDiscordBusy(false);
+    if (e) { setErr(e); return; }
+    setDiscordInput(''); setDiscordConnected(true);
+  };
+  const clearDiscordWebhook = async () => {
+    setDiscordBusy(true);
+    const e = await removeDiscordWebhook(channel.id);
+    setDiscordBusy(false);
+    if (e) { setErr(e); return; }
+    setDiscordConnected(false);
+  };
   const doDelete = async () => {
     if (!await confirm({ title: `Delete #${channel.name}?`, message: 'All its messages will be removed. This cannot be undone.', confirmLabel: 'DELETE' })) return;
     setBusy(true); const e = await deleteChannel(channel.id); setBusy(false);
@@ -358,7 +397,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
               {channel.is_private ? <Lock size={15} /> : <Hash size={15} />}{channel.name}
             </h2>
           </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close manage channel" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
         </div>
 
         {channel.type === 'text' && (
@@ -369,6 +408,26 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
                 <button key={v} onClick={() => savePolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
               ))}
             </div>
+          </div>
+        )}
+
+        {channel.type === 'text' && (
+          <div style={{ marginBottom: 22 }}>
+            <label style={label}>Discord bridge</label>
+            <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 8 }}>
+              One-way: messages posted here also get sent to a Discord channel via webhook. The webhook URL is write-only once set — it can be replaced but never viewed again.
+            </div>
+            {discordConnected ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                <span style={{ fontSize: 12, color: '#34d399' }}>● Connected</span>
+                <Button variant="outline" size="sm" onClick={clearDiscordWebhook} disabled={discordBusy} style={{ marginLeft: 'auto' }}>DISCONNECT</Button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}><Input label="Webhook URL" value={discordInput} onChange={e => setDiscordInput(e.target.value)} type="password" /></div>
+                <Button size="sm" onClick={saveDiscordWebhook} disabled={discordBusy || !discordInput.trim()} isLoading={discordBusy}>CONNECT</Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -423,8 +482,9 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 }
 
 export default function LoungePage() {
-  useRequireAuth();
+  const { isLoading } = useRequireAuth();
   const { toast } = useToast();
+  if (isLoading) return null;
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
@@ -678,7 +738,7 @@ export default function LoungePage() {
   };
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
       <GrainOverlay />
 
       {/* Header */}
@@ -1013,7 +1073,7 @@ export default function LoungePage() {
           >
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#10b981' }}>Thread</span>
-              <button onClick={() => setThreadParent(null)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
+              <button onClick={() => setThreadParent(null)} aria-label="Close thread" style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
               {/* Parent message */}
@@ -1036,7 +1096,7 @@ export default function LoungePage() {
             <div style={{ padding: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8 }}>
               <input value={threadInput} onChange={e => setThreadInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleThreadSend(); } }}
                 placeholder="Reply…" style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--fg)', fontFamily: 'var(--serif)', fontSize: 13, outline: 'none' }} />
-              <button onClick={handleThreadSend} style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
+              <button onClick={handleThreadSend} aria-label="Send message" style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
             </div>
           </motion.div>
         )}

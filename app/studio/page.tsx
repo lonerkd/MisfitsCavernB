@@ -22,15 +22,20 @@ import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
 import { useProject } from '@/lib/context/ProjectContext';
+import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
-import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
-import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
+import { getActivities, subscribeToActivities, logActivity, type Activity } from '@/lib/supabase/activity';
+import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, updateStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
+import { PannableCanvas, type PannableCanvasHandle } from '@/components/canvas/PannableCanvas';
+import { CanvasPin } from '@/components/canvas/CanvasPin';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
-import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { syncSceneElementsFromScript, syncBudgetFromSceneElements, ELEMENT_CATEGORIES, type ElementCategory } from '@/lib/supabase/breakdown';
+import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X, Tags } from 'lucide-react';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
 import { useRequireAuth } from '@/lib/useRequireAuth';
@@ -43,6 +48,12 @@ interface Asset {
   size: string;
   dateAdded: string;
   url?: string;
+  // Free-canvas position/size, from studio_assets.position_x/y/width/height —
+  // only meaningful in the canvas view; the grid view ignores them entirely.
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 
@@ -156,7 +167,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
+             <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name} <span style={{ color: '#666', marginLeft: 8 }}>V2</span></div>
              <div style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(0,204,102,0.1)', color: '#00cc66', borderRadius: 4, textTransform: 'uppercase' }}>Approved</div>
            </div>
@@ -229,8 +240,12 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if ((!url && !file) || !boardId || !userId) {
-      setError('Add a file or a link before submitting');
+    if (!url && !file) {
+      setError('Please add a file or enter an external link first.');
+      return;
+    }
+    if (!userId) {
+      setError('Session expired or user not logged in. Please log in again.');
       return;
     }
     setLoading(true);
@@ -246,7 +261,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
         finalUrl = await uploadStudioFile(filePath, file);
       }
 
-      await addStudioAsset({
+      const newAsset = await addStudioAsset({
         board_id: boardId,
         user_id: userId,
         title: title || (file ? file.name : 'Untitled Asset'),
@@ -254,6 +269,9 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
         asset_type: type,
         category: category
       });
+      if (newAsset) {
+        await logActivity(`uploaded ${type} reference "${newAsset.title}"`, 'studio_asset', newAsset.id);
+      }
       onSuccess();
       onClose();
       // Reset form
@@ -523,11 +541,11 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+      <button onClick={onClose} aria-label="Close lightbox" style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
       {images.length > 1 && (
         <>
-          <button onClick={(e) => { e.stopPropagation(); go(-1); }} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
-          <button onClick={(e) => { e.stopPropagation(); go(1); }} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous image" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next image" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
         </>
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
@@ -696,7 +714,7 @@ function ReferenceSearchModal({
                 Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
+            <button onClick={onClose} aria-label="Close schedule edit" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
           </div>
 
           <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
@@ -891,7 +909,12 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   const [lookFor, setLookFor] = useState<string | null>(null);
 
   const loadRefs = async () => {
-    const { data } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
+    // concept_asset_id must be selected explicitly (not just implied by the
+    // concept_assets(...) join) — omitting it left every Ref's
+    // concept_asset_id undefined, so the "already linked" filter below
+    // (a Set built from this field) never matched anything and the
+    // look-board picker let the same concept image get linked repeatedly.
+    const { data } = await supabase.from('character_references').select('id,character_id,concept_asset_id,concept_assets(image_url,title)').eq('project_id', projectId);
     const map: Record<string, Ref[]> = {};
     (data || []).forEach((r: any) => { (map[r.character_id] ||= []).push({ id: r.id, concept_asset_id: r.concept_asset_id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
     setRefs(map);
@@ -1028,10 +1051,508 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
 }
 const inputMini: React.CSSProperties = { width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none' };
 
+// Casting board: the roster of characters (pulled straight from the ScriptOS
+// bible — never re-typed), each with a casting slot that either names a crew
+// member or is left "Open — Post to Jobs", a look-board of concept images, and
+// the character's footprint across the shooting schedule.
+function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId: string; userId: string | null; concepts: any[]; scenes: any[]; crew: any[] }) {
+  const { toast } = useToast();
+  type Char = { id?: string; name: string; color: string };
+  type Look = { id: string; image_url: string; title: string | null };
+  const [chars, setChars] = useState<Char[]>([]);
+  const [castings, setCastings] = useState<Record<string, Casting>>({});
+  const [looks, setLooks] = useState<Record<string, Look[]>>({});
+  const [selected, setSelected] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+
+  const loadCastings = async () => {
+    try { setCastings(await getCastingsForProject(projectId)); } catch { /* table may be empty */ }
+  };
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
+      const parsedNames: string[] = withContent?.content ? parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean) : [];
+      const savedById = new Map<string, any>();
+      if (withContent) {
+        const { data: saved } = await supabase.from('script_characters').select('id,name,color').eq('script_id', withContent.id);
+        (saved || []).forEach((r: any) => savedById.set(r.name, r));
+      }
+      const names = Array.from(new Set([...parsedNames, ...Array.from(savedById.keys())]));
+      const list = names.map((name, i) => { const r = savedById.get(name); return { id: r?.id, name, color: r?.color || palette[i % palette.length] }; });
+      setChars(list);
+      setSelected(prev => prev && names.includes(prev) ? prev : names[0] || null);
+      // Look-board references keyed by character_id
+      const { data: refData } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
+      const lookMap: Record<string, Look[]> = {};
+      (refData || []).forEach((r: any) => { (lookMap[r.character_id] ||= []).push({ id: r.id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
+      setLooks(lookMap);
+      await loadCastings();
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId, scenes.length]);
+
+  // Footprint of a character across the shooting schedule, matched on cast_list.
+  const footprint = (name: string) => {
+    const up = name.toUpperCase();
+    const inScenes = scenes.filter(s => String(s.cast_list || '').toUpperCase().split(',').map((c: string) => c.trim()).includes(up));
+    const days = Array.from(new Set(inScenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+    return { sceneNums: inScenes.map(s => s.scene_number).sort((a, b) => a - b), days };
+  };
+
+  const assign = async (crewUserId: string) => {
+    if (!selected || !userId) { toast('Sign in to cast', 'error'); return; }
+    try {
+      await setCasting(projectId, selected, crewUserId, userId);
+      await loadCastings();
+      setAssigning(false);
+      toast(`Cast ${selected}`, 'success');
+      await logActivity(`cast character "${selected}"`, 'casting', projectId);
+    } catch (e: any) { toast(e?.message || 'Could not cast', 'error'); }
+  };
+  const clearCasting = async (name: string) => {
+    try {
+      await removeCasting(projectId, name);
+      await loadCastings();
+      toast(`${name} reopened`, 'info');
+      await logActivity(`removed casting for character "${name}"`, 'casting', projectId);
+    }
+    catch (e: any) { toast(e?.message || 'Could not update', 'error'); }
+  };
+
+  const sel = chars.find(c => c.name === selected) || null;
+  const castCount = chars.filter(c => castings[c.name.toUpperCase()]).length;
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+        <Users size={16} /> Casting Board
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', fontWeight: 400 }}>· {castCount}/{chars.length} cast · from ScriptOS</span>
+      </div>
+      {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Loading…</div>}
+      {!loading && chars.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the casting board.</div>}
+      {chars.length > 0 && (
+        <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 }}>
+          {/* Character roster */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {chars.map(c => {
+              const cast = castings[c.name.toUpperCase()];
+              const active = selected === c.name;
+              return (
+                <button key={c.name} onClick={() => { setSelected(c.name); setAssigning(false); }} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', textAlign: 'left',
+                  background: active ? `${c.color}18` : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${active ? `${c.color}55` : 'rgba(255,255,255,0.06)'}`,
+                  borderLeft: `3px solid ${c.color}`, borderRadius: 8, cursor: 'pointer',
+                }}>
+                  <span style={{ flex: 1, fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, color: active ? c.color : 'var(--fg)' }}>{c.name}</span>
+                  {cast ? (
+                    <span title={`Cast: ${cast.username || 'crew'}`} style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+                  ) : (
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>open</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detail panel */}
+          {sel && (() => {
+            const cast = castings[sel.name.toUpperCase()];
+            const looksFor = sel.id ? (looks[sel.id] || []) : [];
+            const fp = footprint(sel.name);
+            return (
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${sel.color}33`, borderRadius: 12, padding: 24 }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: sel.color, marginBottom: 20 }}>{sel.name}</div>
+
+                {/* Casting slot */}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
+                {cast ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, marginBottom: 24 }}>
+                    <Avatar src={cast.avatar_url} name={cast.username || 'Crew'} size={38} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{cast.username || 'Crew member'}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#34d399', textTransform: 'uppercase', letterSpacing: 1 }}>Cast</div>
+                    </div>
+                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Recast</button>
+                    <button onClick={() => clearCasting(sel.name)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#ef4444', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Remove</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: assigning ? 12 : 24 }}>
+                    <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
+                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: sel.color, background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
+                    <Link href={`/jobs?title=${encodeURIComponent(`Cast as ${sel.name}`)}&role=${encodeURIComponent('Actor')}`} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
+                  </div>
+                )}
+
+                {/* Crew picker */}
+                {assigning && (
+                  <div style={{ marginBottom: 24, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 10 }}>
+                    {crew.length === 0 ? (
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No crew recruited yet — recruit talent in the Crew tab or post the role to Jobs.</span>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {crew.map((m: any) => (
+                          <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
+                            <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
+                            <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{m.role}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Look-board */}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
+                {looksFor.length > 0 ? (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
+                    {looksFor.map(l => (
+                      <div key={l.id} style={{ width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: `1px solid ${sel.color}44` }} title={l.title || 'look'}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={l.image_url} alt={l.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginBottom: 24 }}>No look references yet — link concept images to this character in the Character Bible.</div>
+                )}
+
+                {/* Scene footprint */}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
+                {fp.sceneNums.length > 0 ? (
+                  <div>
+                    <div style={{ display: 'flex', gap: 20, marginBottom: 10, fontFamily: 'var(--mono)', fontSize: 12 }}>
+                      <span><span style={{ color: sel.color, fontSize: 18, fontWeight: 700 }}>{fp.sceneNums.length}</span> <span style={{ color: 'var(--fg-dim)' }}>scenes</span></span>
+                      <span><span style={{ color: sel.color, fontSize: 18, fontWeight: 700 }}>{fp.days.length}</span> <span style={{ color: 'var(--fg-dim)' }}>shoot day{fp.days.length === 1 ? '' : 's'}</span></span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {fp.sceneNums.map(n => (
+                        <span key={n} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 7px' }}>#{n}</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Not tagged into any scene yet — add this character to scene cast lists in the schedule.</div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Stripboard + Day-Out-of-Days. The stripboard colours each scene by shoot
+// condition (INT/EXT × day/night, the Movie Magic convention), sizes it by
+// page eighths and groups the strips under their shoot day. The DOOD grid
+// derives each actor's Start/Work/Hold/Finish pattern from the scene cast
+// lists — all read straight off the same `scenes` rows the schedule edits.
+function Stripboard({ scenes }: { scenes: any[] }) {
+  const [view, setView] = useState<'strips' | 'dood'>('strips');
+
+  // Movie Magic strip colours: white = INT day, yellow = EXT day,
+  // blue = INT night, green = EXT night.
+  const stripColor = (s: any) => {
+    const head = `${s.title || ''} ${s.location || ''}`.toUpperCase();
+    const isExt = /\bEXT\b/.test(head) || (!/\bINT\b/.test(head) && false);
+    const tod = String(s.time_of_day || 'DAY').toUpperCase();
+    const isNight = tod === 'NIGHT' || tod === 'DUSK' || tod === 'EVENING';
+    if (isExt && isNight) return { bg: 'rgba(16,185,129,0.16)', bar: '#10b981', label: 'EXT · NIGHT' };
+    if (isExt) return { bg: 'rgba(245,158,11,0.16)', bar: '#f59e0b', label: 'EXT · DAY' };
+    if (isNight) return { bg: 'rgba(59,130,246,0.16)', bar: '#3b82f6', label: 'INT · NIGHT' };
+    return { bg: 'rgba(255,255,255,0.05)', bar: 'rgba(255,255,255,0.5)', label: 'INT · DAY' };
+  };
+  const eighths = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\/8/); return m ? Number(m[1]) : 1; };
+
+  const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+
+  // Day-Out-of-Days: for every actor, the span of shoot days they touch.
+  const castRows = (() => {
+    const map: Record<string, Set<number>> = {};
+    scenes.forEach(s => {
+      const day = s.shoot_day || 1;
+      String(s.cast_list || '').split(',').map((c: string) => c.trim()).filter(Boolean).forEach(name => {
+        (map[name.toUpperCase()] ||= new Set()).add(day);
+      });
+    });
+    return Object.entries(map).map(([name, set]) => {
+      const dset = set as Set<number>;
+      const worked = Array.from(dset).sort((a, b) => a - b);
+      const start = worked[0]; const finish = worked[worked.length - 1];
+      // cell state per shoot day: S start, W work, H hold (between), F finish, · idle
+      const cells = days.map(d => {
+        if (!dset.has(d)) return d > start && d < finish ? 'H' : '·';
+        if (d === start && d === finish) return 'SF';
+        if (d === start) return 'S';
+        if (d === finish) return 'F';
+        return 'W';
+      });
+      const total = worked.length;
+      return { name, cells, total };
+    }).sort((a, b) => b.total - a.total);
+  })();
+
+  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#d7340b', SF: '#10b981', '·': 'rgba(255,255,255,0.12)' };
+
+  if (scenes.length === 0) return null;
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{view === 'strips' ? 'Stripboard' : 'Day Out of Days'}</div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['strips', 'dood'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)} style={{
+              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
+              padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+              background: view === v ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${view === v ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+              color: view === v ? '#a5b4fc' : 'var(--fg-muted)',
+            }}>{v === 'strips' ? 'Strips' : 'DOOD'}</button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'strips' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 480 }}>
+          {days.map(day => {
+            const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
+            const dayEighths = dayScenes.reduce((t, s) => t + eighths(s), 0);
+            return (
+              <div key={day}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#6366f1' }}>DAY {day}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{dayScenes.length} scene{dayScenes.length === 1 ? '' : 's'} · {(dayEighths / 8).toFixed(1)} pg</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {dayScenes.map(s => {
+                    const c = stripColor(s);
+                    const e = eighths(s);
+                    return (
+                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: c.bg, borderLeft: `4px solid ${c.bar}`, borderRadius: 4, padding: '7px 10px', minHeight: 22 + Math.min(e, 8) * 3 }}>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, width: 28, flexShrink: 0 }}>{s.scene_number}</span>
+                        <span style={{ flex: 1, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title || 'Untitled'}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: c.bar, letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', width: 32, textAlign: 'right', flexShrink: 0 }}>{e}/8</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            {[['#10b981', 'EXT Night'], ['#f59e0b', 'EXT Day'], ['#3b82f6', 'INT Night'], ['rgba(255,255,255,0.5)', 'INT Day']].map(([col, lbl]) => (
+              <span key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: col }} /> {lbl}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : (
+        castRows.length === 0 ? (
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No cast tagged into scenes yet — add actors to scene cast lists to build the Day Out of Days.</div>
+        ) : (
+          <div style={{ minWidth: 120 + days.length * 34 }}>
+            <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 6, marginBottom: 6 }}>
+              <div style={{ width: 120, fontFamily: 'var(--mono)', fontSize: 9, color: '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Actor</div>
+              {days.map(d => <div key={d} style={{ width: 30, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: '#888' }}>{d}</div>)}
+              <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 9, color: '#888' }}>Days</div>
+            </div>
+            {castRows.map(row => (
+              <div key={row.name} style={{ display: 'flex', alignItems: 'center', padding: '4px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                <div style={{ width: 120, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 6 }}>{row.name}</div>
+                {row.cells.map((cell, i) => (
+                  <div key={i} style={{ width: 30, textAlign: 'center' }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: cell === '·' ? codeColor['·'] : codeColor[cell] }}>{cell === 'SF' ? 'SF' : cell}</span>
+                  </div>
+                ))}
+                <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{row.total}</div>
+              </div>
+            ))}
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              {[['S', 'Start'], ['W', 'Work'], ['H', 'Hold'], ['F', 'Finish']].map(([code, lbl]) => (
+                <span key={code} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
+                  <span style={{ fontWeight: 700, color: codeColor[code] }}>{code}</span> {lbl}
+                </span>
+              ))}
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+// Shot List: per-scene camera setups. This is the real destination for
+// ScriptOS's "shot" margin annotations (see resolveLineToSceneId in
+// lib/supabase/breakdown.ts) — previously that annotation type claimed to
+// "route to" a Shot List that didn't exist anywhere in the app.
+function ShotList({ projectId, scenes }: { projectId: string; scenes: any[] }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const [shots, setShots] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openScene, setOpenScene] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ shot_number: string; shot_size: string; angle: string; movement: string; lens: string; description: string }>({ shot_number: '', shot_size: '', angle: '', movement: '', lens: '', description: '' });
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase.from('shots').select('*').eq('project_id', projectId).order('order_index');
+    setShots(data || []);
+    setLoading(false);
+  }, [projectId]);
+  useEffect(() => { load(); }, [load]);
+
+  const shotsByScene = React.useMemo(() => {
+    const map: Record<string, any[]> = {};
+    shots.forEach(s => { (map[s.scene_id] ||= []).push(s); });
+    return map;
+  }, [shots]);
+
+  const addShot = async (sceneId: string) => {
+    if (!draft.shot_number.trim()) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    const orderIndex = (shotsByScene[sceneId]?.length || 0);
+    const { error } = await supabase.from('shots').insert({
+      project_id: projectId, scene_id: sceneId, shot_number: draft.shot_number.trim(),
+      shot_size: draft.shot_size || null, angle: draft.angle || null, movement: draft.movement || null,
+      lens: draft.lens || null, description: draft.description || null, order_index: orderIndex, created_by: user?.id,
+    });
+    if (error) { toast(error.message || 'Could not add shot', 'error'); return; }
+    setDraft({ shot_number: '', shot_size: '', angle: '', movement: '', lens: '', description: '' });
+    load();
+  };
+
+  const cycleStatus = async (shot: any) => {
+    const next = shot.status === 'planned' ? 'shot' : shot.status === 'shot' ? 'omitted' : 'planned';
+    await supabase.from('shots').update({ status: next }).eq('id', shot.id);
+    load();
+  };
+
+  const removeShot = async (id: string) => {
+    if (!await confirm('Delete this shot?')) return;
+    await supabase.from('shots').delete().eq('id', id);
+    load();
+  };
+
+  const statusColor: Record<string, string> = { planned: 'var(--fg-dim)', shot: '#10b981', omitted: '#6b7280' };
+
+  if (scenes.length === 0) return null;
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shot List</div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{shots.length} shot{shots.length === 1 ? '' : 's'} across {Object.keys(shotsByScene).length} scene{Object.keys(shotsByScene).length === 1 ? '' : 's'}</span>
+      </div>
+
+      {loading ? (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Loading…</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {scenes.slice().sort((a, b) => a.scene_number - b.scene_number).map(scene => {
+            const sceneShots = (shotsByScene[scene.id] || []).slice().sort((a, b) => a.order_index - b.order_index);
+            const open = openScene === scene.id;
+            return (
+              <div key={scene.id} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
+                <button
+                  onClick={() => setOpenScene(open ? null : scene.id)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: '#6366f1', width: 28 }}>{scene.scene_number}</span>
+                  <span style={{ flex: 1, fontSize: 12, color: '#fff' }}>{scene.title || 'Untitled'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{sceneShots.length} shot{sceneShots.length === 1 ? '' : 's'}</span>
+                </button>
+                {open && (
+                  <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {sceneShots.map(shot => (
+                      <div key={shot.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                        <button onClick={() => cycleStatus(shot)} title="Cycle status" style={{ fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, width: 24, background: 'none', border: 'none', color: statusColor[shot.status], cursor: 'pointer' }}>{shot.shot_number}</button>
+                        <span style={{ flex: 1, fontSize: 11, color: '#ddd' }}>
+                          {[shot.shot_size, shot.angle, shot.movement, shot.lens].filter(Boolean).join(' · ') || <span style={{ opacity: 0.4 }}>No details</span>}
+                          {shot.description && <span style={{ display: 'block', fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>{shot.description}</span>}
+                        </span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: statusColor[shot.status], textTransform: 'uppercase' }}>{shot.status}</span>
+                        <button onClick={() => removeShot(shot.id)} aria-label="Remove shot" style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 11 }}>✕</button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: sceneShots.length > 0 ? 4 : 0 }}>
+                      <input placeholder="#" value={draft.shot_number} onChange={e => setDraft(d => ({ ...d, shot_number: e.target.value }))} style={{ width: 44, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Size (WS/MS/CU)" value={draft.shot_size} onChange={e => setDraft(d => ({ ...d, shot_size: e.target.value }))} style={{ width: 100, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Angle" value={draft.angle} onChange={e => setDraft(d => ({ ...d, angle: e.target.value }))} style={{ width: 90, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Movement" value={draft.movement} onChange={e => setDraft(d => ({ ...d, movement: e.target.value }))} style={{ width: 90, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Lens" value={draft.lens} onChange={e => setDraft(d => ({ ...d, lens: e.target.value }))} style={{ width: 70, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <input placeholder="Description" value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} style={{ flex: 1, minWidth: 140, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
+                      <button className="link-btn" disabled={!draft.shot_number.trim()} onClick={() => addShot(scene.id)}>+ Add</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Real call sheets generated by grouping the schedule's scenes by shoot day.
-function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
+function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: string; scenes: any[]; crew: any[]; projectTitle: string }) {
+  const { toast } = useToast();
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
+
+  // The header fields (call times, weather, notes) were previously nowhere
+  // to be saved — this whole component was a derived, read-only view over
+  // scenes grouped by shoot_day, regenerated fresh on every render with no
+  // persistence at all. call_sheets adds the one real row per shoot day this
+  // was always missing.
+  const [sheets, setSheets] = useState<Record<number, any>>({});
+  const [draft, setDraft] = useState<{ general_call: string; shooting_call: string; estimated_wrap: string; weather: string; notes: string }>({ general_call: '', shooting_call: '', estimated_wrap: '', weather: '', notes: '' });
+  const [saving, setSaving] = useState(false);
+
+  const loadSheets = React.useCallback(async () => {
+    const { data } = await supabase.from('call_sheets').select('*').eq('project_id', projectId);
+    const byDay: Record<number, any> = {};
+    (data || []).forEach((s: any) => { byDay[s.shoot_day] = s; });
+    setSheets(byDay);
+  }, [projectId]);
+  useEffect(() => { loadSheets(); }, [loadSheets]);
+
+  const openDayFor = (day: number) => {
+    const existing = sheets[day];
+    setDraft({
+      general_call: existing?.general_call || '', shooting_call: existing?.shooting_call || '',
+      estimated_wrap: existing?.estimated_wrap || '', weather: existing?.weather || '', notes: existing?.notes || '',
+    });
+    setOpenDay(day);
+  };
+
+  const saveSheet = async (day: number) => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const payload = {
+      project_id: projectId, shoot_day: day,
+      general_call: draft.general_call || null, shooting_call: draft.shooting_call || null,
+      estimated_wrap: draft.estimated_wrap || null, weather: draft.weather || null, notes: draft.notes || null,
+      updated_by: user?.id, updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('call_sheets').upsert(payload, { onConflict: 'project_id,shoot_day' });
+    setSaving(false);
+    if (error) { toast(error.message || 'Could not save call sheet', 'error'); return; }
+    toast('Call sheet saved', 'success');
+    loadSheets();
+  };
 
   const dayData = (day: number) => {
     const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
@@ -1044,6 +1565,7 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
   const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
   const printDay = (day: number) => {
     const d = dayData(day);
+    const sheet = sheets[day];
     const w = window.open('', '_blank', 'width=820,height=1060');
     if (!w) return;
     w.document.write(`<!doctype html><html><head><title>${esc(projectTitle)} — Call Sheet Day ${day}</title>
@@ -1052,11 +1574,18 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
       h3{font-size:10px;letter-spacing:2px;color:#666;border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
       .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:#999}</style></head><body>
       <h1>${esc(projectTitle).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}</h2>
+      ${sheet && (sheet.general_call || sheet.shooting_call || sheet.estimated_wrap || sheet.weather) ? `<div class="row" style="margin-bottom:16px">
+        ${sheet.general_call ? `<div class="col"><h3>GENERAL CALL</h3>${esc(sheet.general_call)}</div>` : ''}
+        ${sheet.shooting_call ? `<div class="col"><h3>SHOOTING CALL</h3>${esc(sheet.shooting_call)}</div>` : ''}
+        ${sheet.estimated_wrap ? `<div class="col"><h3>EST. WRAP</h3>${esc(sheet.estimated_wrap)}</div>` : ''}
+        ${sheet.weather ? `<div class="col"><h3>WEATHER</h3>${esc(sheet.weather)}</div>` : ''}
+      </div>` : ''}
       <div class="row"><div class="col"><h3>SCENES (${d.dayScenes.length}${d.pages ? ` · ${d.pages} pg` : ''})</h3>
       ${d.dayScenes.map((s: any) => `<div class="sc"><span class="num">${s.scene_number}.</span> ${esc(s.title)} ${s.time_of_day ? `<span class="num">(${esc(s.time_of_day)})</span>` : ''}</div>`).join('')}</div>
       <div class="col"><h3>LOCATIONS</h3>${d.locations.length ? d.locations.map((l: any) => `<div>${esc(l)}</div>`).join('') : '—'}
       <h3>CAST</h3>${d.cast.length ? esc(d.cast.join(', ')) : '—'}</div>
       <div class="col"><h3>CREW</h3>${crew.length ? crew.map((c: any) => `<div>${esc(c.name || c.profiles?.username || 'Crew')}${c.role ? ` — ${esc(c.role)}` : ''}</div>`).join('') : 'No crew assigned'}</div></div>
+      ${sheet?.notes ? `<h3>NOTES</h3><div>${esc(sheet.notes)}</div>` : ''}
       <script>window.onload=()=>{window.print()}</script></body></html>`);
     w.document.close();
   };
@@ -1072,7 +1601,7 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
           const open = openDay === day;
           return (
             <div key={day} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14, gridColumn: open ? '1 / -1' : 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpenDay(open ? null : day)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => open ? setOpenDay(null) : openDayFor(day)}>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>DAY {day}</span>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{d.dayScenes.length} sc · {d.cast.length} cast{d.pages ? ` · ${d.pages} pg` : ''}</span>
               </div>
@@ -1087,6 +1616,16 @@ function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]
                     <div style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: 1 }}>{projectTitle.toUpperCase()} — CALL SHEET · DAY {day}</div>
                     <button onClick={() => printDay(day)} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#ddd', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', letterSpacing: 1 }}>⎙ PRINT / PDF</button>
                   </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+                    <input placeholder="General call (e.g. 06:00)" value={draft.general_call} onChange={e => setDraft(dr => ({ ...dr, general_call: e.target.value }))} style={{ width: 140, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Shooting call" value={draft.shooting_call} onChange={e => setDraft(dr => ({ ...dr, shooting_call: e.target.value }))} style={{ width: 120, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Est. wrap" value={draft.estimated_wrap} onChange={e => setDraft(dr => ({ ...dr, estimated_wrap: e.target.value }))} style={{ width: 100, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Weather" value={draft.weather} onChange={e => setDraft(dr => ({ ...dr, weather: e.target.value }))} style={{ width: 120, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <input placeholder="Notes" value={draft.notes} onChange={e => setDraft(dr => ({ ...dr, notes: e.target.value }))} style={{ flex: 1, minWidth: 140, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
+                    <button className="link-btn" disabled={saving} onClick={() => saveSheet(day)} style={{ fontSize: 9 }}>{saving ? 'Saving…' : 'Save'}</button>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
                     <div>
                       <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 }}>SCENES</div>
@@ -1359,7 +1898,15 @@ export default function StudioPage() {
   const confirm = useConfirm();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
+  // Production suite is split into three sub-surfaces so the story work, the
+  // shooting schedule and the people no longer share one crowded grid.
+  const [prodTab, setProdTab] = useState<'story' | 'schedule' | 'crew'>('story');
   const [filter, setFilter] = useState<string>('all');
+  // Library tab has a grid (default, matches every other list in the suite)
+  // and a free-canvas view (pan/zoom, drag pins to arbitrary positions) —
+  // the first proof point for a suite-wide pannable-canvas pattern.
+  const [libraryView, setLibraryView] = useState<'grid' | 'canvas'>('grid');
+  const [canvasScale, setCanvasScale] = useState(1);
   const [user, setUser] = useState<any>(null);
   const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [showIntake, setShowIntake] = useState(false);
@@ -1562,6 +2109,7 @@ export default function StudioPage() {
           cast_list: (s.characters || []).join(', ') || null,
           est_duration: `${s.eighths || 1}/8 pg`,
           shoot_day: 1,
+          elements: s.elements || {},
         }));
       if (rows.length === 0) { toast('Schedule is already in sync with the script.', 'info'); return; }
       const { error } = await supabase.from('scenes').insert(rows);
@@ -1572,9 +2120,33 @@ export default function StudioPage() {
     }
   };
 
+  // The real breakdown hinge: re-tag every scene's production elements from
+  // the current script, then roll the unique counts per category into
+  // budget_items — replacing the fake hardcoded breakdown with a live sync.
+  const [syncingBreakdown, setSyncingBreakdown] = useState(false);
+  const syncBreakdown = async () => {
+    if (!activeProject) return;
+    const scenes = (activeProject.scenes || []) as any[];
+    if (scenes.length === 0) { toast('No scenes scheduled yet — import from the screenplay first.', 'info'); return; }
+    setSyncingBreakdown(true);
+    try {
+      const elementsById = await syncSceneElementsFromScript(activeProject.id, scenes);
+      const withElements = scenes.map(s => ({ ...s, elements: elementsById[s.id] ?? s.elements ?? {} }));
+      const synced = await syncBudgetFromSceneElements(activeProject.id, withElements, (activeProject.budget_items || []) as any[]);
+      await refreshProject(activeProject.id);
+      toast(synced.length > 0 ? `Breakdown synced — ${synced.length} budget categor${synced.length === 1 ? 'y' : 'ies'} updated` : 'Breakdown synced — no production elements detected', 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Could not sync breakdown', 'error');
+    } finally {
+      setSyncingBreakdown(false);
+    }
+  };
+
   const [showAddCampaign, setShowAddCampaign] = useState(false);
   const [campaignTitle, setCampaignTitle] = useState('');
   const [campaignPlatform, setCampaignPlatform] = useState('Instagram');
+  const [campaignDemo, setCampaignDemo] = useState('');
+  const [campaignBudget, setCampaignBudget] = useState('');
 
   // Scene ↔ concept references (assets linked to scenes)
   type SceneRef = { id: string; concept_asset_id: string; image_url: string; title: string | null };
@@ -1608,12 +2180,15 @@ export default function StudioPage() {
     if (activeProject) loadSceneRefs(activeProject.id);
   };
 
+  // 'marketing' (Promos) is gated by the active project's Distribution
+  // module toggle — same switch that hides the hub's Distribution tile.
+  const studioModules = getProjectModules(activeProject?.settings);
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
     { id: 'concept', name: 'Concept', icon: Image },
     { id: 'production', name: 'Production', icon: Video },
     { id: 'assets', name: 'Library', icon: Archive },
-    { id: 'marketing', name: 'Promos', icon: Megaphone },
+    ...(studioModules.distribution ? [{ id: 'marketing', name: 'Promos', icon: Megaphone }] : []),
     { id: 'pitch', name: 'Pitch', icon: Maximize2 },
   ];
 
@@ -1656,7 +2231,8 @@ export default function StudioPage() {
             category: a.category || 'Studio',
             url: a.asset_url,
             size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+            dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+            x: a.position_x ?? 0, y: a.position_y ?? 0, width: a.width ?? 300, height: a.height ?? 300,
           })));
 
         } catch (err) {
@@ -1716,7 +2292,8 @@ export default function StudioPage() {
           category: a.category || 'Studio',
           url: a.asset_url,
           size: 'Unknown',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
+          x: (a as any).position_x ?? 0, y: (a as any).position_y ?? 0, width: (a as any).width ?? 300, height: (a as any).height ?? 300,
         })));
       }
     } catch (err) {
@@ -1729,6 +2306,12 @@ export default function StudioPage() {
     try {
       const projectBeats = await getProjectBeats(activeProject.id);
       setBeats(projectBeats);
+      // The Story tab reads activeProject.beats from ProjectContext, not this
+      // component's local `beats` state (which only feeds the Pitch Deck) —
+      // without this, a beat added/deleted here updated the Pitch Deck's
+      // Story Engine slide but left the Story tab itself showing stale data
+      // until some unrelated action happened to call refreshProject().
+      refreshProject(activeProject.id);
     } catch (err) {
       console.error('Error refreshing beats:', err);
     }
@@ -1740,12 +2323,15 @@ export default function StudioPage() {
     if (!title) return;
     const content = prompt('Beat Content:');
     try {
-      await createProjectBeat({
+      const b = await createProjectBeat({
         project_id: activeProject.id,
         title,
         content,
         order_index: beats.length
       });
+      if (b) {
+        await logActivity(`created beat card "${title}"`, 'beat', b.id);
+      }
       refreshBeats();
     } catch (err) {
       console.error('Error adding beat:', err);
@@ -1894,12 +2480,12 @@ export default function StudioPage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 style={{
                   position: 'relative',
-                  height: 32, padding: '0 16px',
+                  height: 34, padding: '0 16px',
                   background: 'transparent', border: 'none', borderRadius: 9999,
                   display: 'flex', alignItems: 'center', gap: 6,
                   color: isActive ? 'var(--fg)' : 'var(--fg-dim)',
                   cursor: 'pointer', transition: 'color 0.25s',
-                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
                   textTransform: 'uppercase',
                 }}
                 whileHover={{ color: 'var(--fg-muted)' } as any}
@@ -2147,19 +2733,46 @@ export default function StudioPage() {
 
         {activeTab === 'production' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
               <div>
                 <SectionLabel text="Pre-Production" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="link-btn" onClick={printSchedule}>⎙ Export Schedule</button>
-                <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>
+                {prodTab === 'schedule' && <button className="link-btn" onClick={printSchedule}>⎙ Export Schedule</button>}
+                {prodTab === 'story' && <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>}
+                {prodTab === 'crew' && <button className="link-btn" onClick={() => setShowRecruit(true)}>+ Recruit Crew</button>}
               </div>
             </div>
 
-            <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40 }}>
-               {/* Beat Board */}
+            {/* Production sub-tabs — Story / Schedule / Crew */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 36, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              {([
+                ['story', 'Story', BookOpen],
+                ['schedule', 'Schedule', Calendar],
+                ['crew', 'Crew', Users],
+              ] as const).map(([key, label, Icon]) => {
+                const active = prodTab === key;
+                return (
+                  <button key={key} onClick={() => setProdTab(key)} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
+                    color: active ? 'var(--fg)' : 'var(--fg-dim)', marginBottom: -1,
+                    fontSize: 13, fontWeight: 600, letterSpacing: 0.5, transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                  >
+                    <Icon size={15} /> {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── STORY ── beat board + character bible */}
+            {prodTab === 'story' && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                <div>
                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                    <BookOpen size={16} /> Beat Board / Outline
@@ -2186,7 +2799,7 @@ export default function StudioPage() {
                  )}
 
                  {(activeProject?.beats && activeProject.beats.length > 0) ? (
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
                      {activeProject.beats.map((beat, i) => (
                        <BeatCard key={beat.id} beat={beat} index={i} onDelete={async (id) => { if (!await confirm('Delete this beat?')) return; await supabase.from('project_beats').delete().eq('id', id); await refreshProject(activeProject.id); }} onPush={handlePushToScript} />
                      ))}
@@ -2196,10 +2809,15 @@ export default function StudioPage() {
                  )}
                </div>
 
-               {/* Staffing & Casting */}
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-                 <div>
-                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
+               {activeProject && <CharacterBible projectId={activeProject.id} userId={user?.id ?? null} concepts={(activeProject.concept_assets || []) as any[]} />}
+             </div>
+            )}
+
+            {/* ── CREW ── cast & crew hub + casting board */}
+            {prodTab === 'crew' && (
+               <div>
+                 <div style={{ maxWidth: 720 }}>
+                   <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
                      <Users size={16} /> Cast & Crew Hub
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -2216,13 +2834,30 @@ export default function StudioPage() {
                       )}
                       <button
                         onClick={() => setShowRecruit(true)}
-                        style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}
+                        style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}
                       >
                         + Recruit Crew / Invite Talent
                       </button>
                     </div>
                  </div>
 
+                 {activeProject && (
+                   <div style={{ marginTop: 44, maxWidth: 'none' }}>
+                     <CastingBoard
+                       projectId={activeProject.id}
+                       userId={user?.id ?? null}
+                       concepts={(activeProject.concept_assets || []) as any[]}
+                       scenes={(activeProject.scenes || []) as any[]}
+                       crew={crewList}
+                     />
+                   </div>
+                 )}
+               </div>
+            )}
+
+            {/* ── SCHEDULE ── scene gantt + call sheets */}
+            {prodTab === 'schedule' && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                  {/* Scene Gantt Timeline (StudioBinder style) */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -2247,6 +2882,7 @@ export default function StudioPage() {
                      <div style={{ display: 'flex', gap: 8 }}>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(215, 52, 11,0.12)', borderColor: 'rgba(215, 52, 11,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
+                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(99,102,241,0.12)', borderColor: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }} onClick={syncBreakdown} disabled={syncingBreakdown} title="Re-tag every scene's production elements from the script and roll them into the budget by category"><Tags size={12}/> {syncingBreakdown ? 'Syncing…' : 'Sync Breakdown → Budget'}</button>
                        <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
                      </div>
                    </div>
@@ -2303,7 +2939,7 @@ export default function StudioPage() {
                                  </select>
                                  <input type="number" min="1" value={editScene.shoot_day} onChange={e => setEditScene(p => ({ ...p, shoot_day: e.target.value }))} style={{ width: 56, padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
                                  <button onClick={saveScene} style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 10 }}>Save</button>
-                                 <button onClick={() => setEditSceneId(null)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                                 <button onClick={() => setEditSceneId(null)} aria-label="Cancel edit" style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
                                </div>
                              ) : (
                              <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -2340,6 +2976,20 @@ export default function StudioPage() {
                                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.5 }}>add concept images to link references</span>
                                )}
                              </div>
+                             {/* Tagged production elements — synced from the script via "Sync Breakdown → Budget" */}
+                             {(() => {
+                               const els = s.elements || {};
+                               const chips = ELEMENT_CATEGORIES.flatMap((cat: ElementCategory) => (els[cat] || []).map((name: string) => ({ cat, name })));
+                               if (chips.length === 0) return null;
+                               const catColor: Record<ElementCategory, string> = { props: '#ffaa00', wardrobe: '#d7340b', vehicles: '#0099ff', sfx: '#a855f7', vfx: '#6366f1' };
+                               return (
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
+                                   {chips.map(({ cat, name }) => (
+                                     <span key={`${cat}-${name}`} title={cat} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: catColor[cat], background: `${catColor[cat]}14`, border: `1px solid ${catColor[cat]}33`, borderRadius: 4, padding: '2px 6px' }}>{name}</span>
+                                   ))}
+                                 </div>
+                               );
+                             })()}
                              {/* Concept picker */}
                              {picking && (
                                <div style={{ marginTop: 8, marginLeft: 60, padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -2362,13 +3012,18 @@ export default function StudioPage() {
                      <EmptyState icon={<Calendar size={28} />} title="No scenes scheduled yet" />
                    )}
                  </div>
-               </div>
 
                {activeProject?.scenes && activeProject.scenes.length > 0 && (
-                 <CallSheets scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
+                 <Stripboard scenes={activeProject.scenes as any[]} />
                )}
-               {activeProject && <CharacterBible projectId={activeProject.id} userId={user?.id ?? null} concepts={(activeProject.concept_assets || []) as any[]} />}
-            </div>
+               {activeProject?.scenes && activeProject.scenes.length > 0 && (
+                 <ShotList projectId={activeProject.id} scenes={activeProject.scenes as any[]} />
+               )}
+               {activeProject?.scenes && activeProject.scenes.length > 0 && (
+                 <CallSheets projectId={activeProject.id} scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
+               )}
+             </div>
+            )}
           </motion.div>
         )}
 
@@ -2378,6 +3033,22 @@ export default function StudioPage() {
               <div>
                 <SectionLabel text="Asset Library" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Digital Assets</h2>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {(['grid', 'canvas'] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setLibraryView(v)}
+                    style={{
+                      padding: '7px 16px',
+                      background: libraryView === v ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${libraryView === v ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
+                      color: libraryView === v ? 'var(--bg)' : 'var(--fg-muted)',
+                      fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
+                      borderRadius: 'var(--radius-full)', cursor: 'pointer', transition: 'all 0.3s',
+                    }}
+                  >{v === 'grid' ? 'Grid' : 'Canvas'}</button>
+                ))}
               </div>
             </div>
 
@@ -2417,6 +3088,33 @@ export default function StudioPage() {
                 title={assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
                 subtitle={assetsList.length === 0 ? 'Use Intake above to track files hosted elsewhere' : undefined}
               />
+            ) : libraryView === 'canvas' ? (
+              <div style={{ height: '70vh', minHeight: 480, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, position: 'relative' }}>
+                <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 99 }}>
+                  {Math.round(canvasScale * 100)}% · scroll to zoom, drag background to pan, drag a pin to move it, double-click to open
+                </div>
+                <PannableCanvas onScaleChange={setCanvasScale}>
+                  {filtered.filter(a => a.type === 'image' && a.url).map(asset => (
+                    <CanvasPin
+                      key={asset.id}
+                      pin={{ id: asset.id, url: asset.url!, title: asset.name, x: asset.x ?? 0, y: asset.y ?? 0, width: asset.width ?? 300, height: asset.height ?? 300 }}
+                      scale={canvasScale}
+                      onMove={(id, x, y) => {
+                        // Local-only, fires every drag frame — no network
+                        // write here, or dragging one pin would fire dozens
+                        // of Supabase updates per second.
+                        setAssetsList(prev => prev.map(a => a.id === id ? { ...a, x, y } : a));
+                      }}
+                      onMoveEnd={(id, x, y) => {
+                        setAssetsList(prev => prev.map(a => a.id === id ? { ...a, x, y } : a));
+                        updateStudioAsset(id, { position_x: Math.round(x), position_y: Math.round(y) }).catch(() => toast('Could not save pin position', 'error'));
+                      }}
+                      onOpen={(id) => { const a = assetsList.find(x => x.id === id); if (a) setReviewAsset(a); }}
+                      onRemove={(id) => { deleteStudioAsset(id).then(refreshAssets); }}
+                    />
+                  ))}
+                </PannableCanvas>
+              </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
                 {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
@@ -2432,7 +3130,7 @@ export default function StudioPage() {
             <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>SELECT A PROJECT TO BUILD A PITCH</div>
           )
         )}
-        {activeTab === 'marketing' && (
+        {activeTab === 'marketing' && studioModules.distribution && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
               <div>
@@ -2446,14 +3144,16 @@ export default function StudioPage() {
                {/* Campaign Planner */}
                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   {showAddCampaign && (
-                    <div style={{ display: 'flex', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
-                      <input autoFocus placeholder="Campaign title" value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+                      <input autoFocus placeholder="Campaign title" value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} style={{ flex: '1 1 160px', padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
                       <select value={campaignPlatform} onChange={e => setCampaignPlatform(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }}>
                         <option>Instagram</option>
                         <option>X / Twitter</option>
                         <option>YouTube</option>
                         <option>TikTok</option>
                       </select>
+                      <input placeholder="Target demographic" value={campaignDemo} onChange={e => setCampaignDemo(e.target.value)} style={{ flex: '1 1 140px', padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
+                      <input type="number" placeholder="Budget $" value={campaignBudget} onChange={e => setCampaignBudget(e.target.value)} style={{ width: 100, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
                       <button
                         className="link-btn"
                         disabled={adding || !campaignTitle.trim()}
@@ -2462,10 +3162,13 @@ export default function StudioPage() {
                           setAdding(true);
                           try {
                             const { data: { user } } = await supabase.auth.getUser();
-                            const { error } = await supabase.from('campaigns').insert({ project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id });
+                            const { error } = await supabase.from('campaigns').insert({
+                              project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id,
+                              target_demographic: campaignDemo.trim() || null, budget: Number(campaignBudget) || 0,
+                            });
                             if (error) { toast(error.message || 'Could not add campaign', 'error'); return; }
                             await refreshProject(activeProject.id);
-                            setCampaignTitle(''); setShowAddCampaign(false);
+                            setCampaignTitle(''); setCampaignDemo(''); setCampaignBudget(''); setShowAddCampaign(false);
                           } finally { setAdding(false); }
                         }}
                       >{adding ? 'Adding…' : 'Add'}</button>
@@ -2484,8 +3187,14 @@ export default function StudioPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                                <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
                                <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
+                               {campaign.target_demographic && <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#a5b4fc' }}>{campaign.target_demographic}</span>}
                             </div>
                             <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
+                            {!!campaign.budget && (
+                              <div style={{ fontSize: 10.5, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', marginTop: 4 }}>
+                                ${Number(campaign.spend || 0).toLocaleString()} spent / ${Number(campaign.budget).toLocaleString()} budget
+                              </div>
+                            )}
                          </div>
                          <button title="Delete campaign" onClick={async () => { if (!await confirm(`Delete campaign "${campaign.title}"?`)) return; await supabase.from('campaigns').delete().eq('id', campaign.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
                       </div>
@@ -2501,6 +3210,8 @@ export default function StudioPage() {
                  const byStatus: Record<string, number> = {};
                  const byPlatform: Record<string, number> = {};
                  camps.forEach(c => { byStatus[c.status || 'planned'] = (byStatus[c.status || 'planned'] || 0) + 1; byPlatform[c.platform || 'Other'] = (byPlatform[c.platform || 'Other'] || 0) + 1; });
+                 const totalCampaignBudget = camps.reduce((s, c) => s + Number(c.budget || 0), 0);
+                 const totalCampaignSpend = camps.reduce((s, c) => s + Number(c.spend || 0), 0);
                  return (
                    <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
                      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Megaphone size={16} /> Campaign Overview</div>
@@ -2519,6 +3230,12 @@ export default function StudioPage() {
                              <span key={pl} style={{ fontFamily: 'var(--mono)', fontSize: 9, color: '#a5b4fc', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 99, padding: '2px 8px' }}>{pl} · {n}</span>
                            ))}
                          </div>
+                         {totalCampaignBudget > 0 && (
+                           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 11 }}>
+                             <span style={{ color: 'var(--fg-dim)' }}>${totalCampaignSpend.toLocaleString()} spent / ${totalCampaignBudget.toLocaleString()} budget</span>
+                             <span style={{ color: totalCampaignSpend > totalCampaignBudget ? '#ff6b6b' : '#10b981' }}>{Math.round((totalCampaignSpend / totalCampaignBudget) * 100)}%</span>
+                           </div>
+                         )}
                        </>
                      )}
                    </div>

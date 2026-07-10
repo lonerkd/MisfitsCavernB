@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 // Context the cursor can adapt to. Each maps to a distinct visual treatment so
 // the pointer tells you what a target does before you click it.
-type CursorMode = 'default' | 'action' | 'text' | 'grab' | 'view' | 'disabled';
+type CursorMode = 'default' | 'action' | 'text' | 'grab' | 'view' | 'disabled' | 'help';
 
 export default function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
@@ -24,6 +24,23 @@ export default function CustomCursor() {
     try { pref = localStorage.getItem('mc_reduce_motion'); } catch {}
     const reduce = pref === 'on' || (pref == null && osReduced);
     document.body.classList.toggle('reduce-motion', reduce);
+  }, []);
+
+  useEffect(() => {
+    const updateTheme = () => {
+      try {
+        const theme = localStorage.getItem('mc_theme') || 'default';
+        // Convert classList to array to safely remove during iteration
+        const classesToRemove = Array.from(document.body.classList).filter(cls => cls.startsWith('theme-'));
+        classesToRemove.forEach(cls => document.body.classList.remove(cls));
+        if (theme !== 'default') {
+          document.body.classList.add(`theme-${theme}`);
+        }
+      } catch {}
+    };
+    updateTheme();
+    window.addEventListener('mc-theme-change', updateTheme);
+    return () => window.removeEventListener('mc-theme-change', updateTheme);
   }, []);
 
   useEffect(() => {
@@ -48,18 +65,40 @@ export default function CustomCursor() {
   // Resolve which mode an element under the pointer should trigger.
   const resolveMode = (el: HTMLElement | null): CursorMode => {
     if (!el) return 'default';
-    if (el.closest('[data-cursor="grab"], [draggable="true"]')) {
-      // A disabled draggable still reads as disabled.
+    
+    // Explicit data attribute overrides
+    const explicit = el.closest('[data-cursor]') as HTMLElement | null;
+    if (explicit) {
+      const val = explicit.dataset.cursor as CursorMode;
+      if (val) return val;
+    }
+
+    // Computed style check (automatic fallback)
+    try {
+      const style = window.getComputedStyle(el);
+      if (style.cursor === 'pointer') {
+        if (el.closest('[disabled], [aria-disabled="true"]')) return 'disabled';
+        return 'action';
+      }
+      if (style.cursor === 'text') return 'text';
+      if (style.cursor === 'grab' || style.cursor === 'grabbing') return 'grab';
+      if (style.cursor === 'help') return 'help';
+      if (style.cursor === 'not-allowed') return 'disabled';
+    } catch {}
+
+    if (el.closest('[draggable="true"]')) {
       if (el.closest('[disabled], [aria-disabled="true"]')) return 'disabled';
       return 'grab';
     }
-    if (el.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"], [data-cursor="text"]')) return 'text';
-    const actionable = el.closest('a, button, [role="button"], [role="link"], select, label[for], [data-cursor-hover], [data-cursor="action"]');
+    if (el.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"]')) return 'text';
+    
+    const actionable = el.closest('a, button, [role="button"], [role="link"], select, label[for], [data-cursor-hover]');
     if (actionable) {
       if (actionable.matches('[disabled], [aria-disabled="true"]') || actionable.closest('[disabled], [aria-disabled="true"]')) return 'disabled';
       return 'action';
     }
-    if (el.closest('[data-cursor="view"], img, video')) return 'view';
+    if (el.closest('img, video')) return 'view';
+    
     return 'default';
   };
 
@@ -81,14 +120,14 @@ export default function CustomCursor() {
     const onUp = () => setClicking(false);
 
     const tick = () => {
-      rx += (mx - rx) * 0.12;
-      ry += (my - ry) * 0.12;
+      rx += (mx - rx) * 0.28;
+      ry += (my - ry) * 0.28;
 
       if (dotRef.current) {
-        dotRef.current.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%)`;
+        dotRef.current.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%) ${clicking ? 'scale(0.6)' : 'scale(1)'}`;
       }
       if (ringRef.current) {
-        ringRef.current.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%)`;
+        ringRef.current.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%) ${clicking ? 'scale(0.82)' : 'scale(1)'}`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -109,7 +148,7 @@ export default function CustomCursor() {
       window.removeEventListener('mouseup', onUp);
       cancelAnimationFrame(raf);
     };
-  }, [visible, enabled]);
+  }, [visible, enabled, clicking]);
 
   if (!enabled) return null;
 
@@ -122,16 +161,17 @@ export default function CustomCursor() {
   // Ring geometry + treatment per mode.
   const ring = (() => {
     switch (mode) {
-      case 'action': return { size: 44, border: `1px solid ${accent}`, radius: '50%', dash: false, bg: 'transparent' };
-      case 'grab': return { size: 40, border: `1.5px dashed ${accent}`, radius: '10px', dash: true, bg: 'transparent' };
-      case 'view': return { size: 58, border: '1px solid rgba(224, 221, 174,0.5)', radius: '50%', dash: false, bg: 'rgba(224, 221, 174,0.04)' };
-      case 'disabled': return { size: 30, border: '1.5px solid #ff5c5c', radius: '50%', dash: false, bg: 'transparent' };
-      case 'text': return { size: 0, border: '1px solid transparent', radius: '50%', dash: false, bg: 'transparent' };
-      default: return { size: clicking ? 28 : 36, border: '1px solid rgba(224, 221, 174,0.35)', radius: '50%', dash: false, bg: 'transparent' };
+      case 'action': return { size: 48, border: `1px solid ${accent}`, radius: '50%', bg: 'rgba(255,255,255,0.08)', backdrop: 'blur(2px)' };
+      case 'grab': return { size: 36, border: `2px solid ${accent}`, radius: '8px', bg: 'rgba(255,255,255,0.15)', backdrop: 'blur(4px)' };
+      case 'view': return { size: 60, border: '1px solid rgba(255,255,255,0.4)', radius: '50%', bg: 'rgba(0,0,0,0.2)', backdrop: 'blur(4px)' };
+      case 'help': return { size: 42, border: `1.5px dotted ${accent}`, radius: '50%', bg: 'rgba(255,255,255,0.05)', backdrop: 'none' };
+      case 'disabled': return { size: 30, border: '1.5px solid #ff5c5c', radius: '50%', bg: 'rgba(255, 92, 92, 0.1)', backdrop: 'none' };
+      case 'text': return { size: 0, border: '1px solid transparent', radius: '50%', bg: 'transparent', backdrop: 'none' };
+      default: return { size: clicking ? 24 : 34, border: '1.5px solid rgba(255,255,255,0.3)', radius: '50%', bg: clicking ? 'rgba(255,255,255,0.1)' : 'transparent', backdrop: 'none' };
     }
   })();
 
-  const label = mode === 'grab' ? 'DRAG' : mode === 'view' ? 'VIEW' : '';
+  const label = mode === 'grab' ? 'DRAG' : mode === 'view' ? 'VIEW' : mode === 'help' ? '?' : '';
 
   return (
     <>
@@ -148,9 +188,10 @@ export default function CustomCursor() {
           background: dotColor,
           pointerEvents: 'none',
           zIndex: 99999,
+          mixBlendMode: isText ? 'normal' : 'difference',
           opacity: visible ? 1 : 0,
-          transition: 'width 0.15s, height 0.15s, background 0.2s, border-radius 0.15s, opacity 0.3s',
-          willChange: 'transform',
+          transition: 'width 0.15s cubic-bezier(0.16, 1, 0.3, 1), height 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, border-radius 0.15s, opacity 0.3s',
+          willChange: 'transform, width, height',
         }}
       />
       {/* Lagging ring */}
@@ -165,14 +206,17 @@ export default function CustomCursor() {
           borderRadius: ring.radius,
           border: ring.border,
           background: ring.bg,
+          backdropFilter: ring.backdrop,
+          WebkitBackdropFilter: ring.backdrop,
           pointerEvents: 'none',
           zIndex: 99998,
+          mixBlendMode: 'difference',
           opacity: visible && ring.size > 0 ? 1 : 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'width 0.2s, height 0.2s, border-color 0.2s, border-radius 0.2s, background 0.2s, opacity 0.3s',
-          willChange: 'transform',
+          transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), height 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, border-radius 0.2s, background 0.2s, opacity 0.3s',
+          willChange: 'transform, width, height',
         }}
       >
         {label && (

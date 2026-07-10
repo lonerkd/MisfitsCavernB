@@ -121,3 +121,28 @@ export async function canManageChannel(channelId: string): Promise<boolean> {
   const { data } = await supabase.rpc('can_manage_channel', { cid: channelId });
   return !!data;
 }
+
+// Discord webhook bridge: discord_integrations has no SELECT policy, so the
+// only thing the UI can ever learn is whether one is set (via the
+// SECURITY DEFINER has_discord_webhook helper) — never the URL itself.
+export async function hasDiscordWebhook(channelId: string): Promise<boolean> {
+  const { data } = await supabase.rpc('has_discord_webhook', { cid: channelId });
+  return !!data;
+}
+export async function setDiscordWebhook(channelId: string, webhookUrl: string): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  // discord_integrations has no SELECT policy, so there's no way to tell
+  // insert-vs-update apart from the client side (a plain upsert's internal
+  // conflict check and update() both need the row visible under standard
+  // RLS SELECT semantics, which doesn't exist here). Delete-then-insert only
+  // ever needs the DELETE and INSERT policies, both of which are real.
+  await supabase.from('discord_integrations').delete().eq('channel_id', channelId);
+  const { error } = await supabase.from('discord_integrations').insert({
+    channel_id: channelId, webhook_url: webhookUrl, created_by: user?.id,
+  });
+  return error?.message || null;
+}
+export async function removeDiscordWebhook(channelId: string): Promise<string | null> {
+  const { error } = await supabase.from('discord_integrations').delete().eq('channel_id', channelId);
+  return error?.message || null;
+}

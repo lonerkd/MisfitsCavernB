@@ -248,7 +248,19 @@ CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid(
 -- Membership-check helpers. SECURITY DEFINER bypasses RLS on the referenced
 -- tables, which prevents the projects <-> project_crew policies from recursing
 -- into each other (Postgres error 42P17: infinite recursion).
-CREATE OR REPLACE FUNCTION public.is_project_creator(pid uuid)
+--
+-- Defined in `internal`, not `public`: PostgREST auto-exposes every function
+-- granted EXECUTE in an exposed schema as a `/rest/v1/rpc/<fn>` endpoint, and
+-- these two (plus can_access_script below) exist purely to be called from
+-- inside RLS policy USING/WITH CHECK clauses, never from the client — left
+-- in `public` they'd let any signed-in caller probe arbitrary project IDs
+-- directly. Moving schema doesn't affect existing policies (Postgres
+-- resolves policy expressions by function OID, not by re-parsing a
+-- schema-qualified name), and EXECUTE stays granted to `authenticated`
+-- since RLS evaluation still needs it.
+CREATE SCHEMA IF NOT EXISTS internal;
+
+CREATE OR REPLACE FUNCTION internal.is_project_creator(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public
@@ -256,7 +268,7 @@ AS $$
   SELECT EXISTS (SELECT 1 FROM projects WHERE id = pid AND creator_id = auth.uid());
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_project_member(pid uuid)
+CREATE OR REPLACE FUNCTION internal.is_project_member(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public
@@ -266,7 +278,7 @@ $$;
 
 -- RLS Policies: Projects
 CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
-  creator_id = auth.uid() OR public.is_project_member(id)
+  creator_id = auth.uid() OR internal.is_project_member(id)
 );
 CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
@@ -274,16 +286,16 @@ CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_i
 
 -- RLS Policies: Project crew (uses is_project_creator to avoid recursion)
 CREATE POLICY "Project crew viewable by project members" ON project_crew FOR SELECT USING (
-  user_id = auth.uid() OR public.is_project_creator(project_id)
+  user_id = auth.uid() OR internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can manage crew" ON project_crew FOR INSERT WITH CHECK (
-  public.is_project_creator(project_id)
+  internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can update crew" ON project_crew FOR UPDATE USING (
-  public.is_project_creator(project_id)
+  internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USING (
-  public.is_project_creator(project_id) OR user_id = auth.uid()
+  internal.is_project_creator(project_id) OR user_id = auth.uid()
 );
 
 -- NOTE (performance): on the live DB, migration
@@ -311,7 +323,7 @@ CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CH
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
   created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
-  (project_id IS NOT NULL AND (public.is_project_creator(project_id) OR public.is_project_member(project_id)))
+  (project_id IS NOT NULL AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
 );
 CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
 
@@ -329,17 +341,17 @@ ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
 -- the owning project. Shared by script_metadata and script_revisions (migration
 -- tighten_script_revisions_rls) so personal scripts are NOT open to every
 -- authenticated user.
-CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
+CREATE OR REPLACE FUNCTION internal.can_access_script(sid uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.scripts s WHERE s.id = sid AND (
       s.created_by = auth.uid() OR s.last_edited_by = auth.uid()
-      OR (s.project_id IS NOT NULL AND (public.is_project_creator(s.project_id) OR public.is_project_member(s.project_id)))
+      OR (s.project_id IS NOT NULL AND (internal.is_project_creator(s.project_id) OR internal.is_project_member(s.project_id)))
     )
   );
 $$;
-CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (public.can_access_script(script_id));
-CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (public.can_access_script(script_id)) WITH CHECK (public.can_access_script(script_id));
+CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (internal.can_access_script(script_id));
+CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (internal.can_access_script(script_id)) WITH CHECK (internal.can_access_script(script_id));
 
 -- RLS Policies: Jobs
 CREATE POLICY "Jobs publicly readable" ON jobs FOR SELECT USING (status = 'open' OR created_by = auth.uid());
@@ -505,11 +517,55 @@ CREATE TABLE IF NOT EXISTS scene_references (
 );
 ALTER TABLE scene_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "scene_refs view" ON scene_references FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+
+-- Character Bible: one row per character, shared by ScriptOS's Character
+-- Report (lib/scriptos/bible.ts) and Studio's Casting Board/look-board
+-- (app/studio/page.tsx) — both read and write this same table so a
+-- character developed in either surface shows up in the other, instead of
+-- silently diverging into two separate bibles. Applied live directly against
+-- Supabase; backfilled here since this file had never caught up with it.
+CREATE TABLE IF NOT EXISTS script_characters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  full_name TEXT,
+  age TEXT,
+  description TEXT,
+  backstory TEXT,
+  motivation TEXT,
+  arc TEXT,
+  relationships TEXT,
+  notes TEXT,
+  color TEXT DEFAULT '#ff3c00',
+  updated_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  -- Also live in production under this exact name, confirmed via
+  -- pg_constraint — backfilled here for the same reason as the table
+  -- itself. This is the hard backstop for saveCharacterProfiles's
+  -- per-script save-chain serialization (lib/scriptos/bible.ts): if
+  -- anything ever races an insert for the same (script_id, name) despite
+  -- the serialization, this constraint turns a silent duplicate row into
+  -- a 23505 error the caller already knows how to recover from.
+  CONSTRAINT script_characters_script_id_name_key UNIQUE (script_id, name)
+);
+ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Script members can manage characters" ON script_characters FOR ALL
+  USING (script_id IN (
+    SELECT scripts.id FROM scripts WHERE (
+      scripts.project_id IS NULL
+      OR scripts.project_id IN (
+        SELECT projects.id FROM projects WHERE projects.creator_id = auth.uid()
+        UNION
+        SELECT project_crew.project_id FROM project_crew WHERE project_crew.user_id = auth.uid()
+      )
+    )
+  ));
 
 -- Casting/look references: link concept-board images to characters
 CREATE TABLE IF NOT EXISTS character_references (
@@ -523,14 +579,41 @@ CREATE TABLE IF NOT EXISTS character_references (
 );
 ALTER TABLE character_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "char_refs view" ON character_references FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "char_refs insert" ON character_references FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Scene shoot status tracking
 ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
+
+-- Per-scene production elements (props/wardrobe/vehicles/sfx/vfx tagged from the
+-- script) — the real script -> schedule -> budget breakdown hinge.
+ALTER TABLE scenes ADD COLUMN IF NOT EXISTS elements JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- ScriptOS margin gutter: typed, line-anchored annotations on a script. Each
+-- one conceptually "routes to" its owning department (shot -> shot list,
+-- beat -> board, todo -> call sheet/props) — the routing is a label for now,
+-- not yet a write into those tables.
+CREATE TABLE IF NOT EXISTS script_annotations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  line_index INT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('shot', 'beat', 'note', 'revision', 'reference', 'todo')),
+  text TEXT NOT NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_script_annotations_script ON script_annotations(script_id);
+ALTER TABLE script_annotations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "script_annotations view" ON script_annotations FOR SELECT TO authenticated
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "script_annotations insert" ON script_annotations FOR INSERT TO authenticated
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "script_annotations delete" ON script_annotations FOR DELETE TO authenticated
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Notifications: per-user feed (bell). Insert allowed for any authenticated
 -- user so actors can notify recipients; read/update/delete scoped to owner.
@@ -611,8 +694,507 @@ CREATE TABLE IF NOT EXISTS channel_members (
 );
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES channels(id) ON DELETE CASCADE;
 
+-- Discord webhook bridge: one-way (Lounge -> Discord) announce mirror for a
+-- channel. The webhook URL is a bearer credential — anyone holding it can
+-- post to the Discord channel as the configured bot, so it must never reach
+-- a browser. Deliberately has NO select policy at all: a manager can set or
+-- replace the webhook (insert/update) but can't read it back, and no other
+-- code path selects from this table except the server-side API route
+-- (app/api/discord/notify), which uses the service-role key to bypass RLS
+-- entirely rather than relying on a policy that would otherwise have to
+-- grant some authenticated role read access.
+CREATE TABLE IF NOT EXISTS discord_integrations (
+  channel_id UUID PRIMARY KEY REFERENCES channels(id) ON DELETE CASCADE,
+  webhook_url TEXT NOT NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE discord_integrations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "discord webhook set by channel managers" ON discord_integrations FOR INSERT TO authenticated
+  WITH CHECK (can_manage_channel(channel_id) AND created_by = auth.uid());
+CREATE POLICY "discord webhook updated by channel managers" ON discord_integrations FOR UPDATE TO authenticated
+  USING (can_manage_channel(channel_id)) WITH CHECK (can_manage_channel(channel_id));
+CREATE POLICY "discord webhook removed by channel managers" ON discord_integrations FOR DELETE TO authenticated
+  USING (can_manage_channel(channel_id));
+-- Existence-only check so the UI can show "Connected" / "Not connected"
+-- without ever selecting the webhook_url column itself.
+CREATE OR REPLACE FUNCTION has_discord_webhook(cid uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM discord_integrations WHERE channel_id = cid);
+$$;
+GRANT EXECUTE ON FUNCTION has_discord_webhook(uuid) TO authenticated;
+
 -- SECURITY DEFINER permission helpers: can_view_channel / can_post_channel /
 -- can_manage_channel. View = global, project owner, project crew (public), or
 -- explicit member (private). Post gated by post_policy (viewers/members/
 -- managers). Manage = project owner or channel member with can_manage.
 -- (Full definitions applied via migration project_channels_system.)
+
+-- Root cause (found while verifying Phase 5's auto-channel-creation against
+-- the live DB with a real account): the original channels INSERT policy's
+-- WITH CHECK required created_by = auth.uid() in addition to
+-- is_project_creator(project_id). Both clauses independently proved true in
+-- isolation, yet the INSERT still failed for every real user, including a
+-- project's own creator.
+--
+-- The deeper bug lived in can_view_channel() (the SELECT/USING policy):
+-- INSERT ... RETURNING (what supabase-js's .select().single() generates)
+-- requires Postgres to re-check the SELECT policy against the row just
+-- inserted, within the SAME command as the INSERT. Under MVCC command-counter
+-- rules, a statement's own just-inserted row isn't visible to nested
+-- re-queries of the same table within that command, so can_view_channel's
+-- internal lookup never found the row, even though the identical check
+-- against the same row succeeds an instant later as its own statement. This
+-- wasn't specific to new code: createChannel() has always used
+-- .select().single(), so the Lounge's own "+ New Channel" button had likely
+-- been silently broken for every real user. Fixed by (1) simplifying the
+-- INSERT policy below to the same proven creator-or-crew pattern already
+-- working for project_crew and character_castings, dropping the redundant
+-- created_by self-check, and (2) createChannel() in lib/supabase/channels.ts
+-- inserting with Prefer: return=minimal then doing a separate follow-up
+-- SELECT, instead of chaining .select().single() onto the insert.
+DROP POLICY IF EXISTS "channels create by project owner" ON channels;
+CREATE POLICY "channels create by project creator or crew" ON channels FOR INSERT
+  WITH CHECK (
+    project_id IS NOT NULL
+    AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  );
+
+-- Timeline and budget: ProjectContext.tsx queried these since the project hub
+-- was built, but they were never defined above, so crew/schedule/budget data
+-- on project pages silently came back empty until this was applied.
+CREATE TABLE IF NOT EXISTS timeline_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  phase TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  completion INT DEFAULT 0 CHECK (completion >= 0 AND completion <= 100),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS budget_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  description TEXT,
+  amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+  actual_cost DECIMAL(12, 2),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_timeline_items_project ON timeline_items(project_id);
+CREATE INDEX IF NOT EXISTS idx_budget_items_project ON budget_items(project_id);
+ALTER TABLE timeline_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE budget_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Timeline members can view" ON timeline_items FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Timeline members can manage" ON timeline_items FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Budget members can view" ON budget_items FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Budget members can manage" ON budget_items FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON timeline_items
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON budget_items
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Studio's Beat Board, Concept Board, Scene scheduling, and Marketing Hub
+-- backing tables. These previously rendered static fabricated data with no
+-- way to persist anything a user added. (NOTE: scene_references and
+-- character_references above reference scenes/concept_assets — this section
+-- must exist before those for a from-scratch run; pre-existing file-order
+-- issue, not fixed here to avoid reshuffling unrelated content.)
+CREATE TABLE IF NOT EXISTS beats (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT DEFAULT '',
+  color TEXT,
+  position INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS concept_assets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT,
+  image_url TEXT NOT NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS scenes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  scene_number INT NOT NULL,
+  title TEXT NOT NULL,
+  time_of_day TEXT DEFAULT 'DAY' CHECK (time_of_day IN ('DAY', 'NIGHT', 'DAWN', 'DUSK')),
+  location TEXT,
+  cast_list TEXT,
+  est_duration TEXT,
+  shoot_day INT DEFAULT 1,
+  -- Per-scene production elements ({ props: string[], wardrobe: string[], vehicles: string[],
+  -- sfx: string[], vfx: string[] }), the real script -> schedule -> budget breakdown hinge.
+  elements JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS campaigns (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  status TEXT DEFAULT 'drafting' CHECK (status IN ('drafting', 'in-review', 'scheduled', 'live')),
+  reach_target TEXT,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_beats_project ON beats(project_id);
+CREATE INDEX IF NOT EXISTS idx_concept_assets_project ON concept_assets(project_id);
+CREATE INDEX IF NOT EXISTS idx_scenes_project ON scenes(project_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_project ON campaigns(project_id);
+ALTER TABLE beats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE concept_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scenes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Beats: project members can view" ON beats FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Beats: project members can manage" ON beats FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Concept assets: project members can view" ON concept_assets FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Concept assets: project members can manage" ON concept_assets FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Scenes: project members can view" ON scenes FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Scenes: project members can manage" ON scenes FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Campaigns: project members can view" ON campaigns FOR SELECT USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+CREATE POLICY "Campaigns: project members can manage" ON campaigns FOR ALL USING (
+  project_id IN (
+    SELECT id FROM projects WHERE creator_id = auth.uid()
+    UNION
+    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
+  )
+);
+
+-- Link Jobs postings back to the Budget line item they were posted from, so
+-- Studio/Projects can show "posted as job" status on a budget row and avoid
+-- accidental duplicate postings. Part of the Jobs <-> Crew <-> Budget
+-- interconnection (accepting a job application also creates real
+-- project_crew membership — see app/jobs/[id]/page.tsx).
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS budget_item_id UUID REFERENCES budget_items(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_jobs_budget_item ON jobs(budget_item_id);
+
+-- Real casting links between screenplay characters and crew members. This is
+-- a separate, non-overlapping concept from script_characters (character
+-- development data) and character_references (look-board images) above —
+-- casting is "who plays this role," keyed by character_name rather than
+-- character_id, so it stays valid even before a character has a bible row.
+-- (Earlier revisions of this file incorrectly claimed script_characters/
+-- character_references were dead JSONB-superseded tables with 0 rows; they
+-- were live in the database the whole time, just missing their CREATE TABLE
+-- statements here — see script_characters above for the correction.)
+CREATE TABLE IF NOT EXISTS character_castings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  character_name TEXT NOT NULL,
+  crew_user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, character_name)
+);
+CREATE INDEX IF NOT EXISTS idx_character_castings_project ON character_castings(project_id);
+CREATE INDEX IF NOT EXISTS idx_character_castings_crew_user ON character_castings(crew_user_id);
+ALTER TABLE character_castings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Castings viewable by project creator or crew" ON character_castings FOR SELECT
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "Castings writable by project creator or crew" ON character_castings FOR ALL
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+
+-- Shot List: per-scene camera setups. The redesign spec's ScriptOS margin
+-- annotations (script_annotations, type='shot') claimed to "route to" a
+-- Shot List that never existed anywhere in the app -- this is that
+-- destination. shot_number is a free-form label (e.g. "12A") rather than a
+-- strict integer since shot renumbering/insertion during scouting is normal
+-- shorthand practice (12, 12A, 12B...), same reasoning as scene numbering
+-- elsewhere in this schema.
+CREATE TABLE IF NOT EXISTS shots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  scene_id UUID NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
+  shot_number TEXT NOT NULL,
+  shot_size TEXT,
+  angle TEXT,
+  movement TEXT,
+  lens TEXT,
+  description TEXT,
+  status TEXT DEFAULT 'planned' CHECK (status IN ('planned', 'shot', 'omitted')),
+  order_index INT DEFAULT 0,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_shots_scene ON shots(scene_id);
+CREATE INDEX IF NOT EXISTS idx_shots_project ON shots(project_id);
+ALTER TABLE shots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Shots viewable by project creator or crew" ON shots FOR SELECT
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "Shots writable by project creator or crew" ON shots FOR ALL
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+
+-- Call Sheet: previously a fully derived, read-only view in Studio's
+-- Schedule tab (grouping scenes by shoot_day with no persistence at all) --
+-- this adds the real per-day header (call times, weather, notes) and
+-- per-person call times the derived view never had anywhere to save. One
+-- call_sheets row per shoot day; call_sheet_calls holds individual crew/cast
+-- call times for that day, cross-referencing project_crew (crew) and
+-- character_castings (cast, via character_name -> crew_user_id).
+CREATE TABLE IF NOT EXISTS call_sheets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  shoot_day INT NOT NULL,
+  shoot_date DATE,
+  general_call TIME,
+  shooting_call TIME,
+  estimated_wrap TIME,
+  location_address TEXT,
+  weather TEXT,
+  notes TEXT,
+  updated_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, shoot_day)
+);
+CREATE TABLE IF NOT EXISTS call_sheet_calls (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  call_sheet_id UUID NOT NULL REFERENCES call_sheets(id) ON DELETE CASCADE,
+  crew_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  character_name TEXT,
+  role_label TEXT,
+  call_time TIME,
+  remarks TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_call_sheets_project ON call_sheets(project_id);
+CREATE INDEX IF NOT EXISTS idx_call_sheet_calls_sheet ON call_sheet_calls(call_sheet_id);
+ALTER TABLE call_sheets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE call_sheet_calls ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Call sheets viewable by project creator or crew" ON call_sheets FOR SELECT
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "Call sheets writable by project creator or crew" ON call_sheets FOR ALL
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+-- call_sheet_calls has no project_id of its own -- gate through the parent
+-- call_sheets row's project, same indirection pattern as scene_references
+-- gating through scenes elsewhere in this file.
+CREATE POLICY "Call sheet calls viewable by project creator or crew" ON call_sheet_calls FOR SELECT
+  USING (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
+CREATE POLICY "Call sheet calls writable by project creator or crew" ON call_sheet_calls FOR ALL
+  USING (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
+  WITH CHECK (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
+
+-- Link portfolio_projects back to their originating production project.
+-- Without this, the Showcase tab on a project has no real table to
+-- read/write to — portfolio_projects exists only as a standalone per-user
+-- collection. Adding source_project_id lets a project's finished work
+-- surface in both places.
+ALTER TABLE portfolio_projects
+  ADD COLUMN IF NOT EXISTS source_project_id UUID REFERENCES projects(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_portfolio_projects_source ON portfolio_projects(source_project_id);
+
+-- Persist Spotify OAuth tokens per-account instead of localStorage only.
+-- Every other piece of state in this suite is tied to the Supabase account
+-- and survives across devices/browsers; Spotify auth was the one exception,
+-- requiring a full reconnect on every new device. This table lets
+-- lib/spotify/auth.ts read/write a real, RLS-protected per-user record.
+CREATE TABLE IF NOT EXISTS spotify_connections (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expires_at BIGINT NOT NULL, -- ms epoch, matches Date.now()-based math already used client-side
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE spotify_connections ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own spotify connection" ON spotify_connections
+  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own spotify connection" ON spotify_connections
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own spotify connection" ON spotify_connections
+  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own spotify connection" ON spotify_connections
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Pitch-board blocks for portfolio projects: a project can be assembled into
+-- an ordered, drag-and-drop board of blocks (concept art, scenes, budget,
+-- crew, script excerpts, custom text/media) that doubles as a public
+-- showcase and a pitch deck. Blocks store SNAPSHOTS, not references: the
+-- public share page (/p/[token]) is viewed by anonymous visitors who, by
+-- RLS, cannot read the source project tables (concept_assets/scenes/
+-- budget_items/project_crew are creator/crew-only), so each block copies the
+-- data it needs (image URL, scene text, budget totals, crew name+role) into
+-- this publicly-readable table at add-time — the same pattern
+-- portfolio_media already uses (open read, owner-only write; portfolio
+-- sharing is gated in-app via share_token, not an is_public column).
+CREATE TABLE IF NOT EXISTS portfolio_blocks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  portfolio_project_id UUID NOT NULL REFERENCES portfolio_projects(id) ON DELETE CASCADE,
+  position INT NOT NULL DEFAULT 0,
+  block_type TEXT NOT NULL CHECK (block_type IN
+    ('cover','concept','scene','budget','crew','script','text','media')),
+  title TEXT,
+  body TEXT,
+  image_url TEXT,
+  meta JSONB,
+  source_ref_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS portfolio_blocks_project_idx
+  ON portfolio_blocks(portfolio_project_id, position);
+ALTER TABLE portfolio_blocks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Portfolio blocks readable" ON portfolio_blocks FOR SELECT USING (true);
+CREATE POLICY "Portfolio blocks owner write" ON portfolio_blocks FOR ALL USING (
+  portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
+
+-- Per-project settings (default script format override + ecosystem module
+-- visibility toggles — ScriptOS/Studio/Lounge/Portfolio/Distribution can
+-- each be switched off per project, hiding that department's hub tile and
+-- taskbar icon without touching its underlying data) and a lightweight
+-- festival-submissions tracker. Both are JSONB on `projects` rather than
+-- new relational tables — settings is a small fixed shape read as a whole,
+-- and festival submissions have no cross-table relations of their own, so
+-- either a real table would be pure ceremony.
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{"modules":{"scriptos":true,"studio":true,"lounge":true,"portfolio":true,"distribution":true}}'::jsonb;
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS festival_submissions JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- Campaign budget tracking: target demographic + planned budget/actual spend
+-- + a flight window, so the Studio Promos tab's Campaign Overview can show
+-- real spend-vs-budget instead of just counts.
+ALTER TABLE campaigns
+  ADD COLUMN IF NOT EXISTS target_demographic TEXT,
+  ADD COLUMN IF NOT EXISTS budget NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS spend NUMERIC DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS start_date DATE,
+  ADD COLUMN IF NOT EXISTS end_date DATE;
+
+-- Schema debt cleanup (redesign spec section 3): the codebase ended up with
+-- two duplicate-purpose table pairs from earlier passes. Checked every call
+-- site in app/ and lib/ before touching either:
+--   - `beats` vs `project_beats`      -> project_beats is the one every
+--     Studio/Editor code path reads and writes (getProjectBeats/
+--     createProjectBeat/deleteProjectBeat in lib/supabase/studio.ts,
+--     ProjectContext's beats field). `beats` has zero references anywhere
+--     in app/ or lib/ — dead since whichever earlier pass introduced
+--     project_beats without migrating off the original.
+--   - `campaigns` vs `marketing_campaigns` -> campaigns is the one Studio's
+--     Promos tab and the Portfolio Distribution view both read/write.
+--     marketing_campaigns has zero references anywhere in app/ or lib/.
+-- Both dead tables have no rows referencing them from other tables (no
+-- inbound foreign keys), so dropping is safe with no migration step needed.
+DROP TABLE IF EXISTS beats;
+DROP TABLE IF EXISTS marketing_campaigns;
+
+-- NOT done here, deliberately: consolidating studio_assets/studio_boards
+-- (owner-scoped moodboards, lib/supabase/studio.ts) onto concept_assets
+-- (project-shared, used by Studio's scene/character reference pickers)
+-- is real product behavior change, not a rename — it would make every
+-- existing Concept Board visible to the whole crew instead of just its
+-- creator, which may or may not be wanted for personal moodboards vs
+-- shared references. Needs a product decision, not a silent migration.
+-- Character data (script_characters bible + character_castings +
+-- character_references) previously had a real split: ScriptOS's Character
+-- Report wrote profiles into script_metadata.character_bible (JSONB) while
+-- Studio's Casting Board read/wrote script_characters (relational) — two
+-- bibles that never saw each other's data, with script_characters sitting
+-- empty in production despite Studio's UI acting like it was populated.
+-- Fixed by moving lib/scriptos/bible.ts onto script_characters so both
+-- surfaces share the one table; character_castings (cast assignment) and
+-- character_references (look-board images) were already correctly scoped
+-- to their distinct purposes and needed no change.
+
+-- SFX Library (Soundtrack)
+CREATE TABLE IF NOT EXISTS sfx_assets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  audio_url TEXT NOT NULL,
+  duration INT,
+  tags TEXT[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE sfx_assets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ""SFX assets viewable by everyone"" ON sfx_assets FOR SELECT USING (true);
+CREATE POLICY ""SFX assets owner only insert"" ON sfx_assets FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY ""SFX assets owner only update"" ON sfx_assets FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY ""SFX assets owner only delete"" ON sfx_assets FOR DELETE USING (user_id = auth.uid());
+
+INSERT INTO storage.buckets (id, name, public) VALUES ('sfx-library', 'sfx-library', true) ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY ""SFX files viewable by everyone"" ON storage.objects FOR SELECT USING (bucket_id = 'sfx-library');
+CREATE POLICY ""SFX files insertable by authenticated users"" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'sfx-library' AND auth.role() = 'authenticated');

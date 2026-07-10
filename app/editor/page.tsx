@@ -15,17 +15,23 @@ import { saveScript, getAllScripts, createNewScript, importScriptFromText, type 
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { saveTitlePage, getDefaultTitlePage, type TitlePage, getTitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine, LineType } from '@/types/screenplay';
+import { saveCharacterProfiles, mergeProfiles, type CharacterProfile, getCharacterProfiles } from '@/lib/scriptos/bible';
+import type { ScriptLine, LineType, StashItem } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
+import { usePresence } from '@/lib/context/PresenceContext';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
+import { resolveLineToSceneId } from '@/lib/supabase/breakdown';
+import { getProjectBeats, createProjectBeat } from '@/lib/supabase/studio';
+import { logAuditAction } from '@/lib/supabase/audit';
+import { logActivity } from '@/lib/supabase/activity';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
@@ -36,7 +42,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
-import { EditorRightPanels } from '@/components/editor/EditorSidePanels';
+import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
@@ -125,6 +131,19 @@ const PLACEHOLDER = `Start writing — try "FADE IN:" or "INT. LOCATION - DAY"`;
 // Standard screenplay transitions offered by the editor's autocomplete.
 const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
 
+// Status bar copy: names the current line's element and hints at the
+// conventional next keystroke, the way Highland/Fountain-style editors do.
+const ELEMENT_STATUS: Record<string, { label: string; hint: string }> = {
+  slug: { label: 'Scene Heading', hint: 'Enter → Action' },
+  action: { label: 'Action', hint: 'Enter → Action · Tab → Character' },
+  character: { label: 'Character', hint: 'Enter → Dialogue' },
+  dialogue: { label: 'Dialogue', hint: 'Enter → Character · Tab → Parenthetical' },
+  parenthetical: { label: 'Parenthetical', hint: 'Enter → Dialogue' },
+  transition: { label: 'Transition', hint: 'Enter → Scene Heading' },
+  shot: { label: 'Shot', hint: 'Enter → Action' },
+  empty: { label: 'New Line', hint: 'Tab → cycle element type' },
+};
+
 // Undo/redo history depth.
 const MAX_HISTORY = 50;
 
@@ -162,7 +181,7 @@ function transformLineForType(text: string, type: LineType): string {
 // COMPONENTS
 // ============================================================================
 
-function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; index: number; nightModePreview: boolean }) {
+function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean }) {
   const style: React.CSSProperties = {
     fontFamily: 'Courier Prime, Courier, monospace',
     fontSize: 14,
@@ -192,7 +211,18 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
   const contd = line.meta?.isContinued;
   
   if (line.type === 'slug') {
-    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>{displayContent}</div>;
+    return (
+      <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
+        {/* Scene numbers in both margins — real screenplay convention */}
+        {showSceneNumbers && sceneNumber != null && (
+          <>
+            <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
+            <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
+          </>
+        )}
+        {displayContent}
+      </div>
+    );
   }
   if (line.type === 'character') {
     const name = line.meta?.isDualDialogue ? displayContent.replace(/^\^/, '') : displayContent;
@@ -216,8 +246,10 @@ function LinePreview({ line, index, nightModePreview }: { line: ScriptLine; inde
 // ============================================================================
 
 export default function EditorPage() {
-  useRequireAuth();
+  const { isLoading } = useRequireAuth();
   const { activeProject } = useProject();
+  if (isLoading) return null;
+  const { updateScenePresence } = usePresence();
   const { playUri } = useSpotify();
   
   const [projectAudioRefs, setProjectAudioRefs] = useState<any[]>([]);
@@ -232,6 +264,15 @@ export default function EditorPage() {
     }
   }, [activeProject?.id]);
 
+  // Margin gutter: typed, line-anchored annotations (shot/beat/note/revision/
+  // reference/todo) tied to the current script, each conceptually routing to
+  // its owning department elsewhere in the suite.
+  const [annotations, setAnnotations] = useState<ScriptAnnotation[]>([]);
+  const [annotationDraft, setAnnotationDraft] = useState<{ line: number; type: AnnotationType; text: string } | null>(null);
+  const reloadAnnotations = useCallback((scriptId: string) => {
+    listAnnotations(scriptId).then(setAnnotations).catch(() => setAnnotations([]));
+  }, []);
+
   const playAudioRef = useCallback((ref: any) => {
     if (ref.reference_type === 'spotify') playUri(ref.uri);
     else if (ref.reference_type === 'custom_upload') {
@@ -245,13 +286,113 @@ export default function EditorPage() {
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+  useEffect(() => {
+    if (currentScript?.id) reloadAnnotations(currentScript.id);
+    else setAnnotations([]);
+  }, [currentScript?.id, reloadAnnotations]);
+
+  const submitAnnotation = useCallback(async () => {
+    if (!annotationDraft || !currentScript?.id || !activeProject?.id || !annotationDraft.text.trim()) return;
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    try {
+      await addAnnotation({ scriptId: currentScript.id, projectId: activeProject.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), createdBy: auth.user.id });
+
+      // shot/todo annotations claim (via ANNOTATION_META.routesTo) to reach a
+      // real Shot List / Call Sheet elsewhere in the suite — this is what
+      // actually makes that true, instead of the annotation being the only
+      // place the note ever lives. Best-effort: if the scene can't be
+      // resolved (script/schedule drifted, or the scene isn't imported into
+      // the schedule yet), the margin annotation itself still saved above,
+      // so this never blocks or fails the user's actual action.
+      const scenes = (activeProject.scenes || []) as { id: string; scene_number: number; shoot_day?: number }[];
+      if ((annotationDraft.type === 'shot' || annotationDraft.type === 'todo') && scenes.length > 0) {
+        const sceneId = await resolveLineToSceneId(activeProject.id, annotationDraft.line, scenes);
+        if (sceneId) {
+          if (annotationDraft.type === 'shot') {
+            const { count } = await supabase.from('shots').select('id', { count: 'exact', head: true }).eq('scene_id', sceneId);
+            await supabase.from('shots').insert({
+              project_id: activeProject.id, scene_id: sceneId, shot_number: String((count || 0) + 1),
+              description: annotationDraft.text.trim(), order_index: count || 0, created_by: auth.user.id,
+            });
+            toast('Shot added to the Shot List', 'success');
+          } else {
+            const scene = scenes.find(s => s.id === sceneId);
+            const day = scene?.shoot_day || 1;
+            const { data: existingSheet } = await supabase.from('call_sheets').select('id,notes').eq('project_id', activeProject.id).eq('shoot_day', day).maybeSingle();
+            const combinedNotes = existingSheet?.notes ? `${existingSheet.notes}\n${annotationDraft.text.trim()}` : annotationDraft.text.trim();
+            await supabase.from('call_sheets').upsert(
+              { project_id: activeProject.id, shoot_day: day, notes: combinedNotes, updated_by: auth.user.id, updated_at: new Date().toISOString() },
+              { onConflict: 'project_id,shoot_day' }
+            );
+            toast(`Added to Day ${day}'s call sheet notes`, 'success');
+          }
+        }
+      }
+
+      // beat annotations claim to route to Studio's Beat Board
+      // (project_beats) — unlike shot/todo, beats aren't scene-scoped, so
+      // this doesn't need resolveLineToSceneId at all; it just creates the
+      // beat directly. Title is a short lead-in from the note text so the
+      // Beat Board card has something to show in its title row.
+      if (annotationDraft.type === 'beat') {
+        const text = annotationDraft.text.trim();
+        const existing = await getProjectBeats(activeProject.id);
+        await createProjectBeat({
+          project_id: activeProject.id,
+          title: text.length > 40 ? `${text.slice(0, 40)}…` : text,
+          content: text,
+          order_index: (existing || []).length,
+        });
+        toast('Beat added to the Beat Board', 'success');
+      }
+
+      reloadAnnotations(currentScript.id);
+      setAnnotationDraft(null);
+    } catch (e: any) {
+      console.error('Failed to add annotation:', e);
+    }
+  }, [annotationDraft, currentScript?.id, activeProject, reloadAnnotations, toast]);
+
+  const removeAnnotation = useCallback(async (id: string) => {
+    if (!currentScript?.id) return;
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+    try { await deleteAnnotation(id); } catch (e) { console.error('Failed to delete annotation:', e); reloadAnnotations(currentScript.id); }
+  }, [currentScript?.id, reloadAnnotations]);
+
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
   
   // UI States
+  // Workspace Layout State
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [showRightSidebar, setShowRightSidebar] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedSidebar = localStorage.getItem('mc_editor_show_sidebar');
+      const storedRightSidebar = localStorage.getItem('mc_editor_show_right_sidebar');
+      if (storedSidebar !== null) setShowSidebar(storedSidebar === '1');
+      if (storedRightSidebar !== null) setShowRightSidebar(storedRightSidebar === '1');
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setShowSidebar(prev => {
+      const next = !prev;
+      localStorage.setItem('mc_editor_show_sidebar', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  const toggleRightSidebar = () => {
+    setShowRightSidebar(prev => {
+      const next = !prev;
+      localStorage.setItem('mc_editor_show_right_sidebar', next ? '1' : '0');
+      return next;
+    });
+  };
   const [isMobile, setIsMobile] = useState(false);
 
   // On phones the fixed-width side panels would crush the writing area, so
@@ -290,7 +431,7 @@ export default function EditorPage() {
   const [findCount, setFindCount] = useState(0);
 
   // Panels
-  const [rightPanel, setRightPanel] = useState<'tools' | 'characters' | 'revisions' | 'lint' | 'stash' | 'breakdown' | 'audio'>('tools');
+  const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
@@ -314,7 +455,7 @@ export default function EditorPage() {
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
-  const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
+  const [stashItems, setStashItems] = useState<StashItem[]>([]);
   const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
   const [sceneNotes, setSceneNotes] = useState<Record<string, string>>({});
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
@@ -344,10 +485,8 @@ export default function EditorPage() {
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content || '');
-    setTitlePage(loadTitlePageCached(script.id));
-    setCharProfiles(loadCharacterProfilesCached(script.id));
-    loadTitlePage(script.id).then(setTitlePage);
-    loadCharacterProfiles(script.id).then(setCharProfiles);
+    getTitlePage(script.id).then(setTitlePage);
+    getCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
@@ -379,67 +518,77 @@ export default function EditorPage() {
     }
   }, [activeProject?.id, toast]);
 
-  // Init
-  useEffect(() => {
-    const init = async () => {
-      const all = await getAllScripts();
-      setScripts(all);
-      if (all.length > 0) {
-        const latest = all[0];
-        setCurrentScript(latest);
-        setContent(latest.content || '');
-        setTitlePage(loadTitlePageCached(latest.id));
-        setCharProfiles(loadCharacterProfilesCached(latest.id));
-        loadTitlePage(latest.id).then(setTitlePage);
-        loadCharacterProfiles(latest.id).then(setCharProfiles);
-        setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
-      } else {
-        const fresh = await createNewScript('My First Screenplay');
-        if (fresh) {
-          setCurrentScript(fresh);
-          setScripts([fresh]);
-          setContent('');
-          setSessionStartWords(0);
+  const handleCreateNewScript = useCallback(async (title: string, initialContent: string = '') => {
+    try {
+      const s = await saveScript({ title, content: initialContent, project_id: activeProject?.id });
+      if (s) {
+        try {
+          await logActivity(`created screenplay "${title}"`, 'script', s.id);
+        } catch (e) {
+          console.error('Failed to log activity for new script', e);
         }
       }
-    };
-    init();
-  }, []);
+      return s;
+    } catch (e) {
+      console.error('Failed to create script:', e);
+      return null;
+    }
+  }, [activeProject?.id]);
 
-  // Load (or create) the ACTIVE PROJECT's screenplay from Supabase, so the
-  // editor edits the same script row Studio/Production/Pitch read. Using the
-  // real Supabase id means useScriptSync persists edits straight to that row.
+  // Unified initialization and project sync
   useEffect(() => {
-    if (!activeProject?.id) return;
     let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from('scripts')
-          .select('id,title,content')
-          .eq('project_id', activeProject.id)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        let row = data?.[0];
+    const init = async () => {
+      const projectId = activeProject?.id;
+      const all = await getAllScripts(projectId);
+      if (cancelled) return;
+      setScripts(all);
+
+      if (projectId) {
+        // We have an active project — ensure a script exists for it and load it
+        let row = all.find(s => s.project_id === projectId);
         if (!row) {
           const { data: auth } = await supabase.auth.getUser();
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')
-            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
-            .select('id,title,content')
+            .insert({ project_id: projectId, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || 'feature', status: 'draft', created_by: uid, last_edited_by: uid })
+            .select('*')
             .single();
-          row = ins.data || undefined;
+          if (ins.data) {
+            row = {
+              id: ins.data.id, title: ins.data.title, content: ins.data.content,
+              createdAt: ins.data.created_at, updatedAt: ins.data.updated_at, project_id: ins.data.project_id
+            };
+            setScripts(prev => [row!, ...prev]);
+            if (uid) console.log('Script created for project');
+          }
         }
+        
         if (cancelled || !row) return;
-        if (currentScript?.id === row.id) return;
-        const now = new Date().toISOString();
-        handleLoadScript({ id: row.id, title: row.title || activeProject.title, content: row.content || '', createdAt: now, updatedAt: now, project_id: activeProject.id });
+        if (currentScript?.id === row.id) return; // already loaded
+        
+        handleLoadScript(row);
         toast(`Editing “${activeProject.title}” screenplay`, 'info');
-      } catch (e) {
-        console.error('Failed to load project script:', e);
+      } else {
+        // No active project (rare but possible) — just load latest or create empty
+        if (all.length > 0) {
+          const latest = all[0];
+          if (currentScript?.id !== latest.id) {
+             handleLoadScript(latest);
+          }
+        } else {
+          const fresh = await createNewScript('My First Screenplay');
+          if (fresh) {
+            setCurrentScript(fresh);
+            setScripts([fresh]);
+            setContent('');
+            setSessionStartWords(0);
+          }
+        }
       }
-    })();
+    };
+    init();
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -528,14 +677,46 @@ export default function EditorPage() {
     textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
   }, [tableReadLineIdx]);
 
-  // Parser hook
+  // Web Worker Parser Hook
+  const workerRef = useRef<Worker | null>(null);
+  
+  useEffect(() => {
+    // Initialize Web Worker
+    workerRef.current = new Worker(new URL('@/lib/scriptos/parser.worker.ts', import.meta.url));
+    
+    workerRef.current.onmessage = (e) => {
+      if (e.data.success) {
+        const result = e.data.result;
+        setLines(result.lines);
+        
+        if (result.elements) {
+          setElements(result.elements);
+        }
+        
+        if (result.charStats) {
+          // charStats is already computed in the worker if we move it there, 
+          // or we can compute it here. Currently it's computed here.
+          setCharStats(analyzeCharacters(result.lines, result.scenes));
+        }
+        
+        setLintIssues(validateScript(result.lines, content));
+      } else {
+        console.error("Parser worker error:", e.data.error);
+      }
+    };
+    
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, [content]); // need content for lintIssues, though it's better to pass it to state
+
+  // Debounced sending of content to worker
   useEffect(() => {
     if (content) {
-      const result = parseScript(content);
-      setLines(result.lines);
-      if (result.elements) setElements(result.elements);
-      setCharStats(analyzeCharacters(result.lines, result.scenes));
-      setLintIssues(validateScript(result.lines, content));
+      const timeoutId = setTimeout(() => {
+        workerRef.current?.postMessage({ text: content, format: 'screenplay' });
+      }, 400); // 400ms debounce
+      return () => clearTimeout(timeoutId);
     } else {
       setLines([]);
       setElements({});
@@ -552,7 +733,8 @@ export default function EditorPage() {
     (async () => {
       const remote = await fetchRevisionsDB(currentScript.id);
       if (!active) return;
-      setRevisions(remote.length > 0 ? remote : getRevisions(currentScript.id));
+      const local = await getRevisions(currentScript.id);
+      setRevisions(remote.length > 0 ? remote : local);
     })();
     return () => { active = false; };
   }, [currentScript]);
@@ -663,7 +845,7 @@ export default function EditorPage() {
       toast(`Locked as ${rev.label}`, 'success');
     } else {
       // Offline / no access — fall back to a local snapshot so work isn't lost.
-      const { revision } = createRevision(currentScript.id, content);
+      const { revision } = await createRevision(currentScript.id, content);
       setRevisions(prev => [...prev, revision]);
       toast(`Locked locally as ${revision.label}`, 'info');
     }
@@ -1133,18 +1315,17 @@ export default function EditorPage() {
 
   // Which scene index is the cursor currently inside
   const currentSceneIdx = useMemo(() => {
-    let lineCount = 0;
-    let lastScene = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].type === 'slug') {
-        const sIdx = scenesList.indexOf(lines[i]);
-        if (sIdx !== -1) lastScene = sIdx;
-      }
-      if (lineCount >= cursorLine) break;
-      lineCount++;
+    let lastMatchedIdx = -1;
+    for (let i = 0; i <= cursorLine && i < lines.length; i++) {
+      if (lines[i].type === 'slug') lastMatchedIdx = i;
     }
-    return lastScene;
-  }, [lines, scenesList, cursorLine]);
+    return lastMatchedIdx;
+  }, [cursorLine, lines]);
+
+  useEffect(() => {
+    updateScenePresence(currentSceneIdx);
+  }, [currentSceneIdx, updateScenePresence]);
+
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
   // The taskbar's context capsule morphs to surface these read-outs and the
@@ -1224,11 +1405,36 @@ export default function EditorPage() {
               <ArrowLeft size={18} />
             </Link>
 
+            {/* Persistent active-project indicator — a direct nav to /editor
+                (bookmark, new tab) has no route param of its own, so without
+                this there's no always-visible confirmation of which
+                project's script is loaded (only a transient toast on
+                switch). Click jumps to that project's hub, where the
+                taskbar's own project switcher lives if you need to change it. */}
+            {activeProject && (
+              <Link
+                href={`/projects/${activeProject.id}`}
+                title="Open this project's hub"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1,
+                  color: activeProject.accent_color || '#d7340b',
+                  background: `${activeProject.accent_color || '#d7340b'}14`,
+                  border: `1px solid ${activeProject.accent_color || '#d7340b'}30`,
+                  padding: '4px 10px', borderRadius: 9999, textDecoration: 'none',
+                  maxWidth: 160, overflow: 'hidden',
+                }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: activeProject.accent_color || '#d7340b', flexShrink: 0 }} />
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeProject.title}</span>
+              </Link>
+            )}
+
             <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button
-                onClick={() => setShowSidebar(!showSidebar)}
+                onClick={toggleSidebar}
                 className="link-btn"
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
               >
@@ -1308,7 +1514,7 @@ export default function EditorPage() {
               { icon: SplitSquareHorizontal, title: 'Dual Dialogue', onClick: toggleDualDialogue },
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },
-              { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
+              { icon: Settings,   title: 'Tools Panel', onClick: toggleRightSidebar },
               { icon: Lock,       title: 'Lock Revision', onClick: handleLockRevision },
             ].map(({ icon: Icon, title, onClick }) => (
               <button
@@ -1434,7 +1640,7 @@ export default function EditorPage() {
               }}
             >
               <EditorLeftNav
-                scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
+                scripts={scripts} setScripts={setScripts} createNewScript={handleCreateNewScript}
                 setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
                 fileInputRef={fileInputRef} handleImportFile={handleImportFile}
                 showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
@@ -1486,13 +1692,79 @@ export default function EditorPage() {
                   const color = (type && TYPE_COLORS[type]) || (revisionMode ? '#0099ff' : '#e0e0e0');
                   const bold = type === 'slug' || type === 'character' || type === 'transition';
                   const isReadingLine = tableReadLineIdx === i;
+                  const isCurrentLine = i === cursorLine;
+                  const lineAnnotations = annotations.filter(a => a.line_index === i);
                   return (
                     <div key={i} style={{
+                      position: 'relative',
                       color, fontWeight: bold ? 700 : 400,
-                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : undefined,
-                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : undefined,
+                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
+                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : isCurrentLine ? 'inset 2px 0 0 rgba(255,255,255,0.25)' : undefined,
                     }}>
                       {lineText.length ? lineText : ' '}
+                      {lineAnnotations.map((a, ai) => {
+                        const meta = ANNOTATION_META[a.type];
+                        return (
+                          <span
+                            key={a.id}
+                            title={`${meta.label}: ${a.text}\nRoutes to: ${meta.routesTo}\n(click to remove)`}
+                            onClick={() => removeAnnotation(a.id)}
+                            style={{
+                              position: 'absolute', left: -22 - ai * 14, top: 3, width: 9, height: 9, borderRadius: '50%',
+                              background: meta.color, boxShadow: `0 0 6px ${meta.color}99`, cursor: 'pointer', pointerEvents: 'auto',
+                            }}
+                          />
+                        );
+                      })}
+                      {isCurrentLine && !annotationDraft && (
+                        <span
+                          onClick={() => setAnnotationDraft({ line: i, type: 'note', text: '' })}
+                          title="Add margin note"
+                          style={{
+                            position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
+                            border: '1px dashed rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.5)',
+                            fontSize: 9, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
+                          }}
+                        >+</span>
+                      )}
+                      {isCurrentLine && annotationDraft?.line === i && (
+                        <div
+                          style={{
+                            position: 'absolute', left: -22, top: 18, zIndex: 30, width: 220,
+                            background: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                            padding: 10, pointerEvents: 'auto', boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                          }}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                            {ANNOTATION_TYPES.map(t => (
+                              <button
+                                key={t}
+                                onClick={() => setAnnotationDraft(d => d ? { ...d, type: t } : d)}
+                                style={{
+                                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase',
+                                  padding: '3px 7px', borderRadius: 99, cursor: 'pointer',
+                                  background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(255,255,255,0.04)',
+                                  border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.1)'}`,
+                                  color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.5)',
+                                }}
+                              >{ANNOTATION_META[t].label}</button>
+                            ))}
+                          </div>
+                          <input
+                            autoFocus
+                            value={annotationDraft.text}
+                            onChange={e => setAnnotationDraft(d => d ? { ...d, text: e.target.value } : d)}
+                            onKeyDown={e => { if (e.key === 'Enter') submitAnnotation(); if (e.key === 'Escape') setAnnotationDraft(null); }}
+                            placeholder={`Routes to ${ANNOTATION_META[annotationDraft.type].routesTo}...`}
+                            style={{ width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, marginBottom: 8 }}
+                          />
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px', cursor: 'pointer', fontSize: 10 }}>Add</button>
+                            <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 10 }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1502,7 +1774,11 @@ export default function EditorPage() {
                 value={content}
                 onChange={handleEditorChange}
                 onKeyDown={handleEditorKeyDown}
-                onSelect={e => broadcastCursor((e.target as HTMLTextAreaElement).selectionStart)}
+                onSelect={e => {
+                  const ta = e.target as HTMLTextAreaElement;
+                  broadcastCursor(ta.selectionStart);
+                  setCursorLine(ta.value.substring(0, ta.selectionStart).split('\n').length - 1);
+                }}
                 onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
                 placeholder={PLACEHOLDER}
                 spellCheck={false}
@@ -1545,30 +1821,144 @@ export default function EditorPage() {
                   </span>
                 </div>
               )}
+
+              {/* Status bar — names the current element and hints the
+                  conventional next keystroke, so the writer never has to
+                  guess what Tab/Enter will do mid-scene. */}
+              {!focusMode && (() => {
+                const currentType = lines[cursorLine]?.type || 'empty';
+                const status = ELEMENT_STATUS[currentType] || ELEMENT_STATUS.empty;
+                const color = TYPE_COLORS[currentType] || 'rgba(224, 221, 174,0.6)';
+                return (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '6px 16px', background: 'rgba(8,8,8,0.9)', borderTop: '1px solid rgba(255,255,255,0.06)',
+                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 0.5,
+                  }}>
+                    <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
+                    <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{status.hint}</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
-          {/* Structure Lines (Visual Act Markers) */}
+          {/* Live structure rail — Save-the-Cat-style milestone overlay, a
+              pacing flag, and where the current scene sits, surfaced in the
+              margin instead of buried in a Stats tab. */}
+          {/* Live structure rail — Save-the-Cat-style milestone overlay, a
+              pacing flag, and where the current scene sits, surfaced in the
+              margin instead of buried in a Stats tab. */}
           {activeView === 'write' && !focusMode && (
-            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
+            <div style={{
+              position: 'fixed',
+              left: showSidebar && !isMobile ? 288 : 40,
+              top: 120,
+              bottom: 80,
+              width: 2,
+              background: 'rgba(255,255,255,0.03)',
+              zIndex: 10,
+              transition: 'left 0.35s ease'
+            }}>
               {scenesList.map((s, idx) => {
                 const pos = (idx / scenesList.length) * 100;
                 const isActBreak = s.text.includes('ACT');
                 return (
-                  <div 
-                    key={s.id} 
-                    style={{ 
-                      position: 'absolute', 
-                      top: `${pos}%`, 
-                      left: -4, 
-                      width: 10, 
-                      height: 2, 
+                  <div
+                    key={s.id}
+                    style={{
+                      position: 'absolute',
+                      top: `${pos}%`,
+                      left: -4,
+                      width: 10,
+                      height: 2,
                       background: isActBreak ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
-                    }} 
+                    }}
                     title={s.text}
                   />
                 );
               })}
+
+              {/* Save-the-Cat milestone labels */}
+              {[
+                { pct: 10, label: 'Setup' },
+                { pct: 25, label: 'Break into Two' },
+                { pct: 50, label: 'Midpoint' },
+                { pct: 75, label: 'Break into Three' },
+                { pct: 90, label: 'Finale' },
+              ].map(m => (
+                <div
+                  key={m.label}
+                  title={m.label}
+                  style={{
+                    position: 'absolute',
+                    top: `${m.pct}%`,
+                    left: -3,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.25)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    transform: 'translateY(-50%)',
+                    cursor: 'help',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'var(--accent)';
+                    const txt = e.currentTarget.querySelector('span');
+                    if (txt) {
+                      txt.style.color = '#fff';
+                      txt.style.opacity = '1';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
+                    const txt = e.currentTarget.querySelector('span');
+                    if (txt) {
+                      txt.style.color = 'rgba(255,255,255,0.35)';
+                      txt.style.opacity = '0.7';
+                    }
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute',
+                    left: 16,
+                    top: -5,
+                    fontFamily: 'var(--mono)',
+                    fontSize: 8.5,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,255,255,0.35)',
+                    opacity: 0.7,
+                    whiteSpace: 'nowrap',
+                    transition: 'color 0.2s, opacity 0.2s'
+                  }}>
+                    {m.label}
+                  </span>
+                </div>
+              ))}
+
+              {/* Where the cursor currently sits */}
+              {scenesList.length > 0 && currentSceneIdx >= 0 && (
+                <div style={{ position: 'absolute', top: `${(currentSceneIdx / scenesList.length) * 100}%`, left: -5, width: 12, height: 12, marginTop: -6, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} title={`Now writing: ${scenesList[currentSceneIdx]?.text}`} />
+              )}
+
+              {/* Pacing flag — Act II (25%-75%) word share vs. the rest */}
+              {(() => {
+                if (scenesList.length < 4) return null;
+                const inAct2 = (idx: number) => { const p = (idx / scenesList.length) * 100; return p >= 25 && p < 75; };
+                let act2Words = 0, totalWords = 0;
+                sceneWordCounts.forEach((wc, idx) => { totalWords += wc; if (inAct2(idx)) act2Words += wc; });
+                if (totalWords === 0) return null;
+                const act2Share = act2Words / totalWords;
+                if (act2Share < 0.55) return null;
+                return (
+                  <div style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 0.5, color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
+                    Act II lagging · {Math.round(act2Share * 100)}% of words
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1603,7 +1993,7 @@ export default function EditorPage() {
                           <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
                         </div>
                       )}
-                      <LinePreview line={line} index={i} nightModePreview={nightModePreview} />
+                      <LinePreview line={line} index={i} nightModePreview={nightModePreview} sceneNumber={line.type === 'slug' ? scenesList.indexOf(line) + 1 : undefined} showSceneNumbers={showSceneNumbers} />
                     </React.Fragment>
                   );
                 })
@@ -1667,7 +2057,7 @@ export default function EditorPage() {
                   typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
                   nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
                   elements={elements} chars={chars} charStats={charStats}
-                  handleLockRevision={handleLockRevision} revisions={revisions}
+                  handleLockRevision={handleLockRevision} handleRestoreRevision={(text: string) => setContent(text)} revisions={revisions} content={content}
                   setContent={setContent} toast={toast}
                   showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
                   showWatermark={showWatermark} setShowWatermark={setShowWatermark}

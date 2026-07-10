@@ -8,6 +8,7 @@ import type { LintIssue } from '@/lib/scriptos/validator';
 import { TYPE_COLORS } from './editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { usePillZone } from '@/lib/context/PillContext';
+import { usePresence } from '@/lib/context/PresenceContext';
 
 /* =========================================================================
    ScriptOS editor — the three read-mostly center-stage tabs (Board, Outline,
@@ -112,13 +113,20 @@ function SceneBoardCard({
     ],
   }, 2);
 
+  const { onlineUsers } = usePresence();
+  const activeUsers = React.useMemo(() => onlineUsers.filter(u => u.sceneIdx === index), [onlineUsers, index]);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
-      whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+    <div
       onClick={() => { onJump(); zoneHandlers.onClick(); }}
       onMouseEnter={zoneHandlers.onMouseEnter}
       onMouseLeave={zoneHandlers.onMouseLeave}
+      style={{ cursor: 'grab' }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
+        whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
+
       title="Drag to reorder · click to open in the script"
       draggable
       onDragStart={onDragStart}
@@ -134,9 +142,25 @@ function SceneBoardCard({
         opacity: isDragging ? 0.4 : 1,
         transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
       }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
         <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {index + 1}</span>
-        <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wordCount}w · ~{estMins}m</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {activeUsers.length > 0 && (
+            <div style={{ display: 'flex', marginRight: 4 }}>
+              {activeUsers.slice(0, 3).map((u, ui) => (
+                <div key={u.userId} title={`${u.email} is here`} style={{
+                  width: 16, height: 16, borderRadius: '50%', background: u.color, color: '#fff',
+                  border: '2px solid var(--bg-3)', marginLeft: ui > 0 ? -6 : 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 8, fontWeight: 700, zIndex: 3 - ui,
+                }}>
+                  {u.email[0].toUpperCase()}
+                </div>
+              ))}
+            </div>
+          )}
+          <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wordCount}w · ~{estMins}m</span>
+        </div>
       </div>
       <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
       <textarea
@@ -149,7 +173,8 @@ function SceneBoardCard({
       <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {lines.slice(startIdx + 1, startIdx + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
 

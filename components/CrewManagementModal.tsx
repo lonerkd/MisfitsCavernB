@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Shield } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getProjectCrew, assignCrewMember, updateCrewMemberRole, removeCrewMember, type CrewRole } from '@/lib/supabase/crew-management';
 import { searchProfiles } from '@/lib/supabase/profiles';

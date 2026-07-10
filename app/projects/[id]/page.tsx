@@ -17,6 +17,9 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { usePillZone } from '@/lib/context/PillContext';
 import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/context/ProjectContext';
+import type { ProjectSettings } from '@/lib/types/settings';
+import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
+import type { ScriptFormat } from '@/lib/scriptos/parser';
 
 // Rough indie default rates used to seed budget suggestions from the script
 // breakdown. They are starting points the user edits after inserting.
@@ -43,6 +46,7 @@ interface ProjectHubViewModel {
   assetCount?: number;
   assetGB?: number;
   publishedWork?: number;
+  settings?: ProjectSettings;
 }
 
 // ─── Production phases ───────────────────────────────────────────────────────
@@ -113,7 +117,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: color, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: color, letterSpacing: 2, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
       </div>
 
       {/* Preview content */}
@@ -133,7 +137,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
           {stats.map(s => (
             <div key={s.label}>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -142,7 +146,7 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
             whileHover={{ scale: 1.06, x: 2 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
               textTransform: 'uppercase', color: color,
               padding: '6px 12px', borderRadius: 9999,
               background: `${color}12`, border: `1px solid ${color}28`,
@@ -166,7 +170,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{pages}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
       </div>
       {bars > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -175,7 +179,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No script yet — open ScriptOS to start.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>No script yet — open ScriptOS to start.</div>
       )}
     </div>
   );
@@ -191,7 +195,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
   const palette = ['#6366f1', '#d7340b', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
       {total > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -199,7 +203,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No assets yet — add them in Studio.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>No assets yet — add them in Studio.</div>
       )}
     </div>
   );
@@ -223,7 +227,7 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>{member.role}</div>
           </div>
           {member.online && (
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
@@ -251,7 +255,7 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, textTransform: 'uppercase' }}>days to deadline</span>
       </div>
 
       {/* Progress rail */}
@@ -272,7 +276,7 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
               width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
               background: m.done ? '#10b981' : 'rgba(255,255,255,0.1)',
             }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: m.done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: m.done ? 'line-through' : 'none', opacity: m.done ? 0.5 : 1 }}>{m.label}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: m.done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: m.done ? 'line-through' : 'none', opacity: m.done ? 0.5 : 1 }}>{m.label}</span>
           </div>
         ))}
       </div>
@@ -345,6 +349,7 @@ export default function ProjectHubPage() {
         description: data.description || '',
         color: data.accent_color || '#d7340b',
         team: [],
+        settings: data.settings,
       });
       setLoading(false);
       if (activeProject?.id !== data.id) refreshProject(data.id);
@@ -404,6 +409,7 @@ export default function ProjectHubPage() {
   // milestone checklist and the progress-percent calc.
   const typePhases = getPhasesForType(project.type);
   const typePhaseIdx = phaseIndexForType(project.type, project.phase);
+  const modules = getProjectModules(project.settings);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -519,53 +525,59 @@ export default function ProjectHubPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
 
           {/* ─ ScriptOS ─ */}
-          <DeptWindow
-            title="ScriptOS"
-            tag="Screenplay"
-            color="#d7340b"
-            href="/editor"
-            delay={0.05}
-            stats={[
-              { label: 'Pages', value: counts.pages },
-              { label: 'Scripts', value: counts.scripts },
-            ]}
-            preview={<ScriptPreview pages={counts.pages} scripts={counts.scripts} scenes={counts.scenes} />}
-          />
+          {modules.scriptos && (
+            <DeptWindow
+              title="ScriptOS"
+              tag="Screenplay"
+              color="#d7340b"
+              href="/editor"
+              delay={0.05}
+              stats={[
+                { label: 'Pages', value: counts.pages },
+                { label: 'Scripts', value: counts.scripts },
+              ]}
+              preview={<ScriptPreview pages={counts.pages} scripts={counts.scripts} scenes={counts.scenes} />}
+            />
+          )}
 
           {/* ─ Studio ─ */}
-          <DeptWindow
-            title="Studio"
-            tag="Assets"
-            color="#6366f1"
-            href="/studio"
-            delay={0.1}
-            stats={[
-              { label: 'Concepts', value: counts.concepts },
-              { label: 'Scenes',   value: counts.scenes },
-            ]}
-            preview={<AssetPreview concepts={counts.concepts} scenes={counts.scenes} />}
-          />
+          {modules.studio && (
+            <DeptWindow
+              title="Studio"
+              tag="Assets"
+              color="#6366f1"
+              href="/studio"
+              delay={0.1}
+              stats={[
+                { label: 'Concepts', value: counts.concepts },
+                { label: 'Scenes',   value: counts.scenes },
+              ]}
+              preview={<AssetPreview concepts={counts.concepts} scenes={counts.scenes} />}
+            />
+          )}
 
           {/* ─ Lounge / Crew ─ */}
-          <DeptWindow
-            title="Lounge"
-            tag="Crew"
-            color="#10b981"
-            href="/lounge"
-            delay={0.15}
-            stats={[
-              { label: 'Crew',  value: counts.crew },
-              { label: 'Tasks', value: `${counts.tasksDone}/${counts.tasks}` },
-            ]}
-            preview={<CrewPreview team={project.team} />}
-          />
+          {modules.lounge && (
+            <DeptWindow
+              title="Lounge"
+              tag="Crew"
+              color="#10b981"
+              href="/lounge"
+              delay={0.15}
+              stats={[
+                { label: 'Crew',  value: counts.crew },
+                { label: 'Tasks', value: `${counts.tasksDone}/${counts.tasks}` },
+              ]}
+              preview={<CrewPreview team={project.team} />}
+            />
+          )}
 
           {/* ─ Timeline ─ */}
           <DeptWindow
             title="Timeline"
             tag="Schedule"
             color="#f59e0b"
-            href="/projects"
+            href="#timeline"
             delay={0.2}
             stats={[
               { label: 'Milestones', value: counts.timeline },
@@ -575,46 +587,50 @@ export default function ProjectHubPage() {
           />
 
           {/* ─ Portfolio ─ */}
-          <DeptWindow
-            title="Portfolio"
-            tag="Showcase"
-            color="#8b5cf6"
-            href="/portfolio"
-            delay={0.25}
-            stats={[
-              { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
-              { label: 'Type',  value: project.type },
-            ]}
-            preview={<PortfolioPreview published={counts.portfolioPublished} />}
-          />
+          {modules.portfolio && (
+            <DeptWindow
+              title="Portfolio"
+              tag="Showcase"
+              color="#8b5cf6"
+              href="/portfolio"
+              delay={0.25}
+              stats={[
+                { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
+                { label: 'Type',  value: project.type },
+              ]}
+              preview={<PortfolioPreview published={counts.portfolioPublished} />}
+            />
+          )}
 
-          {/* ─ Jobs / Distribution ─ */}
-          <DeptWindow
-            title="Distribution"
-            tag="Launch"
-            color="#ec4899"
-            href="/jobs"
-            delay={0.3}
-            stats={[
-              { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
-              { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
-            ]}
-            preview={
-              <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {[
-                  { label: 'Picture Lock', ready: currentPhaseIdx >= 3 },
-                  { label: 'Trailer Cut',  ready: currentPhaseIdx >= 3 },
-                  { label: 'Press Kit',    ready: currentPhaseIdx >= 4 },
-                  { label: 'Delivered',    ready: project.progress === 100 },
-                ].map(({ label, ready }) => ({ label, value: ready ? 'Ready' : 'Not yet', color: ready ? '#10b981' : '#4b5563' })).map(({ label, value, color }) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            }
-          />
+          {/* ─ Distribution ─ */}
+          {modules.distribution && (
+            <DeptWindow
+              title="Distribution"
+              tag="Launch"
+              color="#ec4899"
+              href="/portfolio?tab=distribution"
+              delay={0.3}
+              stats={[
+                { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
+                { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
+              ]}
+              preview={
+                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    { label: 'Picture Lock', ready: currentPhaseIdx >= 3 },
+                    { label: 'Trailer Cut',  ready: currentPhaseIdx >= 3 },
+                    { label: 'Press Kit',    ready: currentPhaseIdx >= 4 },
+                    { label: 'Delivered',    ready: project.progress === 100 },
+                  ].map(({ label, ready }) => ({ label, value: ready ? 'Ready' : 'Not yet', color: ready ? '#10b981' : '#4b5563' })).map(({ label, value, color }) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              }
+            />
+          )}
 
         </div>
 
@@ -633,6 +649,13 @@ interface BudgetRow { id: string; category: string; amount: number; actual_cost?
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
 interface PortfolioRow { id: string; title: string; share_token: string }
+interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
+
+const SCRIPT_FORMATS: ScriptFormat[] = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline'];
+const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
+const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
+  planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',
+};
 
 function ProductionManager({ projectId, accent, projectTitle, projectType }: { projectId: string; accent: string; projectTitle: string; projectType: string }) {
   const { toast } = useToast();
@@ -644,6 +667,8 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   const [err, setErr] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [taskSuggestions, setTaskSuggestions] = useState<string[] | null>(null);
+  const [analyzingTasks, setAnalyzingTasks] = useState(false);
   // Budget line items that already have a job posted from them, so the
   // "Post as Job" action can't be fired twice for the same line by accident.
   const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
@@ -651,15 +676,18 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   // This project's real portfolio entries (source_project_id-linked), and
   // whether a publish is in flight.
   const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
+  const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
+  const [festivals, setFestivals] = useState<FestivalRow[]>([]);
 
   const load = React.useCallback(async () => {
     try {
-      const [t, b, tl, c, pf] = await Promise.all([
+      const [t, b, tl, c, pf, proj] = await Promise.all([
         supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
         supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
         supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
         supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
+        supabase.from('projects').select('settings,festival_submissions').eq('id', projectId).single(),
       ]);
       setTasks((t.data as TaskRow[]) || []);
       setBudget((b.data as BudgetRow[]) || []);
@@ -667,6 +695,8 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
       setCrew((c.data as unknown as CrewRow[]) || []);
       setPortfolio((pf.data as PortfolioRow[]) || []);
       setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
+      if (proj.data?.settings) setSettings(proj.data.settings as ProjectSettings);
+      setFestivals((proj.data?.festival_submissions as FestivalRow[]) || []);
     } catch (e: any) {
       setErr(e.message);
     }
@@ -775,6 +805,41 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     setSuggestions([]);
   };
 
+  // Build task suggestions from the project's screenplay breakdown (Props and Wardrobe)
+  const analyzeTasks = async () => {
+    setAnalyzingTasks(true); setErr(null);
+    try {
+      const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setTaskSuggestions([]); return; }
+      const parsed = parseScript(withContent.content);
+      
+      const sugg = new Set<string>();
+      parsed.scenes.forEach(sc => {
+        (sc.elements?.props || []).forEach(p => sugg.add(`Source Prop: ${p}`));
+        (sc.elements?.wardrobe || []).forEach(w => sugg.add(`Source Wardrobe: ${w}`));
+        (sc.elements?.vehicles || []).forEach(v => sugg.add(`Source Vehicle: ${v}`));
+      });
+      
+      const existing = new Set(tasks.map(t => t.title.toLowerCase()));
+      setTaskSuggestions(Array.from(sugg).filter(s => !existing.has(s.toLowerCase())));
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setAnalyzingTasks(false);
+    }
+  };
+
+  const acceptTaskSuggestion = async (title: string) => {
+    await addTask(title);
+    setTaskSuggestions(prev => prev ? prev.filter(x => x !== title) : prev);
+  };
+  const acceptAllTaskSuggestions = async () => {
+    const list = taskSuggestions || [];
+    for (const s of list) await addTask(s);
+    setTaskSuggestions([]);
+  };
+
   const addTimeline = async (title: string, start: string, end: string) => {
     const { data, error } = await supabase.from('timeline_items')
       .insert({ project_id: projectId, title, start_date: start || null, end_date: end || null, created_by: userId })
@@ -807,13 +872,46 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     if (error) { setErr(error.message); setCrew(prev); }
   };
 
+  // Settings: format override + ecosystem module toggles, persisted straight
+  // to the projects row so the hub grid / taskbar nav pick it up immediately.
+  const saveSettings = async (next: ProjectSettings) => {
+    setSettings(next);
+    const { error } = await supabase.from('projects').update({ settings: next }).eq('id', projectId);
+    if (error) setErr(error.message);
+  };
+  const setDefaultFormat = (format: ScriptFormat | '') => {
+    saveSettings({ ...settings, defaultScriptFormat: format || undefined });
+  };
+  const toggleModule = (key: keyof ProjectSettings['modules']) => {
+    saveSettings({ ...settings, modules: { ...settings.modules, [key]: !settings.modules[key] } });
+  };
+
+  const addFestival = async (name: string, deadline: string) => {
+    if (!name.trim()) return;
+    const next = [...festivals, { id: crypto.randomUUID(), name: name.trim(), deadline: deadline || undefined, status: 'planned' as const }];
+    setFestivals(next);
+    const { error } = await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+    if (error) setErr(error.message);
+  };
+  const setFestivalStatus = async (id: string, status: FestivalRow['status']) => {
+    const next = festivals.map(f => f.id === id ? { ...f, status } : f);
+    setFestivals(next);
+    await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+  };
+  const delFestival = async (id: string) => {
+    if (!await confirm('Remove this festival submission?')) return;
+    const next = festivals.filter(f => f.id !== id);
+    setFestivals(next);
+    await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+  };
+
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
   const totalActual = budget.reduce((s, b) => s + Number(b.actual_cost || 0), 0);
   const hasActuals = budget.some(b => b.actual_cost != null);
 
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
       {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
@@ -828,6 +926,30 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
             </Row>
           ))}
           <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
+
+          {/* Tasks-from-breakdown: suggest art department tasks from the script */}
+          <button onClick={analyzeTasks} disabled={analyzingTasks} style={{ marginTop: 8, width: '100%', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', borderRadius: 6, padding: '6px 10px', cursor: analyzingTasks ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
+            {analyzingTasks ? 'ANALYZING SCRIPT…' : '✦ AUTO-GENERATE FROM SCRIPT'}
+          </button>
+          {taskSuggestions && taskSuggestions.length > 0 && (
+            <div style={{ marginTop: 8, padding: 8, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#34d399', letterSpacing: 0.5 }}>SUGGESTED — from tagged elements</span>
+                <button onClick={acceptAllTaskSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#34d399', background: 'none', border: '1px solid rgba(16,185,129,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {taskSuggestions.map(s => (
+                  <Row key={s}>
+                    <span style={{ flex: 1, fontSize: 10.5 }}>{s}</span>
+                    <button onClick={() => acceptTaskSuggestion(s)} aria-label="add" style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 4, padding: '0 7px', cursor: 'pointer', fontSize: 12 }}>+</button>
+                  </Row>
+                ))}
+              </div>
+            </div>
+          )}
+          {taskSuggestions && taskSuggestions.length === 0 && !analyzingTasks && (
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No new suggestions — all items already added.</div>
+          )}
         </Panel>
 
         {/* Budget */}
@@ -850,14 +972,14 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
           {/* Budget-from-breakdown: suggest line items from the script */}
-          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
             {analyzing ? 'ANALYZING SCRIPT…' : '✦ SUGGEST FROM SCRIPT BREAKDOWN'}
           </button>
           {suggestions && suggestions.length > 0 && (
             <div style={{ marginTop: 8, padding: 8, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', letterSpacing: 1 }}>SUGGESTED — from tagged elements</span>
-                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#a5b4fc', letterSpacing: 0.5 }}>SUGGESTED — from tagged elements</span>
+                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {suggestions.map(s => (
@@ -871,11 +993,14 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
             </div>
           )}
           {suggestions && suggestions.length === 0 && !analyzing && (
-            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
+            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
           )}
         </Panel>
 
-        {/* Timeline */}
+        {/* Timeline — id lets the Timeline DeptWindow tile's "Open" link
+            scroll straight here instead of to the generic /projects list,
+            since this page has no per-section route to link to instead. */}
+        <div id="timeline">
         <Panel title="Timeline" accent={accent}>
           {timeline.length === 0 && <Empty>No milestones</Empty>}
           {timeline.map(tl => (
@@ -887,6 +1012,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           ))}
           <AddForm placeholder="Milestone" fields={['text', 'date', 'date']} dateLabels={['Start', 'End']} onSubmit={(v) => v[0] && addTimeline(v[0], v[1], v[2])} accent={accent} />
         </Panel>
+        </div>
 
         {/* Crew */}
         <Panel title="Crew" accent={accent}>
@@ -919,6 +1045,65 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
               </Row>
             ))
           )}
+        </Panel>
+
+        {/* Festival Submissions */}
+        <Panel title="Festival Submissions" accent={accent}>
+          {festivals.length === 0 && <Empty>No submissions tracked yet</Empty>}
+          {festivals.map(f => (
+            <Row key={f.id}>
+              <span style={{ flex: 1, fontSize: 11 }}>{f.name}</span>
+              {f.deadline && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{new Date(f.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              <select
+                value={f.status}
+                onChange={e => setFestivalStatus(f.id, e.target.value as FestivalRow['status'])}
+                aria-label={`${f.name} submission status`}
+                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 8.5, textTransform: 'uppercase' }}
+              >
+                {FESTIVAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <DelBtn onClick={() => delFestival(f.id)} />
+            </Row>
+          ))}
+          <AddForm placeholder="Festival name" fields={['text', 'date']} dateLabels={['Deadline']} onSubmit={(v) => v[0] && addFestival(v[0], v[1])} accent={accent} />
+        </Panel>
+
+        {/* Settings: script format override + per-project ecosystem module toggles */}
+        <Panel title="Settings" accent={accent}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
+          <select
+            value={settings.defaultScriptFormat || ''}
+            onChange={e => setDefaultFormat(e.target.value as ScriptFormat | '')}
+            aria-label="Default script format"
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}
+          >
+            <option value="">Use project-type default</option>
+            {SCRIPT_FORMATS.map(f => <option key={f} value={f}>{SCRIPT_FORMAT_LABELS[f]}</option>)}
+          </select>
+
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 6 }}>Ecosystem modules</div>
+          {([
+            ['scriptos', 'ScriptOS'], ['studio', 'Studio'], ['lounge', 'Lounge'],
+            ['portfolio', 'Portfolio'], ['distribution', 'Distribution'],
+          ] as [keyof ProjectSettings['modules'], string][]).map(([key, label]) => (
+            <Row key={key}>
+              <span style={{ flex: 1, fontSize: 11 }}>{label}</span>
+              <button
+                onClick={() => toggleModule(key)}
+                aria-label={`toggle ${label}`}
+                style={{
+                  width: 32, height: 18, borderRadius: 9999, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                  background: settings.modules[key] ? `${accent}40` : 'rgba(255,255,255,0.08)',
+                  border: `1px solid ${settings.modules[key] ? accent : 'rgba(255,255,255,0.15)'}`,
+                }}
+              >
+                <div style={{
+                  width: 12, height: 12, borderRadius: '50%', background: settings.modules[key] ? accent : 'var(--fg-dim)',
+                  position: 'absolute', top: 2, left: settings.modules[key] ? 17 : 2, transition: 'left 0.18s',
+                }} />
+              </button>
+            </Row>
+          ))}
         </Panel>
       </div>
     </div>

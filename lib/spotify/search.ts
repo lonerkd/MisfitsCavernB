@@ -1,4 +1,5 @@
 import { getValidToken } from './auth';
+import { parseScript } from '../scriptos/parser';
 
 /**
  * Executes a search against the Spotify API.
@@ -38,6 +39,20 @@ export async function generateContextualSearchQuery(sceneText: string): Promise<
   const text = sceneText.toLowerCase();
   
   const keywords: string[] = [];
+
+  try {
+    const parsed = parseScript(sceneText);
+    const sfx = new Set<string>();
+    parsed.scenes.forEach(sc => {
+      (sc.elements?.sfx || []).forEach(s => sfx.add(s));
+    });
+    
+    if (sfx.size > 0) {
+      keywords.push(...Array.from(sfx).slice(0, 3)); // Use top 3 SFX for Spotify search
+    }
+  } catch {
+    // Fallback if parsing fails
+  }
 
   // Mood heuristics
   if (text.match(/\b(gun|shoot|run|fast|chase|explosion|fight)\b/)) {

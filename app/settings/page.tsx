@@ -92,9 +92,15 @@ export default function SettingsPage() {
   // Preferences (device-level)
   const [cursor, setCursor] = useState(true);
   const [motion, setMotion] = useState(false);
+  const [theme, setTheme] = useState('default');
+  const [taskbarScale, setTaskbarScale] = useState(1);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
+  
+  // Custom theme colors
+  const [customBg, setCustomBg] = useState('#040710');
+  const [customAccent, setCustomAccent] = useState('#d7340b');
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -109,6 +115,12 @@ export default function SettingsPage() {
     });
     setCursor(getPref(PREF_KEYS.cursor, true));
     setMotion(getPref(PREF_KEYS.motion, false));
+    try {
+      setTheme(localStorage.getItem('mc_theme') || 'default');
+      setCustomBg(localStorage.getItem('mc_theme_custom_bg') || '#040710');
+      setCustomAccent(localStorage.getItem('mc_theme_custom_accent') || '#d7340b');
+      setTaskbarScale(parseFloat(localStorage.getItem('mc_taskbar_scale') || '1'));
+    } catch {}
   }, [router]);
 
   // Persist a single notification preference to the profile (cross-device).
@@ -129,6 +141,31 @@ export default function SettingsPage() {
   const setMotionPref = (v: boolean) => {
     setMotion(v); savePref(PREF_KEYS.motion, v);
     document.body.classList.toggle('reduce-motion', v);
+  };
+  const setThemePref = (v: string) => {
+    setTheme(v);
+    try {
+      localStorage.setItem('mc_theme', v);
+      window.dispatchEvent(new Event('mc-theme-change'));
+    } catch {}
+  };
+
+  const setCustomColorPref = (key: 'bg' | 'accent', val: string) => {
+    if (key === 'bg') setCustomBg(val);
+    if (key === 'accent') setCustomAccent(val);
+    try {
+      localStorage.setItem(`mc_theme_custom_${key}`, val);
+      if (theme === 'custom') {
+        window.dispatchEvent(new Event('mc-theme-change'));
+      }
+    } catch {}
+  };
+  const setTaskbarScalePref = (v: number) => {
+    setTaskbarScale(v);
+    try {
+      localStorage.setItem('mc_taskbar_scale', String(v));
+      window.dispatchEvent(new Event('mc-taskbar-scale-change'));
+    } catch {}
   };
 
   const changeEmail = async () => {
@@ -209,7 +246,7 @@ export default function SettingsPage() {
         )}
       </header>
 
-      <div style={{ maxWidth: 620, margin: '60px auto 0', padding: '40px 24px 120px' }}>
+      <div style={{ maxWidth: 520, margin: '60px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
 
         <Section icon={<User size={15} />} title="Account">
           <Row label="Email address" hint="Changing this sends a confirmation link to the new address." control={
@@ -232,6 +269,60 @@ export default function SettingsPage() {
         <Section icon={<Palette size={15} />} title="Appearance">
           <Row label="Custom cursor" hint="The adaptive Misfits cursor on mouse/trackpad devices." control={<Toggle on={cursor} onChange={setCursorPref} />} />
           <Row label="Reduce motion" hint="Minimise animations and transitions across the app." control={<Toggle on={motion} onChange={setMotionPref} />} />
+          <Row label="Color Theme" hint="Choose a color palette for the entire platform interface." control={
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-end' }}>
+              <select
+                value={theme}
+                onChange={e => setThemePref(e.target.value)}
+                style={{
+                  padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none', cursor: 'pointer',
+                  width: '100%', minWidth: 200
+                }}
+              >
+                <option value="default" style={{ background: '#111', color: '#fff' }}>Default (Sinopia / Vanilla)</option>
+                <option value="cyberpunk" style={{ background: '#111', color: '#fff' }}>Cyberpunk (Neon Pink / Aqua)</option>
+                <option value="forest" style={{ background: '#111', color: '#fff' }}>Forest (Sage Green / Gold)</option>
+                <option value="obsidian" style={{ background: '#111', color: '#fff' }}>Obsidian (Monochrome Slate)</option>
+                <option value="vampire" style={{ background: '#111', color: '#fff' }}>Vampire (Crimson / Violet)</option>
+                <option value="custom" style={{ background: '#111', color: '#fff' }}>Custom Hex Theme...</option>
+              </select>
+              
+              {theme === 'custom' && (
+                <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Background Base</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input type="color" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
+                      <input type="text" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Accent Core</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input type="color" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
+                      <input type="text" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          } />
+          <Row label="Taskbar Scale" hint={`Adjust taskbar sizing. Current: ${taskbarScale.toFixed(2)}x`} control={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="range"
+                min="0.8"
+                max="1.3"
+                step="0.05"
+                value={taskbarScale}
+                onChange={e => setTaskbarScalePref(parseFloat(e.target.value))}
+                style={{ width: 120, accentColor: 'var(--accent)' }}
+              />
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{taskbarScale.toFixed(2)}x</span>
+            </div>
+          } />
         </Section>
 
         <Section icon={<Bell size={15} />} title="Notifications">

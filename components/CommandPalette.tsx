@@ -37,6 +37,10 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Dynamic data for search
+  const [scripts, setScripts] = useState<any[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
+
   // ⌘K / Ctrl-K toggles; also close on route change.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -53,8 +57,28 @@ export default function CommandPalette() {
   }, []);
 
   useEffect(() => { setOpen(false); }, [pathname]);
+  
   useEffect(() => {
-    if (open) { setQuery(''); setSel(0); setTimeout(() => inputRef.current?.focus(), 30); }
+    if (open) { 
+      setQuery(''); 
+      setSel(0); 
+      setTimeout(() => inputRef.current?.focus(), 30); 
+      
+      // Fetch dynamic data when palette opens
+      const fetchData = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const [scriptsRes, assetsRes] = await Promise.all([
+          supabase.from('scripts').select('id, title, project_id').eq('created_by', user.id).limit(20),
+          supabase.from('assets').select('id, name, project_id').eq('uploaded_by', user.id).limit(20)
+        ]);
+        
+        if (scriptsRes.data) setScripts(scriptsRes.data);
+        if (assetsRes.data) setAssets(assetsRes.data);
+      };
+      fetchData();
+    }
   }, [open]);
 
   const go = (path: string) => () => { router.push(path); setOpen(false); };
@@ -82,12 +106,47 @@ export default function CommandPalette() {
       keywords: 'switch open',
       run: () => { setActiveProject(p); router.push('/studio'); setOpen(false); },
     }));
-    return [...nav, ...proj];
-  }, [projects, router]); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    const scriptCmds: Command[] = scripts.map(s => {
+      const projMatch = projects.find(p => p.id === s.project_id);
+      return {
+        id: `script-${s.id}`,
+        label: s.title || 'Untitled Script',
+        hint: projMatch ? `Script in ${projMatch.title}` : 'Script',
+        icon: <FileText size={15} />,
+        group: 'Scripts',
+        keywords: 'script screenplay write',
+        run: () => { 
+          if (projMatch) setActiveProject(projMatch); 
+          router.push('/editor'); 
+          setOpen(false); 
+        },
+      };
+    });
+
+    const assetCmds: Command[] = assets.map(a => {
+      const projMatch = projects.find(p => p.id === a.project_id);
+      return {
+        id: `asset-${a.id}`,
+        label: a.name || 'Untitled Asset',
+        hint: projMatch ? `Asset in ${projMatch.title}` : 'Asset',
+        icon: <LayoutGrid size={15} />,
+        group: 'Studio Assets',
+        keywords: 'asset image video file',
+        run: () => { 
+          if (projMatch) setActiveProject(projMatch); 
+          router.push('/studio'); 
+          setOpen(false); 
+        },
+      };
+    });
+
+    return [...nav, ...proj, ...scriptCmds, ...assetCmds];
+  }, [projects, router, scripts, assets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
     const list = commands.filter(c => fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));
-    return list;
+    return list.slice(0, 50); // Limit to 50 results to keep UI snappy
   }, [commands, query]);
 
   // Group results while preserving order.

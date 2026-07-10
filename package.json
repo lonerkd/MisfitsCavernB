@@ -7,17 +7,22 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "node scripts/copy-pdf-worker.js"
+    "postinstall": "node scripts/copy-pdf-worker.js",
+    "sync-intel": "node scripts/sync-intel.js"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.105.0",
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
+    "@types/diff": "^7.0.2",
+    "diff": "^9.0.0",
     "fast-average-color": "^9.5.2",
     "framer-motion": "^12.35.2",
+    "idb-keyval": "^6.3.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.562.0",
     "next": "^14.2.35",

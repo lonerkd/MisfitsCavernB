@@ -6,15 +6,15 @@ import { ToastProvider } from '@/components/Toast';
 import { ConfirmProvider } from '@/components/Confirm';
 import { ProjectProvider } from '@/lib/context/ProjectContext';
 import { AuthProvider } from '@/lib/context/AuthContext';
+import { PresenceProvider } from '@/lib/context/PresenceContext';
 import { PillProvider } from '@/lib/context/PillContext';
 import { SpotifyProvider } from '@/lib/context/SpotifyContext';
-import PageTransition from '@/components/PageTransition';
 
 const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
-const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
+const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
 
 // Self-hosted via next/font: no render-blocking request to Google, no FOUT,
 // and no client-side hit to fonts.googleapis.com (privacy/GDPR-friendly).
@@ -57,15 +57,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ToastProvider>
             <ConfirmProvider>
               <ProjectProvider>
-                <PillProvider>
+                <PresenceProvider>
+                  <PillProvider>
                   <SpotifyProvider>
                     <CustomCursor />
                     <CommandPalette />
                     <ShortcutsOverlay />
+                    <ThemeInitializer />
                     <EcosystemTaskbar />
-                    <PageTransition>{children}</PageTransition>
+                    <div className="main-content-container">{children}</div>
                   </SpotifyProvider>
-                </PillProvider>
+                  </PillProvider>
+                </PresenceProvider>
               </ProjectProvider>
             </ConfirmProvider>
           </ToastProvider>

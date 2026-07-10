@@ -42,7 +42,7 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`notif-${userId}`)
+      .channel(`notif-${userId}-${Math.random().toString(36).substring(2, 9)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload) => {
         const n = payload.new as Notification;
         if (!typeEnabled(n.type)) return;

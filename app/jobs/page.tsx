@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { Input } from '@/components/ui/Input';
@@ -14,6 +15,7 @@ import EmptyState from '@/components/EmptyState';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useProject } from '@/lib/context/ProjectContext';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
+import { logAuditAction } from '@/lib/supabase/audit';
 
 const ROLES = [
   'Director', 'DP / Cinematographer', 'Editor', 'Sound Designer',
@@ -37,20 +39,22 @@ function roleColor(role: string) {
   return ROLE_COLORS[role] ?? '#737373';
 }
 
-function PostModal({ onClose, onCreated, userId, projectId, projectTitle }: {
+function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole }: {
   onClose: () => void;
   onCreated: () => void;
   userId: string;
   projectId: string | null;
   projectTitle: string | null;
+  initialTitle?: string;
+  initialRole?: string;
 }) {
-  const [form, setForm] = useState({ title: '', description: '', role: 'Director', rate: '' });
+  const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || 'Director', rate: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.title || !form.role) return;
     setSubmitting(true);
-    const { error } = await supabase.from('jobs').insert({
+    const { data, error } = await supabase.from('jobs').insert({
       title: form.title,
       description: form.description,
       role: form.role,
@@ -58,9 +62,12 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle }: {
       project_id: projectId,
       created_by: userId,
       status: 'open',
-    });
+    }).select('id').single();
     setSubmitting(false);
-    if (!error) { onCreated(); onClose(); }
+    if (!error) {
+      if (data) logAuditAction(userId, 'job_created', 'job', data.id, { title: form.title, role: form.role });
+      onCreated(); onClose();
+    }
   };
 
   return (
@@ -395,6 +402,7 @@ export default function JobsPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const { activeProject } = useProject();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -404,6 +412,13 @@ export default function JobsPage() {
   const [showPost, setShowPost] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [tab, setTab] = useState<'open' | 'mine'>('open');
+  // ?title=&role= let another page (e.g. Studio's Casting Board "Post to
+  // Jobs" for a specific character) deep-link straight into a prefilled
+  // Post Position modal instead of dumping the user on this list with the
+  // casting context silently dropped.
+  const prefillTitle = searchParams.get('title') || '';
+  const prefillRole = searchParams.get('role') || '';
+  useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -466,6 +481,7 @@ export default function JobsPage() {
     if (!await confirm('Close this job posting? It will stop accepting applications.')) return;
     const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
     if (error) { toast(error.message || 'Could not close job', 'error'); return; }
+    if (user) logAuditAction(user.id, 'job_closed', 'job', jobId);
     toast('Job closed', 'success');
     if (user) loadMyJobs(user.id);
     loadJobs();
@@ -682,7 +698,11 @@ export default function JobsPage() {
               {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="skeleton" style={{ height: 88, borderRadius: 14 }} />
+                    <div key={i} style={{ padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, height: 120 }}>
+                      <div className="skeleton" style={{ width: 120, height: 14, borderRadius: 4, marginBottom: 16 }} />
+                      <div className="skeleton" style={{ width: '40%', height: 10, borderRadius: 4, marginBottom: 8 }} />
+                      <div className="skeleton" style={{ width: '30%', height: 10, borderRadius: 4 }} />
+                    </div>
                   ))}
                 </div>
               ) : loadError ? (
@@ -765,6 +785,8 @@ export default function JobsPage() {
             userId={user.id}
             projectId={activeProject?.id ?? null}
             projectTitle={activeProject?.title ?? null}
+            initialTitle={prefillTitle}
+            initialRole={prefillRole}
           />
         )}
       </AnimatePresence>

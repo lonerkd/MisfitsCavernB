@@ -1,9 +1,10 @@
 // ============================================================================
-// SCRIPTOS SCRIPT VALIDATOR / LINTER
-// Checks screenplay formatting for common issues
+// SCRIPTOS SCRIPT VALIDATOR / LINTER (The "Third Brain")
+// Checks screenplay formatting and provides deep structural analysis via AST.
 // ============================================================================
 
 import type { ScriptLine } from '@/types/screenplay';
+import { buildAST, ScriptAST, ASTDialogueBlock, ASTActionBeat } from '../advanced-parser';
 
 export interface LintIssue {
   line: number;
@@ -16,39 +17,31 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
   const issues: LintIssue[] = [];
   const rawLines = content.split('\n');
   let hasSlug = false;
-  let lastCharLine = -1;
-  let orphanDialogue = false;
-
+  
+  // 1. Basic linear checks (Fast Pass)
   lines.forEach((line, i) => {
-    // Rule: Scene heading should come before dialogue
     if (line.type === 'dialogue' && !hasSlug) {
       issues.push({ line: i + 1, type: 'warning', message: 'Dialogue appears before any scene heading', rule: 'scene-first' });
     }
     if (line.type === 'slug') hasSlug = true;
 
-    // Rule: Slug should be uppercase
     if (line.type === 'slug' && line.text !== line.text.toUpperCase()) {
       issues.push({ line: i + 1, type: 'info', message: 'Scene heading should be fully uppercase', rule: 'slug-case' });
     }
 
-    // Rule: Character name should be uppercase
     if (line.type === 'character' && line.text.trim() !== line.text.trim().toUpperCase()) {
       issues.push({ line: i + 1, type: 'warning', message: 'Character name should be uppercase', rule: 'char-case' });
     }
 
-    // Rule: Very long action block
     if (line.type === 'action' && line.text.length > 500) {
-      issues.push({ line: i + 1, type: 'info', message: 'Action block is very long (>500 chars). Consider breaking it up.', rule: 'action-length' });
+      issues.push({ line: i + 1, type: 'info', message: 'Action block is very long (>500 chars). Consider breaking it up for a faster read.', rule: 'action-length' });
     }
 
-    // Rule: Unknown caps format — only flag lines the parser genuinely couldn't resolve.
-    // Camera cues (shot detection) confidently bucket into 'action' by design; don't re-flag those.
     const trimText = line.text.trim();
     if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && !line.meta.classifiedAsShot && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
       issues.push({ line: i + 1, type: 'warning', message: `Unrecognized uppercase format: "${trimText}"`, rule: 'unknown-caps' });
     }
 
-    // Rule: Parenthetical without preceding character
     if (line.type === 'parenthetical') {
       const prev = lines[i - 1];
       if (prev && prev.type !== 'character' && prev.type !== 'dialogue') {
@@ -56,7 +49,6 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
       }
     }
 
-    // Rule: Dialogue without character
     if (line.type === 'dialogue') {
       const prev = lines[i - 1];
       if (prev && prev.type !== 'character' && prev.type !== 'parenthetical' && prev.type !== 'dialogue') {
@@ -64,7 +56,6 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
       }
     }
 
-    // Rule: Empty scene (slug followed immediately by another slug)
     if (line.type === 'slug' && i > 0) {
       const prevNonEmpty = lines.slice(0, i).reverse().find(l => l.type !== 'empty');
       if (prevNonEmpty && prevNonEmpty.type === 'slug') {
@@ -72,21 +63,98 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
       }
     }
 
-    // Rule: Transition not uppercase
     if (line.type === 'transition' && line.text.trim() !== line.text.trim().toUpperCase()) {
       issues.push({ line: i + 1, type: 'info', message: 'Transitions are typically uppercase', rule: 'transition-case' });
     }
   });
 
-  // Rule: Script is very short
   const nonEmptyLines = lines.filter(l => l.type !== 'empty').length;
   if (nonEmptyLines < 10 && nonEmptyLines > 0) {
     issues.push({ line: 1, type: 'info', message: 'Script is very short. Feature screenplays are typically 90-120 pages.', rule: 'length' });
   }
 
-  // Rule: No scene headings
   if (!hasSlug && nonEmptyLines > 5) {
     issues.push({ line: 1, type: 'error', message: 'No scene headings detected. Use INT. or EXT. to start scenes.', rule: 'no-scenes' });
+  }
+
+  // 2. Advanced AST Structural Analysis (The Third Brain)
+  const ast = buildAST(lines);
+  
+  if (ast.scenes.length > 0) {
+    let runningWords = 0;
+    const seenCharacters = new Set<string>();
+
+    ast.scenes.forEach((scene, sceneIndex) => {
+      // Pacing check: Very long scenes drag down the narrative
+      if (scene.wordCount > 750) {
+        issues.push({ 
+          line: scene.startIndex + 1, 
+          type: 'info', 
+          message: `Cinematic Polish: This scene is very dense (~${scene.wordCount} words). Consider breaking it up or ensuring pacing remains high.`, 
+          rule: 'scene-length-ast' 
+        });
+      }
+
+      scene.children.forEach(child => {
+        if (child.type === 'DIALOGUE_BLOCK') {
+          const charName = (child as ASTDialogueBlock).character;
+          // Character intro check
+          if (!seenCharacters.has(charName)) {
+            seenCharacters.add(charName);
+            // Ideally they should be introduced in an ACTION block first, but we flag if their first appearance is speech
+            // unless they are explicitly V.O. or O.S.
+            if (!charName.includes('V.O.') && !charName.includes('O.S.')) {
+              // It's a heuristic, but powerful for structure
+              issues.push({
+                line: child.startIndex + 1,
+                type: 'info',
+                message: `Character "${charName}" speaks for the first time here. Ensure they are properly introduced in action lines prior to this.`,
+                rule: 'character-intro-ast'
+              });
+            }
+          }
+
+          // Dialogue length/consistency check (Monologue detection)
+          if (child.wordCount > 100) {
+            issues.push({
+              line: child.startIndex + 1,
+              type: 'info',
+              message: `Monologue detected (${child.wordCount} words). Ensure this lengthy speech is structurally earned.`,
+              rule: 'dialogue-length-ast'
+            });
+          }
+        } else if (child.type === 'ACTION_BEAT') {
+          // Track characters introduced in action beats
+          const actionBeat = child as ASTActionBeat;
+          const actionText = actionBeat.text.toUpperCase();
+          ast.globalCharacters.forEach((_, charName) => {
+            const baseName = charName.replace(/\s*\(.*\)/, '').trim();
+            if (baseName.length > 2 && actionText.includes(baseName)) {
+              seenCharacters.add(charName);
+            }
+          });
+        }
+      });
+
+      runningWords += scene.wordCount;
+      
+      // Act II Timing check (typically around 25% of the way in)
+      if (ast.totalWords > 5000) {
+        const percentProgress = runningWords / ast.totalWords;
+        // If we cross 35% and haven't transitioned strongly, it might be dragging
+        if (percentProgress > 0.35 && sceneIndex < ast.scenes.length * 0.2) {
+          if (scene.wordCount > 500) {
+             // Too dense early on
+             issues.push({
+               line: scene.startIndex + 1,
+               type: 'warning',
+               message: `Structural Pacing: Act I seems to be dragging. You are 35% through the script's word count but still in early scenes.`,
+               rule: 'act1-pacing-ast'
+             });
+          }
+        }
+      }
+    });
   }
 
   return issues.sort((a, b) => a.line - b.line);

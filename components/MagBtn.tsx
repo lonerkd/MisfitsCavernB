@@ -24,6 +24,7 @@ export default function MagBtn({
   primary = false,
   type = 'button',
   disabled = false,
+  className,
   external = false,
 }: MagBtnProps) {
   const ref = useRef<HTMLAnchorElement & HTMLButtonElement>(null);

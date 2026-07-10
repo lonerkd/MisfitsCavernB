@@ -169,7 +169,13 @@ export default function ManagePortfolioPage() {
         {loading ? (
           <div style={{ display: 'grid', gap: 20 }}>
             {[0, 1].map(i => (
-              <div key={i} className="skeleton" style={{ height: 140, borderRadius: 12 }} />
+              <div key={i} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="skeleton" style={{ width: 150, height: 14, borderRadius: 4 }} />
+                  <div className="skeleton" style={{ width: 60, height: 14, borderRadius: 4 }} />
+                </div>
+                <div className="skeleton" style={{ width: '100%', height: 80, borderRadius: 8 }} />
+              </div>
             ))}
           </div>
         ) : projects.length === 0 && !showNew ? (
