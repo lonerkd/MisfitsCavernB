@@ -356,6 +356,7 @@ export default function ProjectHubPage() {
       if (activeProject?.id !== data.id) refreshProject(data.id);
     });
     return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshProject is stable from context; activeProject?.id intentionally omitted to avoid re-fetch loop
   }, [id, router]);
 
   // Live cross-suite counts for real projects, so the hub tiles reflect the

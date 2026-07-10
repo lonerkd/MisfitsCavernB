@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Play, Pause, SkipBack, SkipForward, Disc, Volume2, LogOut, Link2Off, RefreshCw } from 'lucide-react';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
@@ -77,7 +78,7 @@ export default function GlobalAudioWidget() {
       {/* Track Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         {currentTrack?.album?.images?.[0]?.url ? (
-          <img src={currentTrack.album.images[0].url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }} />
+          <Image src={currentTrack.album.images[0].url} alt="" width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
         ) : (
           <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Disc size={20} color="rgba(255,255,255,0.2)" />

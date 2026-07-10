@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Play, X, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -58,11 +59,12 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
       onClick={() => onClick(video)}
     >
       {/* Thumbnail */}
-      <img
+      <Image
         src={IMG(video.driveId)}
         alt={video.title}
+        fill
         loading="lazy"
-        style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
+        style={{ objectFit: 'cover', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
         onError={e => {
           const t = e.target as HTMLImageElement;
           if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = IMG_FB(video.driveId); }
@@ -249,7 +251,7 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
               <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 20, scrollSnapType: 'x mandatory' }}>
                 {project.stills.map((still, i) => (
                   <div key={i} style={{ minWidth: '60%', aspectRatio: '21/9', background: '#111', borderRadius: 8, overflow: 'hidden', scrollSnapAlign: 'start', flexShrink: 0 }}>
-                    <img src={still} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <Image src={still} alt="" fill style={{ objectFit: 'cover' }} />
                   </div>
                 ))}
               </div>

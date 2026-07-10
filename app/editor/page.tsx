@@ -407,7 +407,7 @@ export default function EditorPage() {
     loadCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
-  }, [toast]);
+  }, []);
 
   // Casting is project-scoped (not per-script), so it loads independently of
   // which draft is open — the crew list and who's cast stay stable across
@@ -695,7 +695,7 @@ export default function EditorPage() {
       toast(`Exported as .txt`, 'success');
     }
     setShowFormatMenu(false);
-  }, [currentScript, content, toast]);
+  }, [currentScript, content, titlePage, toast]);
 
   const handleFindReplace = useCallback(() => {
     if (!findText) return;
@@ -944,6 +944,7 @@ export default function EditorPage() {
       const caret = lineStart + transformed.length;
       setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- acceptAutocomplete/insertElement are stable imperative helpers
   }, [content, lines, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
   const insertElement = (type: string) => {

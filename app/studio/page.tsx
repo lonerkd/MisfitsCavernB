@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, FolderOpen, Image, Video, FileText, Music, Upload, Plus } from 'lucide-react';
 import Link from 'next/link';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -58,7 +59,7 @@ const STAGES = [
 ];
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  image: <Image size={15} />,
+  image: <Image size={15} aria-label="image type" />,
   video: <Video size={15} />,
   document: <FileText size={15} />,
   audio: <Music size={15} />,
@@ -181,7 +182,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
                  <audio src={asset.url} controls style={{ width: '100%' }} />
                </div>
              ) : asset.url ? (
-               <img src={asset.url} alt={asset.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                <NextImage src={asset.url} alt={asset.name} width={800} height={600} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
              ) : (
                <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>No preview available</div>
              )}
@@ -534,7 +535,7 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
         </>
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-        <img src={img.image_url} alt={img.title || ''} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
+        <NextImage src={img.image_url} alt={img.title || ''} width={900} height={700} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(224, 221, 174,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>{img.title || 'Untitled'}</span>
           <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
@@ -587,11 +588,11 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: 
     >
       {broken ? (
         <div onClick={onOpen} style={{ width: '100%', minHeight: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20, background: 'rgba(255,255,255,0.02)', cursor: onOpen ? 'pointer' : 'default' }}>
-          <Image size={22} color="rgba(255,255,255,0.2)" />
+          <Image size={22} color="rgba(255,255,255,0.2)" aria-label="broken image" />
           <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', textAlign: 'center', wordBreak: 'break-word' }}>{image.title || 'Image unavailable'}</span>
         </div>
       ) : (
-        <img src={image.url} alt={image.title} onClick={onOpen} onError={() => setBroken(true)} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
+        <NextImage src={image.url} alt={image.title} width={400} height={300} onClick={onOpen} onError={() => setBroken(true)} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
       )}
 
       {sceneCount > 0 && (
@@ -733,7 +734,7 @@ function ReferenceSearchModal({
                   const isPending = pending.has(ref.id);
                   return (
                     <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#050a14' }}>
-                      <img src={ref.thumbnail} alt={ref.title} loading="lazy" style={{ width: '100%', display: 'block' }} />
+                      <NextImage src={ref.thumbnail} alt={ref.title} width={300} height={200} loading="lazy" style={{ width: '100%', display: 'block' }} />
                       <div
                         style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
                         onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
@@ -846,7 +847,7 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
         {slides.map((s, i) => (
           <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-            {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
+            {s.bg && (<><NextImage src={s.bg} alt="" fill style={{ objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
             <div style={{ position: 'relative', zIndex: 1 }}>
               <SectionLabel text={`Slide 0${i + 1}`} />
               {s.render(false)}
@@ -865,7 +866,7 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
             <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
-              {slides[idx].bg && (<><img src={slides[idx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
+              {slides[idx].bg && (<><NextImage src={slides[idx].bg} alt="" fill style={{ objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
               <div style={{ position: 'relative', zIndex: 1 }}>{slides[idx].render(true)}</div>
             </div>
             <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: idx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
@@ -899,7 +900,7 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
     (data || []).forEach((r: any) => { (map[r.character_id] ||= []).push({ id: r.id, concept_asset_id: r.concept_asset_id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
     setRefs(map);
   };
-  useEffect(() => { loadRefs(); /* eslint-disable-next-line */ }, [projectId, bios.length]);
+  useEffect(() => { loadRefs(); }, [projectId, bios.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ensureRow = async (b: Bio): Promise<string | null> => {
     if (b.id) return b.id;
@@ -938,7 +939,7 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
       setLoading(false);
     }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId]);
+  useEffect(() => { load(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startEdit = (b: Bio) => { setEditName(b.name); setDraft({ ...b }); };
   const save = async () => {
@@ -1074,7 +1075,7 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
       await loadCastings();
     } finally { setLoading(false); }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId, scenes.length]);
+  useEffect(() => { load(); }, [projectId, scenes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Footprint of a character across the shooting schedule, matched on cast_list.
   const footprint = (name: string) => {
@@ -1962,7 +1963,7 @@ export default function StudioPage() {
   useEffect(() => {
     if (activeProject?.id) loadSceneRefs(activeProject.id);
     else setSceneRefs({});
-  }, [activeProject?.id, activeProject?.scenes]);
+  }, [activeProject?.id, activeProject?.scenes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const linkConceptToScene = async (sceneId: string, conceptId: string) => {
     if (!activeProject) return;
@@ -2070,7 +2071,7 @@ export default function StudioPage() {
     return () => {
       supabase.removeChannel(sub);
     };
-  }, [activeProject?.id]);
+  }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = filter === 'all' ? assetsList : assetsList.filter(a => a.type === filter);
 
@@ -2496,7 +2497,7 @@ export default function StudioPage() {
                       })}
                     </div>
                   ) : (
-                    <EmptyState icon={<Image size={28} />} title={all.length === 0 ? 'No concept references yet' : `Nothing in "${activeConceptBoard}" yet`} subtitle="Paste an image URL above to start your visual moodboard. Group pins into boards like Lighting, Wardrobe or Locations." />
+                    <EmptyState icon={<Image size={28} aria-label="no images" />} title={all.length === 0 ? 'No concept references yet' : `Nothing in "${activeConceptBoard}" yet`} subtitle="Paste an image URL above to start your visual moodboard. Group pins into boards like Lighting, Wardrobe or Locations." />
                   )}
 
                   {lightboxIdx !== null && filtered[lightboxIdx] && (

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Textarea } from '@/components/ui/Textarea';
@@ -375,7 +376,7 @@ export default function JobDetailPage() {
                           flexShrink: 0,
                         }}>
                           {app.profiles?.avatar_url ? (
-                            <img src={app.profiles.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <Image src={app.profiles.avatar_url} alt="" width={32} height={32} style={{ objectFit: 'cover' }} />
                           ) : (
                             <User size={14} style={{ color: 'var(--accent)', opacity: 0.6 }} />
                           )}

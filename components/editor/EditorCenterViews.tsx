@@ -98,7 +98,7 @@ function SceneBoardCard({
     const endIdx = lines.findIndex((l, idx) => idx > startIdx && l.type === 'slug');
     const body = lines.slice(startIdx + 1, endIdx === -1 ? lines.length : endIdx);
     return [...new Set(body.filter(l => l.type === 'character').map(l => l.text.trim()))];
-  }, [lines, startIdx, scene.id]);
+  }, [lines, startIdx]);
 
   const zoneHandlers = usePillZone({
     module: 'editor',

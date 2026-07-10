@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 // Avatar that falls back to an initial monogram when there's no image URL or
 // the image fails to load (a 404'd avatar no longer shows a broken icon).
@@ -19,9 +20,11 @@ export default function Avatar({ src, name, size = 40, radius, accent = 'var(--a
 
   if (src && !broken) {
     return (
-      <img
+      <Image
         src={src}
         alt={name || ''}
+        width={size}
+        height={size}
         onError={() => setBroken(true)}
         style={{ width: size, height: size, borderRadius: br, objectFit: 'cover', flexShrink: 0, ...style }}
       />

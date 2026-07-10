@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
@@ -165,10 +166,12 @@ export default function CrewMemberPage() {
           {/* Avatar */}
           <div style={{ flexShrink: 0 }}>
             {profile.avatar_url ? (
-              <img
+              <Image
                 src={profile.avatar_url}
                 alt={profile.username}
-                style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', display: 'block' }}
+                width={80}
+                height={80}
+                style={{ borderRadius: '50%', objectFit: 'cover', display: 'block' }}
               />
             ) : (
               <div style={{
@@ -323,10 +326,11 @@ export default function CrewMemberPage() {
                         width: '100%', aspectRatio: '16/9', background: '#111',
                         marginBottom: 14, overflow: 'hidden', position: 'relative'
                       }}>
-                        <img
+                        <Image
                           src={project.portfolio_media[0].thumbnail_url}
                           alt={project.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.75 }}
+                          fill
+                          style={{ objectFit: 'cover', display: 'block', opacity: 0.75 }}
                         />
                         {project.portfolio_media.length > 1 && (
                           <div style={{

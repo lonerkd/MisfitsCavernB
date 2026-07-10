@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plus, Trash, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
@@ -50,23 +51,23 @@ export default function SoundtrackPage() {
   const [projectRefs, setProjectRefs] = useState<any[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'sfx') fetchSfxAssets();
-    if (activeTab === 'project' && activeProject?.id) fetchProjectRefs();
-  }, [activeTab, activeProject?.id]);
-
-  const fetchSfxAssets = async () => {
+  const fetchSfxAssets = useCallback(async () => {
     const { data, error } = await supabase.from('sfx_assets').select('*').order('created_at', { ascending: false });
     if (data && !error) setSfxAssets(data);
-  };
+  }, []);
 
-  const fetchProjectRefs = async () => {
+  const fetchProjectRefs = useCallback(async () => {
     if (!activeProject?.id) return;
     setLoadingRefs(true);
     const { data, error } = await supabase.from('project_audio_references').select('*').eq('project_id', activeProject.id).order('created_at', { ascending: false });
     if (data && !error) setProjectRefs(data);
     setLoadingRefs(false);
-  };
+  }, [activeProject?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'sfx') fetchSfxAssets();
+    if (activeTab === 'project' && activeProject?.id) fetchProjectRefs();
+  }, [activeTab, activeProject?.id, fetchSfxAssets, fetchProjectRefs]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -415,7 +416,7 @@ export default function SoundtrackPage() {
                   <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                     <div className="flex items-center gap-4 overflow-hidden">
                       {item.album?.images?.[2]?.url ? (
-                        <img src={item.album.images[2].url} alt="" className="w-12 h-12 rounded object-cover" />
+                        <Image src={item.album.images[2].url} alt="" width={48} height={48} className="rounded object-cover" />
                       ) : (
                         <div className="w-12 h-12 rounded bg-white/5 flex items-center justify-center"><Disc size={16} className="opacity-40" /></div>
                       )}

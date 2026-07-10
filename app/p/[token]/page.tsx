@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Film } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
@@ -245,10 +246,11 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
               flexShrink: 0,
             }}>
               {profiles.avatar_url ? (
-                <img
+                <Image
                   src={profiles.avatar_url}
                   alt={profiles.username}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  fill
+                  style={{ objectFit: 'cover' }}
                 />
               ) : (
                 <span style={{
@@ -546,7 +548,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
         <div style={wrap}>
           <div style={label}>Concept</div>
           {block.image_url && (
-            <img src={block.image_url} alt={block.title || ''} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+            <Image src={block.image_url} alt={block.title || ''} width={800} height={420} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
           )}
           {block.title && <h3 style={{ ...heading, marginTop: 10 }}>{block.title}</h3>}
         </div>
@@ -588,7 +590,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
       return (
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 14 }}>
           {block.image_url ? (
-            <img src={block.image_url} alt={block.title || ''} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            <Image src={block.image_url} alt={block.title || ''} width={48} height={48} style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
           ) : (
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(215,52,11,0.15)', flexShrink: 0 }} />
           )}
@@ -630,7 +632,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
       return (
         <div style={wrap}>
           <div style={label}>Media</div>
-          {url && <img src={url} alt={block.title || ''} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />}
+          {url && <Image src={url} alt={block.title || ''} width={800} height={420} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />}
         </div>
       );
     }
@@ -685,12 +687,11 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
       }}
     >
       {/* Thumbnail */}
-      <img
+      <Image
         src={thumb}
         alt={media.title}
+        fill
         style={{
-          width: '100%',
-          height: '100%',
           objectFit: 'cover',
           display: 'block',
           transition: 'transform 0.3s',

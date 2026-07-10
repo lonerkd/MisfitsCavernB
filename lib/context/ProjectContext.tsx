@@ -259,7 +259,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       setActiveProject(fullProject);
       setProjects(prev => prev.map(p => p.id === id ? fullProject : p));
     }
-  }, []);
+  }, [setActiveProject]);
 
   // Read inside the realtime callbacks below via a ref instead of the
   // `activeProject` state directly — the effect that owns the subscription

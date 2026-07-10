@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 export interface CanvasPinData {
   id: string;
@@ -61,11 +62,12 @@ export function CanvasPin({ pin, scale, onMove, onMoveEnd, onOpen, onRemove }: C
       whileDrag={{ cursor: 'grabbing', boxShadow: '0 16px 50px rgba(0,0,0,0.7)', zIndex: 50 }}
       onDoubleClick={() => onOpen?.(pin.id)}
     >
-      <img
+      <Image
         src={pin.url}
         alt={pin.title || ''}
+        fill
         draggable={false}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
+        style={{ objectFit: 'cover', pointerEvents: 'none' }}
       />
       {pin.title && (
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '6px 8px', background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', fontFamily: 'var(--mono)', fontSize: 10, color: '#fff', pointerEvents: 'none' }}>

@@ -75,7 +75,7 @@ export default function LoungeDock() {
       setMessages(prev => [...prev, payload.new as DBMessage]);
     });
     return () => { cancelled = true; supabase.removeChannel(sub); };
-  }, [activeChannel?.id]);
+  }, [activeChannel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages.length]);
 

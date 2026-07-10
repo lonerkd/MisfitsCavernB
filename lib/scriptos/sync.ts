@@ -99,7 +99,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       setConflict(NO_CONFLICT);
       lastRemoteRef.current = '';
     };
-  }, [scriptId]);
+  }, [scriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Push local changes: broadcast to peers + debounced DB save.
   useEffect(() => {

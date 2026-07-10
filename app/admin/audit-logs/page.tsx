@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Filter, Download, Search, Clock, User, Zap } from 'lucide-react';
 import { ProtectedPage } from '@/lib/permissions/access-control';
@@ -39,12 +39,7 @@ export default function AuditLogsPage() {
 
   const pageSize = 50;
 
-  useEffect(() => {
-    loadLogs();
-    loadActivitySummary();
-  }, [searchTerm, actionFilter, page]);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       const { logs: auditLogs, count } = await getAuditLogs(pageSize, page * pageSize, {
@@ -66,9 +61,9 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, actionFilter, page, pageSize]);
 
-  const loadActivitySummary = async () => {
+  const loadActivitySummary = useCallback(async () => {
     try {
       const summary = await getActivitySummary();
       setActivitySummary(summary);
@@ -78,7 +73,12 @@ export default function AuditLogsPage() {
     } catch (error) {
       console.error('Failed to load activity summary:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadLogs();
+    loadActivitySummary();
+  }, [loadLogs, loadActivitySummary]);
 
   const exportLogs = () => {
     const csv = [

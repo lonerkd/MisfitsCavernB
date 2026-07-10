@@ -196,8 +196,10 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
 
     return () => {
       cancelled = true;
-      peersRef.current.forEach((_, id) => closePeer(id));
-      peersRef.current.clear();
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- copied to local var intentionally for cleanup safety
+      const peers = peersRef.current;
+      peers.forEach((_, id) => closePeer(id));
+      peers.clear();
       rosterRef.current.clear();
       streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;

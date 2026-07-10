@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getProjectCrew, assignCrewMember, updateCrewMemberRole, removeCrewMember, type CrewRole } from '@/lib/supabase/crew-management';
@@ -40,19 +40,7 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
   const [savingMemberId, setSavingMemberId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadCrew();
-  }, [projectId]);
-
-  useEffect(() => {
-    if (searchQuery.length > 2) {
-      searchUsers();
-    } else {
-      setSearchResults([]);
-    }
-  }, [searchQuery]);
-
-  const loadCrew = async () => {
+  const loadCrew = useCallback(async () => {
     try {
       setLoading(true);
       const crewData = await getProjectCrew(projectId);
@@ -63,16 +51,28 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, toast]);
 
-  const searchUsers = async () => {
+  const searchUsers = useCallback(async () => {
     try {
       const results = await searchProfiles(searchQuery);
       setSearchResults(results.filter(u => !crew.some(c => c.user_id === u.id)));
     } catch (error) {
       console.error('Failed to search users:', error);
     }
-  };
+  }, [searchQuery, crew]);
+
+  useEffect(() => {
+    loadCrew();
+  }, [loadCrew]);
+
+  useEffect(() => {
+    if (searchQuery.length > 2) {
+      searchUsers();
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery, searchUsers]);
 
   const handleAddMember = async (userId: string) => {
     try {

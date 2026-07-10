@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
@@ -304,7 +305,7 @@ export default function PitchBoardPage() {
             <LibList empty={concepts.length === 0 ? 'No concept art in Studio yet' : undefined}>
               {concepts.map(c => (
                 <Chip key={c.id} accent={accent} onAdd={() => addBlock(addConcept(c))} onDragStart={() => onLibDragStart(addConcept(c))} onDragEnd={onLibDragEnd}>
-                  {c.image_url && <img src={c.image_url} alt="" style={{ width: 26, height: 26, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
+                  {c.image_url && <Image src={c.image_url} alt="" width={26} height={26} style={{ borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
                   <span style={chipLabel}>{c.title || 'Untitled concept'}</span>
                 </Chip>
               ))}
@@ -505,7 +506,7 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
     case 'media':
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {block.image_url && <img src={block.image_url} alt="" style={{ width: 56, height: 40, borderRadius: 6, objectFit: 'cover' }} />}
+          {block.image_url && <Image src={block.image_url} alt="" width={56} height={40} style={{ borderRadius: 6, objectFit: 'cover' }} />}
           <div style={{ minWidth: 0 }}>
             {block.title && <div style={previewTitle}>{block.title}</div>}
             {block.meta?.url && <div style={{ ...previewBody, wordBreak: 'break-all' }}>{block.meta.url}</div>}
@@ -525,7 +526,7 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
     case 'crew':
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {block.image_url && <img src={block.image_url} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />}
+          {block.image_url && <Image src={block.image_url} alt="" width={32} height={32} style={{ borderRadius: '50%', objectFit: 'cover' }} />}
           <div>
             <div style={previewTitle}>{block.title}</div>
             {block.body && <div style={previewBody}>{block.body}</div>}
