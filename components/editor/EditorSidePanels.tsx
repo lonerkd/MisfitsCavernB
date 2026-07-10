@@ -478,7 +478,7 @@ export function EditorRightPanels({
                         <>
                           <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4, padding: '0 4px' }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
                           {stashItems.length === 0 ? (
-                            <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click "+ Add Selected" to save it here.</div>
+                            <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click &quot;+ Add Selected&quot; to save it here.</div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {stashItems.map(item => (

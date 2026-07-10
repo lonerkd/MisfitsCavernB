@@ -116,7 +116,7 @@ export default function CrewMemberPage() {
         <div style={{ marginTop: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', gap: 16 }}>
           <User size={40} style={{ opacity: 0.2 }} />
           <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, opacity: 0.3 }}>PROFILE NOT FOUND</div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, marginTop: 4 }}>This crew member doesn't exist or has been removed.</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, marginTop: 4 }}>This crew member doesn&apos;t exist or has been removed.</div>
           <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
             BACK TO CREW
           </Link>

@@ -341,7 +341,7 @@ export default function SoundtrackPage() {
                     <div className="p-12 rounded-2xl border border-dashed border-white/10 text-center">
                       <Music size={32} className="opacity-20 mb-4 mx-auto" />
                       <h3 className="mc-title text-lg mb-2">Bible is empty</h3>
-                      <p className="mc-text text-sm opacity-50">Search for tracks or upload SFX, then click "+" to save them here.</p>
+                      <p className="mc-text text-sm opacity-50">Search for tracks or upload SFX, then click &quot;+&quot; to save them here.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -1,16 +1,36 @@
 # Knowledge Sync Protocol
 
-## 1. Multi-Suite Cooperation
+## 1. Universal Agent Compatibility
+
+Misfits Cavern uses an **agent-agnostic** knowledge architecture. Every AI coding tool reads `AGENTS.md` at the repo root natively:
+
+| Tool | Reads | Function |
+|---|---|---|
+| GitHub Copilot | `.github/copilot-instructions.md` → references `AGENTS.md` | IDE inline suggestions |
+| Claude Code | `CLAUDE.md` → references `AGENTS.md` | CLI agent loop |
+| Cline / Roo Code | `AGENTS.md` | Autonomous CLI agent |
+| Cursor | `AGENTS.md` | IDE agent |
+| Windsurf | `AGENTS.md`, `.windsurfrules` | IDE agent |
+| Zed | `AGENTS.md` | Editor agent |
+| OpenCode | `AGENTS.md`, `.opencode/` | CLI agent loop |
+| Gemini Code Assist | `AGENTS.md` | IDE agent |
+| Codex / Codeium | `AGENTS.md` | IDE agent |
+
+All tools share **one source of truth**: `AGENTS.md` (universal rules) + `.cavern-intelligence/` (deep knowledge hub). No duplicated instructions across tools.
+
+## 2. Multi-Suite Cooperation
+
 Misfits Cavern is developed across multiple active environments:
 - **VS Code:** Local coding, manual reviews, and extensions.
 - **Claude Code / OpenCode:** Autonomous command-line agent loops.
-- **Antigravity / Other IDE Suites:** Visual refactoring and code automation.
+- **Cline / Cursor / Windsurf:** AI IDE assistants.
+- **Any other tool reading AGENTS.md.**
 
-To prevent documentation drift, all human developers and AI coding agents must treat the `.cavern-intelligence/` directory as the central **Source of Truth** and the **Codebase Memory Gutter**.
+To prevent documentation drift, all human developers and AI coding agents must treat `.cavern-intelligence/` as the central **Source of Truth** and **Codebase Memory Gutter**.
 
 ---
 
-## 2. The Golden Rules for AI Agents
+## 3. The Golden Rules for AI Agents
 
 Whenever an AI coding agent (Claude Code, Antigravity, OpenCode) initializes a session or is assigned a task:
 
@@ -21,7 +41,7 @@ Whenever an AI coding agent (Claude Code, Antigravity, OpenCode) initializes a s
 
 ---
 
-## 3. Machine-Readable Syncing
+## 4. Machine-Readable Syncing
 - The file `.cavern-intelligence/sync-manifest.json` acts as an automated registry for external tools.
 - It provides a tree mapping of folder blocks to their core technologies, dependencies, and synchronization states.
 - Running `node scripts/sync-intel.js` will automatically scan the workspace and reconstruct this manifest, ensuring that file counts, structures, and module definitions are always accurate.

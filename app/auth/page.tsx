@@ -11,7 +11,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
 import { signIn, signUp } from '@/lib/supabase/auth';
 import { withTimeout } from '@/lib/supabase/withTimeout';
-import { checkPasswordWeakness } from '@/lib/password-strength';
+import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
 import { supabase } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
@@ -69,6 +69,8 @@ export default function AuthPage() {
     if (mode === 'signup') {
       const weak = checkPasswordWeakness(form.password, form.email, form.username);
       if (weak) { setError(weak); return; }
+      const count = await checkHibpBreach(form.password);
+      if (count > 0) { setError(`This password has appeared in ${count.toLocaleString()} known data breaches. Choose a unique password.`); setLoading(false); return; }
     }
 
     setLoading(true);

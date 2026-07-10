@@ -290,7 +290,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>
-              File storage isn't connected yet — link to a file already hosted elsewhere (Drive, YouTube, etc.) to track it here.
+              File storage isn&apos;t connected yet — link to a file already hosted elsewhere (Drive, YouTube, etc.) to track it here.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
