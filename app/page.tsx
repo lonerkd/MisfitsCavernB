@@ -172,7 +172,7 @@ function ScriptOSPreview({ lines }: { lines?: string[] }) {
       </div>
       <br />
       <div className="screenplay-char">MARA</div>
-      <div className="screenplay-dialog">You can't make art in a vacuum. You need friction.</div>
+      <div className="screenplay-dialog">You can&apos;t make art in a vacuum. You need friction.</div>
     </div>
   );
 }

@@ -125,7 +125,7 @@ export default function NotificationBell() {
             <div style={{ maxHeight: 380, overflowY: 'auto' }}>
               {items.length === 0 ? (
                 <div style={{ padding: '32px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 11.5, fontFamily: 'var(--mono)' }}>
-                  <Bell size={22} style={{ opacity: 0.3, marginBottom: 8 }} /><br />You're all caught up.
+                  <Bell size={22} style={{ opacity: 0.3, marginBottom: 8 }} /><br />You&apos;re all caught up.
                 </div>
               ) : items.map(n => (
                 <div

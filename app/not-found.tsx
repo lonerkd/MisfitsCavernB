@@ -10,7 +10,7 @@ export default function NotFound() {
         404
       </span>
       <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2, margin: 0, maxWidth: 480 }}>
-        This page doesn't exist.
+        This page doesn&apos;t exist.
       </h1>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 440 }}>
         Check the link, or head back home.

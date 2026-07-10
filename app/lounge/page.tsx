@@ -484,7 +484,6 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 export default function LoungePage() {
   const { isLoading } = useRequireAuth();
   const { toast } = useToast();
-  if (isLoading) return null;
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
@@ -523,9 +522,7 @@ export default function LoungePage() {
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
 
-  // Publish the lounge's live state to the Pill's context capsule: which
-  // channel you're in, how many crew are online (real presence), and message
-  // count — the same state the sidebar already drives.
+  // Publish the lounge's live state to the Pill's context capsule.
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
   usePillStage(
     {
@@ -598,7 +595,6 @@ export default function LoungePage() {
         console.error(e);
       }
     };
-    // In DM mode we need the signed-in user resolved first.
     if (dmTarget && !currentUser) return () => { mounted = false; };
     loadMessages();
 
@@ -626,8 +622,7 @@ export default function LoungePage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Typing indicators over Realtime broadcast (Slack/Discord style). Each
-  // channel gets an ephemeral broadcast room; peers show for ~3s per keypress.
+  // Typing indicators over Realtime broadcast (Slack/Discord style).
   useEffect(() => {
     if (!activeChannel) return;
     const uname = myProfile?.username || 'Someone';
@@ -642,27 +637,6 @@ export default function LoungePage() {
     typingChannelRef.current = { ch, uname };
     return () => { supabase.removeChannel(ch); setTypingUsers([]); };
   }, [activeChannel, myProfile?.username]);
-
-  const broadcastTyping = () => {
-    const now = Date.now();
-    if (now - lastBroadcast.current < 1200) return; // throttle
-    lastBroadcast.current = now;
-    typingChannelRef.current?.ch?.send({ type: 'broadcast', event: 'typing', payload: { username: typingChannelRef.current.uname } });
-  };
-
-  const handleReact = async (messageId: string, emoji: string) => {
-    if (!currentUser) return;
-    // Optimistic toggle.
-    setMessages(prev => prev.map(m => {
-      if (m.id !== messageId) return m;
-      const r: Record<string, string[]> = { ...(m.reactions || {}) };
-      const users = r[emoji] || [];
-      if (users.includes(currentUser.id)) { const n = users.filter(u => u !== currentUser.id); if (n.length) r[emoji] = n; else delete r[emoji]; }
-      else r[emoji] = [...users, currentUser.id];
-      return { ...m, reactions: r };
-    }));
-    try { await toggleReaction(messageId, emoji, currentUser.id); } catch (e) { console.error(e); }
-  };
 
   // Thread panel — load a message's replies live and let the user reply in it.
   useEffect(() => {
@@ -679,6 +653,28 @@ export default function LoungePage() {
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [threadParent]);
+
+  if (isLoading) return null;
+
+  const broadcastTyping = () => {
+    const now = Date.now();
+    if (now - lastBroadcast.current < 1200) return; // throttle
+    lastBroadcast.current = now;
+    typingChannelRef.current?.ch?.send({ type: 'broadcast', event: 'typing', payload: { username: typingChannelRef.current.uname } });
+  };
+
+  const handleReact = async (messageId: string, emoji: string) => {
+    if (!currentUser) return;
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const r: Record<string, string[]> = { ...(m.reactions || {}) };
+      const users = r[emoji] || [];
+      if (users.includes(currentUser.id)) { const n = users.filter(u => u !== currentUser.id); if (n.length) r[emoji] = n; else delete r[emoji]; }
+      else r[emoji] = [...users, currentUser.id];
+      return { ...m, reactions: r };
+    }));
+    try { await toggleReaction(messageId, emoji, currentUser.id); } catch (e) { console.error(e); }
+  };
 
   const handleThreadSend = async () => {
     const text = threadInput.trim();

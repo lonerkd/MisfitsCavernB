@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone } from 'lucide-react';
+import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '@/lib/supabase/notifications';
+import { checkHibpBreach } from '@/lib/password-strength';
 
 // Device-level preferences live in localStorage (they describe this browser,
 // not the account). Notification prefs are account-level and live on the
@@ -97,6 +98,7 @@ export default function SettingsPage() {
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
+  const [leakCheck, setLeakCheck] = useState(true);
   
   // Custom theme colors
   const [customBg, setCustomBg] = useState('#040710');
@@ -112,6 +114,7 @@ export default function SettingsPage() {
       setNotifyReplies(prefs.replies);
       setNotifyJobs(prefs.jobs);
       setNotifyProduct(prefs.product);
+      setLeakCheck(prefs.leak_check);
     });
     setCursor(getPref(PREF_KEYS.cursor, true));
     setMotion(getPref(PREF_KEYS.motion, false));
@@ -177,6 +180,11 @@ export default function SettingsPage() {
   };
   const changePassword = async () => {
     if (newPassword.length < 8) { flash('Password must be at least 8 characters.', false); return; }
+    if (leakCheck) {
+      setBusy('password');
+      const count = await checkHibpBreach(newPassword);
+      if (count > 0) { setBusy(null); flash(`This password has appeared in ${count.toLocaleString()} known data breaches. Choose something unique.`, false); return; }
+    }
     setBusy('password');
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setBusy(null);
@@ -332,6 +340,7 @@ export default function SettingsPage() {
         </Section>
 
         <Section icon={<ShieldCheck size={15} />} title="Data & Privacy">
+              <Row label="Leaked-password detection" hint="Checks passwords against known data breaches (k-anonymity — only a hash prefix leaves your device)." control={<Toggle on={leakCheck} onChange={v => { setLeakCheck(v); if (user) saveNotificationPrefs(user.id, { leak_check: v }); }} />} />
           <Row label="Export my data" hint="Download your profile, projects, scripts and jobs as JSON." control={
             <button style={{ ...ghostBtn, display: 'flex', alignItems: 'center', gap: 6 }} onClick={exportData} disabled={busy === 'export'}>
               <Download size={12} /> {busy === 'export' ? 'PREPARING…' : 'EXPORT'}

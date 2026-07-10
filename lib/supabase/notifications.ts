@@ -11,11 +11,12 @@ export interface Notification {
   created_at: string;
 }
 
-// Account-level notification preferences, stored on profiles.notification_prefs
-// so they sync across devices (was previously localStorage-only). A muted type
+// Account-level preferences stored on profiles.notification_prefs so they sync
+// across devices (was previously localStorage-only). Includes notification
+// toggles plus security prefs like leaked-password protection. A muted type
 // is never surfaced client-side. Defaults: replies/jobs on, product off.
-export interface NotificationPrefs { replies: boolean; jobs: boolean; product: boolean }
-export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = { replies: true, jobs: true, product: false };
+export interface NotificationPrefs { replies: boolean; jobs: boolean; product: boolean; leak_check: boolean }
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = { replies: true, jobs: true, product: false, leak_check: true };
 
 const TYPE_PREF: Record<string, keyof NotificationPrefs> = {
   reply: 'replies', comment: 'replies', job: 'jobs', application: 'jobs', product: 'product',

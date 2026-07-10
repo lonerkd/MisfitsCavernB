@@ -293,7 +293,7 @@ CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USIN
 -- of per row. Policies below are shown unwrapped for readability.
 
 -- RLS Policies: Scripts
-CREATE POLICY "Script members can view" ON scripts FOR SELECT USING (
+CREATE POLICY "Script members can view" ON scripts FOR SELECT TO authenticated USING (
   shared = TRUE OR
   created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
@@ -338,7 +338,6 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
     )
   );
 $$;
-CREATE POLICY "metadata readable by script members" ON script_metadata FOR SELECT USING (public.can_access_script(script_id));
 CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (public.can_access_script(script_id)) WITH CHECK (public.can_access_script(script_id));
 
 -- RLS Policies: Jobs
@@ -362,24 +361,25 @@ CREATE POLICY "Studio assets owner only" ON studio_assets FOR ALL USING (user_id
 CREATE POLICY "Portfolio readable if public or owner" ON portfolio_projects FOR SELECT USING (
   is_public = true OR user_id = auth.uid()
 );
-CREATE POLICY "Portfolio owner only write" ON portfolio_projects FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "Portfolio owner insert" ON portfolio_projects FOR INSERT WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Portfolio owner update" ON portfolio_projects FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "Portfolio owner delete" ON portfolio_projects FOR DELETE USING (user_id = auth.uid());
 CREATE POLICY "Portfolio media readable if public or owner" ON portfolio_media FOR SELECT USING (
   project_id IN (
     SELECT id FROM portfolio_projects WHERE is_public = true OR user_id = auth.uid()
   )
 );
-CREATE POLICY "Portfolio media owner write" ON portfolio_media FOR ALL USING (
+CREATE POLICY "Portfolio media owner insert" ON portfolio_media FOR INSERT WITH CHECK (
+  project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
+CREATE POLICY "Portfolio media owner update" ON portfolio_media FOR UPDATE USING (
+  project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
+CREATE POLICY "Portfolio media owner delete" ON portfolio_media FOR DELETE USING (
   project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
 
--- RLS Policies: Project Tasks
-CREATE POLICY "Project task members can view" ON project_tasks FOR SELECT USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
+-- RLS Policies: Project Tasks (single ALL policy covers SELECT/INSERT/UPDATE/DELETE)
 CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
@@ -388,14 +388,7 @@ CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
   )
 );
 
--- RLS Policies: Project Beats
-CREATE POLICY "Project beats members can view" ON project_beats FOR SELECT USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
+-- RLS Policies: Project Beats (single ALL policy covers SELECT/INSERT/UPDATE/DELETE)
 CREATE POLICY "Project beats members can manage" ON project_beats FOR ALL USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
@@ -676,21 +669,7 @@ CREATE INDEX IF NOT EXISTS idx_timeline_items_project ON timeline_items(project_
 CREATE INDEX IF NOT EXISTS idx_budget_items_project ON budget_items(project_id);
 ALTER TABLE timeline_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budget_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Timeline members can view" ON timeline_items FOR SELECT USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
 CREATE POLICY "Timeline members can manage" ON timeline_items FOR ALL USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
-CREATE POLICY "Budget members can view" ON budget_items FOR SELECT USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
     UNION
@@ -762,21 +741,7 @@ ALTER TABLE beats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE concept_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scenes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Beats: project members can view" ON beats FOR SELECT USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
 CREATE POLICY "Beats: project members can manage" ON beats FOR ALL USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
-CREATE POLICY "Concept assets: project members can view" ON concept_assets FOR SELECT USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
     UNION
@@ -790,21 +755,7 @@ CREATE POLICY "Concept assets: project members can manage" ON concept_assets FOR
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
   )
 );
-CREATE POLICY "Scenes: project members can view" ON scenes FOR SELECT USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
 CREATE POLICY "Scenes: project members can manage" ON scenes FOR ALL USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
-CREATE POLICY "Campaigns: project members can view" ON campaigns FOR SELECT USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
     UNION
@@ -847,8 +798,6 @@ CREATE TABLE IF NOT EXISTS character_castings (
 CREATE INDEX IF NOT EXISTS idx_character_castings_project ON character_castings(project_id);
 CREATE INDEX IF NOT EXISTS idx_character_castings_crew_user ON character_castings(crew_user_id);
 ALTER TABLE character_castings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Castings viewable by project creator or crew" ON character_castings FOR SELECT
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
 CREATE POLICY "Castings writable by project creator or crew" ON character_castings FOR ALL
   USING (public.is_project_creator(project_id) OR public.is_project_member(project_id))
   WITH CHECK (public.is_project_creator(project_id) OR public.is_project_member(project_id));
@@ -912,7 +861,13 @@ CREATE INDEX IF NOT EXISTS portfolio_blocks_project_idx
   ON portfolio_blocks(portfolio_project_id, position);
 ALTER TABLE portfolio_blocks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Portfolio blocks readable" ON portfolio_blocks FOR SELECT USING (true);
-CREATE POLICY "Portfolio blocks owner write" ON portfolio_blocks FOR ALL USING (
+CREATE POLICY "Portfolio blocks owner insert" ON portfolio_blocks FOR INSERT WITH CHECK (
+  portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
+CREATE POLICY "Portfolio blocks owner update" ON portfolio_blocks FOR UPDATE USING (
+  portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
+);
+CREATE POLICY "Portfolio blocks owner delete" ON portfolio_blocks FOR DELETE USING (
   portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
 

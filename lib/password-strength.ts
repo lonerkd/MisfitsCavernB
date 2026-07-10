@@ -49,3 +49,34 @@ export function checkPasswordWeakness(password: string, email?: string, username
 
   return null;
 }
+
+// Check if a password has appeared in known data breaches using the Have I
+// Been Pwned k-anonymity API. Only the first 5 chars of the SHA-1 hash leave
+// the client — the full password is never transmitted. Returns the breach count
+// or 0 if not found / unreachable.
+export async function checkHibpBreach(password: string): Promise<number> {
+  const hash = await sha1(password);
+  const prefix = hash.slice(0, 5).toUpperCase();
+  const suffix = hash.slice(5).toUpperCase();
+  try {
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return 0;
+    const text = await res.text();
+    for (const line of text.split('\n')) {
+      const [s, count] = line.split(':');
+      if (s?.trim() === suffix) return parseInt(count, 10) || 0;
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function sha1(str: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const buf = await crypto.subtle.digest('SHA-1', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
