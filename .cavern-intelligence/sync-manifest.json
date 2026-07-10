@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-07-10T02:05:56.572Z",
+  "last_synchronized": "2026-07-10T02:36:24.317Z",
   "stats": {
     "totalFiles": 216,
-    "totalSize": 1997569,
+    "totalSize": 1996178,
     "byExtension": {
       ".md": 45,
       ".json": 7,
@@ -380,13 +380,13 @@
     },
     {
       "path": ".eslintrc.json",
-      "size": 40,
-      "last_modified": "2026-07-10T01:17:42.442Z"
+      "size": 43,
+      "last_modified": "2026-07-10T02:11:41.157Z"
     },
     {
       "path": ".github/copilot-instructions.md",
-      "size": 770,
-      "last_modified": "2026-07-10T01:13:53.158Z"
+      "size": 782,
+      "last_modified": "2026-07-10T02:11:41.159Z"
     },
     {
       "path": ".vercel/project.json",
@@ -395,8 +395,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 3057,
-      "last_modified": "2026-07-10T01:13:48.908Z"
+      "size": 2886,
+      "last_modified": "2026-07-10T02:11:41.160Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -446,7 +446,7 @@
     {
       "path": "app/auth/page.tsx",
       "size": 14626,
-      "last_modified": "2026-07-10T02:04:38.490Z"
+      "last_modified": "2026-07-10T02:11:41.168Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -461,7 +461,7 @@
     {
       "path": "app/crew/[id]/page.tsx",
       "size": 18513,
-      "last_modified": "2026-07-10T01:24:31.140Z"
+      "last_modified": "2026-07-10T02:11:41.172Z"
     },
     {
       "path": "app/editor/error.tsx",
@@ -516,12 +516,12 @@
     {
       "path": "app/lounge/page.tsx",
       "size": 69349,
-      "last_modified": "2026-07-10T01:27:18.182Z"
+      "last_modified": "2026-07-10T02:11:41.175Z"
     },
     {
       "path": "app/not-found.tsx",
       "size": 1219,
-      "last_modified": "2026-07-10T01:24:31.640Z"
+      "last_modified": "2026-07-10T02:11:41.178Z"
     },
     {
       "path": "app/p/[token]/page.tsx",
@@ -531,7 +531,7 @@
     {
       "path": "app/page.tsx",
       "size": 38703,
-      "last_modified": "2026-07-10T01:24:32.184Z"
+      "last_modified": "2026-07-10T02:11:41.183Z"
     },
     {
       "path": "app/portfolio/manage/page.tsx",
@@ -555,8 +555,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 63328,
-      "last_modified": "2026-07-10T00:40:55.954Z"
+      "size": 61924,
+      "last_modified": "2026-07-10T02:32:57.929Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -571,7 +571,7 @@
     {
       "path": "app/settings/page.tsx",
       "size": 19969,
-      "last_modified": "2026-07-10T02:04:19.870Z"
+      "last_modified": "2026-07-10T02:11:41.188Z"
     },
     {
       "path": "app/showcase/page.tsx",
@@ -581,17 +581,17 @@
     {
       "path": "app/soundtrack/page.tsx",
       "size": 22627,
-      "last_modified": "2026-07-10T01:24:32.836Z"
+      "last_modified": "2026-07-10T02:11:41.192Z"
     },
     {
       "path": "app/studio/page.tsx",
       "size": 186858,
-      "last_modified": "2026-07-10T01:24:33.625Z"
+      "last_modified": "2026-07-10T02:11:41.195Z"
     },
     {
       "path": "CLAUDE.md",
-      "size": 711,
-      "last_modified": "2026-07-10T01:13:51.067Z"
+      "size": 734,
+      "last_modified": "2026-07-10T02:11:41.162Z"
     },
     {
       "path": "components/3D/OrbitGallery.tsx",
@@ -681,7 +681,7 @@
     {
       "path": "components/editor/EditorSidePanels.tsx",
       "size": 39904,
-      "last_modified": "2026-07-10T01:24:34.193Z"
+      "last_modified": "2026-07-10T02:11:41.203Z"
     },
     {
       "path": "components/EmptyState.tsx",
@@ -721,7 +721,7 @@
     {
       "path": "components/NotificationBell.tsx",
       "size": 7817,
-      "last_modified": "2026-07-10T01:24:34.651Z"
+      "last_modified": "2026-07-10T02:11:41.199Z"
     },
     {
       "path": "components/PageTransition.tsx",
@@ -800,8 +800,8 @@
     },
     {
       "path": "e2e/sam-journey-smoke.spec.ts",
-      "size": 5418,
-      "last_modified": "2026-07-10T01:23:00.792Z"
+      "size": 5564,
+      "last_modified": "2026-07-10T02:11:41.204Z"
     },
     {
       "path": "e2e/studio-module-toggle.spec.ts",
@@ -881,7 +881,7 @@
     {
       "path": "lib/password-strength.ts",
       "size": 3998,
-      "last_modified": "2026-07-10T02:03:25.640Z"
+      "last_modified": "2026-07-10T02:11:41.207Z"
     },
     {
       "path": "lib/permissions/access-control.tsx",
@@ -1101,7 +1101,7 @@
     {
       "path": "lib/supabase/notifications.ts",
       "size": 3112,
-      "last_modified": "2026-07-10T02:03:35.210Z"
+      "last_modified": "2026-07-10T02:11:41.210Z"
     },
     {
       "path": "lib/supabase/portfolio.ts",
@@ -1201,7 +1201,7 @@
     {
       "path": "README.md",
       "size": 6461,
-      "last_modified": "2026-07-10T01:22:13.740Z"
+      "last_modified": "2026-07-10T02:11:41.165Z"
     },
     {
       "path": "scratch_chrome_audit_prompt.md",
@@ -1236,7 +1236,7 @@
     {
       "path": "supabase-schema.sql",
       "size": 41953,
-      "last_modified": "2026-07-10T01:59:44.418Z"
+      "last_modified": "2026-07-10T02:11:41.215Z"
     },
     {
       "path": "tailwind.config.js",
