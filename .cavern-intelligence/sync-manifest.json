@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-07-09T23:20:32.559Z",
+  "last_synchronized": "2026-07-10T00:21:11.357Z",
   "stats": {
-    "totalFiles": 168,
-    "totalSize": 1931149,
+    "totalFiles": 211,
+    "totalSize": 2053246,
     "byExtension": {
-      ".json": 7,
+      ".md": 43,
+      ".json": 8,
       ".ts": 74,
-      ".tsx": 77,
-      ".md": 3,
+      ".tsx": 78,
       ".js": 6,
-      ".sql": 1
+      ".sql": 2
     }
   },
   "modules": {
@@ -111,6 +111,7 @@
         "app/profile/page.tsx",
         "app/projects/page.tsx",
         "app/projects/[id]/page.tsx",
+        "app/projects/[id]/pitch/page.tsx",
         "app/s/[token]/page.tsx",
         "app/settings/page.tsx",
         "app/showcase/page.tsx",
@@ -166,11 +167,212 @@
       "description": "Postgres schema declarations, indices, and row-level security definitions",
       "path": ".",
       "files": [
+        "supabase-migration-portfolio-blocks.sql",
         "supabase-schema.sql"
       ]
     }
   },
   "all_monitored_files": [
+    {
+      "path": ".agents/skills/supabase/assets/feedback-issue-template.md",
+      "size": 476,
+      "last_modified": "2026-07-10T00:17:46.974Z"
+    },
+    {
+      "path": ".agents/skills/supabase/CHANGELOG.md",
+      "size": 3325,
+      "last_modified": "2026-07-10T00:17:46.973Z"
+    },
+    {
+      "path": ".agents/skills/supabase/references/skill-feedback.md",
+      "size": 1052,
+      "last_modified": "2026-07-10T00:17:46.980Z"
+    },
+    {
+      "path": ".agents/skills/supabase/SKILL.md",
+      "size": 11400,
+      "last_modified": "2026-07-10T00:17:46.974Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/CHANGELOG.md",
+      "size": 2065,
+      "last_modified": "2026-07-10T00:17:46.934Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "size": 1523,
+      "last_modified": "2026-07-10T00:17:46.944Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "size": 1493,
+      "last_modified": "2026-07-10T00:17:46.945Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "size": 1328,
+      "last_modified": "2026-07-10T00:17:46.945Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "size": 1369,
+      "last_modified": "2026-07-10T00:17:46.946Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "size": 1423,
+      "last_modified": "2026-07-10T00:17:46.946Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "size": 1575,
+      "last_modified": "2026-07-10T00:17:46.949Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "size": 1341,
+      "last_modified": "2026-07-10T00:17:46.950Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "size": 1414,
+      "last_modified": "2026-07-10T00:17:46.951Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "size": 1408,
+      "last_modified": "2026-07-10T00:17:46.951Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "size": 1440,
+      "last_modified": "2026-07-10T00:17:46.953Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "size": 1587,
+      "last_modified": "2026-07-10T00:17:46.955Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "size": 1923,
+      "last_modified": "2026-07-10T00:17:46.955Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "size": 1400,
+      "last_modified": "2026-07-10T00:17:46.956Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "size": 1407,
+      "last_modified": "2026-07-10T00:17:46.957Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "size": 1486,
+      "last_modified": "2026-07-10T00:17:46.958Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "size": 1473,
+      "last_modified": "2026-07-10T00:17:46.960Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "size": 1561,
+      "last_modified": "2026-07-10T00:17:46.960Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "size": 1498,
+      "last_modified": "2026-07-10T00:17:46.961Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "size": 1327,
+      "last_modified": "2026-07-10T00:17:46.961Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "size": 1569,
+      "last_modified": "2026-07-10T00:17:46.962Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "size": 1261,
+      "last_modified": "2026-07-10T00:17:46.963Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "size": 1392,
+      "last_modified": "2026-07-10T00:17:46.964Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "size": 1960,
+      "last_modified": "2026-07-10T00:17:46.964Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "size": 1499,
+      "last_modified": "2026-07-10T00:17:46.965Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "size": 1738,
+      "last_modified": "2026-07-10T00:17:46.965Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "size": 1783,
+      "last_modified": "2026-07-10T00:17:46.966Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "size": 1603,
+      "last_modified": "2026-07-10T00:17:46.966Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "size": 1882,
+      "last_modified": "2026-07-10T00:17:46.968Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "size": 1620,
+      "last_modified": "2026-07-10T00:17:46.969Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "size": 1422,
+      "last_modified": "2026-07-10T00:17:46.972Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "size": 2166,
+      "last_modified": "2026-07-10T00:17:46.972Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "size": 4283,
+      "last_modified": "2026-07-10T00:17:46.940Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_sections.md",
+      "size": 1721,
+      "last_modified": "2026-07-10T00:17:46.943Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_template.md",
+      "size": 1074,
+      "last_modified": "2026-07-10T00:17:46.943Z"
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/SKILL.md",
+      "size": 2640,
+      "last_modified": "2026-07-10T00:17:46.936Z"
+    },
     {
       "path": ".claude/settings.local.json",
       "size": 5605,
@@ -199,7 +401,7 @@
     {
       "path": "app/admin/analytics/page.tsx",
       "size": 10795,
-      "last_modified": "2026-07-07T12:38:53.822Z"
+      "last_modified": "2026-07-09T23:55:09.810Z"
     },
     {
       "path": "app/admin/audit-logs/page.tsx",
@@ -208,8 +410,8 @@
     },
     {
       "path": "app/admin/error.tsx",
-      "size": 2401,
-      "last_modified": "2026-07-09T20:23:54.211Z"
+      "size": 2492,
+      "last_modified": "2026-07-09T23:55:09.810Z"
     },
     {
       "path": "app/admin/page.tsx",
@@ -223,13 +425,13 @@
     },
     {
       "path": "app/api/discord/notify/route.ts",
-      "size": 2956,
-      "last_modified": "2026-07-09T20:25:01.495Z"
+      "size": 3027,
+      "last_modified": "2026-07-09T23:55:09.812Z"
     },
     {
       "path": "app/api/discord/test/route.ts",
-      "size": 2056,
-      "last_modified": "2026-07-07T12:31:27.308Z"
+      "size": 2098,
+      "last_modified": "2026-07-09T23:55:09.813Z"
     },
     {
       "path": "app/api/references/search/route.ts",
@@ -239,12 +441,12 @@
     {
       "path": "app/auth/callback/page.tsx",
       "size": 4996,
-      "last_modified": "2026-07-09T11:05:38.398Z"
+      "last_modified": "2026-07-09T23:55:09.815Z"
     },
     {
       "path": "app/auth/page.tsx",
       "size": 14381,
-      "last_modified": "2026-07-07T12:45:00.394Z"
+      "last_modified": "2026-07-09T23:55:09.818Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -254,7 +456,7 @@
     {
       "path": "app/crew/page.tsx",
       "size": 15122,
-      "last_modified": "2026-07-05T22:12:33.200Z"
+      "last_modified": "2026-07-09T23:55:09.821Z"
     },
     {
       "path": "app/crew/[id]/page.tsx",
@@ -263,28 +465,28 @@
     },
     {
       "path": "app/editor/error.tsx",
-      "size": 2403,
-      "last_modified": "2026-07-09T20:21:57.340Z"
+      "size": 2494,
+      "last_modified": "2026-07-09T23:55:09.822Z"
     },
     {
       "path": "app/editor/loading.tsx",
-      "size": 2169,
-      "last_modified": "2026-07-09T20:22:44.413Z"
+      "size": 2245,
+      "last_modified": "2026-07-09T23:55:09.823Z"
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 117667,
-      "last_modified": "2026-07-09T21:39:45.892Z"
+      "size": 117671,
+      "last_modified": "2026-07-09T23:55:09.826Z"
     },
     {
       "path": "app/error.tsx",
-      "size": 2414,
-      "last_modified": "2026-07-09T08:49:47.095Z"
+      "size": 2466,
+      "last_modified": "2026-07-09T23:55:09.828Z"
     },
     {
       "path": "app/jobs/page.tsx",
       "size": 35628,
-      "last_modified": "2026-07-07T12:41:45.192Z"
+      "last_modified": "2026-07-09T23:55:09.834Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
@@ -293,8 +495,8 @@
     },
     {
       "path": "app/layout.tsx",
-      "size": 2952,
-      "last_modified": "2026-07-09T21:38:06.056Z"
+      "size": 3031,
+      "last_modified": "2026-07-09T23:55:09.837Z"
     },
     {
       "path": "app/loading.tsx",
@@ -303,18 +505,18 @@
     },
     {
       "path": "app/lounge/error.tsx",
-      "size": 2403,
-      "last_modified": "2026-07-09T20:22:14.196Z"
+      "size": 2494,
+      "last_modified": "2026-07-09T23:55:09.838Z"
     },
     {
       "path": "app/lounge/loading.tsx",
-      "size": 2419,
-      "last_modified": "2026-07-09T20:22:59.408Z"
+      "size": 2513,
+      "last_modified": "2026-07-09T23:55:09.839Z"
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 69662,
-      "last_modified": "2026-07-09T21:40:36.125Z"
+      "size": 69666,
+      "last_modified": "2026-07-09T23:55:09.841Z"
     },
     {
       "path": "app/not-found.tsx",
@@ -323,38 +525,43 @@
     },
     {
       "path": "app/p/[token]/page.tsx",
-      "size": 21558,
-      "last_modified": "2026-07-05T19:59:22.829Z"
+      "size": 28459,
+      "last_modified": "2026-07-10T00:17:46.996Z"
     },
     {
       "path": "app/page.tsx",
-      "size": 38671,
-      "last_modified": "2026-07-09T22:13:58.030Z"
+      "size": 38698,
+      "last_modified": "2026-07-09T23:55:09.844Z"
     },
     {
       "path": "app/portfolio/manage/page.tsx",
       "size": 13444,
-      "last_modified": "2026-07-05T22:12:33.204Z"
+      "last_modified": "2026-07-09T23:55:09.847Z"
     },
     {
       "path": "app/portfolio/page.tsx",
       "size": 26867,
-      "last_modified": "2026-07-07T12:34:03.363Z"
+      "last_modified": "2026-07-09T23:55:09.850Z"
     },
     {
       "path": "app/profile/page.tsx",
       "size": 21211,
-      "last_modified": "2026-07-09T08:50:58.020Z"
+      "last_modified": "2026-07-09T23:55:09.855Z"
     },
     {
       "path": "app/projects/page.tsx",
       "size": 28222,
-      "last_modified": "2026-07-08T05:26:25.787Z"
+      "last_modified": "2026-07-09T23:55:09.861Z"
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 67517,
-      "last_modified": "2026-07-08T04:17:34.036Z"
+      "size": 66113,
+      "last_modified": "2026-07-10T00:17:46.999Z"
+    },
+    {
+      "path": "app/projects/[id]/pitch/page.tsx",
+      "size": 31981,
+      "last_modified": "2026-07-10T00:17:47.000Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -364,7 +571,7 @@
     {
       "path": "app/settings/page.tsx",
       "size": 19220,
-      "last_modified": "2026-07-09T09:14:00.224Z"
+      "last_modified": "2026-07-09T23:55:09.864Z"
     },
     {
       "path": "app/showcase/page.tsx",
@@ -379,12 +586,12 @@
     {
       "path": "app/studio/page.tsx",
       "size": 206169,
-      "last_modified": "2026-07-09T08:58:10.230Z"
+      "last_modified": "2026-07-09T23:55:09.872Z"
     },
     {
       "path": "CLAW.md",
       "size": 5524,
-      "last_modified": "2026-07-07T05:39:21.164Z"
+      "last_modified": "2026-07-09T23:55:09.806Z"
     },
     {
       "path": "components/3D/OrbitGallery.tsx",
@@ -408,18 +615,18 @@
     },
     {
       "path": "components/canvas/CanvasPin.tsx",
-      "size": 3256,
-      "last_modified": "2026-07-07T13:47:46.600Z"
+      "size": 3342,
+      "last_modified": "2026-07-09T23:55:09.898Z"
     },
     {
       "path": "components/canvas/PannableCanvas.tsx",
-      "size": 5404,
-      "last_modified": "2026-07-07T13:44:42.493Z"
+      "size": 5535,
+      "last_modified": "2026-07-09T23:55:09.899Z"
     },
     {
       "path": "components/CommandPalette.tsx",
       "size": 12171,
-      "last_modified": "2026-07-09T09:12:39.840Z"
+      "last_modified": "2026-07-09T23:55:09.875Z"
     },
     {
       "path": "components/Confirm.tsx",
@@ -428,28 +635,28 @@
     },
     {
       "path": "components/CrewManagementModal.tsx",
-      "size": 13775,
-      "last_modified": "2026-07-09T20:55:02.556Z"
+      "size": 13776,
+      "last_modified": "2026-07-09T23:55:09.877Z"
     },
     {
       "path": "components/CustomCursor.tsx",
       "size": 9683,
-      "last_modified": "2026-07-09T09:28:13.012Z"
+      "last_modified": "2026-07-09T23:55:09.880Z"
     },
     {
       "path": "components/EcosystemTaskbar.tsx",
       "size": 52256,
-      "last_modified": "2026-07-09T10:02:38.415Z"
+      "last_modified": "2026-07-09T23:55:09.882Z"
     },
     {
       "path": "components/editor/DiffModal.tsx",
-      "size": 17103,
-      "last_modified": "2026-07-09T10:11:49.601Z"
+      "size": 17507,
+      "last_modified": "2026-07-09T23:55:09.899Z"
     },
     {
       "path": "components/editor/EditorCenterViews.tsx",
       "size": 29966,
-      "last_modified": "2026-07-09T09:55:12.082Z"
+      "last_modified": "2026-07-09T23:55:09.902Z"
     },
     {
       "path": "components/editor/editorConstants.ts",
@@ -464,7 +671,7 @@
     {
       "path": "components/editor/EditorLeftNav.tsx",
       "size": 15388,
-      "last_modified": "2026-07-09T09:07:14.425Z"
+      "last_modified": "2026-07-09T23:55:09.905Z"
     },
     {
       "path": "components/editor/EditorModals.tsx",
@@ -473,8 +680,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 48611,
-      "last_modified": "2026-07-09T21:18:12.610Z"
+      "size": 48616,
+      "last_modified": "2026-07-09T23:55:09.908Z"
     },
     {
       "path": "components/EmptyState.tsx",
@@ -483,8 +690,8 @@
     },
     {
       "path": "components/GlobalAudioWidget.tsx",
-      "size": 13585,
-      "last_modified": "2026-07-09T21:40:49.677Z"
+      "size": 13586,
+      "last_modified": "2026-07-09T23:55:09.885Z"
     },
     {
       "path": "components/GrainOverlay.tsx",
@@ -493,13 +700,13 @@
     },
     {
       "path": "components/LoungeDock.tsx",
-      "size": 18158,
-      "last_modified": "2026-07-08T06:16:27.974Z"
+      "size": 18501,
+      "last_modified": "2026-07-09T23:55:09.886Z"
     },
     {
       "path": "components/MagBtn.tsx",
-      "size": 2944,
-      "last_modified": "2026-07-09T21:18:31.185Z"
+      "size": 2955,
+      "last_modified": "2026-07-09T23:55:09.890Z"
     },
     {
       "path": "components/Navigation.tsx",
@@ -514,7 +721,7 @@
     {
       "path": "components/NotificationBell.tsx",
       "size": 7812,
-      "last_modified": "2026-07-08T05:19:26.650Z"
+      "last_modified": "2026-07-09T23:55:09.893Z"
     },
     {
       "path": "components/PageTransition.tsx",
@@ -534,7 +741,7 @@
     {
       "path": "components/RoleBasedNav.tsx",
       "size": 4952,
-      "last_modified": "2026-07-09T21:37:06.112Z"
+      "last_modified": "2026-07-09T23:55:09.896Z"
     },
     {
       "path": "components/SectionLabel.tsx",
@@ -548,8 +755,8 @@
     },
     {
       "path": "components/ThemeInitializer.tsx",
-      "size": 1534,
-      "last_modified": "2026-07-09T09:13:34.854Z"
+      "size": 1579,
+      "last_modified": "2026-07-09T23:55:09.896Z"
     },
     {
       "path": "components/Toast.tsx",
@@ -563,13 +770,13 @@
     },
     {
       "path": "components/ui/Button.tsx",
-      "size": 5789,
-      "last_modified": "2026-07-05T22:44:29.724Z"
+      "size": 5979,
+      "last_modified": "2026-07-09T23:55:09.911Z"
     },
     {
       "path": "components/ui/Input.tsx",
       "size": 5104,
-      "last_modified": "2026-07-07T12:43:29.620Z"
+      "last_modified": "2026-07-09T23:55:09.914Z"
     },
     {
       "path": "components/ui/Textarea.tsx",
@@ -583,8 +790,8 @@
     },
     {
       "path": "lib/advanced-parser.ts",
-      "size": 6497,
-      "last_modified": "2026-07-09T08:45:19.183Z"
+      "size": 6700,
+      "last_modified": "2026-07-09T23:55:09.914Z"
     },
     {
       "path": "lib/animations/variants.ts",
@@ -593,8 +800,8 @@
     },
     {
       "path": "lib/api-rate-limit.ts",
-      "size": 2291,
-      "last_modified": "2026-07-09T20:24:46.761Z"
+      "size": 2375,
+      "last_modified": "2026-07-09T23:55:09.915Z"
     },
     {
       "path": "lib/api-validation.ts",
@@ -604,7 +811,7 @@
     {
       "path": "lib/context/AuthContext.tsx",
       "size": 11558,
-      "last_modified": "2026-07-07T03:28:53.129Z"
+      "last_modified": "2026-07-09T23:55:09.918Z"
     },
     {
       "path": "lib/context/PillContext.tsx",
@@ -613,13 +820,13 @@
     },
     {
       "path": "lib/context/PresenceContext.tsx",
-      "size": 3671,
-      "last_modified": "2026-07-09T20:53:07.865Z"
+      "size": 3790,
+      "last_modified": "2026-07-09T23:55:09.919Z"
     },
     {
       "path": "lib/context/ProjectContext.tsx",
-      "size": 13327,
-      "last_modified": "2026-07-09T21:36:52.004Z"
+      "size": 13330,
+      "last_modified": "2026-07-09T23:55:09.923Z"
     },
     {
       "path": "lib/context/SpotifyContext.tsx",
@@ -633,8 +840,8 @@
     },
     {
       "path": "lib/hooks/useNetworkStatus.ts",
-      "size": 1960,
-      "last_modified": "2026-07-09T20:53:37.747Z"
+      "size": 2029,
+      "last_modified": "2026-07-09T23:55:09.926Z"
     },
     {
       "path": "lib/hooks/usePresence.ts",
@@ -693,8 +900,8 @@
     },
     {
       "path": "lib/scriptos/bible.ts",
-      "size": 7018,
-      "last_modified": "2026-07-09T09:54:05.192Z"
+      "size": 7197,
+      "last_modified": "2026-07-09T23:55:09.928Z"
     },
     {
       "path": "lib/scriptos/blocks.ts",
@@ -719,7 +926,7 @@
     {
       "path": "lib/scriptos/export.ts",
       "size": 9961,
-      "last_modified": "2026-07-05T22:12:33.218Z"
+      "last_modified": "2026-07-09T23:55:09.930Z"
     },
     {
       "path": "lib/scriptos/fountain-export.ts",
@@ -739,17 +946,17 @@
     {
       "path": "lib/scriptos/parser.ts",
       "size": 28413,
-      "last_modified": "2026-07-09T10:06:35.972Z"
+      "last_modified": "2026-07-09T23:55:09.934Z"
     },
     {
       "path": "lib/scriptos/parser.worker.ts",
-      "size": 457,
-      "last_modified": "2026-07-09T09:59:45.588Z"
+      "size": 471,
+      "last_modified": "2026-07-09T23:55:09.935Z"
     },
     {
       "path": "lib/scriptos/pdfGenerator.ts",
-      "size": 3986,
-      "last_modified": "2026-07-09T10:02:13.607Z"
+      "size": 4126,
+      "last_modified": "2026-07-09T23:55:09.935Z"
     },
     {
       "path": "lib/scriptos/pdfImport.ts",
@@ -759,7 +966,7 @@
     {
       "path": "lib/scriptos/revisions.ts",
       "size": 6214,
-      "last_modified": "2026-07-09T10:12:18.249Z"
+      "last_modified": "2026-07-09T23:55:09.938Z"
     },
     {
       "path": "lib/scriptos/sceneVisuals.ts",
@@ -774,7 +981,7 @@
     {
       "path": "lib/scriptos/storage.ts",
       "size": 8183,
-      "last_modified": "2026-07-09T10:00:47.798Z"
+      "last_modified": "2026-07-09T23:55:09.942Z"
     },
     {
       "path": "lib/scriptos/sync.ts",
@@ -789,27 +996,27 @@
     {
       "path": "lib/scriptos/titlepage.ts",
       "size": 3749,
-      "last_modified": "2026-07-09T10:03:40.035Z"
+      "last_modified": "2026-07-09T23:55:09.947Z"
     },
     {
       "path": "lib/scriptos/validator.ts",
       "size": 7249,
-      "last_modified": "2026-07-09T10:03:27.772Z"
+      "last_modified": "2026-07-09T23:55:09.952Z"
     },
     {
       "path": "lib/spotify/auth.ts",
-      "size": 8143,
-      "last_modified": "2026-07-09T11:32:14.761Z"
+      "size": 8154,
+      "last_modified": "2026-07-09T23:55:09.958Z"
     },
     {
       "path": "lib/spotify/search.ts",
-      "size": 2843,
-      "last_modified": "2026-07-08T04:20:28.207Z"
+      "size": 2930,
+      "last_modified": "2026-07-09T23:55:09.965Z"
     },
     {
       "path": "lib/storage/cache-versioning.ts",
-      "size": 3166,
-      "last_modified": "2026-07-09T09:53:18.170Z"
+      "size": 3285,
+      "last_modified": "2026-07-09T23:55:09.970Z"
     },
     {
       "path": "lib/supabase/activity.ts",
@@ -819,12 +1026,12 @@
     {
       "path": "lib/supabase/annotations.ts",
       "size": 3810,
-      "last_modified": "2026-07-07T14:37:27.144Z"
+      "last_modified": "2026-07-09T23:55:09.971Z"
     },
     {
       "path": "lib/supabase/audit.ts",
       "size": 6036,
-      "last_modified": "2026-07-07T12:24:28.093Z"
+      "last_modified": "2026-07-09T23:55:09.975Z"
     },
     {
       "path": "lib/supabase/auth.ts",
@@ -834,7 +1041,7 @@
     {
       "path": "lib/supabase/breakdown.ts",
       "size": 7575,
-      "last_modified": "2026-07-07T14:26:29.015Z"
+      "last_modified": "2026-07-09T23:55:09.976Z"
     },
     {
       "path": "lib/supabase/casting.ts",
@@ -844,7 +1051,7 @@
     {
       "path": "lib/supabase/channels.ts",
       "size": 6438,
-      "last_modified": "2026-07-07T05:31:09.495Z"
+      "last_modified": "2026-07-09T23:55:09.979Z"
     },
     {
       "path": "lib/supabase/client.ts",
@@ -864,7 +1071,7 @@
     {
       "path": "lib/supabase/messages.ts",
       "size": 6589,
-      "last_modified": "2026-07-07T05:31:38.352Z"
+      "last_modified": "2026-07-09T23:55:09.981Z"
     },
     {
       "path": "lib/supabase/notifications.ts",
@@ -873,8 +1080,8 @@
     },
     {
       "path": "lib/supabase/portfolio.ts",
-      "size": 2087,
-      "last_modified": "2026-07-05T19:59:22.832Z"
+      "size": 4476,
+      "last_modified": "2026-07-10T00:17:47.002Z"
     },
     {
       "path": "lib/supabase/profiles.ts",
@@ -884,12 +1091,12 @@
     {
       "path": "lib/supabase/projects.ts",
       "size": 2894,
-      "last_modified": "2026-07-07T03:28:53.132Z"
+      "last_modified": "2026-07-09T23:55:09.986Z"
     },
     {
       "path": "lib/supabase/scripts.ts",
       "size": 3640,
-      "last_modified": "2026-07-07T03:28:53.133Z"
+      "last_modified": "2026-07-09T23:55:09.988Z"
     },
     {
       "path": "lib/supabase/stats.ts",
@@ -909,7 +1116,7 @@
     {
       "path": "lib/types/settings.ts",
       "size": 1644,
-      "last_modified": "2026-07-05T22:12:33.221Z"
+      "last_modified": "2026-07-09T23:55:09.990Z"
     },
     {
       "path": "lib/useEscapeKey.ts",
@@ -918,8 +1125,8 @@
     },
     {
       "path": "lib/useRequireAuth.ts",
-      "size": 1556,
-      "last_modified": "2026-07-09T22:52:26.351Z"
+      "size": 1607,
+      "last_modified": "2026-07-09T23:55:09.993Z"
     },
     {
       "path": "lib/useScript.ts",
@@ -933,8 +1140,8 @@
     },
     {
       "path": "middleware.ts",
-      "size": 2674,
-      "last_modified": "2026-07-09T22:32:55.356Z"
+      "size": 2749,
+      "last_modified": "2026-07-09T23:55:09.994Z"
     },
     {
       "path": "next-env.d.ts",
@@ -943,23 +1150,23 @@
     },
     {
       "path": "next.config.js",
-      "size": 588,
-      "last_modified": "2026-07-09T21:29:09.819Z"
+      "size": 598,
+      "last_modified": "2026-07-09T23:55:09.997Z"
     },
     {
       "path": "package-lock.json",
       "size": 320314,
-      "last_modified": "2026-07-09T20:20:43.545Z"
+      "last_modified": "2026-07-09T23:55:10.001Z"
     },
     {
       "path": "package.json",
       "size": 1325,
-      "last_modified": "2026-07-09T23:18:48.971Z"
+      "last_modified": "2026-07-09T23:55:10.004Z"
     },
     {
       "path": "playwright.config.ts",
       "size": 657,
-      "last_modified": "2026-07-06T08:06:14.056Z"
+      "last_modified": "2026-07-09T23:55:10.005Z"
     },
     {
       "path": "postcss.config.js",
@@ -974,7 +1181,7 @@
     {
       "path": "scratch_chrome_audit_prompt.md",
       "size": 6387,
-      "last_modified": "2026-07-07T04:32:46.150Z"
+      "last_modified": "2026-07-09T23:55:10.006Z"
     },
     {
       "path": "scripts/copy-pdf-worker.js",
@@ -983,18 +1190,28 @@
     },
     {
       "path": "scripts/sync-intel.js",
-      "size": 4018,
-      "last_modified": "2026-07-09T23:17:02.443Z"
+      "size": 4147,
+      "last_modified": "2026-07-09T23:55:10.006Z"
     },
     {
       "path": "scripts/test-anon-rls.js",
       "size": 3048,
-      "last_modified": "2026-07-07T04:32:46.150Z"
+      "last_modified": "2026-07-09T23:55:10.007Z"
+    },
+    {
+      "path": "skills-lock.json",
+      "size": 566,
+      "last_modified": "2026-07-10T00:17:47.003Z"
+    },
+    {
+      "path": "supabase-migration-portfolio-blocks.sql",
+      "size": 2388,
+      "last_modified": "2026-07-10T00:17:47.004Z"
     },
     {
       "path": "supabase-schema.sql",
-      "size": 58261,
-      "last_modified": "2026-07-08T04:19:35.439Z"
+      "size": 58284,
+      "last_modified": "2026-07-09T23:55:10.010Z"
     },
     {
       "path": "tailwind.config.js",
@@ -1004,12 +1221,12 @@
     {
       "path": "tsconfig.json",
       "size": 1246,
-      "last_modified": "2026-07-06T08:10:27.459Z"
+      "last_modified": "2026-07-09T23:55:10.013Z"
     },
     {
       "path": "types/screenplay.ts",
-      "size": 2363,
-      "last_modified": "2026-07-09T10:05:47.104Z"
+      "size": 2477,
+      "last_modified": "2026-07-09T23:55:10.021Z"
     }
   ]
 }
