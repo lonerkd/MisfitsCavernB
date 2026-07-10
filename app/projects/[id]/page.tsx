@@ -15,7 +15,6 @@ import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
-import { createPortfolioProject } from '@/lib/supabase/portfolio';
 import { usePillZone } from '@/lib/context/PillContext';
 import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/context/ProjectContext';
 import type { ProjectSettings } from '@/lib/types/settings';
@@ -677,7 +676,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   // This project's real portfolio entries (source_project_id-linked), and
   // whether a publish is in flight.
   const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
-  const [publishing, setPublishing] = useState(false);
   const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
   const [festivals, setFestivals] = useState<FestivalRow[]>([]);
 
@@ -761,37 +759,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   const setActual = async (id: string, actual: number | null) => {
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
     await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
-  };
-
-  // Publish this production to Portfolio, real row + real source_project_id
-  // link — not a fabricated "published" count. A manual button rather than an
-  // automatic phase-transition trigger: publishing is a one-way, visible act
-  // that the owner should choose, not something that silently fires because
-  // a status dropdown changed.
-  //
-  // NOTE: portfolio_projects has no is_public column live (despite the static
-  // schema file claiming one) and no app code anywhere reads/writes one, so
-  // there is currently no real public/private distinction for portfolio rows
-  // at all — visibility is effectively open to any signed-in user. That's a
-  // pre-existing gap independent of this feature; not something to silently
-  // paper over here.
-  const publishToPortfolio = async () => {
-    if (!userId || publishing) return;
-    setPublishing(true);
-    try {
-      const created = await createPortfolioProject({
-        user_id: userId,
-        title: projectTitle,
-        category: projectType,
-        source_project_id: projectId,
-      });
-      setPortfolio(p => [created as PortfolioRow, ...p]);
-      toast('Published to Portfolio', 'success');
-    } catch (e: any) {
-      toast(e.message || 'Could not publish to Portfolio', 'error');
-    } finally {
-      setPublishing(false);
-    }
   };
 
   // Build budget suggestions from the project's screenplay breakdown.
@@ -1064,16 +1031,16 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
         <Panel title="Portfolio" accent={accent}>
           {portfolio.length === 0 ? (
             <>
-              <Empty>Not published yet</Empty>
-              <button onClick={publishToPortfolio} disabled={publishing} style={{ marginTop: 4, width: '100%', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: 6, padding: '6px 10px', cursor: publishing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
-                {publishing ? 'PUBLISHING…' : '✦ PUBLISH TO PORTFOLIO'}
-              </button>
+              <Empty>No pitch board yet</Empty>
+              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+                ✦ BUILD PITCH BOARD
+              </Link>
             </>
           ) : (
             portfolio.map(p => (
               <Row key={p.id}>
                 <span style={{ flex: 1, fontSize: 11 }}>{p.title}</span>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#10b981' }}>PUBLISHED</span>
+                <Link href={`/projects/${projectId}/pitch`} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: accent, textDecoration: 'none' }}>EDIT BOARD</Link>
                 <Link href={`/p/${p.share_token}`} aria-label="view" style={{ color: 'var(--fg-dim)', display: 'flex' }}><ExternalLink size={12} /></Link>
               </Row>
             ))
