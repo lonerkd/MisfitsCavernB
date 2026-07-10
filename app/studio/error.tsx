@@ -1,11 +1,11 @@
 'use client';
 
-export default function EditorError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function StudioError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
-      <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--accent)' }}>SCRIPT EDITOR ERROR</div>
+      <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--accent)' }}>STUDIO ERROR</div>
       <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 500, textAlign: 'center', lineHeight: 1.6 }}>
-        {error.message || 'The editor hit an unexpected error. Your script content is safe — it was auto-saved before this crash.'}
+        {error.message || 'The studio hit an unexpected error. Your assets and project data are safe.'}
       </div>
       {error.digest && (
         <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.5 }}>Error ID: {error.digest}</div>
