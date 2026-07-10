@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-07-10T02:36:24.317Z",
+  "last_synchronized": "2026-07-10T03:42:13.050Z",
   "stats": {
-    "totalFiles": 216,
-    "totalSize": 1996178,
+    "totalFiles": 222,
+    "totalSize": 2162127,
     "byExtension": {
       ".md": 45,
-      ".json": 7,
+      ".json": 8,
       ".tsx": 78,
-      ".ts": 78,
+      ".ts": 82,
       ".js": 6,
-      ".sql": 2
+      ".sql": 3
     }
   },
   "modules": {
@@ -29,6 +29,7 @@
         "lib/scriptos/fountain-export.ts",
         "lib/scriptos/import.ts",
         "lib/scriptos/normalize.ts",
+        "lib/scriptos/parser.test.ts",
         "lib/scriptos/parser.ts",
         "lib/scriptos/parser.worker.ts",
         "lib/scriptos/pdfGenerator.ts",
@@ -56,6 +57,7 @@
         "lib/supabase/channels.ts",
         "lib/supabase/client.ts",
         "lib/supabase/crew-management.ts",
+        "lib/supabase/database.types.ts",
         "lib/supabase/jobs.ts",
         "lib/supabase/messages.ts",
         "lib/supabase/notifications.ts",
@@ -168,6 +170,7 @@
       "path": ".",
       "files": [
         "supabase-migration-portfolio-blocks.sql",
+        "supabase-migration-project-channels-system.sql",
         "supabase-schema.sql"
       ]
     }
@@ -425,8 +428,8 @@
     },
     {
       "path": "app/api/discord/notify/route.ts",
-      "size": 3027,
-      "last_modified": "2026-07-09T23:55:09.812Z"
+      "size": 4486,
+      "last_modified": "2026-07-10T03:14:04.043Z"
     },
     {
       "path": "app/api/discord/test/route.ts",
@@ -455,8 +458,8 @@
     },
     {
       "path": "app/crew/page.tsx",
-      "size": 15122,
-      "last_modified": "2026-07-09T23:55:09.821Z"
+      "size": 15148,
+      "last_modified": "2026-07-10T03:36:52.525Z"
     },
     {
       "path": "app/crew/[id]/page.tsx",
@@ -485,13 +488,13 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 35628,
-      "last_modified": "2026-07-09T23:55:09.834Z"
+      "size": 35670,
+      "last_modified": "2026-07-10T03:38:59.793Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
-      "size": 26190,
-      "last_modified": "2026-07-05T19:49:49.444Z"
+      "size": 26238,
+      "last_modified": "2026-07-10T03:39:01.215Z"
     },
     {
       "path": "app/layout.tsx",
@@ -515,8 +518,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 69349,
-      "last_modified": "2026-07-10T02:11:41.175Z"
+      "size": 69397,
+      "last_modified": "2026-07-10T03:37:00.544Z"
     },
     {
       "path": "app/not-found.tsx",
@@ -555,8 +558,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 61924,
-      "last_modified": "2026-07-10T02:32:57.929Z"
+      "size": 62192,
+      "last_modified": "2026-07-10T03:38:11.868Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -580,8 +583,8 @@
     },
     {
       "path": "app/soundtrack/page.tsx",
-      "size": 22627,
-      "last_modified": "2026-07-10T02:11:41.192Z"
+      "size": 22980,
+      "last_modified": "2026-07-10T03:39:16.052Z"
     },
     {
       "path": "app/studio/page.tsx",
@@ -625,8 +628,8 @@
     },
     {
       "path": "components/CommandPalette.tsx",
-      "size": 12171,
-      "last_modified": "2026-07-09T23:55:09.875Z"
+      "size": 12338,
+      "last_modified": "2026-07-10T03:35:23.071Z"
     },
     {
       "path": "components/Confirm.tsx",
@@ -730,8 +733,8 @@
     },
     {
       "path": "components/ParticleBackground.tsx",
-      "size": 2321,
-      "last_modified": "2026-07-05T00:39:23.144Z"
+      "size": 2211,
+      "last_modified": "2026-07-10T03:06:03.240Z"
     },
     {
       "path": "components/PhotoScatter.tsx",
@@ -785,8 +788,8 @@
     },
     {
       "path": "e2e/auth-validation.spec.ts",
-      "size": 1387,
-      "last_modified": "2026-07-10T00:41:36.915Z"
+      "size": 1963,
+      "last_modified": "2026-07-10T03:23:29.486Z"
     },
     {
       "path": "e2e/helpers.ts",
@@ -835,8 +838,8 @@
     },
     {
       "path": "lib/context/AuthContext.tsx",
-      "size": 11558,
-      "last_modified": "2026-07-09T23:55:09.918Z"
+      "size": 11751,
+      "last_modified": "2026-07-10T03:37:40.065Z"
     },
     {
       "path": "lib/context/PillContext.tsx",
@@ -850,8 +853,8 @@
     },
     {
       "path": "lib/context/ProjectContext.tsx",
-      "size": 13209,
-      "last_modified": "2026-07-10T00:39:55.015Z"
+      "size": 13691,
+      "last_modified": "2026-07-10T03:37:35.773Z"
     },
     {
       "path": "lib/context/SpotifyContext.tsx",
@@ -887,6 +890,11 @@
       "path": "lib/permissions/access-control.tsx",
       "size": 6025,
       "last_modified": "2026-06-29T01:02:37.601Z"
+    },
+    {
+      "path": "lib/permissions/access-matrix.test.ts",
+      "size": 3349,
+      "last_modified": "2026-07-10T03:12:02.134Z"
     },
     {
       "path": "lib/permissions/access-matrix.ts",
@@ -969,6 +977,11 @@
       "last_modified": "2026-07-05T00:39:23.164Z"
     },
     {
+      "path": "lib/scriptos/parser.test.ts",
+      "size": 4294,
+      "last_modified": "2026-07-10T03:11:48.787Z"
+    },
+    {
       "path": "lib/scriptos/parser.ts",
       "size": 28413,
       "last_modified": "2026-07-09T23:55:09.934Z"
@@ -1020,8 +1033,8 @@
     },
     {
       "path": "lib/scriptos/titlepage.ts",
-      "size": 3749,
-      "last_modified": "2026-07-09T23:55:09.947Z"
+      "size": 3773,
+      "last_modified": "2026-07-10T03:37:02.542Z"
     },
     {
       "path": "lib/scriptos/validator.ts",
@@ -1065,8 +1078,8 @@
     },
     {
       "path": "lib/supabase/breakdown.ts",
-      "size": 4577,
-      "last_modified": "2026-07-10T00:39:15.912Z"
+      "size": 4643,
+      "last_modified": "2026-07-10T03:37:19.081Z"
     },
     {
       "path": "lib/supabase/casting.ts",
@@ -1080,13 +1093,18 @@
     },
     {
       "path": "lib/supabase/client.ts",
-      "size": 741,
-      "last_modified": "2026-04-29T08:24:21.245Z"
+      "size": 1255,
+      "last_modified": "2026-07-10T03:32:24.097Z"
     },
     {
       "path": "lib/supabase/crew-management.ts",
       "size": 3974,
       "last_modified": "2026-07-05T00:39:23.168Z"
+    },
+    {
+      "path": "lib/supabase/database.types.ts",
+      "size": 81319,
+      "last_modified": "2026-07-10T03:32:13.795Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1095,13 +1113,13 @@
     },
     {
       "path": "lib/supabase/messages.ts",
-      "size": 6589,
-      "last_modified": "2026-07-09T23:55:09.981Z"
+      "size": 6698,
+      "last_modified": "2026-07-10T03:14:14.745Z"
     },
     {
       "path": "lib/supabase/notifications.ts",
-      "size": 3112,
-      "last_modified": "2026-07-10T02:11:41.210Z"
+      "size": 3144,
+      "last_modified": "2026-07-10T03:37:04.053Z"
     },
     {
       "path": "lib/supabase/portfolio.ts",
@@ -1110,8 +1128,8 @@
     },
     {
       "path": "lib/supabase/profiles.ts",
-      "size": 2419,
-      "last_modified": "2026-07-05T00:39:23.171Z"
+      "size": 2467,
+      "last_modified": "2026-07-10T03:36:51.128Z"
     },
     {
       "path": "lib/supabase/projects.ts",
@@ -1165,8 +1183,8 @@
     },
     {
       "path": "middleware.ts",
-      "size": 2749,
-      "last_modified": "2026-07-09T23:55:09.994Z"
+      "size": 2952,
+      "last_modified": "2026-07-10T03:15:06.963Z"
     },
     {
       "path": "next-env.d.ts",
@@ -1175,18 +1193,18 @@
     },
     {
       "path": "next.config.js",
-      "size": 598,
-      "last_modified": "2026-07-09T23:55:09.997Z"
+      "size": 742,
+      "last_modified": "2026-07-10T03:06:04.787Z"
     },
     {
       "path": "package-lock.json",
-      "size": 320314,
-      "last_modified": "2026-07-09T23:55:10.001Z"
+      "size": 359085,
+      "last_modified": "2026-07-10T03:11:06.752Z"
     },
     {
       "path": "package.json",
-      "size": 1325,
-      "last_modified": "2026-07-09T23:55:10.004Z"
+      "size": 1484,
+      "last_modified": "2026-07-10T03:11:06.122Z"
     },
     {
       "path": "playwright.config.ts",
@@ -1205,8 +1223,8 @@
     },
     {
       "path": "scratch_chrome_audit_prompt.md",
-      "size": 6387,
-      "last_modified": "2026-07-09T23:55:10.006Z"
+      "size": 33195,
+      "last_modified": "2026-07-10T02:55:47.756Z"
     },
     {
       "path": "scripts/copy-pdf-worker.js",
@@ -1234,14 +1252,24 @@
       "last_modified": "2026-07-10T00:17:47.004Z"
     },
     {
+      "path": "supabase-migration-project-channels-system.sql",
+      "size": 6170,
+      "last_modified": "2026-07-10T03:30:49.824Z"
+    },
+    {
       "path": "supabase-schema.sql",
-      "size": 41953,
-      "last_modified": "2026-07-10T02:11:41.215Z"
+      "size": 42013,
+      "last_modified": "2026-07-10T03:28:49.360Z"
     },
     {
       "path": "tailwind.config.js",
       "size": 1705,
       "last_modified": "2026-04-29T08:02:41.253Z"
+    },
+    {
+      "path": "test-results/.last-run.json",
+      "size": 45,
+      "last_modified": "2026-07-10T03:23:49.303Z"
     },
     {
       "path": "tsconfig.json",
@@ -1252,6 +1280,11 @@
       "path": "types/screenplay.ts",
       "size": 2477,
       "last_modified": "2026-07-09T23:55:10.021Z"
+    },
+    {
+      "path": "vitest.config.ts",
+      "size": 282,
+      "last_modified": "2026-07-10T03:11:23.427Z"
     }
   ]
 }

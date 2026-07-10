@@ -13,9 +13,6 @@ export default function ParticleBackground() {
   return (
     <Particles
       id="tsparticles"
-      particlesLoaded={async (container) => {
-        console.log('Particles loaded', container);
-      }}
       options={{
         background: {
           color: {

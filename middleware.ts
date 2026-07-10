@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -16,27 +17,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Only redirect if there are ZERO Supabase auth cookies.
-  // The SSR createServerClient + getSession() pattern fails in Vercel's
-  // Edge Runtime because the cookie format differs from what the browser
-  // client sets. If cookies exist, trust that the client-side auth
-  // (useRequireAuth / supabase.auth.getUser) will handle validation.
-  const hasAuthCookies = request.cookies.getAll().some(
-    (c) => c.name.includes('sb-') && c.name.includes('auth-token'),
-  );
-
-  // ── ADMIN ROUTES ──────────────────────────────────────────────────
-  if (path.startsWith('/admin')) {
-    if (!hasAuthCookies) {
-      const redirectUrl = new URL('/auth', request.url);
-      redirectUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(redirectUrl);
-    }
-    // Client-side ProtectedPage component will verify is_admin
-    return NextResponse.next();
-  }
-
-  // ── PROTECTED ROUTES (require auth) ──────────────────────────────
   const protectedPaths = [
     '/editor',
     '/lounge',
@@ -49,17 +29,59 @@ export async function middleware(request: NextRequest) {
     '/settings',
     '/soundtrack',
   ];
-  if (protectedPaths.some((p) => path === p || path.startsWith(p + '/'))) {
-    if (!hasAuthCookies) {
-      const redirectUrl = new URL('/auth', request.url);
-      redirectUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(redirectUrl);
-    }
+  const isAdminPath = path.startsWith('/admin');
+  const isProtectedPath = protectedPaths.some((p) => path === p || path.startsWith(p + '/'));
+
+  // Everything else (p/, s/, showcase, etc.) is open — skip the auth work.
+  if (!isAdminPath && !isProtectedPath) {
     return NextResponse.next();
   }
 
-  // ── DEFAULT: allow through (p/, s/, showcase, etc.) ──────────────
-  return NextResponse.next();
+  // Validate the session for real (not just cookie presence). The browser
+  // client is cookie-backed via @supabase/ssr, so createServerClient can read
+  // and refresh it here; getUser() verifies the JWT against Supabase Auth,
+  // so a forged or expired cookie fails.
+  let response = NextResponse.next({ request });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    const redirectUrl = new URL('/auth', request.url);
+    redirectUrl.searchParams.set('redirect', path);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // ── ADMIN ROUTES: verify is_admin server-side, not just in the UI ─
+  if (isAdminPath) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!profile?.is_admin) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
+
+  return response;
 }
 
 export const config = {

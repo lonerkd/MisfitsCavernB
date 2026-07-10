@@ -340,7 +340,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const doRemove = async (m: ChannelMember) => { setBusy(true); const e = await removeChannelMember(m.id); setBusy(false); if (e) { setErr(e); return; } await refresh(); onChanged(); };
   const toggle = async (m: ChannelMember, field: 'can_post' | 'can_manage') => {
     setBusy(true);
-    await supabase.from('channel_members').update({ [field]: !m[field] }).eq('id', m.id);
+    await supabase.from('channel_members').update({ [field]: !m[field] } as { can_post?: boolean; can_manage?: boolean }).eq('id', m.id);
     setBusy(false); await refresh();
   };
   const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };

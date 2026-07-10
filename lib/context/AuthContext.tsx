@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setState(prev => ({
               ...prev,
               isAuthenticated: true,
-              user: profile,
+              user: profile as unknown as UserProfile,
               userRole,
               permissions,
               error: null,
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setState(prev => ({
               ...prev,
               isAuthenticated: true,
-              user: profile,
+              user: profile as unknown as UserProfile,
               userRole,
               permissions: getPermissionsForRole(userRole),
               isLoading: false,
@@ -226,9 +226,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!state.user) return;
 
     try {
+      // projects has no is_public column — selecting it errored the query, so
+      // projectAccess was silently never populated for any project.
       const { data: project } = await supabase
         .from('projects')
-        .select('id, creator_id, is_public')
+        .select('id, creator_id')
         .eq('id', projectId)
         .single();
 

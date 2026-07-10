@@ -11,3 +11,5 @@ build/
 .idea
 public/pdf.worker.min.mjs
 .vercel
+playwright-report/
+test-results/

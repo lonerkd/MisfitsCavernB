@@ -96,7 +96,7 @@ export default function CrewPage() {
 
       const { data, error } = await query;
       if (error) throw error;
-      setCrew(data || []);
+      setCrew((data as unknown as Profile[]) || []);
     } catch (error: any) {
       console.error(error);
       setLoadError(error?.message || 'Failed to load crew directory');

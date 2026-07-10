@@ -119,6 +119,7 @@ export default function SoundtrackPage() {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Not authenticated');
+      if (!activeProject?.id) throw new Error('Select an active project first');
 
       const fileName = `${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage.from('sfx_library').upload(fileName, file);
@@ -126,11 +127,15 @@ export default function SoundtrackPage() {
 
       const { data: publicUrl } = supabase.storage.from('sfx_library').getPublicUrl(fileName);
 
+      // sfx_assets columns are (title, audio_url, user_id, tags, ...) — the
+      // previous insert used nonexistent columns (bucket_path, file_name,
+      // category, uploaded_by), so every SFX upload failed at the DB step.
       const { error: dbError } = await supabase.from('sfx_assets').insert({
-        bucket_path: fileName,
-        file_name: file.name,
-        category: 'Cavern Created',
-        uploaded_by: userData.user.id
+        title: file.name,
+        audio_url: publicUrl.publicUrl,
+        user_id: userData.user.id,
+        project_id: activeProject.id,
+        tags: ['Cavern Created']
       });
       if (dbError) throw dbError;
 

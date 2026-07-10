@@ -35,7 +35,7 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
     return [];
   }
 
-  return data || [];
+  return (data as unknown as Profile[]) || [];
 }
 
 export async function getProfile(id: string): Promise<Profile | null> {
@@ -46,7 +46,7 @@ export async function getProfile(id: string): Promise<Profile | null> {
     .single();
 
   if (error) return null;
-  return data;
+  return data as unknown as Profile;
 }
 
 export async function inviteToCrew(projectId: string, userId: string, role: string) {

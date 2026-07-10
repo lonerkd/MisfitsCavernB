@@ -61,7 +61,7 @@ export async function loadTitlePage(scriptId: string): Promise<TitlePage> {
       .eq('script_id', scriptId)
       .maybeSingle();
     if (data?.title_page && Object.keys(data.title_page).length > 0) {
-      const merged = { ...DEFAULT_TITLE_PAGE, ...data.title_page };
+      const merged = { ...DEFAULT_TITLE_PAGE, ...(data.title_page as Partial<TitlePage>) };
       await setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
       return merged;
     }

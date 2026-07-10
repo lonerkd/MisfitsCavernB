@@ -6,7 +6,12 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'i.scdn.co' },
       { protocol: 'https', hostname: 'cdn.discordapp.com' },
-      { protocol: 'https', hostname: 'fxsryglwpwcqkfjljbrm.supabase.co' },
+      {
+        protocol: 'https',
+        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL
+          ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+          : 'fxsryglwpwcqkfjljbrm.supabase.co',
+      },
     ],
   },
   compiler: {

@@ -13,6 +13,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { useConfirm } from '@/components/Confirm';
 import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
+import type { Json } from '@/lib/supabase/database.types';
 import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { usePillZone } from '@/lib/context/PillContext';
@@ -349,7 +350,7 @@ export default function ProjectHubPage() {
         description: data.description || '',
         color: data.accent_color || '#d7340b',
         team: [],
-        settings: data.settings,
+        settings: data.settings as unknown as ProjectSettings,
       });
       setLoading(false);
       if (activeProject?.id !== data.id) refreshProject(data.id);
@@ -364,7 +365,9 @@ export default function ProjectHubPage() {
     let active = true;
     (async () => {
       const [sc, cr, tk, bd, tl, scn, cn, pf] = await Promise.all([
-        supabase.from('scripts').select('page_count').eq('project_id', id),
+        // scripts has no page_count column — selecting it errored the whole
+        // query, so the hub's script count always showed 0.
+        supabase.from('scripts').select('id').eq('project_id', id),
         supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
         supabase.from('budget_items').select('amount').eq('project_id', id),
@@ -377,7 +380,8 @@ export default function ProjectHubPage() {
       const tasks = (tk.data as { completed: boolean }[]) || [];
       setCounts({
         scripts: sc.data?.length || 0,
-        pages: (sc.data as { page_count: number }[] | null)?.reduce((s, x) => s + (x.page_count || 0), 0) || 0,
+        pages: 0, // no page data stored per script yet
+
         crew: cr.count || 0,
         tasks: tasks.length,
         tasksDone: tasks.filter(t => t.completed).length,
@@ -693,8 +697,8 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
       setCrew((c.data as unknown as CrewRow[]) || []);
       setPortfolio((pf.data as PortfolioRow[]) || []);
       setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
-      if (proj.data?.settings) setSettings(proj.data.settings as ProjectSettings);
-      setFestivals((proj.data?.festival_submissions as FestivalRow[]) || []);
+      if (proj.data?.settings) setSettings(proj.data.settings as unknown as ProjectSettings);
+      setFestivals((proj.data?.festival_submissions as unknown as FestivalRow[]) || []);
     } catch (e: any) {
       setErr(e.message);
     }
@@ -839,7 +843,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   // to the projects row so the hub grid / taskbar nav pick it up immediately.
   const saveSettings = async (next: ProjectSettings) => {
     setSettings(next);
-    const { error } = await supabase.from('projects').update({ settings: next }).eq('id', projectId);
+    const { error } = await supabase.from('projects').update({ settings: next as unknown as Json }).eq('id', projectId);
     if (error) setErr(error.message);
   };
   const setDefaultFormat = (format: ScriptFormat | '') => {
@@ -853,19 +857,19 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     if (!name.trim()) return;
     const next = [...festivals, { id: crypto.randomUUID(), name: name.trim(), deadline: deadline || undefined, status: 'planned' as const }];
     setFestivals(next);
-    const { error } = await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+    const { error } = await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
     if (error) setErr(error.message);
   };
   const setFestivalStatus = async (id: string, status: FestivalRow['status']) => {
     const next = festivals.map(f => f.id === id ? { ...f, status } : f);
     setFestivals(next);
-    await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+    await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
   };
   const delFestival = async (id: string) => {
     if (!await confirm('Remove this festival submission?')) return;
     const next = festivals.filter(f => f.id !== id);
     setFestivals(next);
-    await supabase.from('projects').update({ festival_submissions: next }).eq('id', projectId);
+    await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
   };
 
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);

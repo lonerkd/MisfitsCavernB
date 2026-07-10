@@ -71,7 +71,9 @@ export default function CommandPalette() {
         
         const [scriptsRes, assetsRes] = await Promise.all([
           supabase.from('scripts').select('id, title, project_id').eq('created_by', user.id).limit(20),
-          supabase.from('assets').select('id, name, project_id').eq('uploaded_by', user.id).limit(20)
+          // there is no `assets` table — project_assets is the real one, so
+          // the palette's asset search had always silently returned nothing
+          supabase.from('project_assets').select('id, title, project_id').eq('created_by', user.id).limit(20)
         ]);
         
         if (scriptsRes.data) setScripts(scriptsRes.data);
@@ -128,7 +130,7 @@ export default function CommandPalette() {
       const projMatch = projects.find(p => p.id === a.project_id);
       return {
         id: `asset-${a.id}`,
-        label: a.name || 'Untitled Asset',
+        label: a.title || 'Untitled Asset',
         hint: projMatch ? `Asset in ${projMatch.title}` : 'Asset',
         icon: <LayoutGrid size={15} />,
         group: 'Studio Assets',

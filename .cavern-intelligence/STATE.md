@@ -2,20 +2,33 @@
 
 ## Active Iteration
 
-Merged `claude/charming-galileo-fewe3n` (4 commits ahead of main) — Portfolio → pitch board refactor, portfolio_blocks migration fix, Supabase skill docs.
+Repo audit + hardening pass (Milestones 0–1 of the audit plan in `~/.claude/plans/you-are-a-world-class-typed-corbato.md`): CI pipeline, unit-test harness, Discord notify route auth, real middleware session validation.
 
 ## Last Change Summary
 
-- Merged `origin/claude/charming-galileo-fewe3n` into main (clean auto-merge, 1 file conflict resolved)
-- Portfolio panel in ProductionManager replaced "Publish to Portfolio" button with "Build Pitch Board" link; published entries show "Edit Board" instead of "PUBLISHED" badge
-- Removed obsolete `createPortfolioProject` import and `publishToPortfolio` function
-- `sync-manifest.json` updated to 216 tracked files
-- `npx tsc --noEmit && npm run build && npm run lint` all pass with zero errors
+- **CI**: `.github/workflows/ci.yml` — typecheck + lint + vitest + build, plus unauthenticated Playwright smoke job. Needs `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` repo secrets.
+- **Unit tests**: Vitest added (`vitest.config.ts`); 36 tests covering `lib/scriptos/parser.ts` and `lib/permissions/access-matrix.ts`. `npm run test`.
+- **Security — notify route**: `/api/discord/notify` now requires a Bearer access token (401 otherwise), derives sender identity from the verified JWT (body `senderId` removed — spoofing closed), and 403s unless the caller can view the channel under RLS. Caller updated in `lib/supabase/messages.ts`.
+- **Security — auth**: browser client migrated to cookie-backed `createBrowserClient` (`@supabase/ssr`); middleware now validates the session via `getUser()` (forged/expired cookies rejected) and gates `/admin` on server-verified `profiles.is_admin`. **Existing localStorage sessions are not migrated — all users sign in once more after deploy.**
+- Quick wins: `typecheck`/`test`/`test:e2e` npm scripts; `updateProject` errors now surface via toast; debug `console.log` removed from ParticleBackground; Supabase image host in `next.config.js` derived from env.
+- Fixed broken `e2e/auth-validation.spec.ts` (targeted nonexistent `/auth/signup` + label selectors that never matched) — now passes against the real `/auth` signup mode.
+- `sync-manifest.json` at 220 tracked files.
+
+## Second Pass (same session) — DB verification, types, drift fixes
+
+- **Live RLS verified**: every public table has RLS enabled; anon (Riley) sees 0 rows in channels/channel_members/discord_integrations/messages.
+- **Recovered + committed** the uncommitted `project_channels_system` DDL as `supabase-migration-project-channels-system.sql`.
+- **Fixed a live production outage**: `can_post_channel` / `can_view_channel` / `can_manage_channel` referenced helpers by their old `public.*` names after they moved to `internal`, so all three raised 42883 — breaking the channels SELECT policy and every channel message insert. Fixed via prod migrations `fix_can_post_channel_schema_reference` + `fix_channel_helpers_internal_schema_references`; committed SQL matches.
+- **Generated Supabase types** (`lib/supabase/database.types.ts`), client is now `createBrowserClient<Database>`; `Database = any` gone.
+- Types immediately caught **4 schema-drift bugs**, all fixed: `scripts.page_count` (broke hub script count), `projects.is_public` (broke projectAccess loading in AuthContext), `sfx_assets` insert used 4 nonexistent columns + missing required `project_id` (every SFX upload failed), CommandPalette queried nonexistent `assets` table (now `project_assets`).
 
 ## Known Issues
 
-1. Leaked-password protection — dashboard toggle, owner must flip it
+1. Leaked-password protection — dashboard toggle, owner must flip it (also flagged by security advisor)
 2. README / production branding / docs polish — partial pass done, could use another round
+3. `tsconfig.json` still `strict: false` (audit plan M2.2)
+4. `npm audit`: 5 vulnerabilities (1 moderate, 4 high) reported at install — triage pending
+5. Security advisor WARNs: public buckets (`sfx-library`, `studio-assets`) allow listing; `has_discord_webhook` executable by anon — review intent
 
 ## Last Session
 

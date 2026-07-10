@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import type { Json } from './database.types';
 import { parseScript } from '@/lib/scriptos/parser';
 
 // The real script -> schedule -> budget breakdown hinge (build spec's
@@ -51,7 +52,7 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   });
 
   if (updates.length === 0) return {};
-  await Promise.all(updates.map(u => supabase.from('scenes').update({ elements: u.elements }).eq('id', u.id)));
+  await Promise.all(updates.map(u => supabase.from('scenes').update({ elements: u.elements as unknown as Json }).eq('id', u.id)));
   return elementsById;
 }
 

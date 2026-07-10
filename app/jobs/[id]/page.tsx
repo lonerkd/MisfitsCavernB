@@ -84,7 +84,7 @@ export default function JobDetailPage() {
         .eq('id', jobId)
         .single();
       if (error) throw error;
-      setJob(data);
+      setJob(data as unknown as Job);
     } catch (err) {
       console.error('Error loading job:', err);
     } finally {
@@ -102,7 +102,7 @@ export default function JobDetailPage() {
         .eq('job_id', jobId)
         .order('applied_at', { ascending: false });
       if (error) throw error;
-      setApplications(data || []);
+      setApplications((data as unknown as Application[]) || []);
     } catch (err) {
       console.error('Error loading applications:', err);
     } finally {

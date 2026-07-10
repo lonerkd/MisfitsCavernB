@@ -439,7 +439,7 @@ export default function JobsPage() {
         .order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) throw error;
-      setJobs(data || []);
+      setJobs((data as unknown as Job[]) || []);
     } catch (error: any) {
       console.error(error);
       setLoadError(error?.message || 'Failed to load job listings');
@@ -460,7 +460,7 @@ export default function JobsPage() {
       const { count } = await supabase.from('job_applications').select('id', { count: 'exact', head: true }).eq('job_id', job.id);
       return { ...job, application_count: count || 0 };
     }));
-    setMyJobs(withCounts);
+    setMyJobs(withCounts as unknown as Job[]);
   };
 
   const handleApply = async (jobId: string) => {

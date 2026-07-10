@@ -24,15 +24,51 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { channelId?: string; senderId?: string; content?: string };
+  // The caller must prove who they are: the sender's identity comes from the
+  // verified JWT, never from the request body, so nobody can post to Discord
+  // under someone else's username.
+  const authHeader = req.headers.get('authorization') ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+
+  const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
+  const user = userData?.user;
+  if (authError || !user) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let body: { channelId?: string; content?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const { channelId, senderId, content } = body;
-  if (!channelId || !content) return NextResponse.json({ ok: false }, { status: 400 });
+  const { channelId, content } = body;
+  if (!channelId || typeof channelId !== 'string' || !content || typeof content !== 'string') {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  // Authorization: re-check channel visibility as the caller, not as admin.
+  // A user-scoped client runs under RLS, so can_view_channel() decides —
+  // the same policy that gates the Lounge UI. Outsiders get a 403 here even
+  // though the webhook lookup below runs with the service role.
+  const supabaseAsUser = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    }
+  );
+  const { data: channel, error: channelError } = await supabaseAsUser
+    .from('channels')
+    .select('id')
+    .eq('id', channelId)
+    .maybeSingle();
+  if (channelError || !channel) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
 
   const { data, error } = await supabaseAdmin
     .from('discord_integrations')
@@ -45,10 +81,8 @@ export async function POST(req: NextRequest) {
   if (error || !data?.webhook_url) return NextResponse.json({ ok: true, bridged: false });
 
   let senderName = 'Misfits Cavern';
-  if (senderId) {
-    const { data: profile } = await supabaseAdmin.from('profiles').select('username').eq('id', senderId).maybeSingle();
-    if (profile?.username) senderName = profile.username;
-  }
+  const { data: profile } = await supabaseAdmin.from('profiles').select('username').eq('id', user.id).maybeSingle();
+  if (profile?.username) senderName = profile.username;
 
   try {
     const discordRes = await fetch(data.webhook_url, {

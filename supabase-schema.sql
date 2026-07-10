@@ -608,7 +608,8 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES chann
 -- can_manage_channel. View = global, project owner, project crew (public), or
 -- explicit member (private). Post gated by post_policy (viewers/members/
 -- managers). Manage = project owner or channel member with can_manage.
--- (Full definitions applied via migration project_channels_system.)
+-- (Full definitions committed in supabase-migration-project-channels-system.sql,
+-- recovered from the live DB on 2026-07-09.)
 
 -- Root cause (found while verifying Phase 5's auto-channel-creation against
 -- the live DB with a real account): the original channels INSERT policy's

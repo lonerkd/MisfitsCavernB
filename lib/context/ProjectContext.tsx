@@ -1,9 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, type Database } from '@/lib/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import type { ProjectSettings } from '@/lib/types/settings';
+import { useToast } from '@/components/Toast';
 
 export interface Beat {
   id: string;
@@ -205,6 +206,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [activeProject, setActiveProjectState] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   // Persist the active project so the whole suite stays on the same context
   // across pages and reloads.
@@ -245,7 +247,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         concept_assets: conceptRes.data || [],
         scenes: scenesRes.data || [],
         campaigns: campaignsRes.data || [],
-      };
+        // DB rows use wide/nullable column types; Project narrows them for the app
+      } as unknown as Project;
     }
     return null;
   };
@@ -281,10 +284,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         .order('updated_at', { ascending: false });
 
       if (!error && data) {
-        setProjects(data);
-        if (data.length > 0) {
+        const rows = data as unknown as Project[];
+        setProjects(rows);
+        if (rows.length > 0) {
           const savedId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_KEY) : null;
-          const target = (savedId && data.find(p => p.id === savedId)) || data[0];
+          const target = (savedId && rows.find(p => p.id === savedId)) || rows[0];
           const full = await fetchProjectDetails(target.id);
           setActiveProjectState(full || target);
         }
@@ -335,10 +339,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const { error } = await supabase
       .from('projects')
-      .update(updates)
+      // Project narrows Json columns (settings, festival_submissions) to app
+      // shapes; widen back to the generated row type for the write
+      .update(updates as unknown as Database['public']['Tables']['projects']['Update'])
       .eq('id', id);
     
-    if (error) console.error('Error updating project:', error);
+    if (error) toast('Failed to update project. Please try again.', 'error');
   };
 
   return (
