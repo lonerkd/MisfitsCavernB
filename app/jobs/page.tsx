@@ -50,6 +50,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
 }) {
   const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || 'Director', rate: '' });
   const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     if (!form.title || !form.role) return;
@@ -64,10 +65,12 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       status: 'open',
     }).select('id').single();
     setSubmitting(false);
-    if (!error) {
-      if (data) logAuditAction(userId, 'job_created', 'job', data.id, { title: form.title, role: form.role });
-      onCreated(); onClose();
+    if (error) {
+      toast('Failed to post job: ' + error.message, 'error');
+      return;
     }
+    if (data) logAuditAction(userId, 'job_created', 'job', data.id, { title: form.title, role: form.role });
+    onCreated(); onClose();
   };
 
   return (

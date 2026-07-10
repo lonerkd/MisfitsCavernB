@@ -141,18 +141,6 @@ export default function AdminUsersPage() {
             >
               AUDIT LOGS
             </Link>
-            <Link
-              href="/admin/analytics"
-              style={{
-                fontFamily: 'var(--mono)',
-                fontSize: 11,
-                letterSpacing: 2,
-                color: 'var(--fg-muted)',
-                textDecoration: 'none',
-              }}
-            >
-              ANALYTICS
-            </Link>
           </div>
 
           {/* Users Table */}

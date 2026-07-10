@@ -22,6 +22,28 @@ Repo audit + hardening pass (Milestones 0–1 of the audit plan in `~/.claude/pl
 - **Generated Supabase types** (`lib/supabase/database.types.ts`), client is now `createBrowserClient<Database>`; `Database = any` gone.
 - Types immediately caught **4 schema-drift bugs**, all fixed: `scripts.page_count` (broke hub script count), `projects.is_public` (broke projectAccess loading in AuthContext), `sfx_assets` insert used 4 nonexistent columns + missing required `project_id` (every SFX upload failed), CommandPalette queried nonexistent `assets` table (now `project_assets`).
 
+## Third Pass — full-suite logic audit (every page/button/query)
+
+Three parallel audits verified ~180 buttons/actions and every `supabase.from()`
+call across all 27 routes against the generated schema. Sign-in redirect loop
+fixed and verified live in production (cookie-backed session + validating
+middleware, commit 9e68493). Additional defects found and fixed:
+
+- soundtrack SFX panel (5): consumed nonexistent `bucket_path`/`file_name`/
+  `category` columns — uploads were unplayable, untitled, and unsavable to the
+  Audio Bible. Now reads `audio_url`/`title`/`tags`.
+- profile page: `jobs.company/location` don't exist — the select error blanked
+  ALL profile lists and stat counts. Now selects `role`/`status`.
+- jobs board: failed job post was silent — now toasts the error.
+- CrewManagementModal: role dropdown now gated by `manage_crew` (was enabled
+  for viewers and silently failed at RLS).
+- admin/users: removed duplicate ANALYTICS tab link.
+
+Clean areas: home, projects, project hub, pitch board, portfolio (+manage),
+p/[token], s/[token], showcase, studio, editor + ScriptOS libs, Spotify,
+lounge + channels + voice, jobs, crew, settings, admin ×4, auth ×3, taskbar/
+nav/notifications.
+
 ## Known Issues
 
 1. Leaked-password protection — dashboard toggle, owner must flip it (also flagged by security advisor)

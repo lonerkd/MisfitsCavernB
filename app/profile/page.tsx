@@ -52,7 +52,9 @@ export default function ProfilePage() {
       const [scriptsRes, projectsRes, jobsRes] = await Promise.all([
         supabase.from('scripts').select('id, title, updated_at').or(`created_by.eq.${userId},last_edited_by.eq.${userId}`).order('updated_at', { ascending: false }),
         supabase.from('projects').select('id, title, status, accent_color').eq('creator_id', userId).order('updated_at', { ascending: false }),
-        supabase.from('jobs').select('id, title, company, location, created_at').eq('created_by', userId).order('created_at', { ascending: false }),
+        // jobs has no company/location columns — selecting them errored the
+        // whole Promise.all, blanking every profile list and stat count
+        supabase.from('jobs').select('id, title, role, status, created_at').eq('created_by', userId).order('created_at', { ascending: false }),
       ]);
 
       const sData = scriptsRes.data || [];
@@ -299,10 +301,10 @@ export default function ProfilePage() {
                     >
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{j.title}</span>
-                        {j.company && <span style={{ fontSize: 8, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 2 }}>{j.company}</span>}
+                        {j.role && <span style={{ fontSize: 8, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 2 }}>{j.role}</span>}
                       </div>
                       <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'rgba(255,255,255,0.25)' }}>
-                        {j.location || 'REMOTE'}
+                        {(j.status || 'OPEN').toUpperCase()}
                       </span>
                     </Link>
                   ))

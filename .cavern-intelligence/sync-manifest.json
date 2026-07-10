@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-07-10T03:42:13.050Z",
+  "last_synchronized": "2026-07-10T04:04:32.797Z",
   "stats": {
-    "totalFiles": 222,
-    "totalSize": 2162127,
+    "totalFiles": 223,
+    "totalSize": 2164289,
     "byExtension": {
       ".md": 45,
       ".json": 8,
       ".tsx": 78,
-      ".ts": 82,
+      ".ts": 83,
       ".js": 6,
       ".sql": 3
     }
@@ -423,8 +423,8 @@
     },
     {
       "path": "app/admin/users/page.tsx",
-      "size": 10637,
-      "last_modified": "2026-07-05T00:39:23.103Z"
+      "size": 10282,
+      "last_modified": "2026-07-10T04:02:44.202Z"
     },
     {
       "path": "app/api/discord/notify/route.ts",
@@ -488,8 +488,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 35670,
-      "last_modified": "2026-07-10T03:38:59.793Z"
+      "size": 35776,
+      "last_modified": "2026-07-10T04:02:26.663Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
@@ -548,8 +548,8 @@
     },
     {
       "path": "app/profile/page.tsx",
-      "size": 21211,
-      "last_modified": "2026-07-09T23:55:09.855Z"
+      "size": 21366,
+      "last_modified": "2026-07-10T04:02:16.566Z"
     },
     {
       "path": "app/projects/page.tsx",
@@ -583,8 +583,8 @@
     },
     {
       "path": "app/soundtrack/page.tsx",
-      "size": 22980,
-      "last_modified": "2026-07-10T03:39:16.052Z"
+      "size": 23180,
+      "last_modified": "2026-07-10T03:58:47.457Z"
     },
     {
       "path": "app/studio/page.tsx",
@@ -638,8 +638,8 @@
     },
     {
       "path": "components/CrewManagementModal.tsx",
-      "size": 13776,
-      "last_modified": "2026-07-09T23:55:09.877Z"
+      "size": 14303,
+      "last_modified": "2026-07-10T04:03:01.518Z"
     },
     {
       "path": "components/CustomCursor.tsx",
@@ -800,6 +800,11 @@
       "path": "e2e/home-page-crash.spec.ts",
       "size": 1992,
       "last_modified": "2026-07-10T00:41:36.916Z"
+    },
+    {
+      "path": "e2e/login-smoke.spec.ts",
+      "size": 1529,
+      "last_modified": "2026-07-10T03:50:42.299Z"
     },
     {
       "path": "e2e/sam-journey-smoke.spec.ts",
@@ -1269,7 +1274,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-07-10T03:23:49.303Z"
+      "last_modified": "2026-07-10T04:01:23.475Z"
     },
     {
       "path": "tsconfig.json",

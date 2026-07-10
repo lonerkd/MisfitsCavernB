@@ -294,6 +294,13 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
                       <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 4 }}>
                         {member.username || 'Unknown'}
                       </div>
+                      {/* Same gate as the Remove button — without manage_crew
+                          the dropdown was enabled but every change died at RLS */}
+                      <IfAccess permission="manage_crew" fallback={
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: '#0099ff' }}>
+                          {CREW_ROLES.find(r => r.role === member.role)?.label || member.role}
+                        </span>
+                      }>
                       <select
                         value={member.role}
                         onChange={e => handleUpdateRole(member.user_id, e.target.value as CrewRole)}
@@ -316,6 +323,7 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
                           </option>
                         ))}
                       </select>
+                      </IfAccess>
                     </div>
 
                     <IfAccess permission="manage_crew">

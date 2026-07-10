@@ -160,9 +160,11 @@ export default function SoundtrackPage() {
         project_id: activeProject.id,
         added_by: userData.user?.id,
         reference_type: type,
-        uri: type === 'spotify' ? item.uri : item.bucket_path,
-        title: type === 'spotify' ? item.name : item.file_name,
-        description: type === 'spotify' ? (item.artists?.[0]?.name || 'Spotify Playist') : item.category
+        // sfx_assets rows carry audio_url/title/tags — the old bucket_path/
+        // file_name/category columns never existed, so saves always failed
+        uri: type === 'spotify' ? item.uri : item.audio_url,
+        title: type === 'spotify' ? item.name : item.title,
+        description: type === 'spotify' ? (item.artists?.[0]?.name || 'Spotify Playist') : (item.tags?.[0] || 'Custom SFX')
       });
       if (error) throw error;
       toast('Saved to Project Audio Bible', 'success');
@@ -290,7 +292,8 @@ export default function SoundtrackPage() {
                   </div>
                 ) : (
                   sfxAssets.map(asset => {
-                    const publicUrl = supabase.storage.from('sfx_library').getPublicUrl(asset.bucket_path).data.publicUrl;
+                    // audio_url already holds the full public URL from upload time
+                    const publicUrl = asset.audio_url;
                     return (
                       <div key={asset.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                         <div className="flex items-center gap-4 overflow-hidden">
@@ -301,8 +304,8 @@ export default function SoundtrackPage() {
                             <Play size={16} />
                           </button>
                           <div className="min-w-0">
-                            <h4 className="mc-title text-sm truncate">{asset.file_name}</h4>
-                            <p className="mc-text text-xs opacity-50 truncate">{asset.category}</p>
+                            <h4 className="mc-title text-sm truncate">{asset.title}</h4>
+                            <p className="mc-text text-xs opacity-50 truncate">{asset.tags?.[0] || 'Custom SFX'}</p>
                           </div>
                         </div>
                         <button 
