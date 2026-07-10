@@ -523,50 +523,6 @@ CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticate
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
   USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
--- Character Bible: one row per character, shared by ScriptOS's Character
--- Report (lib/scriptos/bible.ts) and Studio's Casting Board/look-board
--- (app/studio/page.tsx) — both read and write this same table so a
--- character developed in either surface shows up in the other, instead of
--- silently diverging into two separate bibles. Applied live directly against
--- Supabase; backfilled here since this file had never caught up with it.
-CREATE TABLE IF NOT EXISTS script_characters (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  full_name TEXT,
-  age TEXT,
-  description TEXT,
-  backstory TEXT,
-  motivation TEXT,
-  arc TEXT,
-  relationships TEXT,
-  notes TEXT,
-  color TEXT DEFAULT '#ff3c00',
-  updated_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  -- Also live in production under this exact name, confirmed via
-  -- pg_constraint — backfilled here for the same reason as the table
-  -- itself. This is the hard backstop for saveCharacterProfiles's
-  -- per-script save-chain serialization (lib/scriptos/bible.ts): if
-  -- anything ever races an insert for the same (script_id, name) despite
-  -- the serialization, this constraint turns a silent duplicate row into
-  -- a 23505 error the caller already knows how to recover from.
-  CONSTRAINT script_characters_script_id_name_key UNIQUE (script_id, name)
-);
-ALTER TABLE script_characters ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Script members can manage characters" ON script_characters FOR ALL
-  USING (script_id IN (
-    SELECT scripts.id FROM scripts WHERE (
-      scripts.project_id IS NULL
-      OR scripts.project_id IN (
-        SELECT projects.id FROM projects WHERE projects.creator_id = auth.uid()
-        UNION
-        SELECT project_crew.project_id FROM project_crew WHERE project_crew.user_id = auth.uid()
-      )
-    )
-  ));
-
 -- Casting/look references: link concept-board images to characters
 CREATE TABLE IF NOT EXISTS character_references (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -693,37 +649,6 @@ CREATE TABLE IF NOT EXISTS channel_members (
   UNIQUE(channel_id, user_id)
 );
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES channels(id) ON DELETE CASCADE;
-
--- Discord webhook bridge: one-way (Lounge -> Discord) announce mirror for a
--- channel. The webhook URL is a bearer credential — anyone holding it can
--- post to the Discord channel as the configured bot, so it must never reach
--- a browser. Deliberately has NO select policy at all: a manager can set or
--- replace the webhook (insert/update) but can't read it back, and no other
--- code path selects from this table except the server-side API route
--- (app/api/discord/notify), which uses the service-role key to bypass RLS
--- entirely rather than relying on a policy that would otherwise have to
--- grant some authenticated role read access.
-CREATE TABLE IF NOT EXISTS discord_integrations (
-  channel_id UUID PRIMARY KEY REFERENCES channels(id) ON DELETE CASCADE,
-  webhook_url TEXT NOT NULL,
-  created_by UUID REFERENCES profiles(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE discord_integrations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "discord webhook set by channel managers" ON discord_integrations FOR INSERT TO authenticated
-  WITH CHECK (can_manage_channel(channel_id) AND created_by = auth.uid());
-CREATE POLICY "discord webhook updated by channel managers" ON discord_integrations FOR UPDATE TO authenticated
-  USING (can_manage_channel(channel_id)) WITH CHECK (can_manage_channel(channel_id));
-CREATE POLICY "discord webhook removed by channel managers" ON discord_integrations FOR DELETE TO authenticated
-  USING (can_manage_channel(channel_id));
--- Existence-only check so the UI can show "Connected" / "Not connected"
--- without ever selecting the webhook_url column itself.
-CREATE OR REPLACE FUNCTION has_discord_webhook(cid uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (SELECT 1 FROM discord_integrations WHERE channel_id = cid);
-$$;
-GRANT EXECUTE ON FUNCTION has_discord_webhook(uuid) TO authenticated;
 
 -- SECURITY DEFINER permission helpers: can_view_channel / can_post_channel /
 -- can_manage_channel. View = global, project owner, project crew (public), or
@@ -945,15 +870,13 @@ ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS budget_item_id UUID REFERENCES budget_items(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_jobs_budget_item ON jobs(budget_item_id);
 
--- Real casting links between screenplay characters and crew members. This is
--- a separate, non-overlapping concept from script_characters (character
--- development data) and character_references (look-board images) above —
--- casting is "who plays this role," keyed by character_name rather than
--- character_id, so it stays valid even before a character has a bible row.
--- (Earlier revisions of this file incorrectly claimed script_characters/
--- character_references were dead JSONB-superseded tables with 0 rows; they
--- were live in the database the whole time, just missing their CREATE TABLE
--- statements here — see script_characters above for the correction.)
+-- Real casting links between screenplay characters and crew members. The old
+-- script_characters/character_references tables model a relational Character
+-- Bible that was superseded by the JSONB-based one in
+-- script_metadata.character_bible (see lib/scriptos/bible.ts) and are unused
+-- (0 rows, no app code reads/writes them). So casting gets its own small,
+-- purpose-built table instead: cheap to join both directions, doesn't touch
+-- the JSONB bible, and doesn't resurrect the orphaned tables.
 CREATE TABLE IF NOT EXISTS character_castings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -971,88 +894,6 @@ CREATE POLICY "Castings viewable by project creator or crew" ON character_castin
 CREATE POLICY "Castings writable by project creator or crew" ON character_castings FOR ALL
   USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
   WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
-
--- Shot List: per-scene camera setups. The redesign spec's ScriptOS margin
--- annotations (script_annotations, type='shot') claimed to "route to" a
--- Shot List that never existed anywhere in the app -- this is that
--- destination. shot_number is a free-form label (e.g. "12A") rather than a
--- strict integer since shot renumbering/insertion during scouting is normal
--- shorthand practice (12, 12A, 12B...), same reasoning as scene numbering
--- elsewhere in this schema.
-CREATE TABLE IF NOT EXISTS shots (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  scene_id UUID NOT NULL REFERENCES scenes(id) ON DELETE CASCADE,
-  shot_number TEXT NOT NULL,
-  shot_size TEXT,
-  angle TEXT,
-  movement TEXT,
-  lens TEXT,
-  description TEXT,
-  status TEXT DEFAULT 'planned' CHECK (status IN ('planned', 'shot', 'omitted')),
-  order_index INT DEFAULT 0,
-  created_by UUID REFERENCES profiles(id),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_shots_scene ON shots(scene_id);
-CREATE INDEX IF NOT EXISTS idx_shots_project ON shots(project_id);
-ALTER TABLE shots ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Shots viewable by project creator or crew" ON shots FOR SELECT
-  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
-CREATE POLICY "Shots writable by project creator or crew" ON shots FOR ALL
-  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
-  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
-
--- Call Sheet: previously a fully derived, read-only view in Studio's
--- Schedule tab (grouping scenes by shoot_day with no persistence at all) --
--- this adds the real per-day header (call times, weather, notes) and
--- per-person call times the derived view never had anywhere to save. One
--- call_sheets row per shoot day; call_sheet_calls holds individual crew/cast
--- call times for that day, cross-referencing project_crew (crew) and
--- character_castings (cast, via character_name -> crew_user_id).
-CREATE TABLE IF NOT EXISTS call_sheets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  shoot_day INT NOT NULL,
-  shoot_date DATE,
-  general_call TIME,
-  shooting_call TIME,
-  estimated_wrap TIME,
-  location_address TEXT,
-  weather TEXT,
-  notes TEXT,
-  updated_by UUID REFERENCES profiles(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(project_id, shoot_day)
-);
-CREATE TABLE IF NOT EXISTS call_sheet_calls (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  call_sheet_id UUID NOT NULL REFERENCES call_sheets(id) ON DELETE CASCADE,
-  crew_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  character_name TEXT,
-  role_label TEXT,
-  call_time TIME,
-  remarks TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_call_sheets_project ON call_sheets(project_id);
-CREATE INDEX IF NOT EXISTS idx_call_sheet_calls_sheet ON call_sheet_calls(call_sheet_id);
-ALTER TABLE call_sheets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE call_sheet_calls ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Call sheets viewable by project creator or crew" ON call_sheets FOR SELECT
-  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
-CREATE POLICY "Call sheets writable by project creator or crew" ON call_sheets FOR ALL
-  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
-  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
--- call_sheet_calls has no project_id of its own -- gate through the parent
--- call_sheets row's project, same indirection pattern as scene_references
--- gating through scenes elsewhere in this file.
-CREATE POLICY "Call sheet calls viewable by project creator or crew" ON call_sheet_calls FOR SELECT
-  USING (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
-CREATE POLICY "Call sheet calls writable by project creator or crew" ON call_sheet_calls FOR ALL
-  USING (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
-  WITH CHECK (call_sheet_id IN (SELECT id FROM call_sheets WHERE internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
 
 -- Link portfolio_projects back to their originating production project.
 -- Without this, the Showcase tab on a project has no real table to
@@ -1165,36 +1006,7 @@ DROP TABLE IF EXISTS marketing_campaigns;
 -- creator, which may or may not be wanted for personal moodboards vs
 -- shared references. Needs a product decision, not a silent migration.
 -- Character data (script_characters bible + character_castings +
--- character_references) previously had a real split: ScriptOS's Character
--- Report wrote profiles into script_metadata.character_bible (JSONB) while
--- Studio's Casting Board read/wrote script_characters (relational) — two
--- bibles that never saw each other's data, with script_characters sitting
--- empty in production despite Studio's UI acting like it was populated.
--- Fixed by moving lib/scriptos/bible.ts onto script_characters so both
--- surfaces share the one table; character_castings (cast assignment) and
--- character_references (look-board images) were already correctly scoped
--- to their distinct purposes and needed no change.
-
--- SFX Library (Soundtrack)
-CREATE TABLE IF NOT EXISTS sfx_assets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  audio_url TEXT NOT NULL,
-  duration INT,
-  tags TEXT[],
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE sfx_assets ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY ""SFX assets viewable by everyone"" ON sfx_assets FOR SELECT USING (true);
-CREATE POLICY ""SFX assets owner only insert"" ON sfx_assets FOR INSERT WITH CHECK (user_id = auth.uid());
-CREATE POLICY ""SFX assets owner only update"" ON sfx_assets FOR UPDATE USING (user_id = auth.uid());
-CREATE POLICY ""SFX assets owner only delete"" ON sfx_assets FOR DELETE USING (user_id = auth.uid());
-
-INSERT INTO storage.buckets (id, name, public) VALUES ('sfx-library', 'sfx-library', true) ON CONFLICT (id) DO NOTHING;
-
-CREATE POLICY ""SFX files viewable by everyone"" ON storage.objects FOR SELECT USING (bucket_id = 'sfx-library');
-CREATE POLICY ""SFX files insertable by authenticated users"" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'sfx-library' AND auth.role() = 'authenticated');
+-- character_references) is NOT orphaned as originally reported — the
+-- Casting Board and Character Bible added in this pass wire all three
+-- together for their distinct purposes (bible content, cast assignment,
+-- look-board images), so no further consolidation is needed there.

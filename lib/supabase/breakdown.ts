@@ -37,23 +37,6 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
 
   const parsed = parseScript(withContent.content);
   const parsedScenes = parsed.scenes.filter((s: any) => !s.omitted);
-
-  // Both this function and importScenesFromScript (app/studio/page.tsx)
-  // number scenes by their position in the same "!omitted" filtered list, so
-  // re-syncing stays aligned as long as which scenes are omitted hasn't
-  // changed since the schedule was imported. If a later script revision
-  // marks a previously-real scene OMITTED (or un-omits one), every scene
-  // number after that point shifts — and without this check, the update
-  // below would silently write one scene's breakdown tags onto a different
-  // scene's row (same failure mode a page-eighths/DOOD recount would want
-  // caught too). Bail with a clear error instead of misassigning data.
-  const existingNums = new Set(existingScenes.map(s => s.scene_number));
-  const parsedNums = new Set(parsedScenes.map((_: any, i: number) => i + 1));
-  const numsMatch = existingNums.size === parsedNums.size && [...existingNums].every(n => parsedNums.has(n));
-  if (!numsMatch) {
-    throw new Error('The script\'s scene numbering no longer matches the imported schedule (a scene was likely marked OMITTED or restored since the schedule was imported). Re-import the schedule from ScriptOS before syncing the breakdown, so scenes don\'t get mismatched.');
-  }
-
   const byNumber = new Map(existingScenes.map(s => [s.scene_number, s.id]));
 
   const updates: { id: string; elements: SceneElements }[] = [];
@@ -70,35 +53,6 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   if (updates.length === 0) return {};
   await Promise.all(updates.map(u => supabase.from('scenes').update({ elements: u.elements }).eq('id', u.id)));
   return elementsById;
-}
-
-// Resolve a script line (as recorded on a margin annotation, script_annotations
-// .line_index) to the real scenes.id it falls inside — the missing link that
-// let "shot" and "todo" annotations claim to route to a Shot List / Call
-// Sheet without ever actually reaching one. Reuses the exact same
-// !omitted-filtered positional numbering as syncSceneElementsFromScript and
-// importScenesFromScript, and the same drift guard: if the script's scene
-// count/numbering no longer matches the imported schedule, this returns null
-// rather than guessing at a scene and risking a shot/note landing on the
-// wrong one.
-export async function resolveLineToSceneId(projectId: string, lineIndex: number, existingScenes: { id: string; scene_number: number }[]): Promise<string | null> {
-  const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
-  const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
-  if (!withContent) return null;
-
-  const parsed = parseScript(withContent.content);
-  const parsedScenes = parsed.scenes.filter((s: any) => !s.omitted);
-
-  const existingNums = new Set(existingScenes.map(s => s.scene_number));
-  const parsedNums = new Set(parsedScenes.map((_: any, i: number) => i + 1));
-  const numsMatch = existingNums.size === parsedNums.size && [...existingNums].every(n => parsedNums.has(n));
-  if (!numsMatch) return null;
-
-  const idx = parsedScenes.findIndex((s: any) => lineIndex >= s.startIndex && lineIndex <= s.endIndex);
-  if (idx === -1) return null;
-
-  const byNumber = new Map(existingScenes.map(s => [s.scene_number, s.id]));
-  return byNumber.get(idx + 1) ?? null;
 }
 
 // Aggregate unique element names per category across every scene, then

@@ -27,10 +27,8 @@ import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
-import { getActivities, subscribeToActivities, logActivity, type Activity } from '@/lib/supabase/activity';
-import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, updateStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
-import { PannableCanvas, type PannableCanvasHandle } from '@/components/canvas/PannableCanvas';
-import { CanvasPin } from '@/components/canvas/CanvasPin';
+import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
+import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
@@ -48,12 +46,6 @@ interface Asset {
   size: string;
   dateAdded: string;
   url?: string;
-  // Free-canvas position/size, from studio_assets.position_x/y/width/height —
-  // only meaningful in the canvas view; the grid view ignores them entirely.
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
 }
 
 
@@ -167,7 +159,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-             <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
+             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
              <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name} <span style={{ color: '#666', marginLeft: 8 }}>V2</span></div>
              <div style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(0,204,102,0.1)', color: '#00cc66', borderRadius: 4, textTransform: 'uppercase' }}>Approved</div>
            </div>
@@ -240,12 +232,8 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    if (!url && !file) {
-      setError('Please add a file or enter an external link first.');
-      return;
-    }
-    if (!userId) {
-      setError('Session expired or user not logged in. Please log in again.');
+    if ((!url && !file) || !boardId || !userId) {
+      setError('Add a file or a link before submitting');
       return;
     }
     setLoading(true);
@@ -261,7 +249,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
         finalUrl = await uploadStudioFile(filePath, file);
       }
 
-      const newAsset = await addStudioAsset({
+      await addStudioAsset({
         board_id: boardId,
         user_id: userId,
         title: title || (file ? file.name : 'Untitled Asset'),
@@ -269,9 +257,6 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
         asset_type: type,
         category: category
       });
-      if (newAsset) {
-        await logActivity(`uploaded ${type} reference "${newAsset.title}"`, 'studio_asset', newAsset.id);
-      }
       onSuccess();
       onClose();
       // Reset form
@@ -541,11 +526,11 @@ function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards =
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <button onClick={onClose} aria-label="Close lightbox" style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+      <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
       {images.length > 1 && (
         <>
-          <button onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous image" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
-          <button onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next image" style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(-1); }} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
+          <button onClick={(e) => { e.stopPropagation(); go(1); }} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
         </>
       )}
       <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
@@ -714,7 +699,7 @@ function ReferenceSearchModal({
                 Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
               </div>
             </div>
-            <button onClick={onClose} aria-label="Close schedule edit" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
           </div>
 
           <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
@@ -909,12 +894,7 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
   const [lookFor, setLookFor] = useState<string | null>(null);
 
   const loadRefs = async () => {
-    // concept_asset_id must be selected explicitly (not just implied by the
-    // concept_assets(...) join) — omitting it left every Ref's
-    // concept_asset_id undefined, so the "already linked" filter below
-    // (a Set built from this field) never matched anything and the
-    // look-board picker let the same concept image get linked repeatedly.
-    const { data } = await supabase.from('character_references').select('id,character_id,concept_asset_id,concept_assets(image_url,title)').eq('project_id', projectId);
+    const { data } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
     const map: Record<string, Ref[]> = {};
     (data || []).forEach((r: any) => { (map[r.character_id] ||= []).push({ id: r.id, concept_asset_id: r.concept_asset_id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
     setRefs(map);
@@ -1111,16 +1091,10 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
       await loadCastings();
       setAssigning(false);
       toast(`Cast ${selected}`, 'success');
-      await logActivity(`cast character "${selected}"`, 'casting', projectId);
     } catch (e: any) { toast(e?.message || 'Could not cast', 'error'); }
   };
   const clearCasting = async (name: string) => {
-    try {
-      await removeCasting(projectId, name);
-      await loadCastings();
-      toast(`${name} reopened`, 'info');
-      await logActivity(`removed casting for character "${name}"`, 'casting', projectId);
-    }
+    try { await removeCasting(projectId, name); await loadCastings(); toast(`${name} reopened`, 'info'); }
     catch (e: any) { toast(e?.message || 'Could not update', 'error'); }
   };
 
@@ -1185,7 +1159,7 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: assigning ? 12 : 24 }}>
                     <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
                     <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: sel.color, background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
-                    <Link href={`/jobs?title=${encodeURIComponent(`Cast as ${sel.name}`)}&role=${encodeURIComponent('Actor')}`} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
+                    <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
                   </div>
                 )}
 
@@ -1393,166 +1367,10 @@ function Stripboard({ scenes }: { scenes: any[] }) {
   );
 }
 
-// Shot List: per-scene camera setups. This is the real destination for
-// ScriptOS's "shot" margin annotations (see resolveLineToSceneId in
-// lib/supabase/breakdown.ts) — previously that annotation type claimed to
-// "route to" a Shot List that didn't exist anywhere in the app.
-function ShotList({ projectId, scenes }: { projectId: string; scenes: any[] }) {
-  const { toast } = useToast();
-  const confirm = useConfirm();
-  const [shots, setShots] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [openScene, setOpenScene] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ shot_number: string; shot_size: string; angle: string; movement: string; lens: string; description: string }>({ shot_number: '', shot_size: '', angle: '', movement: '', lens: '', description: '' });
-
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    const { data } = await supabase.from('shots').select('*').eq('project_id', projectId).order('order_index');
-    setShots(data || []);
-    setLoading(false);
-  }, [projectId]);
-  useEffect(() => { load(); }, [load]);
-
-  const shotsByScene = React.useMemo(() => {
-    const map: Record<string, any[]> = {};
-    shots.forEach(s => { (map[s.scene_id] ||= []).push(s); });
-    return map;
-  }, [shots]);
-
-  const addShot = async (sceneId: string) => {
-    if (!draft.shot_number.trim()) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    const orderIndex = (shotsByScene[sceneId]?.length || 0);
-    const { error } = await supabase.from('shots').insert({
-      project_id: projectId, scene_id: sceneId, shot_number: draft.shot_number.trim(),
-      shot_size: draft.shot_size || null, angle: draft.angle || null, movement: draft.movement || null,
-      lens: draft.lens || null, description: draft.description || null, order_index: orderIndex, created_by: user?.id,
-    });
-    if (error) { toast(error.message || 'Could not add shot', 'error'); return; }
-    setDraft({ shot_number: '', shot_size: '', angle: '', movement: '', lens: '', description: '' });
-    load();
-  };
-
-  const cycleStatus = async (shot: any) => {
-    const next = shot.status === 'planned' ? 'shot' : shot.status === 'shot' ? 'omitted' : 'planned';
-    await supabase.from('shots').update({ status: next }).eq('id', shot.id);
-    load();
-  };
-
-  const removeShot = async (id: string) => {
-    if (!await confirm('Delete this shot?')) return;
-    await supabase.from('shots').delete().eq('id', id);
-    load();
-  };
-
-  const statusColor: Record<string, string> = { planned: 'var(--fg-dim)', shot: '#10b981', omitted: '#6b7280' };
-
-  if (scenes.length === 0) return null;
-
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shot List</div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{shots.length} shot{shots.length === 1 ? '' : 's'} across {Object.keys(shotsByScene).length} scene{Object.keys(shotsByScene).length === 1 ? '' : 's'}</span>
-      </div>
-
-      {loading ? (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Loading…</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {scenes.slice().sort((a, b) => a.scene_number - b.scene_number).map(scene => {
-            const sceneShots = (shotsByScene[scene.id] || []).slice().sort((a, b) => a.order_index - b.order_index);
-            const open = openScene === scene.id;
-            return (
-              <div key={scene.id} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
-                <button
-                  onClick={() => setOpenScene(open ? null : scene.id)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.02)', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: '#6366f1', width: 28 }}>{scene.scene_number}</span>
-                  <span style={{ flex: 1, fontSize: 12, color: '#fff' }}>{scene.title || 'Untitled'}</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{sceneShots.length} shot{sceneShots.length === 1 ? '' : 's'}</span>
-                </button>
-                {open && (
-                  <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {sceneShots.map(shot => (
-                      <div key={shot.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
-                        <button onClick={() => cycleStatus(shot)} title="Cycle status" style={{ fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, width: 24, background: 'none', border: 'none', color: statusColor[shot.status], cursor: 'pointer' }}>{shot.shot_number}</button>
-                        <span style={{ flex: 1, fontSize: 11, color: '#ddd' }}>
-                          {[shot.shot_size, shot.angle, shot.movement, shot.lens].filter(Boolean).join(' · ') || <span style={{ opacity: 0.4 }}>No details</span>}
-                          {shot.description && <span style={{ display: 'block', fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>{shot.description}</span>}
-                        </span>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: statusColor[shot.status], textTransform: 'uppercase' }}>{shot.status}</span>
-                        <button onClick={() => removeShot(shot.id)} aria-label="Remove shot" style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 11 }}>✕</button>
-                      </div>
-                    ))}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: sceneShots.length > 0 ? 4 : 0 }}>
-                      <input placeholder="#" value={draft.shot_number} onChange={e => setDraft(d => ({ ...d, shot_number: e.target.value }))} style={{ width: 44, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                      <input placeholder="Size (WS/MS/CU)" value={draft.shot_size} onChange={e => setDraft(d => ({ ...d, shot_size: e.target.value }))} style={{ width: 100, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                      <input placeholder="Angle" value={draft.angle} onChange={e => setDraft(d => ({ ...d, angle: e.target.value }))} style={{ width: 90, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                      <input placeholder="Movement" value={draft.movement} onChange={e => setDraft(d => ({ ...d, movement: e.target.value }))} style={{ width: 90, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                      <input placeholder="Lens" value={draft.lens} onChange={e => setDraft(d => ({ ...d, lens: e.target.value }))} style={{ width: 70, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                      <input placeholder="Description" value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} style={{ flex: 1, minWidth: 140, padding: 8, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                      <button className="link-btn" disabled={!draft.shot_number.trim()} onClick={() => addShot(scene.id)}>+ Add</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Real call sheets generated by grouping the schedule's scenes by shoot day.
-function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: string; scenes: any[]; crew: any[]; projectTitle: string }) {
-  const { toast } = useToast();
+function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
-
-  // The header fields (call times, weather, notes) were previously nowhere
-  // to be saved — this whole component was a derived, read-only view over
-  // scenes grouped by shoot_day, regenerated fresh on every render with no
-  // persistence at all. call_sheets adds the one real row per shoot day this
-  // was always missing.
-  const [sheets, setSheets] = useState<Record<number, any>>({});
-  const [draft, setDraft] = useState<{ general_call: string; shooting_call: string; estimated_wrap: string; weather: string; notes: string }>({ general_call: '', shooting_call: '', estimated_wrap: '', weather: '', notes: '' });
-  const [saving, setSaving] = useState(false);
-
-  const loadSheets = React.useCallback(async () => {
-    const { data } = await supabase.from('call_sheets').select('*').eq('project_id', projectId);
-    const byDay: Record<number, any> = {};
-    (data || []).forEach((s: any) => { byDay[s.shoot_day] = s; });
-    setSheets(byDay);
-  }, [projectId]);
-  useEffect(() => { loadSheets(); }, [loadSheets]);
-
-  const openDayFor = (day: number) => {
-    const existing = sheets[day];
-    setDraft({
-      general_call: existing?.general_call || '', shooting_call: existing?.shooting_call || '',
-      estimated_wrap: existing?.estimated_wrap || '', weather: existing?.weather || '', notes: existing?.notes || '',
-    });
-    setOpenDay(day);
-  };
-
-  const saveSheet = async (day: number) => {
-    setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    const payload = {
-      project_id: projectId, shoot_day: day,
-      general_call: draft.general_call || null, shooting_call: draft.shooting_call || null,
-      estimated_wrap: draft.estimated_wrap || null, weather: draft.weather || null, notes: draft.notes || null,
-      updated_by: user?.id, updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from('call_sheets').upsert(payload, { onConflict: 'project_id,shoot_day' });
-    setSaving(false);
-    if (error) { toast(error.message || 'Could not save call sheet', 'error'); return; }
-    toast('Call sheet saved', 'success');
-    loadSheets();
-  };
 
   const dayData = (day: number) => {
     const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
@@ -1565,7 +1383,6 @@ function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: stri
   const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
   const printDay = (day: number) => {
     const d = dayData(day);
-    const sheet = sheets[day];
     const w = window.open('', '_blank', 'width=820,height=1060');
     if (!w) return;
     w.document.write(`<!doctype html><html><head><title>${esc(projectTitle)} — Call Sheet Day ${day}</title>
@@ -1574,18 +1391,11 @@ function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: stri
       h3{font-size:10px;letter-spacing:2px;color:#666;border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
       .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:#999}</style></head><body>
       <h1>${esc(projectTitle).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}</h2>
-      ${sheet && (sheet.general_call || sheet.shooting_call || sheet.estimated_wrap || sheet.weather) ? `<div class="row" style="margin-bottom:16px">
-        ${sheet.general_call ? `<div class="col"><h3>GENERAL CALL</h3>${esc(sheet.general_call)}</div>` : ''}
-        ${sheet.shooting_call ? `<div class="col"><h3>SHOOTING CALL</h3>${esc(sheet.shooting_call)}</div>` : ''}
-        ${sheet.estimated_wrap ? `<div class="col"><h3>EST. WRAP</h3>${esc(sheet.estimated_wrap)}</div>` : ''}
-        ${sheet.weather ? `<div class="col"><h3>WEATHER</h3>${esc(sheet.weather)}</div>` : ''}
-      </div>` : ''}
       <div class="row"><div class="col"><h3>SCENES (${d.dayScenes.length}${d.pages ? ` · ${d.pages} pg` : ''})</h3>
       ${d.dayScenes.map((s: any) => `<div class="sc"><span class="num">${s.scene_number}.</span> ${esc(s.title)} ${s.time_of_day ? `<span class="num">(${esc(s.time_of_day)})</span>` : ''}</div>`).join('')}</div>
       <div class="col"><h3>LOCATIONS</h3>${d.locations.length ? d.locations.map((l: any) => `<div>${esc(l)}</div>`).join('') : '—'}
       <h3>CAST</h3>${d.cast.length ? esc(d.cast.join(', ')) : '—'}</div>
       <div class="col"><h3>CREW</h3>${crew.length ? crew.map((c: any) => `<div>${esc(c.name || c.profiles?.username || 'Crew')}${c.role ? ` — ${esc(c.role)}` : ''}</div>`).join('') : 'No crew assigned'}</div></div>
-      ${sheet?.notes ? `<h3>NOTES</h3><div>${esc(sheet.notes)}</div>` : ''}
       <script>window.onload=()=>{window.print()}</script></body></html>`);
     w.document.close();
   };
@@ -1601,7 +1411,7 @@ function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: stri
           const open = openDay === day;
           return (
             <div key={day} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14, gridColumn: open ? '1 / -1' : 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => open ? setOpenDay(null) : openDayFor(day)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpenDay(open ? null : day)}>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>DAY {day}</span>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{d.dayScenes.length} sc · {d.cast.length} cast{d.pages ? ` · ${d.pages} pg` : ''}</span>
               </div>
@@ -1616,16 +1426,6 @@ function CallSheets({ projectId, scenes, crew, projectTitle }: { projectId: stri
                     <div style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: 1 }}>{projectTitle.toUpperCase()} — CALL SHEET · DAY {day}</div>
                     <button onClick={() => printDay(day)} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#ddd', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', letterSpacing: 1 }}>⎙ PRINT / PDF</button>
                   </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
-                    <input placeholder="General call (e.g. 06:00)" value={draft.general_call} onChange={e => setDraft(dr => ({ ...dr, general_call: e.target.value }))} style={{ width: 140, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
-                    <input placeholder="Shooting call" value={draft.shooting_call} onChange={e => setDraft(dr => ({ ...dr, shooting_call: e.target.value }))} style={{ width: 120, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
-                    <input placeholder="Est. wrap" value={draft.estimated_wrap} onChange={e => setDraft(dr => ({ ...dr, estimated_wrap: e.target.value }))} style={{ width: 100, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
-                    <input placeholder="Weather" value={draft.weather} onChange={e => setDraft(dr => ({ ...dr, weather: e.target.value }))} style={{ width: 120, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
-                    <input placeholder="Notes" value={draft.notes} onChange={e => setDraft(dr => ({ ...dr, notes: e.target.value }))} style={{ flex: 1, minWidth: 140, padding: 7, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)' }} />
-                    <button className="link-btn" disabled={saving} onClick={() => saveSheet(day)} style={{ fontSize: 9 }}>{saving ? 'Saving…' : 'Save'}</button>
-                  </div>
-
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
                     <div>
                       <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 }}>SCENES</div>
@@ -1902,11 +1702,6 @@ export default function StudioPage() {
   // shooting schedule and the people no longer share one crowded grid.
   const [prodTab, setProdTab] = useState<'story' | 'schedule' | 'crew'>('story');
   const [filter, setFilter] = useState<string>('all');
-  // Library tab has a grid (default, matches every other list in the suite)
-  // and a free-canvas view (pan/zoom, drag pins to arbitrary positions) —
-  // the first proof point for a suite-wide pannable-canvas pattern.
-  const [libraryView, setLibraryView] = useState<'grid' | 'canvas'>('grid');
-  const [canvasScale, setCanvasScale] = useState(1);
   const [user, setUser] = useState<any>(null);
   const [assetsList, setAssetsList] = useState<Asset[]>([]);
   const [showIntake, setShowIntake] = useState(false);
@@ -2231,8 +2026,7 @@ export default function StudioPage() {
             category: a.category || 'Studio',
             url: a.asset_url,
             size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0],
-            x: a.position_x ?? 0, y: a.position_y ?? 0, width: a.width ?? 300, height: a.height ?? 300,
+            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
           })));
 
         } catch (err) {
@@ -2292,8 +2086,7 @@ export default function StudioPage() {
           category: a.category || 'Studio',
           url: a.asset_url,
           size: 'Unknown',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0],
-          x: (a as any).position_x ?? 0, y: (a as any).position_y ?? 0, width: (a as any).width ?? 300, height: (a as any).height ?? 300,
+          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
         })));
       }
     } catch (err) {
@@ -2306,12 +2099,6 @@ export default function StudioPage() {
     try {
       const projectBeats = await getProjectBeats(activeProject.id);
       setBeats(projectBeats);
-      // The Story tab reads activeProject.beats from ProjectContext, not this
-      // component's local `beats` state (which only feeds the Pitch Deck) —
-      // without this, a beat added/deleted here updated the Pitch Deck's
-      // Story Engine slide but left the Story tab itself showing stale data
-      // until some unrelated action happened to call refreshProject().
-      refreshProject(activeProject.id);
     } catch (err) {
       console.error('Error refreshing beats:', err);
     }
@@ -2323,15 +2110,12 @@ export default function StudioPage() {
     if (!title) return;
     const content = prompt('Beat Content:');
     try {
-      const b = await createProjectBeat({
+      await createProjectBeat({
         project_id: activeProject.id,
         title,
         content,
         order_index: beats.length
       });
-      if (b) {
-        await logActivity(`created beat card "${title}"`, 'beat', b.id);
-      }
       refreshBeats();
     } catch (err) {
       console.error('Error adding beat:', err);
@@ -2939,7 +2723,7 @@ export default function StudioPage() {
                                  </select>
                                  <input type="number" min="1" value={editScene.shoot_day} onChange={e => setEditScene(p => ({ ...p, shoot_day: e.target.value }))} style={{ width: 56, padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
                                  <button onClick={saveScene} style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 10 }}>Save</button>
-                                 <button onClick={() => setEditSceneId(null)} aria-label="Cancel edit" style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                                 <button onClick={() => setEditSceneId(null)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
                                </div>
                              ) : (
                              <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -3017,10 +2801,7 @@ export default function StudioPage() {
                  <Stripboard scenes={activeProject.scenes as any[]} />
                )}
                {activeProject?.scenes && activeProject.scenes.length > 0 && (
-                 <ShotList projectId={activeProject.id} scenes={activeProject.scenes as any[]} />
-               )}
-               {activeProject?.scenes && activeProject.scenes.length > 0 && (
-                 <CallSheets projectId={activeProject.id} scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
+                 <CallSheets scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
                )}
              </div>
             )}
@@ -3033,22 +2814,6 @@ export default function StudioPage() {
               <div>
                 <SectionLabel text="Asset Library" />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Digital Assets</h2>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {(['grid', 'canvas'] as const).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setLibraryView(v)}
-                    style={{
-                      padding: '7px 16px',
-                      background: libraryView === v ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${libraryView === v ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
-                      color: libraryView === v ? 'var(--bg)' : 'var(--fg-muted)',
-                      fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
-                      borderRadius: 'var(--radius-full)', cursor: 'pointer', transition: 'all 0.3s',
-                    }}
-                  >{v === 'grid' ? 'Grid' : 'Canvas'}</button>
-                ))}
               </div>
             </div>
 
@@ -3088,33 +2853,6 @@ export default function StudioPage() {
                 title={assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
                 subtitle={assetsList.length === 0 ? 'Use Intake above to track files hosted elsewhere' : undefined}
               />
-            ) : libraryView === 'canvas' ? (
-              <div style={{ height: '70vh', minHeight: 480, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: 99 }}>
-                  {Math.round(canvasScale * 100)}% · scroll to zoom, drag background to pan, drag a pin to move it, double-click to open
-                </div>
-                <PannableCanvas onScaleChange={setCanvasScale}>
-                  {filtered.filter(a => a.type === 'image' && a.url).map(asset => (
-                    <CanvasPin
-                      key={asset.id}
-                      pin={{ id: asset.id, url: asset.url!, title: asset.name, x: asset.x ?? 0, y: asset.y ?? 0, width: asset.width ?? 300, height: asset.height ?? 300 }}
-                      scale={canvasScale}
-                      onMove={(id, x, y) => {
-                        // Local-only, fires every drag frame — no network
-                        // write here, or dragging one pin would fire dozens
-                        // of Supabase updates per second.
-                        setAssetsList(prev => prev.map(a => a.id === id ? { ...a, x, y } : a));
-                      }}
-                      onMoveEnd={(id, x, y) => {
-                        setAssetsList(prev => prev.map(a => a.id === id ? { ...a, x, y } : a));
-                        updateStudioAsset(id, { position_x: Math.round(x), position_y: Math.round(y) }).catch(() => toast('Could not save pin position', 'error'));
-                      }}
-                      onOpen={(id) => { const a = assetsList.find(x => x.id === id); if (a) setReviewAsset(a); }}
-                      onRemove={(id) => { deleteStudioAsset(id).then(refreshAssets); }}
-                    />
-                  ))}
-                </PannableCanvas>
-              </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
                 {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}

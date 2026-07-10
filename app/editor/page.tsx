@@ -15,23 +15,19 @@ import { saveScript, getAllScripts, createNewScript, importScriptFromText, type 
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { saveTitlePage, getDefaultTitlePage, type TitlePage, getTitlePage } from '@/lib/scriptos/titlepage';
+import { loadTitlePage, loadTitlePageCached, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { saveCharacterProfiles, mergeProfiles, type CharacterProfile, getCharacterProfiles } from '@/lib/scriptos/bible';
-import type { ScriptLine, LineType, StashItem } from '@/types/screenplay';
+import { loadCharacterProfiles, loadCharacterProfilesCached, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
+import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/context/ProjectContext';
-import { usePresence } from '@/lib/context/PresenceContext';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
-import { resolveLineToSceneId } from '@/lib/supabase/breakdown';
-import { getProjectBeats, createProjectBeat } from '@/lib/supabase/studio';
 import { logAuditAction } from '@/lib/supabase/audit';
-import { logActivity } from '@/lib/supabase/activity';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { getDefaultScriptFormat } from '@/lib/projectTypes';
@@ -246,10 +242,8 @@ function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumb
 // ============================================================================
 
 export default function EditorPage() {
-  const { isLoading } = useRequireAuth();
+  useRequireAuth();
   const { activeProject } = useProject();
-  if (isLoading) return null;
-  const { updateScenePresence } = usePresence();
   const { playUri } = useSpotify();
   
   const [projectAudioRefs, setProjectAudioRefs] = useState<any[]>([]);
@@ -297,62 +291,12 @@ export default function EditorPage() {
     if (!auth.user) return;
     try {
       await addAnnotation({ scriptId: currentScript.id, projectId: activeProject.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), createdBy: auth.user.id });
-
-      // shot/todo annotations claim (via ANNOTATION_META.routesTo) to reach a
-      // real Shot List / Call Sheet elsewhere in the suite — this is what
-      // actually makes that true, instead of the annotation being the only
-      // place the note ever lives. Best-effort: if the scene can't be
-      // resolved (script/schedule drifted, or the scene isn't imported into
-      // the schedule yet), the margin annotation itself still saved above,
-      // so this never blocks or fails the user's actual action.
-      const scenes = (activeProject.scenes || []) as { id: string; scene_number: number; shoot_day?: number }[];
-      if ((annotationDraft.type === 'shot' || annotationDraft.type === 'todo') && scenes.length > 0) {
-        const sceneId = await resolveLineToSceneId(activeProject.id, annotationDraft.line, scenes);
-        if (sceneId) {
-          if (annotationDraft.type === 'shot') {
-            const { count } = await supabase.from('shots').select('id', { count: 'exact', head: true }).eq('scene_id', sceneId);
-            await supabase.from('shots').insert({
-              project_id: activeProject.id, scene_id: sceneId, shot_number: String((count || 0) + 1),
-              description: annotationDraft.text.trim(), order_index: count || 0, created_by: auth.user.id,
-            });
-            toast('Shot added to the Shot List', 'success');
-          } else {
-            const scene = scenes.find(s => s.id === sceneId);
-            const day = scene?.shoot_day || 1;
-            const { data: existingSheet } = await supabase.from('call_sheets').select('id,notes').eq('project_id', activeProject.id).eq('shoot_day', day).maybeSingle();
-            const combinedNotes = existingSheet?.notes ? `${existingSheet.notes}\n${annotationDraft.text.trim()}` : annotationDraft.text.trim();
-            await supabase.from('call_sheets').upsert(
-              { project_id: activeProject.id, shoot_day: day, notes: combinedNotes, updated_by: auth.user.id, updated_at: new Date().toISOString() },
-              { onConflict: 'project_id,shoot_day' }
-            );
-            toast(`Added to Day ${day}'s call sheet notes`, 'success');
-          }
-        }
-      }
-
-      // beat annotations claim to route to Studio's Beat Board
-      // (project_beats) — unlike shot/todo, beats aren't scene-scoped, so
-      // this doesn't need resolveLineToSceneId at all; it just creates the
-      // beat directly. Title is a short lead-in from the note text so the
-      // Beat Board card has something to show in its title row.
-      if (annotationDraft.type === 'beat') {
-        const text = annotationDraft.text.trim();
-        const existing = await getProjectBeats(activeProject.id);
-        await createProjectBeat({
-          project_id: activeProject.id,
-          title: text.length > 40 ? `${text.slice(0, 40)}…` : text,
-          content: text,
-          order_index: (existing || []).length,
-        });
-        toast('Beat added to the Beat Board', 'success');
-      }
-
       reloadAnnotations(currentScript.id);
       setAnnotationDraft(null);
     } catch (e: any) {
       console.error('Failed to add annotation:', e);
     }
-  }, [annotationDraft, currentScript?.id, activeProject, reloadAnnotations, toast]);
+  }, [annotationDraft, currentScript?.id, activeProject?.id, reloadAnnotations]);
 
   const removeAnnotation = useCallback(async (id: string) => {
     if (!currentScript?.id) return;
@@ -365,34 +309,8 @@ export default function EditorPage() {
   const [scripts, setScripts] = useState<StoredScript[]>([]);
   
   // UI States
-  // Workspace Layout State
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showRightSidebar, setShowRightSidebar] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedSidebar = localStorage.getItem('mc_editor_show_sidebar');
-      const storedRightSidebar = localStorage.getItem('mc_editor_show_right_sidebar');
-      if (storedSidebar !== null) setShowSidebar(storedSidebar === '1');
-      if (storedRightSidebar !== null) setShowRightSidebar(storedRightSidebar === '1');
-    }
-  }, []);
-
-  const toggleSidebar = () => {
-    setShowSidebar(prev => {
-      const next = !prev;
-      localStorage.setItem('mc_editor_show_sidebar', next ? '1' : '0');
-      return next;
-    });
-  };
-
-  const toggleRightSidebar = () => {
-    setShowRightSidebar(prev => {
-      const next = !prev;
-      localStorage.setItem('mc_editor_show_right_sidebar', next ? '1' : '0');
-      return next;
-    });
-  };
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
   // On phones the fixed-width side panels would crush the writing area, so
@@ -455,7 +373,7 @@ export default function EditorPage() {
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
-  const [stashItems, setStashItems] = useState<StashItem[]>([]);
+  const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
   const [sceneNotes, setSceneNotes] = useState<Record<string, string>>({});
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
@@ -485,8 +403,10 @@ export default function EditorPage() {
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content || '');
-    getTitlePage(script.id).then(setTitlePage);
-    getCharacterProfiles(script.id).then(setCharProfiles);
+    setTitlePage(loadTitlePageCached(script.id));
+    setCharProfiles(loadCharacterProfilesCached(script.id));
+    loadTitlePage(script.id).then(setTitlePage);
+    loadCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [toast]);
@@ -518,77 +438,68 @@ export default function EditorPage() {
     }
   }, [activeProject?.id, toast]);
 
-  const handleCreateNewScript = useCallback(async (title: string, initialContent: string = '') => {
-    try {
-      const s = await saveScript({ title, content: initialContent, project_id: activeProject?.id });
-      if (s) {
-        try {
-          await logActivity(`created screenplay "${title}"`, 'script', s.id);
-        } catch (e) {
-          console.error('Failed to log activity for new script', e);
+  // Init
+  useEffect(() => {
+    const init = async () => {
+      const all = await getAllScripts();
+      setScripts(all);
+      if (all.length > 0) {
+        const latest = all[0];
+        setCurrentScript(latest);
+        setContent(latest.content || '');
+        setTitlePage(loadTitlePageCached(latest.id));
+        setCharProfiles(loadCharacterProfilesCached(latest.id));
+        loadTitlePage(latest.id).then(setTitlePage);
+        loadCharacterProfiles(latest.id).then(setCharProfiles);
+        setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
+      } else {
+        const fresh = await createNewScript('My First Screenplay');
+        if (fresh) {
+          setCurrentScript(fresh);
+          setScripts([fresh]);
+          setContent('');
+          setSessionStartWords(0);
         }
       }
-      return s;
-    } catch (e) {
-      console.error('Failed to create script:', e);
-      return null;
-    }
-  }, [activeProject?.id]);
+    };
+    init();
+  }, []);
 
-  // Unified initialization and project sync
+  // Load (or create) the ACTIVE PROJECT's screenplay from Supabase, so the
+  // editor edits the same script row Studio/Production/Pitch read. Using the
+  // real Supabase id means useScriptSync persists edits straight to that row.
   useEffect(() => {
+    if (!activeProject?.id) return;
     let cancelled = false;
-    const init = async () => {
-      const projectId = activeProject?.id;
-      const all = await getAllScripts(projectId);
-      if (cancelled) return;
-      setScripts(all);
-
-      if (projectId) {
-        // We have an active project — ensure a script exists for it and load it
-        let row = all.find(s => s.project_id === projectId);
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('scripts')
+          .select('id,title,content')
+          .eq('project_id', activeProject.id)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+        let row = data?.[0];
         if (!row) {
           const { data: auth } = await supabase.auth.getUser();
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')
-            .insert({ project_id: projectId, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || 'feature', status: 'draft', created_by: uid, last_edited_by: uid })
-            .select('*')
+            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
+            .select('id,title,content')
             .single();
-          if (ins.data) {
-            row = {
-              id: ins.data.id, title: ins.data.title, content: ins.data.content,
-              createdAt: ins.data.created_at, updatedAt: ins.data.updated_at, project_id: ins.data.project_id
-            };
-            setScripts(prev => [row!, ...prev]);
-            if (uid) console.log('Script created for project');
-          }
+          row = ins.data || undefined;
+          if (row && uid) logAuditAction(uid, 'script_created', 'script', row.id, { title: row.title, project_id: activeProject.id });
         }
-        
         if (cancelled || !row) return;
-        if (currentScript?.id === row.id) return; // already loaded
-        
-        handleLoadScript(row);
+        if (currentScript?.id === row.id) return;
+        const now = new Date().toISOString();
+        handleLoadScript({ id: row.id, title: row.title || activeProject.title, content: row.content || '', createdAt: now, updatedAt: now, project_id: activeProject.id });
         toast(`Editing “${activeProject.title}” screenplay`, 'info');
-      } else {
-        // No active project (rare but possible) — just load latest or create empty
-        if (all.length > 0) {
-          const latest = all[0];
-          if (currentScript?.id !== latest.id) {
-             handleLoadScript(latest);
-          }
-        } else {
-          const fresh = await createNewScript('My First Screenplay');
-          if (fresh) {
-            setCurrentScript(fresh);
-            setScripts([fresh]);
-            setContent('');
-            setSessionStartWords(0);
-          }
-        }
+      } catch (e) {
+        console.error('Failed to load project script:', e);
       }
-    };
-    init();
+    })();
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -677,46 +588,14 @@ export default function EditorPage() {
     textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
   }, [tableReadLineIdx]);
 
-  // Web Worker Parser Hook
-  const workerRef = useRef<Worker | null>(null);
-  
-  useEffect(() => {
-    // Initialize Web Worker
-    workerRef.current = new Worker(new URL('@/lib/scriptos/parser.worker.ts', import.meta.url));
-    
-    workerRef.current.onmessage = (e) => {
-      if (e.data.success) {
-        const result = e.data.result;
-        setLines(result.lines);
-        
-        if (result.elements) {
-          setElements(result.elements);
-        }
-        
-        if (result.charStats) {
-          // charStats is already computed in the worker if we move it there, 
-          // or we can compute it here. Currently it's computed here.
-          setCharStats(analyzeCharacters(result.lines, result.scenes));
-        }
-        
-        setLintIssues(validateScript(result.lines, content));
-      } else {
-        console.error("Parser worker error:", e.data.error);
-      }
-    };
-    
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [content]); // need content for lintIssues, though it's better to pass it to state
-
-  // Debounced sending of content to worker
+  // Parser hook
   useEffect(() => {
     if (content) {
-      const timeoutId = setTimeout(() => {
-        workerRef.current?.postMessage({ text: content, format: 'screenplay' });
-      }, 400); // 400ms debounce
-      return () => clearTimeout(timeoutId);
+      const result = parseScript(content);
+      setLines(result.lines);
+      if (result.elements) setElements(result.elements);
+      setCharStats(analyzeCharacters(result.lines, result.scenes));
+      setLintIssues(validateScript(result.lines, content));
     } else {
       setLines([]);
       setElements({});
@@ -733,8 +612,7 @@ export default function EditorPage() {
     (async () => {
       const remote = await fetchRevisionsDB(currentScript.id);
       if (!active) return;
-      const local = await getRevisions(currentScript.id);
-      setRevisions(remote.length > 0 ? remote : local);
+      setRevisions(remote.length > 0 ? remote : getRevisions(currentScript.id));
     })();
     return () => { active = false; };
   }, [currentScript]);
@@ -845,7 +723,7 @@ export default function EditorPage() {
       toast(`Locked as ${rev.label}`, 'success');
     } else {
       // Offline / no access — fall back to a local snapshot so work isn't lost.
-      const { revision } = await createRevision(currentScript.id, content);
+      const { revision } = createRevision(currentScript.id, content);
       setRevisions(prev => [...prev, revision]);
       toast(`Locked locally as ${revision.label}`, 'info');
     }
@@ -1315,17 +1193,18 @@ export default function EditorPage() {
 
   // Which scene index is the cursor currently inside
   const currentSceneIdx = useMemo(() => {
-    let lastMatchedIdx = -1;
-    for (let i = 0; i <= cursorLine && i < lines.length; i++) {
-      if (lines[i].type === 'slug') lastMatchedIdx = i;
+    let lineCount = 0;
+    let lastScene = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].type === 'slug') {
+        const sIdx = scenesList.indexOf(lines[i]);
+        if (sIdx !== -1) lastScene = sIdx;
+      }
+      if (lineCount >= cursorLine) break;
+      lineCount++;
     }
-    return lastMatchedIdx;
-  }, [cursorLine, lines]);
-
-  useEffect(() => {
-    updateScenePresence(currentSceneIdx);
-  }, [currentSceneIdx, updateScenePresence]);
-
+    return lastScene;
+  }, [lines, scenesList, cursorLine]);
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
   // The taskbar's context capsule morphs to surface these read-outs and the
@@ -1434,7 +1313,7 @@ export default function EditorPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button
-                onClick={toggleSidebar}
+                onClick={() => setShowSidebar(!showSidebar)}
                 className="link-btn"
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
               >
@@ -1514,7 +1393,7 @@ export default function EditorPage() {
               { icon: SplitSquareHorizontal, title: 'Dual Dialogue', onClick: toggleDualDialogue },
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },
-              { icon: Settings,   title: 'Tools Panel', onClick: toggleRightSidebar },
+              { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
               { icon: Lock,       title: 'Lock Revision', onClick: handleLockRevision },
             ].map(({ icon: Icon, title, onClick }) => (
               <button
@@ -1640,7 +1519,7 @@ export default function EditorPage() {
               }}
             >
               <EditorLeftNav
-                scripts={scripts} setScripts={setScripts} createNewScript={handleCreateNewScript}
+                scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
                 setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
                 fileInputRef={fileInputRef} handleImportFile={handleImportFile}
                 showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
@@ -1847,20 +1726,8 @@ export default function EditorPage() {
           {/* Live structure rail — Save-the-Cat-style milestone overlay, a
               pacing flag, and where the current scene sits, surfaced in the
               margin instead of buried in a Stats tab. */}
-          {/* Live structure rail — Save-the-Cat-style milestone overlay, a
-              pacing flag, and where the current scene sits, surfaced in the
-              margin instead of buried in a Stats tab. */}
           {activeView === 'write' && !focusMode && (
-            <div style={{
-              position: 'fixed',
-              left: showSidebar && !isMobile ? 288 : 40,
-              top: 120,
-              bottom: 80,
-              width: 2,
-              background: 'rgba(255,255,255,0.03)',
-              zIndex: 10,
-              transition: 'left 0.35s ease'
-            }}>
+            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
               {scenesList.map((s, idx) => {
                 const pos = (idx / scenesList.length) * 100;
                 const isActBreak = s.text.includes('ACT');
@@ -1888,54 +1755,8 @@ export default function EditorPage() {
                 { pct: 75, label: 'Break into Three' },
                 { pct: 90, label: 'Finale' },
               ].map(m => (
-                <div
-                  key={m.label}
-                  title={m.label}
-                  style={{
-                    position: 'absolute',
-                    top: `${m.pct}%`,
-                    left: -3,
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.25)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    transform: 'translateY(-50%)',
-                    cursor: 'help',
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'var(--accent)';
-                    const txt = e.currentTarget.querySelector('span');
-                    if (txt) {
-                      txt.style.color = '#fff';
-                      txt.style.opacity = '1';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
-                    const txt = e.currentTarget.querySelector('span');
-                    if (txt) {
-                      txt.style.color = 'rgba(255,255,255,0.35)';
-                      txt.style.opacity = '0.7';
-                    }
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute',
-                    left: 16,
-                    top: -5,
-                    fontFamily: 'var(--mono)',
-                    fontSize: 8.5,
-                    letterSpacing: 1,
-                    textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.35)',
-                    opacity: 0.7,
-                    whiteSpace: 'nowrap',
-                    transition: 'color 0.2s, opacity 0.2s'
-                  }}>
-                    {m.label}
-                  </span>
+                <div key={m.label} title={m.label} style={{ position: 'absolute', top: `${m.pct}%`, left: -1, width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', transform: 'translateY(-50%)' }}>
+                  <span style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 0.5, color: 'rgba(255,255,255,0.25)', whiteSpace: 'nowrap' }}>{m.label}</span>
                 </div>
               ))}
 
@@ -2057,7 +1878,7 @@ export default function EditorPage() {
                   typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
                   nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
                   elements={elements} chars={chars} charStats={charStats}
-                  handleLockRevision={handleLockRevision} handleRestoreRevision={(text: string) => setContent(text)} revisions={revisions} content={content}
+                  handleLockRevision={handleLockRevision} revisions={revisions}
                   setContent={setContent} toast={toast}
                   showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
                   showWatermark={showWatermark} setShowWatermark={setShowWatermark}
