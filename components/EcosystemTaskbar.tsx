@@ -579,18 +579,11 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current || !scrollRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 3 && !dragRef.current.moved) {
-      dragRef.current.moved = true;
-      try { e.currentTarget.setPointerCapture(dragRef.current.pointerId); } catch (err) {}
-    }
-    const nextScroll = dragRef.current.startScroll - dx;
-    scrollRef.current.scrollLeft = nextScroll;
-    targetScroll.current = nextScroll;
-    currentScroll.current = nextScroll;
+    if (Math.abs(dx) > 3 && !dragRef.current.moved) { dragRef.current.moved = true; try { e.currentTarget.setPointerCapture(dragRef.current.pointerId); } catch (err) {} }
+    scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
   };
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.moved) { try { e.currentTarget.releasePointerCapture(dragRef.current.pointerId); } catch (err) {} }
-    dragRef.current = null;
+    if (dragRef.current?.moved) { try { e.currentTarget.releasePointerCapture(dragRef.current.pointerId); } catch (err) {} } dragRef.current = null;
     normalize();
     scheduleReturnHome();
   };
