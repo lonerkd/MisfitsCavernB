@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { X, Keyboard } from 'lucide-react';
 
-// Grouped reference of the app's keyboard shortcuts. Opened with "?" from
-// anywhere you're not typing.
 const GROUPS: { title: string; items: [string, string][] }[] = [
   {
     title: 'Global',
@@ -41,7 +39,7 @@ export default function ShortcutsOverlay() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setOpen(false); return; }
-      // "?" is Shift+/ — ignore while typing in a field.
+
       if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
         const t = e.target as HTMLElement;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;

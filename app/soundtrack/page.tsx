@@ -14,17 +14,17 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/Toast';
 
 const MOODS = [
-  // Cinematic Moods
+
   { category: 'Cinematic Moods', name: 'Tension', uri: 'spotify:playlist:37i9dQZF1EIeO67Lh9iQ3Y', color: '#8b0000' },
   { category: 'Cinematic Moods', name: 'Ethereal', uri: 'spotify:playlist:37i9dQZF1DXc8kgYqQLKc1', color: '#4169e1' },
   { category: 'Cinematic Moods', name: 'Cyberpunk', uri: 'spotify:playlist:37i9dQZF1DXdLEN7aqioJC', color: '#ff00ff' },
   { category: 'Cinematic Moods', name: 'Orchestral Sweep', uri: 'spotify:playlist:37i9dQZF1DX1qHzZWvoGZu', color: '#daa520' },
   { category: 'Cinematic Moods', name: 'Dark Ambient', uri: 'spotify:playlist:37i9dQZF1DX1n9dp3223e7', color: '#2f4f4f' },
-  // Eras & Genres
+
   { category: 'Eras & Genres', name: '80s Synthwave', uri: 'spotify:playlist:37i9dQZF1DXdLEN7aqioJC', color: '#ff1493' },
   { category: 'Eras & Genres', name: 'Noir Jazz', uri: 'spotify:playlist:37i9dQZF1DX0b1hHYPNzaU', color: '#708090' },
   { category: 'Eras & Genres', name: 'Western Acoustic', uri: 'spotify:playlist:37i9dQZF1DWZqzjeJjC6n4', color: '#cd853f' },
-  // Pacing & Action
+
   { category: 'Pacing & Action', name: 'Chase Sequences', uri: 'spotify:playlist:37i9dQZF1DWTx0ygoZScW3', color: '#ff4500' },
   { category: 'Pacing & Action', name: 'Slow Burn', uri: 'spotify:playlist:37i9dQZF1DX2pCG3h42yA9', color: '#483d8b' },
   { category: 'Pacing & Action', name: 'Suspense', uri: 'spotify:playlist:37i9dQZF1DWZq91oqsEAqw', color: '#000000' },
@@ -34,20 +34,17 @@ export default function SoundtrackPage() {
   const { isAuthenticated, playUri } = useSpotify();
   const { activeProject } = useProject();
   const { toast } = useToast();
-  
+
   const [activeTab, setActiveTab] = useState<'moods'|'sfx'|'project'|'search'>('moods');
-  
-  // Search State
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  // Custom SFX State
+
   const [sfxAssets, setSfxAssets] = useState<any[]>([]);
   const [uploadingSfx, setUploadingSfx] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Project References State
+
   const [projectRefs, setProjectRefs] = useState<any[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
@@ -90,8 +87,7 @@ export default function SoundtrackPage() {
     }
     setIsSearching(true);
     try {
-      // Pull the real, most-recently-edited script for this project and read
-      // its actual content for mood/keyword extraction -- not a fixed string.
+
       const { data: scripts } = await supabase
         .from('scripts')
         .select('content')
@@ -115,7 +111,7 @@ export default function SoundtrackPage() {
   const handleSfxUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setUploadingSfx(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -128,9 +124,6 @@ export default function SoundtrackPage() {
 
       const { data: publicUrl } = supabase.storage.from('sfx_library').getPublicUrl(fileName);
 
-      // sfx_assets columns are (title, audio_url, user_id, tags, ...) — the
-      // previous insert used nonexistent columns (bucket_path, file_name,
-      // category, uploaded_by), so every SFX upload failed at the DB step.
       const { error: dbError } = await supabase.from('sfx_assets').insert({
         title: file.name,
         audio_url: publicUrl.publicUrl,
@@ -161,8 +154,7 @@ export default function SoundtrackPage() {
         project_id: activeProject.id,
         added_by: userData.user?.id,
         reference_type: type,
-        // sfx_assets rows carry audio_url/title/tags — the old bucket_path/
-        // file_name/category columns never existed, so saves always failed
+
         uri: type === 'spotify' ? item.uri : item.audio_url,
         title: type === 'spotify' ? item.name : item.title,
         description: type === 'spotify' ? (item.artists?.[0]?.name || 'Spotify Playist') : (item.tags?.[0] || 'Custom SFX')
@@ -195,7 +187,6 @@ export default function SoundtrackPage() {
     );
   }
 
-  // Group moods by category
   const groupedMoods = MOODS.reduce((acc, mood) => {
     if (!acc[mood.category]) acc[mood.category] = [];
     acc[mood.category].push(mood);
@@ -240,16 +231,16 @@ export default function SoundtrackPage() {
                   <h2 className="mc-title text-xl opacity-60 mb-6">{category}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {moods.map(mood => (
-                      <div 
-                        key={mood.name} 
+                      <div
+                        key={mood.name}
                         className="p-6 rounded-2xl border border-white/5 bg-black/40 hover:bg-white/5 transition-all cursor-pointer group flex flex-col items-center justify-center text-center gap-4 hover:-translate-y-1 relative overflow-hidden"
                         onClick={() => playUri(mood.uri)}
                       >
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity" 
+                        <div
+                          className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
                           style={{ background: `radial-gradient(circle at center, ${mood.color}, transparent)` }}
                         />
-                        <div 
+                        <div
                           className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform relative z-10"
                           style={{ boxShadow: `0 0 20px ${mood.color}40` }}
                         >
@@ -272,12 +263,12 @@ export default function SoundtrackPage() {
                   <p className="mc-text text-sm opacity-50">Upload raw .wav or .mp3 files to your Cavern Created library.</p>
                 </div>
                 <div>
-                  <input 
-                    type="file" 
-                    accept="audio/*" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleSfxUpload} 
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleSfxUpload}
                   />
                   <Button variant="solid" className="gap-2" onClick={() => fileInputRef.current?.click()} isLoading={uploadingSfx}>
                     <UploadCloud size={16} /> Upload Audio
@@ -293,12 +284,12 @@ export default function SoundtrackPage() {
                   </div>
                 ) : (
                   sfxAssets.map(asset => {
-                    // audio_url already holds the full public URL from upload time
+
                     const publicUrl = asset.audio_url;
                     return (
                       <div key={asset.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                         <div className="flex items-center gap-4 overflow-hidden">
-                          <button 
+                          <button
                             className="w-10 h-10 shrink-0 rounded-full bg-[#1ed760]/10 flex items-center justify-center hover:bg-[#1ed760]/20 text-[#1ed760]"
                             onClick={() => new Audio(publicUrl).play()}
                           >
@@ -309,7 +300,7 @@ export default function SoundtrackPage() {
                             <p className="mc-text text-xs opacity-50 truncate">{asset.tags?.[0] || 'Custom SFX'}</p>
                           </div>
                         </div>
-                        <button 
+                        <button
                           className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-white/50 hover:text-white shrink-0"
                           title="Save to Active Project"
                           onClick={() => saveToProject(asset, 'custom_upload')}
@@ -357,7 +348,7 @@ export default function SoundtrackPage() {
                       {projectRefs.map(ref => (
                         <div key={ref.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                           <div className="flex items-center gap-4 overflow-hidden">
-                            <button 
+                            <button
                               className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
                               onClick={() => {
                                 if (ref.reference_type === 'spotify') playUri(ref.uri);
@@ -377,7 +368,7 @@ export default function SoundtrackPage() {
                               </p>
                             </div>
                           </div>
-                          <button 
+                          <button
                             className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-400 transition-all shrink-0"
                             onClick={() => deleteProjectRef(ref.id)}
                           >
@@ -396,9 +387,9 @@ export default function SoundtrackPage() {
             <div className="max-w-4xl">
               <form className="flex gap-4 items-end mb-8" onSubmit={handleSearch}>
                 <div className="flex-1">
-                  <Input 
-                    label="Search Spotify for cinematic tracks..." 
-                    type="text" 
+                  <Input
+                    label="Search Spotify for cinematic tracks..."
+                    type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                   />
@@ -410,7 +401,7 @@ export default function SoundtrackPage() {
                   <Wand2 size={16} className="mr-2" /> Magic Context Fill
                 </Button>
               </form>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {searchResults.map((item: any) => (
                   <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
@@ -426,13 +417,13 @@ export default function SoundtrackPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[#1ed760]/20 text-[#1ed760] transition-all"
                         onClick={() => playUri(item.uri)}
                       >
                         <Play size={16} />
                       </button>
-                      <button 
+                      <button
                         className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 text-white/60 hover:text-white transition-all"
                         title="Save to Project Bible"
                         onClick={() => saveToProject(item, 'spotify')}

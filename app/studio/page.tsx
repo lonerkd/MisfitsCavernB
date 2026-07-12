@@ -49,7 +49,6 @@ interface Asset {
   url?: string;
 }
 
-
 const STAGES = [
   { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
   { id: 'pre', name: 'Pre-Production', color: '#0099ff', icon: ClipboardList },
@@ -118,7 +117,6 @@ function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onC
   );
 }
 
-// Frame.io style Asset Review Modal
 function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isOpen: boolean; onClose: () => void }) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -135,7 +133,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
     if (!user) return;
     const { data } = await supabase.from('asset_comments').insert({ asset_id: asset.id, user_id: user.id, content: t, timecode: 'Global' }).select('id,content,timecode,created_at').single();
     if (data) setComments(p => [...p, { ...data, profiles: { username: 'You' } }]);
-    // Notify the asset owner of the new review comment.
+
     const ownerId = (asset as any).created_by;
     if (ownerId) {
       notify(ownerId, {
@@ -157,7 +155,6 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
         exit={{ opacity: 0 }}
         style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#050505', display: 'flex', flexDirection: 'column' }}
       >
-        {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
@@ -170,9 +167,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
            </div>
         </div>
 
-        {/* Content Area */}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Main Viewer */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, background: '#000', position: 'relative' }}>
              {asset.type === 'video' && asset.url ? (
                <video src={asset.url} controls style={{ width: '100%', maxWidth: 1000, maxHeight: '100%', borderRadius: 8, background: '#000' }} />
@@ -188,10 +183,9 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
              )}
           </div>
 
-          {/* Comments Sidebar (Frame.io style) */}
           <div style={{ width: 340, background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
-            
+
             <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {comments.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No feedback yet — leave the first note.</div>}
               {comments.map((comment) => {
@@ -260,7 +254,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
       });
       onSuccess();
       onClose();
-      // Reset form
+
       setTitle('');
       setUrl('');
       setFile(null);
@@ -325,7 +319,7 @@ function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: 
                     onChange={e => {
                       if (e.target.files?.[0]) {
                         setFile(e.target.files[0]);
-                        // Auto-detect type
+
                         const f = e.target.files[0];
                         if (f.type.includes('image')) setType('image');
                         else if (f.type.includes('video')) setType('video');
@@ -415,7 +409,6 @@ function ProjectCard({ project, index }: { project: any; index: number }) {
         onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 20px 60px rgba(0,0,0,0.8)`)}
         onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
       >
-        {/* Ghost title */}
         <div style={{
           position: 'absolute',
           top: -10,
@@ -489,9 +482,9 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
         const Icon = stage.icon;
         return (
           <div key={stage.id} style={{ flex: 1, position: 'relative' }}>
-            <div style={{ 
-              height: 4, 
-              background: isActive ? stage.color : 'rgba(255,255,255,0.05)', 
+            <div style={{
+              height: 4,
+              background: isActive ? stage.color : 'rgba(255,255,255,0.05)',
               borderRadius: 2,
               marginBottom: 12,
               transition: 'all 0.5s'
@@ -507,7 +500,6 @@ function StageIndicator({ currentStage }: { currentStage: string }) {
   );
 }
 
-// Pinterest-style full-screen pin viewer with keyboard navigation.
 function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards = [] }: { images: any[]; index: number; onIndex: (i: number) => void; onClose: () => void; onSetBoard?: (id: string, board: string | null) => void; boards?: string[] }) {
   const img = images[index];
   const [boardInput, setBoardInput] = useState('');
@@ -641,7 +633,6 @@ function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: 
   );
 }
 
-// Pinterest/ShotDeck-style reference search → pin straight to the project moodboard.
 function ReferenceSearchModal({
   isOpen, onClose, projectTitle, addedUrls, onAdd,
 }: {
@@ -761,8 +752,6 @@ function ReferenceSearchModal({
   );
 }
 
-// Live pitch deck: title + logline, real concept images, and the character
-// bible — auto-built from the project's data, with a presentation view.
 function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts: any[]; beats: any[] }) {
   const [characters, setCharacters] = useState<string[]>([]);
   const [present, setPresent] = useState(false);
@@ -776,7 +765,7 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
       const { data: saved } = await supabase.from('script_characters').select('name,full_name').eq('script_id', withContent.id);
       let names = (saved || []).map((r: any) => r.full_name || r.name);
       if (names.length === 0 && withContent.content) {
-        try { names = parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean); } catch { /* ignore */ }
+        try { names = parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean); } catch {  }
       }
       setCharacters(names.slice(0, 12));
     })();
@@ -879,9 +868,6 @@ function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts
   );
 }
 
-// Character bible: parsed from the screenplay, persisted to script_characters
-// (Supabase) so character development is shared across the suite, not trapped
-// in one browser.
 function CharacterBible({ projectId, userId, concepts }: { projectId: string; userId: string | null; concepts: any[] }) {
   const { toast } = useToast();
   type Bio = { id?: string; name: string; full_name: string; age: string; arc: string; description: string; color?: string };
@@ -990,7 +976,6 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
                   {!b.full_name && !b.age && !b.arc && !b.description && <div style={{ color: '#555' }}>No bio yet — click ✎ to develop.</div>}
                 </div>
               )}
-              {/* Casting / look references */}
               {(() => {
                 const cRefs = b.id ? (refs[b.id] || []) : [];
                 const linkedIds = new Set(cRefs.map(r => r.concept_asset_id));
@@ -1032,10 +1017,6 @@ function CharacterBible({ projectId, userId, concepts }: { projectId: string; us
 }
 const inputMini: React.CSSProperties = { width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none' };
 
-// Casting board: the roster of characters (pulled straight from the ScriptOS
-// bible — never re-typed), each with a casting slot that either names a crew
-// member or is left "Open — Post to Jobs", a look-board of concept images, and
-// the character's footprint across the shooting schedule.
 function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId: string; userId: string | null; concepts: any[]; scenes: any[]; crew: any[] }) {
   const { toast } = useToast();
   type Char = { id?: string; name: string; color: string };
@@ -1049,7 +1030,7 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
   const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
 
   const loadCastings = async () => {
-    try { setCastings(await getCastingsForProject(projectId)); } catch { /* table may be empty */ }
+    try { setCastings(await getCastingsForProject(projectId)); } catch {  }
   };
 
   const load = async () => {
@@ -1067,7 +1048,7 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
       const list = names.map((name, i) => { const r = savedById.get(name); return { id: r?.id, name, color: r?.color || palette[i % palette.length] }; });
       setChars(list);
       setSelected(prev => prev && names.includes(prev) ? prev : names[0] || null);
-      // Look-board references keyed by character_id
+
       const { data: refData } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
       const lookMap: Record<string, Look[]> = {};
       (refData || []).forEach((r: any) => { (lookMap[r.character_id] ||= []).push({ id: r.id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
@@ -1077,7 +1058,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
   };
   useEffect(() => { load(); }, [projectId, scenes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Footprint of a character across the shooting schedule, matched on cast_list.
   const footprint = (name: string) => {
     const up = name.toUpperCase();
     const inScenes = scenes.filter(s => String(s.cast_list || '').toUpperCase().split(',').map((c: string) => c.trim()).includes(up));
@@ -1112,7 +1092,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
       {!loading && chars.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the casting board.</div>}
       {chars.length > 0 && (
         <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 }}>
-          {/* Character roster */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {chars.map(c => {
               const cast = castings[c.name.toUpperCase()];
@@ -1135,7 +1114,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
             })}
           </div>
 
-          {/* Detail panel */}
           {sel && (() => {
             const cast = castings[sel.name.toUpperCase()];
             const looksFor = sel.id ? (looks[sel.id] || []) : [];
@@ -1144,7 +1122,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
               <div style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${sel.color}33`, borderRadius: 12, padding: 24 }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: sel.color, marginBottom: 20 }}>{sel.name}</div>
 
-                {/* Casting slot */}
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
                 {cast ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, marginBottom: 24 }}>
@@ -1164,7 +1141,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
                   </div>
                 )}
 
-                {/* Crew picker */}
                 {assigning && (
                   <div style={{ marginBottom: 24, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 10 }}>
                     {crew.length === 0 ? (
@@ -1183,7 +1159,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
                   </div>
                 )}
 
-                {/* Look-board */}
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
                 {looksFor.length > 0 ? (
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
@@ -1198,7 +1173,6 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginBottom: 24 }}>No look references yet — link concept images to this character in the Character Bible.</div>
                 )}
 
-                {/* Scene footprint */}
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
                 {fp.sceneNums.length > 0 ? (
                   <div>
@@ -1224,16 +1198,9 @@ function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId
   );
 }
 
-// Stripboard + Day-Out-of-Days. The stripboard colours each scene by shoot
-// condition (INT/EXT × day/night, the Movie Magic convention), sizes it by
-// page eighths and groups the strips under their shoot day. The DOOD grid
-// derives each actor's Start/Work/Hold/Finish pattern from the scene cast
-// lists — all read straight off the same `scenes` rows the schedule edits.
 function Stripboard({ scenes }: { scenes: any[] }) {
   const [view, setView] = useState<'strips' | 'dood'>('strips');
 
-  // Movie Magic strip colours: white = INT day, yellow = EXT day,
-  // blue = INT night, green = EXT night.
   const stripColor = (s: any) => {
     const head = `${s.title || ''} ${s.location || ''}`.toUpperCase();
     const isExt = /\bEXT\b/.test(head) || (!/\bINT\b/.test(head) && false);
@@ -1248,7 +1215,6 @@ function Stripboard({ scenes }: { scenes: any[] }) {
 
   const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
 
-  // Day-Out-of-Days: for every actor, the span of shoot days they touch.
   const castRows = (() => {
     const map: Record<string, Set<number>> = {};
     scenes.forEach(s => {
@@ -1261,7 +1227,7 @@ function Stripboard({ scenes }: { scenes: any[] }) {
       const dset = set as Set<number>;
       const worked = Array.from(dset).sort((a, b) => a - b);
       const start = worked[0]; const finish = worked[worked.length - 1];
-      // cell state per shoot day: S start, W work, H hold (between), F finish, · idle
+
       const cells = days.map(d => {
         if (!dset.has(d)) return d > start && d < finish ? 'H' : '·';
         if (d === start && d === finish) return 'SF';
@@ -1323,7 +1289,6 @@ function Stripboard({ scenes }: { scenes: any[] }) {
               </div>
             );
           })}
-          {/* Legend */}
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             {[['#10b981', 'EXT Night'], ['#f59e0b', 'EXT Day'], ['#3b82f6', 'INT Night'], ['rgba(255,255,255,0.5)', 'INT Day']].map(([col, lbl]) => (
               <span key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
@@ -1353,7 +1318,6 @@ function Stripboard({ scenes }: { scenes: any[] }) {
                 <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{row.total}</div>
               </div>
             ))}
-            {/* Legend */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               {[['S', 'Start'], ['W', 'Work'], ['H', 'Hold'], ['F', 'Finish']].map(([code, lbl]) => (
                 <span key={code} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
@@ -1368,7 +1332,6 @@ function Stripboard({ scenes }: { scenes: any[] }) {
   );
 }
 
-// Real call sheets generated by grouping the schedule's scenes by shoot day.
 function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
@@ -1482,7 +1445,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
     >
       <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
         {onPush && (
-          <button 
+          <button
             onClick={() => onPush(beat)}
             style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
             title="Push to ScriptOS"
@@ -1493,7 +1456,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
           </button>
         )}
         {onDelete && (
-          <button 
+          <button
             onClick={() => onDelete(beat.id)}
             style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
             title="Delete Beat"
@@ -1517,9 +1480,7 @@ function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number;
 
 function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
   const router = useRouter();
-  // Hovering a crew card sharpens the Pill down from "studio" to this person
-  // — their role, live online status, and a real "Message" action that jumps
-  // straight to the Lounge, instead of the page-level context alone.
+
   const zoneHandlers = usePillZone(member.userId ? {
     module: 'studio',
     title: member.name,
@@ -1617,11 +1578,11 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
-            
+
             {!selectedUser ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ position: 'relative' }}>
-                  <input 
+                  <input
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -1630,11 +1591,11 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
                   />
                   <Search size={16} style={{ position: 'absolute', right: 14, top: 14, color: '#666' }} />
                 </div>
-                
+
                 <div style={{ minHeight: 200, maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {loading ? <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>Searching...</div> : 
+                  {loading ? <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>Searching...</div> :
                    results.map(u => (
-                    <div 
+                    <div
                       key={u.id}
                       onClick={() => setSelectedUser(u)}
                       style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
@@ -1664,7 +1625,7 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 
                  <div>
                    <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Assigned Role</label>
-                   <select 
+                   <select
                      value={role}
                      onChange={e => setRole(e.target.value)}
                      style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 12, borderRadius: 8, fontSize: 13 }}
@@ -1699,8 +1660,7 @@ export default function StudioPage() {
   const confirm = useConfirm();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
-  // Production suite is split into three sub-surfaces so the story work, the
-  // shooting schedule and the people no longer share one crowded grid.
+
   const [prodTab, setProdTab] = useState<'story' | 'schedule' | 'crew'>('story');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -1717,8 +1677,6 @@ export default function StudioPage() {
   const [showRecruit, setShowRecruit] = useState(false);
   const onlineIds = useOnlinePresence(user?.id);
 
-  // Publish the studio's live context to the Pill: the active project, the tab
-  // you're in, and its real crew/asset counts, with a one-tap tab cycle.
   const STUDIO_TABS = ['overview', 'concept', 'production', 'assets', 'marketing', 'pitch'] as const;
   usePillStage(
     {
@@ -1748,10 +1706,6 @@ export default function StudioPage() {
   const [showRefSearch, setShowRefSearch] = useState(false);
   const [activeConceptBoard, setActiveConceptBoard] = useState<string>('All');
 
-  // Pin a searched reference straight into the real Concept board
-  // (concept_assets — the same table the "Paste an image URL" flow writes
-  // to), so results actually show up on the board instead of a disconnected
-  // media table nothing else reads.
   const addReferenceToBoard = async (ref: ReferenceResult) => {
     if (!user || !activeProject) return;
     const existing = (activeProject.concept_assets || []) as any[];
@@ -1767,7 +1721,7 @@ export default function StudioPage() {
       if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
       await refreshProject(activeProject.id);
       toast('Reference added', 'success');
-    } catch { /* keep board state unchanged on failure */ }
+    } catch {  }
   };
   const [adding, setAdding] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -1800,7 +1754,6 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
-  // Export the whole shooting schedule (all scenes grouped by day) to print/PDF.
   const printSchedule = () => {
     if (!activeProject) return;
     const scenes = (activeProject.scenes || []) as any[];
@@ -1823,36 +1776,31 @@ export default function StudioPage() {
     w.document.close();
   };
 
-  // Auto-schedule: real 1st-AD board logic. Groups scenes by location to
-  // minimise company moves, then packs each location's scenes into shoot days
-  // respecting a daily page capacity (in eighths). NIGHT scenes are clustered
-  // together within a location so the unit isn't bouncing between day/night.
   const [autoScheduling, setAutoScheduling] = useState(false);
   const eighthsOf = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\s*\/\s*8/); return m ? Number(m[1]) : 8; };
   const autoSchedule = async () => {
     if (!activeProject) return;
     const scenes = ((activeProject.scenes || []) as any[]).slice();
     if (scenes.length === 0) { toast('No scenes to schedule yet — import from the screenplay first.', 'info'); return; }
-    const CAP = 40; // eighths/day ≈ 5 script pages, standard indie pace
-    // Group by location (unset locations bucket together at the end).
+    const CAP = 40;
+
     const groups = new Map<string, any[]>();
     for (const s of scenes) {
       const key = (s.location || '').trim().toUpperCase() || '￿UNSET';
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(s);
     }
-    // Sort groups by size desc (anchor the biggest locations first), and
-    // within a group cluster NIGHT scenes after DAY ones.
+
     const ordered = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
     const nightRank = (s: any) => /NIGHT|DUSK|NUIT/i.test(String(s.time_of_day || '')) ? 1 : 0;
-    let day = 0, used = CAP + 1; // force day 1 on first scene
+    let day = 0, used = CAP + 1;
     const updates: { id: string; shoot_day: number }[] = [];
     for (const [, list] of ordered) {
       list.sort((a, b) => nightRank(a) - nightRank(b) || a.scene_number - b.scene_number);
       let first = true;
       for (const s of list) {
         const e = eighthsOf(s);
-        // New location always starts a fresh day (a company move = new day).
+
         if (first || used + e > CAP) { day += 1; used = 0; first = false; }
         used += e;
         if ((s.shoot_day || 1) !== day) updates.push({ id: s.id, shoot_day: day });
@@ -1869,7 +1817,6 @@ export default function StudioPage() {
     }
   };
 
-  // Cycle a scene's shoot status: planned → shot → wrapped → planned.
   const cycleSceneStatus = async (s: any) => {
     if (!activeProject) return;
     const order = ['planned', 'shot', 'wrapped'];
@@ -1879,9 +1826,6 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
-  // Generate the production scene list directly from the screenplay. Adds a
-  // scenes row for every parsed scene whose number isn't already present, so
-  // ScriptOS becomes the source of the shooting schedule.
   const [importingScenes, setImportingScenes] = useState(false);
   const importScenesFromScript = async () => {
     if (!activeProject) return;
@@ -1916,9 +1860,6 @@ export default function StudioPage() {
     }
   };
 
-  // The real breakdown hinge: re-tag every scene's production elements from
-  // the current script, then roll the unique counts per category into
-  // budget_items — replacing the fake hardcoded breakdown with a live sync.
   const [syncingBreakdown, setSyncingBreakdown] = useState(false);
   const syncBreakdown = async () => {
     if (!activeProject) return;
@@ -1944,7 +1885,6 @@ export default function StudioPage() {
   const [campaignDemo, setCampaignDemo] = useState('');
   const [campaignBudget, setCampaignBudget] = useState('');
 
-  // Scene ↔ concept references (assets linked to scenes)
   type SceneRef = { id: string; concept_asset_id: string; image_url: string; title: string | null };
   const [sceneRefs, setSceneRefs] = useState<Record<string, SceneRef[]>>({});
   const [linkScene, setLinkScene] = useState<string | null>(null);
@@ -1976,8 +1916,6 @@ export default function StudioPage() {
     if (activeProject) loadSceneRefs(activeProject.id);
   };
 
-  // 'marketing' (Promos) is gated by the active project's Distribution
-  // module toggle — same switch that hides the hub's Distribution tile.
   const studioModules = getProjectModules(activeProject?.settings);
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -1995,19 +1933,18 @@ export default function StudioPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUser(user);
-      
-      // Load Boards for Project
+
       if (activeProject) {
         setLoadingBoards(true);
         try {
           const projectBoards = await getProjectBoards(activeProject.id);
           setBoards(projectBoards);
-          
+
           let currentBoard = projectBoards[0];
           if (projectBoards.length > 0) {
             setActiveBoard(currentBoard);
           } else {
-            // Auto-create a default board if none exist
+
             currentBoard = await createStudioBoard({
               user_id: user.id,
               project_id: activeProject.id,
@@ -2018,7 +1955,6 @@ export default function StudioPage() {
             setActiveBoard(currentBoard);
           }
 
-          // Fetch assets for this board specifically
           const boardAssets = await getStudioAssets(currentBoard.id);
           setAssetsList(boardAssets.map((a: any) => ({
             id: a.id,
@@ -2037,7 +1973,6 @@ export default function StudioPage() {
         }
       }
 
-      // Load activities
       try {
         const acts = await getActivities(5);
         setActivities(acts);
@@ -2045,7 +1980,6 @@ export default function StudioPage() {
         console.error('Error loading activities:', err);
       }
 
-      // Load Beats
       if (activeProject) {
         try {
           const projectBeats = await getProjectBeats(activeProject.id);
@@ -2053,7 +1987,7 @@ export default function StudioPage() {
         } catch (err) {
           console.error('Error loading beats:', err);
         }
-        
+
         try {
           const crew = await getProjectCrew(activeProject.id);
           setCrewList(crew);
@@ -2126,18 +2060,18 @@ export default function StudioPage() {
   const handlePushToScript = async (beat: any) => {
     if (!activeProject || !user) return;
     try {
-      const sceneTitle = beat.title.toUpperCase().startsWith('EXT.') || beat.title.toUpperCase().startsWith('INT.') 
-        ? beat.title.toUpperCase() 
+      const sceneTitle = beat.title.toUpperCase().startsWith('EXT.') || beat.title.toUpperCase().startsWith('INT.')
+        ? beat.title.toUpperCase()
         : `INT. ${beat.title.toUpperCase()} - DAY`;
-        
+
       const content = `${sceneTitle}\n\n${beat.content}`;
-      
+
       const newScript = await saveScript({
         title: `${activeProject.title} - ${beat.title}`,
         content,
         project_id: activeProject.id
       });
-      
+
       if (newScript) {
         toast('Beat pushed to ScriptOS! You can find it in your scripts list.', 'success');
       }
@@ -2176,7 +2110,6 @@ export default function StudioPage() {
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, width: '100%',
         padding: '0 28px', height: 62,
@@ -2197,11 +2130,10 @@ export default function StudioPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#6366f1', textTransform: 'uppercase' }}>Studio</div>
 
-          {/* Project Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Project:</span>
-            <select 
-              value={activeProject?.id || ''} 
+            <select
+              value={activeProject?.id || ''}
               onChange={(e) => {
                 const p = projects.find(p => p.id === e.target.value);
                 if (p) setActiveProject(p);
@@ -2242,7 +2174,6 @@ export default function StudioPage() {
         onAdd={addReferenceToBoard}
       />
 
-      {/* TABS BAR */}
       <div className="mc-studio-tabs" style={{
         position: 'fixed', top: 62, left: 0, width: '100%',
         height: 52, background: 'rgba(6,6,6,0.88)',
@@ -2318,7 +2249,7 @@ export default function StudioPage() {
                 <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
                   {activeProject.description || "No project description provided. Update your script metadata to populate this field."}
                 </p>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 60 }}>
                   <div>
                     <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Production Stats</div>
@@ -2352,7 +2283,6 @@ export default function StudioPage() {
                   </div>
                 </div>
 
-                {/* Production budget — pulled from this project's budget_items */}
                 <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -2382,7 +2312,6 @@ export default function StudioPage() {
                   )}
                 </div>
 
-                {/* Milestones — pulled from this project's timeline_items */}
                 <div style={{ marginTop: 40 }}>
                    <SectionLabel text="Project Milestones" />
                    {(activeProject.timeline_items && activeProject.timeline_items.length > 0) ? (
@@ -2530,7 +2459,6 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* Production sub-tabs — Story / Schedule / Crew */}
             <div style={{ display: 'flex', gap: 4, marginBottom: 36, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               {([
                 ['story', 'Story', BookOpen],
@@ -2555,7 +2483,6 @@ export default function StudioPage() {
               })}
             </div>
 
-            {/* ── STORY ── beat board + character bible */}
             {prodTab === 'story' && (
              <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
                <div>
@@ -2598,7 +2525,6 @@ export default function StudioPage() {
              </div>
             )}
 
-            {/* ── CREW ── cast & crew hub + casting board */}
             {prodTab === 'crew' && (
                <div>
                  <div style={{ maxWidth: 720 }}>
@@ -2640,10 +2566,8 @@ export default function StudioPage() {
                </div>
             )}
 
-            {/* ── SCHEDULE ── scene gantt + call sheets */}
             {prodTab === 'schedule' && (
              <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-                 {/* Scene Gantt Timeline (StudioBinder style) */}
                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                      {(() => {
@@ -2743,7 +2667,6 @@ export default function StudioPage() {
                                </div>
                              </div>
                              )}
-                             {/* Linked concept references */}
                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
                                {refs.map(r => (
                                  <div key={r.id} style={{ position: 'relative', width: 40, height: 28, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }} title={r.title || 'reference'}>
@@ -2761,7 +2684,6 @@ export default function StudioPage() {
                                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.5 }}>add concept images to link references</span>
                                )}
                              </div>
-                             {/* Tagged production elements — synced from the script via "Sync Breakdown → Budget" */}
                              {(() => {
                                const els = s.elements || {};
                                const chips = ELEMENT_CATEGORIES.flatMap((cat: ElementCategory) => (els[cat] || []).map((name: string) => ({ cat, name })));
@@ -2775,7 +2697,6 @@ export default function StudioPage() {
                                  </div>
                                );
                              })()}
-                             {/* Concept picker */}
                              {picking && (
                                <div style={{ marginTop: 8, marginLeft: 60, padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                  {available.length === 0 ? (
@@ -2818,7 +2739,6 @@ export default function StudioPage() {
               </div>
             </div>
 
-            {/* Filter tabs */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
               {types.map(t => (
                 <button
@@ -2880,7 +2800,6 @@ export default function StudioPage() {
             </div>
 
             <div className="mc-collapse" style={{ gridTemplateColumns: '2fr 1fr', display: 'grid', gap: 40 }}>
-               {/* Campaign Planner */}
                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   {showAddCampaign && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
@@ -2943,7 +2862,6 @@ export default function StudioPage() {
                   )}
                </div>
 
-               {/* Campaign Overview — real */}
                {(() => {
                  const camps = (activeProject?.campaigns || []) as any[];
                  const byStatus: Record<string, number> = {};

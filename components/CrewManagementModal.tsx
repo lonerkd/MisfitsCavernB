@@ -152,7 +152,6 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
             overflowY: 'auto',
           }}
         >
-          {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, margin: 0 }}>
               MANAGE CREW
@@ -171,7 +170,6 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
             </button>
           </div>
 
-          {/* Add Member Section */}
           <IfAccess permission="manage_crew">
             <div style={{ marginBottom: 24, padding: 16, background: 'rgba(215, 52, 11,0.05)', borderRadius: 8 }}>
               <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, margin: '0 0 12px 0', opacity: 0.7 }}>
@@ -265,7 +263,6 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
             </div>
           </IfAccess>
 
-          {/* Current Crew */}
           <div>
             <h3 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, margin: '0 0 12px 0', opacity: 0.7 }}>
               CURRENT CREW ({crew.length})
@@ -294,8 +291,6 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
                       <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 4 }}>
                         {member.username || 'Unknown'}
                       </div>
-                      {/* Same gate as the Remove button — without manage_crew
-                          the dropdown was enabled but every change died at RLS */}
                       <IfAccess permission="manage_crew" fallback={
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: '#0099ff' }}>
                           {CREW_ROLES.find(r => r.role === member.role)?.label || member.role}
@@ -354,7 +349,6 @@ export function CrewManagementModal({ projectId, currentUserId, onClose }: Props
             )}
           </div>
 
-          {/* Role Legend */}
           <div style={{ marginTop: 24, padding: 16, background: 'rgba(99,102,241,0.05)', borderRadius: 8 }}>
             <h3 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, margin: '0 0 8px 0', opacity: 0.7 }}>
               ROLE PERMISSIONS

@@ -16,8 +16,6 @@ const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ss
 const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
 const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
 
-// Self-hosted via next/font: no render-blocking request to Google, no FOUT,
-// and no client-side hit to fonts.googleapis.com (privacy/GDPR-friendly).
 const bebasNeue = Bebas_Neue({
   weight: '400',
   subsets: ['latin'],

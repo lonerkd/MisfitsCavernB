@@ -15,7 +15,7 @@ export interface DBScript {
 }
 
 export async function createScript(projectId: string, title: string, format: 'screenplay' | 'teleplay' | 'stage-play' = 'screenplay') {
-  // The scripts INSERT RLS policy requires created_by = auth.uid().
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -64,8 +64,7 @@ export async function getScript(scriptId: string) {
 
 export async function updateScript(scriptId: string, content: string, userId: string) {
   const script = await getScript(scriptId);
-  
-  // Create version backup
+
   await supabase
     .from('script_versions')
     .insert({
@@ -75,7 +74,6 @@ export async function updateScript(scriptId: string, content: string, userId: st
       edited_by: userId
     });
 
-  // Update script
   const { data, error } = await supabase
     .from('scripts')
     .update({

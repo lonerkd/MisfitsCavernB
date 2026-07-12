@@ -1,10 +1,8 @@
 import { Variants } from 'framer-motion';
 
-// Standard easing curves
 export const easeExpo = [0.16, 1, 0.3, 1] as const;
 export const easeSmooth = [0.25, 0.1, 0.25, 1] as const;
 
-// Stagger configurations
 export const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -25,7 +23,6 @@ export const staggerContainerFast: Variants = {
   },
 };
 
-// Fade animations
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -70,7 +67,6 @@ export const fadeIn: Variants = {
   },
 };
 
-// Scale animations
 export const scaleUp: Variants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
@@ -89,7 +85,6 @@ export const scaleDown: Variants = {
   },
 };
 
-// Modals/Overlays
 export const modalVariants: Variants = {
   hidden: { opacity: 0, scale: 0.95, y: 10 },
   visible: {

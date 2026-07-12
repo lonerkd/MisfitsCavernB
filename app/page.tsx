@@ -123,9 +123,6 @@ function PipelineConnector({ index }: { index: number }) {
 
 /* ─── Module Tile — screen-preview cards ─────────────────────────────────── */
 
-// When the viewer is signed in we render their real latest screenplay; when
-// logged out we show a representative sample that demonstrates the editor's
-// industry-standard formatting.
 function ScriptOSPreview({ lines }: { lines?: string[] }) {
   if (lines && lines.length > 0) {
     return (
@@ -135,7 +132,7 @@ function ScriptOSPreview({ lines }: { lines?: string[] }) {
           if (!t) return <div key={i} style={{ height: 3 }} />;
           const isHead = /^(INT|EXT|EST|I\/E)[.\s]/i.test(t);
           const isChar = !isHead && t === t.toUpperCase() && t.length > 1 && t.length < 32 && !/[.!?,]$/.test(t);
-          // Truncate long action lines so the preview never overflows its card
+
           const display = isHead || isChar ? t : t.length > 80 ? t.slice(0, 80) + '…' : t;
           return (
             <div key={i}
@@ -256,13 +253,11 @@ function LoungePreview({ messages: real }: { messages?: { from: string; text: st
 function PortfolioPreview() {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', minHeight: 140 }}>
-      {/* Simulated widescreen film frame */}
       <div style={{
         position: 'absolute',
         inset: 0,
         background: 'linear-gradient(160deg, #0d0d0f 0%, #1a1008 40%, #0a0806 100%)',
       }} />
-      {/* Horizontal bands — film grain aesthetic */}
       {[0.15, 0.4, 0.65, 0.85].map((y, i) => (
         <div key={i} style={{
           position: 'absolute',
@@ -272,10 +267,8 @@ function PortfolioPreview() {
           background: 'rgba(255,255,255,0.04)',
         }} />
       ))}
-      {/* Letterbox bars */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '14%', background: '#000', opacity: 0.6 }} />
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '14%', background: '#000', opacity: 0.6 }} />
-      {/* Central light source */}
       <div style={{
         position: 'absolute',
         top: '20%', left: '35%',
@@ -283,7 +276,6 @@ function PortfolioPreview() {
         background: 'radial-gradient(ellipse, rgba(245,158,11,0.12) 0%, transparent 70%)',
         borderRadius: '50%',
       }} />
-      {/* Frame label */}
       <div style={{
         position: 'absolute',
         bottom: '18%', right: 16,
@@ -332,7 +324,6 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
             ...style,
           }}
         >
-          {/* Corner accent glow */}
           <div style={{
             position: 'absolute',
             top: -60, right: -60,
@@ -344,7 +335,6 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
             opacity: hovered ? 1 : 0.4,
           }} />
 
-          {/* Preview area */}
           <div style={{
             flex: 1,
             overflow: 'hidden',
@@ -354,7 +344,6 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
             {preview}
           </div>
 
-          {/* Footer bar */}
           <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{
@@ -449,13 +438,7 @@ export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], latestScriptTitle: null });
-  // The one real "active project" — same shared context the taskbar's
-  // switcher and every other module (Editor/Studio/Lounge) read from, so
-  // "Resume X" here always names whatever project actually opens elsewhere.
-  // This page used to run its own separate query (most-recently-created
-  // project), which could silently disagree with what the user had actually
-  // selected as active — "Resume Femme Fatale" while Studio opened something
-  // else entirely.
+
   const { activeProject } = useProject();
 
   useEffect(() => {
@@ -466,17 +449,14 @@ export default function Home() {
       if (!user) return;
 
       try {
-        // Live platform stats (RLS scopes reads to authenticated users).
+
         const platformStats = await getPlatformStats();
         setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
 
-        // The viewer's own latest work, surfaced as real previews.
         const [scriptRes, assetRes, msgRes] = await Promise.all([
           supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
           supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
-          // Only real channel messages here, never DMs (messages also stores
-          // private 1:1s via receiver_id) — a general activity pulse must not
-          // ever surface someone else's private conversation.
+
           supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
         ]);
         const script = scriptRes.data?.[0];
@@ -518,7 +498,6 @@ export default function Home() {
         overflow: 'hidden',
         padding: '0 24px',
       }}>
-        {/* Ambient orbs */}
         <div style={{
           position: 'absolute',
           width: '70vw',
@@ -543,7 +522,6 @@ export default function Home() {
 
         <motion.div style={{ opacity: heroOpacity, y: heroY, position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
 
-          {/* Status chip */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -569,7 +547,6 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Wordmark with viewfinder */}
           <div style={{ position: 'relative', display: 'inline-block' }}>
             <motion.div
               initial={{ opacity: 0, y: 50, filter: 'blur(16px)' }}
@@ -599,12 +576,10 @@ export default function Home() {
                 CAVERN
               </span>
 
-              {/* Viewfinder corners */}
               <Viewfinder size={22} color="rgba(215, 52, 11,0.45)" />
             </motion.div>
           </div>
 
-          {/* Sub-line */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 0.45, y: 0 }}
@@ -621,7 +596,6 @@ export default function Home() {
             Script to Screen — one integrated studio.
           </motion.p>
 
-          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -638,7 +612,6 @@ export default function Home() {
           </motion.div>
         </motion.div>
 
-        {/* Scroll cue */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.2 }}
@@ -763,10 +736,8 @@ export default function Home() {
       ══════════════════════════════════════════════ */}
       <section style={{ padding: '80px 24px 100px', maxWidth: 1200, margin: '0 auto' }}>
 
-        {/* Top row — 2 columns: large left + right */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
 
-          {/* ScriptOS — large left */}
           <ModuleTile
             title="ScriptOS"
             tag="Screenplay Editor"
@@ -792,7 +763,6 @@ export default function Home() {
             }
           />
 
-          {/* Right column: Studio + Lounge stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <ModuleTile
               title="Studio"
@@ -813,7 +783,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom row — Portfolio, full width */}
         <ModuleTile
           title="Portfolio"
           tag="Cinematic Showcase"
@@ -829,7 +798,6 @@ export default function Home() {
           CLOSING CTA
       ══════════════════════════════════════════════ */}
       <section style={{ padding: '100px 24px 160px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        {/* Background glow */}
         <div style={{
           position: 'absolute',
           inset: 0,

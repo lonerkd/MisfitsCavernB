@@ -16,7 +16,7 @@ export function exportScriptAsText(script: StoredScript, format: 'txt' | 'founta
 
 export function exportScriptAsFdx(script: StoredScript): void {
   const result = parseScript(script.content);
-  
+
   const mapTypeToFdx = (type: string): string => {
     switch (type) {
       case 'slug': return 'Scene Heading';
@@ -32,20 +32,19 @@ export function exportScriptAsFdx(script: StoredScript): void {
   const paragraphs = result.lines
     .filter(line => line.type !== 'empty')
     .map(line => {
-      // Basic XML escape
+
       const escapedText = line.text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
-      
+
       return `    <Paragraph Type="${mapTypeToFdx(line.type)}">
       <Text>${escapedText}</Text>
     </Paragraph>`;
     }).join('\n');
 
-  // Complete Final Draft 12 XML Wrapper
   const fdxXml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <FinalDraft DocumentType="Script" Template="No" Version="3">
   <Content>
@@ -110,11 +109,6 @@ ${paragraphs}
   URL.revokeObjectURL(url);
 }
 
-// Real, paginated, industry-formatted screenplay PDF — Courier 12pt on US
-// Letter, 1" margins (1.5" left for binding), correct per-element indents.
-// Generates an actual file download directly; no popup/print-dialog step
-// (which the previous window.open()-based approach needed, and which popup
-// blockers could silently kill).
 export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): void {
   const result = parseScript(script.content);
 
@@ -125,12 +119,10 @@ export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: st
   const PAGE_HEIGHT = 11;
   const TOP_MARGIN = 1;
   const BOTTOM_MARGIN = 1;
-  const LEFT_MARGIN = 1.5; // standard screenplay binding margin
-  const LINE_HEIGHT = 12 / 72 * 1.2; // 12pt line, single-spaced screenplay leading
+  const LEFT_MARGIN = 1.5;
+  const LINE_HEIGHT = 12 / 72 * 1.2;
   const CONTENT_BOTTOM = PAGE_HEIGHT - BOTTOM_MARGIN;
 
-  // Per-element left offset (inches, relative to the page, not the 1.5" margin)
-  // and the usable text width for wrapping, matching standard screenplay format.
   const ELEMENT_LEFT: Record<string, number> = {
     slug: LEFT_MARGIN,
     action: LEFT_MARGIN,
@@ -166,7 +158,6 @@ export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: st
     if (y + linesNeeded * LINE_HEIGHT > CONTENT_BOTTOM) newPage();
   };
 
-  // ---- Title page ----
   if (titlePage?.title || script.title) {
     doc.setFontSize(14);
     const title = (titlePage?.title || script.title || 'Untitled').toUpperCase();
@@ -204,13 +195,9 @@ export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: st
 
     const wrapped: string[] = doc.splitTextToSize(text, width) as string[];
 
-    // Extra leading before scene headings and character cues, matching screen convention.
     if (type === 'slug') { ensureSpace(2); y += LINE_HEIGHT; }
     if (type === 'character') { ensureSpace(wrapped.length + 1); y += LINE_HEIGHT; }
 
-    // A dialogue/parenthetical block that won't fit before the page bottom
-    // gets a "(MORE)" cue and the page break carries a "(CONT'D)" cue for
-    // the same speaker — standard screenplay pagination, not a plain cut.
     if ((type === 'dialogue' || type === 'parenthetical') && y + wrapped.length * LINE_HEIGHT > CONTENT_BOTTOM && currentSpeaker) {
       doc.text('(MORE)', ELEMENT_LEFT.dialogue, y, { align: 'left' });
       newPage();

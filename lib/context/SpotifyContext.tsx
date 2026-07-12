@@ -31,33 +31,29 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
   const [isSDKReady, setIsSDKReady] = useState(false);
   const [player, setPlayer] = useState<any | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  
-  // Playback state
+
   const [currentTrack, setCurrentTrack] = useState<Spotify.Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progressMs, setProgressMs] = useState(0);
   const [durationMs, setDurationMs] = useState(0);
   const [volume, setVolume] = useState(0.5);
-  
-  // Settings
-  const [isPremium, setIsPremium] = useState(true); // Default assume premium until forbidden
+
+  const [isPremium, setIsPremium] = useState(true);
   const [useIframeFallback, setUseIframeFallback] = useState(false);
 
-  // Poll for token existence (since it might change from other tabs or redirect)
   useEffect(() => {
     const checkToken = async () => {
       const token = await getValidToken();
       setIsAuthenticated(!!token);
     };
-    
+
     checkToken();
-    
+
     const onAuthChange = () => checkToken();
     window.addEventListener('spotify-auth-changed', onAuthChange);
     return () => window.removeEventListener('spotify-auth-changed', onAuthChange);
   }, []);
 
-  // Initialize Web Playback SDK
   useEffect(() => {
     if (!isAuthenticated || useIframeFallback) return;
 
@@ -84,7 +80,7 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     if (!isSDKReady || !isAuthenticated || useIframeFallback) return;
 
     let localPlayer: any;
-    
+
     const initPlayer = async () => {
       const token = await getValidToken();
       if (!token) return;
@@ -141,7 +137,6 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isSDKReady, isAuthenticated, useIframeFallback]);
 
-  // Sync progress bar locally
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -152,7 +147,7 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
 
   const playUri = useCallback(async (uri: string) => {
     if (useIframeFallback) {
-      // Handled by UI
+
       return;
     }
 
@@ -214,14 +209,12 @@ export function useSpotify() {
   return c;
 }
 
-// Ensure TypeScript knows about window.Spotify
 declare global {
   interface Window {
     Spotify: any;
     onSpotifyWebPlaybackSDKReady: () => void;
   }
-  
-  // Basic Spotify SDK Types to avoid implicitly any where easily avoidable
+
   namespace Spotify {
     interface Track {
       uri: string;

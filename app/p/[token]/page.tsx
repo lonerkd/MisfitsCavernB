@@ -53,7 +53,7 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           setProject(data as Project);
         }
       } catch (err) {
-        // Network/connection failure — don't leave the page stuck on "LOADING"
+
         console.error('Failed to load portfolio:', err);
         setNotFound(true);
       } finally {
@@ -153,7 +153,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           BROWSE PORTFOLIOS
         </Link>
 
-        {/* Footer */}
         <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center' }}>
           <FooterLink />
         </div>
@@ -164,10 +163,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
   const { title, year, role, description, portfolio_media, profiles } = project;
   const avatarInitial = profiles?.username?.[0]?.toUpperCase() ?? '?';
 
-  // Pitch-board blocks (already ordered by `position` from the query).
-  // The cover block's body is this deck's write-up when the portfolio row
-  // itself has no description — the builder seeds it from the source
-  // project, so it's usually the real content, not the row column.
   const blocks = (project.portfolio_blocks || []).filter(b => b.block_type !== 'cover');
   const coverBlock = (project.portfolio_blocks || []).find(b => b.block_type === 'cover');
   const effectiveDescription = description || coverBlock?.body || null;
@@ -176,7 +171,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
-      {/* ── Hero Header ── */}
       <header style={{
         position: 'relative',
         width: '100%',
@@ -189,7 +183,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         padding: 'clamp(32px, 5vw, 64px)',
         overflow: 'hidden',
       }}>
-        {/* Subtle grid texture */}
         <div style={{
           position: 'absolute',
           inset: 0,
@@ -198,7 +191,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           pointerEvents: 'none',
         }} />
 
-        {/* Accent line */}
         <div style={{
           position: 'absolute',
           bottom: 0,
@@ -208,7 +200,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           background: 'var(--accent)',
         }} />
 
-        {/* Title */}
         <h1 style={{
           fontFamily: 'var(--display)',
           fontSize: 'clamp(2.8rem, 8vw, 6.5rem)',
@@ -223,7 +214,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           {title}
         </h1>
 
-        {/* Creator info */}
         {profiles && (
           <div style={{
             display: 'flex',
@@ -232,7 +222,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
             position: 'relative',
             zIndex: 1,
           }}>
-            {/* Avatar */}
             <div style={{
               width: 34,
               height: 34,
@@ -264,7 +253,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
               )}
             </div>
 
-            {/* Name + role */}
             <div>
               <div style={{
                 fontFamily: 'var(--mono)',
@@ -290,13 +278,11 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         )}
       </header>
 
-      {/* ── Meta + Description ── */}
       <section style={{
         maxWidth: 900,
         margin: '0 auto',
         padding: 'clamp(32px, 5vw, 56px) clamp(20px, 5vw, 64px)',
       }}>
-        {/* Year / Role metadata */}
         {(year || role) && (
           <div style={{
             display: 'flex',
@@ -350,7 +336,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
           </div>
         )}
 
-        {/* Description */}
         {effectiveDescription && (
           <p style={{
             fontFamily: 'var(--serif)',
@@ -366,7 +351,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         )}
       </section>
 
-      {/* ── Pitch Deck (blocks assembled from the source project) ── */}
       {blocks.length > 0 && (
         <section style={{
           maxWidth: 900,
@@ -379,8 +363,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         </section>
       )}
 
-      {/* ── Video Grid — only when there's no assembled deck, so media isn't
-          shown twice (deck blocks of type 'media' already cover it) ── */}
       {blocks.length === 0 && portfolio_media.length > 0 && (
         <section style={{
           maxWidth: 1200,
@@ -425,7 +407,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         </div>
       )}
 
-      {/* ── Footer ── */}
       <footer style={{
         borderTop: '1px solid rgba(255,255,255,0.04)',
         padding: '28px 24px',
@@ -434,7 +415,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
         <FooterLink />
       </footer>
 
-      {/* ── Video Modal ── */}
       {playingMedia && (
         <div
           role="dialog"
@@ -460,7 +440,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
             <button
               onClick={closeModal}
               aria-label="Close video"
@@ -484,14 +463,12 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(215, 52, 11,0.18)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
             >
-              {/* X icon drawn inline */}
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="1" y1="1" x2="13" y2="13" />
                 <line x1="13" y1="1" x2="1" y2="13" />
               </svg>
             </button>
 
-            {/* Video embed */}
             <div style={{ aspectRatio: '16/9', background: '#000', width: '100%' }}>
               <iframe
                 src={`https://www.youtube.com/embed/${playingMedia.url}?autoplay=1&rel=0&modestbranding=1`}
@@ -504,7 +481,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
               />
             </div>
 
-            {/* Video title */}
             {playingMedia.title && playingMedia.title !== 'YouTube Video' && (
               <div style={{ marginTop: 16, paddingLeft: 2 }}>
                 <h3 style={{
@@ -527,10 +503,6 @@ export default function PublicPortfolioPage({ params }: { params: { token: strin
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-// Renders one pitch-board block for the anonymous public visitor. Every field
-// here comes from the block's own snapshot columns — never a join back to the
-// source project's protected tables (concept_assets/scenes/budget_items/
-// project_crew), which anon can't read anyway.
 function DeckBlock({ block }: { block: PortfolioBlock }) {
   const label: React.CSSProperties = {
     fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, opacity: 0.3, marginBottom: 8, textTransform: 'uppercase',
@@ -686,7 +658,6 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         outline: 'none',
       }}
     >
-      {/* Thumbnail */}
       <Image
         src={thumb}
         alt={media.title}
@@ -700,7 +671,6 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         loading="lazy"
       />
 
-      {/* Overlay */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -712,7 +682,6 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        {/* Play button */}
         <div style={{
           width: 52,
           height: 52,
@@ -725,7 +694,6 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
           transition: 'background 0.2s, border-color 0.2s, transform 0.2s',
           transform: hovered ? 'scale(1.1)' : 'scale(1)',
         }}>
-          {/* Triangle play icon */}
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <polygon
               points="5,3 15,9 5,15"
@@ -735,7 +703,6 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         </div>
       </div>
 
-      {/* Video title at bottom */}
       {media.title && media.title !== 'YouTube Video' && (
         <div style={{
           position: 'absolute',

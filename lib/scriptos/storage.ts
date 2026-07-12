@@ -1,4 +1,4 @@
-// Supabase utilities for ScriptOS - Cloud Sync Architecture
+
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 
@@ -14,8 +14,7 @@ export interface StoredScript {
 }
 
 // ── Offline Queue / Sync Manager ─────────────────────────────────────────────
-// When offline, we write to IndexedDB and mark as syncPending. When online,
-// we push the pending scripts up to Supabase.
+
 export async function syncPendingScripts() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
@@ -26,7 +25,7 @@ export async function syncPendingScripts() {
       const script = await get<StoredScript>(k);
       if (script && script.syncPending) {
         console.log(`[Offline Sync] Pushing pending script ${script.id}...`);
-        
+
         const baseData = {
           id: script.id,
           title: script.title,
@@ -36,10 +35,9 @@ export async function syncPendingScripts() {
           project_id: script.project_id
         };
 
-        // We UPSERT the pending data to Supabase
         const { error } = await supabase.from('scripts').upsert([{
           ...baseData,
-          created_by: script.user_id || user.id, // Fallback if missing
+          created_by: script.user_id || user.id,
           status: 'draft'
         }]);
 
@@ -54,7 +52,6 @@ export async function syncPendingScripts() {
   }
 }
 
-// Automatically sync when returning online
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     console.log('[Offline Sync] Back online! Syncing pending changes...');
@@ -67,13 +64,13 @@ if (typeof window !== 'undefined') {
 export async function getAllScripts(projectId?: string): Promise<StoredScript[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
-  
+
   let query = supabase
     .from('scripts')
     .select('*')
     .eq('created_by', user.id)
     .order('updated_at', { ascending: false });
-    
+
   if (projectId) {
     query = query.eq('project_id', projectId);
   }
@@ -82,7 +79,7 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
 
   if (error || !data) {
     console.warn('[Offline Sync] Failed to fetch scripts from Supabase. Falling back to local cache.');
-    // Fallback to local cache
+
     const allKeys = await keys();
     const localScripts: StoredScript[] = [];
     for (const k of allKeys) {
@@ -96,7 +93,6 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
     return localScripts.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }
 
-  // Update local cache with remote truth
   const scripts: StoredScript[] = data.map(s => ({
     id: s.id,
     title: s.title,
@@ -110,13 +106,12 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
 
   for (const s of scripts) {
     const local = await get<StoredScript>(`script_${s.id}`);
-    // Only overwrite local cache if local doesn't have pending changes
+
     if (!local || !local.syncPending) {
       await set(`script_${s.id}`, s);
     }
   }
 
-  // Fetch pending scripts that aren't on remote yet (created offline)
   const allKeys = await keys();
   for (const k of allKeys) {
     if (typeof k === 'string' && k.startsWith('script_')) {
@@ -133,9 +128,9 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
 }
 
 export async function getScript(id: string): Promise<StoredScript | null> {
-  // Try local first for speed
+
   const local = await get<StoredScript>(`script_${id}`);
-  
+
   if (!navigator.onLine) {
     return local || null;
   }
@@ -172,11 +167,10 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Build the unified object
   const isNew = !script.id;
   const scriptId = script.id || crypto.randomUUID();
   const now = new Date().toISOString();
-  
+
   const unifiedData: StoredScript = {
     id: scriptId,
     title: script.title || 'Untitled',
@@ -188,10 +182,8 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
     syncPending: true
   };
 
-  // Instantly save to local IndexedDB
   await set(`script_${scriptId}`, unifiedData);
 
-  // Attempt network sync
   if (navigator.onLine) {
     const baseData = {
       id: unifiedData.id,
@@ -213,7 +205,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 
     if (!error) {
       unifiedData.syncPending = false;
-      await set(`script_${scriptId}`, unifiedData); // update pending flag
+      await set(`script_${scriptId}`, unifiedData);
     } else {
       console.warn('[Offline Sync] Supabase save failed, will sync later.', error);
     }
@@ -223,12 +215,12 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 }
 
 export async function deleteScript(id: string): Promise<boolean> {
-  await del(`script_${id}`); // Delete local
+  await del(`script_${id}`);
   if (navigator.onLine) {
     const { error } = await supabase.from('scripts').delete().eq('id', id);
     return !error;
   }
-  // If offline, we could mark it as deleted in a tombstone list, but for now just drop local.
+
   return true;
 }
 

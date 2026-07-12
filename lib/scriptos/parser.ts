@@ -1,56 +1,47 @@
-/* =========================================================================
-   SCRIPTOS KNOWLEDGE ENGINE - Misfits Cavern Edition
-   
-   Architecture: Dictionary-Driven State Machine
-   Philosophy: "Context is King, Vocabulary is Queen"
-   ========================================================================= */
+
 
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/types/screenplay';
 
-// =========================================================================
-// KNOWLEDGE BASE
-// =========================================================================
-
 const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
-    'INT.', 'EXT.', 'INT', 'EXT', 'INT./EXT.', 'EXT./INT.', 'INT/EXT', 'EXT/INT', 
+    'INT.', 'EXT.', 'INT', 'EXT', 'INT./EXT.', 'EXT./INT.', 'INT/EXT', 'EXT/INT',
     'I/E', 'E/I', 'EST.', 'ESTABLISHING', 'INT-', 'EXT-', 'INT ', 'EXT ',
     'INTERIOR', 'EXTERIOR', 'SPACE', 'UNDERWATER', 'AERIAL', 'ON SCREEN'
   ]),
-  
+
   TIME_OF_DAY: new Set([
-    'DAY', 'NIGHT', 'MORNING', 'AFTERNOON', 'EVENING', 'DAWN', 'DUSK', 
-    'SUNRISE', 'SUNSET', 'LATER', 'CONTINUOUS', 'MOMENTS LATER', 'SAME', 
+    'DAY', 'NIGHT', 'MORNING', 'AFTERNOON', 'EVENING', 'DAWN', 'DUSK',
+    'SUNRISE', 'SUNSET', 'LATER', 'CONTINUOUS', 'MOMENTS LATER', 'SAME',
     'SAME TIME', 'MAGIC HOUR', 'EARLY MORNING', 'LATE NIGHT', 'MIDNIGHT', 'NOON',
     'FLASHBACK', 'DREAM SEQUENCE', 'DAYDREAM', 'NIGHTMARE', 'FUTURE', 'PAST',
     'PRESENT', 'SIMULTANEOUS'
   ]),
 
   TRANSITIONS: new Set([
-    'CUT TO:', 'CUT TO', 'FADE IN:', 'FADE IN', 'FADE OUT:', 'FADE OUT', 
-    'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'JUMP CUT TO:', 
-    'WIPE TO:', 'IRIS IN:', 'IRIS OUT:', 'INTERCUT:', 'BACK TO:', 'TIME CUT:', 
+    'CUT TO:', 'CUT TO', 'FADE IN:', 'FADE IN', 'FADE OUT:', 'FADE OUT',
+    'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'JUMP CUT TO:',
+    'WIPE TO:', 'IRIS IN:', 'IRIS OUT:', 'INTERCUT:', 'BACK TO:', 'TIME CUT:',
     'MORPH TO:', 'BLACKOUT', 'FADE TO BLACK.', 'SLAM TO BLACK', 'RESET TO:',
     'QUICK CUT:', 'HARD CUT TO:', 'CROSSFADE TO:'
   ]),
 
   CAMERA_ANGLES: new Set([
-    'ANGLE ON', 'CLOSE UP', 'C.U.', 'ECU', 'XCU', 'MCU', 'POV', 'PAN TO', 
+    'ANGLE ON', 'CLOSE UP', 'C.U.', 'ECU', 'XCU', 'MCU', 'POV', 'PAN TO',
     'TILT UP', 'TILT DOWN', 'ZOOM IN', 'ZOOM OUT', 'DOLLY IN', 'DOLLY OUT',
-    'TRACKING SHOT', 'CRANE SHOT', 'AERIAL SHOT', 'INSERT', 'STOCK FOOTAGE', 
-    'SUPER:', 'TITLE CARD:', 'VFX:', 'SFX:', 'CHYRON:', 'CREDIT:', 
+    'TRACKING SHOT', 'CRANE SHOT', 'AERIAL SHOT', 'INSERT', 'STOCK FOOTAGE',
+    'SUPER:', 'TITLE CARD:', 'VFX:', 'SFX:', 'CHYRON:', 'CREDIT:',
     'THE CAMERA', 'WE SEE', 'REVEAL', 'PULL BACK', 'PUSH IN', 'WHIP PAN'
   ]),
 
   EXTENSIONS: new Set([
-    "CONT'D", "V.O.", "O.S.", "O.C.", "OFF SCREEN", "VOICE OVER", 
-    "PRE-LAP", "INTO PHONE", "ON RADIO", "FILTERED", "ROBOTIC", 
+    "CONT'D", "V.O.", "O.S.", "O.C.", "OFF SCREEN", "VOICE OVER",
+    "PRE-LAP", "INTO PHONE", "ON RADIO", "FILTERED", "ROBOTIC",
     "SUBTITLE", "ELECTRONIC", "THROUGH PHONE", "DISEMBODIED"
   ]),
 
   VERBS_MOVEMENT: new Set([
-    'WALKS', 'RUNS', 'SPRINTS', 'DARTS', 'CLIMBS', 'CRAWLS', 'JUMPS', 'LEAPS', 
-    'FALLS', 'LANDS', 'STRIDES', 'PACES', 'MARCHES', 'RUSHES', 'BOLTS', 
+    'WALKS', 'RUNS', 'SPRINTS', 'DARTS', 'CLIMBS', 'CRAWLS', 'JUMPS', 'LEAPS',
+    'FALLS', 'LANDS', 'STRIDES', 'PACES', 'MARCHES', 'RUSHES', 'BOLTS',
     'STUMBLES', 'TRIPS', 'SLIDES', 'DRIVES', 'RIDES', 'FLIES', 'SAILS'
   ]),
 
@@ -61,7 +52,7 @@ const KNOWLEDGE = {
   ]),
 
   VERBS_PASSIVE: new Set([
-    'SITS', 'STANDS', 'WAITS', 'WATCHES', 'LOOKS', 'STARES', 'GLANCES', 
+    'SITS', 'STANDS', 'WAITS', 'WATCHES', 'LOOKS', 'STARES', 'GLANCES',
     'PEERS', 'NOTICES', 'SPOTS', 'HEARS', 'LISTENS', 'SLEEPS', 'WAKES',
     'SIGHS', 'SMILES', 'FROWNS', 'NODS', 'SHAKES', 'SHRUGS'
   ]),
@@ -107,10 +98,6 @@ const KNOWLEDGE = {
   ])
 };
 
-// =========================================================================
-// PARSER CLASS
-// =========================================================================
-
 export type ScriptFormat = 'screenplay' | 'teleplay' | 'stage-play' | 'treatment' | 'podcast' | 'doc-outline';
 
 export class ScriptParser {
@@ -120,14 +107,8 @@ export class ScriptParser {
   private lines: ScriptLine[];
   private format: ScriptFormat;
 
-  // Names the writer has already established as real characters, carried over
-  // from previous parses of this same script. Seeding the cast list with these
-  // before the pre-scan means a character who only appears once this pass — too
-  // rare to self-confirm — is still recognized, instead of the parser
-  // "forgetting" who they are every time a draft is re-parsed.
   private learnedNames: Set<string>;
 
-  // State Machine
   private sceneIndex: number = -1;
   private lastSpeaker: string | null = null;
   private insideDialogueBlock: boolean = false;
@@ -151,7 +132,6 @@ export class ScriptParser {
     return this.format === 'screenplay' || this.format === 'teleplay' || this.format === 'stage-play';
   }
 
-  // --- UTILS ---
   private isCaps(text: string): boolean {
     const letters = text.replace(/[^a-zA-Z]/g, '');
     return letters.length > 0 && text === text.toUpperCase();
@@ -159,24 +139,21 @@ export class ScriptParser {
 
   private clean(text: string): string {
     return text
-      .replace(/\s*\(.*?\)\s*/g, ' ')                    // drop (V.O.), (CONT'D)…
-      .replace(/^\^/, '')                                // strip caret dual-dialogue marker
-      .replace(/[^\p{L}\p{N}\s'’\-]/gu, '')              // keep letters (incl. accents), digits, apostrophe, hyphen
+      .replace(/\s*\(.*?\)\s*/g, ' ')
+      .replace(/^\^/, '')
+      .replace(/[^\p{L}\p{N}\s'’\-]/gu, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
 
-  // True only for real scene headings — INT./EXT./EST. as a whole token, so
-  // "INTERVIEWER" and "INTERNET CAFÉ" are NOT mistaken for slugs.
   private isSceneHeading(text: string): boolean {
     return /^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.test(text.trim());
   }
 
-  // --- MAIN PARSE LOOP ---
   public parse(): ParseResult {
     this.lines = [];
     if (this.usesScreenplayGrammar()) {
-      this.preScanCharacters(); // Pass 1: Build the Cast List
+      this.preScanCharacters();
     } else if (this.format === 'podcast') {
       this.preScanSpeakers();
     }
@@ -184,20 +161,18 @@ export class ScriptParser {
     for (let i = 0; i < this.rawLines.length; i++) {
       const raw = this.rawLines[i];
       const trim = raw.trim();
-      
+
       if (!trim) {
         this.lines.push(this.line(i, '', 'empty', 100));
         this.insideDialogueBlock = false;
         continue;
       }
 
-      // Title Page Guard
       if (i < 50 && this.isTitlePageContent(trim)) {
         this.lines.push(this.line(i, raw, 'title', 100, ['Title page keyword detected']));
         continue;
       }
 
-      // Context Object
       const context = {
         prev: this.lines[this.lines.length - 1],
         prev2: this.lines[this.lines.length - 2],
@@ -205,36 +180,33 @@ export class ScriptParser {
         lastSpeaker: this.lastSpeaker
       };
 
-      // Classification
       const analysis = this.usesScreenplayGrammar()
         ? this.analyzeLine(trim, context)
         : this.analyzeNonScreenplayLine(trim, context);
 
-      // State Updates
       if (analysis.type === 'slug') {
         this.sceneIndex++;
         this.lastSpeaker = null;
         this.insideDialogueBlock = false;
       } else if (analysis.type === 'character') {
         const charName = analysis.meta?.characterName || trim;
-        // Detect Dual Dialogue: caret prefix (^CHARACTER)
+
         const isDual = trim.startsWith('^');
-        // Detect CONT'D: same character speaking again after action
-        const isContinued = this.lastSpeaker !== null && 
-          this.clean(charName) === this.lastSpeaker && 
+
+        const isContinued = this.lastSpeaker !== null &&
+          this.clean(charName) === this.lastSpeaker &&
           !this.insideDialogueBlock;
-        
+
         analysis.meta = {
           ...analysis.meta,
           isDualDialogue: isDual,
           characterName: isDual ? charName.replace(/^\^/, '').trim() : charName,
         };
-        
-        // If CONT'D and name doesn't already have it, note it
+
         if (isContinued && !charName.includes("CONT'D") && !charName.includes("(CONT'D)")) {
           analysis.meta.isContinued = true;
         }
-        
+
         this.lastSpeaker = this.clean(analysis.meta.characterName || charName);
         this.insideDialogueBlock = true;
       } else if (analysis.type === 'action' || analysis.type === 'transition') {
@@ -255,8 +227,7 @@ export class ScriptParser {
 
     const scenes = this.extractScenes(this.lines);
     const characters = this.getCharacters();
-    
-    // Convert sets to arrays for the result
+
     const extractedElements: Record<string, string[]> = {};
     for (const [key, set] of Object.entries(this.elements)) {
       if (set.size > 0) {
@@ -267,10 +238,8 @@ export class ScriptParser {
     return { lines: this.lines, scenes, characters, elements: extractedElements };
   }
 
-  // --- PASS 1: CHARACTER RECOGNITION ---
   private preScanCharacters() {
-    // Seed with names confirmed in earlier parses so a character who appears
-    // only once in *this* pass (too rare to self-confirm) is still recognized.
+
     this.learnedNames.forEach(name => {
       const cleanName = this.clean(name);
       if (cleanName && !this.characterStats.has(cleanName)) this.characterStats.set(cleanName, 1);
@@ -280,9 +249,7 @@ export class ScriptParser {
       if (!this.isCaps(trim) || trim.length < 2 || trim.length >= 50) return;
       const cleanName = this.clean(trim);
       const words = cleanName.split(' ').filter(Boolean);
-      // Real character cues are short (≤4 words), have no digits, aren't a
-      // scene heading / transition / time-of-day / pure section header, and
-      // are followed by dialogue or a parenthetical.
+
       if (words.length === 0 || words.length > 4) return;
       if (/\d/.test(cleanName)) return;
       if (this.isSceneHeading(trim)) return;
@@ -294,9 +261,6 @@ export class ScriptParser {
     });
   }
 
-  // --- PASS 1 (PODCAST): SPEAKER RECOGNITION ---
-  // Podcast scripts tag speakers as "Name:" rather than screenplay's ALL-CAPS
-  // convention, so they need their own pre-scan to build a cast list.
   private preScanSpeakers() {
     const speakerLine = /^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*\S/;
     this.rawLines.forEach(line => {
@@ -308,12 +272,6 @@ export class ScriptParser {
     });
   }
 
-  // --- NON-SCREENPLAY GRAMMARS: treatment / podcast / doc-outline ---
-  // These formats don't follow screenplay slug-line convention, so rather than
-  // force them through the screenplay state machine, each gets its own
-  // lightweight classifier that still emits the same ScriptLine vocabulary
-  // (slug = segment/section header, dialogue = a speaker's words, etc.) so the
-  // rest of ScriptOS (scene board, character list, beat sheet) keeps working.
   private analyzeNonScreenplayLine(text: string, context: any): {
     type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any
   } {
@@ -325,12 +283,12 @@ export class ScriptParser {
     };
 
     if (this.format === 'podcast') {
-      // Bracketed/parenthetical production cues: [INTRO MUSIC], (SFX: door)
+
       if (/^[\[(].*[\])]$/.test(text)) {
         reasoning.push('Bracketed production cue');
         return { type: 'parenthetical', confidence: 90, scores, reasoning, meta: {} };
       }
-      // "Speaker Name: their words"
+
       const speakerMatch = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
       if (speakerMatch) {
         reasoning.push('Speaker-tagged line');
@@ -339,7 +297,7 @@ export class ScriptParser {
           meta: { characterName: speakerMatch[1].trim().toUpperCase() }
         };
       }
-      // Segment headers: "EPISODE 4", "SEGMENT 2 — INTERVIEW", numbered/all-caps short lines
+
       if (/^(EPISODE|SEGMENT|INTRO|OUTRO|BREAK|COLD OPEN)\b/i.test(text) || (this.isCaps(text) && text.length < 60)) {
         reasoning.push('Segment header');
         return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
@@ -349,17 +307,17 @@ export class ScriptParser {
     }
 
     if (this.format === 'doc-outline') {
-      // Timecode ranges: "00:00–00:30 — Cold open"
+
       if (/^\d{1,2}:\d{2}(:\d{2})?\s*[-–—]/.test(text)) {
         reasoning.push('Timecoded segment marker');
         return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
-      // Labeled segment markers
+
       if (/^(B-ROLL|INTERVIEW|ARCHIVAL|VO|VOICEOVER|TALKING HEAD|SEGMENT|SCENE)\s*[:.\-]/i.test(text)) {
         reasoning.push('Labeled segment marker');
         return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
-      // Quoted soundbite, optionally attributed: SUBJECT: "quote"
+
       const quoteMatch = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*["“](.+)["”]$/);
       if (quoteMatch) {
         reasoning.push('Attributed soundbite');
@@ -373,8 +331,6 @@ export class ScriptParser {
       return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
     }
 
-    // 'treatment' (and any other free-prose format)
-    // Headers: short ALL-CAPS lines, markdown-style "#", or "SCENE/SHOT N"
     if ((this.isCaps(text) && text.length < 60) || /^#{1,3}\s/.test(text) || /^(SCENE|SHOT|BEAT)\s*\d*/i.test(text)) {
       reasoning.push('Treatment section header');
       return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
@@ -387,12 +343,11 @@ export class ScriptParser {
     return { type: 'action', confidence: 60, scores, reasoning, meta: {} };
   }
 
-  // --- THE BRAIN: LINE ANALYSIS ---
-  private analyzeLine(text: string, context: any): { 
-    type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any 
+  private analyzeLine(text: string, context: any): {
+    type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any
   } {
     const scores: Record<LineType, number> = {
-      slug: 0, action: 0, character: 0, dialogue: 0, 
+      slug: 0, action: 0, character: 0, dialogue: 0,
       parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0,
       centered: 0, scene: 0
     };
@@ -400,7 +355,6 @@ export class ScriptParser {
     const upper = text.toUpperCase();
     const cleanName = this.clean(text);
 
-    // 1. SLUG DETECTION — requires a real INT./EXT. token, not just an "INT…" word
     if (this.isSceneHeading(text)) {
       scores.slug = 100;
       reasoning.push('Starts with known scene prefix');
@@ -409,7 +363,6 @@ export class ScriptParser {
       reasoning.push('Starts with dot (shorthand slug)');
     }
 
-    // 2. TRANSITION DETECTION
     if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, ''))) {
       scores.transition = 100;
       reasoning.push('Exact transition match');
@@ -418,7 +371,6 @@ export class ScriptParser {
       reasoning.push('Ends with " TO:" and is caps');
     }
 
-    // 3. PARENTHETICAL DETECTION
     if (text.startsWith('(') && text.endsWith(')')) {
       scores.parenthetical = 90;
       reasoning.push('Wrapped in parentheses');
@@ -431,21 +383,19 @@ export class ScriptParser {
       }
     }
 
-    // 4. CHARACTER DETECTION
     if (this.isCaps(text) && text.length < 60) {
-      let charScore = 30; // Base score for all-caps
-      
+      let charScore = 30;
+
       if (this.characterStats.get(cleanName)! >= 1) {
         charScore += 20;
         reasoning.push('Found in cast pre-scan');
       }
-      
+
       if ([...KNOWLEDGE.EXTENSIONS].some(e => upper.includes(e))) {
         charScore += 50;
         reasoning.push('Contains character extension');
       }
 
-      // Crucial: If next line is dialogue (lowercase or starts with paren), this is almost certainly a character
       if (context.next && !this.isCaps(context.next)) {
         charScore += 30;
         reasoning.push('Followed by likely dialogue');
@@ -456,7 +406,7 @@ export class ScriptParser {
       }
 
       if (scores.transition > 50) charScore = 0;
-      
+
       if (this.matchesSetStart(upper, KNOWLEDGE.CAMERA_ANGLES)) {
         charScore = 0;
         scores.shot = 90;
@@ -466,16 +416,15 @@ export class ScriptParser {
       scores.character = charScore;
     }
 
-    // 5. ACTION DETECTION
     let visualScore = 0;
     const words = upper.split(/[^A-Z]+/);
-    
+
     const hasMovement = words.some(w => KNOWLEDGE.VERBS_MOVEMENT.has(w));
     if (hasMovement) { visualScore += 25; reasoning.push('Contains movement verb'); }
-    
+
     const hasViolence = words.some(w => KNOWLEDGE.VERBS_VIOLENT.has(w));
     if (hasViolence) { visualScore += 35; reasoning.push('Contains violent verb'); }
-    
+
     const hasInteraction = words.some(w => KNOWLEDGE.VERBS_INTERACTION.has(w));
     if (hasInteraction) { visualScore += 20; reasoning.push('Contains interaction verb'); }
 
@@ -487,8 +436,6 @@ export class ScriptParser {
       }
     }
 
-    // --- ELEMENT EXTRACTION ---
-    // If it's an action line, scan for elements regardless of capitalization
     const upperWords = upper.split(/[^A-Z]+/);
     upperWords.forEach(w => {
       if (KNOWLEDGE.PROPS.has(w)) this.elements.PROPS.add(w);
@@ -500,7 +447,6 @@ export class ScriptParser {
 
     scores.action = visualScore + 20;
 
-    // 6. DIALOGUE DETECTION
     if (!this.isCaps(text)) {
       if (context.prev?.type === 'character' || context.prev?.type === 'parenthetical') {
         scores.dialogue = 100;
@@ -511,7 +457,6 @@ export class ScriptParser {
       }
     }
 
-    // --- CONFLICT RESOLUTION ---
     let bestType: LineType = 'action';
 
     if (scores.slug >= 90) bestType = 'slug';
@@ -540,7 +485,6 @@ export class ScriptParser {
     };
   }
 
-  // --- HELPERS ---
   private matchesSetStart(text: string, set: Set<string>): boolean {
     for (const item of set) if (text.startsWith(item)) return true;
     return false;
@@ -574,7 +518,6 @@ export class ScriptParser {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // --- EXPORTS ---
   public getCharacters(): Character[] {
     return Array.from(this.characterStats.entries())
       .sort((a, b) => b[1] - a[1])
@@ -584,7 +527,7 @@ export class ScriptParser {
   public extractScenes(lines: ScriptLine[]): Scene[] {
     const scenes: Scene[] = [];
     let currentScene: Scene | undefined = undefined;
-    
+
     lines.forEach((line, i) => {
       if (line.type === 'slug') {
         if (currentScene) {
@@ -610,18 +553,17 @@ export class ScriptParser {
         }
       }
     });
-    
+
     if (currentScene) {
       currentScene.endIndex = lines.length - 1;
       scenes.push(currentScene);
     }
 
-    // Per-scene breakdown: page-eighths estimate + tagged production elements.
     scenes.forEach(sc => {
       const body = lines.slice(sc.startIndex, sc.endIndex + 1).map(l => l.text).join(' ');
       const words = body.split(/\s+/).filter(Boolean).length;
       sc.wordCount = words;
-      // ~190 words per script page, 8 eighths per page; min 1/8.
+
       sc.eighths = Math.max(1, Math.round((words / 190) * 8));
       sc.elements = this.tagElements(body);
     });
@@ -641,7 +583,7 @@ export class ScriptParser {
 
   private parseLocation(slug: string): string {
     const body = this.stripScenePrefix(slug);
-    // Split only on spaced dashes (" - " / " -- "), preserving hyphenated words.
+
     const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
     if (parts.length === 0) return body.trim();
     while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
@@ -652,15 +594,14 @@ export class ScriptParser {
     const body = this.stripScenePrefix(slug);
     const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
     const last = (parts[parts.length - 1] || '').toUpperCase().replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
-    // Prefer multi-word matches (LATE NIGHT) over single (NIGHT) by length.
+
     const hits = [...KNOWLEDGE.TIME_OF_DAY].filter(t => new RegExp(`(^|\\s)${t}(\\s|$)`).test(last));
     if (hits.length) return hits.sort((a, b) => b.length - a.length)[0];
-    // Compound times not in the dictionary but ending in a known token.
+
     for (const t of KNOWLEDGE.TIME_OF_DAY) if (last.endsWith(t)) return t;
     return 'UNKNOWN';
   }
 
-  // Scan a scene's text for production elements (props, wardrobe, etc.).
   private tagElements(text: string): { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] } {
     const words = new Set(text.toUpperCase().split(/[^A-Z]+/).filter(Boolean));
     const pick = (dict: Set<string>) => [...dict].filter(w => words.has(w));
@@ -674,10 +615,6 @@ export class ScriptParser {
   }
 
 }
-
-// =========================================================================
-// EXPORT FUNCTION
-// =========================================================================
 
 export function parseScript(text: string, format: ScriptFormat = 'screenplay', learnedNames?: Set<string>): ParseResult {
   const parser = new ScriptParser(text, format, learnedNames);

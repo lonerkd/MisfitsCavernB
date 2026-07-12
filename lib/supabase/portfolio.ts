@@ -66,10 +66,6 @@ export async function deletePortfolioMedia(id: string) {
 }
 
 // ── Pitch-board blocks ──────────────────────────────────────────────────────
-// Blocks are ordered snapshots of a project's real assets (see the
-// portfolio_blocks migration for why snapshots, not references). Each carries
-// its own displayable content so the anonymous share page never has to read a
-// protected project table.
 
 export type PortfolioBlockType = 'cover' | 'concept' | 'scene' | 'budget' | 'crew' | 'script' | 'text' | 'media';
 
@@ -113,8 +109,6 @@ export async function deletePortfolioBlock(id: string) {
   if (error) throw error;
 }
 
-// Persist a new ordering by writing each block's index as its position. Called
-// after a drag-reorder on the board.
 export async function reorderPortfolioBlocks(orderedIds: string[]): Promise<void> {
   await Promise.all(
     orderedIds.map((id, i) =>

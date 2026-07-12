@@ -1,4 +1,4 @@
-// Keeps public/pdf.worker.min.mjs in sync with the installed pdfjs-dist version.
+
 const fs = require('fs');
 const path = require('path');
 

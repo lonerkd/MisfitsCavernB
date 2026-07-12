@@ -6,8 +6,7 @@ function getRedirectUri() {
   if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
     return `${window.location.origin}/auth/spotify-callback`;
   }
-  // Force production domain because Spotify restricts redirects to exact whitelisted URIs.
-  // Using dynamic window.location on Vercel preview branches causes auth rejection.
+
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://misfits-cavern-b.vercel.app';
   return `${baseUrl}/auth/spotify-callback`;
 }
@@ -30,11 +29,6 @@ async function generateCodeChallenge(codeVerifier: string) {
     .replace(/=+$/, '');
 }
 
-// Persist to localStorage (fast, synchronous read path) AND to the account's
-// spotify_connections row (survives across devices/browsers) — every other
-// piece of state in this suite is account-scoped, not browser-scoped, and
-// Spotify auth shouldn't be the one exception. Best-effort: a signed-out or
-// offline Supabase write never blocks the local session from working.
 async function persistTokens(accessToken: string, refreshToken: string | undefined, expiresAt: number) {
   window.localStorage.setItem('spotify_access_token', accessToken);
   if (refreshToken) {
@@ -46,7 +40,7 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const storedRefreshToken = refreshToken || window.localStorage.getItem('spotify_refresh_token');
-    if (!storedRefreshToken) return; // the table requires a refresh token; nothing to persist yet
+    if (!storedRefreshToken) return;
     await supabase.from('spotify_connections').upsert({
       user_id: user.id,
       access_token: accessToken,
@@ -55,7 +49,7 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
       updated_at: new Date().toISOString(),
     });
   } catch {
-    // Non-fatal — the local session still works from localStorage alone.
+
   }
 }
 
@@ -129,8 +123,6 @@ async function refreshWithToken(refreshToken: string): Promise<string | null> {
     const data = await result.json();
     const expiresAt = Date.now() + (data.expires_in * 1000);
 
-    // Spotify doesn't always return a new refresh_token — keep the one we
-    // already have if it didn't send one, so the account row stays valid.
     await persistTokens(data.access_token, data.refresh_token || refreshToken, expiresAt);
 
     return data.access_token;
@@ -145,8 +137,6 @@ export async function refreshAccessToken(): Promise<string | null> {
   return refreshWithToken(refreshToken);
 }
 
-// A new device/browser has no localStorage entry at all — check the account's
-// real connection row before concluding the user isn't connected.
 async function loadTokensFromAccount(): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -159,7 +149,6 @@ async function loadTokensFromAccount(): Promise<string | null> {
       .single();
     if (error || !data) return null;
 
-    // Still valid — cache locally and use it as-is.
     if (Date.now() < data.expires_at - 60000) {
       window.localStorage.setItem('spotify_access_token', data.access_token);
       window.localStorage.setItem('spotify_refresh_token', data.refresh_token);
@@ -167,7 +156,6 @@ async function loadTokensFromAccount(): Promise<string | null> {
       return data.access_token;
     }
 
-    // Expired — refresh using the account's stored refresh token.
     return refreshWithToken(data.refresh_token);
   } catch {
     return null;
@@ -183,7 +171,7 @@ export async function getValidToken(): Promise<string | null> {
 
   const expiresAt = parseInt(expiresAtStr, 10);
   if (Date.now() > expiresAt - 60000) {
-    // Token is expired or about to expire in 1 minute, refresh it
+
     return refreshAccessToken();
   }
 
@@ -198,9 +186,6 @@ export function logoutSpotify() {
   window.localStorage.removeItem('spotify_code_verifier');
   window.dispatchEvent(new Event('spotify-auth-changed'));
 
-  // Disconnect the account too, not just this browser's cache — otherwise
-  // "Disconnect" here would silently reconnect on the next page load via
-  // loadTokensFromAccount() reading the still-live Supabase row.
   supabase.auth.getUser().then(({ data: { user } }) => {
     if (!user) return;
     supabase.from('spotify_connections').delete().eq('user_id', user.id).then(() => {});

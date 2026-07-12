@@ -22,15 +22,9 @@ import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import type { ScriptFormat } from '@/lib/scriptos/parser';
 
-// Rough indie default rates used to seed budget suggestions from the script
-// breakdown. They are starting points the user edits after inserting.
 const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-// ProjectHubViewModel is a card/hub display shape (formatted color, deadline
-// as a string, team as display objects) — distinct from the raw hydrated
-// lib/context/ProjectContext.tsx:Project entity it's derived from. Was named
-// bare "Project" before this consolidation, shadowing the real Project type.
 
 interface ProjectHubViewModel {
   id: string;
@@ -98,7 +92,6 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
         position: 'relative',
       }}
     >
-      {/* Corner accent glow */}
       <div style={{
         position: 'absolute', top: -40, right: -40, width: 140, height: 140,
         borderRadius: '50%', pointerEvents: 'none',
@@ -106,7 +99,6 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
         opacity: hovered ? 1 : 0.5, transition: 'opacity 0.4s',
       }} />
 
-      {/* Window chrome */}
       <div style={{
         padding: '10px 14px',
         borderBottom: `1px solid ${hovered ? color + '18' : 'rgba(255,255,255,0.04)'}`,
@@ -121,14 +113,11 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
         <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: color, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
       </div>
 
-      {/* Preview content */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {preview}
-        {/* Bottom fade */}
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, background: 'linear-gradient(transparent, rgba(10,10,10,0.9))', pointerEvents: 'none' }} />
       </div>
 
-      {/* Footer */}
       <div style={{
         padding: '12px 16px',
         borderTop: `1px solid rgba(255,255,255,0.04)`,
@@ -163,8 +152,6 @@ function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span =
 
 // ─── Script preview ──────────────────────────────────────────────────────────
 
-// Abstract, data-driven peek — reflects the project's real script counts
-// without fabricating any screenplay content.
 function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: number; scenes: number }) {
   const bars = Math.min(14, Math.max(scenes || scripts || 0, pages > 0 ? 8 : 0));
   return (
@@ -188,8 +175,6 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
 
 // ─── Asset preview ───────────────────────────────────────────────────────────
 
-// Abstract tile grid whose fill reflects the real concept/scene counts — no
-// invented filenames.
 function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }) {
   const total = concepts + scenes;
   const filled = Math.min(6, concepts);
@@ -259,7 +244,6 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
         <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
       </div>
 
-      {/* Progress rail */}
       <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
         <motion.div
           initial={{ width: 0 }}
@@ -269,7 +253,6 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
         />
       </div>
 
-      {/* Milestones */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {milestones.map((m, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -328,12 +311,6 @@ export default function ProjectHubPage() {
   const [realProject, setRealProject] = useState<ProjectHubViewModel | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Always load the actual project from Supabase and show the live production
-  // manager. Unknown ids redirect back to the projects list. Also syncs the
-  // shared ProjectContext to whatever project is being viewed here, so a
-  // direct link or refresh on this page doesn't leave the taskbar switcher
-  // and every other module (Studio/Lounge/Editor/Soundtrack) pointed at a
-  // stale, unrelated project.
   useEffect(() => {
     let active = true;
     supabase.from('projects').select('*').eq('id', id).single().then(({ data, error }) => {
@@ -359,15 +336,12 @@ export default function ProjectHubPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshProject is stable from context; activeProject?.id intentionally omitted to avoid re-fetch loop
   }, [id, router]);
 
-  // Live cross-suite counts for real projects, so the hub tiles reflect the
-  // actual scripts / crew / tasks / budget / timeline managed elsewhere.
   const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, portfolioPublished: 0 });
   useEffect(() => {
     let active = true;
     (async () => {
       const [sc, cr, tk, bd, tl, scn, cn, pf] = await Promise.all([
-        // scripts has no page_count column — selecting it errored the whole
-        // query, so the hub's script count always showed 0.
+
         supabase.from('scripts').select('id').eq('project_id', id),
         supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
@@ -381,7 +355,7 @@ export default function ProjectHubPage() {
       const tasks = (tk.data as { completed: boolean }[]) || [];
       setCounts({
         scripts: sc.data?.length || 0,
-        pages: 0, // no page data stored per script yet
+        pages: 0,
 
         crew: cr.count || 0,
         tasks: tasks.length,
@@ -409,9 +383,7 @@ export default function ProjectHubPage() {
   const isRealProject = true;
   const currentPhaseIdx = phaseIndex(project.phase);
   const onlineCount = project.team.filter(m => m.online).length;
-  // Type-aware phase rail (labels + which stages are even shown) — the
-  // generic PHASES/phaseIndex above stay as-is for TimelinePreview's fixed
-  // milestone checklist and the progress-percent calc.
+
   const typePhases = getPhasesForType(project.type);
   const typePhaseIdx = phaseIndexForType(project.type, project.phase);
   const modules = getProjectModules(project.settings);
@@ -420,13 +392,11 @@ export default function ProjectHubPage() {
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
       <GrainOverlay />
 
-      {/* Ambient project glow */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '50vh', pointerEvents: 'none', zIndex: 0,
         background: `radial-gradient(ellipse at 50% -20%, ${project.color}0a 0%, transparent 65%)`,
       }} />
 
-      {/* ── Header ── */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -453,7 +423,6 @@ export default function ProjectHubPage() {
           </div>
         </div>
 
-        {/* Phase rail — labels/stage-count adapt to the project's type */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
           {typePhases.map((phase, i) => {
             const isDone   = i < typePhaseIdx;
@@ -500,10 +469,8 @@ export default function ProjectHubPage() {
         </div>
       </motion.header>
 
-      {/* ── Department Grid ── */}
       <div style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
 
-        {/* Title block */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -529,7 +496,6 @@ export default function ProjectHubPage() {
         */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
 
-          {/* ─ ScriptOS ─ */}
           {modules.scriptos && (
             <DeptWindow
               title="ScriptOS"
@@ -545,7 +511,6 @@ export default function ProjectHubPage() {
             />
           )}
 
-          {/* ─ Studio ─ */}
           {modules.studio && (
             <DeptWindow
               title="Studio"
@@ -561,7 +526,6 @@ export default function ProjectHubPage() {
             />
           )}
 
-          {/* ─ Lounge / Crew ─ */}
           {modules.lounge && (
             <DeptWindow
               title="Lounge"
@@ -577,7 +541,6 @@ export default function ProjectHubPage() {
             />
           )}
 
-          {/* ─ Timeline ─ */}
           <DeptWindow
             title="Timeline"
             tag="Schedule"
@@ -591,7 +554,6 @@ export default function ProjectHubPage() {
             preview={<TimelinePreview deadline={project.deadline} progress={project.progress} phase={project.phase} />}
           />
 
-          {/* ─ Portfolio ─ */}
           {modules.portfolio && (
             <DeptWindow
               title="Portfolio"
@@ -607,7 +569,6 @@ export default function ProjectHubPage() {
             />
           )}
 
-          {/* ─ Jobs / Distribution ─ */}
           {modules.distribution && (
             <DeptWindow
               title="Distribution"
@@ -672,12 +633,10 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   const [err, setErr] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  // Budget line items that already have a job posted from them, so the
-  // "Post as Job" action can't be fired twice for the same line by accident.
+
   const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
   const [postingBudgetId, setPostingBudgetId] = useState<string | null>(null);
-  // This project's real portfolio entries (source_project_id-linked), and
-  // whether a publish is in flight.
+
   const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
   const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
   const [festivals, setFestivals] = useState<FestivalRow[]>([]);
@@ -710,7 +669,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     load();
   }, [load]);
 
-  // ── mutations ──
   const addTask = async (title: string) => {
     const { data, error } = await supabase.from('project_tasks')
       .insert({ project_id: projectId, title }).select('id,title,completed').single();
@@ -742,10 +700,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     const { error } = await supabase.from('budget_items').delete().eq('id', id);
     if (error) { setErr(error.message); setBudget(prev); }
   };
-  // Turn a budget line ("Director fee", $2,000) straight into an open Jobs
-  // posting — the category becomes both the title and the role, the amount
-  // becomes the rate. This is the first link in the Jobs <-> Crew <-> Budget
-  // chain: post from budget, accept an applicant, they become real crew.
+
   const postJobFromBudget = async (b: BudgetRow) => {
     if (!userId || postedBudgetIds.has(b.id)) return;
     setPostingBudgetId(b.id);
@@ -764,7 +719,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
   };
 
-  // Build budget suggestions from the project's screenplay breakdown.
   const analyzeBudget = async () => {
     setAnalyzing(true); setErr(null);
     try {
@@ -840,8 +794,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     if (error) { setErr(error.message); setCrew(prev); }
   };
 
-  // Settings: format override + ecosystem module toggles, persisted straight
-  // to the projects row so the hub grid / taskbar nav pick it up immediately.
   const saveSettings = async (next: ProjectSettings) => {
     setSettings(next);
     const { error } = await supabase.from('projects').update({ settings: next as unknown as Json }).eq('id', projectId);
@@ -883,7 +835,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
       {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
-        {/* Tasks */}
         <Panel title="Tasks" accent={accent}>
           {tasks.length === 0 && <Empty>No tasks yet</Empty>}
           {tasks.map(t => (
@@ -896,7 +847,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
         </Panel>
 
-        {/* Budget */}
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {budget.length === 0 && <Empty>No budget items</Empty>}
           {budget.map(b => (
@@ -915,7 +865,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
-          {/* Budget-from-breakdown: suggest line items from the script */}
           <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
             {analyzing ? 'ANALYZING SCRIPT…' : '✦ SUGGEST FROM SCRIPT BREAKDOWN'}
           </button>
@@ -941,7 +890,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           )}
         </Panel>
 
-        {/* Timeline */}
         <Panel title="Timeline" accent={accent}>
           {timeline.length === 0 && <Empty>No milestones</Empty>}
           {timeline.map(tl => (
@@ -954,7 +902,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           <AddForm placeholder="Milestone" fields={['text', 'date', 'date']} dateLabels={['Start', 'End']} onSubmit={(v) => v[0] && addTimeline(v[0], v[1], v[2])} accent={accent} />
         </Panel>
 
-        {/* Crew */}
         <Panel title="Crew" accent={accent}>
           {crew.length === 0 && <Empty>No crew yet</Empty>}
           {crew.map(c => (
@@ -967,7 +914,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />
         </Panel>
 
-        {/* Portfolio */}
         <Panel title="Portfolio" accent={accent}>
           {portfolio.length === 0 ? (
             <>
@@ -987,7 +933,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           )}
         </Panel>
 
-        {/* Festival Submissions */}
         <Panel title="Festival Submissions" accent={accent}>
           {festivals.length === 0 && <Empty>No submissions tracked yet</Empty>}
           {festivals.map(f => (
@@ -1008,7 +953,6 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
           <AddForm placeholder="Festival name" fields={['text', 'date']} dateLabels={['Deadline']} onSubmit={(v) => v[0] && addFestival(v[0], v[1])} accent={accent} />
         </Panel>
 
-        {/* Settings: script format override + per-project ecosystem module toggles */}
         <Panel title="Settings" accent={accent}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
           <select
@@ -1072,10 +1016,6 @@ function DelBtn({ onClick }: { onClick: () => void }) {
   return <button onClick={onClick} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, opacity: 0.5, flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}>×</button>;
 }
 
-// Its own component (not inlined in budget.map) so it can call usePillZone —
-// hovering a budget line sharpens the Pill down to that line's real spend
-// and, if it hasn't been posted yet, the same "Post as Job" action as the
-// line's own button.
 function BudgetRowItem({
   item, posted, posting, onSetActual, onPostJob, onDelete,
 }: {

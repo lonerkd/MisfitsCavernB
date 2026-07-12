@@ -8,10 +8,9 @@ const FORMATS: Record<ScreenplayFormat, { name: string; pageRatio: number }> = {
   'stage-play': { name: 'Stage Play', pageRatio: 0.9 }
 };
 
-// Professional formatting rules
 export function formatLine(text: string, type: string, format: ScreenplayFormat): string {
   text = text.trim();
-  
+
   switch (type) {
     case 'slug':
       return text.toUpperCase();
@@ -30,14 +29,12 @@ export function formatLine(text: string, type: string, format: ScreenplayFormat)
   }
 }
 
-// Calculate page count (standard: 1 page = ~55 lines)
 export function calculatePageCount(lines: ScriptLine[], format: ScreenplayFormat): number {
   const lineCount = lines.length;
   const basePages = lineCount / 55;
   return Math.ceil(basePages * FORMATS[format].pageRatio);
 }
 
-// Calculate word count (more accurate)
 export function calculateWordCount(lines: ScriptLine[]): { dialogue: number; action: number; total: number } {
   let dialogue = 0;
   let action = 0;
@@ -58,10 +55,9 @@ export function calculateWordCount(lines: ScriptLine[]): { dialogue: number; act
   };
 }
 
-// Extract all unique character names (for autocomplete)
 export function extractCharacters(lines: ScriptLine[]): string[] {
   const characters = new Set<string>();
-  
+
   lines.forEach(line => {
     if (line.type === 'character' && line.meta?.characterName) {
       characters.add(line.meta.characterName);
@@ -71,7 +67,6 @@ export function extractCharacters(lines: ScriptLine[]): string[] {
   return Array.from(characters).sort();
 }
 
-// Scene breakdown analysis
 export function analyzeScenes(lines: ScriptLine[]) {
   const scenes = [];
   let currentScene = null;
@@ -104,28 +99,23 @@ export function analyzeScenes(lines: ScriptLine[]) {
   return scenes;
 }
 
-// Detect element type from context (AI-like behavior)
 export function detectElementType(text: string, context: { prev?: ScriptLine; next?: ScriptLine }): string {
   const upper = text.toUpperCase();
   const isCaps = /^[A-Z\s.,:'-]+$/.test(text);
   const isParens = text.startsWith('(') && text.endsWith(')');
 
-  // Parenthetical detection
   if (isParens && context.prev?.type === 'character') {
     return 'parenthetical';
   }
 
-  // Dialogue detection
   if (context.prev?.type === 'character' || context.prev?.type === 'parenthetical') {
     return 'dialogue';
   }
 
-  // Slug/Scene heading detection
   if (isCaps && (text.includes('INT.') || text.includes('EXT.') || text.includes('INT/EXT'))) {
     return 'slug';
   }
 
-  // Character detection
   if (isCaps && text.length < 60 && text.length > 2) {
     const lineEnds = ['V.O.', 'O.S.', 'O.C.', 'CONT\'D'];
     if (lineEnds.some(end => text.includes(end))) {
@@ -133,16 +123,13 @@ export function detectElementType(text: string, context: { prev?: ScriptLine; ne
     }
   }
 
-  // Transition detection
   if (isCaps && (text.includes('CUT TO:') || text.includes('FADE') || text.includes('DISSOLVE'))) {
     return 'transition';
   }
 
-  // Default to action
   return 'action';
 }
 
-// Smart indentation
 export function getIndentation(type: string): string {
   switch (type) {
     case 'character':
@@ -158,9 +145,8 @@ export function getIndentation(type: string): string {
   }
 }
 
-// Calculate read time
 export function calculateReadTime(words: number): { minutes: number; seconds: number } {
-  const totalSeconds = (words / 150) * 60; // 150 WPM average
+  const totalSeconds = (words / 150) * 60;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   return { minutes, seconds };

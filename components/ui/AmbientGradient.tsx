@@ -17,16 +17,15 @@ export function AmbientGradient({
   className = '',
 }: AmbientGradientProps) {
   const yPos = position === 'top' ? '20%' : position === 'bottom' ? '80%' : '50%';
-  
-  // Default to the brand accent color if no color is provided
+
   const baseColor = color || 'rgba(215, 52, 11, 1)';
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ 
+      animate={{
         opacity: 1,
-        background: `radial-gradient(ellipse at 50% ${yPos}, ${baseColor} 0%, transparent 60%)` 
+        background: `radial-gradient(ellipse at 50% ${yPos}, ${baseColor} 0%, transparent 60%)`
       }}
       transition={{ duration: 1.5, ease: 'easeOut' }}
       className={`absolute inset-0 pointer-events-none z-0 mix-blend-screen ${className}`}

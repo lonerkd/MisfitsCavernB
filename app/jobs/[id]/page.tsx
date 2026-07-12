@@ -63,11 +63,9 @@ export default function JobDetailPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Creator view
   const [applications, setApplications] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
 
-  // Applicant view
   const [coverNote, setCoverNote] = useState('');
   const [applying, setApplying] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
@@ -153,7 +151,7 @@ export default function JobDetailPage() {
       } else {
         setAlreadyApplied(true);
         setCoverNote('');
-        // Notify the job poster of the new application.
+
         notify(job.created_by, {
           type: 'application',
           title: `New application · ${job.title}`,
@@ -176,13 +174,9 @@ export default function JobDetailPage() {
       setApplications(prev =>
         prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
       );
-      // Notify the applicant that their status changed.
+
       const app = applications.find(a => a.id === appId);
 
-      // Accepting an applicant makes them real project crew immediately — no
-      // separate manual "add crew member" step. Contributor is the safe
-      // default access level for a hired role; the job's own `role` (e.g.
-      // "Director") is what actually describes what they were hired to do.
       if (newStatus === 'accepted' && app && job?.project_id && user) {
         try {
           await assignCrewMember(job.project_id, app.applicant_id, 'contributor', user.id);
@@ -224,7 +218,6 @@ export default function JobDetailPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
-      {/* Fixed Header */}
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         background: 'rgba(6,6,6,0.92)', backdropFilter: 'blur(24px)',
@@ -260,12 +253,9 @@ export default function JobDetailPage() {
         <span style={statusBadgeStyle(job.status)}>{job.status}</span>
       </header>
 
-      {/* Main Content */}
       <main style={{ maxWidth: 720, margin: '58px auto 0', padding: '48px 24px 100px' }}>
 
-        {/* Job Header */}
         <div style={{ marginBottom: 40 }}>
-          {/* Role badge */}
           <div style={{ marginBottom: 14 }}>
             <span style={{
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3,
@@ -281,7 +271,6 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          {/* Title */}
           <h1 style={{
             fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 6vw, 3.5rem)',
             letterSpacing: 4, lineHeight: 1, margin: '0 0 20px',
@@ -289,7 +278,6 @@ export default function JobDetailPage() {
             {job.title}
           </h1>
 
-          {/* Meta row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             {job.rate && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>
@@ -311,10 +299,8 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginBottom: 40 }} />
 
-        {/* Description */}
         {job.description && (
           <div style={{ marginBottom: 48 }}>
             <p style={{
@@ -326,7 +312,6 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Divider */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginBottom: 40 }} />
 
         {/* ─── CREATOR VIEW: Applications Panel ─── */}
@@ -365,7 +350,6 @@ export default function JobDetailPage() {
                     ...appStatusStyle(app.status),
                     transition: 'border-color 0.2s',
                   }}>
-                    {/* Applicant header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
@@ -397,7 +381,6 @@ export default function JobDetailPage() {
                         </div>
                       </div>
 
-                      {/* Status badge */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {app.status === 'pending' && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.4 }}>
@@ -417,12 +400,10 @@ export default function JobDetailPage() {
                       </div>
                     </div>
 
-                    {/* Applied at */}
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.3, letterSpacing: 1, marginBottom: app.cover_note ? 16 : 0 }}>
                       Applied {new Date(app.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
 
-                    {/* Cover note */}
                     {app.cover_note && (
                       <div style={{
                         marginTop: 12, padding: '12px 16px',
@@ -439,7 +420,6 @@ export default function JobDetailPage() {
                       </div>
                     )}
 
-                    {/* Action buttons */}
                     {app.status === 'pending' && (
                       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                         <button
@@ -477,7 +457,6 @@ export default function JobDetailPage() {
                       </div>
                     )}
 
-                    {/* Re-action buttons for accepted/rejected */}
                     {app.status !== 'pending' && (
                       <button
                         onClick={() => handleApplicationStatus(app.id, app.status === 'accepted' ? 'rejected' : 'accepted')}
@@ -514,7 +493,6 @@ export default function JobDetailPage() {
               APPLY
             </h2>
 
-            {/* Not signed in */}
             {!user && (
               <div style={{
                 padding: 32, border: '1px solid rgba(255,255,255,0.08)',
@@ -533,7 +511,6 @@ export default function JobDetailPage() {
               </div>
             )}
 
-            {/* Already applied */}
             {user && alreadyApplied && (
               <div style={{
                 padding: 32, border: '1px solid #22c55e',
@@ -552,7 +529,6 @@ export default function JobDetailPage() {
               </div>
             )}
 
-            {/* Apply form */}
             {user && !alreadyApplied && (
               <div style={{ display: 'grid', gap: 16 }}>
                 <Textarea

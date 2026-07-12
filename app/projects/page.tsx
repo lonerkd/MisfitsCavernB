@@ -72,12 +72,6 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
   );
 }
 
-// ProjectCardViewModel: this list page's card display shape (formatted color,
-// deadline as a string, team as plain initials strings) — distinct from the
-// raw hydrated lib/context/ProjectContext.tsx:Project entity. Was named bare
-// "Project" before this consolidation, shadowing the real Project type (and
-// diverging in shape from app/projects/[id]/page.tsx's own local "Project",
-// which used `team: {name,role,online?}[]` instead of `team: string[]`).
 interface ProjectCardViewModel {
   id: string;
   title: string;
@@ -149,14 +143,12 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           cursor: 'grab',
         }}
       >
-        {/* Ambient corner glow */}
         <div style={{
           position: 'absolute', top: 0, right: 0, width: 80, height: 80,
           background: `radial-gradient(circle at top right, ${phase}18 0%, transparent 70%)`,
           pointerEvents: 'none',
         }} />
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <div style={{
@@ -179,7 +171,6 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           </motion.div>
         </div>
 
-        {/* Title */}
         <div style={{
           fontFamily: 'var(--display)',
           fontSize: '1.25rem',
@@ -191,7 +182,6 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           {project.title}
         </div>
 
-        {/* Description */}
         <div style={{
           fontFamily: 'var(--mono)',
           fontSize: 9.5,
@@ -206,7 +196,6 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           {project.description}
         </div>
 
-        {/* Progress bar */}
         <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
           <motion.div
             initial={{ width: 0 }}
@@ -217,9 +206,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           />
         </div>
 
-        {/* Footer row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Team avatars */}
           <div style={{ display: 'flex', gap: -4 }}>
             {project.team.slice(0, 3).map((initials, i) => (
               <div key={i} style={{
@@ -237,7 +224,6 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
             ))}
           </div>
 
-          {/* Deadline */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 4,
             fontFamily: 'var(--mono)', fontSize: 8.5,
@@ -258,7 +244,6 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
 
   return (
     <div style={{ minWidth: 260, flex: '0 0 260px' }}>
-      {/* Column header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         marginBottom: 14, padding: '0 2px',
@@ -292,7 +277,6 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
         </div>
       </div>
 
-      {/* Drop zone */}
       <div
         onDragOver={e => { e.preventDefault(); if (!dragOver) setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -352,7 +336,6 @@ export default function ProjectsPage() {
   const { setActiveProject } = useProject();
   const router = useRouter();
 
-  // Publish the projects hub's live state to the Pill's context capsule.
   usePillStage(
     {
       module: 'home',
@@ -369,8 +352,7 @@ export default function ProjectsPage() {
   );
 
   useEffect(() => {
-    // A stalled/failed getUser() call must never leave the board stuck on
-    // skeleton loaders forever — always resolve `loaded`, even on failure.
+
     withTimeout(supabase.auth.getUser(), 12000, 'getUser timed out').then(({ data: { user } }) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
@@ -418,11 +400,10 @@ export default function ProjectsPage() {
         team: ['CR'], description: p.description || '', color: p.accent_color || '#6366f1',
       };
       setProjectsList(prev => [newP, ...prev]);
-      setActiveProject(p as any);   // make it the active project across the suite
+      setActiveProject(p as any);
       setShowNew(false);
       toast('Project created — opening studio', 'success');
-      
-      // Log recent activity
+
       await logActivity(`started project "${title}"`, 'project', p.id);
 
       router.push('/studio');
@@ -445,12 +426,11 @@ export default function ProjectsPage() {
         'delivery': 'completed'
       };
       const dbStatus = statusMap[targetPhase];
-      
+
       const { error } = await supabase.from('projects').update({ status: dbStatus }).eq('id', projectId);
       if (error) throw error;
       toast(`Project moved to ${targetPhase}`, 'success');
 
-      // Log recent activity
       if (targetProj) {
         await logActivity(`moved project "${targetProj.title}" to ${targetPhase}`, 'project', projectId);
       }
@@ -469,7 +449,6 @@ export default function ProjectsPage() {
       <GrainOverlay />
       <NewProjectModal open={showNew} onClose={() => setShowNew(false)} onCreate={createFromModal} />
 
-      {/* Top bar */}
       <div style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -499,7 +478,6 @@ export default function ProjectsPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Stats */}
           <div style={{ display: 'flex', gap: 12 }}>
             {[
               { label: 'Total', value: total },
@@ -544,7 +522,6 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Phase pipeline rail — decorative */}
       <div style={{
         position: 'fixed', top: 58, left: 0, width: '100%', height: 32,
         display: 'flex', alignItems: 'center',
@@ -596,7 +573,6 @@ export default function ProjectsPage() {
         })}
       </div>
 
-      {/* Board — horizontal scroll */}
       <div style={{
         paddingTop: 90 + 32,
         paddingBottom: 'calc(var(--taskbar-height, 94px) + 20px)',
@@ -652,7 +628,6 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Scrollbar style */}
       <style>{`
         ::-webkit-scrollbar { height: 4px; width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }

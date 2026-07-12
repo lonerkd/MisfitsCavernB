@@ -1,4 +1,4 @@
-// API request validation and sanitization
+
 
 export interface ValidationRule {
   type: 'string' | 'number' | 'boolean' | 'email' | 'uuid' | 'url' | 'object';
@@ -29,7 +29,7 @@ export function validateURL(url: string): boolean {
 }
 
 export function validateField(value: any, rule: ValidationRule): { valid: boolean; error?: string } {
-  // Check required
+
   if (rule.required && (value === null || value === undefined || value === '')) {
     return { valid: false, error: 'This field is required' };
   }
@@ -38,7 +38,6 @@ export function validateField(value: any, rule: ValidationRule): { valid: boolea
     return { valid: true };
   }
 
-  // Check type
   switch (rule.type) {
     case 'string':
       if (typeof value !== 'string') {
@@ -107,7 +106,6 @@ export function validateField(value: any, rule: ValidationRule): { valid: boolea
       break;
   }
 
-  // Check enum
   if (rule.enum && !rule.enum.includes(value)) {
     return { valid: false, error: `Must be one of: ${rule.enum.join(', ')}` };
   }
@@ -136,7 +134,7 @@ export function validateRequest(
 
 export function sanitizeString(str: string): string {
   return str
-    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/[<>]/g, '')
     .trim();
 }
 

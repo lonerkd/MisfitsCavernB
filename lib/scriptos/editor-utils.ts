@@ -17,7 +17,7 @@ export function getCurrentLine(content: string, cursorPos: number): { line: stri
       return {
         line: lines[i],
         lineStart: pos,
-        lineEnd: lineEnd + 1 // +1 for \n
+        lineEnd: lineEnd + 1
       };
     }
     pos = lineEnd + 1;

@@ -6,7 +6,7 @@ export function NetworkStatusIndicator() {
   const { isOnline, isSlowConnection } = useNetworkStatus();
 
   if (isOnline && !isSlowConnection) {
-    return null; // Don't show anything when everything is fine
+    return null;
   }
 
   const message = !isOnline

@@ -41,7 +41,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
     const setupPresence = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      
+
       myUserId = user.id;
       myEmail = user.email || 'Unknown';
       const myColor = PRESENCE_COLORS[(myUserId.charCodeAt(0) + myUserId.charCodeAt(myUserId.length - 1)) % PRESENCE_COLORS.length];
@@ -50,21 +50,20 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
         config: { presence: { key: myUserId } }
       });
 
-      // Store in ref immediately so cleanup can access it even before subscribe resolves
       channelRef.current = room;
 
       room
         .on('presence', { event: 'sync' }, () => {
           const state = room.presenceState();
           const users: PresenceState[] = [];
-          
+
           for (const id in state) {
-            // Pick the most recent presence state if multiple connections exist for same user
+
             const p = state[id][0] as any;
             if (p) users.push(p);
           }
-          
-          setOnlineUsers(users.filter(u => u.userId !== myUserId)); // Exclude self
+
+          setOnlineUsers(users.filter(u => u.userId !== myUserId));
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED' && !cancelled) {
@@ -98,7 +97,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const myColor = PRESENCE_COLORS[(user.id.charCodeAt(0) + user.id.charCodeAt(user.id.length - 1)) % PRESENCE_COLORS.length];
-      
+
       await currentChannel.track({
         userId: user.id,
         email: user.email || 'Unknown',

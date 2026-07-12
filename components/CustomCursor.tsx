@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-// Context the cursor can adapt to. Each maps to a distinct visual treatment so
-// the pointer tells you what a target does before you click it.
 type CursorMode = 'default' | 'action' | 'text' | 'grab' | 'view' | 'disabled' | 'help';
 
 export default function CustomCursor() {
@@ -14,10 +12,6 @@ export default function CustomCursor() {
   const [mode, setMode] = useState<CursorMode>('default');
   const [enabled, setEnabled] = useState(false);
 
-  // Only run the custom cursor on real fine-pointer devices (mouse/trackpad),
-  // and honour the user's preference toggled from Settings. On touch we leave
-  // the native cursor alone entirely.
-  // Apply the reduce-motion preference (or the OS setting) app-wide on load.
   useEffect(() => {
     const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let pref: string | null = null;
@@ -30,7 +24,7 @@ export default function CustomCursor() {
     const updateTheme = () => {
       try {
         const theme = localStorage.getItem('mc_theme') || 'default';
-        // Convert classList to array to safely remove during iteration
+
         const classesToRemove = Array.from(document.body.classList).filter(cls => cls.startsWith('theme-'));
         classesToRemove.forEach(cls => document.body.classList.remove(cls));
         if (theme !== 'default') {
@@ -62,18 +56,15 @@ export default function CustomCursor() {
     };
   }, []);
 
-  // Resolve which mode an element under the pointer should trigger.
   const resolveMode = (el: HTMLElement | null): CursorMode => {
     if (!el) return 'default';
-    
-    // Explicit data attribute overrides
+
     const explicit = el.closest('[data-cursor]') as HTMLElement | null;
     if (explicit) {
       const val = explicit.dataset.cursor as CursorMode;
       if (val) return val;
     }
 
-    // Computed style check (automatic fallback)
     try {
       const style = window.getComputedStyle(el);
       if (style.cursor === 'pointer') {
@@ -91,14 +82,14 @@ export default function CustomCursor() {
       return 'grab';
     }
     if (el.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"]')) return 'text';
-    
+
     const actionable = el.closest('a, button, [role="button"], [role="link"], select, label[for], [data-cursor-hover]');
     if (actionable) {
       if (actionable.matches('[disabled], [aria-disabled="true"]') || actionable.closest('[disabled], [aria-disabled="true"]')) return 'disabled';
       return 'action';
     }
     if (el.closest('img, video')) return 'view';
-    
+
     return 'default';
   };
 
@@ -154,11 +145,9 @@ export default function CustomCursor() {
 
   const accent = 'var(--accent)';
 
-  // Dot: an I-beam bar in text mode, a solid dot otherwise.
   const isText = mode === 'text';
   const dotColor = mode === 'action' || mode === 'grab' ? accent : mode === 'disabled' ? '#ff5c5c' : 'var(--fg)';
 
-  // Ring geometry + treatment per mode.
   const ring = (() => {
     switch (mode) {
       case 'action': return { size: 48, border: `1px solid ${accent}`, radius: '50%', bg: 'rgba(255,255,255,0.08)', backdrop: 'blur(2px)' };
@@ -175,7 +164,6 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Fast dot / I-beam */}
       <div
         ref={dotRef}
         style={{
@@ -194,7 +182,6 @@ export default function CustomCursor() {
           willChange: 'transform, width, height',
         }}
       />
-      {/* Lagging ring */}
       <div
         ref={ringRef}
         style={{

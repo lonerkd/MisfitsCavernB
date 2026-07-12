@@ -1,7 +1,4 @@
-// ============================================================================
-// SCRIPTOS REVISION TRACKING SYSTEM
-// Industry-standard colored revision pages (Final Draft workflow)
-// ============================================================================
+
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
@@ -26,7 +23,7 @@ export interface Revision {
   colorIndex: number;
   date: string;
   label: string;
-  snapshot: string; // content at time of lock
+  snapshot: string;
 }
 
 export interface RevisionMark {
@@ -74,8 +71,6 @@ export async function saveRevision(scriptId: string, revision: Revision): Promis
 }
 
 // ── Supabase-backed persistence ─────────────────────────────────────────────
-// Locked revisions live in the script_revisions table so they survive across
-// devices and sessions (localStorage was per-browser and lost on cleanup).
 
 export async function fetchRevisionsDB(scriptId: string): Promise<Revision[]> {
   if (!scriptId) return [];
@@ -118,10 +113,6 @@ export async function createRevision(scriptId: string, content: string, label?: 
   return { revision, result };
 }
 
-// Compare two text snapshots and return changed line indices using Myers diff algorithm.
-// Uses the `diff` package (diffLines) for O(ND) LCS-based accuracy instead of the
-// previous naïve O(N) index-matched comparison that missed insertions/deletions.
-
 export function diffSnapshots(oldText: string, newText: string): RevisionMark[] {
   const changes = DiffLib.diffLines(oldText, newText);
   const marks: RevisionMark[] = [];
@@ -129,7 +120,7 @@ export function diffSnapshots(oldText: string, newText: string): RevisionMark[] 
 
   for (const change of changes) {
     const lineCount = change.value.split('\n').filter((_, i, arr) =>
-      // don't count trailing empty string from split
+
       i < arr.length - 1 || change.value.endsWith('\n') ? true : change.value !== ''
     ).length;
 
@@ -142,7 +133,7 @@ export function diffSnapshots(oldText: string, newText: string): RevisionMark[] 
       for (let i = 0; i < lineCount; i++) {
         marks.push({ lineIndex: lineIndex + i, revisionId: '', type: 'deleted' });
       }
-      // removed lines don't advance the new-text index
+
     } else {
       lineIndex += lineCount;
     }

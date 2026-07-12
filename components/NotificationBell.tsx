@@ -38,7 +38,6 @@ export default function NotificationBell() {
     });
   }, [load]);
 
-  // Realtime: new notifications for this user arrive live.
   useEffect(() => {
     if (!userId) return;
     const channel = supabase

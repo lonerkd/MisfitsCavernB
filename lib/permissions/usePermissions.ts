@@ -4,19 +4,11 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { Permission, AccessContext } from '@/lib/context/types';
 import { canAccessPage, canPerformAction as canPerformActionMatrix } from './access-matrix';
 
-/**
- * Hook to check if current user can perform an action
- * @param permission - The permission to check
- * @param context - Optional context for project-specific permissions
- */
 export function usePermission(permission: Permission, context?: AccessContext): boolean {
   const { canPerformAction } = useAuth();
   return canPerformAction(permission, context);
 }
 
-/**
- * Hook to check multiple permissions (user must have ALL)
- */
 export function usePermissions(
   permissions: Permission[],
   context?: AccessContext
@@ -25,9 +17,6 @@ export function usePermissions(
   return permissions.every(p => canPerformAction(p, context));
 }
 
-/**
- * Hook to check if user has ANY of the provided permissions
- */
 export function useAnyPermission(
   permissions: Permission[],
   context?: AccessContext
@@ -36,33 +25,21 @@ export function useAnyPermission(
   return permissions.some(p => canPerformAction(p, context));
 }
 
-/**
- * Hook to get all permissions for current user
- */
 export function useUserPermissions() {
   const { permissions, userRole } = useAuth();
   return { permissions, userRole };
 }
 
-/**
- * Hook to check page access
- */
 export function usePageAccess(path: string): boolean {
   const { userRole } = useAuth();
   return canAccessPage(userRole, path);
 }
 
-/**
- * Hook to check action access (action matrix)
- */
 export function useActionAccess(action: string): boolean {
   const { userRole } = useAuth();
   return canPerformActionMatrix(userRole, action);
 }
 
-/**
- * Hook to get project-specific access
- */
 export function useProjectAccess(projectId: string) {
   const { projectAccess, loadProjectAccess } = useAuth();
 
@@ -81,9 +58,6 @@ export function useProjectAccess(projectId: string) {
   };
 }
 
-/**
- * Hook to get current user info
- */
 export function useCurrentUser() {
   const { user, isAuthenticated, userRole } = useAuth();
 
@@ -98,9 +72,6 @@ export function useCurrentUser() {
   };
 }
 
-/**
- * Hook to handle authentication state
- */
 export function useAuthState() {
   const { isAuthenticated, isLoading, error } = useAuth();
 
@@ -111,9 +82,6 @@ export function useAuthState() {
   };
 }
 
-/**
- * Hook to get auth methods
- */
 export function useAuthActions() {
   const { signIn, signUp, signOut } = useAuth();
 

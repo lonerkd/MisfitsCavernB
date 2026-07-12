@@ -1,7 +1,4 @@
-// ============================================================================
-// SCRIPTOS CHARACTER STATISTICS ENGINE
-// Deep analysis of character presence, dialogue weight, and relationships
-// ============================================================================
+
 
 import type { ScriptLine, Scene } from '@/types/screenplay';
 
@@ -10,12 +7,12 @@ export interface CharacterStats {
   dialogueLines: number;
   dialogueWords: number;
   sceneAppearances: number;
-  scenesIn: number[];           // indices of scenes this character appears in
-  firstAppearance: number;      // line index
-  lastAppearance: number;       // line index
-  dialoguePercentage: number;   // % of total dialogue
+  scenesIn: number[];
+  firstAppearance: number;
+  lastAppearance: number;
+  dialoguePercentage: number;
   avgWordsPerLine: number;
-  speaksTo: Record<string, number>; // who they share scenes/dialogue with
+  speaksTo: Record<string, number>;
 }
 
 export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): CharacterStats[] {
@@ -23,7 +20,6 @@ export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): Charact
   let totalDialogueWords = 0;
   let currentCharacter: string | null = null;
 
-  // Pass 1: Gather raw stats
   lines.forEach((line, i) => {
     if (line.type === 'character') {
       const name = line.text.trim().replace(/\s*\(.*?\)\s*/g, '').trim();
@@ -65,7 +61,6 @@ export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): Charact
     }
   });
 
-  // Pass 2: Scene appearances
   scenes.forEach((scene, sceneIdx) => {
     scene.characters.forEach(charName => {
       const s = stats.get(charName);
@@ -74,7 +69,6 @@ export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): Charact
       }
     });
 
-    // Build "speaks to" relationships
     const sceneChars = scene.characters;
     for (let a = 0; a < sceneChars.length; a++) {
       for (let b = a + 1; b < sceneChars.length; b++) {
@@ -86,7 +80,6 @@ export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): Charact
     }
   });
 
-  // Pass 3: Compute derived stats
   const result = Array.from(stats.values()).map(s => ({
     ...s,
     dialoguePercentage: totalDialogueWords > 0
@@ -97,7 +90,6 @@ export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): Charact
       : 0,
   }));
 
-  // Sort by dialogue word count descending
   result.sort((a, b) => b.dialogueWords - a.dialogueWords);
 
   return result;

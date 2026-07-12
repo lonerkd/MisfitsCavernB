@@ -1,7 +1,5 @@
 import { supabase } from './client';
 
-// ScriptOS margin gutter: typed, line-anchored annotations. Each type
-// conceptually routes to its owning department elsewhere in the suite.
 export type AnnotationType = 'shot' | 'beat' | 'note' | 'revision' | 'reference' | 'todo';
 
 export const ANNOTATION_META: Record<AnnotationType, { label: string; color: string; routesTo: string }> = {

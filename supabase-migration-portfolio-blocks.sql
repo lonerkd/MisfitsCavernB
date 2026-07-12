@@ -1,18 +1,5 @@
--- Migration: pitch-board blocks for portfolio projects.
 --
--- The "Publish to Portfolio" flow used to create an empty portfolio_projects
--- shell with source_project_id set but pulled zero real assets in. This table
--- lets a project be assembled into an ordered, drag-and-drop board of blocks
--- (concept art, scenes, budget, crew, script excerpts, custom text/media) that
--- doubles as a public showcase and a pitch deck.
 --
--- IMPORTANT — blocks store SNAPSHOTS, not references. The public share page
--- (/p/[token]) is viewed by anonymous visitors who, by RLS, cannot read the
--- source project tables (concept_assets / scenes / budget_items / project_crew
--- are creator/crew-only). So each block copies the data it needs (image URL,
--- scene text, budget totals, crew name+role) into this publicly-readable table
--- at add-time. That mirrors exactly how portfolio_media already makes the
--- share page work today.
 
 CREATE TABLE IF NOT EXISTS portfolio_blocks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -33,9 +20,6 @@ CREATE INDEX IF NOT EXISTS portfolio_blocks_project_idx
 
 ALTER TABLE portfolio_blocks ENABLE ROW LEVEL SECURITY;
 
--- Read/write policies mirror portfolio_media's exactly: portfolio_projects has
--- no is_public column (sharing is gated in-app by the unguessable share_token),
--- so read is open like portfolio_media's, and write is owner-only.
 CREATE POLICY "Portfolio blocks readable" ON portfolio_blocks FOR SELECT USING (true);
 CREATE POLICY "Portfolio blocks owner write" ON portfolio_blocks FOR ALL USING (
   portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())

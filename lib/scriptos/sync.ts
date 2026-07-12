@@ -6,7 +6,7 @@ export interface Collaborator {
   userId: string;
   username: string;
   color: string;
-  line?: number;      // 1-based caret line, for "editing near line N"
+  line?: number;
 }
 
 const CURSOR_COLORS = ['#ff6b00', '#00cc66', '#0099ff', '#a855f7', '#ec4899', '#eab308'];
@@ -30,14 +30,13 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
 
   const channelRef = useRef<any>(null);
   const meRef = useRef<{ id: string; username: string; color: string } | null>(null);
-  // Live values for the subscribe closure (which only binds once per scriptId).
+
   const localRef = useRef(localContent);
   const lastRemoteRef = useRef<string>('');
-  const lastLocalEditRef = useRef<number>(0);   // ms timestamp of last local keystroke
+  const lastLocalEditRef = useRef<number>(0);
   const lastCursorSentRef = useRef<number>(0);
   localRef.current = localContent;
 
-  // Mark that the local user just edited (called from the editor onChange).
   const noteLocalEdit = useCallback(() => { lastLocalEditRef.current = Date.now(); }, []);
 
   useEffect(() => {
@@ -62,14 +61,11 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           const local = localRef.current;
           const base = lastRemoteRef.current;
 
-          // Concurrent-edit guard: if the local user has typed within the last
-          // second AND both sides diverged from the last shared base, surface a
-          // conflict instead of silently clobbering their in-progress edit.
           const typingNow = Date.now() - lastLocalEditRef.current < 1000;
           if (typingNow && base && local !== base && remote !== base &&
               Math.abs(local.length - base.length) > 5 && Math.abs(remote.length - base.length) > 5) {
             setConflict({ detected: true, remoteContent: remote, remoteLength: remote.length, localLength: local.length, message: 'A collaborator saved changes while you were typing.' });
-            return; // hold the remote copy; let the user choose (see accept/keep).
+            return;
           }
 
           lastRemoteRef.current = remote;
@@ -101,7 +97,6 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     };
   }, [scriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Push local changes: broadcast to peers + debounced DB save.
   useEffect(() => {
     if (!scriptId || !channelRef.current) return;
     const timer = setTimeout(async () => {
@@ -116,7 +111,6 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     return () => clearTimeout(timer);
   }, [localContent, scriptId]);
 
-  // Share caret line via presence (throttled to ~3/sec).
   const broadcastCursor = useCallback((caretIndex: number) => {
     const ch = channelRef.current, me = meRef.current;
     if (!ch || !me) return;
@@ -130,7 +124,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
   const resolveConflict = useCallback((choice: 'accept-remote' | 'keep-mine') => {
     setConflict(prev => {
       if (choice === 'accept-remote' && prev.remoteContent) { lastRemoteRef.current = prev.remoteContent; onRemoteChange(prev.remoteContent); }
-      // keep-mine: next debounced push rebroadcasts local as the new base.
+
       return NO_CONFLICT;
     });
   }, [onRemoteChange]);

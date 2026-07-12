@@ -14,10 +14,6 @@ export interface DBJob {
   budget_item_id?: string | null;
 }
 
-// Job as actually rendered in the UI: the raw row plus whichever relations
-// the query joined in. app/jobs/page.tsx and app/jobs/[id]/page.tsx each
-// hand-rolled a slightly different local `Job` interface before this
-// consolidation — neither imported DBJob at all.
 export interface JobWithRelations extends DBJob {
   profiles?: { username: string; role?: string; avatar_url?: string };
   projects?: { title: string };
@@ -44,9 +40,6 @@ export async function createJob(projectId: string, userId: string, title: string
   return data;
 }
 
-// Which of this project's budget line items already have a job posted from
-// them — lets the Budget panel show "Posted" instead of letting someone
-// double-post the same line item by accident.
 export async function getBudgetItemIdsWithJobs(projectId: string): Promise<Set<string>> {
   const { data, error } = await supabase
     .from('jobs')

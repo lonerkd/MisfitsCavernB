@@ -44,7 +44,7 @@ export function useScript() {
         }
 
         const created = await sbCreateScript(projectId, title);
-        // Persist initial content if provided
+
         const newScript =
           content && content.length > 0
             ? await sbUpdateScript(created.id, content, userId)

@@ -17,7 +17,6 @@ interface Command {
   group: string;
 }
 
-// Lightweight subsequence fuzzy match — every query char must appear in order.
 function fuzzy(query: string, text: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();
@@ -37,11 +36,9 @@ export default function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic data for search
   const [scripts, setScripts] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
 
-  // ⌘K / Ctrl-K toggles; also close on route change.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -57,25 +54,23 @@ export default function CommandPalette() {
   }, []);
 
   useEffect(() => { setOpen(false); }, [pathname]);
-  
+
   useEffect(() => {
-    if (open) { 
-      setQuery(''); 
-      setSel(0); 
-      setTimeout(() => inputRef.current?.focus(), 30); 
-      
-      // Fetch dynamic data when palette opens
+    if (open) {
+      setQuery('');
+      setSel(0);
+      setTimeout(() => inputRef.current?.focus(), 30);
+
       const fetchData = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        
+
         const [scriptsRes, assetsRes] = await Promise.all([
           supabase.from('scripts').select('id, title, project_id').eq('created_by', user.id).limit(20),
-          // there is no `assets` table — project_assets is the real one, so
-          // the palette's asset search had always silently returned nothing
+
           supabase.from('project_assets').select('id, title, project_id').eq('created_by', user.id).limit(20)
         ]);
-        
+
         if (scriptsRes.data) setScripts(scriptsRes.data);
         if (assetsRes.data) setAssets(assetsRes.data);
       };
@@ -108,7 +103,7 @@ export default function CommandPalette() {
       keywords: 'switch open',
       run: () => { setActiveProject(p); router.push('/studio'); setOpen(false); },
     }));
-    
+
     const scriptCmds: Command[] = scripts.map(s => {
       const projMatch = projects.find(p => p.id === s.project_id);
       return {
@@ -118,10 +113,10 @@ export default function CommandPalette() {
         icon: <FileText size={15} />,
         group: 'Scripts',
         keywords: 'script screenplay write',
-        run: () => { 
-          if (projMatch) setActiveProject(projMatch); 
-          router.push('/editor'); 
-          setOpen(false); 
+        run: () => {
+          if (projMatch) setActiveProject(projMatch);
+          router.push('/editor');
+          setOpen(false);
         },
       };
     });
@@ -135,10 +130,10 @@ export default function CommandPalette() {
         icon: <LayoutGrid size={15} />,
         group: 'Studio Assets',
         keywords: 'asset image video file',
-        run: () => { 
-          if (projMatch) setActiveProject(projMatch); 
-          router.push('/studio'); 
-          setOpen(false); 
+        run: () => {
+          if (projMatch) setActiveProject(projMatch);
+          router.push('/studio');
+          setOpen(false);
         },
       };
     });
@@ -148,10 +143,9 @@ export default function CommandPalette() {
 
   const filtered = useMemo(() => {
     const list = commands.filter(c => fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));
-    return list.slice(0, 50); // Limit to 50 results to keep UI snappy
+    return list.slice(0, 50);
   }, [commands, query]);
 
-  // Group results while preserving order.
   const groups = useMemo(() => {
     const m: { group: string; items: Command[] }[] = [];
     for (const c of filtered) {
@@ -170,7 +164,6 @@ export default function CommandPalette() {
     else if (e.key === 'Enter') { e.preventDefault(); filtered[sel]?.run(); }
   };
 
-  // Keep the selected row scrolled into view.
   useEffect(() => {
     const el = listRef.current?.querySelector(`[data-idx="${sel}"]`) as HTMLElement | null;
     el?.scrollIntoView({ block: 'nearest' });
@@ -193,7 +186,6 @@ export default function CommandPalette() {
             onMouseDown={e => e.stopPropagation()}
             style={{ width: 'min(92vw, 560px)', background: 'rgba(5, 10, 18, 0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
           >
-            {/* Search input */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <Search size={16} color="rgba(255,255,255,0.4)" />
               <input
@@ -207,7 +199,6 @@ export default function CommandPalette() {
               <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
             </div>
 
-            {/* Results */}
             <div ref={listRef} style={{ maxHeight: '52vh', overflowY: 'auto', padding: 8 }}>
               {filtered.length === 0 ? (
                 <div style={{ padding: '28px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>

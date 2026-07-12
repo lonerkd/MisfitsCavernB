@@ -10,7 +10,7 @@ export interface AutoSaveState {
 }
 
 export class AutoSaveManager {
-  private saveInterval = 30000; // 30 seconds
+  private saveInterval = 30000;
   private timeoutId: NodeJS.Timeout | null = null;
   private state: AutoSaveState;
   private onStateChange: (state: AutoSaveState) => void;
@@ -32,12 +32,10 @@ export class AutoSaveManager {
     this.state.unsavedChanges = true;
     this.onStateChange(this.state);
 
-    // Clear existing timeout
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
     }
 
-    // Schedule auto-save
     this.timeoutId = setTimeout(async () => {
       await this.save(userId);
     }, this.saveInterval);
@@ -51,19 +49,19 @@ export class AutoSaveManager {
 
     try {
       await updateScript(this.state.scriptId, this.state.content, userId);
-      
+
       this.state.lastSaved = new Date();
       this.state.saveCount += 1;
       this.state.unsavedChanges = false;
       this.state.isSaving = false;
-      
+
       this.onStateChange(this.state);
-      
+
       return { success: true };
     } catch (error) {
       this.state.isSaving = false;
       this.onStateChange(this.state);
-      
+
       console.error('Auto-save failed:', error);
       return { success: false, error };
     }
@@ -80,7 +78,6 @@ export class AutoSaveManager {
   }
 }
 
-// Manual save trigger
 export async function manualSave(scriptId: string, content: string, userId: string) {
   try {
     await updateScript(scriptId, content, userId);

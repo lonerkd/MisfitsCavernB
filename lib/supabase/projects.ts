@@ -33,9 +33,6 @@ export async function createProject(userId: string, title: string, description =
 
   if (error) throw error;
 
-  // Give the project a home in the Lounge from minute one, instead of every
-  // project needing someone to remember to create a channel by hand. Best
-  // effort: a failure here shouldn't undo the project that was just created.
   try {
     await createChannel({ project_id: data.id, name: 'general', topic: `${title} — general discussion` });
   } catch (channelError) {
@@ -48,10 +45,7 @@ export async function createProject(userId: string, title: string, description =
 }
 
 export async function getUserProjects(_userId?: string) {
-  // RLS ("Project members can view") already scopes this to projects the
-  // current user created or is crew on, so no client-side filter is needed.
-  // The previous .or(... id.in.(SELECT ...)) embedded raw SQL inside a
-  // PostgREST filter, which is unsupported and returned a 400 every time.
+
   const { data, error } = await supabase
     .from('projects')
     .select('*')

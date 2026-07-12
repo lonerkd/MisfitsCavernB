@@ -1,8 +1,4 @@
-/* =========================================================================
-   SCRIPTOS — IMPORT
-   Lossless where the format allows it (Final Draft .fdx carries explicit
-   element types), best-effort smart-clean for plain .txt / .fountain.
-   ========================================================================= */
+
 
 import { normalizeScreenplay } from './normalize';
 import { serializeBlocks, newBlockId, type Block, type BlockType } from './blocks';
@@ -22,7 +18,7 @@ const FDX_TYPE_MAP: Record<string, BlockType> = {
 
 function decodeXml(s: string): string {
   return s
-    .replace(/<[^>]+>/g, '') // strip any nested inline tags
+    .replace(/<[^>]+>/g, '')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
@@ -32,7 +28,6 @@ function decodeXml(s: string): string {
     .replace(/&amp;/g, '&');
 }
 
-/** Final Draft .fdx — paragraphs carry an explicit Type, so this is lossless. */
 export function parseFdx(xml: string): string {
   const blocks: Block[] = [];
   const paraRe = /<Paragraph\b([^>]*)>([\s\S]*?)<\/Paragraph>/g;
@@ -52,15 +47,13 @@ export function parseFdx(xml: string): string {
   return blocks.length ? serializeBlocks(blocks) : '';
 }
 
-/** Strip Fountain-only scaffolding the screenplay parser shouldn't see, then
- *  hand off to the normalizer. Honors forced-element markers (., !, @, >). */
 function preprocessFountain(text: string): string {
   let t = text.replace(/\r\n?/g, '\n');
-  // Remove boneyard /* ... */ comments.
+
   t = t.replace(/\/\*[\s\S]*?\*\//g, '');
   const out: string[] = [];
   const lines = t.split('\n');
-  // Drop a leading title-page block (Key: Value lines before the first blank).
+
   let i = 0;
   if (/^[A-Za-z][\w ]*:/.test(lines[0] || '')) {
     while (i < lines.length && lines[i].trim() !== '') i++;
@@ -68,12 +61,12 @@ function preprocessFountain(text: string): string {
   for (; i < lines.length; i++) {
     let line = lines[i];
     const s = line.trim();
-    if (/^={3,}$/.test(s) || /^#{1,6}\s/.test(s) || s.startsWith('=')) continue; // sections/synopsis/page-break
-    if (s.startsWith('.') && !s.startsWith('..')) line = s.slice(1).toUpperCase();   // forced scene
-    else if (s.startsWith('!')) line = s.slice(1);                                   // forced action
-    else if (s.startsWith('@')) line = s.slice(1).toUpperCase();                     // forced character
-    else if (s.startsWith('>') && s.endsWith('<')) line = s.slice(1, -1).trim();     // centered
-    else if (s.startsWith('>')) line = s.slice(1).trim().toUpperCase();              // forced transition
+    if (/^={3,}$/.test(s) || /^#{1,6}\s/.test(s) || s.startsWith('=')) continue;
+    if (s.startsWith('.') && !s.startsWith('..')) line = s.slice(1).toUpperCase();
+    else if (s.startsWith('!')) line = s.slice(1);
+    else if (s.startsWith('@')) line = s.slice(1).toUpperCase();
+    else if (s.startsWith('>') && s.endsWith('<')) line = s.slice(1, -1).trim();
+    else if (s.startsWith('>')) line = s.slice(1).trim().toUpperCase();
     out.push(line);
   }
   return out.join('\n');

@@ -2,18 +2,9 @@ import { supabase } from './client';
 import type { Json } from './database.types';
 import { parseScript } from '@/lib/scriptos/parser';
 
-// The real script -> schedule -> budget breakdown hinge (build spec's
-// "single highest-leverage fix"): re-parse the script, persist each scene's
-// tagged production elements onto scenes.elements, then roll every category
-// up into budget_items — so tagging an element on a scene actually reaches
-// the stripboard and the budget, live, instead of rendering fake demo tags.
-
 export type ElementCategory = 'props' | 'wardrobe' | 'vehicles' | 'sfx' | 'vfx';
 export const ELEMENT_CATEGORIES: ElementCategory[] = ['props', 'wardrobe', 'vehicles', 'sfx', 'vfx'];
 
-// Per-item budget rate and the exact category-label convention already used
-// by the projects hub's one-shot budget suggestion, so a synced line item
-// reads the same whether it came from there or from here.
 const BUDGET_RATE: Record<ElementCategory, number> = { props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500 };
 const CATEGORY_LABEL: Record<ElementCategory, (n: number) => string> = {
   props: n => `Props (${n} items)`,
@@ -26,11 +17,6 @@ const CATEGORY_PREFIX: Record<ElementCategory, string> = { props: 'Props (', war
 
 export interface SceneElements { props?: string[]; wardrobe?: string[]; vehicles?: string[]; sfx?: string[]; vfx?: string[] }
 
-// Re-parse the project's latest non-empty script, match scenes to the
-// existing schedule by scene_number (same numbering importScenesFromScript
-// uses), and write each scene's tagged elements back to scenes.elements.
-// Returns the updated element map per scene id, for the caller to roll into
-// budget without a second round-trip.
 export async function syncSceneElementsFromScript(projectId: string, existingScenes: { id: string; scene_number: number }[]): Promise<Record<string, SceneElements>> {
   const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
   const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
@@ -45,7 +31,7 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   parsedScenes.forEach((s: any, i: number) => {
     const num = i + 1;
     const sceneId = byNumber.get(num);
-    if (!sceneId) return; // scene not imported into the schedule yet
+    if (!sceneId) return;
     const elements: SceneElements = s.elements || {};
     updates.push({ id: sceneId, elements });
     elementsById[sceneId] = elements;
@@ -56,9 +42,6 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   return elementsById;
 }
 
-// Aggregate unique element names per category across every scene, then
-// upsert one budget_items row per non-empty category — matching by category
-// prefix so a re-sync updates the existing row instead of duplicating it.
 export async function syncBudgetFromSceneElements(
   projectId: string,
   scenes: { elements?: SceneElements }[],

@@ -8,26 +8,6 @@ import type { CharacterStats } from '@/lib/scriptos/characters';
 
 const CHARACTER_COLOR = '#ffaa00';
 
-/* =========================================================================
-   ScriptOS editor — the tabbed right-sidebar panels.
-
-   Regrouped from the seven legacy tabs (tools / characters / revisions /
-   lint / stash / breakdown / audio) into four grouped tabs that mirror the
-   Cavern Suite redesign:
-
-     • Write    — the writing surface tools (quick insert, sprint, goal,
-                  view options, detected elements)
-     • Insights — collapsible Breakdown, Character Report and Validation
-                  sections (analysis that used to be three separate tabs)
-     • History  — Revisions and the Stash, side by side
-     • Audio    — project audio references (previously a dead tab)
-
-   The type scale was also lifted off the 7–9px floor to a legible 11–14px.
-   Still pure presentation: every piece of state, every handler and the
-   textarea ref are passed in as props. The only local state is the
-   ephemeral open/closed flags for the collapsible Insights/History sections.
-   ========================================================================= */
-
 export type RightPanelTab = 'write' | 'insights' | 'history' | 'audio';
 
 export interface EditorRightPanelsProps {
@@ -73,7 +53,6 @@ export interface EditorRightPanelsProps {
   playAudioRef?: (ref: any) => void;
 }
 
-/* A collapsible section header used inside the Insights and History tabs. */
 function SectionHeader({
   icon: Icon, label, count, color = 'var(--fg)', open, onToggle, right,
 }: {
@@ -121,7 +100,6 @@ export function EditorRightPanels({
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
-  // Ephemeral open/closed flags for the collapsible sections.
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
   const [lintOpen, setLintOpen] = useState(false);
@@ -140,7 +118,6 @@ export function EditorRightPanels({
 
   return (
     <>
-              {/* Panel Tabs — labelled pill group */}
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 {TABS.map(([key, Icon, label]) => (
                   <button key={key} onClick={() => setRightPanel(key)} style={{
@@ -160,10 +137,8 @@ export function EditorRightPanels({
               </div>
 
               <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 22, flex: 1, overflowY: 'auto' }}>
-                {/* ============================= WRITE ============================= */}
                 {rightPanel === 'write' && (
                   <>
-                    {/* ── CURRENT SCENE CONTEXT ── */}
                     {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {
                       const scene = scenesList[currentSceneIdx];
                       const { isInt, isExt, isDay, isNight } = getSceneType(scene);
@@ -205,7 +180,6 @@ export function EditorRightPanels({
                       );
                     })()}
 
-                    {/* Quick Insert */}
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
                         <Wand2 size={14} /> Quick Insert
@@ -216,7 +190,6 @@ export function EditorRightPanels({
                         ))}
                       </div>
                     </div>
-                    {/* Sprint Timer */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
@@ -224,13 +197,11 @@ export function EditorRightPanels({
                       </div>
                       <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
                     </div>
-                    {/* Goal Tracker */}
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}><span>Daily Goal</span><span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{wordCount} / {dailyGoal}</span></div>
                       <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#0099ff', transition: 'width 0.5s' }} /></div>
                     </div>
                     <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    {/* View Options */}
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -245,7 +216,6 @@ export function EditorRightPanels({
                       </div>
                     </div>
                     <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    {/* Detected Elements */}
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Tags size={14} /> Elements</div>
                       {Object.keys(elements).length === 0 ? (
@@ -266,15 +236,12 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {/* ============================ INSIGHTS =========================== */}
                 {rightPanel === 'insights' && (
                   <>
-                    {/* ── Breakdown section ── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader icon={ClipboardList} label="Breakdown" open={breakdownOpen} onToggle={() => setBreakdownOpen(o => !o)} />
                       {breakdownOpen && (
                         <>
-                          {/* Analytics summary */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, padding: '0 4px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Scenes</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{scenesList.length}</span></div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Characters</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{chars.length}</span></div>
@@ -283,7 +250,6 @@ export function EditorRightPanels({
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
                           </div>
-                          {/* Production element tags, derived from detected elements */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                             <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>Production elements per scene.</div>
                             <button className="link-btn" style={{ fontSize: 11 }} onClick={() => {
@@ -323,7 +289,6 @@ export function EditorRightPanels({
                       )}
                     </div>
 
-                    {/* ── Character Report section ── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader icon={BarChart3} label="Character Report" count={charStats.length || null} color={CHARACTER_COLOR} open={charsOpen} onToggle={() => setCharsOpen(o => !o)} />
                       {charsOpen && (
@@ -354,7 +319,6 @@ export function EditorRightPanels({
                       )}
                     </div>
 
-                    {/* ── Validation section ── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader
                         icon={AlertCircle}
@@ -403,10 +367,8 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {/* ============================ HISTORY ============================ */}
                 {rightPanel === 'history' && (
                   <>
-                    {/* ── Revisions section ── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader
                         icon={History}
@@ -453,7 +415,6 @@ export function EditorRightPanels({
                       )}
                     </div>
 
-                    {/* ── Stash section ── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader
                         icon={Bookmark}
@@ -509,7 +470,6 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {/* ============================= AUDIO ============================= */}
                 {rightPanel === 'audio' && (
                   <>
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Music size={14} /> Project Audio</div>

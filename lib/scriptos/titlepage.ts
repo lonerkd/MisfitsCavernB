@@ -1,19 +1,13 @@
-// ============================================================================
-// SCRIPTOS TITLE PAGE
-// Standard screenplay title page fields.
-// Persisted in Supabase (script_metadata.title_page) so every collaborator on a
-// script sees the same title page. localStorage is kept only as an offline
-// cache / optimistic fallback, mirroring lib/scriptos/revisions.ts.
-// ============================================================================
+
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
 
 export interface TitlePage {
   title: string;
-  credit: string;      // "Written by", "Screenplay by", etc.
+  credit: string;
   author: string;
-  source: string;       // "Based on..."
+  source: string;
   draftDate: string;
   contact: string;
   copyright: string;
@@ -37,8 +31,6 @@ export function getDefaultTitlePage(): TitlePage {
 
 const DEFAULT_TITLE_PAGE = getDefaultTitlePage();
 
-// Synchronous cache read for instant first paint; the async loader below
-// reconciles with the shared DB copy.
 export async function getTitlePage(scriptId: string): Promise<TitlePage> {
   if (typeof window === 'undefined') return DEFAULT_TITLE_PAGE;
   try {
@@ -65,7 +57,7 @@ export async function loadTitlePage(scriptId: string): Promise<TitlePage> {
       await setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
       return merged;
     }
-  } catch { /* offline — fall back to cache */ }
+  } catch {  }
   return cached;
 }
 
@@ -75,19 +67,18 @@ export async function saveTitlePage(scriptId: string, updates: Partial<TitlePage
     const merged = { ...current, ...updates };
 
     await setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('script_metadata').upsert(
       { script_id: scriptId, title_page: merged, updated_by: user?.id, updated_at: new Date().toISOString() },
       { onConflict: 'script_id' }
     );
     return { success: true };
-  } catch { /* offline — cache already written, will reconcile on next save */
+  } catch {
     return { success: true };
   }
 }
 
-// Generate Fountain title page block from TitlePage object
 export function titlePageToFountain(tp: TitlePage): string {
   const lines: string[] = [];
   if (tp.title) lines.push(`Title: ${tp.title}`);

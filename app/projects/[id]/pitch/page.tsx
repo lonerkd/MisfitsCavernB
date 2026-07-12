@@ -21,9 +21,6 @@ import {
   type PortfolioBlockType,
 } from '@/lib/supabase/portfolio';
 
-// A draggable library chip's payload — the snapshot to persist when it lands
-// on the board. Kept as a plain builder (no live reference) so the block is
-// self-contained for the anonymous share page.
 type LibPayload = Omit<Partial<PortfolioBlock>, 'block_type'> & { block_type: PortfolioBlockType };
 
 type LibTab = 'concept' | 'scene' | 'budget' | 'crew' | 'script' | 'custom';
@@ -62,7 +59,6 @@ export default function PitchBoardPage() {
   const [loading, setLoading] = useState(true);
   const [fatal, setFatal] = useState<string | null>(null);
 
-  // Library
   const [tab, setTab] = useState<LibTab>('concept');
   const [concepts, setConcepts] = useState<{ id: string; title: string | null; image_url: string }[]>([]);
   const [scenes, setScenes] = useState<{ id: string; scene_number: number | null; title: string | null; location: string | null; time_of_day: string | null }[]>([]);
@@ -70,15 +66,12 @@ export default function PitchBoardPage() {
   const [crew, setCrew] = useState<{ user_id: string; username?: string; role: string; avatar_url?: string }[]>([]);
   const [scriptScenes, setScriptScenes] = useState<{ heading: string; excerpt: string }[]>([]);
 
-  // Custom-block inputs
   const [customTitle, setCustomTitle] = useState('');
   const [customBody, setCustomBody] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
 
   const accent = project?.accent_color || '#8b5cf6';
 
-  // Drag state: a library chip in flight (ref, since dataTransfer only carries
-  // strings) and a board block being reordered (index).
   const libDragRef = useRef<LibPayload | null>(null);
   const [blockDragIdx, setBlockDragIdx] = useState<number | null>(null);
   const [dropIdx, setDropIdx] = useState<number | null>(null);
@@ -100,8 +93,6 @@ export default function PitchBoardPage() {
         if (!alive) return;
         setProject(proj);
 
-        // Find this project's portfolio row (or create one). One board per
-        // source project, owned by the current user.
         const { data: existing } = await supabase
           .from('portfolio_projects')
           .select('id, share_token')
@@ -128,7 +119,7 @@ export default function PitchBoardPage() {
         if (!alive) return;
 
         if (existingBlocks.length === 0) {
-          // Seed a cover from the project so a new board is never blank.
+
           const cover = await addPortfolioBlock({
             portfolio_project_id: pid,
             block_type: 'cover',
@@ -141,7 +132,6 @@ export default function PitchBoardPage() {
           setBlocks(existingBlocks);
         }
 
-        // Load library assets in parallel (all fine to fail individually).
         const [c, s, b, cr, scr] = await Promise.all([
           supabase.from('concept_assets').select('id, title, image_url').eq('project_id', projectId).order('created_at'),
           supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).order('scene_number'),
@@ -163,7 +153,7 @@ export default function PitchBoardPage() {
               heading: sc.heading,
               excerpt: lines.slice(sc.startIndex, sc.endIndex + 1).map((l: any) => l.text).join('\n').trim().slice(0, 1200),
             })));
-          } catch { /* parser is best-effort */ }
+          } catch {  }
         }
       } catch (e: any) {
         if (alive) setFatal(e.message || 'Failed to load the pitch board.');
@@ -256,7 +246,6 @@ export default function PitchBoardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-      {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 50, height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -284,7 +273,6 @@ export default function PitchBoardPage() {
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) 1fr', gap: 0, alignItems: 'stretch', minHeight: 'calc(100vh - 60px)' }}>
-        {/* ── Asset library ── */}
         <aside style={{ borderRight: '1px solid rgba(255,255,255,0.05)', padding: 16, overflowY: 'auto' }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 12 }}>ASSET LIBRARY</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
@@ -390,7 +378,6 @@ export default function PitchBoardPage() {
           )}
         </aside>
 
-        {/* ── Board canvas ── */}
         <main
           onDragOver={e => { if (libDragRef.current) { e.preventDefault(); setCanvasHot(true); } }}
           onDragLeave={() => setCanvasHot(false)}
@@ -549,7 +536,7 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
           )}
         </div>
       );
-    default: // cover, text
+    default:
       return (
         <div>
           {block.title && <div style={previewTitle}>{block.title}</div>}

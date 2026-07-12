@@ -14,10 +14,6 @@ import type { Profile } from '@/lib/supabase/profiles';
 
 const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor'];
 
-// One normalized shape so the same card renders both the global talent
-// directory (a `profiles` row) and a project's own crew (a `project_crew`
-// row joined to its profile). Keeps a single card definition instead of two
-// that could drift.
 type DisplayMember = {
   key: string;
   linkId: string;
@@ -34,9 +30,7 @@ type DisplayMember = {
 
 export default function CrewPage() {
   const { activeProject } = useProject();
-  // 'all' = global talent directory (default, never regresses); 'project' =
-  // just the active project's crew. The project option only surfaces when a
-  // project is actually active.
+
   const [mode, setMode] = useState<'all' | 'project'>('all');
 
   const [crew, setCrew] = useState<Profile[]>([]);
@@ -54,13 +48,10 @@ export default function CrewPage() {
     supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
   }, []);
 
-  // If the active project disappears (e.g. cleared), fall back to global so we
-  // never sit in an empty project mode with no way to see anyone.
   useEffect(() => {
     if (mode === 'project' && !activeProject) setMode('all');
   }, [mode, activeProject]);
 
-  // Debounce search to avoid hammering Supabase on every keystroke
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(handler);
@@ -165,8 +156,6 @@ export default function CrewPage() {
       </header>
 
       <div style={{ marginTop: 60, padding: 24, maxWidth: 1100, margin: '60px auto 0' }}>
-        {/* Scope toggle — All Talent (global) vs this project's crew. Only
-            shown when there's an active project to scope to. */}
         {activeProject && (
           <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
             {([
@@ -190,7 +179,6 @@ export default function CrewPage() {
           </div>
         )}
 
-        {/* Search + Filters — only meaningful for the global directory */}
         {mode === 'all' && (
           <>
             <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>

@@ -18,9 +18,6 @@ export async function signUp(email: string, password: string, username: string) 
 
   if (error) throw error;
 
-  // A DB trigger (handle_new_user) creates the profile server-side on signup,
-  // so it always exists. This upsert is a defensive fallback that also ensures
-  // the chosen username is applied; ignoreDuplicates avoids racing the trigger.
   if (data.user) {
     await supabase.from('profiles').upsert(
       { id: data.user.id, username, status: 'OPEN' },

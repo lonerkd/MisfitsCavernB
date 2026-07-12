@@ -8,12 +8,9 @@ import { supabase } from '@/lib/supabase/client';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 
-// Device-level preferences live in localStorage (they describe this browser,
-// not the account). Notification prefs are account-level and live on the
-// profile (see getNotificationPrefs) so they sync across devices.
 const PREF_KEYS = {
-  cursor: 'mc_custom_cursor',      // 'on' | 'off'
-  motion: 'mc_reduce_motion',      // 'on' | 'off'
+  cursor: 'mc_custom_cursor',
+  motion: 'mc_reduce_motion',
 } as const;
 
 const getPref = (k: string, dflt: boolean) => {
@@ -85,12 +82,10 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
-  // Account form
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
 
-  // Preferences (device-level)
   const [cursor, setCursor] = useState(true);
   const [motion, setMotion] = useState(false);
   const [theme, setTheme] = useState('default');
@@ -99,8 +94,7 @@ export default function SettingsPage() {
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
   const [leakCheck, setLeakCheck] = useState(true);
-  
-  // Custom theme colors
+
   const [customBg, setCustomBg] = useState('#040710');
   const [customAccent, setCustomAccent] = useState('#d7340b');
 
@@ -126,7 +120,6 @@ export default function SettingsPage() {
     } catch {}
   }, [router]);
 
-  // Persist a single notification preference to the profile (cross-device).
   const setNotifyPref = (key: 'replies' | 'jobs' | 'product', v: boolean) => {
     if (key === 'replies') setNotifyReplies(v);
     if (key === 'jobs') setNotifyJobs(v);
@@ -199,7 +192,6 @@ export default function SettingsPage() {
     router.replace('/auth');
   };
 
-  // GDPR-friendly: export everything this account owns as a JSON file.
   const exportData = async () => {
     if (!user) return;
     setBusy('export');
@@ -295,7 +287,7 @@ export default function SettingsPage() {
                 <option value="vampire" style={{ background: '#111', color: '#fff' }}>Vampire (Crimson / Violet)</option>
                 <option value="custom" style={{ background: '#111', color: '#fff' }}>Custom Hex Theme...</option>
               </select>
-              
+
               {theme === 'custom' && (
                 <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -305,7 +297,7 @@ export default function SettingsPage() {
                       <input type="text" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
                     </div>
                   </div>
-                  
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Accent Core</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

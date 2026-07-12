@@ -62,7 +62,6 @@ export default function Navigation() {
           transition: 'padding 0.4s, background 0.4s, border-color 0.4s',
         }}
       >
-        {/* Wordmark */}
         <Link
           href="/"
           style={{
@@ -80,9 +79,7 @@ export default function Navigation() {
           MC
         </Link>
 
-        {/* Desktop — pill nav group */}
         <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {/* Pill container */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -145,10 +142,8 @@ export default function Navigation() {
             })}
           </div>
 
-          {/* Notification bell — only meaningful once signed in */}
           {!isLoading && !isGuest && <NotificationBell />}
 
-          {/* Auth — reflects real session state instead of always saying "Sign In" */}
           {!isLoading && !isGuest ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
               <Link
@@ -215,7 +210,6 @@ export default function Navigation() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
         <button
           onClick={() => setOpen(!open)}
           className="show-mobile"
@@ -225,7 +219,6 @@ export default function Navigation() {
         </button>
       </motion.nav>
 
-      {/* Mobile slide-in menu */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -333,7 +326,6 @@ export default function Navigation() {
         )}
       </AnimatePresence>
 
-      {/* Mobile backdrop */}
       <AnimatePresence>
         {open && (
           <motion.div

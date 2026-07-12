@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-// Regression tests for Bug #3: Home Page Crash
-// Root page (/) hits an error boundary ("THIS PAGE HIT AN UNEXPECTED ERROR")
-// caused by a postgres_changes realtime subscription conflict on the
-// notifications channel. See QA Session Log entry dated 7/6/2026.
-
 test.describe('Home Page Crash', () => {
     test('root page loads without hitting the error boundary', async ({ page }) => {
           await page.goto('/');

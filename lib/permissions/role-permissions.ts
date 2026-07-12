@@ -1,4 +1,4 @@
-// Role-based permission definitions
+
 
 import { UserRole, Permission } from '@/lib/context/types';
 
@@ -66,7 +66,6 @@ export function hasAllPermissions(role: UserRole, permissions: Permission[]): bo
   return permissions.every(p => rolePermissions.includes(p));
 }
 
-// Project-level role permissions
 const PROJECT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
   owner: [
     'view_site',
@@ -111,10 +110,8 @@ export function hasProjectPermission(projectRole: string, permission: Permission
   return getProjectPermissions(projectRole).includes(permission);
 }
 
-// Determine user's global role based on profile
 export function determineUserRole(profile: any): UserRole {
   if (profile?.is_admin) return 'admin';
-  // For now, all registered users are project creators
-  // This can be refined based on additional criteria
+
   return 'project_creator';
 }

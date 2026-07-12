@@ -101,7 +101,6 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
         }}
       >
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase', marginBottom: 6 }}>
@@ -116,9 +115,6 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           </button>
         </div>
 
-        {/* Which project this posting belongs to — matches whatever's
-            selected in the taskbar's switcher, so it's never a silent
-            orphan job disconnected from the project it's actually for. */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
           padding: '8px 12px', borderRadius: 8,
@@ -132,7 +128,6 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Role selector */}
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -160,7 +155,6 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             </div>
           </div>
 
-          {/* Title */}
           <Input
             label="Position Title"
             value={form.title}
@@ -168,7 +162,6 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             placeholder="e.g. Lead Editor for short film"
           />
 
-          {/* Description */}
           <Textarea
             label="Brief"
             value={form.description}
@@ -177,7 +170,6 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             rows={3}
           />
 
-          {/* Rate */}
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
@@ -243,7 +235,6 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
     >
-      {/* Corner glow */}
       <div style={{
         position: 'absolute', top: 0, left: 0, width: 100, height: 100,
         background: `radial-gradient(circle at top left, ${color}12 0%, transparent 70%)`,
@@ -252,7 +243,6 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Role + project */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <div style={{
               padding: '4px 10px', borderRadius: 9999,
@@ -270,12 +260,10 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
             )}
           </div>
 
-          {/* Title */}
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 2, marginBottom: 8, lineHeight: 1.2 }}>
             {job.title}
           </div>
 
-          {/* Description */}
           {job.description && (
             <div style={{
               fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.65,
@@ -288,7 +276,6 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
             </div>
           )}
 
-          {/* Footer */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {job.rate && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 10, color }}>
@@ -301,7 +288,6 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           </div>
         </div>
 
-        {/* Apply CTA */}
         <motion.button
           onClick={() => onApply(job.id)}
           animate={{ opacity: hovered ? 1 : 0.5, scale: hovered ? 1 : 0.97 }}
@@ -415,10 +401,7 @@ export default function JobsPage() {
   const [showPost, setShowPost] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [tab, setTab] = useState<'open' | 'mine'>('open');
-  // ?title=&role= let another page (e.g. Studio's Casting Board "Post to
-  // Jobs" for a specific character) deep-link straight into a prefilled
-  // Post Position modal instead of dumping the user on this list with the
-  // casting context silently dropped.
+
   const prefillTitle = searchParams.get('title') || '';
   const prefillRole = searchParams.get('role') || '';
   useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
@@ -497,7 +480,6 @@ export default function JobsPage() {
     return matchSearch && matchRole;
   });
 
-  // Publish the jobs board's live state to the Pill's context capsule.
   usePillStage(
     {
       module: 'portfolio',
@@ -524,7 +506,6 @@ export default function JobsPage() {
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -612,7 +593,6 @@ export default function JobsPage() {
 
       <div style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
 
-        {/* Left sidebar — role filter */}
         <div style={{
           width: 220, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.04)',
           padding: '32px 20px', position: 'sticky', top: 58,
@@ -671,12 +651,10 @@ export default function JobsPage() {
           })}
         </div>
 
-        {/* Main content */}
         <div style={{ flex: 1, padding: '32px 32px 100px', maxWidth: 800 }}>
 
           {tab === 'open' && (
             <>
-              {/* Search */}
               <div style={{ position: 'relative', marginBottom: 28 }}>
                 <Search size={13} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
@@ -779,7 +757,6 @@ export default function JobsPage() {
         </div>
       </div>
 
-      {/* Post modal */}
       <AnimatePresence>
         {showPost && user && (
           <PostModal

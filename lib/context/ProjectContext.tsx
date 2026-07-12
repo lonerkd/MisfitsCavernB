@@ -97,10 +97,6 @@ export interface Project {
   festival_submissions?: FestivalSubmission[];
 }
 
-// The production-phase model shared by the projects list and hub pages.
-// Both files independently implemented the identical status->phase mapping
-// before this consolidation (one as a named function, one as an inline
-// ternary chain) — same logic, two copies that could silently drift.
 export type Phase = 'development' | 'pre-production' | 'production' | 'post-production' | 'delivery';
 
 export function mapStatusToPhase(status?: string): Phase {
@@ -118,13 +114,6 @@ export function mapStatusToPhase(status?: string): Phase {
   }
 }
 
-// Per-type relabeling (+ optional stage-skipping) layered on top of the same
-// 5 canonical phases above — the persisted `status` column and Phase model
-// are never touched, only what's *displayed* differs, so this has zero
-// migration risk against existing project data. Used by the single-project
-// hub's phase rail, where exactly one type is in scope; the cross-project
-// Kanban board on the projects list intentionally keeps the generic labels
-// since it shows every type side by side in shared columns.
 const ALL_PHASES: { id: Phase; label: string; abbr: string }[] = [
   { id: 'development',     label: 'Development',     abbr: 'DEV'  },
   { id: 'pre-production',  label: 'Pre-Production',  abbr: 'PRE'  },
@@ -157,9 +146,6 @@ const TYPE_PHASE_LABELS: Record<string, Partial<Record<Phase, { label: string; a
   },
 };
 
-// Which canonical phases a type's pipeline visually skips (still valid if
-// `status` is ever set to one — the rail just clamps to the nearest earlier
-// visible stage rather than showing a pip for it).
 const TYPE_SKIPPED_PHASES: Record<string, Phase[]> = {
   'Music Video': ['pre-production'],
   Podcast: ['pre-production'],
@@ -179,8 +165,7 @@ export function phaseIndexForType(projectType: string | null | undefined, phase:
   const visibleIds = phases.map(p => p.id);
   const idx = visibleIds.indexOf(phase);
   if (idx !== -1) return idx;
-  // This type skips `phase` visually — clamp to the nearest earlier stage
-  // it does show, so an edge-case status never produces a missing pip.
+
   const allIds = ALL_PHASES.map(p => p.id);
   for (let i = allIds.indexOf(phase) - 1; i >= 0; i--) {
     const j = visibleIds.indexOf(allIds[i]);
@@ -208,8 +193,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Persist the active project so the whole suite stays on the same context
-  // across pages and reloads.
   const setActiveProject = useCallback((project: Project | null) => {
     setActiveProjectState(project);
     if (typeof window !== 'undefined') {
@@ -247,7 +230,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         concept_assets: conceptRes.data || [],
         scenes: scenesRes.data || [],
         campaigns: campaignsRes.data || [],
-        // DB rows use wide/nullable column types; Project narrows them for the app
+
       } as unknown as Project;
     }
     return null;
@@ -261,18 +244,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [setActiveProject]);
 
-  // Read inside the realtime callbacks below via a ref instead of the
-  // `activeProject` state directly — the effect that owns the subscription
-  // intentionally never re-runs once mounted (see why below), so a plain
-  // closure over `activeProject` would always see its value from the first
-  // render, not the current one.
   const activeProjectRef = useRef(activeProject);
   useEffect(() => { activeProjectRef.current = activeProject; }, [activeProject]);
 
-  // Load the initial project list once per session, not on every
-  // activeProject change (setting the active project below used to be a
-  // dependency of this same effect, which re-ran it every time — redundant
-  // at best).
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -297,16 +271,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  // Realtime sync — set up exactly once. The previous version rebuilt this
-  // subscription on every `activeProject` change while reusing the same
-  // static channel name ('project-changes'); activeProject changes at least
-  // once immediately after the initial load (null -> the loaded project),
-  // so on every page load a second channel with the identical topic name
-  // was opened while the first was still tearing down asynchronously —
-  // Supabase Realtime rejects that as a duplicate join, throwing during a
-  // render/effect phase where nothing caught it, which is what was tripping
-  // the app-wide error boundary on the home page (and anywhere else this
-  // provider mounts, i.e. everywhere).
   useEffect(() => {
     const projectSubscription: RealtimeChannel = supabase
       .channel('project-changes')
@@ -339,11 +303,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const { error } = await supabase
       .from('projects')
-      // Project narrows Json columns (settings, festival_submissions) to app
-      // shapes; widen back to the generated row type for the write
+
       .update(updates as unknown as Database['public']['Tables']['projects']['Update'])
       .eq('id', id);
-    
+
     if (error) toast('Failed to update project. Please try again.', 'error');
   };
 

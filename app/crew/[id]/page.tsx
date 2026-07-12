@@ -72,13 +72,9 @@ export default function CrewMemberPage() {
 
         setProjects((projectData as PortfolioProject[]) || []);
 
-        // What this person is cast as, across every project they're crew on —
-        // only visible to viewers who are themselves creator/crew on at least
-        // one shared project (RLS-scoped), so this can quietly return empty
-        // for a stranger browsing the directory rather than erroring.
         getCastingsForUser(id).then(setCastings).catch(() => setCastings([]));
       } catch (err) {
-        // Network failure — surface not-found instead of an infinite spinner
+
         console.error('Failed to load crew member:', err);
         setNotFound(true);
       } finally {
@@ -163,7 +159,6 @@ export default function CrewMemberPage() {
         {/* ── Hero Block ───────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', marginBottom: 56 }}>
 
-          {/* Avatar */}
           <div style={{ flexShrink: 0 }}>
             {profile.avatar_url ? (
               <Image
@@ -185,10 +180,8 @@ export default function CrewMemberPage() {
             )}
           </div>
 
-          {/* Identity */}
           <div style={{ flex: 1, minWidth: 0 }}>
 
-            {/* Username */}
             <h1 style={{
               fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 6vw, 3.6rem)',
               letterSpacing: 4, margin: '0 0 10px', lineHeight: 1, textTransform: 'uppercase'
@@ -196,7 +189,6 @@ export default function CrewMemberPage() {
               {profile.username}
             </h1>
 
-            {/* Role + Status row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               {profile.role && (
                 <span style={{
@@ -222,7 +214,6 @@ export default function CrewMemberPage() {
               )}
             </div>
 
-            {/* Meta row */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
               {profile.location && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.45 }}>
@@ -320,7 +311,6 @@ export default function CrewMemberPage() {
                     onMouseEnter={() => setHoveredCard(project.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
-                    {/* Project thumbnail strip */}
                     {project.portfolio_media.length > 0 && project.portfolio_media[0].thumbnail_url && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9', background: '#111',
@@ -345,7 +335,6 @@ export default function CrewMemberPage() {
                       </div>
                     )}
 
-                    {/* No media placeholder */}
                     {project.portfolio_media.length === 0 && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9',

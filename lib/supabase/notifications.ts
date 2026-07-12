@@ -11,10 +11,6 @@ export interface Notification {
   created_at: string;
 }
 
-// Account-level preferences stored on profiles.notification_prefs so they sync
-// across devices (was previously localStorage-only). Includes notification
-// toggles plus security prefs like leaked-password protection. A muted type
-// is never surfaced client-side. Defaults: replies/jobs on, product off.
 export interface NotificationPrefs { replies: boolean; jobs: boolean; product: boolean; leak_check: boolean }
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = { replies: true, jobs: true, product: false, leak_check: true };
 
@@ -40,8 +36,6 @@ export async function saveNotificationPrefs(userId: string, patch: Partial<Notif
   return next;
 }
 
-// Create a notification for a recipient. No-ops when the recipient is the
-// actor themselves (you don't notify yourself) or missing.
 export async function notify(userId: string | null | undefined, n: { type: string; title: string; body?: string; link?: string }, actorId?: string | null) {
   if (!userId || (actorId && actorId === userId)) return;
   await supabase.from('notifications').insert({

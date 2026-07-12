@@ -24,8 +24,6 @@ interface Field {
   show?: boolean;
 }
 
-
-
 export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -44,7 +42,6 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
 
-    // Client-side validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!form.email.trim()) {
       setError('Please enter your email address.');
@@ -76,19 +73,15 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      // A stalled connection or a Supabase-side incident should never leave
-      // this button stuck on "One moment..." forever with no way out.
+
       if (mode === 'signin') {
         await withTimeout(signIn(form.email, form.password), 30000, 'Sign-in timed out.');
       } else {
         await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
       }
-      // Session is persisted by the Supabase client (persistSession);
-      // pages read it via supabase.auth.getUser().
 
       toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
-      // New users land on the projects board (first-run onboarding); returning
-      // users go to their projects too — the suite's natural home.
+
       setTimeout(() => router.push('/projects'), 600);
     } catch (err: any) {
       const code = err.code || '';
@@ -127,7 +120,6 @@ export default function AuthPage() {
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
       <GrainOverlay />
 
-      {/* Background orb */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -135,7 +127,6 @@ export default function AuthPage() {
         background: 'radial-gradient(ellipse at 50% 40%, rgba(215, 52, 11,0.05) 0%, transparent 60%)',
       }} />
 
-      {/* Back to home */}
       <motion.div
         initial={{ opacity: 0, x: -16 }}
         animate={{ opacity: 1, x: 0 }}
@@ -163,7 +154,6 @@ export default function AuthPage() {
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 2 }}>
 
-        {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -20, filter: 'blur(6px)' }}
           animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -184,7 +174,6 @@ export default function AuthPage() {
           </p>
         </motion.div>
 
-        {/* Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -197,7 +186,6 @@ export default function AuthPage() {
             borderRadius: 'var(--radius-sm)',
           }}
         >
-          {/* Mode toggle */}
           <div style={{
             display: 'flex',
             marginBottom: 32,
@@ -265,7 +253,6 @@ export default function AuthPage() {
               onChange={handleChange}
             />
 
-            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -289,7 +276,6 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            {/* Submit */}
             <Button
               type="submit"
               fullWidth
@@ -300,7 +286,6 @@ export default function AuthPage() {
             </Button>
           </form>
 
-          {/* Divider */}
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--fg-subtle)' }}>
@@ -312,12 +297,7 @@ export default function AuthPage() {
           <button
             type="button"
             onClick={async () => {
-              // signInWithOAuth's result was previously discarded entirely —
-              // if Discord isn't enabled/configured as an OAuth provider in
-              // Supabase's dashboard, or the redirect URI doesn't match what's
-              // registered in Discord's own application settings, this call
-              // fails immediately with zero visible feedback: no redirect, no
-              // error, the button just appears to do nothing.
+
               const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'discord',
                 options: { redirectTo: `${window.location.origin}/auth/callback` }

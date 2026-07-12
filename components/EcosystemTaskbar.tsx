@@ -49,7 +49,6 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         zIndex: 10,
       }}
     >
-      {/* Header */}
       <div style={{
         fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5,
         textTransform: 'uppercase', color: 'rgba(224, 221, 174,0.3)',
@@ -71,7 +70,6 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         </Link>
       </div>
 
-      {/* Project list — real, sets the global active project */}
       {projects.length === 0 && (
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(224, 221, 174,0.3)', padding: '10px 8px', letterSpacing: 1 }}>
           No projects yet.
@@ -144,11 +142,6 @@ function TransientView({ label, tone }: { label: string; tone: 'default' | 'succ
   );
 }
 
-// ── Context capsule — the live module context, budded off the dock like a
-// Dynamic-Island activity. Collapsed it's a glanceable beacon + lead read-out;
-// expanded (on hover, an in-page zone, or the armed keyboard layer) it blooms
-// into the full strip of live fields, real toggles and real actions. Every
-// control here is wired — a toggle flips genuine page state, never decoration.
 function ContextCapsule({
   descriptor, accent, expanded, zoneChain, kbActive, focusedId,
 }: {
@@ -166,7 +159,6 @@ function ContextCapsule({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, pointerEvents: 'auto' }}>
-      {/* Depth cues — the hovered nesting path, shallow → deep. */}
       <AnimatePresence>
         {showBreadcrumb && (
           <motion.div
@@ -210,7 +202,6 @@ function ContextCapsule({
           boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 22px ${accent}20, inset 0 1px 0 rgba(255,255,255,0.04)`,
         }}
       >
-        {/* Live beacon — the "active" pulse */}
         <motion.span
           layout
           animate={{ scale: [1, 1.3, 1], opacity: [0.65, 1, 0.65] }}
@@ -221,7 +212,6 @@ function ContextCapsule({
           }}
         />
 
-        {/* Collapsed: a single glanceable read-out keeps the capsule tight */}
         {!expanded && lead && (
           <motion.span layout style={{
             fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
@@ -231,7 +221,6 @@ function ContextCapsule({
           </motion.span>
         )}
 
-        {/* Expanded: title + the full strip blooms open */}
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -340,12 +329,7 @@ function ContextCapsule({
 }
 
 // ── App icon carousel ───────────────────────────────────────────────────────
-// The department-icon row shrinks (when the context pill to its right
-// expands and needs the room) into a narrow, infinitely-looping scroll strip
-// instead of relayouting/shoving the rest of the dock around. The icon list
-// is tripled and the scroll position is silently rewound by one set-width
-// whenever it strays into an outer copy, so there's no hard stop scrolling
-// in either direction — like a fidget spinner, not a bounded carousel.
+
 const APP_ICON = 46;
 const APP_GAP = 2;
 
@@ -415,8 +399,6 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   const setWidth = apps.length * (APP_ICON + APP_GAP);
   const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
 
-  // Start scrolled into the middle copy so a full set is available to
-  // scroll into in either direction before a loop-reset needs to fire.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
   }, [setWidth]);
@@ -438,10 +420,6 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
     normalize();
   };
 
-  // Desktop mouse drag-to-scroll (touch already scrolls natively). A click
-  // that ends without meaningfully moving still navigates normally; one that
-  // dragged past a few px is treated as a swipe, not a click on whatever
-  // icon happens to be under the pointer when it's released.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -486,9 +464,6 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
         })}
       </div>
 
-      {/* Edge fade masks — the strip loops infinitely both ways, so both
-          edges always have more to scroll to; the fade reads as "more here"
-          instead of an abrupt clip. */}
       <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 14, background: 'linear-gradient(to right, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 14, background: 'linear-gradient(to left, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
 
@@ -503,8 +478,7 @@ export default function EcosystemTaskbar() {
   const { activeProject } = useProject();
   const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
   const activeColor = activeProject?.accent_color || '#d7340b';
-  // Per-project module toggles hide a dock icon entirely when its department
-  // is switched off for the active project — 'home' has no toggle of its own.
+
   const modules = getProjectModules(activeProject?.settings);
   const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -512,11 +486,6 @@ export default function EcosystemTaskbar() {
   const [contextExpanded, setContextExpanded] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
-  // Dock can shrink to a small handle so it doesn't sit as a full bar across
-  // the bottom of every page. Collapsed state persists across pages/reloads;
-  // the toggle lives inside the same layout-animated flex row as the context
-  // capsule, so collapsing/expanding the dock's width also slides the capsule
-  // over in sync (framer-motion's `layout` prop on both, no extra wiring).
   const [dockCollapsed, setDockCollapsed] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('mc_taskbar_collapsed') === '1') setDockCollapsed(true);
@@ -529,8 +498,6 @@ export default function EcosystemTaskbar() {
     });
   };
 
-  // Flatten the active descriptor's toggles + actions into one orderable list
-  // — this is the order the hotkeys and Tab-focus ring walk through.
   const hotkeyItems = React.useMemo(() => {
     const toggles = activeDescriptor?.toggles ?? [];
     const actions = activeDescriptor?.actions ?? [];
@@ -543,11 +510,8 @@ export default function EcosystemTaskbar() {
   useEffect(() => { if (!kbActive) setKbFocusIndex(-1); }, [kbActive]);
   useEffect(() => { setKbFocusIndex(-1); }, [hotkeyItems.length]);
 
-  // Close switcher and drop any clicked-and-pinned zone on route change —
-  // a pin from the previous page shouldn't keep steering hotkeys on the new one.
   useEffect(() => { setProjectsOpen(false); clearPin(); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close on outside click
   useEffect(() => {
     if (!projectsOpen) return;
     const handler = (e: MouseEvent) => {
@@ -558,9 +522,6 @@ export default function EcosystemTaskbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [projectsOpen]);
 
-  // While Caps Lock is held: digits/QWERTY fire the matching toggle/action;
-  // Tab/Shift+Tab walk a focus ring (Enter activates); arrows switch app
-  // (left/right) or open/close the context capsule (up/down).
   useEffect(() => {
     if (!kbActive) return;
     const handler = (e: KeyboardEvent) => {
@@ -586,7 +547,7 @@ export default function EcosystemTaskbar() {
         });
         return;
       }
-      
+
       if (e.key === '[' || e.key === 'ArrowLeft') {
         if (!hotkeyItems.length) return;
         e.preventDefault();
@@ -612,12 +573,9 @@ export default function EcosystemTaskbar() {
 
   if (pathname === '/login' || pathname === '/auth') return null;
 
-  // Determine active module color for contextual glow
   const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
   const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#d7340b';
-  // The context capsule shows whenever a page publishes a descriptor (or a
-  // transient activity is firing). It blooms open on hover, an in-page zone
-  // hover, or when the keyboard-hotkey layer is armed.
+
   const showContext = !!activeDescriptor || !!transient;
   const contextOpen = contextExpanded || zoneActive || kbActive;
   const focusedId = kbFocusIndex >= 0 ? hotkeyItems[kbFocusIndex]?.id ?? null : null;
@@ -634,8 +592,6 @@ export default function EcosystemTaskbar() {
         pointerEvents: 'none',
       }}
     >
-      {/* The row binds the dock and its context capsule into one hover region,
-          so crossing the gap between them never collapses the context. */}
       <motion.div
         layout
         initial={{ y: 100, opacity: 0 }}
@@ -643,7 +599,6 @@ export default function EcosystemTaskbar() {
         transition={{ layout: MORPH, default: { delay: 0.4, duration: 0.9, ease: [0.16, 1, 0.3, 1] } }}
         style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'none' }}
       >
-        {/* ── Main dock — main's proven, fully-clickable taskbar, unchanged ── */}
         <motion.div
           layout
           className="mc-taskbar"
@@ -663,9 +618,6 @@ export default function EcosystemTaskbar() {
           }}
           onMouseLeave={() => setHoveredId(null)}
         >
-          {/* Collapse handle — shrinks the dock to a small pill so it stops
-              covering page content underneath; the active module's color
-              stays visible as a dot even when collapsed. */}
           <motion.button
             onClick={toggleDock}
             aria-label={dockCollapsed ? 'Expand taskbar' : 'Collapse taskbar'}
@@ -694,7 +646,6 @@ export default function EcosystemTaskbar() {
             transition={MORPH}
             style={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}
           >
-          {/* Command palette trigger */}
           <div style={{ position: 'relative' }}>
             <motion.button
               onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))}
@@ -724,20 +675,15 @@ export default function EcosystemTaskbar() {
             </AnimatePresence>
           </div>
 
-          {/* Divider */}
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
-          {/* App icons — shrinks into an infinite-loop scroll carousel while
-              the context pill is expanded, instead of relayouting the dock. */}
           <AppIconCarousel apps={visibleApps} pathname={pathname} hoveredId={hoveredId} setHoveredId={setHoveredId} shrunk={contextOpen} />
 
-          {/* Divider */}
           <div style={{
             width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
             margin: '0 4px', flexShrink: 0,
           }} />
 
-          {/* Project switcher button */}
           <div style={{ position: 'relative' }}>
             <motion.button
               onClick={() => setProjectsOpen(v => !v)}
@@ -761,7 +707,6 @@ export default function EcosystemTaskbar() {
                 transition: 'background 0.25s',
               }}
             >
-              {/* Active project color swatch */}
               {activeProject && (
                 <div style={{
                   position: 'absolute',
@@ -792,7 +737,6 @@ export default function EcosystemTaskbar() {
               </motion.div>
             </motion.button>
 
-            {/* Switcher tooltip */}
             <AnimatePresence>
               {hoveredId === 'projects' && !projectsOpen && (
                 <motion.div
@@ -833,7 +777,6 @@ export default function EcosystemTaskbar() {
               )}
             </AnimatePresence>
 
-            {/* Project switcher panel */}
             <AnimatePresence>
               {projectsOpen && (
                 <ProjectSwitcher onClose={() => setProjectsOpen(false)} />
@@ -841,18 +784,14 @@ export default function EcosystemTaskbar() {
             </AnimatePresence>
           </div>
 
-          {/* Divider */}
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
-          {/* Notifications */}
           <NotificationBell />
 
-          {/* Audio Engine */}
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
             <GlobalAudioWidget />
           </div>
 
-          {/* Account: profile + settings */}
           {([
             { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
             { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
@@ -903,9 +842,6 @@ export default function EcosystemTaskbar() {
           </AnimatePresence>
         </motion.div>
 
-        {/* ── Context capsule: the live module context, budded off the dock.
-            Shows a transient activity ("Saved") or the page's live descriptor
-            (fields/toggles/actions published via usePillStage / usePillZone). ── */}
         <AnimatePresence>
           {showContext && (
             <motion.div

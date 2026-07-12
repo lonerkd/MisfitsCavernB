@@ -12,12 +12,6 @@ import { getChannelMessagesByUuid, sendChannelMessage, subscribeToChannelUuid, t
 
 const LAST_SEEN_KEY = 'mc_lounge_last_seen';
 
-// The Lounge, docked beside whatever the user is actually working on instead
-// of demanding a full page navigation. Community + the active project's
-// channels stay one glance away; opening the panel reads like a slide-over,
-// not a context switch. Full thread/member management still lives on the
-// dedicated /lounge page — this dock covers the "read and reply without
-// leaving" case the redesign asks for, with a link out for everything else.
 export default function LoungeDock() {
   const pathname = usePathname();
   const { activeProject } = useProject();
@@ -48,9 +42,6 @@ export default function LoungeDock() {
 
   useEffect(() => { loadChannels(); }, [loadChannels]);
 
-  // Lightweight unread signal: any channel message newer than the last time
-  // the dock was opened. No new schema — just a localStorage watermark, in
-  // keeping with "notification rail" rather than a full read-state model.
   useEffect(() => {
     if (!userId || channels.length === 0) return;
     let cancelled = false;
@@ -93,7 +84,7 @@ export default function LoungeDock() {
     if (!draft.trim() || !userId || !activeChannel) return;
     const text = draft.trim();
     setDraft('');
-    try { await sendChannelMessage(userId, text, activeChannel.id); } catch { /* dock stays optimistic-free; full Lounge surfaces errors */ }
+    try { await sendChannelMessage(userId, text, activeChannel.id); } catch {  }
   };
 
   if (!userId || pathname === '/auth' || pathname === '/login' || pathname === '/lounge') return null;
@@ -127,7 +118,6 @@ export default function LoungeDock() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 380, maxWidth: '92vw', height: 460, maxHeight: '70vh', background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20, display: 'flex' }}
           >
-            {/* Channel rail */}
             <div style={{ width: 96, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.06)', overflowY: 'auto', padding: '10px 6px' }}>
               {activeProject && (
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', padding: '2px 4px', marginBottom: 4 }}>{activeProject.title}</div>
@@ -147,7 +137,6 @@ export default function LoungeDock() {
               )}
             </div>
 
-            {/* Active channel */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

@@ -15,7 +15,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const [isFocused, setIsFocused] = useState(false);
     const [hasValue, setHasValue] = useState(Boolean(props.value || props.defaultValue));
     const [charCount, setCharCount] = useState(String(props.value || props.defaultValue || '').length);
-    
+
     const internalRef = useRef<HTMLTextAreaElement>(null);
     const ref = (forwardedRef as any) || internalRef;
 
@@ -33,16 +33,15 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setHasValue(Boolean(e.target.value));
       setCharCount(e.target.value.length);
-      
+
       if (autoResize && ref.current) {
         ref.current.style.height = 'auto';
         ref.current.style.height = `${ref.current.scrollHeight}px`;
       }
-      
+
       if (onChange) onChange(e);
     };
 
-    // Initial resize if needed
     useEffect(() => {
       if (autoResize && ref.current && (props.value || props.defaultValue)) {
         ref.current.style.height = 'auto';
@@ -79,7 +78,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           onChange={handleChange}
           maxLength={maxLength}
           className={`
-            w-full bg-[rgba(0,0,0,0.3)] 
+            w-full bg-[rgba(0,0,0,0.3)]
             border ${error || isOverLimit ? 'border-red-500/50' : isFocused ? 'border-[var(--accent)]' : 'border-[rgba(255,255,255,0.08)]'}
             rounded-lg px-4 py-4 min-h-[120px] resize-none
             text-[var(--fg)] font-serif text-sm leading-relaxed
@@ -107,9 +106,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
               )}
             </AnimatePresence>
           </div>
-          
+
           {maxLength && (
-            <motion.div 
+            <motion.div
               className={`transition-colors duration-300 ${
                 isOverLimit ? 'text-red-500' : isNearLimit ? 'text-amber-500' : 'text-[var(--fg-muted)]'
               }`}

@@ -32,7 +32,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-  // Initialize auth state
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -58,9 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               error: null,
             }));
           } else {
-            // Authenticated but no profile row (missing/blocked by RLS): fall
-            // back to guest permissions rather than leaving stale state — and
-            // still clear isLoading below so the UI never hangs.
+
             setState(prev => ({
               ...prev,
               isAuthenticated: false,
@@ -84,10 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           error: 'Failed to initialize authentication',
         }));
       } finally {
-        // Clear BOTH loading flags. state.isLoading gates ProtectedPage and
-        // useAuthState across the suite; if we only cleared isLoadingAuth
-        // (as before), every guarded page hung on "LOADING…" forever because
-        // initAuth never reset state.isLoading from its initial `true`.
+
         setState(prev => ({ ...prev, isLoading: false }));
         setIsLoadingAuth(false);
       }
@@ -95,12 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Subscribe to auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Only a real new sign-in fires 'SIGNED_IN' — a page refresh with an
-      // existing session fires 'INITIAL_SESSION' instead, so this can't
-      // double-log every reload the way logging on `session?.user` truthy
-      // would have.
+
       if (event === 'SIGNED_IN' && session?.user) {
         logAuditAction(session.user.id, 'user_login', 'auth', session.user.id);
       }
@@ -133,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
-          // Never leave the UI hung on a profile-fetch failure.
+
           setState(prev => ({ ...prev, isLoading: false }));
         }
       } else {
@@ -226,8 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!state.user) return;
 
     try {
-      // projects has no is_public column — selecting it errored the query, so
-      // projectAccess was silently never populated for any project.
+
       const { data: project } = await supabase
         .from('projects')
         .select('id, creator_id')
@@ -279,12 +268,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const canPerformAction = useCallback(
     (action: Permission, context?: AccessContext): boolean => {
-      // Check global permissions
+
       if (!hasPermission(state.userRole, action)) {
         return false;
       }
 
-      // Check project-level permissions if context provided
       if (context?.projectId) {
         const projectAccess = state.projectAccess[context.projectId];
         if (projectAccess) {
@@ -336,7 +324,6 @@ export function useAuth() {
   return context;
 }
 
-// Helper function to get project permissions
 function getProjectPermissionsForRole(
   role: 'owner' | 'lead' | 'contributor' | 'viewer'
 ): Permission[] {

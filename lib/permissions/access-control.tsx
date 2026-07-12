@@ -15,10 +15,6 @@ interface ActionButtonProps {
   disabledTooltip?: string;
 }
 
-/**
- * ActionButton - Renders a button only if user has permission
- * Automatically disables if permission check fails
- */
 export function ActionButton({
   permission,
   context,
@@ -52,10 +48,6 @@ interface IfAccessProps {
   fallback?: React.ReactNode;
 }
 
-/**
- * IfAccess - Conditionally renders content based on permission
- * Useful for showing/hiding UI elements
- */
 export function IfAccess({ permission, context, children, fallback }: IfAccessProps) {
   const { canPerformAction } = useAuth();
   const hasPermission = canPerformAction(permission, context);
@@ -70,9 +62,6 @@ interface ProtectedPageProps {
   fallback?: React.ReactNode;
 }
 
-/**
- * ProtectedPage - Wraps a page/component requiring specific permission
- */
 export function ProtectedPage({
   requiredPermission,
   context,
@@ -124,10 +113,6 @@ interface PageAccessConfig {
   description: string;
 }
 
-/**
- * Page access control configuration
- * Define which permissions are required for each page
- */
 export const PAGE_ACCESS_CONFIG: Record<string, PageAccessConfig> = {
   '/profile': {
     path: '/profile',
@@ -187,11 +172,8 @@ interface ProjectActionConfig {
   description: string;
 }
 
-/**
- * Project-level action permissions
- */
 export const PROJECT_ACTION_PERMISSIONS: Record<string, ProjectActionConfig> = {
-  // Project actions
+
   'project.edit': {
     action: 'project.edit',
     permission: 'edit_project',
@@ -208,7 +190,6 @@ export const PROJECT_ACTION_PERMISSIONS: Record<string, ProjectActionConfig> = {
     description: 'Manage project crew',
   },
 
-  // Script actions
   'script.create': {
     action: 'script.create',
     permission: 'create_script',
@@ -225,7 +206,6 @@ export const PROJECT_ACTION_PERMISSIONS: Record<string, ProjectActionConfig> = {
     description: 'Delete script',
   },
 
-  // Job actions
   'job.create': {
     action: 'job.create',
     permission: 'create_job',

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { 
-  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2, 
+import {
+  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
   Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
   Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
@@ -41,10 +41,6 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
-
-// ============================================================================
-// CONSTANTS & HELPERS
-// ============================================================================
 
 const PRINT_COLORS: Record<string, string> = {
   slug: '#000',
@@ -117,18 +113,10 @@ END COLD OPEN
 `,
 };
 
-// Deliberately short and clearly instructional, not a full fake scene — an
-// earlier version was a complete multi-paragraph sample screenplay, elaborate
-// enough that a writer opening a genuinely-empty new script could mistake the
-// faint placeholder text for real saved content, then "lose" it the instant
-// they typed a single character (placeholders vanish on any real input).
 const PLACEHOLDER = `Start writing — try "FADE IN:" or "INT. LOCATION - DAY"`;
 
-// Standard screenplay transitions offered by the editor's autocomplete.
 const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
 
-// Status bar copy: names the current line's element and hints at the
-// conventional next keystroke, the way Highland/Fountain-style editors do.
 const ELEMENT_STATUS: Record<string, { label: string; hint: string }> = {
   slug: { label: 'Scene Heading', hint: 'Enter → Action' },
   action: { label: 'Action', hint: 'Enter → Action · Tab → Character' },
@@ -140,12 +128,8 @@ const ELEMENT_STATUS: Record<string, { label: string; hint: string }> = {
   empty: { label: 'New Line', hint: 'Tab → cycle element type' },
 };
 
-// Undo/redo history depth.
 const MAX_HISTORY = 50;
 
-// Tab cycles a line's element type in this order, transforming its text so the
-// parser re-classifies it — mirrors the reference editor's Tab-to-cycle-type
-// instead of the single "empty line → scene template" heuristic it replaces.
 const TAB_TYPE_CYCLE: LineType[] = ['action', 'character', 'parenthetical', 'dialogue', 'transition'];
 
 function stripLineDecoration(text: string): string {
@@ -173,17 +157,13 @@ function transformLineForType(text: string, type: LineType): string {
   }
 }
 
-// ============================================================================
-// COMPONENTS
-// ============================================================================
-
 function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean }) {
   const style: React.CSSProperties = {
     fontFamily: 'Courier Prime, Courier, monospace',
     fontSize: 14,
     lineHeight: '1.7',
-    color: nightModePreview 
-      ? (line.type === 'slug' || line.type === 'character' ? '#fff' : '#ccc') 
+    color: nightModePreview
+      ? (line.type === 'slug' || line.type === 'character' ? '#fff' : '#ccc')
       : (PRINT_COLORS[line.type] || '#000'),
     fontWeight: (line.type === 'slug' || line.type === 'character') ? 700 : 400,
     textTransform: (line.type === 'slug' || line.type === 'character' || line.type === 'transition') ? 'uppercase' : 'none',
@@ -193,8 +173,7 @@ function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumb
   };
 
   let displayContent = line.text;
-  
-  // Notes syntax [[Note]]
+
   if (displayContent.includes('[[') && displayContent.includes(']]')) {
     style.color = TYPE_COLORS.note;
     style.background = 'rgba(234, 179, 8, 0.1)';
@@ -203,13 +182,11 @@ function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumb
     style.borderLeft = '2px solid #eab308';
   }
 
-  // CONT'D indicator
   const contd = line.meta?.isContinued;
-  
+
   if (line.type === 'slug') {
     return (
       <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
-        {/* Scene numbers in both margins — real screenplay convention */}
         {showSceneNumbers && sceneNumber != null && (
           <>
             <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
@@ -237,15 +214,11 @@ function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumb
   return <div style={style}>{displayContent || <span style={{ opacity: 0.2 }}>—</span>}</div>;
 }
 
-// ============================================================================
-// MAIN EDITOR
-// ============================================================================
-
 export default function EditorPage() {
   useRequireAuth();
   const { activeProject } = useProject();
   const { playUri } = useSpotify();
-  
+
   const [projectAudioRefs, setProjectAudioRefs] = useState<any[]>([]);
 
   useEffect(() => {
@@ -258,9 +231,6 @@ export default function EditorPage() {
     }
   }, [activeProject?.id]);
 
-  // Margin gutter: typed, line-anchored annotations (shot/beat/note/revision/
-  // reference/todo) tied to the current script, each conceptually routing to
-  // its owning department elsewhere in the suite.
   const [annotations, setAnnotations] = useState<ScriptAnnotation[]>([]);
   const [annotationDraft, setAnnotationDraft] = useState<{ line: number; type: AnnotationType; text: string } | null>(null);
   const reloadAnnotations = useCallback((scriptId: string) => {
@@ -307,14 +277,11 @@ export default function EditorPage() {
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
-  
-  // UI States
+
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // On phones the fixed-width side panels would crush the writing area, so
-  // collapse them by default and overlay them when opened.
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 820px)');
     const apply = () => { setIsMobile(mq.matches); if (mq.matches) { setShowSidebar(false); setShowRightSidebar(false); } };
@@ -327,43 +294,37 @@ export default function EditorPage() {
   const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
-  
-  // Tools & Tracking
+
   const [dailyGoal, setDailyGoal] = useState(1000);
   const [sprintActive, setSprintActive] = useState(false);
-  const [sprintTime, setSprintTime] = useState(15 * 60); // 15 mins
+  const [sprintTime, setSprintTime] = useState(15 * 60);
   const [revisionMode, setRevisionMode] = useState(false);
-  
-  // Autocomplete state
+
   const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 });
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteItems, setAutocompleteItems] = useState<string[]>([]);
   const [autocompleteIdx, setAutocompleteIdx] = useState(0);
-  // Range of text (in the full document) the current suggestion will replace.
+
   const [completionRange, setCompletionRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
-  // Find & Replace
   const [showFindReplace, setShowFindReplace] = useState(false);
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
   const [findCount, setFindCount] = useState(0);
 
-  // Panels
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [charStats, setCharStats] = useState<CharacterStats[]>([]);
   const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
 
-  // Title Page & Settings
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
   const [showTitleEditor, setShowTitleEditor] = useState(false);
   const [showSceneNumbers, setShowSceneNumbers] = useState(true);
   const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
-  // Casting: links a screenplay character to a real project_crew member, so
-  // "who's playing MARA" is a real, queryable fact — not a name in a text box.
+
   const [castings, setCastings] = useState<Record<string, Casting>>({});
   const [projectCrew, setProjectCrew] = useState<CrewMember[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -383,18 +344,15 @@ export default function EditorPage() {
   const [tableReadPlaying, setTableReadPlaying] = useState(false);
   const [tableReadLineIdx, setTableReadLineIdx] = useState<number | null>(null);
   const tableReadEngineRef = useRef<TableReadEngine | null>(null);
-  // Real undo/redo history — snapshots of `content` coalesced at typing pauses
-  // (not one entry per keystroke), capped at 50 like the reference editor.
-  // Replaces reliance on the browser's native, per-keystroke textarea undo.
+
   const [history, setHistory] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
   const historyPushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSnapshotRef = useRef<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supabase Realtime Sync (live co-editing: content sync + presence + cursors)
   const { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
-    // Only update if it's different to avoid cursor jumping
+
     if (newContent !== content) {
       setContent(newContent);
     }
@@ -409,9 +367,6 @@ export default function EditorPage() {
     setActiveView('write');
   }, []);
 
-  // Casting is project-scoped (not per-script), so it loads independently of
-  // which draft is open — the crew list and who's cast stay stable across
-  // script switches within the same project.
   useEffect(() => {
     if (!activeProject?.id) { setCastings({}); setProjectCrew([]); return; }
     getCastingsForProject(activeProject.id).then(setCastings).catch(console.error);
@@ -436,7 +391,6 @@ export default function EditorPage() {
     }
   }, [activeProject?.id, toast]);
 
-  // Init
   useEffect(() => {
     const init = async () => {
       const all = await getAllScripts();
@@ -461,9 +415,6 @@ export default function EditorPage() {
     init();
   }, []);
 
-  // Load (or create) the ACTIVE PROJECT's screenplay from Supabase, so the
-  // editor edits the same script row Studio/Production/Pitch read. Using the
-  // real Supabase id means useScriptSync persists edits straight to that row.
   useEffect(() => {
     if (!activeProject?.id) return;
     let cancelled = false;
@@ -499,9 +450,6 @@ export default function EditorPage() {
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Table Read — reads the parsed lines aloud, voicing each character
-  // distinctly, and scrolls/highlights the currently-spoken line. Stop on
-  // unmount or script switch so it never keeps talking over a page change.
   const startTableRead = useCallback((fromIndex = 0) => {
     if (!isTableReadSupported()) { toast('Table read isn’t supported in this browser', 'error'); return; }
     tableReadEngineRef.current?.stop();
@@ -534,9 +482,6 @@ export default function EditorPage() {
   useEffect(() => () => { tableReadEngineRef.current?.stop(); }, []);
   useEffect(() => { stopTableRead(); }, [currentScript?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Note that an edit happened, coalescing rapid keystrokes into one snapshot
-  // of what the script looked like right before the burst started — so undo
-  // reverts a sentence/edit at a time, not one character at a time.
   const noteHistoryEdit = useCallback((prevContent: string) => {
     if (pendingSnapshotRef.current == null) pendingSnapshotRef.current = prevContent;
     if (historyPushTimer.current) clearTimeout(historyPushTimer.current);
@@ -575,7 +520,6 @@ export default function EditorPage() {
     pendingSnapshotRef.current = null;
   }, [currentScript?.id]);
 
-  // Keep the write surface scrolled to whatever line is currently being read.
   useEffect(() => {
     if (tableReadLineIdx == null || !textareaRef.current) return;
     const textarea = textareaRef.current;
@@ -584,7 +528,6 @@ export default function EditorPage() {
     textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
   }, [tableReadLineIdx]);
 
-  // Parser hook
   useEffect(() => {
     if (content) {
       const result = parseScript(content);
@@ -600,8 +543,6 @@ export default function EditorPage() {
     }
   }, [content]);
 
-  // Load revisions when script changes — from Supabase so locked drafts
-  // persist across devices, with a localStorage fallback while offline.
   useEffect(() => {
     if (!currentScript) return;
     let active = true;
@@ -613,17 +554,15 @@ export default function EditorPage() {
     return () => { active = false; };
   }, [currentScript]);
 
-  // Typewriter Centering Effect
   useEffect(() => {
     if (typewriterMode && activeView === 'write' && textareaRef.current) {
       const textarea = textareaRef.current;
       const { selectionStart } = textarea;
-      
-      // Approximate line height and position
-      const lineHeight = 26; 
+
+      const lineHeight = 26;
       const linesBefore = textarea.value.substr(0, selectionStart).split('\n').length;
       const targetScroll = (linesBefore * lineHeight) - (window.innerHeight * 0.3);
-      
+
       textarea.scrollTo({
         top: targetScroll,
         behavior: 'smooth'
@@ -631,7 +570,6 @@ export default function EditorPage() {
     }
   }, [content, typewriterMode, activeView]);
 
-  // Find count
   useEffect(() => {
     if (findText && content) {
       const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
@@ -642,8 +580,6 @@ export default function EditorPage() {
     }
   }, [findText, content]);
 
-
-  // Auto-save
   useEffect(() => {
     if (!currentScript) return;
     const timer = setTimeout(async () => {
@@ -652,7 +588,6 @@ export default function EditorPage() {
     return () => clearTimeout(timer);
   }, [content, currentScript]);
 
-  // Sprint Timer Hook
   useEffect(() => {
     let interval: any = null;
     if (sprintActive && sprintTime > 0) {
@@ -664,7 +599,6 @@ export default function EditorPage() {
     return () => clearInterval(interval);
   }, [sprintActive, sprintTime, toast]);
 
-  // Actions
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
     setSaving(true);
@@ -688,9 +622,7 @@ export default function EditorPage() {
       exportScriptAsPdf({ ...currentScript, content }, titlePage);
       toast('Generating PDF...', 'success');
     } else {
-      // Defensive: the export menu only offers the handled formats above, so
-      // this is unreachable in practice. Fall back to plain-text rather than
-      // silently doing nothing if a new format is added to the menu.
+
       exportScriptAsText({ ...currentScript, content }, 'txt');
       toast(`Exported as .txt`, 'success');
     }
@@ -718,15 +650,13 @@ export default function EditorPage() {
       setRevisions(prev => [...prev, rev]);
       toast(`Locked as ${rev.label}`, 'success');
     } else {
-      // Offline / no access — fall back to a local snapshot so work isn't lost.
+
       const { revision } = await createRevision(currentScript.id, content);
       setRevisions(prev => [...prev, revision]);
       toast(`Locked locally as ${revision.label}`, 'info');
     }
   }, [currentScript, content, revisions.length, toast]);
 
-  // Toggle dual dialogue (Fountain '^') on the character cue under the cursor —
-  // the parser + preview already render side-by-side dialogue when marked.
   const toggleDualDialogue = useCallback(() => {
     const editor = textareaRef.current;
     if (!editor) return;
@@ -747,7 +677,6 @@ export default function EditorPage() {
     toast(has ? 'Dual dialogue removed' : 'Marked as dual dialogue (^)', 'success');
   }, [content, toast]);
 
-  // Keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+E, Escape)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -779,9 +708,7 @@ export default function EditorPage() {
         if (showGoToScene) setShowGoToScene(false);
         if (showShortcuts) setShowShortcuts(false);
       }
-      // Undo/redo the script content specifically (our own history stack, not
-      // the browser's native per-keystroke textarea undo) while the write
-      // surface is focused.
+
       if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) redo(); else undo();
@@ -795,11 +722,10 @@ export default function EditorPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
 
-  // Import .fountain / .txt / .fdx / .pdf file
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = ''; // reset input immediately so re-picking the same file fires
+    e.target.value = '';
 
     const title = file.name.replace(/\.(fountain|txt|fdx|pdf)$/i, '');
 
@@ -813,9 +739,6 @@ export default function EditorPage() {
       }
     };
 
-    // PDFs need text extraction with reading-order reconstruction, then the
-    // smart normalizer to repair extraction artifacts (stray page numbers,
-    // smart quotes, action mis-joined into dialogue) before they parse cleanly.
     if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
       toast('Extracting PDF…', 'success');
       Promise.all([
@@ -832,10 +755,6 @@ export default function EditorPage() {
       return;
     }
 
-    // .fdx (Final Draft XML) carries an explicit element type per paragraph,
-    // so it's parsed losslessly instead of being dumped in as raw XML text;
-    // .fountain gets its forced-element markers (., !, @, >) translated
-    // before the normalizer sees it.
     if (/\.(fdx|fountain)$/i.test(file.name)) {
       const reader = new FileReader();
       reader.onload = (ev) => {
@@ -857,7 +776,6 @@ export default function EditorPage() {
     reader.readAsText(file);
   }, [toast]);
 
-  // Title page save
   const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
     setTitlePage(prev => {
       const updated = { ...prev, [field]: value };
@@ -866,17 +784,15 @@ export default function EditorPage() {
     });
   }, [currentScript]);
 
-  // Tab key cycling (in the textarea: Tab inserts element type based on context)
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Autocomplete navigation takes priority while the popup is open.
+
     if (showAutocomplete && autocompleteItems.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setAutocompleteIdx(i => (i - 1 + autocompleteItems.length) % autocompleteItems.length); return; }
       if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAutocomplete(autocompleteItems[autocompleteIdx]); return; }
       if (e.key === 'Escape') { e.preventDefault(); setShowAutocomplete(false); return; }
     }
-    // Auto-close a parenthetical: typing "(" inserts "()" and drops the caret
-    // inside, so wrylies like "(beat)" are one keystroke instead of two.
+
     if (e.key === '(') {
       const editor = textareaRef.current;
       if (editor) {
@@ -891,8 +807,7 @@ export default function EditorPage() {
         return;
       }
     }
-    // On Enter, auto-uppercase a scene heading so slugs are always formatted
-    // like Final Draft/WriterDuet — "int. kitchen - day" → "INT. KITCHEN - DAY".
+
     if (e.key === 'Enter' && !e.shiftKey) {
       const editor = textareaRef.current;
       if (editor && editor.selectionStart === editor.selectionEnd) {
@@ -904,10 +819,10 @@ export default function EditorPage() {
           e.preventDefault();
           const upper = line.toUpperCase();
           const col = cursor - lineStart;
-          // Uppercase the whole slug, then split it at the caret like Enter would.
+
           const next = content.substring(0, lineStart) + upper.substring(0, col) + '\n' + upper.substring(col) + content.substring(lineEnd);
           setContent(next);
-          const caret = cursor + 1; // toUpperCase preserves length
+          const caret = cursor + 1;
           setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
           return;
         }
@@ -923,15 +838,11 @@ export default function EditorPage() {
       const currentLine = content.substring(lineStart, lineEnd);
       const trimmed = currentLine.trim();
 
-      // Empty line: no type to cycle, so start a scene heading template.
       if (!trimmed) {
         insertElement('scene');
         return;
       }
 
-      // Cycle the line's element type — action → character → parenthetical →
-      // dialogue → transition → action — by transforming its text so the
-      // parser reclassifies it as the next (or, with Shift, previous) type.
       const lineIdx = content.substring(0, lineStart).split('\n').length - 1;
       const currentType = lines[lineIdx]?.type;
       const cycleIdx = currentType ? TAB_TYPE_CYCLE.indexOf(currentType) : -1;
@@ -973,9 +884,6 @@ export default function EditorPage() {
     }, 0);
   };
 
-  // Compute the caret's viewport pixel position by mirroring the textarea into
-  // an off-screen div, so the autocomplete popup can sit right under the caret
-  // instead of a fixed corner.
   const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
     const rect = ta.getBoundingClientRect();
     const style = window.getComputedStyle(ta);
@@ -1006,8 +914,6 @@ export default function EditorPage() {
     setShowAutocomplete(true);
   };
 
-  // Replace the in-progress token with the chosen suggestion and drop the caret
-  // right after it, keeping the writer in flow.
   const acceptAutocomplete = (item: string) => {
     const editor = textareaRef.current;
     if (!editor) return;
@@ -1034,7 +940,7 @@ export default function EditorPage() {
     const trimmed = currentLine.trim();
 
     if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
-      // Location autocomplete — complete the text after the INT./EXT. prefix.
+
       const afterPrefix = currentLine.replace(/^(INT\.|EXT\.)\s*/, '');
       const typed = afterPrefix.trim().toUpperCase();
       const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()).filter(Boolean))];
@@ -1045,8 +951,7 @@ export default function EditorPage() {
         setShowAutocomplete(false);
       }
     } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
-      // Character-cue / transition autocomplete — suggest known characters and
-      // standard transitions matching what's typed.
+
       const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
       const matchingTrans = TRANSITIONS.filter(t => t.startsWith(trimmed) && t !== trimmed);
       const items = [...matchingChars, ...matchingTrans];
@@ -1061,16 +966,12 @@ export default function EditorPage() {
     }
   };
 
-  // Scene colour tags — persisted per script, keyed by slug text so they
-  // survive re-parsing. Powers the outline's colour-coding (Arc-style).
   useEffect(() => {
     if (!currentScript?.id) { setSceneColors({}); setSceneNotes({}); return; }
     try { const raw = localStorage.getItem(`mc_scene_colors_${currentScript.id}`); setSceneColors(raw ? JSON.parse(raw) : {}); } catch { setSceneColors({}); }
     try { const raw = localStorage.getItem(`mc_scene_notes_${currentScript.id}`); setSceneNotes(raw ? JSON.parse(raw) : {}); } catch { setSceneNotes({}); }
   }, [currentScript?.id]);
 
-  // Per-scene beat/summary — a one-line intent the writer sets on the board,
-  // persisted per script and keyed by slug.
   const setSceneNote = (sceneText: string, note: string) => {
     const key = sceneText.trim().toUpperCase();
     setSceneNotes(prev => {
@@ -1091,14 +992,8 @@ export default function EditorPage() {
     });
   };
 
-  // Stats
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
-  // Each scene slug's real character offset in `content`, found once via a
-  // single forward pass (cursor only ever advances) — the single source of
-  // truth both jumpToScene and reorderScenes key off, so a repeated slug
-  // (a flashback returning to "INT. COFFEE SHOP - DAY") always resolves to
-  // its own occurrence instead of whichever one text search happens to hit.
   const scenePositions = useMemo(() => {
     let cursor = 0;
     const positions: number[] = [];
@@ -1111,10 +1006,6 @@ export default function EditorPage() {
     return positions;
   }, [scenesList, content]);
 
-  // Jump from a plot card / outline row / Story Map rail straight to that
-  // scene in the writing view (Arc Studio Pro-style board↔script navigation).
-  // Keyed by scene index (via scenePositions), not by re-searching for the
-  // slug's text, so a repeated scene heading always opens its own occurrence.
   const jumpToScene = (sceneIndex: number) => {
     setActiveView('write');
     setTimeout(() => {
@@ -1130,12 +1021,9 @@ export default function EditorPage() {
     }, 60);
   };
 
-  // Reorder whole scenes by rewriting the script text — dragging a card on the
-  // board (or the always-visible Story Map rail) physically moves that scene
-  // (heading + body) to the new position.
   const reorderScenes = (from: number, to: number) => {
     if (from === to || from < 0 || to < 0) return;
-    if (scenePositions.some(p => p < 0)) return; // bail if any scene couldn't be located cleanly
+    if (scenePositions.some(p => p < 0)) return;
     const positions = scenePositions;
     const preamble = content.substring(0, positions[0]);
     const blocks = positions.map((p, k) => content.substring(p, k + 1 < positions.length ? positions[k + 1] : content.length));
@@ -1162,7 +1050,6 @@ export default function EditorPage() {
   const actionLines = lines.filter(l => l.type === 'action').length;
   const dialogueRatio = actionLines + dialogueLines > 0 ? Math.round((dialogueLines / (actionLines + dialogueLines)) * 100) : 0;
 
-  // Scene word counts (for board cards)
   const sceneWordCounts = useMemo(() => {
     const counts: number[] = [];
     for (let s = 0; s < scenesList.length; s++) {
@@ -1177,7 +1064,6 @@ export default function EditorPage() {
 
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
 
-  // Per-scene character presence map
   const sceneCharMap = useMemo(() => {
     return scenesList.map((scene, i) => {
       const startIdx = lines.findIndex(l => l.id === scene.id);
@@ -1188,7 +1074,6 @@ export default function EditorPage() {
     });
   }, [lines, scenesList]);
 
-  // Which scene index is the cursor currently inside
   const currentSceneIdx = useMemo(() => {
     let lineCount = 0;
     let lastScene = -1;
@@ -1204,8 +1089,7 @@ export default function EditorPage() {
   }, [lines, scenesList, cursorLine]);
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
-  // The taskbar's context capsule morphs to surface these read-outs and the
-  // Focus toggle — every value is live page state, the toggle flips it for real.
+
   usePillStage(
     {
       module: 'editor',
@@ -1223,7 +1107,6 @@ export default function EditorPage() {
     [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
   );
 
-  // Act structure — properly clamped so it never produces "Sc 4-3" nonsense
   const actStructure = useMemo(() => {
     const n = scenesList.length;
     if (n === 0) return { act1End: 0, act2End: 0, act2Start: 1, act3Start: 1 };
@@ -1243,7 +1126,6 @@ export default function EditorPage() {
     return { act1End, act2End, act2Start: act1End + 1, act3Start: act2End + 1 };
   }, [sceneWordCounts, scenesList.length]);
 
-  // Unique locations for location manager
   const uniqueLocations = useMemo(() => {
     const locs = new Map<string, number>();
     scenesList.forEach(s => {
@@ -1257,7 +1139,6 @@ export default function EditorPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* TOOLBAR */}
       {!focusMode && (
         <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
@@ -1273,7 +1154,6 @@ export default function EditorPage() {
           zIndex: 100,
           flexShrink: 0,
         }}>
-          {/* Left: Branding & Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <Link href="/" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
@@ -1281,12 +1161,6 @@ export default function EditorPage() {
               <ArrowLeft size={18} />
             </Link>
 
-            {/* Persistent active-project indicator — a direct nav to /editor
-                (bookmark, new tab) has no route param of its own, so without
-                this there's no always-visible confirmation of which
-                project's script is loaded (only a transient toast on
-                switch). Click jumps to that project's hub, where the
-                taskbar's own project switcher lives if you need to change it. */}
             {activeProject && (
               <Link
                 href={`/projects/${activeProject.id}`}
@@ -1314,9 +1188,9 @@ export default function EditorPage() {
                 className="link-btn"
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
               >
-                <List size={14} className="text-indigo-400" /> 
-                <input 
-                  value={currentScript?.title || ''} 
+                <List size={14} className="text-indigo-400" />
+                <input
+                  value={currentScript?.title || ''}
                   onChange={async (e) => {
                     if (currentScript) {
                       const updated = { ...currentScript, title: e.target.value };
@@ -1325,12 +1199,12 @@ export default function EditorPage() {
                     }
                   }}
                   placeholder="Untitled Script"
-                  style={{ 
-                    background: 'transparent', 
-                    border: 'none', 
-                    color: '#fff', 
-                    fontSize: 14, 
-                    fontWeight: 700, 
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 700,
                     outline: 'none',
                     padding: '2px 4px',
                     borderRadius: 4,
@@ -1341,14 +1215,13 @@ export default function EditorPage() {
                   onBlur={(e) => e.target.style.background = 'transparent'}
                 />
               </button>
-              
+
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </span>
             </div>
           </div>
 
-          {/* Center: View Switcher — pill nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9999, padding: '3px 4px' }}>
             {([
               { id: 'write',   icon: Type,            label: 'Write'   },
@@ -1375,10 +1248,8 @@ export default function EditorPage() {
             ))}
           </div>
 
-          {/* Right: Tools & Export */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            
-            {/* Session word count */}
+
             {sessionWordsWritten > 0 && (
               <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
                 +{sessionWordsWritten}w
@@ -1477,7 +1348,6 @@ export default function EditorPage() {
         </header>
       )}
 
-      {/* FIND & REPLACE BAR */}
       <AnimatePresence>
         {showFindReplace && (
           <FindReplaceBar
@@ -1491,15 +1361,12 @@ export default function EditorPage() {
         )}
       </AnimatePresence>
 
-      {/* WORKSPACE */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
 
-        {/* Mobile scrim behind an open panel */}
         {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
           <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
         )}
 
-        {/* LEFT NAVIGATOR (Scenes & Documents) */}
         <AnimatePresence>
           {showSidebar && !focusMode && (
             <motion.div
@@ -1532,10 +1399,8 @@ export default function EditorPage() {
           )}
         </AnimatePresence>
 
-        {/* CENTER STAGE */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
-          
-          {/* Focus Exit */}
+
           {focusMode && (
             <button onClick={() => setFocusMode(false)} style={{
               position: 'absolute', top: 20, right: 20, zIndex: 100,
@@ -1547,12 +1412,6 @@ export default function EditorPage() {
 
           {activeView === 'write' && (
             <div style={{ flex: 1, position: 'relative', width: '100%', maxWidth: 900, margin: '0 auto' }}>
-              {/* Highlight layer — mirrors the textarea's text per-line, colored
-                  by parsed screenplay type (slug/character/dialogue/etc.), so the
-                  live writing surface isn't just undifferentiated monospace text.
-                  Kept pixel-identical (same font/line-height/padding, no per-line
-                  indentation) to the textarea beneath it so the invisible caret
-                  always lands where the colored text appears. */}
               <div
                 ref={highlightRef}
                 aria-hidden
@@ -1667,8 +1526,6 @@ export default function EditorPage() {
                 }}
               />
 
-              {/* Table Read control — plays the script aloud, voicing each
-                  character distinctly, and scrolls/highlights the live line. */}
               {!focusMode && (
                 <div style={{
                   position: 'absolute', top: 16, right: 16, zIndex: 5,
@@ -1698,9 +1555,6 @@ export default function EditorPage() {
                 </div>
               )}
 
-              {/* Status bar — names the current element and hints the
-                  conventional next keystroke, so the writer never has to
-                  guess what Tab/Enter will do mid-scene. */}
               {!focusMode && (() => {
                 const currentType = lines[cursorLine]?.type || 'empty';
                 const status = ELEMENT_STATUS[currentType] || ELEMENT_STATUS.empty;
@@ -1720,9 +1574,6 @@ export default function EditorPage() {
             </div>
           )}
 
-          {/* Live structure rail — Save-the-Cat-style milestone overlay, a
-              pacing flag, and where the current scene sits, surfaced in the
-              margin instead of buried in a Stats tab. */}
           {activeView === 'write' && !focusMode && (
             <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
               {scenesList.map((s, idx) => {
@@ -1744,7 +1595,6 @@ export default function EditorPage() {
                 );
               })}
 
-              {/* Save-the-Cat milestone labels */}
               {[
                 { pct: 10, label: 'Setup' },
                 { pct: 25, label: 'Break into Two' },
@@ -1757,12 +1607,10 @@ export default function EditorPage() {
                 </div>
               ))}
 
-              {/* Where the cursor currently sits */}
               {scenesList.length > 0 && currentSceneIdx >= 0 && (
                 <div style={{ position: 'absolute', top: `${(currentSceneIdx / scenesList.length) * 100}%`, left: -5, width: 12, height: 12, marginTop: -6, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 10px var(--accent)' }} title={`Now writing: ${scenesList[currentSceneIdx]?.text}`} />
               )}
 
-              {/* Pacing flag — Act II (25%-75%) word share vs. the rest */}
               {(() => {
                 if (scenesList.length < 4) return null;
                 const inAct2 = (idx: number) => { const p = (idx / scenesList.length) * 100; return p >= 25 && p < 75; };
@@ -1782,13 +1630,10 @@ export default function EditorPage() {
 
           {activeView === 'preview' && (
             <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: nightModePreview ? '#111' : '#fff', color: nightModePreview ? '#ddd' : '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
-              {/* Page number */}
               <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace' }}>Page 1</div>
-              {/* Watermark */}
               {showWatermark && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-30deg)', fontSize: 80, fontWeight: 900, color: 'rgba(0,0,0,0.04)', textTransform: 'uppercase', fontFamily: 'Courier Prime, monospace', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0 }}>DRAFT</div>
               )}
-              {/* Title block */}
               {titlePage.title && (
                 <div style={{ textAlign: 'center', marginBottom: 48, paddingTop: 40 }}>
                   <div style={{ fontSize: 20, fontWeight: 700, textTransform: 'uppercase', fontFamily: 'Courier Prime, monospace', marginBottom: 24 }}>{titlePage.title}</div>
@@ -1802,7 +1647,7 @@ export default function EditorPage() {
                 <div style={{ textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>Start writing to see preview</div>
               ) : (
                 lines.map((line, i) => {
-                  // Add page numbers every ~55 lines (approx 1 page)
+
                   const pageBreak = i > 0 && i % 55 === 0;
                   return (
                     <React.Fragment key={i}>
@@ -1846,7 +1691,6 @@ export default function EditorPage() {
           )}
         </div>
 
-        {/* RIGHT SIDEBAR (Tabbed Panels) */}
         <AnimatePresence>
           {showRightSidebar && !focusMode && (
             <motion.div
@@ -1856,10 +1700,6 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: 272, maxWidth: '86vw', background: 'rgba(8,8,8,0.98)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
-              {/* Scoped tightly around just this panel: if a runaway effect in
-                  one of its many tabs (sprint timer, revisions, stats) throws,
-                  only the sidebar unmounts — the write surface and content
-                  state are untouched and the writer never loses a draft. */}
               <EditorErrorBoundary onCrash={() => {
                 try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
               }}>
@@ -1892,7 +1732,6 @@ export default function EditorPage() {
 
       </div>
 
-      {/* Autocomplete Popover (Basic implementation) */}
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
           position: 'fixed', top: cursorPos.top, left: cursorPos.left,
@@ -1914,7 +1753,6 @@ export default function EditorPage() {
         </div>
       )}
 
-      {/* TITLE PAGE EDITOR MODAL */}
       <AnimatePresence>
         {showTitleEditor && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowTitleEditor(false)}>
@@ -1936,7 +1774,6 @@ export default function EditorPage() {
         )}
       </AnimatePresence>
 
-      {/* CHARACTER BIBLE MODAL */}
       <AnimatePresence>
         {showCharBible && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCharBible(false)}>
@@ -2017,12 +1854,10 @@ export default function EditorPage() {
       <EditorErrorBoundary onCrash={() => {
         try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
       }}>
-        {/* KEYBOARD SHORTCUTS MODAL */}
         <AnimatePresence>
           {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
         </AnimatePresence>
 
-        {/* GO TO SCENE DIALOG */}
         <AnimatePresence>
           {showGoToScene && (
             <GoToSceneModal
@@ -2041,7 +1876,6 @@ export default function EditorPage() {
         </AnimatePresence>
       </EditorErrorBoundary>
 
-      {/* STATUS BAR */}
       <div style={{
         height: 26,
         background: 'rgba(4,4,4,0.97)',

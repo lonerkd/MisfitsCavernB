@@ -20,13 +20,11 @@ interface ProcessedHunk {
   parts: { type: 'added' | 'removed' | 'unchanged'; text: string }[];
 }
 
-// Build context-aware hunks from a line diff.
-// Groups nearby changes with N lines of context, like a real unified diff.
 function buildHunks(
   changes: Diff.Change[],
   contextLines = 3
 ): ProcessedHunk[] {
-  // Expand change list into individual lines with metadata
+
   interface LineInfo {
     text: string;
     type: 'added' | 'removed' | 'unchanged';
@@ -39,7 +37,7 @@ function buildHunks(
 
   for (const part of changes) {
     const partLines = part.value.split('\n');
-    // split produces trailing empty string when value ends with \n
+
     if (partLines[partLines.length - 1] === '') partLines.pop();
     for (const text of partLines) {
       if (part.added) {
@@ -52,14 +50,12 @@ function buildHunks(
     }
   }
 
-  // Find indices of changed lines
   const changedIdx = new Set(
     lines.map((l, i) => (l.type !== 'unchanged' ? i : -1)).filter(i => i !== -1)
   );
 
   if (changedIdx.size === 0) return [];
 
-  // Build ranges with context
   const ranges: [number, number][] = [];
   let rangeStart = -1;
   let rangeEnd = -1;
@@ -92,7 +88,6 @@ function buildHunks(
   });
 }
 
-// Inline word-level highlighting within a single changed line pair
 function inlineWordDiff(removed: string, added: string): {
   removedParts: { text: string; highlight: boolean }[];
   addedParts: { text: string; highlight: boolean }[];
@@ -111,7 +106,6 @@ function inlineWordDiff(removed: string, added: string): {
   return { removedParts, addedParts };
 }
 
-// Stat summary
 function computeStats(changes: Diff.Change[]) {
   let added = 0, removed = 0, unchanged = 0;
   for (const c of changes) {
@@ -136,7 +130,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
     };
   }, [isOpen, originalText, modifiedText]);
 
-  // For word mode — flat word-level diff
   const wordChanges = useMemo(() => {
     if (!isOpen || mode !== 'words') return [];
     return Diff.diffWords(originalText, modifiedText);
@@ -183,7 +176,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
           }}
           onClick={e => e.stopPropagation()}
         >
-          {/* Header */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -193,7 +185,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--display)', color: 'var(--fg)', letterSpacing: 0.5 }}>
                 Diff — <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{label}</span>
               </h3>
-              {/* Stats chips */}
               <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: '#34d399', padding: '2px 8px', borderRadius: 99, fontFamily: 'var(--mono)' }}>
                 +{stats.added}
               </span>
@@ -202,7 +193,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Mode toggle */}
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 2 }}>
                 {(['lines', 'words'] as DiffMode[]).map(m => (
                   <button
@@ -231,7 +221,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
             </div>
           </div>
 
-          {/* Body */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
             {noChanges ? (
               <div style={{ textAlign: 'center', padding: '60px 24px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--mono)', fontSize: 13 }}>
@@ -265,8 +254,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                 {hunks.map((hunk, hi) => {
                   const collapsed = collapsedHunks.has(hi);
 
-                  // Find adjacent removed+added lines for inline word diff
-                  // Build an enriched version of parts for rendering
                   interface EnrichedPart {
                     type: 'added' | 'removed' | 'unchanged';
                     text: string;
@@ -279,7 +266,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                   let i = 0;
                   while (i < parts.length) {
                     const cur = parts[i];
-                    // If removed followed by added → inline word diff pair
+
                     if (cur.type === 'removed' && i + 1 < parts.length && parts[i + 1].type === 'added') {
                       const { removedParts, addedParts } = inlineWordDiff(cur.text, parts[i + 1].text);
                       enriched.push({ type: 'removed', text: cur.text, removedParts });
@@ -293,7 +280,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
 
                   return (
                     <div key={hi} style={{ marginBottom: 2 }}>
-                      {/* Hunk header */}
                       <div
                         onClick={() => toggleHunk(hi)}
                         style={{
@@ -308,7 +294,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                         <span style={{ opacity: 0.7, fontStyle: 'italic' }}>{hunk.header}</span>
                       </div>
 
-                      {/* Lines */}
                       {!collapsed && enriched.map((part, pi) => {
                         const bg =
                           part.type === 'added' ? 'rgba(16,185,129,0.1)' :
@@ -333,7 +318,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                                 : '3px solid transparent',
                             }}
                           >
-                            {/* Gutter sign */}
                             <span style={{
                               width: 36, flexShrink: 0, textAlign: 'center',
                               fontSize: 12, color: fg, padding: '2px 0',
@@ -341,14 +325,12 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                             }}>
                               {gutter}
                             </span>
-                            {/* Content */}
                             <span style={{
                               flex: 1, padding: '2px 12px 2px 0',
                               whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                               color: part.type === 'unchanged' ? 'rgba(255,255,255,0.38)' : fg,
                               fontSize: 12.5, lineHeight: 1.65,
                             }}>
-                              {/* Inline word highlights if available */}
                               {part.removedParts ? (
                                 part.removedParts.map((w, wi) => (
                                   <span key={wi} style={{
@@ -377,7 +359,6 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
             )}
           </div>
 
-          {/* Footer */}
           <div style={{
             padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',

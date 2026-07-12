@@ -5,13 +5,6 @@ import { Plus, FileUp, Book } from 'lucide-react';
 import type { ScriptLine } from '@/types/screenplay';
 import type { StoredScript } from '@/lib/scriptos/storage';
 
-/* =========================================================================
-   ScriptOS editor — the left navigator (script controls, templates, and the
-   proportional Story Map scene list), extracted from the editor page.
-   Pure presentation: state, handlers and the textarea ref are passed in, so
-   behaviour matches the inline version it replaced (a cut-and-thread).
-   ========================================================================= */
-
 export interface EditorLeftNavProps {
   scripts: StoredScript[];
   setScripts: React.Dispatch<React.SetStateAction<StoredScript[]>>;
@@ -48,7 +41,6 @@ export function EditorLeftNav({
 }: EditorLeftNavProps) {
   return (
     <>
-              {/* Script Controls */}
               <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 <button onClick={async () => {
                   const s = await createNewScript('Untitled Script');
@@ -96,7 +88,6 @@ export function EditorLeftNav({
 
                 <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx,.pdf" onChange={handleImportFile} style={{ display: 'none' }} />
 
-                {/* Templates */}
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 3, marginTop: 14, marginBottom: 7 }}>Templates</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {Object.keys(TEMPLATES).filter(k => k !== 'blank').map(key => (
@@ -126,7 +117,6 @@ export function EditorLeftNav({
                 </div>
               </div>
 
-              {/* STORY MAP — proportional scene navigator */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 20px' }}>
                 <div style={{
                   fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)',
@@ -154,7 +144,6 @@ export function EditorLeftNav({
                     const chars = sceneCharMap[i] || [];
                     const typeLabel = `${isInt ? 'I' : isExt ? 'E' : '?'}/${isDay ? 'D' : isNight ? 'N' : '?'}`;
 
-                    // Act boundary lines
                     const isAct2Start = i + 1 === actStructure.act2Start && scenesList.length > 2;
                     const isAct3Start = i + 1 === actStructure.act3Start && scenesList.length > 2;
 
@@ -196,7 +185,6 @@ export function EditorLeftNav({
                           onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
                           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                         >
-                          {/* Scene header row */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                             <span style={{
                               fontFamily: 'var(--mono)', fontSize: 9, color: color,
@@ -215,7 +203,6 @@ export function EditorLeftNav({
                             </span>
                           </div>
 
-                          {/* Word count bar */}
                           <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 1.5, marginBottom: 8, overflow: 'hidden' }}>
                             <div style={{
                               height: '100%', width: `${barPct}%`,
@@ -225,7 +212,6 @@ export function EditorLeftNav({
                             }} />
                           </div>
 
-                          {/* Character dots */}
                           {chars.length > 0 && (
                             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                               {chars.slice(0, 4).map(c => (

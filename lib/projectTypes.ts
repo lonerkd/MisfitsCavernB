@@ -1,6 +1,4 @@
-// Per-project-type phase pipelines + script-format defaults.
-// `project_type` on a project is free text — any of these are just curated
-// suggestions. Unknown/custom types fall back to GENERIC_PHASES.
+
 
 export interface PhaseDef {
   id: string;
@@ -84,7 +82,6 @@ export function phaseIndex(projectType: string | undefined | null, phaseId: stri
   return Math.max(0, idx);
 }
 
-// Suggested default ScriptOS format per project type — still user-overridable.
 export const DEFAULT_SCRIPT_FORMAT: Record<string, string> = {
   Feature: 'screenplay',
   'Short Film': 'screenplay',

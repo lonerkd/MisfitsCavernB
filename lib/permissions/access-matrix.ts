@@ -1,5 +1,4 @@
-// Comprehensive access control matrix showing exactly what each user type can do
-// in different contexts (pages, projects, etc.)
+
 
 import { UserRole, Permission } from '@/lib/context/types';
 
@@ -10,15 +9,12 @@ export interface AccessMatrix {
   actionAccess: Record<string, boolean>;
 }
 
-/**
- * Complete access matrix for all user roles across the application
- */
 export const ACCESS_MATRIX: Record<UserRole, AccessMatrix> = {
   admin: {
     role: 'admin',
     pageAccess: {
       '/': true,
-      '/auth': false, // Already logged in
+      '/auth': false,
       '/profile': true,
       '/editor': true,
       '/projects': true,
@@ -38,7 +34,7 @@ export const ACCESS_MATRIX: Record<UserRole, AccessMatrix> = {
       '/admin/analytics': true,
     },
     projectAccess: {
-      // Admin can always perform these actions on any project
+
       'edit_project': {
         owner: true,
         lead: true,
@@ -77,33 +73,29 @@ export const ACCESS_MATRIX: Record<UserRole, AccessMatrix> = {
       },
     },
     actionAccess: {
-      // Project actions
+
       'project.edit': true,
       'project.delete': true,
       'project.manage_crew': true,
       'project.publish': true,
       'project.archive': true,
 
-      // Script actions
       'script.create': true,
       'script.edit': true,
       'script.delete': true,
       'script.publish': true,
       'script.share': true,
 
-      // Job actions
       'job.create': true,
       'job.edit': true,
       'job.delete': true,
       'job.close': true,
 
-      // Portfolio actions
       'portfolio.add_media': true,
       'portfolio.edit_media': true,
       'portfolio.delete_media': true,
       'portfolio.publish': true,
 
-      // User management
       'user.edit_profile': true,
       'user.manage_roles': true,
       'user.view_analytics': true,
@@ -299,7 +291,7 @@ export const ACCESS_MATRIX: Record<UserRole, AccessMatrix> = {
       '/editor': false,
       '/projects': false,
       '/projects/create': false,
-      '/projects/[id]': false, // Can view public projects via /showcase
+      '/projects/[id]': false,
       '/jobs': false,
       '/jobs/[id]': false,
       '/jobs/post': false,
@@ -307,7 +299,7 @@ export const ACCESS_MATRIX: Record<UserRole, AccessMatrix> = {
       '/portfolio/manage': false,
       '/studio': false,
       '/crew': true,
-      '/crew/[id]': true, // Can view public profiles
+      '/crew/[id]': true,
       '/lounge': false,
       '/admin': false,
       '/admin/users': false,
@@ -381,23 +373,14 @@ export const ACCESS_MATRIX: Record<UserRole, AccessMatrix> = {
   },
 };
 
-/**
- * Get page access for a specific role
- */
 export function canAccessPage(role: UserRole, path: string): boolean {
   return ACCESS_MATRIX[role]?.pageAccess[path] || false;
 }
 
-/**
- * Get action access for a specific role
- */
 export function canPerformAction(role: UserRole, action: string): boolean {
   return ACCESS_MATRIX[role]?.actionAccess[action] || false;
 }
 
-/**
- * Generate a summary of what a role can do
- */
 export function getAccessSummary(role: UserRole): string {
   const matrix = ACCESS_MATRIX[role];
   const accessiblePages = Object.entries(matrix.pageAccess)

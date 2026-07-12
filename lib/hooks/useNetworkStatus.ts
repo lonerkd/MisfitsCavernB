@@ -1,4 +1,4 @@
-// Hook to track and respond to network status changes
+
 
 import { useState, useEffect, useRef } from 'react';
 
@@ -32,11 +32,9 @@ export function useNetworkStatus(): NetworkStatusInfo {
       }));
     };
 
-    // Monitor network status
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Monitor connection speed (if available)
     let connectionMonitor: any;
     let updateConnection: (() => void) | null = null;
     if ('connection' in navigator) {

@@ -1,10 +1,5 @@
 import { supabase } from './client';
 
-// Canonical Profile shape, matching the live `profiles` table exactly (there
-// is no full_name column despite an earlier version of this type claiming
-// one — verified directly against the live DB). Every page that needs a
-// profile shape should import this instead of hand-rolling its own; five
-// divergent local copies existed before this consolidation.
 export interface Profile {
   id: string;
   username: string;
@@ -18,9 +13,6 @@ export interface Profile {
   is_admin?: boolean;
 }
 
-// The minimal public-facing shape used where a profile is joined in purely
-// for display (portfolio share pages) — a Pick of the canonical type rather
-// than a separately hand-maintained interface.
 export type PublicProfile = Pick<Profile, 'username' | 'role' | 'avatar_url'>;
 
 export async function searchProfiles(query: string): Promise<Profile[]> {
@@ -62,7 +54,7 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
     .single();
 
   if (error) throw error;
-  // Let the invited user know they've been added to a project's crew.
+
   try {
     const { data: proj } = await supabase.from('projects').select('title').eq('id', projectId).single();
     await supabase.from('notifications').insert({
@@ -73,7 +65,7 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
       link: '/projects',
       read: false,
     });
-  } catch { /* non-fatal: invite still succeeds */ }
+  } catch {  }
   return data;
 }
 

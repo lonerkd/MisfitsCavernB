@@ -4,14 +4,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 
-/* =========================================================================
-   ScriptOS editor — extracted leaf modals / bars.
-   These are pure, prop-driven UI: they hold no editor state themselves, so
-   pulling them out of the 2,500-line page component is behaviour-preserving.
-   The parent keeps the <AnimatePresence> + show-flag so exit animations and
-   keyboard wiring are unchanged.
-   ========================================================================= */
-
 // ── Find & Replace bar (drops down under the toolbar) ──────────────────────
 export function FindReplaceBar({
   findText, setFindText, replaceText, setReplaceText,
