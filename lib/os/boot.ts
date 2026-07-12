@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
 import { determineUserRole, getPermissionsForRole } from './permissions';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
+import { fetchProjectDetails } from './queries';
+import { syncActiveProject, syncProjectList, teardownSync } from './sync';
 import type { Project } from './types';
 
 export const ACTIVE_PROJECT_KEY = 'mc_active_project';
@@ -10,38 +11,7 @@ export const SCRIPT_POINTER_PREFIX = 'mc_active_script:';
 const LEGACY_SCRIPT_KEY = 'misfits_cavern_current_script';
 
 let booted = false;
-let projectChannel: RealtimeChannel | null = null;
 
-export async function fetchProjectDetails(projectId: string): Promise<Project | null> {
-  const [projectRes, budgetRes, timelineRes, crewRes, beatsRes, conceptRes, scenesRes, campaignsRes] = await Promise.all([
-    supabase.from('projects').select('*').eq('id', projectId).single(),
-    supabase.from('budget_items').select('*').eq('project_id', projectId),
-    supabase.from('timeline_items').select('*').eq('project_id', projectId),
-    supabase.from('project_crew').select('*, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', projectId),
-    supabase.from('project_beats').select('*').eq('project_id', projectId).order('created_at'),
-    supabase.from('concept_assets').select('*').eq('project_id', projectId).order('created_at'),
-    supabase.from('scenes').select('*').eq('project_id', projectId).order('scene_number'),
-    supabase.from('campaigns').select('*').eq('project_id', projectId).order('created_at'),
-  ]);
-
-  if (!projectRes.data) return null;
-  return {
-    ...projectRes.data,
-    budget_items: budgetRes.data || [],
-    timeline_items: timelineRes.data || [],
-    crew: (crewRes.data || []).map((c: any) => ({
-      id: c.id,
-      name: c.profiles?.username || 'Unknown',
-      role: c.role,
-      avatar: c.profiles?.avatar_url || null,
-      status: 'confirmed',
-    })),
-    beats: beatsRes.data || [],
-    concept_assets: conceptRes.data || [],
-    scenes: scenesRes.data || [],
-    campaigns: campaignsRes.data || [],
-  } as unknown as Project;
-}
 
 export async function refreshActiveProject(id: string) {
   const full = await fetchProjectDetails(id);
@@ -100,40 +70,9 @@ async function loadProjects() {
   setProject({ status: 'ready', list: rows, active });
 }
 
-function subscribeRealtime() {
-  if (projectChannel) return;
-  projectChannel = supabase
-    .channel('project-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
-      if (payload.eventType === 'UPDATE') {
-        const updated = payload.new as Project;
-        const { project, setProject } = osState();
-        setProject({
-          list: project.list.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)),
-          active: project.active?.id === updated.id ? { ...project.active, ...updated } : project.active,
-        });
-      }
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'budget_items' }, (payload) => {
-      const item = (payload.new || payload.old) as any;
-      if (osState().project.active?.id === item.project_id) refreshActiveProject(item.project_id);
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'timeline_items' }, (payload) => {
-      const item = (payload.new || payload.old) as any;
-      if (osState().project.active?.id === item.project_id) refreshActiveProject(item.project_id);
-    })
-    .subscribe();
-}
-
-function unsubscribeRealtime() {
-  if (projectChannel) {
-    supabase.removeChannel(projectChannel);
-    projectChannel = null;
-  }
-}
 
 export function resetOS() {
-  unsubscribeRealtime();
+  teardownSync();
   if (typeof window !== 'undefined') {
     localStorage.removeItem(ACTIVE_PROJECT_KEY);
     localStorage.removeItem(LEGACY_SCRIPT_KEY);
@@ -156,7 +95,8 @@ export async function bootOS() {
     if (user) {
       await resolveSessionUser(user.id, user.email ?? null);
       await loadProjects();
-      subscribeRealtime();
+      syncProjectList();
+      syncActiveProject(osState().project.active?.id ?? null);
     } else {
       setSession({ status: 'anon' });
       setProject({ status: 'ready' });
@@ -181,7 +121,8 @@ export async function bootOS() {
         if (previousUserId !== session.user.id) {
           osState().setProject({ status: 'resolving', active: null, list: [] });
           await loadProjects();
-          subscribeRealtime();
+          syncProjectList();
+          syncActiveProject(osState().project.active?.id ?? null);
         }
       } catch (error) {
         console.error('OS session refresh error:', error);

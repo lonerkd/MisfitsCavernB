@@ -5,7 +5,9 @@
 
 export * from './types';
 export { useOSStore, osState } from './store';
-export { bootOS, resetOS, fetchProjectDetails, refreshActiveProject, ACTIVE_PROJECT_KEY, SCRIPT_POINTER_PREFIX } from './boot';
+export { bootOS, resetOS, refreshActiveProject, ACTIVE_PROJECT_KEY, SCRIPT_POINTER_PREFIX } from './boot';
+export { fetchProjectDetails } from './queries';
+export { syncActiveProject, syncProjectList, teardownSync, hydrateActiveProject } from './sync';
 export { osUserId, osUser, requireUserId, awaitOSUser } from './identity';
 export {
   osSignIn, osSignUp, osSignOut,

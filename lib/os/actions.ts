@@ -3,7 +3,9 @@ import { hasPermission, getProjectPermissions, type ProjectRole } from './permis
 import { logAuditAction } from '@/lib/supabase/audit';
 import type { Permission, AccessContext, UserRole } from '@/lib/context/types';
 import { osState } from './store';
-import { resetOS, fetchProjectDetails, refreshActiveProject, ACTIVE_PROJECT_KEY } from './boot';
+import { resetOS, refreshActiveProject, ACTIVE_PROJECT_KEY } from './boot';
+import { fetchProjectDetails } from './queries';
+import { syncActiveProject, hydrateActiveProject } from './sync';
 import { osNotify } from './notify';
 import type { Project } from './types';
 
@@ -53,6 +55,8 @@ export function osSetActiveProject(project: Project | null) {
     if (project?.id) localStorage.setItem(ACTIVE_PROJECT_KEY, project.id);
     else localStorage.removeItem(ACTIVE_PROJECT_KEY);
   }
+  syncActiveProject(project?.id ?? null);
+  if (project?.id) hydrateActiveProject(project.id);
 }
 
 export async function osRefreshProject(id: string) {
