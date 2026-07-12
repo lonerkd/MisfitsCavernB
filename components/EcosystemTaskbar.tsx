@@ -59,7 +59,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         Projects
-        <Link href="/projects" onClick={onClose} style={{
+        <Link href="/projects" prefetch={false} onClick={onClose} style={{
           color: 'rgba(215, 52, 11,0.7)', textDecoration: 'none', fontSize: 7,
           letterSpacing: 1.5,
           transition: 'color 0.2s',
@@ -351,7 +351,7 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
   }, [isHovered]);
 
   return (
-    <Link ref={iconRef} href={app.path} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
+    <Link ref={iconRef} href={app.path} prefetch={false} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
       <motion.div
         onHoverStart={onHoverStart}
         whileHover={{ scale: 1.18, y: -6 }}
@@ -826,7 +826,7 @@ export default function EcosystemTaskbar() {
             const isHovered = hoveredId === item.id;
             const Icon = item.icon;
             return (
-              <Link key={item.id} href={item.path} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
+              <Link key={item.id} href={item.path} prefetch={false} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
                 <motion.div
                   onHoverStart={() => setHoveredId(item.id)}
                   whileHover={{ scale: 1.18, y: -6 }}

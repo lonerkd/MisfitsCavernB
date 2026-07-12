@@ -63,7 +63,8 @@ export default function Navigation() {
         }}
       >
         <Link
-          href="/"
+          prefetch={false}
+              href="/"
           style={{
             fontFamily: 'var(--display)',
             fontSize: '1rem',
@@ -147,7 +148,8 @@ export default function Navigation() {
           {!isLoading && !isGuest ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
               <Link
-                href="/profile"
+                prefetch={false}
+              href="/profile"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
@@ -181,6 +183,7 @@ export default function Navigation() {
             </div>
           ) : (
             <Link
+              prefetch={false}
               href="/auth"
               style={{
                 marginLeft: 10,
@@ -249,7 +252,8 @@ export default function Navigation() {
                 transition={{ delay: i * 0.055, duration: 0.4 }}
               >
                 <Link
-                  href={link.href}
+                  prefetch={false}
+              href={link.href}
                   style={{
                     display: 'block',
                     fontFamily: 'var(--display)',
@@ -275,7 +279,8 @@ export default function Navigation() {
               {!isLoading && !isGuest ? (
                 <>
                   <Link
-                    href="/profile"
+                    prefetch={false}
+              href="/profile"
                     style={{
                       display: 'block', textAlign: 'center', padding: '14px',
                       background: 'rgba(255,255,255,0.06)',
@@ -302,7 +307,8 @@ export default function Navigation() {
                 </>
               ) : (
                 <Link
-                  href="/auth"
+                  prefetch={false}
+              href="/auth"
                   style={{
                     display: 'block',
                     textAlign: 'center',
