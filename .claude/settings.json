@@ -105,6 +105,7 @@
       "mcp__Supabase__generate_typescript_types",
       "mcp__Supabase__search_docs",
       "mcp__Supabase__execute_sql",
+      "mcp__Supabase__apply_migration",
 
       "mcp__Vercel__list_projects",
       "mcp__Vercel__list_deployments",
@@ -121,6 +122,7 @@
       "mcp__Vercel__search_vercel_documentation",
       "mcp__Vercel__web_fetch_vercel_url",
       "mcp__Vercel__get_access_to_vercel_url",
+      "mcp__Vercel__deploy_to_vercel",
 
       "mcp__github__get_me",
       "mcp__github__get_file_contents",
@@ -175,7 +177,6 @@
     ],
     "ask": [
       "Bash(git push*)",
-      "mcp__Supabase__apply_migration",
       "mcp__Supabase__create_project",
       "mcp__Supabase__pause_project",
       "mcp__Supabase__restore_project",
@@ -185,7 +186,6 @@
       "mcp__Supabase__reset_branch",
       "mcp__Supabase__rebase_branch",
       "mcp__Supabase__deploy_edge_function",
-      "mcp__Vercel__deploy_to_vercel",
       "mcp__github__merge_pull_request",
       "mcp__github__enable_pr_auto_merge",
       "mcp__github__delete_file",

@@ -136,31 +136,12 @@ Always test with two browsers/sessions simultaneously for realtime features
 
 
 
-## CURRENT STATE (as of the last session)
+## CURRENT STATE
 
-- Everything through PR #18 is merged to main: suite unification, live
-
-  co-editing, WebRTC voice, channel management UI, ConfirmProvider, security
-
-  hardening (anon share-link fix, orphan tables dropped, definer fns locked,
-
-  bucket listing removed), performance pass (42 FK indexes, 81 policies
-
-  rewritten to initplan form).
-
-- KNOWN REMAINING WORK:
-
-  a) 35 "multiple permissive policies" advisor warnings — needs careful
-
-     per-table policy consolidation (perf, not correctness).
-
-  b) Leaked-password protection — dashboard toggle, owner must flip it.
-
-  c) Old PR #7 is superseded — should be closed.
-
-  d) End-to-end browser smoke test of the full user journey.
-
-  e) README / production branding / docs polish.
+The live, authoritative iteration state — last changes, known issues, and
+follow-ups — is **`STATE.md`** in this directory. Read it at session start; do
+not trust any state snapshot hard-coded here. For the full map of tools,
+routing, and conventions, start at `INDEX.md`.
 
 
 

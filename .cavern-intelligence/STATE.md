@@ -1,5 +1,27 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Harness access + intelligence hub rebuild
+
+- **Committed Claude Code access config** (`.claude/settings.json`, was absent):
+  `enableAllProjectMcpServers`; `allow` for safe dev/verify/git + read MCP tools;
+  `ask` for consequential ops; `deny` on main-push / `.env*` / `sudo` / `rm -rf`.
+  Per owner request, **`apply_migration` and `deploy_to_vercel` are now in
+  `allow`** (no prompt) — the branch→PR→persona-test workflow is the safety net.
+- **SessionStart hook** `.claude/hooks/session-bootstrap.sh` injects
+  `AGENTS.md` + `STATE.md` every session (survives ephemeral containers).
+- **Rebuilt `.cavern-intelligence/` into a full hub** — added `INDEX.md`
+  (front door + read order), `tools-and-access.md` (MCP/permissions/skills/env),
+  `routing-and-surface.md` (all 30 routes, gating tiers, providers, module
+  ownership), `conventions.md` (data-access layer, toast/confirm, migrations,
+  the "usually inline" patterns). Wired them into `AGENTS.md`'s Deep Context
+  table; trimmed `CLAW.md`'s stale hard-coded state to defer to this file.
+  Manifest regenerated → 266 tracked files.
+- **CI blocker (unchanged, out of scope):** `next build` fails at
+  `/api/discord/notify` because `NEXT_PUBLIC_SUPABASE_ANON_KEY` is blank in
+  Actions secrets and the route eagerly builds a Supabase client. Fix = set the
+  secret + lazy-init the client (the lazy-init already exists in PR #39). Not
+  cherry-picked here per owner instruction.
+
 ## Active Iteration
 
 Repo audit + hardening pass (Milestones 0–1 of the audit plan in `~/.claude/plans/you-are-a-world-class-typed-corbato.md`): CI pipeline, unit-test harness, Discord notify route auth, real middleware session validation.
