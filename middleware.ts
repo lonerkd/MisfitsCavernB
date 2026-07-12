@@ -36,10 +36,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // createServerClient throws on missing URL/key with no fallback (unlike
+    // lib/supabase/client.ts's browser client) — every protected-path
+    // request would crash the middleware instead of failing safe. Redirect
+    // to /auth, matching the no-session outcome, rather than 500ing.
+    console.error('Middleware: missing Supabase env vars, redirecting to /auth');
+    const redirectUrl = new URL('/auth', request.url);
+    redirectUrl.searchParams.set('redirect', path);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {

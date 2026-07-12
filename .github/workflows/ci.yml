@@ -37,6 +37,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # No PLAYWRIGHT_BASE_URL set: playwright.config.ts's webServer builds
+      # and serves this checkout on localhost, so these specs test the PR's
+      # own code — not the deployed production site.
       # Unauthenticated smoke specs only; authed journeys need a seeded test user.
       - run: npx playwright test e2e/home-page-crash.spec.ts e2e/auth-validation.spec.ts
       - uses: actions/upload-artifact@v4
