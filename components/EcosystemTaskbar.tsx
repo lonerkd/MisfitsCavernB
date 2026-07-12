@@ -401,21 +401,28 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
   );
 }
 
-function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
+function AppIconCarousel({ apps, pathname, shrunk }: {
   apps: typeof APPS;
   pathname: string;
-  hoveredId: string | null;
-  setHoveredId: (id: string | null) => void;
   shrunk: boolean;
 }) {
+  // Local, per-copy hover state — the carousel triples every app for its
+  // infinite-scroll loop, so keying hover off app.id (shared across all
+  // three copies) lit up and tooltip'd all three at once whenever any one
+  // was hovered. Keyed by loop index instead: only the physical icon under
+  // the cursor reacts.
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean; vx: number; lastX: number; lastT: number } | null>(null);
+  const momentumRaf = useRef<number | null>(null);
   const setWidth = apps.length * (APP_ICON + APP_GAP);
   const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
   }, [setWidth]);
+
+  useEffect(() => () => stopMomentum(), []);
 
   const normalize = () => {
     const el = scrollRef.current;
@@ -435,9 +442,45 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   };
 
   const DRAG_THRESHOLD = 6;
+  const STEP = APP_ICON + APP_GAP;
+
+  const stopMomentum = () => {
+    if (momentumRaf.current !== null) {
+      cancelAnimationFrame(momentumRaf.current);
+      momentumRaf.current = null;
+    }
+  };
+
+  // Snaps to the nearest icon's center with an eased tween — the
+  // "magnetic" feel — instead of leaving the carousel wherever a drag or
+  // fling happened to stop.
+  const snapToNearest = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = Math.round(el.scrollLeft / STEP) * STEP;
+    const start = el.scrollLeft;
+    const delta = target - start;
+    if (Math.abs(delta) < 0.5) { normalize(); return; }
+    const duration = 260;
+    const startTime = performance.now();
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      el.scrollLeft = start + delta * ease(t);
+      if (t < 1) {
+        momentumRaf.current = requestAnimationFrame(tick);
+      } else {
+        momentumRaf.current = null;
+        normalize();
+      }
+    };
+    momentumRaf.current = requestAnimationFrame(tick);
+  };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false };
+    stopMomentum();
+    const now = performance.now();
+    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false, vx: 0, lastX: e.clientX, lastT: now };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -451,11 +494,39 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
       if (Math.abs(dx) <= DRAG_THRESHOLD) return;
       dragRef.current.moved = true;
     }
+    const now = performance.now();
+    const dt = Math.max(1, now - dragRef.current.lastT);
+    // Instantaneous velocity (px/ms), smoothed against the last sample so
+    // a single jittery frame doesn't dominate the momentum on release.
+    const instVx = (e.clientX - dragRef.current.lastX) / dt;
+    dragRef.current.vx = dragRef.current.vx * 0.7 + instVx * 0.3;
+    dragRef.current.lastX = e.clientX;
+    dragRef.current.lastT = now;
     scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
   };
   const onPointerUp = () => {
-    normalize();
-    if (dragRef.current) dragRef.current.moved = false;
+    const drag = dragRef.current;
+    const el = scrollRef.current;
+    if (drag) drag.moved = false;
+    if (drag && el && Math.abs(drag.vx) > 0.05) {
+      // Fling: keep coasting in the release direction with exponential
+      // friction, then hand off to snapToNearest for the magnetic settle.
+      let velocity = -drag.vx * 16; // px per frame at ~60fps
+      const friction = 0.94;
+      const tick = () => {
+        el.scrollLeft += velocity;
+        velocity *= friction;
+        if (Math.abs(velocity) > 0.3) {
+          momentumRaf.current = requestAnimationFrame(tick);
+        } else {
+          momentumRaf.current = null;
+          snapToNearest();
+        }
+      };
+      momentumRaf.current = requestAnimationFrame(tick);
+    } else {
+      snapToNearest();
+    }
   };
 
   return (
@@ -478,13 +549,14 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
           display: 'flex', alignItems: 'center', gap: APP_GAP, height: '100%',
           overflowX: 'auto', overflowY: 'hidden', cursor: 'grab', touchAction: 'pan-x',
           scrollbarWidth: 'none', msOverflowStyle: 'none' as any,
+          scrollSnapType: 'x proximity',
         }}
       >
         {loopApps.map((app, i) => {
           const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
           return (
-            <div key={`${app.id}-${i}`} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
-              <AppIcon app={app} isActive={isActive} isHovered={hoveredId === app.id} onHoverStart={() => setHoveredId(app.id)} />
+            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'center' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
+              <AppIcon app={app} isActive={isActive} isHovered={hoveredIndex === i} onHoverStart={() => setHoveredIndex(i)} />
             </div>
           );
         })}
@@ -703,7 +775,7 @@ export default function EcosystemTaskbar() {
 
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
-          <AppIconCarousel apps={visibleApps} pathname={pathname} hoveredId={hoveredId} setHoveredId={setHoveredId} shrunk={contextOpen} />
+          <AppIconCarousel apps={visibleApps} pathname={pathname} shrunk={contextOpen} />
 
           <div style={{
             width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
