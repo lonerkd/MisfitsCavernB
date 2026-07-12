@@ -12,8 +12,9 @@ import AnimatedSection from '@/components/AnimatedSection';
 import { getPortfolioProjects } from '@/lib/supabase/portfolio';
 import { supabase } from '@/lib/supabase/client';
 import { useEffect } from 'react';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
+import { awaitOSUser } from '@/lib/os';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -277,7 +278,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await awaitOSUser();
         if (!user) return;
         const [projRes, campRes] = await Promise.all([
           supabase.from('projects').select('id,title,festival_submissions'),
@@ -301,7 +302,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await awaitOSUser();
         if (!user) { setLoading(false); return; }
 
         const data = await getPortfolioProjects(user.id);

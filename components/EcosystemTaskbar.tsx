@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import NotificationBell from './NotificationBell';

@@ -3,17 +3,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/context/AuthContext';
-import { useCurrentUser } from '@/lib/permissions/usePermissions';
+import { useCurrentUser, osSignOut } from '@/lib/os';
 import { LogOut, Settings, BarChart3, Users } from 'lucide-react';
 
 export function RoleBasedNav() {
-  const { signOut } = useAuth();
   const router = useRouter();
   const { isAuthenticated, isAdmin, isCreator, isGuest, user } = useCurrentUser();
 
   const handleSignOut = async () => {
-    await signOut();
+    await osSignOut();
     router.push('/');
   };
 
@@ -100,7 +98,7 @@ export function RoleBasedNav() {
 
 export function UserStatusBadge() {
   const { user } = useCurrentUser();
-  const { userRole } = useAuth();
+  const { userRole } = useCurrentUser();
 
   if (!user) return null;
 

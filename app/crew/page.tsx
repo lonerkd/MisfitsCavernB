@@ -8,9 +8,10 @@ import EmptyState from '@/components/EmptyState';
 import { Input } from '@/components/ui/Input';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import type { Profile } from '@/lib/supabase/profiles';
+import { awaitOSUser } from '@/lib/os';
 
 const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor'];
 
@@ -45,7 +46,7 @@ export default function CrewPage() {
   const onlineIds = useOnlinePresence(viewerId);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
+    awaitOSUser().then((user) => setViewerId(user?.id ?? null));
   }, []);
 
   useEffect(() => {

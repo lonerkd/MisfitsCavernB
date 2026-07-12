@@ -22,7 +22,7 @@ import { useConfirm } from '@/components/Confirm';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
@@ -37,7 +37,8 @@ import { syncSceneElementsFromScript, syncBudgetFromSceneElements, ELEMENT_CATEG
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X, Tags } from 'lucide-react';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
-import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useOSGate } from '@/lib/os';
+import { awaitOSUser } from '@/lib/os';
 
 interface Asset {
   id: string;
@@ -129,7 +130,7 @@ function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isO
   const sendComment = async () => {
     const t = commentText.trim();
     if (!t || !asset?.id) return;
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await awaitOSUser();
     if (!user) return;
     const { data } = await supabase.from('asset_comments').insert({ asset_id: asset.id, user_id: user.id, content: t, timecode: 'Global' }).select('id,content,timecode,created_at').single();
     if (data) setComments(p => [...p, { ...data, profiles: { username: 'You' } }]);
@@ -1655,7 +1656,7 @@ function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boole
 }
 
 export default function StudioPage() {
-  useRequireAuth();
+  useOSGate();
   const { toast } = useToast();
   const confirm = useConfirm();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
@@ -1930,7 +1931,7 @@ export default function StudioPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await awaitOSUser();
       if (!user) return;
       setUser(user);
 
@@ -2381,7 +2382,7 @@ export default function StudioPage() {
                     if (!activeProject || !conceptUrl.trim() || adding) return;
                     setAdding(true);
                     try {
-                      const { data: { user } } = await supabase.auth.getUser();
+                      const user = await awaitOSUser();
                       const board = (conceptBoard.trim() || (activeConceptBoard !== 'All' ? activeConceptBoard : '')) || null;
                       const { error } = await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
                       if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
@@ -2819,7 +2820,7 @@ export default function StudioPage() {
                           if (!activeProject || !campaignTitle.trim() || adding) return;
                           setAdding(true);
                           try {
-                            const { data: { user } } = await supabase.auth.getUser();
+                            const user = await awaitOSUser();
                             const { error } = await supabase.from('campaigns').insert({
                               project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id,
                               target_demographic: campaignDemo.trim() || null, budget: Number(campaignBudget) || 0,

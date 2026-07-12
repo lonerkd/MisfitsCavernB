@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { parseScript } from '@/lib/scriptos/parser';
+import { awaitOSUser } from '@/lib/os';
 import {
   createPortfolioProject,
   getPortfolioBlocks,
@@ -82,7 +83,7 @@ export default function PitchBoardPage() {
     let alive = true;
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await awaitOSUser();
         if (!alive) return;
         if (!user) { setFatal('Sign in to build a pitch board.'); setLoading(false); return; }
         setUserId(user.id);

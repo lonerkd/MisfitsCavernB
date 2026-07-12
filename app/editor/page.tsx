@@ -21,10 +21,10 @@ import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type Chara
 import type { ScriptLine, LineType } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';
-import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useOSGate } from '@/lib/os';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
 import { logAuditAction } from '@/lib/supabase/audit';
@@ -41,6 +41,7 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
+import { awaitOSUser } from '@/lib/os';
 
 const PRINT_COLORS: Record<string, string> = {
   slug: '#000',
@@ -215,7 +216,7 @@ function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumb
 }
 
 export default function EditorPage() {
-  useRequireAuth();
+  useOSGate();
   const { activeProject } = useProject();
   const { playUri } = useSpotify();
 
@@ -257,7 +258,7 @@ export default function EditorPage() {
 
   const submitAnnotation = useCallback(async () => {
     if (!annotationDraft || !currentScript?.id || !activeProject?.id || !annotationDraft.text.trim()) return;
-    const { data: auth } = await supabase.auth.getUser();
+    const auth = { user: await awaitOSUser() };
     if (!auth.user) return;
     try {
       await addAnnotation({ scriptId: currentScript.id, projectId: activeProject.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), createdBy: auth.user.id });
@@ -376,7 +377,7 @@ export default function EditorPage() {
   const handleCastCharacter = useCallback(async (characterName: string, crewUserId: string) => {
     if (!activeProject?.id) return;
     try {
-      const { data: auth } = await supabase.auth.getUser();
+      const auth = { user: await awaitOSUser() };
       if (!auth.user) return;
       if (!crewUserId) {
         await removeCasting(activeProject.id, characterName);
@@ -428,7 +429,7 @@ export default function EditorPage() {
           .limit(1);
         let row = data?.[0];
         if (!row) {
-          const { data: auth } = await supabase.auth.getUser();
+          const auth = { user: await awaitOSUser() };
           const uid = auth.user?.id;
           const ins = await supabase
             .from('scripts')

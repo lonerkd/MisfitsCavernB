@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Bell, Check, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Notification, fetchNotifications, markRead, markAllRead, deleteNotification, typeEnabled } from '@/lib/supabase/notifications';
+import { awaitOSUser } from '@/lib/os';
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -31,10 +32,10 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return;
-      setUserId(data.user.id);
-      load(data.user.id);
+    awaitOSUser().then((user) => {
+      if (!user) return;
+      setUserId(user.id);
+      load(user.id);
     });
   }, [load]);
 

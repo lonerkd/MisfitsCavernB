@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, TrendingUp, Users, Zap, Clock } from 'lucide-react';
 
 interface Analytics {

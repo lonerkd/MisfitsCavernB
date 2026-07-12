@@ -33,7 +33,8 @@
     "react-dom": "^18.2.0",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.5.0",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

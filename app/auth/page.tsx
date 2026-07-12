@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
-import { signIn, signUp } from '@/lib/supabase/auth';
+import { osSignIn as signIn, osSignUp as signUp } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
 import { supabase } from '@/lib/supabase/client';

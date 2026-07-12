@@ -1,6 +1,7 @@
 import { supabase } from './client';
 import { createChannel } from './channels';
 import { logAuditAction } from './audit';
+import { awaitOSUser } from '@/lib/os';
 
 export interface DBProject {
   id: string;
@@ -80,7 +81,7 @@ export async function deleteProject(projectId: string) {
 
   if (error) throw error;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (user) logAuditAction(user.id, 'project_deleted', 'project', projectId, { title: existing?.title });
 
   return true;

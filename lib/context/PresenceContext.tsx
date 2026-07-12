@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
+import { awaitOSUser } from '@/lib/os';
 
 export interface PresenceState {
   userId: string;
@@ -39,7 +40,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const setupPresence = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await awaitOSUser();
       if (!user || cancelled) return;
 
       myUserId = user.id;
@@ -94,7 +95,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const updateScenePresence = async (sceneIdx: number | null) => {
     const currentChannel = channelRef.current;
     if (currentChannel && currentChannel.state === 'joined') {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await awaitOSUser();
       if (!user) return;
       const myColor = PRESENCE_COLORS[(user.id.charCodeAt(0) + user.id.charCodeAt(user.id.length - 1)) % PRESENCE_COLORS.length];
 

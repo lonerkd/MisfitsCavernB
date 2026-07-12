@@ -11,6 +11,7 @@ import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
+import { awaitOSUser } from '@/lib/os';
 
 const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
 
@@ -43,7 +44,7 @@ export default function ManagePortfolioPage() {
   const [mediaForm, setMediaForm] = useState<Record<string, { title: string; url: string; media_type: string }>>({});
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    awaitOSUser().then(async (user) => {
       setUser(user);
       if (user) await load(user.id);
       setLoading(false);

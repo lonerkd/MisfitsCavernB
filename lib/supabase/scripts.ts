@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { logAuditAction } from './audit';
+import { awaitOSUser } from '@/lib/os';
 
 export interface DBScript {
   id: string;
@@ -16,7 +17,7 @@ export interface DBScript {
 
 export async function createScript(projectId: string, title: string, format: 'screenplay' | 'teleplay' | 'stage-play' = 'screenplay') {
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase

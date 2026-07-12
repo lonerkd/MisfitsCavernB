@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
+import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
 
 export interface StoredScript {
   id: string;
@@ -16,7 +17,7 @@ export interface StoredScript {
 // ── Offline Queue / Sync Manager ─────────────────────────────────────────────
 
 export async function syncPendingScripts() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (!user) return;
 
   const allKeys = await keys();
@@ -62,7 +63,7 @@ if (typeof window !== 'undefined') {
 // ── Storage APIs ─────────────────────────────────────────────────────────────
 
 export async function getAllScripts(projectId?: string): Promise<StoredScript[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (!user) return [];
 
   let query = supabase
@@ -164,7 +165,7 @@ export async function getScript(id: string): Promise<StoredScript | null> {
 }
 
 export async function saveScript(script: Partial<StoredScript>): Promise<StoredScript | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (!user) return null;
 
   const isNew = !script.id;
@@ -228,15 +229,18 @@ export async function createNewScript(title: string = 'Untitled', projectId?: st
   return saveScript({ title, content: '', project_id: projectId });
 }
 
-const CURRENT_SCRIPT_KEY = 'misfits_cavern_current_script';
+function scriptPointerKey(): string {
+  const projectId = osState().project.active?.id || 'personal';
+  return `${SCRIPT_POINTER_PREFIX}${projectId}`;
+}
 
 export function getCurrentScriptId(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(CURRENT_SCRIPT_KEY);
+  return localStorage.getItem(scriptPointerKey());
 }
 
 export function setCurrentScriptId(id: string): void {
-  localStorage.setItem(CURRENT_SCRIPT_KEY, id);
+  localStorage.setItem(scriptPointerKey(), id);
 }
 
 export async function importScriptFromText(text: string, title: string, projectId?: string): Promise<StoredScript | null> {

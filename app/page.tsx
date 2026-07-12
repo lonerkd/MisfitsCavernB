@@ -13,7 +13,8 @@ import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 import { Button } from '@/components/ui/Button';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
+import { awaitOSUser } from '@/lib/os';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
 function Viewfinder({ size = 20, color = 'rgba(224, 221, 174,0.3)' }: { size?: number; color?: string }) {
@@ -443,8 +444,7 @@ export default function Home() {
 
   useEffect(() => {
     const palette = ['#6366f1', '#10b981', '#d7340b', '#f59e0b', '#8b5cf6', '#06b6d4'];
-    supabase.auth.getUser().then(async ({ data }) => {
-      const user = data.user;
+    awaitOSUser().then(async (user) => {
       setLoggedIn(!!user);
       if (!user) return;
 

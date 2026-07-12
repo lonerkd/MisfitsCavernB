@@ -10,15 +10,16 @@ import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
-import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useOSGate } from '@/lib/os';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import { awaitOSUser } from '@/lib/os';
 
 interface Message {
   id: string;
@@ -465,7 +466,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 }
 
 export default function LoungePage() {
-  const { isLoading } = useRequireAuth();
+  const { isLoading } = useOSGate();
   const { toast } = useToast();
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -529,7 +530,7 @@ export default function LoungePage() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await awaitOSUser();
       if (user && mounted) {
         setCurrentUser(user);
         const { data: mine } = await supabase.from('profiles').select('username, avatar_url, role, status').eq('id', user.id).single();

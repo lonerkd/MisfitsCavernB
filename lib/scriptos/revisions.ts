@@ -3,6 +3,7 @@
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
 import * as DiffLib from 'diff';
+import { awaitOSUser } from '@/lib/os';
 
 export const REVISION_COLORS = [
   { name: 'White',     color: '#ffffff', bg: 'rgba(255,255,255,0.05)' },
@@ -85,7 +86,7 @@ export async function fetchRevisionsDB(scriptId: string): Promise<Revision[]> {
 
 export async function createRevisionDB(scriptId: string, content: string, existingCount: number, label?: string): Promise<Revision | null> {
   const colorIndex = existingCount % REVISION_COLORS.length;
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   const { data, error } = await supabase
     .from('script_revisions')
     .insert({ script_id: scriptId, color_index: colorIndex, label: label || `${REVISION_COLORS[colorIndex].name} Revision`, snapshot: content, created_by: user?.id })

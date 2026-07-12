@@ -17,10 +17,11 @@ import type { Json } from '@/lib/supabase/database.types';
 import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { usePillZone } from '@/lib/context/PillContext';
-import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/context/ProjectContext';
+import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/os';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import type { ScriptFormat } from '@/lib/scriptos/parser';
+import { awaitOSUser } from '@/lib/os';
 
 const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
@@ -665,7 +666,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   }, [projectId]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+    awaitOSUser().then((user) => setUserId(user?.id ?? null));
     load();
   }, [load]);
 

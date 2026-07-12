@@ -13,11 +13,12 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { useProject, type Phase, mapStatusToPhase } from '@/lib/context/ProjectContext';
+import { useProject, type Phase, mapStatusToPhase } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
-import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useOSGate } from '@/lib/os';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import { logActivity } from '@/lib/supabase/activity';
+import { awaitOSUser } from '@/lib/os';
 
 const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
 
@@ -327,7 +328,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
 }
 
 export default function ProjectsPage() {
-  useRequireAuth();
+  useOSGate();
   const [projectsList, setProjectsList] = useState<ProjectCardViewModel[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
@@ -353,7 +354,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
 
-    withTimeout(supabase.auth.getUser(), 12000, 'getUser timed out').then(({ data: { user } }) => {
+    withTimeout(awaitOSUser(), 12000, 'auth timed out').then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
       getUserProjects(user.id).then(data => {

@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
-import { ActionButton, IfAccess } from '@/lib/permissions/access-control';
+import { ActionButton, IfAccess } from '@/lib/os';
 
 interface UserRow {
   id: string;

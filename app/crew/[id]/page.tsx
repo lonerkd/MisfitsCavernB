@@ -10,6 +10,7 @@ import EmptyState from '@/components/EmptyState';
 import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import type { Profile } from '@/lib/supabase/profiles';
+import { awaitOSUser } from '@/lib/os';
 
 interface MediaItem {
   id: string;
@@ -42,7 +43,7 @@ export default function CrewMemberPage() {
   const isOnline = !!profile && onlineIds.has(profile.id);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
+    awaitOSUser().then((user) => setViewerId(user?.id ?? null));
   }, []);
 
   useEffect(() => {

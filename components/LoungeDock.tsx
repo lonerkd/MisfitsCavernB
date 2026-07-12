@@ -6,9 +6,10 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { MessageSquare, Send, ExternalLink, Hash } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { listChannels, type Channel } from '@/lib/supabase/channels';
 import { getChannelMessagesByUuid, sendChannelMessage, subscribeToChannelUuid, type DBMessage } from '@/lib/supabase/messages';
+import { awaitOSUser } from '@/lib/os';
 
 const LAST_SEEN_KEY = 'mc_lounge_last_seen';
 
@@ -27,7 +28,7 @@ export default function LoungeDock() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => { if (data.user) setUserId(data.user.id); });
+    awaitOSUser().then((user) => { if (user) setUserId(user.id); });
   }, []);
 
   const loadChannels = useCallback(async () => {

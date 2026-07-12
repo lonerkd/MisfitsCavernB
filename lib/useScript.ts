@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { awaitOSUser } from '@/lib/os';
 import {
   createScript as sbCreateScript,
   getScript as sbGetScript,
@@ -21,9 +22,7 @@ export interface ScriptData {
 }
 
 async function getUserId(): Promise<string> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (!user) throw new Error('Not authenticated');
   return user.id;
 }

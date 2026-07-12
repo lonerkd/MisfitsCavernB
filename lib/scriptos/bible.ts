@@ -2,6 +2,7 @@
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
+import { awaitOSUser } from '@/lib/os';
 
 export interface CharacterProfile {
   id?: string;
@@ -90,7 +91,7 @@ export async function saveCharacterProfiles(scriptId: string, profiles: Characte
 }
 
 async function doSaveCharacterProfiles(scriptId: string, profiles: CharacterProfile[]): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   const { data: existing } = await supabase.from('script_characters').select('id,name').eq('script_id', scriptId);
   const existingByName = new Map((existing || []).map((r: any) => [r.name, r.id]));
 

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getProjectCrew, assignCrewMember, updateCrewMemberRole, removeCrewMember, type CrewRole } from '@/lib/supabase/crew-management';
 import { searchProfiles } from '@/lib/supabase/profiles';
 import { useToast } from './Toast';
-import { ActionButton, IfAccess } from '@/lib/permissions/access-control';
+import { ActionButton, IfAccess } from '@/lib/os';
 
 interface CrewMember {
   id: string;

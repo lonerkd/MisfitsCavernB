@@ -4,8 +4,7 @@ import { Bebas_Neue, DM_Mono, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { ConfirmProvider } from '@/components/Confirm';
-import { ProjectProvider } from '@/lib/context/ProjectContext';
-import { AuthProvider } from '@/lib/context/AuthContext';
+import { OSProvider } from '@/lib/os';
 import { PresenceProvider } from '@/lib/context/PresenceContext';
 import { PillProvider } from '@/lib/context/PillContext';
 import { SpotifyProvider } from '@/lib/context/SpotifyContext';
@@ -51,11 +50,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
       <body>
-        <AuthProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <ProjectProvider>
-                <PresenceProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <OSProvider>
+              <PresenceProvider>
                   <PillProvider>
                   <SpotifyProvider>
                     <CustomCursor />
@@ -66,11 +64,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <div className="main-content-container">{children}</div>
                   </SpotifyProvider>
                   </PillProvider>
-                </PresenceProvider>
-              </ProjectProvider>
-            </ConfirmProvider>
-          </ToastProvider>
-        </AuthProvider>
+              </PresenceProvider>
+            </OSProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

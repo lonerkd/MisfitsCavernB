@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { awaitOSUser } from '@/lib/os';
 
 export interface Channel {
   id: string;
@@ -38,7 +39,7 @@ export async function createChannel(input: {
   post_policy?: 'viewers' | 'members' | 'managers';
   topic?: string;
 }): Promise<{ channel: Channel | null; error: string | null }> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   const name = input.name.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 40);
 
   const { error } = await supabase.from('channels').insert({
@@ -113,7 +114,7 @@ export async function hasDiscordWebhook(channelId: string): Promise<boolean> {
   return !!data;
 }
 export async function setDiscordWebhook(channelId: string, webhookUrl: string): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
 
   await supabase.from('discord_integrations').delete().eq('channel_id', channelId);
   const { error } = await supabase.from('discord_integrations').insert({

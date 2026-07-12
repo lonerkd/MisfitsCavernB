@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { getCurrentUser } from '@/lib/supabase/auth';
+import { awaitOSUser } from '@/lib/os';
 
 export interface Collaborator {
   userId: string;
@@ -44,7 +44,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     let cancelled = false;
 
     (async () => {
-      const user = await getCurrentUser();
+      const user = await awaitOSUser();
       if (!user || cancelled) return;
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single();
       const username = profile?.username || user.email?.split('@')[0] || 'Anonymous';
@@ -103,7 +103,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       setIsSyncing(true);
       channelRef.current.send({ type: 'broadcast', event: 'content_update', payload: { content: localContent, timestamp: Date.now() } });
       lastRemoteRef.current = localContent;
-      const user = await getCurrentUser();
+      const user = await awaitOSUser();
       if (user) await supabase.from('scripts').update({ content: localContent, updated_at: new Date().toISOString(), last_edited_by: user.id }).eq('id', scriptId);
       setLastSyncedAt(new Date());
       setIsSyncing(false);

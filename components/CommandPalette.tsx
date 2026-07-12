@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard } from 'lucide-react';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
+import { awaitOSUser } from '@/lib/os';
 
 interface Command {
   id: string;
@@ -62,7 +63,7 @@ export default function CommandPalette() {
       setTimeout(() => inputRef.current?.focus(), 30);
 
       const fetchData = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await awaitOSUser();
         if (!user) return;
 
         const [scriptsRes, assetsRes] = await Promise.all([

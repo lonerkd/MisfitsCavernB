@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
-import { ProtectedPage } from '@/lib/permissions/access-control';
-import { useCurrentUser } from '@/lib/permissions/usePermissions';
+import { ProtectedPage } from '@/lib/os';
+import { useCurrentUser } from '@/lib/os';
 import { BarChart3, Users, Settings, Activity } from 'lucide-react';
 import Link from 'next/link';
 

@@ -2,6 +2,7 @@
 
 import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
+import { awaitOSUser } from '@/lib/os';
 
 export interface TitlePage {
   title: string;
@@ -68,7 +69,7 @@ export async function saveTitlePage(scriptId: string, updates: Partial<TitlePage
 
     await setCacheItem(`${TITLE_KEY}_${scriptId}`, merged);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await awaitOSUser();
     await supabase.from('script_metadata').upsert(
       { script_id: scriptId, title_page: merged, updated_by: user?.id, updated_at: new Date().toISOString() },
       { onConflict: 'script_id' }

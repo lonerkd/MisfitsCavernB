@@ -7,11 +7,12 @@ import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plu
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, contextAwareSearch } from '@/lib/spotify/search';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/Toast';
+import { awaitOSUser } from '@/lib/os';
 
 const MOODS = [
 
@@ -114,7 +115,7 @@ export default function SoundtrackPage() {
 
     setUploadingSfx(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const userData = { user: await awaitOSUser() };
       if (!userData.user) throw new Error('Not authenticated');
       if (!activeProject?.id) throw new Error('Select an active project first');
 
@@ -149,7 +150,7 @@ export default function SoundtrackPage() {
       return;
     }
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const userData = { user: await awaitOSUser() };
       const { error } = await supabase.from('project_audio_references').insert({
         project_id: activeProject.id,
         added_by: userData.user?.id,

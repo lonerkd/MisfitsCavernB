@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu } from 'lucide-react';
-import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/permissions/usePermissions';
+import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/os';
 import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [

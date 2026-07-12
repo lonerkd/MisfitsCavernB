@@ -13,9 +13,10 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
 import { usePillStage } from '@/lib/context/PillContext';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
+import { awaitOSUser } from '@/lib/os';
 
 const ROLES = [
   'Director', 'DP / Cinematographer', 'Editor', 'Sound Designer',
@@ -407,7 +408,7 @@ export default function JobsPage() {
   useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    awaitOSUser().then((user) => {
       setUser(user);
       if (user) loadMyJobs(user.id);
     });

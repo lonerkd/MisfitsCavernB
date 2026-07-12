@@ -11,6 +11,7 @@ import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { assignCrewMember } from '@/lib/supabase/crew-management';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
+import { awaitOSUser } from '@/lib/os';
 
 interface Application {
   id: string;
@@ -121,7 +122,7 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     loadJob();
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
+    awaitOSUser().then((u) => {
       setUser(u);
       if (u) checkAlreadyApplied(u.id);
     });

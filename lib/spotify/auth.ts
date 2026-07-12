@@ -1,4 +1,5 @@
 import { supabase } from '../supabase/client';
+import { awaitOSUser } from '@/lib/os';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '';
 
@@ -37,7 +38,7 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
   window.localStorage.setItem('spotify_token_expires_at', expiresAt.toString());
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await awaitOSUser();
     if (!user) return;
     const storedRefreshToken = refreshToken || window.localStorage.getItem('spotify_refresh_token');
     if (!storedRefreshToken) return;
@@ -139,7 +140,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 async function loadTokensFromAccount(): Promise<string | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await awaitOSUser();
     if (!user) return null;
 
     const { data, error } = await supabase
@@ -186,7 +187,7 @@ export function logoutSpotify() {
   window.localStorage.removeItem('spotify_code_verifier');
   window.dispatchEvent(new Event('spotify-auth-changed'));
 
-  supabase.auth.getUser().then(({ data: { user } }) => {
+  awaitOSUser().then((user) => {
     if (!user) return;
     supabase.from('spotify_connections').delete().eq('user_id', user.id).then(() => {});
   });

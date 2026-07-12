@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { awaitOSUser } from '@/lib/os';
 
 export interface Activity {
   id: string;
@@ -15,7 +16,7 @@ export interface Activity {
 }
 
 export async function logActivity(action: string, targetType: string, targetId: string, metadata: any = {}) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await awaitOSUser();
   if (!user) return null;
 
   const { data, error } = await supabase
