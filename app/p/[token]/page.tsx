@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Film } from 'lucide-react';
@@ -30,7 +30,8 @@ interface Project {
   profiles: PublicProfile | null;
 }
 
-export default function PublicPortfolioPage({ params }: { params: { token: string } }) {
+export default function PublicPortfolioPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);

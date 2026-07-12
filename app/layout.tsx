@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import dynamic from 'next/dynamic';
 import { Bebas_Neue, DM_Mono, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
@@ -9,11 +8,7 @@ import { PresenceProvider } from '@/lib/context/PresenceContext';
 import { PillProvider } from '@/lib/context/PillContext';
 import { SpotifyProvider } from '@/lib/context/SpotifyContext';
 
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
-const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
-const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
-const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
-const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
+import ClientShell from '@/components/ClientShell';
 
 const bebasNeue = Bebas_Neue({
   weight: '400',
@@ -56,11 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <PresenceProvider>
                   <PillProvider>
                   <SpotifyProvider>
-                    <CustomCursor />
-                    <CommandPalette />
-                    <ShortcutsOverlay />
-                    <ThemeInitializer />
-                    <EcosystemTaskbar />
+                    <ClientShell />
                     <div className="main-content-container">{children}</div>
                   </SpotifyProvider>
                   </PillProvider>
