@@ -7,13 +7,22 @@ import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
 // only thing that can ever read it back is this route, using the
 // service-role key to bypass RLS entirely. Never forward the URL itself in
 // any response; this route only ever returns success/failure.
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+// Created lazily inside the handler: instantiating at module scope crashes
+// `next build`'s page-data collection when env vars are absent (e.g. CI
+// without secrets configured).
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
 
 export async function POST(req: NextRequest) {
+  const supabaseAdmin = getSupabaseAdmin();
+  if (!supabaseAdmin) {
+    return NextResponse.json({ ok: false, error: 'Server not configured' }, { status: 500 });
+  }
+
   // Rate limit: 30 requests per 60s per IP
   const ip = getClientIp(req);
   const rateLimit = checkRateLimit(ip, { maxRequests: 30, windowMs: 60_000 });
