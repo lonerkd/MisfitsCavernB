@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -340,8 +341,17 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
   onHoverStart: () => void;
 }) {
   const Icon = app.icon;
+  const iconRef = useRef<HTMLAnchorElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ left: number; bottom: number } | null>(null);
+
+  useEffect(() => {
+    if (!isHovered || !iconRef.current) { setTooltipPos(null); return; }
+    const rect = iconRef.current.getBoundingClientRect();
+    setTooltipPos({ left: rect.left + rect.width / 2, bottom: window.innerHeight - rect.top });
+  }, [isHovered]);
+
   return (
-    <Link href={app.path} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
+    <Link ref={iconRef} href={app.path} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
       <motion.div
         onHoverStart={onHoverStart}
         whileHover={{ scale: 1.18, y: -6 }}
@@ -366,23 +376,27 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
           )}
         </AnimatePresence>
       </motion.div>
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }}
-            transition={{ duration: 0.18 }}
-            style={{
-              position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-              background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
-              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-              padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
-            }}
-          >
-            {app.name}
-            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {typeof document !== 'undefined' && tooltipPos && createPortal(
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: 'fixed', left: tooltipPos.left, bottom: tooltipPos.bottom, transform: 'translateX(-50%)',
+                background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
+                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
+                padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
+                zIndex: 100000,
+              }}
+            >
+              {app.name}
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </Link>
   );
 }
@@ -420,6 +434,8 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
     normalize();
   };
 
+  const DRAG_THRESHOLD = 6;
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -427,10 +443,20 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current || !scrollRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 3) dragRef.current.moved = true;
+    // Only commit to a drag (and move the carousel) once the pointer has
+    // travelled past the threshold — otherwise a stationary click on an
+    // icon visibly nudges every icon under the cursor before the click
+    // even registers, and then gets suppressed as a "drag".
+    if (!dragRef.current.moved) {
+      if (Math.abs(dx) <= DRAG_THRESHOLD) return;
+      dragRef.current.moved = true;
+    }
     scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
   };
-  const onPointerUp = () => normalize();
+  const onPointerUp = () => {
+    normalize();
+    if (dragRef.current) dragRef.current.moved = false;
+  };
 
   return (
     <motion.div

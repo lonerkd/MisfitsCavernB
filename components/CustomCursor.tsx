@@ -93,16 +93,28 @@ export default function CustomCursor() {
     return 'default';
   };
 
+  // Position/velocity live in refs, not state — clicking flips `clicking`
+  // state on every mousedown/up, and if that were a dependency here the
+  // whole rAF loop would tear down and rebuild, resetting mx/my/rx/ry to
+  // 0,0 and visibly snapping the cursor to the top-left corner on every
+  // click before the next mousemove arrived to correct it.
+  const posRef = useRef({ mx: 0, my: 0, rx: 0, ry: 0, hasMoved: false });
+  const clickingRef = useRef(false);
+  useEffect(() => { clickingRef.current = clicking; }, [clicking]);
+
   useEffect(() => {
     if (!enabled) return;
     let raf: number;
-    let mx = 0, my = 0;
-    let rx = 0, ry = 0;
 
     const onMove = (e: MouseEvent) => {
-      mx = e.clientX;
-      my = e.clientY;
-      if (!visible) setVisible(true);
+      posRef.current.mx = e.clientX;
+      posRef.current.my = e.clientY;
+      if (!posRef.current.hasMoved) {
+        posRef.current.rx = e.clientX;
+        posRef.current.ry = e.clientY;
+        posRef.current.hasMoved = true;
+      }
+      setVisible(true);
       setMode(prev => { const next = resolveMode(e.target as HTMLElement); return next === prev ? prev : next; });
     };
     const onLeave = () => setVisible(false);
@@ -111,14 +123,16 @@ export default function CustomCursor() {
     const onUp = () => setClicking(false);
 
     const tick = () => {
-      rx += (mx - rx) * 0.28;
-      ry += (my - ry) * 0.28;
+      const p = posRef.current;
+      p.rx += (p.mx - p.rx) * 0.28;
+      p.ry += (p.my - p.ry) * 0.28;
+      const isClicking = clickingRef.current;
 
       if (dotRef.current) {
-        dotRef.current.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%) ${clicking ? 'scale(0.6)' : 'scale(1)'}`;
+        dotRef.current.style.transform = `translate(${p.mx}px, ${p.my}px) translate(-50%, -50%) ${isClicking ? 'scale(0.6)' : 'scale(1)'}`;
       }
       if (ringRef.current) {
-        ringRef.current.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%) ${clicking ? 'scale(0.82)' : 'scale(1)'}`;
+        ringRef.current.style.transform = `translate(${p.rx}px, ${p.ry}px) translate(-50%, -50%) ${isClicking ? 'scale(0.82)' : 'scale(1)'}`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -139,7 +153,7 @@ export default function CustomCursor() {
       window.removeEventListener('mouseup', onUp);
       cancelAnimationFrame(raf);
     };
-  }, [visible, enabled, clicking]);
+  }, [enabled]);
 
   if (!enabled) return null;
 

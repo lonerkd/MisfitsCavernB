@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Sam Persona — Full Journey Smoke', () => {
+test.describe('Route Smoke — pages render without crashing (no user-flow coverage)', () => {
   test('home page loads without error boundary', async ({ page }) => {
     const errors: string[] = [];
     page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
