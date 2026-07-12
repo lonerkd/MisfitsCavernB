@@ -130,7 +130,7 @@ export async function addReaction(messageId: string, emoji: string, userId: stri
 
   if (fetchError) throw fetchError;
 
-  const reactions = message.reactions || {};
+  const reactions = (message.reactions || {}) as Record<string, string[]>;
   if (!reactions[emoji]) {
     reactions[emoji] = [];
   }

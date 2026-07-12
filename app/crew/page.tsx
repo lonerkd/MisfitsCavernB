@@ -119,20 +119,20 @@ export default function CrewPage() {
   const displayList: DisplayMember[] = mode === 'project'
     ? projectCrew.map(m => ({
         key: m.id,
-        linkId: m.user_id,
+        linkId: m.user_id ?? '',
         username: m.username || 'Unknown',
         avatarUrl: m.avatar_url ?? null,
         role: m.role,
         statusLabel: m.status ? m.status.toUpperCase() : null,
         statusOpen: m.status === 'confirmed',
-        presenceId: m.user_id,
+        presenceId: m.user_id ?? '',
       }))
     : crew.map(m => ({
         key: m.id,
         linkId: m.id,
         username: m.username,
         avatarUrl: m.avatar_url ?? null,
-        role: m.role,
+        role: m.role ?? null,
         statusLabel: m.status ?? null,
         statusOpen: m.status === 'OPEN',
         presenceId: m.id,

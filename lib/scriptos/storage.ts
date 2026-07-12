@@ -97,11 +97,11 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
   const scripts: StoredScript[] = data.map(s => ({
     id: s.id,
     title: s.title,
-    content: s.content,
-    createdAt: s.created_at,
-    updatedAt: s.updated_at,
-    user_id: s.created_by,
-    project_id: s.project_id,
+    content: s.content ?? '',
+    createdAt: s.created_at ?? '',
+    updatedAt: s.updated_at ?? '',
+    user_id: s.created_by ?? undefined,
+    project_id: s.project_id ?? undefined,
     syncPending: false
   }));
 
@@ -146,14 +146,14 @@ export async function getScript(id: string): Promise<StoredScript | null> {
     return local || null;
   }
 
-  const remote = {
+  const remote: StoredScript = {
     id: data.id,
     title: data.title,
-    content: data.content,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-    user_id: data.created_by,
-    project_id: data.project_id,
+    content: data.content ?? '',
+    createdAt: data.created_at ?? '',
+    updatedAt: data.updated_at ?? '',
+    user_id: data.created_by ?? undefined,
+    project_id: data.project_id ?? undefined,
     syncPending: false
   };
 

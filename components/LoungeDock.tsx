@@ -54,7 +54,7 @@ export default function LoungeDock() {
         .in('channel_uuid', channels.map(c => c.id))
         .order('created_at', { ascending: false })
         .limit(1);
-      if (!cancelled && data && data[0] && new Date(data[0].created_at).getTime() > lastSeen) setHasUnread(true);
+      if (!cancelled && data && data[0] && new Date(data[0].created_at ?? 0).getTime() > lastSeen) setHasUnread(true);
     })();
     return () => { cancelled = true; };
   }, [userId, channels]);

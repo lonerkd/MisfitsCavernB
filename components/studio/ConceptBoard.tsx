@@ -93,7 +93,7 @@ export function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, bo
           <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', textAlign: 'center', wordBreak: 'break-word' }}>{image.title || 'Image unavailable'}</span>
         </div>
       ) : (
-        <NextImage src={image.url} alt={image.title} width={400} height={300} onClick={onOpen} onError={() => setBroken(true)} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
+        <NextImage src={image.url} alt={image.title || 'Concept image'} width={400} height={300} onClick={onOpen} onError={() => setBroken(true)} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
       )}
 
       {sceneCount > 0 && (

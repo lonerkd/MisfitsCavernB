@@ -67,7 +67,7 @@ export default function ManagePortfolioPage() {
         role: newProject.role || null,
         description: newProject.description || null,
       });
-      setProjects(prev => [{ ...created, portfolio_media: [] }, ...prev]);
+      setProjects(prev => [{ ...created, portfolio_media: [] } as unknown as PortfolioProject, ...prev]);
       setNewProject({ title: '', category: '', year: '', role: '', description: '' });
       setShowNew(false);
       toast('Project added', 'success');
@@ -97,7 +97,7 @@ export default function ManagePortfolioPage() {
         url: form.url,
         media_type: form.media_type || 'youtube',
       });
-      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, portfolio_media: [...p.portfolio_media, media] } : p));
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, portfolio_media: [...p.portfolio_media, media as unknown as MediaItem] } : p));
       setMediaForm(prev => ({ ...prev, [projectId]: { title: '', url: '', media_type: 'youtube' } }));
       toast('Media added', 'success');
     } catch (err: any) {

@@ -34,7 +34,7 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
     }
 
     const trimText = line.text.trim();
-    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && !line.meta.classifiedAsShot && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
+    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && !line.meta?.classifiedAsShot && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
       issues.push({ line: i + 1, type: 'warning', message: `Unrecognized uppercase format: "${trimText}"`, rule: 'unknown-caps' });
     }
 

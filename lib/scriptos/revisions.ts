@@ -93,7 +93,7 @@ export async function createRevisionDB(scriptId: string, content: string, existi
     .select('id,color_index,label,snapshot,created_at')
     .single();
   if (error || !data) return null;
-  return { id: data.id, colorIndex: data.color_index, date: data.created_at, label: data.label, snapshot: data.snapshot };
+  return { id: data.id, colorIndex: data.color_index, date: data.created_at ?? '', label: data.label, snapshot: data.snapshot };
 }
 
 export async function deleteRevisionDB(id: string): Promise<void> {

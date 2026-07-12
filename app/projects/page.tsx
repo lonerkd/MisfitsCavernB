@@ -362,7 +362,7 @@ export default function ProjectsPage() {
           id: p.id,
           title: p.title,
           type: p.project_type || 'Project',
-          phase: mapStatusToPhase(p.status),
+          phase: mapStatusToPhase(p.status ?? undefined),
           progress: 0,
           deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
           team: ['CR'],

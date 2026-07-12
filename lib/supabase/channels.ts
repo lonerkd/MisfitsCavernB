@@ -63,8 +63,8 @@ export async function createChannel(input: {
     .maybeSingle();
   if (fetchError || !data) return { channel: null, error: fetchError?.message || 'Channel created but could not be re-fetched' };
 
-  if (input.is_private) {
-    await supabase.from('channel_members').insert({ channel_id: data.id, user_id: user?.id, can_post: true, can_manage: true });
+  if (input.is_private && user) {
+    await supabase.from('channel_members').insert({ channel_id: data.id, user_id: user.id, can_post: true, can_manage: true });
   }
   return { channel: data as Channel, error: null };
 }

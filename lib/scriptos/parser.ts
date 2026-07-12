@@ -528,7 +528,8 @@ export class ScriptParser {
     const scenes: Scene[] = [];
     let currentScene: Scene | undefined = undefined;
 
-    lines.forEach((line, i) => {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       if (line.type === 'slug') {
         if (currentScene) {
           currentScene.endIndex = i - 1;
@@ -539,24 +540,26 @@ export class ScriptParser {
           startIndex: i,
           endIndex: -1,
           heading: line.text.trim(),
-          sceneNumber: line.meta.sceneNumber || '',
+          sceneNumber: line.meta?.sceneNumber || '',
           location: this.parseLocation(line.text),
           timeOfDay: this.parseTime(line.text),
           characters: [],
           omitted: false
         };
       } else if (currentScene) {
-        if (line.type === 'character' && line.meta.characterName) {
-          if (!currentScene.characters.includes(line.meta.characterName)) {
-            currentScene.characters.push(line.meta.characterName);
+        const characterName = line.meta?.characterName;
+        if (line.type === 'character' && characterName) {
+          if (!currentScene.characters.includes(characterName)) {
+            currentScene.characters.push(characterName);
           }
         }
       }
-    });
+    }
 
-    if (currentScene) {
-      currentScene.endIndex = lines.length - 1;
-      scenes.push(currentScene);
+    const lastScene: Scene | undefined = currentScene;
+    if (lastScene) {
+      lastScene.endIndex = lines.length - 1;
+      scenes.push(lastScene);
     }
 
     scenes.forEach(sc => {

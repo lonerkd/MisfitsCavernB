@@ -84,10 +84,10 @@ export default function PublicScriptPage({ params }: { params: { token: string }
           .select('username, role, avatar_url')
           .eq('id', data.created_by)
           .single();
-        profile = profileData || null;
+        profile = profileData ? { username: profileData.username, role: profileData.role ?? undefined, avatar_url: profileData.avatar_url ?? undefined } : null;
       }
 
-      setScript({ ...data, profile });
+      setScript({ ...data, content: data.content ?? '', updated_at: data.updated_at ?? '', profile });
       setLines(parseScript(data.content || '').lines);
       setLoading(false);
     };

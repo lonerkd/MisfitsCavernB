@@ -68,8 +68,9 @@ export function extractCharacters(lines: ScriptLine[]): string[] {
 }
 
 export function analyzeScenes(lines: ScriptLine[]) {
-  const scenes = [];
-  let currentScene = null;
+  interface SceneInfo { index: number; heading: string; startIndex: number; characters: Set<string> }
+  const scenes: Array<SceneInfo & { endIndex: number; lineCount: number }> = [];
+  let currentScene: SceneInfo | null = null;
   let charCount = 0;
 
   for (let i = 0; i < lines.length; i++) {

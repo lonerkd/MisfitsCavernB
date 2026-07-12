@@ -22,7 +22,7 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
   if (!withContent) throw new Error('No script content yet — write one in ScriptOS first.');
 
-  const parsed = parseScript(withContent.content);
+  const parsed = parseScript(withContent.content ?? '');
   const parsedScenes = parsed.scenes.filter((s: any) => !s.omitted);
   const byNumber = new Map(existingScenes.map(s => [s.scene_number, s.id]));
 

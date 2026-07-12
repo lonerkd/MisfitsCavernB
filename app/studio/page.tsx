@@ -230,7 +230,7 @@ export default function StudioPage() {
       const { data } = await supabase.from('scripts').select('content').eq('project_id', activeProject.id).order('updated_at', { ascending: false });
       const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
       if (!withContent) { toast('No script content yet — write one in ScriptOS first.', 'info'); return; }
-      const parsed = parseScript(withContent.content);
+      const parsed = parseScript(withContent.content ?? '');
       const existingNums = new Set((activeProject.scenes || []).map((s: any) => s.scene_number));
       const rows = parsed.scenes
         .filter((s: any) => !s.omitted)
@@ -359,7 +359,7 @@ export default function StudioPage() {
             category: a.category || 'Studio',
             url: a.asset_url,
             size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+            dateAdded: (a.created_at ? new Date(a.created_at) : new Date()).toISOString().split('T')[0]
           })));
 
         } catch (err) {
@@ -417,7 +417,7 @@ export default function StudioPage() {
           category: a.category || 'Studio',
           url: a.asset_url,
           size: 'Unknown',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          dateAdded: (a.created_at ? new Date(a.created_at) : new Date()).toISOString().split('T')[0]
         })));
       }
     } catch (err) {
@@ -558,7 +558,7 @@ export default function StudioPage() {
       <RecruitModal
         isOpen={showRecruit}
         onClose={() => setShowRecruit(false)}
-        projectId={activeProject?.id}
+        projectId={activeProject?.id ?? ''}
         onSuccess={refreshCrew}
       />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />

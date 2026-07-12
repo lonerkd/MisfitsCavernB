@@ -103,7 +103,7 @@ export default function PitchBoardPage() {
 
         let pid: string; let token: string;
         if (existing && existing.length > 0) {
-          pid = existing[0].id; token = existing[0].share_token;
+          pid = existing[0].id; token = existing[0].share_token ?? '';
         } else {
           const created = await createPortfolioProject({
             user_id: user.id,
@@ -111,7 +111,7 @@ export default function PitchBoardPage() {
             category: proj.project_type,
             source_project_id: projectId,
           });
-          pid = created.id; token = created.share_token;
+          pid = created.id; token = created.share_token ?? '';
         }
         if (!alive) return;
         setPortfolioId(pid); setShareToken(token);

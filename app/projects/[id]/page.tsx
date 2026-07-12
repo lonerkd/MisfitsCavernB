@@ -317,7 +317,7 @@ export default function ProjectHubPage() {
     supabase.from('projects').select('*').eq('id', id).single().then(({ data, error }) => {
       if (!active) return;
       if (error || !data) { router.push('/projects'); return; }
-      const phase = mapStatusToPhase(data.status);
+      const phase = mapStatusToPhase(data.status ?? undefined);
       setRealProject({
         id: data.id,
         title: data.title,
@@ -726,7 +726,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
       const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
       const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
       if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setSuggestions([]); return; }
-      const parsed = parseScript(withContent.content);
+      const parsed = parseScript(withContent.content ?? '');
       const uniq = (key: 'props' | 'wardrobe' | 'vehicles' | 'sfx' | 'vfx') => {
         const set = new Set<string>();
         parsed.scenes.forEach(sc => (sc.elements?.[key] || []).forEach(v => set.add(v)));

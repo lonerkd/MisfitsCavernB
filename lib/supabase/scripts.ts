@@ -70,8 +70,8 @@ export async function updateScript(scriptId: string, content: string, userId: st
     .from('script_versions')
     .insert({
       script_id: scriptId,
-      content: script.content,
-      version: script.version,
+      content: script.content ?? '',
+      version: script.version ?? 1,
       edited_by: userId
     });
 
@@ -79,7 +79,7 @@ export async function updateScript(scriptId: string, content: string, userId: st
     .from('scripts')
     .update({
       content,
-      version: script.version + 1,
+      version: (script.version ?? 1) + 1,
       last_edited_by: userId,
       updated_at: new Date().toISOString()
     })
