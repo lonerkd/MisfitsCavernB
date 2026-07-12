@@ -28,12 +28,8 @@ export async function osSignUp(email: string, password: string, username: string
     osState().setSession({ error: error.message || 'Sign up failed' });
     throw error;
   }
-  if (data.user) {
-    await supabase.from('profiles').upsert(
-      { id: data.user.id, username, status: 'OPEN' },
-      { onConflict: 'id', ignoreDuplicates: true }
-    );
-  }
+  // Profile row is created by the DB trigger on_auth_user_created
+  // (public.handle_new_user) from options.data.username.
   return data;
 }
 
