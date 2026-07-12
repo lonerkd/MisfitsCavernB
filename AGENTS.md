@@ -35,12 +35,18 @@ npm run sync-intel # update file index
 
 ## Deep Context
 
-For architecture docs, DB schema, RLS policies, design tokens, and workflow details, read files in `.cavern-intelligence/`:
+Start at `.cavern-intelligence/INDEX.md` — the knowledge-hub front door. It
+routes to everything: architecture, DB/RLS, tools & access, routing, and
+conventions.
 
 | File | When to Read |
 |---|---|
+| `INDEX.md` | **Session start — front door + read order** |
 | `CLAW.md` | Session start — core working rules |
 | `overview-and-goals.md` | Understanding product vision |
+| `tools-and-access.md` | Tools, MCP servers, permissions, skills, env |
+| `routing-and-surface.md` | Route map, gating tiers, providers, module ownership |
+| `conventions.md` | Coding patterns usually kept inline (data layer, toast/confirm, migrations) |
 | `database-and-security.md` | DB schema + RLS architecture |
 | `design-tokens.md` | UI work — colors, typography, components |
 | `playbook.md` | Detailed change workflow |
