@@ -1,7 +1,7 @@
 import type { ScriptLine } from '@/types/screenplay';
 
 export function exportAsFountain(content: string, title: string): void {
-  // Fountain format is basically the raw text + metadata header
+
   const fountainContent = `Title: ${title}
 Author: Misfits Cavern
 Draft date: ${new Date().toLocaleDateString()}
@@ -20,7 +20,7 @@ ${content}`;
 }
 
 export function exportAsPDF(lines: ScriptLine[], title: string): void {
-  // Generate a PDF-style formatted version
+
   let pdfContent = `${title.toUpperCase()}\n\n`;
   pdfContent += lines.map(line => {
     const style = getLineStyle(line.type);

@@ -10,16 +10,6 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 import { usePillZone } from '@/lib/context/PillContext';
 import { usePresence } from '@/lib/context/PresenceContext';
 
-/* =========================================================================
-   ScriptOS editor — the three read-mostly center-stage tabs (Board, Outline,
-   Stats). Extracted from the monolithic editor page: each is a pure view over
-   derived script data plus a handful of callbacks, with no state of its own
-   beyond what the page already tracks — behaviour-preserving, not a rewrite.
-   The Write (textarea) and Preview tabs stay in the page itself: they're
-   tightly wired to the live cursor/keyboard/collaboration state and moving
-   them would add indirection without reducing real complexity.
-   ========================================================================= */
-
 // ── BOARD: drag-and-drop scene cards ────────────────────────────────────────
 export function BoardView({
   scenesList, lines, sceneColors, sceneNotes, sceneWordCounts,
@@ -68,11 +58,6 @@ export function BoardView({
   );
 }
 
-// Individual scene card — its own component (not inlined in the .map above)
-// so it can call usePillZone: hovering it sharpens the Pill's context down
-// from "editor" to this specific scene — cast + word count + a real Jump
-// action — a concrete instance of the zone drill-down the Pill's own code
-// comments describe but that no page had wired up until now.
 function SceneBoardCard({
   scene, index, lines, cardColor, wordCount, note, isDragging, isDropTarget,
   onJump, onSetNote, onDragStart, onDragOver, onDragEnd, onDrop,

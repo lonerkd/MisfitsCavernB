@@ -20,13 +20,11 @@ export default function SpotifyCallback() {
       return;
     }
 
-    // A stalled token exchange (Spotify-side hiccup, dropped connection)
-    // should never leave this page stuck on "Connecting..." forever.
     withTimeout(getAccessToken(code), 15000, 'Spotify token exchange timed out.')
       .then(() => {
-        // Dispatch an event so the SpotifyContext picks up the new token immediately
+
         window.dispatchEvent(new Event('spotify-auth-changed'));
-        // Redirect back to the audio library or home
+
         router.push('/soundtrack');
       })
       .catch((err) => {

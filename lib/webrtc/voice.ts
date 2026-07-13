@@ -1,14 +1,4 @@
-// ============================================================================
-// VOICE ROOMS — real WebRTC audio over a Supabase Realtime mesh.
-//
-// Signaling rides the same Realtime channel used for room presence: peers
-// exchange offers/answers/ICE via targeted broadcast events. Topology is a
-// full mesh (every peer connects to every other), which is the right tradeoff
-// for indie-film crew rooms (2–8 people) — no SFU infra needed.
-//
-// Initiation rule: the NEWCOMER offers to every peer already in the room
-// (learned via presence sync), so exactly one side of each pair initiates.
-// ============================================================================
+
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
@@ -18,7 +8,7 @@ export interface VoicePeer {
   name: string;
   avatar?: string;
   speaking: boolean;
-  connected: boolean; // WebRTC audio flowing (vs presence-only)
+  connected: boolean;
 }
 
 const RTC_CONFIG: RTCConfiguration = {
@@ -40,7 +30,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
   const [peers, setPeers] = useState<VoicePeer[]>([]);
   const [muted, setMuted] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
-  const [speaking, setSpeaking] = useState(false); // local user speaking
+  const [speaking, setSpeaking] = useState(false);
 
   const chanRef = useRef<any>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -58,7 +48,6 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
     setPeers(prev => list.map(p => ({ ...p, speaking: prev.find(q => q.id === p.id)?.speaking || false })));
   }, [me?.id]);
 
-  // Wire a speaking detector onto a stream; calls cb ~8x/sec with a boolean.
   const attachSpeakingMeter = useCallback((stream: MediaStream, cb: (on: boolean) => void) => {
     try {
       const ctx = audioCtxRef.current || new AudioContext();
@@ -71,7 +60,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
       const timer = setInterval(() => {
         analyser.getByteFrequencyData(buf);
         const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-        cb(avg > 14); // empirical voice threshold
+        cb(avg > 14);
       }, 120);
       return () => { clearInterval(timer); try { src.disconnect(); } catch {} };
     } catch { return () => {}; }
@@ -97,7 +86,6 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
     const ps: PeerState = { pc, audio, pendingIce: [], hasRemoteDesc: false };
     peersRef.current.set(peerId, ps);
 
-    // Send our mic to them.
     streamRef.current?.getTracks().forEach(t => pc.addTrack(t, streamRef.current!));
 
     pc.ontrack = (e) => {
@@ -118,13 +106,12 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
     return ps;
   }, [me?.id, attachSpeakingMeter, closePeer, syncPeerList]);
 
-  // Join/leave lifecycle.
   useEffect(() => {
     if (!joined || !me || !channelId) return;
     let cancelled = false;
 
     (async () => {
-      // 1) Mic first — no point signaling without audio.
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
         if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -135,7 +122,6 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         setMicError(err?.name === 'NotAllowedError' ? 'Microphone permission denied — you are in listen-only mode.' : 'No microphone found — you are in listen-only mode.');
       }
 
-      // 2) Realtime channel: presence + signaling.
       const ch = supabase.channel(`voice:${channelId}`, { config: { presence: { key: me.id }, broadcast: { self: false } } });
       chanRef.current = ch;
 
@@ -174,7 +160,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         .on('presence', { event: 'sync' }, () => {
           const state = ch.presenceState() as any;
           rosterRef.current = new Map(Object.entries(state).map(([key, arr]: [string, any]) => [key, { name: arr[0]?.name || 'Anonymous', avatar: arr[0]?.avatar }]));
-          // Drop connections to peers that left.
+
           peersRef.current.forEach((_, id) => { if (!rosterRef.current.has(id)) closePeer(id); });
           syncPeerList();
         })
@@ -182,7 +168,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         .subscribe(async (status: string) => {
           if (status !== 'SUBSCRIBED') return;
           await ch.track({ id: me.id, name: me.name, avatar: me.avatar });
-          // As the newcomer, offer to everyone already present.
+
           const state = ch.presenceState() as any;
           for (const peerId of Object.keys(state)) {
             if (peerId === me.id) continue;

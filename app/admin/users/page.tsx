@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
-import { ActionButton, IfAccess } from '@/lib/permissions/access-control';
+import { ActionButton, IfAccess } from '@/lib/os';
 
 interface UserRow {
   id: string;
@@ -62,7 +62,6 @@ export default function AdminUsersPage() {
   return (
     <ProtectedPage requiredPermission="manage_users">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-        {/* Header */}
         <header style={{
           position: 'fixed',
           top: 0,
@@ -91,9 +90,7 @@ export default function AdminUsersPage() {
           </Link>
         </header>
 
-        {/* Content */}
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
-          {/* Navigation */}
           <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
@@ -143,7 +140,6 @@ export default function AdminUsersPage() {
             </Link>
           </div>
 
-          {/* Users Table */}
           <div style={{
             overflowX: 'auto',
             border: '1px solid rgba(255,255,255,0.1)',
@@ -255,7 +251,6 @@ export default function AdminUsersPage() {
             </table>
           </div>
 
-          {/* Info */}
           <div style={{ marginTop: 24, padding: 16, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 4, fontSize: 11 }}>
             <p style={{ margin: 0, opacity: 0.7 }}>
               <strong>Total Users:</strong> {users.length}

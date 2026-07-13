@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
@@ -55,7 +55,8 @@ function ScriptLineView({ line, index }: { line: ScriptLine; index: number }) {
   return <div style={base}>{line.text}</div>;
 }
 
-export default function PublicScriptPage({ params }: { params: { token: string } }) {
+export default function PublicScriptPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const [script, setScript] = useState<SharedScript | null>(null);
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,10 +85,10 @@ export default function PublicScriptPage({ params }: { params: { token: string }
           .select('username, role, avatar_url')
           .eq('id', data.created_by)
           .single();
-        profile = profileData || null;
+        profile = profileData ? { username: profileData.username, role: profileData.role ?? undefined, avatar_url: profileData.avatar_url ?? undefined } : null;
       }
 
-      setScript({ ...data, profile });
+      setScript({ ...data, content: data.content ?? '', updated_at: data.updated_at ?? '', profile });
       setLines(parseScript(data.content || '').lines);
       setLoading(false);
     };

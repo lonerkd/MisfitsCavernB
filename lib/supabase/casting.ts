@@ -14,8 +14,6 @@ export interface CastingWithProject extends Casting {
   project_title?: string;
 }
 
-// All castings for a project's Character Bible — keyed by uppercased
-// character name so lookups match the parser's character-name casing.
 export async function getCastingsForProject(projectId: string): Promise<Record<string, Casting>> {
   const { data, error } = await supabase
     .from('character_castings')
@@ -33,8 +31,6 @@ export async function getCastingsForProject(projectId: string): Promise<Record<s
   return byName;
 }
 
-// Reverse lookup for a Crew profile: every character this person is cast as,
-// across every project — "Playing: MARA in Neon Ghosts".
 export async function getCastingsForUser(userId: string): Promise<CastingWithProject[]> {
   const { data, error } = await supabase
     .from('character_castings')

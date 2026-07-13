@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
-import { ProtectedPage } from '@/lib/permissions/access-control';
-import { useCurrentUser } from '@/lib/permissions/usePermissions';
+import { ProtectedPage } from '@/lib/os';
+import { useCurrentUser } from '@/lib/os';
 import { BarChart3, Users, Settings, Activity } from 'lucide-react';
 import Link from 'next/link';
 
@@ -42,7 +42,6 @@ export default function AdminDashboard() {
   return (
     <ProtectedPage requiredPermission="manage_users">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-        {/* Header */}
         <header style={{
           position: 'fixed',
           top: 0,
@@ -69,9 +68,7 @@ export default function AdminDashboard() {
           </Link>
         </header>
 
-        {/* Content */}
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
-          {/* Navigation Tabs */}
           <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
@@ -125,7 +122,6 @@ export default function AdminDashboard() {
             </Link>
           </div>
 
-          {/* Stats Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24, marginBottom: 40 }}>
             {[
               { label: 'Total Users', value: stats.totalUsers, icon: Users },
@@ -155,7 +151,6 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Quick Actions */}
           <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, marginBottom: 16 }}>
               QUICK ACTIONS
@@ -200,7 +195,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Info Section */}
           <div style={{ marginTop: 40, padding: 24, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 8 }}>
             <h3 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, marginBottom: 12 }}>
               ADMIN FEATURES

@@ -3,21 +3,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/context/AuthContext';
-import { useCurrentUser } from '@/lib/permissions/usePermissions';
+import { useCurrentUser, osSignOut } from '@/lib/os';
 import { LogOut, Settings, BarChart3, Users } from 'lucide-react';
 
-/**
- * Role-based navigation that shows different menu items
- * based on user's role and permissions
- */
 export function RoleBasedNav() {
-  const { signOut } = useAuth();
   const router = useRouter();
   const { isAuthenticated, isAdmin, isCreator, isGuest, user } = useCurrentUser();
 
   const handleSignOut = async () => {
-    await signOut();
+    await osSignOut();
     router.push('/');
   };
 
@@ -33,7 +27,6 @@ export function RoleBasedNav() {
 
   return (
     <nav style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-      {/* Common items for all authenticated users */}
       <Link href="/profile" style={{ textDecoration: 'none', color: 'var(--fg)' }}>
         Profile
       </Link>
@@ -44,7 +37,6 @@ export function RoleBasedNav() {
         Editor
       </Link>
 
-      {/* Creator+ features */}
       {(isCreator || isAdmin) && (
         <>
           <Link href="/jobs" style={{ textDecoration: 'none', color: 'var(--fg)' }}>
@@ -59,7 +51,6 @@ export function RoleBasedNav() {
         </>
       )}
 
-      {/* Admin items */}
       {isAdmin && (
         <>
           <div style={{ borderLeft: '1px solid var(--fg-muted)', height: 20, opacity: 0.3 }} />
@@ -78,7 +69,6 @@ export function RoleBasedNav() {
         </>
       )}
 
-      {/* User menu */}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 12, alignItems: 'center' }}>
         <span style={{ fontSize: 11, opacity: 0.6, fontFamily: 'var(--mono)' }}>
           {user?.username}
@@ -106,12 +96,9 @@ export function RoleBasedNav() {
   );
 }
 
-/**
- * Quick user status indicator
- */
 export function UserStatusBadge() {
   const { user } = useCurrentUser();
-  const { userRole } = useAuth();
+  const { userRole } = useCurrentUser();
 
   if (!user) return null;
 
@@ -141,9 +128,6 @@ export function UserStatusBadge() {
   );
 }
 
-/**
- * Role-aware breadcrumb navigation
- */
 export function RoleBreadcrumb({ pages }: { pages: Array<{ label: string; href?: string }> }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, opacity: 0.6 }}>

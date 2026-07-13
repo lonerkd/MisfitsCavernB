@@ -2,7 +2,6 @@
 
 import React from 'react';
 
-// Simple seeded RNG for consistent pseudo-random placement
 function seededRng(seed: number) {
   let s = seed;
   return () => {
@@ -63,7 +62,6 @@ export default function PhotoScatter({ opacity = 0.08, count = 22 }: PhotoScatte
               overflow: 'hidden',
             }}
           >
-            {/* Placeholder for images - will add gradients as placeholders */}
             <div
               style={{
                 width: '100%',

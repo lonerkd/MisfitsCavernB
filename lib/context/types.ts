@@ -1,4 +1,4 @@
-// Comprehensive type definitions for role-based access control
+
 
 export type UserRole = 'admin' | 'project_creator' | 'crew_member' | 'guest';
 
@@ -25,7 +25,7 @@ export interface UserProfile {
   username: string;
   avatar_url?: string;
   bio?: string;
-  role: string; // specialty role (Director, Editor, etc.)
+  role: string;
   location?: string;
   status: 'OPEN' | 'BUSY';
   is_admin?: boolean;

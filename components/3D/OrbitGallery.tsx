@@ -11,9 +11,6 @@ interface Photo {
   title: string;
 }
 
-// The actual photo, rendered as a textured plane on the frame's face — without
-// this the frame was just a solid-color box regardless of imageUrl, so every
-// gallery entry looked like an empty dark void even with real photos.
 function PhotoPlane({ imageUrl }: { imageUrl: string }) {
   const texture = useTexture(imageUrl);
   return (
@@ -50,7 +47,6 @@ function PhotoFrame({ position, imageUrl, rotation }: { position: [number, numbe
         <PhotoPlane imageUrl={imageUrl} />
       </Suspense>
 
-      {/* Frame border */}
       <lineSegments>
         <edgesGeometry args={[new THREE.BoxGeometry(2, 1.4, 0.05)]} />
         <lineBasicMaterial color="#e0ddae" opacity={0.3} transparent />
@@ -93,7 +89,7 @@ function RotatingGallery({ photos }: { photos: Photo[] }) {
 }
 
 export default function OrbitGallery({ photos = [] }: { photos?: Photo[] }) {
-  // No fabricated placeholders — if there's nothing real to show, say so.
+
   if (photos.length === 0) {
     return (
       <div style={{ width: '100%', height: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, background: 'rgba(255,255,255,0.01)' }}>
@@ -112,14 +108,13 @@ export default function OrbitGallery({ photos = [] }: { photos?: Photo[] }) {
       <Canvas>
         <PerspectiveCamera makeDefault position={[0, 2, 8]} />
         <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
-        
+
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#d7340b" />
-        
+
         <RotatingGallery photos={photosToShow} />
-        
-        {/* Floor grid */}
+
         <gridHelper args={[20, 20, '#d7340b', '#1a1a1a']} position={[0, -2, 0]} />
       </Canvas>
     </div>

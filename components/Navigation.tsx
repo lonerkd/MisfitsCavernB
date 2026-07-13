@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu } from 'lucide-react';
-import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/permissions/usePermissions';
+import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/os';
 import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [
@@ -62,9 +62,9 @@ export default function Navigation() {
           transition: 'padding 0.4s, background 0.4s, border-color 0.4s',
         }}
       >
-        {/* Wordmark */}
         <Link
-          href="/"
+          prefetch={false}
+              href="/"
           style={{
             fontFamily: 'var(--display)',
             fontSize: '1rem',
@@ -80,9 +80,7 @@ export default function Navigation() {
           MC
         </Link>
 
-        {/* Desktop — pill nav group */}
         <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {/* Pill container */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -145,14 +143,13 @@ export default function Navigation() {
             })}
           </div>
 
-          {/* Notification bell — only meaningful once signed in */}
           {!isLoading && !isGuest && <NotificationBell />}
 
-          {/* Auth — reflects real session state instead of always saying "Sign In" */}
           {!isLoading && !isGuest ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
               <Link
-                href="/profile"
+                prefetch={false}
+              href="/profile"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
@@ -186,6 +183,7 @@ export default function Navigation() {
             </div>
           ) : (
             <Link
+              prefetch={false}
               href="/auth"
               style={{
                 marginLeft: 10,
@@ -215,7 +213,6 @@ export default function Navigation() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
         <button
           onClick={() => setOpen(!open)}
           className="show-mobile"
@@ -225,7 +222,6 @@ export default function Navigation() {
         </button>
       </motion.nav>
 
-      {/* Mobile slide-in menu */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -256,7 +252,8 @@ export default function Navigation() {
                 transition={{ delay: i * 0.055, duration: 0.4 }}
               >
                 <Link
-                  href={link.href}
+                  prefetch={false}
+              href={link.href}
                   style={{
                     display: 'block',
                     fontFamily: 'var(--display)',
@@ -282,7 +279,8 @@ export default function Navigation() {
               {!isLoading && !isGuest ? (
                 <>
                   <Link
-                    href="/profile"
+                    prefetch={false}
+              href="/profile"
                     style={{
                       display: 'block', textAlign: 'center', padding: '14px',
                       background: 'rgba(255,255,255,0.06)',
@@ -309,7 +307,8 @@ export default function Navigation() {
                 </>
               ) : (
                 <Link
-                  href="/auth"
+                  prefetch={false}
+              href="/auth"
                   style={{
                     display: 'block',
                     textAlign: 'center',
@@ -333,7 +332,6 @@ export default function Navigation() {
         )}
       </AnimatePresence>
 
-      {/* Mobile backdrop */}
       <AnimatePresence>
         {open && (
           <motion.div

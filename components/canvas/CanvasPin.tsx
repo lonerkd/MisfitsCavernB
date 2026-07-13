@@ -17,20 +17,14 @@ export interface CanvasPinData {
 interface CanvasPinProps {
   pin: CanvasPinData;
   scale: number;
-  /** Fires continuously while dragging — local/optimistic state only, never a network write. */
+
   onMove: (id: string, x: number, y: number) => void;
-  /** Fires once, on release — this is where the new position should be persisted. */
+
   onMoveEnd: (id: string, x: number, y: number) => void;
   onOpen?: (id: string) => void;
   onRemove?: (id: string) => void;
 }
 
-// A single free-positioned image on the canvas. Framer Motion's own drag
-// (not the canvas's pan handler) owns repositioning — dragMomentum is off so
-// a pin stays exactly where it's released instead of coasting, and the drag
-// delta is divided by the canvas's current scale so a pin tracks the cursor
-// correctly whether the board is zoomed in or out (a raw pixel delta at
-// 50% zoom would move the pin twice as far as the cursor actually traveled).
 export function CanvasPin({ pin, scale, onMove, onMoveEnd, onOpen, onRemove }: CanvasPinProps) {
   const dragStart = useRef({ x: pin.x, y: pin.y });
 

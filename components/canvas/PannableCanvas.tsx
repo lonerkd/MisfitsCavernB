@@ -2,13 +2,6 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 
-// A pan/zoom viewport for spatial boards (mood boards, story maps, etc.) —
-// scroll-wheel to zoom toward the cursor, click-drag the background to pan,
-// pinch-to-zoom on trackpads (ctrlKey is how browsers report pinch as a
-// wheel event). Built on a single CSS transform rather than a canvas/WebGL
-// layer: children stay real DOM nodes (draggable, focusable, accessible),
-// which matters here since each child is an editable, deletable asset card,
-// not a static drawing.
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 3;
 
@@ -21,7 +14,7 @@ export interface PannableCanvasHandle {
 interface PannableCanvasProps {
   children: React.ReactNode;
   className?: string;
-  /** Called with the live scale so a parent toolbar can show a percentage. */
+
   onScaleChange?: (scale: number) => void;
 }
 
@@ -40,10 +33,7 @@ export const PannableCanvas = React.forwardRef<PannableCanvasHandle, PannableCan
           onScaleChange?.(scale);
           return { ...prev, scale };
         }
-        // Zoom toward the cursor/pinch center: keep the point under the
-        // pivot visually fixed rather than always zooming from the origin,
-        // which is what makes wheel-zoom feel physically correct instead of
-        // yanking the view around every scroll tick.
+
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect) return { ...prev, scale };
         const px = pivotX - rect.left;
@@ -65,18 +55,13 @@ export const PannableCanvas = React.forwardRef<PannableCanvasHandle, PannableCan
 
     const handleWheel = useCallback((e: React.WheelEvent) => {
       e.preventDefault();
-      // Trackpad pinch reports as a wheel event with ctrlKey set (both
-      // Chrome and Safari do this) — same code path as mouse-wheel zoom,
-      // just a different physical gesture triggering it.
+
       const zoomFactor = e.ctrlKey ? 1 - e.deltaY * 0.01 : 1 - e.deltaY * 0.001;
       applyScale(transform.scale * zoomFactor, e.clientX, e.clientY);
     }, [applyScale, transform.scale]);
 
     const handlePointerDown = useCallback((e: React.PointerEvent) => {
-      // Only pan when the background itself is grabbed, not a child asset
-      // card — cards handle their own drag-to-reposition via Framer Motion's
-      // drag prop, and those two gestures must not fight over the same
-      // pointer-down.
+
       if (e.target !== e.currentTarget) return;
       panState.current = { dragging: true, startX: e.clientX, startY: e.clientY, originX: transform.x, originY: transform.y };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);

@@ -32,9 +32,6 @@ export interface AuditLog {
   username?: string;
 }
 
-/**
- * Log an action to the audit trail
- */
 export async function logAuditAction(
   userId: string,
   action: AuditAction,
@@ -61,9 +58,6 @@ export async function logAuditAction(
   }
 }
 
-/**
- * Get audit logs for admin dashboard
- */
 export async function getAuditLogs(
   limit: number = 100,
   offset: number = 0,
@@ -131,9 +125,6 @@ export async function getAuditLogs(
   }
 }
 
-/**
- * Get activity summary for admin dashboard
- */
 export async function getActivitySummary() {
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -167,9 +158,6 @@ export async function getActivitySummary() {
   }
 }
 
-/**
- * Get most active users
- */
 export async function getMostActiveUsers(limit: number = 10) {
   try {
     const { data, error } = await supabase
@@ -182,16 +170,11 @@ export async function getMostActiveUsers(limit: number = 10) {
       return [];
     }
 
-    // Group and count client-side
     const userCounts = new Map<string, { username: string; avatar?: string; count: number }>();
 
     (data || []).forEach((log: any) => {
       const userId = log.user_id;
-      // profiles:user_id(...) is a single-row FK join, so Supabase/PostgREST
-      // returns it as a plain object, not an array — the same shape
-      // getAuditLogs above reads correctly via (log.profiles as any)?.username.
-      // The array-indexed form here always missed, so this widget showed
-      // "Unknown" for every user regardless of real activity.
+
       const username = log.profiles?.username || 'Unknown';
       const avatar = log.profiles?.avatar_url;
 

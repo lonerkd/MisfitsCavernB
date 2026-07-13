@@ -1,23 +1,15 @@
 import type { Metadata, Viewport } from 'next';
-import dynamic from 'next/dynamic';
 import { Bebas_Neue, DM_Mono, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { ConfirmProvider } from '@/components/Confirm';
-import { ProjectProvider } from '@/lib/context/ProjectContext';
-import { AuthProvider } from '@/lib/context/AuthContext';
+import { OSProvider } from '@/lib/os';
 import { PresenceProvider } from '@/lib/context/PresenceContext';
 import { PillProvider } from '@/lib/context/PillContext';
 import { SpotifyProvider } from '@/lib/context/SpotifyContext';
 
-const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: false });
-const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
-const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
-const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
-const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
+import ClientShell from '@/components/ClientShell';
 
-// Self-hosted via next/font: no render-blocking request to Google, no FOUT,
-// and no client-side hit to fonts.googleapis.com (privacy/GDPR-friendly).
 const bebasNeue = Bebas_Neue({
   weight: '400',
   subsets: ['latin'],
@@ -53,26 +45,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
       <body>
-        <AuthProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <ProjectProvider>
-                <PresenceProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <OSProvider>
+              <PresenceProvider>
                   <PillProvider>
                   <SpotifyProvider>
-                    <CustomCursor />
-                    <CommandPalette />
-                    <ShortcutsOverlay />
-                    <ThemeInitializer />
-                    <EcosystemTaskbar />
+                    <ClientShell />
                     <div className="main-content-container">{children}</div>
                   </SpotifyProvider>
                   </PillProvider>
-                </PresenceProvider>
-              </ProjectProvider>
-            </ConfirmProvider>
-          </ToastProvider>
-        </AuthProvider>
+              </PresenceProvider>
+            </OSProvider>
+          </ConfirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -37,16 +37,15 @@ export function Button({
   const buttonRef = useRef<HTMLButtonElement | HTMLAnchorElement>(null);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
-    // Add ripple effect
+
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       const newRipple = { x, y, id: Date.now() };
       setRipples((prev) => [...prev, newRipple]);
 
-      // Remove ripple after animation completes
       setTimeout(() => {
         setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
       }, 600);
@@ -59,20 +58,17 @@ export function Button({
 
   const getBaseClasses = () => {
     let classes = 'relative overflow-hidden inline-flex items-center justify-center font-mono uppercase tracking-widest transition-colors duration-300 ';
-    
-    // Size
+
     if (variant === 'icon') {
       classes += size === 'sm' ? 'w-8 h-8 rounded-md ' : size === 'md' ? 'w-10 h-10 rounded-md ' : 'w-12 h-12 rounded-lg ';
     } else {
-      classes += size === 'sm' ? 'px-3 py-1.5 text-[0.65rem] rounded-md ' : 
-                 size === 'md' ? 'px-5 py-2.5 text-[0.7rem] rounded-md ' : 
+      classes += size === 'sm' ? 'px-3 py-1.5 text-[0.65rem] rounded-md ' :
+                 size === 'md' ? 'px-5 py-2.5 text-[0.7rem] rounded-md ' :
                  'px-6 py-3 text-[0.75rem] rounded-lg ';
     }
 
-    // Width
     if (fullWidth) classes += 'w-full ';
 
-    // Variant
     switch (variant) {
       case 'solid':
         classes += 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] border border-[var(--accent)] hover:shadow-[0_4px_24px_rgba(215,52,11,0.25)] ';
@@ -91,7 +87,6 @@ export function Button({
         break;
     }
 
-    // Disabled / Loading
     if (disabled || isLoading) {
       classes += 'opacity-50 cursor-not-allowed pointer-events-none ';
     }
@@ -116,7 +111,6 @@ export function Button({
         )}
       </span>
 
-      {/* Ripples */}
       <AnimatePresence>
         {ripples.map((ripple) => (
           <motion.span

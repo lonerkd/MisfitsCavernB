@@ -8,12 +8,11 @@ import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
 import { supabase } from '@/lib/supabase/client';
 
-// Dynamic imports for 3D and particles (client-side only)
 const OrbitGallery = dynamic(() => import('@/components/3D/OrbitGallery'), { ssr: false });
 const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
 
 export default function ShowcasePage() {
-  // Populate the 3D gallery from real concept-board images the user can access.
+
   const [photos, setPhotos] = useState<{ id: string; imageUrl: string; title: string }[]>([]);
   useEffect(() => {
     supabase.from('concept_assets').select('id, title, image_url').not('image_url', 'is', null).limit(12).then(({ data }) => {
@@ -25,7 +24,6 @@ export default function ShowcasePage() {
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      {/* Header */}
       <nav
         style={{
           position: 'fixed',
@@ -50,7 +48,6 @@ export default function ShowcasePage() {
         </Link>
       </nav>
 
-      {/* Hero with Particles */}
       <section
         style={{
           height: '100vh',
@@ -94,7 +91,6 @@ export default function ShowcasePage() {
         </div>
       </section>
 
-      {/* 3D Gallery Section */}
       <section style={{ padding: '90px 18px', position: 'relative' }}>
         <AnimatedSection>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
@@ -123,7 +119,6 @@ export default function ShowcasePage() {
         </AnimatedSection>
       </section>
 
-      {/* Visual Effects Demo */}
       <section style={{ padding: '90px 18px', background: '#0a0a0a' }}>
         <AnimatedSection delay={0.2}>
           <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
@@ -155,12 +150,12 @@ export default function ShowcasePage() {
               }}
             >
               <p style={{ marginBottom: 20 }}>
-                Every element of Misfits Cavern is crafted with precision. From the grain texture overlay that adds cinematic depth, 
+                Every element of Misfits Cavern is crafted with precision. From the grain texture overlay that adds cinematic depth,
                 to the particle systems that respond to your interactions.
               </p>
 
               <p style={{ marginBottom: 20 }}>
-                The 3D orbit gallery uses React Three Fiber and WebGL to create smooth, performant animations. 
+                The 3D orbit gallery uses React Three Fiber and WebGL to create smooth, performant animations.
                 Particle effects are powered by tsParticles for optimal performance.
               </p>
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Filter, Download, Search, Clock, User, Zap } from 'lucide-react';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { Input } from '@/components/ui/Input';
 import { getAuditLogs, getActivitySummary, getMostActiveUsers, type AuditLog, type AuditAction } from '@/lib/supabase/audit';
 
@@ -116,7 +116,6 @@ export default function AuditLogsPage() {
   return (
     <ProtectedPage requiredPermission="manage_users">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-        {/* Header */}
         <header
           style={{
             position: 'fixed',
@@ -162,9 +161,7 @@ export default function AuditLogsPage() {
           </button>
         </header>
 
-        {/* Content */}
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1400, margin: '60px auto 0' }}>
-          {/* Navigation */}
           <div
             style={{
               display: 'flex',
@@ -224,7 +221,6 @@ export default function AuditLogsPage() {
             </span>
           </div>
 
-          {/* Activity Summary */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
             {[
               { label: 'Logins (1h)', value: activitySummary.loginsLastHour, icon: User },
@@ -251,7 +247,6 @@ export default function AuditLogsPage() {
             ))}
           </div>
 
-          {/* Filters */}
           <div style={{ marginBottom: 24, display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
               <Input
@@ -291,7 +286,6 @@ export default function AuditLogsPage() {
             </select>
           </div>
 
-          {/* Logs Table */}
           <div style={{ overflowX: 'auto', marginBottom: 24 }}>
             <table
               style={{
@@ -369,7 +363,6 @@ export default function AuditLogsPage() {
             </table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 24 }}>
               <button
@@ -412,7 +405,6 @@ export default function AuditLogsPage() {
             </div>
           )}
 
-          {/* Most Active Users */}
           {activeUsers.length > 0 && (
             <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
               <h3

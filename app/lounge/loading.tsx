@@ -13,7 +13,6 @@ export default function LoungeLoading() {
         padding: 40,
       }}
     >
-      {/* Pulse indicator */}
       <div
         style={{
           width: 12,
@@ -24,7 +23,6 @@ export default function LoungeLoading() {
           animation: 'pulse 1.5s ease-in-out infinite',
         }}
       />
-      {/* Skeleton chat channels */}
       <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 900 }}>
         <div
           style={{
@@ -62,7 +60,6 @@ export default function LoungeLoading() {
           ))}
         </div>
       </div>
-      {/* Skeleton input bar */}
       <div
         style={{
           width: '100%',

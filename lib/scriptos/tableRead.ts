@@ -1,8 +1,4 @@
-// Table-read engine — reads a parsed screenplay aloud with the browser's
-// SpeechSynthesis API, voicing dialogue as whichever character last spoke and
-// narrating everything else (slugs/action/parentheticals/transitions) flat.
-// Purely additive: it only observes already-parsed lines, never mutates the
-// script, so it has no interaction with useScriptSync or the write surface.
+
 
 export interface TableReadLine {
   type: string;
@@ -10,15 +6,12 @@ export interface TableReadLine {
 }
 
 export interface TableReadOptions {
-  /** Fires right before the line at this index starts being spoken. */
+
   onLineStart?: (index: number) => void;
   onComplete?: () => void;
   rate?: number;
 }
 
-// Deterministic voice assignment per character name — hash the name into an
-// index over the available voice list so the same character always gets the
-// same voice across a session (and across replays).
 function voiceForCharacter(name: string, voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
   if (!voices.length) return undefined;
   let hash = 0;

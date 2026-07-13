@@ -40,11 +40,6 @@ export async function sendChannelMessage(senderId: string, content: string, chan
   }).select().single();
   if (error) throw error;
 
-  // Mirror to Discord if this channel has a webhook configured. Fire-and-
-  // forget: the Lounge message already sent successfully above, so a slow or
-  // failed Discord post must never block or fail the sender's own send.
-  // The route derives the sender from the verified access token — never from
-  // the body — so the session token is attached as a Bearer header.
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (!session?.access_token) return;
     return fetch('/api/discord/notify', {
@@ -55,7 +50,7 @@ export async function sendChannelMessage(senderId: string, content: string, chan
       },
       body: JSON.stringify({ channelId: channelUuid, content }),
     });
-  }).catch(() => { /* best-effort only */ });
+  }).catch(() => {  });
 
   return data;
 }
@@ -80,8 +75,6 @@ export function subscribeToChannelUuid(channelUuid: string, callback: (payload: 
     .subscribe();
 }
 
-// Top-level channel messages only (thread replies are hidden from the main
-// stream and read via getThreadReplies).
 export async function getChannelMessages(channelId: string, limit = 100) {
   const { data, error } = await supabase
     .from('messages')
@@ -105,7 +98,6 @@ export async function getThreadReplies(parentMessageId: string) {
   return data;
 }
 
-// Reply counts for a set of parent message ids (for the "N replies" affordance).
 export async function getReplyCounts(parentIds: string[]): Promise<Record<string, number>> {
   if (parentIds.length === 0) return {};
   const { data, error } = await supabase
@@ -138,7 +130,7 @@ export async function addReaction(messageId: string, emoji: string, userId: stri
 
   if (fetchError) throw fetchError;
 
-  const reactions = message.reactions || {};
+  const reactions = (message.reactions || {}) as Record<string, string[]>;
   if (!reactions[emoji]) {
     reactions[emoji] = [];
   }
@@ -158,11 +150,6 @@ export async function addReaction(messageId: string, emoji: string, userId: stri
   return data;
 }
 
-// Add or remove the user's reaction to a message (toggle). Runs through a
-// SECURITY DEFINER RPC because there is no row-level UPDATE policy on messages
-// (writing reactions client-side would otherwise be blocked by RLS). The
-// function only touches the reactions column and verifies the caller can see
-// the message. userId is unused but kept for call-site compatibility.
 export async function toggleReaction(messageId: string, emoji: string, _userId?: string) {
   const { data, error } = await supabase.rpc('toggle_message_reaction', { p_message: messageId, p_emoji: emoji });
   if (error) throw error;

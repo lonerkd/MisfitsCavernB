@@ -10,15 +10,16 @@ import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
 import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
-import { useRequireAuth } from '@/lib/useRequireAuth';
+import { useOSGate } from '@/lib/os';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import { awaitOSUser } from '@/lib/os';
 
 interface Message {
   id: string;
@@ -33,8 +34,6 @@ interface Message {
 
 const REACTION_CHOICES = ['👍', '❤️', '🔥', '🎬', '😂', '🎉', '👀', '🙏'];
 
-// Live production feed for the active project — surfaces the latest changes
-// across scenes, budget, milestones, crew, concept board, and characters.
 function ProductionFeed({ projectId }: { projectId: string }) {
   const [items, setItems] = useState<{ label: string; t: string; color: string }[]>([]);
 
@@ -127,7 +126,6 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
           </p>
         </div>
 
-        {/* React affordance */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setPickerOpen(o => !o)}
@@ -144,7 +142,6 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
           )}
         </div>
 
-        {/* Reply-in-thread affordance */}
         {onOpenThread && (
           <button onClick={() => onOpenThread(msg)} aria-label="Reply in thread"
             style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.9)', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -153,14 +150,12 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
         )}
       </div>
 
-      {/* Thread summary */}
       {replyCount > 0 && onOpenThread && (
         <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 99, padding: '3px 10px', cursor: 'pointer', color: '#10b981', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
           <MessageSquare size={10} /> {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
         </button>
       )}
 
-      {/* Reaction pills */}
       {reactions.length > 0 && (
         <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
           {reactions.map(([emoji, users]) => {
@@ -184,9 +179,6 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
   );
 }
 
-// Voice room: live presence of who's in the channel (Discord-style). Audio
-// Real WebRTC audio: mesh peer connections signaled over the same Realtime
-// channel that tracks room presence (see lib/webrtc/voice.ts).
 function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: string; avatar?: string } | null }) {
   const [joined, setJoined] = useState(false);
   const { peers, muted, toggleMute, micError, speaking } = useVoiceRoom(channel.id, me, joined);
@@ -298,9 +290,6 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
   );
 }
 
-// Manage a channel: roster (add/remove members, toggle post/manage), post
-// policy, and delete. The backend permission model already exists — this is
-// the missing UI for it.
 function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Channel; meId?: string; onClose: () => void; onChanged: () => void }) {
   const [members, setMembers] = useState<ChannelMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -349,12 +338,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     if (!url) return;
     setDiscordBusy(true);
     setErr(null);
-    // Validate + live-test the webhook before ever saving it. Without this,
-    // a typo'd URL, a non-Discord URL, or a webhook already deleted on
-    // Discord's side would all save successfully and show "● Connected" —
-    // then every message would silently fail to bridge forever, since
-    // app/api/discord/notify's failures only ever reach a server log, with
-    // nothing surfaced back to whoever sent the message.
+
     try {
       const testRes = await fetch('/api/discord/test', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -482,7 +466,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 }
 
 export default function LoungePage() {
-  const { isLoading } = useRequireAuth();
+  const { isLoading } = useOSGate();
   const { toast } = useToast();
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -509,8 +493,6 @@ export default function LoungePage() {
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastBroadcast = useRef(0);
 
-  // Load the channels this user can see for the active project (+ community),
-  // and keep a valid active channel selected.
   const reloadChannels = useCallback(async () => {
     const list = await listChannels(activeProject?.id);
     setChannels(list);
@@ -522,7 +504,6 @@ export default function LoungePage() {
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
 
-  // Publish the lounge's live state to the Pill's context capsule.
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
   usePillStage(
     {
@@ -537,7 +518,6 @@ export default function LoungePage() {
     [activeChannel?.name, onlineCrew, crewList.length, messages.length],
   );
 
-  // Resolve post/manage permission whenever the active text channel changes.
   useEffect(() => {
     if (!activeChannel || activeChannel.type !== 'text') { setCanPost(false); setCanManageActive(false); return; }
     let active = true;
@@ -550,7 +530,7 @@ export default function LoungePage() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await awaitOSUser();
       if (user && mounted) {
         setCurrentUser(user);
         const { data: mine } = await supabase.from('profiles').select('username, avatar_url, role, status').eq('id', user.id).single();
@@ -622,7 +602,6 @@ export default function LoungePage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Typing indicators over Realtime broadcast (Slack/Discord style).
   useEffect(() => {
     if (!activeChannel) return;
     const uname = myProfile?.username || 'Someone';
@@ -638,7 +617,6 @@ export default function LoungePage() {
     return () => { supabase.removeChannel(ch); setTypingUsers([]); };
   }, [activeChannel, myProfile?.username]);
 
-  // Thread panel — load a message's replies live and let the user reply in it.
   useEffect(() => {
     if (!threadParent) { setThreadReplies([]); return; }
     let mounted = true;
@@ -658,7 +636,7 @@ export default function LoungePage() {
 
   const broadcastTyping = () => {
     const now = Date.now();
-    if (now - lastBroadcast.current < 1200) return; // throttle
+    if (now - lastBroadcast.current < 1200) return;
     lastBroadcast.current = now;
     typingChannelRef.current?.ch?.send({ type: 'broadcast', event: 'typing', payload: { username: typingChannelRef.current.uname } });
   };
@@ -684,7 +662,7 @@ export default function LoungePage() {
       if (!activeChannel) return;
       await sendChannelMessage(currentUser.id, text, activeChannel.id, threadParent.id);
       setReplyCounts(prev => ({ ...prev, [threadParent.id]: (prev[threadParent.id] || 0) + 1 }));
-      // Notify the original author of the reply.
+
       if (threadParent.sender_id && threadParent.sender_id !== currentUser.id) {
         notify(threadParent.sender_id, {
           type: 'reply',
@@ -714,7 +692,7 @@ export default function LoungePage() {
       }
       if (!activeChannel) return;
       await sendChannelMessage(currentUser.id, text, activeChannel.id);
-      // Notify anyone @mentioned by username (matched against known crew).
+
       const mentioned = new Set((text.match(/@([a-zA-Z0-9_]+)/g) || []).map(m => m.slice(1).toLowerCase()));
       if (mentioned.size > 0) {
         crewList
@@ -728,7 +706,7 @@ export default function LoungePage() {
       }
     } catch (e: any) {
       console.error(e);
-      setInput(text); // restore the unsent message
+      setInput(text);
       toast(e?.message || 'Message failed to send', 'error');
     }
   };
@@ -737,7 +715,6 @@ export default function LoungePage() {
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
       <GrainOverlay />
 
-      {/* Header */}
       <nav style={{
         position: 'sticky',
         top: 0,
@@ -763,11 +740,10 @@ export default function LoungePage() {
         </div>
 
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          {/* Project Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeProject?.accent_color || 'var(--accent)' }} />
-            <select 
-              value={activeProject?.id || ''} 
+            <select
+              value={activeProject?.id || ''}
               onChange={(e) => {
                 const p = projects.find(p => p.id === e.target.value);
                 if (p) setActiveProject(p);
@@ -778,7 +754,6 @@ export default function LoungePage() {
             </select>
           </div>
 
-          {/* Live crew count */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '7px 14px',
@@ -794,10 +769,8 @@ export default function LoungePage() {
         </div>
       </nav>
 
-      {/* Body */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-        {/* Channel Sidebar (Slack-style) */}
         <div className="mc-lounge-channels" style={{
           width: 220,
           background: '#0a0a0a',
@@ -841,7 +814,7 @@ export default function LoungePage() {
                );
              })()}
           </div>
-          
+
           <div style={{ marginTop: 'auto', padding: 20, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Avatar src={myProfile?.avatar_url} name={myProfile?.username || currentUser?.email} size={28} radius={6} />
@@ -854,9 +827,7 @@ export default function LoungePage() {
           </div>
         </div>
 
-        {/* Chat */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Channel Header */}
           <div style={{ padding: '12px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                {dmTarget ? (
@@ -895,7 +866,6 @@ export default function LoungePage() {
             <VoiceRoom channel={activeChannel} me={currentUser ? { id: currentUser.id, name: myProfile?.username || 'You', avatar: myProfile?.avatar_url } : null} />
           ) : (
           <>
-          {/* Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
               {messages.length === 0 ? (
@@ -907,14 +877,12 @@ export default function LoungePage() {
             </div>
           </div>
 
-          {/* Input */}
           <div style={{
             padding: '16px 28px',
             borderTop: '1px solid rgba(255,255,255,0.04)',
             background: '#090909',
             flexShrink: 0,
           }}>
-            {/* Typing indicator */}
             <div style={{ maxWidth: 720, margin: '0 auto', height: 14, marginBottom: 4 }}>
               {typingUsers.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: '#10b981', letterSpacing: 0.5 }}>
@@ -992,7 +960,6 @@ export default function LoungePage() {
           )}
         </div>
 
-        {/* Crew sidebar */}
         <div className="mc-lounge-crew" style={{
           width: 240,
           borderLeft: '1px solid rgba(255,255,255,0.04)',
@@ -1060,7 +1027,6 @@ export default function LoungePage() {
         </div>
       </div>
 
-      {/* Thread drawer */}
       <AnimatePresence>
         {threadParent && (
           <motion.div
@@ -1072,7 +1038,6 @@ export default function LoungePage() {
               <button onClick={() => setThreadParent(null)} aria-label="Close thread" style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
-              {/* Parent message */}
               <div style={{ paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: 12, letterSpacing: 1, color: 'var(--accent)', marginBottom: 4 }}>{threadParent.user}</div>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.85)' }}>{threadParent.text}</div>
@@ -1098,7 +1063,6 @@ export default function LoungePage() {
         )}
       </AnimatePresence>
 
-      {/* New channel modal */}
       <AnimatePresence>
         {showNewChannel && activeProject && (
           <NewChannelModal
@@ -1116,7 +1080,6 @@ export default function LoungePage() {
         )}
       </AnimatePresence>
 
-      {/* Manage channel modal */}
       <AnimatePresence>
         {showManage && activeChannel && (
           <ManageChannelModal

@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { logAuditAction } from './audit';
+import { awaitOSUser } from '@/lib/os';
 
 export interface DBScript {
   id: string;
@@ -15,8 +16,8 @@ export interface DBScript {
 }
 
 export async function createScript(projectId: string, title: string, format: 'screenplay' | 'teleplay' | 'stage-play' = 'screenplay') {
-  // The scripts INSERT RLS policy requires created_by = auth.uid().
-  const { data: { user } } = await supabase.auth.getUser();
+
+  const user = await awaitOSUser();
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
@@ -64,23 +65,21 @@ export async function getScript(scriptId: string) {
 
 export async function updateScript(scriptId: string, content: string, userId: string) {
   const script = await getScript(scriptId);
-  
-  // Create version backup
+
   await supabase
     .from('script_versions')
     .insert({
       script_id: scriptId,
-      content: script.content,
-      version: script.version,
+      content: script.content ?? '',
+      version: script.version ?? 1,
       edited_by: userId
     });
 
-  // Update script
   const { data, error } = await supabase
     .from('scripts')
     .update({
       content,
-      version: script.version + 1,
+      version: (script.version ?? 1) + 1,
       last_edited_by: userId,
       updated_at: new Date().toISOString()
     })

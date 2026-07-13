@@ -1,40 +1,36 @@
 import { test, expect } from '@playwright/test';
 
-// Regression tests for Bug #3: Home Page Crash
-// Root page (/) hits an error boundary ("THIS PAGE HIT AN UNEXPECTED ERROR")
-// caused by a postgres_changes realtime subscription conflict on the
-// notifications channel. See QA Session Log entry dated 7/6/2026.
-
 test.describe('Home Page Crash', () => {
-    test('root page loads without hitting the error boundary', async ({ page }) => {
-          await page.goto('/');
+  test('root page loads without hitting the error boundary and renders navigation', async ({ page }) => {
+    await page.goto('/');
 
-             await expect(page.getByText(/something broke/i)).not.toBeVisible();
-          await expect(page.getByText(/unexpected error/i)).not.toBeVisible();
+    await expect(page.getByText(/something broke/i)).not.toBeVisible();
+    await expect(page.getByText(/unexpected error/i)).not.toBeVisible();
+    await expect(page.locator('[data-taskbar]')).toBeVisible();
+  });
+
+  test('console has no postgres_changes subscription error on notifications channel', async ({ page }) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
-                test('console has no postgres_changes subscription error on notifications channel', async ({ page }) => {
-                      const consoleErrors: string[] = [];
-                      page.on('console', (msg) => {
-                              if (msg.type() === 'error') consoleErrors.push(msg.text());
-                      });
+    await page.goto('/');
+    await page.waitForTimeout(2000);
 
-                         await page.goto('/');
-                      await page.waitForTimeout(2000);
+    const hasRealtimeError = consoleErrors.some(
+      (err) => /postgres_changes/i.test(err) && /notif/i.test(err)
+    );
+    expect(hasRealtimeError).toBeFalsy();
+  });
 
-                         const hasRealtimeError = consoleErrors.some((err) =>
-                                 /postgres_changes/i.test(err) && /notif/i.test(err)
-                                                                         );
-                      expect(hasRealtimeError).toBeFalsy();
-                });
+  test('Try Again button recovers the page if error boundary is shown', async ({ page }) => {
+    await page.goto('/');
 
-                test('Try Again button recovers the page if error boundary is shown', async ({ page }) => {
-                      await page.goto('/');
-
-                         const tryAgainButton = page.getByRole('button', { name: /try again/i });
-                      if (await tryAgainButton.isVisible().catch(() => false)) {
-                              await tryAgainButton.click();
-                              await expect(page.getByText(/something broke/i)).not.toBeVisible();
-                      }
-                });
+    const tryAgainButton = page.getByRole('button', { name: /try again/i });
+    if (await tryAgainButton.isVisible().catch(() => false)) {
+      await tryAgainButton.click();
+      await expect(page.getByText(/something broke/i)).not.toBeVisible();
+    }
+  });
 });

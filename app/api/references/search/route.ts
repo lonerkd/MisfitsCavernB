@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Server-side proxy to the Openverse image API. Keeps the upstream provider
-// server-side so the browser never hits CORS / rate-limit issues, and gives us
-// a single seam to swap in ShotDeck/EyeCandy/Pinterest later.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get('q') || '').trim().slice(0, 200);

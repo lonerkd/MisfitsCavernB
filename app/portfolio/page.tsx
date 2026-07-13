@@ -12,8 +12,9 @@ import AnimatedSection from '@/components/AnimatedSection';
 import { getPortfolioProjects } from '@/lib/supabase/portfolio';
 import { supabase } from '@/lib/supabase/client';
 import { useEffect } from 'react';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
+import { awaitOSUser } from '@/lib/os';
 
 const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
 const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
@@ -29,9 +30,7 @@ interface Video {
   featured?: boolean;
   laurels?: string[];
   stills?: string[];
-  // Showcase entries are frozen snapshots, not a live view of the source
-  // project (anon visitors can't read the underlying tables under RLS) —
-  // surfaced on the card so nobody mistakes this for a live project view.
+
   frozenAt?: string;
 }
 
@@ -58,7 +57,6 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
       onMouseLeave={() => setHover(false)}
       onClick={() => onClick(video)}
     >
-      {/* Thumbnail */}
       <Image
         src={IMG(video.driveId)}
         alt={video.title}
@@ -71,7 +69,6 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         }}
       />
 
-      {/* Gradient */}
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -81,7 +78,6 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         transition: 'background 0.5s',
       }} />
 
-      {/* Category badge */}
       <div style={{
         position: 'absolute',
         top: 14,
@@ -98,7 +94,6 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         {video.category}
       </div>
 
-      {/* Play button */}
       <motion.div
         animate={{ scale: hover ? 1.1 : 1, opacity: hover ? 1 : 0.6 }}
         transition={{ duration: 0.3 }}
@@ -122,7 +117,6 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         <Play size={16} fill={hover ? '#d7340b' : '#fff'} color={hover ? '#d7340b' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
 
-      {/* Info */}
       <motion.div
         animate={{ y: hover ? 0 : 4 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -195,7 +189,6 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             <X size={18} /> Close Bible
           </button>
 
-          {/* Header */}
           <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
             <SectionLabel text={`Project Bible — ${project.year}`} />
             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: 8, lineHeight: 1, marginBottom: 20 }}>{project.title}</h1>
@@ -221,7 +214,6 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             </div>
           </motion.div>
 
-          {/* Media Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
             <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
               <iframe
@@ -244,7 +236,6 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             </div>
           </div>
 
-          {/* Stills Gallery */}
           {project.stills && project.stills.length > 0 && (
             <div style={{ marginBottom: 80 }}>
               <SectionLabel text="Cinematic Stills" />
@@ -264,8 +255,6 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
   );
 }
 
-// Status treatment for festival submissions — shared with the project hub's
-// FESTIVAL_STATUS_COLOR so a submission reads the same colour everywhere.
 const FEST_COLOR: Record<string, string> = {
   planned: '#6b7280',
   submitted: '#f59e0b',
@@ -280,23 +269,16 @@ export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [videosList, setVideosList] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
-  // Showcase = the public collection; Distribution = the campaign + festival
-  // pipeline that used to be scattered across the project hub and Studio.
-  // ?tab=distribution lets other pages (e.g. the Projects Hub's Distribution
-  // tile) deep-link straight into this view instead of always landing on
-  // Showcase and leaving the user to find it themselves.
+
   const searchParams = useSearchParams();
   const [view, setView] = useState<'showcase' | 'distribution'>(searchParams.get('tab') === 'distribution' ? 'distribution' : 'showcase');
   const [festivals, setFestivals] = useState<FestivalEntry[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignEntry[]>([]);
 
-  // Aggregate the distribution pipeline across every project the viewer can
-  // reach — festival submissions live on projects.festival_submissions, and
-  // campaigns in their own table. Both are RLS-scoped to the viewer.
   useEffect(() => {
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await awaitOSUser();
         if (!user) return;
         const [projRes, campRes] = await Promise.all([
           supabase.from('projects').select('id,title,festival_submissions'),
@@ -320,12 +302,9 @@ export default function PortfolioPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await awaitOSUser();
         if (!user) { setLoading(false); return; }
-        // Read the curated `portfolio_projects` table — the one "Publish to
-        // Portfolio" (Studio/project hub) actually writes to — instead of
-        // auto-listing every production project regardless of whether it was
-        // ever published.
+
         const data = await getPortfolioProjects(user.id);
         const fetchedVideos: Video[] = (data || []).map((p: any) => {
           const media = p.portfolio_media?.[0];
@@ -353,7 +332,6 @@ export default function PortfolioPage() {
   const featured = videosList.filter(v => v.featured);
   const rest = videosList.filter(v => !v.featured);
 
-  // Publish the portfolio's live counts to the Pill's context capsule.
   usePillStage(
     {
       module: 'portfolio',
@@ -372,7 +350,6 @@ export default function PortfolioPage() {
       <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, width: '100%',
         padding: '0 32px', height: 62,
@@ -398,7 +375,6 @@ export default function PortfolioPage() {
         </span>
       </nav>
 
-      {/* Hero Section */}
       <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(215, 52, 11,0.08), transparent 55%), #060606' }} />
@@ -413,7 +389,6 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      {/* Showcase / Distribution tab set */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 4, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         {([['showcase', 'Showcase'], ['distribution', 'Distribution']] as const).map(([key, label]) => {
           const active = view === key;
@@ -498,14 +473,12 @@ export default function PortfolioPage() {
           </div>
         ) : (
           <>
-            {/* Featured — 2 col */}
             <AnimatedSection>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
                 {featured.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
               </div>
             </AnimatedSection>
 
-            {/* Rest — 3 col */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
               {rest.map((v, i) => (
                 <AnimatedSection key={v.id} delay={i * 0.08}>
@@ -517,7 +490,6 @@ export default function PortfolioPage() {
         )}
       </section>
 
-      {/* Marquee */}
       <div style={{
         padding: '28px 0',
         overflow: 'hidden',

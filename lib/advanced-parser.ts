@@ -1,12 +1,5 @@
 import type { ScriptLine, LineType } from '@/types/screenplay';
 
-/**
- * @module advanced-parser
- * @description Advanced logic for deep screenplay analysis, moving beyond simple line-by-line linting.
- * This module generates an Abstract Syntax Tree (AST) representation of the script content 
- * to enable complex semantic validation, tone tracking, and structural insights.
- */
-
 export type ASTNodeType = 'SCENE' | 'ACTION_BEAT' | 'DIALOGUE_BLOCK' | 'TRANSITION' | 'SHOT';
 
 export interface ASTNode {
@@ -42,13 +35,10 @@ export interface ASTScene extends ASTNode {
 
 export interface ScriptAST {
   scenes: ASTScene[];
-  globalCharacters: Map<string, number>; // character name -> total words spoken
+  globalCharacters: Map<string, number>;
   totalWords: number;
 }
 
-/**
- * Builds a semantic Abstract Syntax Tree from the linear ScriptLine array.
- */
 export function buildAST(lines: ScriptLine[]): ScriptAST {
   const ast: ScriptAST = {
     scenes: [],
@@ -88,7 +78,7 @@ export function buildAST(lines: ScriptLine[]): ScriptAST {
   };
 
   lines.forEach((line, i) => {
-    // Count total words (rough estimate by splitting on whitespace)
+
     const words = line.text.trim().split(/\s+/).filter(w => w.length > 0).length;
     ast.totalWords += words;
 
@@ -132,7 +122,7 @@ export function buildAST(lines: ScriptLine[]): ScriptAST {
         currentDialogue.wordCount += words;
         currentDialogue.endIndex = i;
       } else {
-        // Orphan parenthetical, treat as action
+
         commitDialogue();
         if (!currentAction && currentScene) {
           currentAction = { id: `act_${i}`, type: 'ACTION_BEAT', startIndex: i, endIndex: i, wordCount: 0, text: '' };
@@ -148,12 +138,11 @@ export function buildAST(lines: ScriptLine[]): ScriptAST {
         currentDialogue.dialogueLines.push(line.text);
         currentDialogue.wordCount += words;
         currentDialogue.endIndex = i;
-        
-        // Update global character stats
+
         const currentTotal = ast.globalCharacters.get(currentDialogue.character) || 0;
         ast.globalCharacters.set(currentDialogue.character, currentTotal + words);
       } else {
-        // Orphan dialogue, just commit as action to keep it somewhere
+
         if (!currentAction && currentScene) {
           currentAction = { id: `act_${i}`, type: 'ACTION_BEAT', startIndex: i, endIndex: i, wordCount: 0, text: '' };
         }
@@ -166,7 +155,7 @@ export function buildAST(lines: ScriptLine[]): ScriptAST {
     } else if (line.type === 'action' || line.type === 'text') {
       commitDialogue();
       if (!currentScene) {
-        // Action before first slugline
+
         currentScene = {
           id: 'implicit_scene', type: 'SCENE', startIndex: 0, endIndex: 0, wordCount: 0, heading: 'IMPLICIT SCENE',
           isInt: false, isExt: false, isDay: false, isNight: false, charactersPresent: new Set(), children: []
@@ -191,14 +180,14 @@ export function buildAST(lines: ScriptLine[]): ScriptAST {
         });
       }
     }
-    
+
     if (currentScene) {
       currentScene.endIndex = i;
       currentScene.wordCount += words;
     }
   });
 
-  commitScene(); // Finalize last scene
+  commitScene();
 
   return ast;
 }

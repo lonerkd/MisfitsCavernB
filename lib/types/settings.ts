@@ -1,9 +1,5 @@
 import type { ScriptFormat } from '@/lib/scriptos/parser';
 
-// Per-project ecosystem module toggles. Each key gates whether that
-// department's nav entry / dept tile is shown for this project — the
-// underlying data isn't deleted when a module is off, just hidden from
-// navigation (re-enabling brings it right back).
 export interface EcosystemModules {
   scriptos: boolean;
   studio: boolean;
@@ -21,11 +17,7 @@ export const DEFAULT_ECOSYSTEM_MODULES: EcosystemModules = {
 };
 
 export interface ProjectSettings {
-  // Overrides lib/projectTypes.ts's project-type-derived default for new
-  // scripts created under this project. Reuses ScriptFormat as-is (not a
-  // separate "content type" enum) since that's the exact set the parser,
-  // formatter, and exporter already branch on — anything wider would be a
-  // dropdown option with no real behavior behind it.
+
   defaultScriptFormat?: ScriptFormat;
   modules: EcosystemModules;
 }

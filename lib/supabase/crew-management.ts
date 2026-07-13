@@ -14,9 +14,6 @@ export interface CrewMember {
   avatar_url?: string;
 }
 
-/**
- * Assign a crew member to a project with a specific role
- */
 export async function assignCrewMember(
   projectId: string,
   userId: string,
@@ -41,7 +38,6 @@ export async function assignCrewMember(
       throw error;
     }
 
-    // Log the action
     await logAuditAction(
       currentUserId,
       'crew_role_changed',
@@ -57,9 +53,6 @@ export async function assignCrewMember(
   }
 }
 
-/**
- * Remove a crew member from a project
- */
 export async function removeCrewMember(
   projectId: string,
   userId: string,
@@ -76,7 +69,6 @@ export async function removeCrewMember(
       throw error;
     }
 
-    // Log the action
     await logAuditAction(
       currentUserId,
       'crew_removed',
@@ -90,15 +82,9 @@ export async function removeCrewMember(
   }
 }
 
-/**
- * Get crew members for a project
- */
 export async function getProjectCrew(projectId: string): Promise<CrewMember[]> {
   try {
-    // NOTE: the live project_crew table has no joined_at column — it's
-    // created_at. This previously threw on every call (silently swallowed
-    // below), so Studio's crew hub always rendered an empty crew list
-    // regardless of real project_crew data.
+
     const { data, error } = await supabase
       .from('project_crew')
       .select(`
@@ -129,9 +115,6 @@ export async function getProjectCrew(projectId: string): Promise<CrewMember[]> {
   }
 }
 
-/**
- * Update crew member role
- */
 export async function updateCrewMemberRole(
   projectId: string,
   userId: string,
@@ -151,7 +134,6 @@ export async function updateCrewMemberRole(
       throw error;
     }
 
-    // Log the action
     await logAuditAction(
       currentUserId,
       'crew_role_changed',

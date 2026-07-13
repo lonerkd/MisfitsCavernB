@@ -32,19 +32,27 @@ export async function middleware(request: NextRequest) {
   const isAdminPath = path.startsWith('/admin');
   const isProtectedPath = protectedPaths.some((p) => path === p || path.startsWith(p + '/'));
 
-  // Everything else (p/, s/, showcase, etc.) is open — skip the auth work.
   if (!isAdminPath && !isProtectedPath) {
     return NextResponse.next();
   }
 
-  // Validate the session for real (not just cookie presence). The browser
-  // client is cookie-backed via @supabase/ssr, so createServerClient can read
-  // and refresh it here; getUser() verifies the JWT against Supabase Auth,
-  // so a forged or expired cookie fails.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // createServerClient throws on missing URL/key with no fallback (unlike
+    // lib/supabase/client.ts's browser client) — every protected-path
+    // request would crash the middleware instead of failing safe. Redirect
+    // to /auth, matching the no-session outcome, rather than 500ing.
+    console.error('Middleware: missing Supabase env vars, redirecting to /auth');
+    const redirectUrl = new URL('/auth', request.url);
+    redirectUrl.searchParams.set('redirect', path);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -69,7 +77,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // ── ADMIN ROUTES: verify is_admin server-side, not just in the UI ─
   if (isAdminPath) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -86,13 +93,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - static assets (svg, png, jpg, jpeg, gif, webp, css, js)
-     */
+
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js|woff2?|ttf|eot)$).*)',
   ],
 };

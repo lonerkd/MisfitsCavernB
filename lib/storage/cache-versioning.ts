@@ -1,5 +1,4 @@
-// Cache versioning and migration system for IndexedDB
-// Prevents stale data when schema changes and avoids localStorage limits
+
 
 import { get, set, keys, del } from 'idb-keyval';
 
@@ -27,7 +26,6 @@ const migrations: Record<string, MigrationRule[]> = {
   'studio': [],
 };
 
-// Migrate old localStorage data to IndexedDB
 async function migrateLocalStorage() {
   if (typeof window === 'undefined') return;
   try {
@@ -51,7 +49,6 @@ async function migrateLocalStorage() {
   }
 }
 
-// Call it once
 if (typeof window !== 'undefined') {
   migrateLocalStorage().catch(console.error);
 }
@@ -72,11 +69,11 @@ export async function setCacheItem(key: string, data: any): Promise<void> {
 export async function getCacheItem(key: string, namespace?: string): Promise<any> {
   try {
     let entry = await get<CacheEntry>(key);
-    
+
     if (!entry) return null;
 
     if (!entry.version) {
-      // Migrate legacy data
+
       return (entry as any).data || entry;
     }
 

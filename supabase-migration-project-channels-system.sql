@@ -1,32 +1,10 @@
--- ============================================================================
--- project_channels_system — RLS + helpers for channels / channel_members /
--- discord_integrations.
 --
--- This migration was originally applied directly to the live database and
--- never committed; this file was recovered from production (pg_policies /
--- pg_get_functiondef, 2026-07-09) so the repo is the source of truth again.
--- Idempotent: safe to re-run.
 --
--- Recovery also surfaced and fixed a live outage: a prior migration moved
--- is_project_creator / is_project_member / can_view_channel into the
--- internal schema but left these helpers calling their old public.* names,
--- so can_view_channel / can_manage_channel / can_post_channel all raised
--- 42883 at runtime — erroring the channels SELECT policy and channel
--- message inserts. The bodies below carry the corrected internal.* refs
--- (applied to prod as migrations fix_can_post_channel_schema_reference and
--- fix_channel_helpers_internal_schema_references).
 --
 -- Security model:
---   view   = global channel (project_id null), project creator, project crew
 --            (public channels), or explicit member (private channels)
---   post   = view + channel post_policy (viewers | members | managers)
---   manage = project creator, global-channel creator, or member with can_manage
---   discord_integrations has NO SELECT policy on purpose: webhook URLs are
 --   secrets, readable only by the service-role client in
---   app/api/discord/notify/route.ts.
--- ============================================================================
 
--- ── Table (channels/channel_members are created in supabase-schema.sql) ─────
 CREATE TABLE IF NOT EXISTS discord_integrations (
   channel_id UUID NOT NULL PRIMARY KEY REFERENCES channels(id) ON DELETE CASCADE,
   webhook_url TEXT NOT NULL,
@@ -35,7 +13,6 @@ CREATE TABLE IF NOT EXISTS discord_integrations (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ── Helper functions ─────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION internal.can_view_channel(cid uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -85,7 +62,6 @@ AS $function$
   );
 $function$;
 
--- ── RLS ──────────────────────────────────────────────────────────────────────
 ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE channel_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE discord_integrations ENABLE ROW LEVEL SECURITY;
@@ -111,7 +87,6 @@ CREATE POLICY "channel_members manage" ON channel_members FOR ALL TO authenticat
   USING (can_manage_channel(channel_id))
   WITH CHECK (can_manage_channel(channel_id));
 
--- discord_integrations — deliberately no SELECT policy (see header)
 DROP POLICY IF EXISTS "discord webhook set by channel managers" ON discord_integrations;
 CREATE POLICY "discord webhook set by channel managers" ON discord_integrations FOR INSERT TO authenticated
   WITH CHECK (can_manage_channel(channel_id) AND created_by = auth.uid());

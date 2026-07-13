@@ -22,7 +22,7 @@ import { useConfirm } from '@/components/Confirm';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { useEffect, useMemo } from 'react';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
@@ -37,1670 +37,33 @@ import { syncSceneElementsFromScript, syncBudgetFromSceneElements, ELEMENT_CATEG
 import { LayoutGrid, ClipboardList, BookOpen, Layers, Archive, CheckCircle2, Maximize2, Filter, Grid, List as ListIcon, Info, DollarSign, Calendar, MessageSquare, Clock, MapPin, Download, Megaphone, Share2, Eye, TrendingUp, Users, Trash2, Search, AlertCircle, ChevronLeft, ChevronRight, X, Tags } from 'lucide-react';
 import { searchReferences, type ReferenceResult } from '@/lib/references/search';
 import EmptyState from '@/components/EmptyState';
-import { useRequireAuth } from '@/lib/useRequireAuth';
-
-interface Asset {
-  id: string;
-  name: string;
-  type: 'image' | 'video' | 'document' | 'audio';
-  category: string;
-  size: string;
-  dateAdded: string;
-  url?: string;
-}
-
-
-const STAGES = [
-  { id: 'dev', name: 'Development', color: '#ffaa00', icon: BookOpen },
-  { id: 'pre', name: 'Pre-Production', color: '#0099ff', icon: ClipboardList },
-  { id: 'prod', name: 'Production', color: '#d7340b', icon: Video },
-  { id: 'post', name: 'Post-Production', color: '#a855f7', icon: Layers },
-  { id: 'del', name: 'Delivery', color: '#00cc66', icon: CheckCircle2 },
-];
-
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  image: <Image size={15} aria-label="image type" />,
-  video: <Video size={15} />,
-  document: <FileText size={15} />,
-  audio: <Music size={15} />,
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  image: '#0099ff',
-  video: '#d7340b',
-  document: '#ffaa00',
-  audio: '#00cc66',
-};
-
-function AssetCard({ asset, index, onClick }: { asset: Asset; index: number; onClick?: (asset: Asset) => void }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.06, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4, borderColor: `${TYPE_COLORS[asset.type]}44` } as any}
-      onClick={() => onClick && onClick(asset)}
-      style={{
-        padding: '22px 20px',
-        background: 'var(--bg-2)',
-        border: '1px solid var(--border)',
-        cursor: 'pointer',
-        transition: 'border-color 0.4s, box-shadow 0.4s',
-        borderRadius: 'var(--radius-sm)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.7), 0 0 30px ${TYPE_COLORS[asset.type]}0a`)}
-      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: TYPE_COLORS[asset.type] }}>{TYPE_ICONS[asset.type]}</span>
-          <span style={{ fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: TYPE_COLORS[asset.type], fontFamily: 'var(--mono)', opacity: 0.85 }}>
-            {asset.category}
-          </span>
-        </div>
-        {asset.type === 'video' && (
-           <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4, color: '#ccc' }}>3 Notes</span>
-        )}
-      </div>
-
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 12, lineHeight: 1.4, marginBottom: 10, color: 'var(--fg)' }}>
-        {asset.name}
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)' }}>
-        <span>{asset.size}</span>
-        <span>{new Date(asset.dateAdded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-      </div>
-    </motion.div>
-  );
-}
-
-// Frame.io style Asset Review Modal
-function AssetReviewModal({ asset, isOpen, onClose }: { asset: Asset | null; isOpen: boolean; onClose: () => void }) {
-  const [comments, setComments] = useState<any[]>([]);
-  const [commentText, setCommentText] = useState('');
-  const [copied, setCopied] = useState(false);
-  useEscapeKey(onClose, isOpen);
-  useEffect(() => {
-    if (!asset?.id || !isOpen) { setComments([]); return; }
-    supabase.from('asset_comments').select('id,content,timecode,created_at,profiles(username)').eq('asset_id', asset.id).order('created_at').then(({ data }) => setComments(data || []));
-  }, [asset?.id, isOpen]);
-  const sendComment = async () => {
-    const t = commentText.trim();
-    if (!t || !asset?.id) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase.from('asset_comments').insert({ asset_id: asset.id, user_id: user.id, content: t, timecode: 'Global' }).select('id,content,timecode,created_at').single();
-    if (data) setComments(p => [...p, { ...data, profiles: { username: 'You' } }]);
-    // Notify the asset owner of the new review comment.
-    const ownerId = (asset as any).created_by;
-    if (ownerId) {
-      notify(ownerId, {
-        type: 'comment',
-        title: `New comment · ${(asset as any).title || 'asset'}`,
-        body: t.length > 80 ? t.slice(0, 80) + '…' : t,
-        link: '/studio',
-      }, user.id);
-    }
-    setCommentText('');
-  };
-  if (!asset || !isOpen) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        style={{ position: 'fixed', inset: 0, zIndex: 2000, background: '#050505', display: 'flex', flexDirection: 'column' }}
-      >
-        {/* Header */}
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><ArrowLeft size={16} /></button>
-             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: '#fff' }}>{asset.name} <span style={{ color: '#666', marginLeft: 8 }}>V2</span></div>
-             <div style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(0,204,102,0.1)', color: '#00cc66', borderRadius: 4, textTransform: 'uppercase' }}>Approved</div>
-           </div>
-           <div style={{ display: 'flex', gap: 12 }}>
-             <button className="link-btn" onClick={() => { if (asset.url) window.open(asset.url, '_blank'); }} disabled={!asset.url}><Download size={12} /> Download</button>
-             <button className="link-btn" style={{ background: copied ? '#10b981' : 'var(--accent)', color: 'var(--bg)' }} disabled={!asset.url} onClick={() => { if (asset.url) { navigator.clipboard?.writeText(asset.url); setCopied(true); setTimeout(() => setCopied(false), 1800); } }}>{copied ? '✓ Copied' : 'Share Link'}</button>
-           </div>
-        </div>
-
-        {/* Content Area */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Main Viewer */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, background: '#000', position: 'relative' }}>
-             {asset.type === 'video' && asset.url ? (
-               <video src={asset.url} controls style={{ width: '100%', maxWidth: 1000, maxHeight: '100%', borderRadius: 8, background: '#000' }} />
-             ) : asset.type === 'audio' && asset.url ? (
-               <div style={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-                 <Music size={48} color="#555" />
-                 <audio src={asset.url} controls style={{ width: '100%' }} />
-               </div>
-             ) : asset.url ? (
-                <NextImage src={asset.url} alt={asset.name} width={800} height={600} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
-             ) : (
-               <div style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 10 }}>No preview available</div>
-             )}
-          </div>
-
-          {/* Comments Sidebar (Frame.io style) */}
-          <div style={{ width: 340, background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Review & Feedback</div>
-            
-            <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {comments.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No feedback yet — leave the first note.</div>}
-              {comments.map((comment) => {
-                const u = comment.profiles?.username || 'User';
-                return (
-                <div key={comment.id} style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{u.charAt(0).toUpperCase()}</div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{u}</span>
-                      {comment.timecode && <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', background: 'rgba(215, 52, 11,0.1)', padding: '2px 6px', borderRadius: 4 }}>{comment.timecode}</span>}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>{comment.content}</div>
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-
-            <div style={{ padding: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-               <textarea value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Leave a comment…" style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: 12, color: '#fff', fontSize: 12, resize: 'none', height: 80, marginBottom: 12 }} />
-               <button onClick={sendComment} disabled={!commentText.trim()} style={{ width: '100%', padding: 10, background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: commentText.trim() ? 'pointer' : 'default', opacity: commentText.trim() ? 1 : 0.6 }}>Send Feedback</button>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
-function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { isOpen: boolean; onClose: () => void; boardId: string; userId: string; onSuccess: () => void }) {
-  useEscapeKey(onClose, isOpen);
-  const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [category, setCategory] = useState('Reference');
-  const [type, setType] = useState('image');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async () => {
-    if ((!url && !file) || !boardId || !userId) {
-      setError('Add a file or a link before submitting');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      let finalUrl = url;
-
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const uid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-        const fileName = `${Date.now()}-${uid}.${fileExt}`;
-        const filePath = `${userId}/${fileName}`;
-        finalUrl = await uploadStudioFile(filePath, file);
-      }
-
-      await addStudioAsset({
-        board_id: boardId,
-        user_id: userId,
-        title: title || (file ? file.name : 'Untitled Asset'),
-        asset_url: finalUrl,
-        asset_type: type,
-        category: category
-      });
-      onSuccess();
-      onClose();
-      // Reset form
-      setTitle('');
-      setUrl('');
-      setFile(null);
-    } catch (err) {
-      console.error('Error adding asset:', err);
-      setError('Upload failed — try again');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={e => e.stopPropagation()}
-            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
-          >
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Digital Intake</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>
-              File storage isn&apos;t connected yet — link to a file already hosted elsewhere (Drive, YouTube, etc.) to track it here.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <Input
-                label="Title"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="Asset Title"
-              />
-
-              <div>
-                <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Upload File</label>
-                <div
-                  onClick={() => document.getElementById('studio-file-input')?.click()}
-                  style={{
-                    width: '100%',
-                    background: '#0a0a0a',
-                    border: '1px dashed #333',
-                    color: '#fff',
-                    padding: 20,
-                    borderRadius: 6,
-                    fontSize: 12,
-                    textAlign: 'center',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {file ? file.name : 'Click to select or drop file'}
-                  <input
-                    id="studio-file-input"
-                    type="file"
-                    onChange={e => {
-                      if (e.target.files?.[0]) {
-                        setFile(e.target.files[0]);
-                        // Auto-detect type
-                        const f = e.target.files[0];
-                        if (f.type.includes('image')) setType('image');
-                        else if (f.type.includes('video')) setType('video');
-                        else if (f.type.includes('audio')) setType('audio');
-                        else setType('document');
-                      }
-                    }}
-                    style={{ display: 'none' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'center', fontSize: 10, color: '#444' }}>— OR —</div>
-
-              <Input
-                label="External URL"
-                value={url}
-                onChange={e => {
-                  setUrl(e.target.value);
-                  if (e.target.value) setFile(null);
-                }}
-                placeholder="https://..."
-              />
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Category</label>
-                  <select
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
-                  >
-                    <option>Raw Footage</option>
-                    <option>Reference</option>
-                    <option>Production Doc</option>
-                    <option>Asset</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Type</label>
-                   <select
-                    value={type}
-                    onChange={e => setType(e.target.value)}
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 10, borderRadius: 6, fontSize: 12 }}
-                   >
-                    <option value="video">Video</option>
-                    <option value="image">Image</option>
-                    <option value="document">PDF / Doc</option>
-                    <option value="audio">Audio</option>
-                  </select>
-                </div>
-              </div>
-
-              {error && <div style={{ fontSize: 11, color: '#ef4444' }}>{error}</div>}
-
-              <Button
-                onClick={handleSubmit}
-                disabled={loading || (!url && !file)}
-                isLoading={loading}
-                fullWidth
-                style={{ marginTop: 12 }}
-              >
-                Complete Intake
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function ProjectCard({ project, index }: { project: any; index: number }) {
-  return (
-    <AnimatedSection delay={index * 0.1}>
-      <motion.div
-        whileHover={{ borderColor: `${project.statusColor}33` } as any}
-        style={{
-          padding: 32,
-          background: 'var(--bg-2)',
-          border: '1px solid var(--border)',
-          transition: 'border-color 0.4s, box-shadow 0.4s',
-          borderRadius: 'var(--radius-sm)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 20px 60px rgba(0,0,0,0.8)`)}
-        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-      >
-        {/* Ghost title */}
-        <div style={{
-          position: 'absolute',
-          top: -10,
-          right: -8,
-          fontFamily: 'var(--display)',
-          fontSize: 'clamp(3rem, 8vw, 6rem)',
-          lineHeight: 1,
-          color: 'rgba(255,255,255,0.025)',
-          letterSpacing: -2,
-          userSelect: 'none',
-          pointerEvents: 'none',
-        }}>
-          {project.title.split(' ')[0].toUpperCase()}
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div>
-              <span style={{ fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.statusColor, fontFamily: 'var(--mono)' }}>
-                {project.type}
-              </span>
-              <h3 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', letterSpacing: 2, marginTop: 6 }}>
-                {project.title}
-              </h3>
-            </div>
-            <span style={{
-              fontSize: 8,
-              letterSpacing: 2,
-              padding: '5px 12px',
-              border: `1px solid ${project.statusColor}55`,
-              color: project.statusColor,
-              textTransform: 'uppercase',
-              fontFamily: 'var(--mono)',
-              borderRadius: 'var(--radius-sm)',
-              flexShrink: 0,
-            }}>
-              {project.status}
-            </span>
-          </div>
-
-          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.92rem', color: 'var(--fg-muted)', marginBottom: 20 }}>
-            {project.description}
-          </p>
-
-          <div style={{ marginTop: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-subtle)', marginBottom: 6 }}>
-              <span>Completion</span>
-              <span style={{ color: project.statusColor }}>{project.completion}%</span>
-            </div>
-            <div style={{ height: 2, background: '#1a1a1a', overflow: 'hidden', borderRadius: 1 }}>
-              <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: `${project.completion}%` }}
-                viewport={{ once: true }}
-                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-                style={{ height: '100%', background: project.statusColor, borderRadius: 1 }}
-              />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </AnimatedSection>
-  );
-}
-
-function StageIndicator({ currentStage }: { currentStage: string }) {
-  return (
-    <div style={{ display: 'flex', gap: 4, marginBottom: 40 }}>
-      {STAGES.map((stage, i) => {
-        const isActive = stage.name.toLowerCase() === currentStage.toLowerCase() || stage.id === currentStage;
-        const Icon = stage.icon;
-        return (
-          <div key={stage.id} style={{ flex: 1, position: 'relative' }}>
-            <div style={{ 
-              height: 4, 
-              background: isActive ? stage.color : 'rgba(255,255,255,0.05)', 
-              borderRadius: 2,
-              marginBottom: 12,
-              transition: 'all 0.5s'
-            }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: isActive ? 1 : 0.2, transition: 'opacity 0.5s' }}>
-              <Icon size={14} color={stage.color} />
-              <span style={{ fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 2, textTransform: 'uppercase', color: stage.color }}>{stage.name}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Pinterest-style full-screen pin viewer with keyboard navigation.
-function ConceptLightbox({ images, index, onIndex, onClose, onSetBoard, boards = [] }: { images: any[]; index: number; onIndex: (i: number) => void; onClose: () => void; onSetBoard?: (id: string, board: string | null) => void; boards?: string[] }) {
-  const img = images[index];
-  const [boardInput, setBoardInput] = useState('');
-  useEffect(() => { setBoardInput(img?.board || ''); }, [img?.id, img?.board]);
-  const go = (d: number) => onIndex((index + d + images.length) % images.length);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowRight') go(1);
-      else if (e.key === 'ArrowLeft') go(-1);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!img) return null;
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 40, height: 40, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
-      {images.length > 1 && (
-        <>
-          <button onClick={(e) => { e.stopPropagation(); go(-1); }} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={22} /></button>
-          <button onClick={(e) => { e.stopPropagation(); go(1); }} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={22} /></button>
-        </>
-      )}
-      <motion.div key={img.id} initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-        <NextImage src={img.image_url} alt={img.title || ''} width={900} height={700} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} style={{ maxWidth: '90vw', maxHeight: '78vh', objectFit: 'contain', borderRadius: 10, boxShadow: '0 30px 90px rgba(0,0,0,0.7)' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(224, 221, 174,0.7)', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <span>{img.title || 'Untitled'}</span>
-          <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
-          <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{index + 1} / {images.length}</span>
-          <a href={img.image_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: '#6366f1', textDecoration: 'none' }}>open original ↗</a>
-          {onSetBoard && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-              <span style={{ color: 'rgba(224, 221, 174,0.3)' }}>·</span>
-              <input
-                list="mc-lightbox-boards"
-                value={boardInput}
-                placeholder="board…"
-                onChange={(e) => setBoardInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') onSetBoard(img.id, boardInput.trim() || null); }}
-                onBlur={() => { if ((boardInput.trim() || null) !== (img.board || null)) onSetBoard(img.id, boardInput.trim() || null); }}
-                style={{ width: 130, padding: '4px 8px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.4)', borderRadius: 6, color: '#c084fc', fontFamily: 'var(--mono)', fontSize: 10, outline: 'none' }}
-              />
-              <datalist id="mc-lightbox-boards">{boards.map(b => <option key={b} value={b} />)}</datalist>
-            </span>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-function ConceptCard({ image, index, onRemove, sceneCount = 0, onOpen, board }: { image: { id: string; url: string; title?: string }; index: number; onRemove?: () => void; sceneCount?: number; onOpen?: () => void; board?: string | null }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [broken, setBroken] = useState(false);
-  const dominantColor = useColorExtractor(image.url);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.05 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        marginBottom: 16,
-        breakInside: 'avoid',
-        position: 'relative',
-        borderRadius: 8,
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.05)',
-        background: '#0a0a0a',
-        boxShadow: isHovered && dominantColor ? `0 16px 40px ${dominantColor}66` : 'none',
-        transition: 'box-shadow 0.4s ease-out'
-      }}
-    >
-      {broken ? (
-        <div onClick={onOpen} style={{ width: '100%', minHeight: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20, background: 'rgba(255,255,255,0.02)', cursor: onOpen ? 'pointer' : 'default' }}>
-          <Image size={22} color="rgba(255,255,255,0.2)" aria-label="broken image" />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', textAlign: 'center', wordBreak: 'break-word' }}>{image.title || 'Image unavailable'}</span>
-        </div>
-      ) : (
-        <NextImage src={image.url} alt={image.title} width={400} height={300} onClick={onOpen} onError={() => setBroken(true)} style={{ width: '100%', height: 'auto', display: 'block', opacity: isHovered ? 1 : 0.8, transition: 'opacity 0.3s', cursor: onOpen ? 'zoom-in' : 'default' }} />
-      )}
-
-      {sceneCount > 0 && (
-        <div style={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#fff', background: 'rgba(99,102,241,0.85)', padding: '2px 7px', borderRadius: 99 }}>
-          {sceneCount} {sceneCount === 1 ? 'scene' : 'scenes'}
-        </div>
-      )}
-      {board && (
-        <div style={{ position: 'absolute', top: 8, right: 8, fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: '#c084fc', background: 'rgba(168,85,247,0.2)', border: '1px solid rgba(168,85,247,0.4)', padding: '2px 7px', borderRadius: 99, backdropFilter: 'blur(4px)' }}>
-          {board}
-        </div>
-      )}
-
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(transparent 60%, rgba(0,0,0,0.8))',
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              alignItems: 'flex-end'
-            }}
-          >
-            {onRemove && (
-              <button
-                onClick={onRemove}
-                style={{ background: 'rgba(255,0,0,0.2)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ff4444' }}
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-            <div style={{ width: '100%' }}>
-              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#fff', letterSpacing: 1, display: 'block' }}>{image.title || 'Untitled'}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-// Pinterest/ShotDeck-style reference search → pin straight to the project moodboard.
-function ReferenceSearchModal({
-  isOpen, onClose, projectTitle, addedUrls, onAdd,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  projectTitle?: string;
-  addedUrls: Set<string>;
-  onAdd: (ref: ReferenceResult) => Promise<void>;
-}) {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<ReferenceResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [pending, setPending] = useState<Set<string>>(new Set());
-
-  const runSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!query.trim()) return;
-    setLoading(true);
-    setSearched(true);
-    try {
-      const res = await searchReferences(query, 1);
-      setResults(res.results);
-    } catch {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAdd = async (ref: ReferenceResult) => {
-    setPending(prev => new Set(prev).add(ref.id));
-    try { await onAdd(ref); } finally {
-      setPending(prev => { const n = new Set(prev); n.delete(ref.id); return n; });
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        style={{ position: 'fixed', inset: 0, zIndex: 1500, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
-          onClick={e => e.stopPropagation()}
-          style={{ width: '100%', maxWidth: 900, maxHeight: '85vh', background: '#0c0c0c', border: '1px solid rgba(224,221,174,0.1)', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-        >
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(224,221,174,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>Reference Search</div>
-              <div style={{ fontSize: 10, color: 'var(--fg-subtle)', marginTop: 2 }}>
-                Search visual references{projectTitle ? ` for ${projectTitle}` : ''} and pin them to your moodboard.
-              </div>
-            </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={18} /></button>
-          </div>
-
-          <form onSubmit={runSearch} style={{ padding: '16px 24px', display: 'flex', gap: 10, borderBottom: '1px solid rgba(224,221,174,0.04)' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(224,221,174,0.04)', border: '1px solid rgba(224,221,174,0.08)', borderRadius: 8, padding: '0 12px' }}>
-              <Search size={15} color="#888" />
-              <input
-                autoFocus value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="e.g. neon noir, blade runner, golden hour rooftop…"
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 13, padding: '12px 0' }}
-              />
-            </div>
-            <button type="submit" disabled={loading || !query.trim()}
-              style={{ padding: '0 20px', background: 'var(--accent)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, cursor: loading ? 'default' : 'pointer', opacity: loading || !query.trim() ? 0.5 : 1 }}>
-              {loading ? 'Searching…' : 'Search'}
-            </button>
-          </form>
-
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-            {!searched ? (
-              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>
-                Search a mood, film, location, or look to find references.
-              </div>
-            ) : loading ? (
-              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>Searching…</div>
-            ) : results.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--fg-subtle)', fontSize: 12, padding: 60 }}>No references found. Try a different term.</div>
-            ) : (
-              <div style={{ columnCount: 3, columnGap: 12 }}>
-                {results.map(ref => {
-                  const added = addedUrls.has(ref.url);
-                  const isPending = pending.has(ref.id);
-                  return (
-                    <div key={ref.id} style={{ marginBottom: 12, breakInside: 'avoid', position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.06)', background: '#050a14' }}>
-                      <NextImage src={ref.thumbnail} alt={ref.title} width={300} height={200} loading="lazy" style={{ width: '100%', display: 'block' }} />
-                      <div
-                        style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(0,0,0,0.85))', opacity: 0, transition: 'opacity 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 12, gap: 8 }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
-                      >
-                        <div style={{ fontSize: 9, color: '#ccc', fontFamily: 'var(--mono)' }}>{ref.creator ? `${ref.creator} · ` : ''}{ref.source}</div>
-                        <button
-                          disabled={added || isPending}
-                          onClick={() => handleAdd(ref)}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', background: added ? 'rgba(0,204,102,0.2)' : 'var(--accent)', color: added ? '#00cc66' : '#000', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, cursor: added || isPending ? 'default' : 'pointer' }}
-                        >
-                          {added ? 'Added ✓' : isPending ? 'Adding…' : <><Plus size={12} /> Add to Board</>}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
-// Live pitch deck: title + logline, real concept images, and the character
-// bible — auto-built from the project's data, with a presentation view.
-function ProjectPitchDeck({ project, concepts, beats }: { project: any; concepts: any[]; beats: any[] }) {
-  const [characters, setCharacters] = useState<string[]>([]);
-  const [present, setPresent] = useState(false);
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    (async () => {
-      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', project.id).order('updated_at', { ascending: false });
-      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
-      if (!withContent) return;
-      const { data: saved } = await supabase.from('script_characters').select('name,full_name').eq('script_id', withContent.id);
-      let names = (saved || []).map((r: any) => r.full_name || r.name);
-      if (names.length === 0 && withContent.content) {
-        try { names = parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean); } catch { /* ignore */ }
-      }
-      setCharacters(names.slice(0, 12));
-    })();
-  }, [project.id]);
-
-  const visual = concepts[0]?.image_url;
-  const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
-  const printDeck = () => {
-    const w = window.open('', '_blank', 'width=900,height=1100');
-    if (!w) return;
-    const imgs = concepts.slice(0, 6).map((c: any) => `<img src="${esc(c.image_url)}" style="width:31%;height:120px;object-fit:cover;border-radius:6px;margin:0 1% 8px 0"/>`).join('');
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Pitch</title>
-      <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:48px;line-height:1.5}
-      .slide{page-break-inside:avoid;margin-bottom:36px}h1{font-size:34px;letter-spacing:2px;margin:0 0 8px}
-      .logline{font-size:16px;color:#444;max-width:640px}h2{font-size:11px;letter-spacing:3px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:28px 0 12px}
-      .chip{display:inline-block;font-size:12px;padding:4px 10px;background:#eef;border:1px solid #ccd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
-      <div class="slide"><h1>${esc(project.title).toUpperCase()}</h1><div class="logline">${esc(project.description || '')}</div></div>
-      <div class="slide"><h2>THE VISUAL WORLD</h2>${imgs || '<div style="color:#999">No concept references yet.</div>'}</div>
-      <div class="slide"><h2>THE CHARACTERS</h2>${characters.length ? characters.map(c => `<span class="chip">${esc(c)}</span>`).join('') : '<div style="color:#999">No characters yet.</div>'}</div>
-      <div class="slide"><h2>STORY ENGINE</h2>${beats.length ? beats.slice(0, 6).map((b: any) => `<div>• ${esc(b.title)}</div>`).join('') : '<div style="color:#999">No story beats yet.</div>'}</div>
-      <script>window.onload=()=>window.print()</script></body></html>`);
-    w.document.close();
-  };
-  const slides = [
-    { label: 'Logline & Title', bg: undefined as string | undefined, render: (big: boolean) => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '5rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>{project.title}</h3>
-        <p style={{ fontFamily: 'var(--serif)', fontSize: big ? '1.4rem' : '0.85rem', color: 'var(--fg-muted)', maxWidth: 640, margin: '0 auto', lineHeight: 1.6 }}>{project.description || 'Add a logline in the project summary.'}</p>
-      </>
-    ) },
-    { label: 'The Visual World', bg: visual, render: (big: boolean) => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>THE VISUAL WORLD</h3>
-        <div style={{ fontSize: big ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>{concepts.length > 0 ? `${concepts.length} concept references` : 'Add references in the Concept board'}</div>
-      </>
-    ) },
-    { label: 'The Characters', bg: undefined, render: (big: boolean) => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: 4, margin: '14px 0' }}>THE CHARACTERS</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 720, margin: '0 auto' }}>
-          {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: big ? 14 : 9.5, padding: big ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 99 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Develop the Character Bible to populate the cast.</span>}
-        </div>
-      </>
-    ) },
-    { label: 'Story Engine', bg: undefined, render: (big: boolean) => (
-      <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: 4, margin: '14px 0' }}>STORY ENGINE</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 600, margin: '0 auto' }}>
-          {beats.length > 0 ? beats.slice(0, 5).map((b: any) => <div key={b.id} style={{ fontFamily: 'var(--mono)', fontSize: big ? 13 : 10, color: '#ddd' }}>{b.title}</div>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Add story beats in the Concept tab.</span>}
-        </div>
-      </>
-    ) },
-  ];
-
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-        <div>
-          <SectionLabel text="Investor Relations" />
-          <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck</h2>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="link-btn" onClick={printDeck}>⎙ Export PDF</button>
-          <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { setIdx(0); setPresent(true); }}>Enter Presentation View</button>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
-        {slides.map((s, i) => (
-          <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-            {s.bg && (<><NextImage src={s.bg} alt="" fill style={{ objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <SectionLabel text={`Slide 0${i + 1}`} />
-              {s.render(false)}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ marginTop: 40, padding: 24, background: 'rgba(215, 52, 11,0.05)', border: '1px solid rgba(215, 52, 11,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Info size={20} color="var(--accent)" />
-        <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, Concept board, Character Bible, and story beats — update them and this updates.</div>
-      </div>
-
-      <AnimatePresence>
-        {present && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
-            <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
-              {slides[idx].bg && (<><NextImage src={slides[idx].bg} alt="" fill style={{ objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
-              <div style={{ position: 'relative', zIndex: 1 }}>{slides[idx].render(true)}</div>
-            </div>
-            <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: idx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
-            <button onClick={() => setIdx(i => Math.min(slides.length - 1, i + 1))} disabled={idx === slides.length - 1} aria-label="next" style={{ position: 'fixed', right: 28, top: '50%', background: 'none', border: 'none', color: idx === slides.length - 1 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>›</button>
-            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#666', letterSpacing: 2 }}>{idx + 1} / {slides.length}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-// Character bible: parsed from the screenplay, persisted to script_characters
-// (Supabase) so character development is shared across the suite, not trapped
-// in one browser.
-function CharacterBible({ projectId, userId, concepts }: { projectId: string; userId: string | null; concepts: any[] }) {
-  const { toast } = useToast();
-  type Bio = { id?: string; name: string; full_name: string; age: string; arc: string; description: string; color?: string };
-  type Ref = { id: string; concept_asset_id: string; image_url: string; title: string | null };
-  const [bios, setBios] = useState<Bio[]>([]);
-  const [scriptId, setScriptId] = useState<string | null>(null);
-  const [editName, setEditName] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Bio | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [refs, setRefs] = useState<Record<string, Ref[]>>({});
-  const [lookFor, setLookFor] = useState<string | null>(null);
-
-  const loadRefs = async () => {
-    const { data } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
-    const map: Record<string, Ref[]> = {};
-    (data || []).forEach((r: any) => { (map[r.character_id] ||= []).push({ id: r.id, concept_asset_id: r.concept_asset_id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
-    setRefs(map);
-  };
-  useEffect(() => { loadRefs(); }, [projectId, bios.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const ensureRow = async (b: Bio): Promise<string | null> => {
-    if (b.id) return b.id;
-    if (!scriptId) return null;
-    const { data } = await supabase.from('script_characters').insert({ script_id: scriptId, name: b.name, color: b.color, updated_by: userId }).select('id').single();
-    if (data?.id) { setBios(prev => prev.map(x => x.name === b.name ? { ...x, id: data.id } : x)); return data.id; }
-    return null;
-  };
-  const linkLook = async (b: Bio, conceptId: string) => {
-    const cid = await ensureRow(b);
-    if (!cid) { toast('Could not link look', 'error'); return; }
-    const { error } = await supabase.from('character_references').insert({ project_id: projectId, character_id: cid, concept_asset_id: conceptId, created_by: userId });
-    if (error) { toast(error.message || 'Could not link look', 'error'); return; }
-    setLookFor(null); loadRefs();
-  };
-  const unlinkLook = async (refId: string) => { await supabase.from('character_references').delete().eq('id', refId); loadRefs(); };
-
-  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', projectId).order('updated_at', { ascending: false });
-      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
-      if (!withContent) { setBios([]); setScriptId(null); return; }
-      setScriptId(withContent.id);
-      const parsedNames: string[] = withContent.content ? parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean) : [];
-      const { data: saved } = await supabase.from('script_characters').select('*').eq('script_id', withContent.id);
-      const savedByName = new Map((saved || []).map((r: any) => [r.name, r]));
-      const names = Array.from(new Set([...parsedNames, ...(saved || []).map((r: any) => r.name)]));
-      setBios(names.map((name, i) => {
-        const r: any = savedByName.get(name);
-        return { id: r?.id, name, full_name: r?.full_name || '', age: r?.age || '', arc: r?.arc || '', description: r?.description || '', color: r?.color || palette[i % palette.length] };
-      }));
-    } finally {
-      setLoading(false);
-    }
-  };
-  useEffect(() => { load(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const startEdit = (b: Bio) => { setEditName(b.name); setDraft({ ...b }); };
-  const save = async () => {
-    if (!draft || !scriptId) return;
-    const payload: any = { script_id: scriptId, name: draft.name, full_name: draft.full_name || null, age: draft.age || null, arc: draft.arc || null, description: draft.description || null, color: draft.color, updated_by: userId, updated_at: new Date().toISOString() };
-    const { error } = draft.id
-      ? await supabase.from('script_characters').update(payload).eq('id', draft.id)
-      : await supabase.from('script_characters').insert(payload);
-    if (error) { toast(error.message || 'Could not save character', 'error'); return; }
-    toast('Character saved', 'success');
-    setEditName(null); setDraft(null);
-    load();
-  };
-
-  return (
-    <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-        <Users size={16} /> Character Bible <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· from ScriptOS · {bios.length}</span>
-      </div>
-      {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Loading…</div>}
-      {!loading && bios.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to build the bible.</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {bios.map(b => {
-          const editing = editName === b.name;
-          return (
-            <div key={b.name} style={{ background: 'rgba(0,0,0,0.25)', border: `1px solid ${b.color}33`, borderLeft: `3px solid ${b.color}`, borderRadius: 10, padding: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, color: b.color }}>{b.name}</span>
-                {!editing && <button onClick={() => startEdit(b)} aria-label="edit" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 11 }}>✎</button>}
-              </div>
-              {editing && draft ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-                  <input value={draft.full_name} onChange={e => setDraft({ ...draft, full_name: e.target.value })} placeholder="Full name" style={inputMini} />
-                  <input value={draft.age} onChange={e => setDraft({ ...draft, age: e.target.value })} placeholder="Age" style={inputMini} />
-                  <input value={draft.arc} onChange={e => setDraft({ ...draft, arc: e.target.value })} placeholder="Character arc" style={inputMini} />
-                  <textarea value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} placeholder="Description" rows={3} style={{ ...inputMini, resize: 'vertical' }} />
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={save} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px', cursor: 'pointer', fontSize: 10 }}>Save</button>
-                    <button onClick={() => { setEditName(null); setDraft(null); }} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 10 }}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 9.5, color: '#aaa', lineHeight: 1.7 }}>
-                  {b.full_name && <div><span style={{ color: '#666' }}>Name:</span> {b.full_name}</div>}
-                  {b.age && <div><span style={{ color: '#666' }}>Age:</span> {b.age}</div>}
-                  {b.arc && <div><span style={{ color: '#666' }}>Arc:</span> {b.arc}</div>}
-                  {b.description && <div style={{ marginTop: 4, color: '#ccc' }}>{b.description}</div>}
-                  {!b.full_name && !b.age && !b.arc && !b.description && <div style={{ color: '#555' }}>No bio yet — click ✎ to develop.</div>}
-                </div>
-              )}
-              {/* Casting / look references */}
-              {(() => {
-                const cRefs = b.id ? (refs[b.id] || []) : [];
-                const linkedIds = new Set(cRefs.map(r => r.concept_asset_id));
-                const avail = concepts.filter((c: any) => !linkedIds.has(c.id));
-                const picking = lookFor === b.name;
-                return (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      {cRefs.map(r => (
-                        <div key={r.id} style={{ position: 'relative', width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', border: `1px solid ${b.color}55` }} title={r.title || 'look'}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={r.image_url} alt={r.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button onClick={() => unlinkLook(r.id)} aria-label="unlink" style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 8, lineHeight: 1, cursor: 'pointer', padding: '1px 3px' }}>✕</button>
-                        </div>
-                      ))}
-                      {concepts.length > 0 && (
-                        <button onClick={() => setLookFor(picking ? null : b.name)} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: b.color, background: `${b.color}14`, border: `1px solid ${b.color}33`, borderRadius: 99, padding: '4px 8px', cursor: 'pointer' }}>{picking ? 'close' : '+ look'}</button>
-                      )}
-                    </div>
-                    {picking && (
-                      <div style={{ marginTop: 6, padding: 6, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                        {avail.length === 0 ? <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>All concept images linked.</span> : avail.map((c: any) => (
-                          <button key={c.id} onClick={() => linkLook(b, c.id)} title={c.title || 'link'} style={{ width: 44, height: 30, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', padding: 0, background: 'none' }}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={c.image_url} alt={c.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-const inputMini: React.CSSProperties = { width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10, fontFamily: 'var(--mono)', outline: 'none' };
-
-// Casting board: the roster of characters (pulled straight from the ScriptOS
-// bible — never re-typed), each with a casting slot that either names a crew
-// member or is left "Open — Post to Jobs", a look-board of concept images, and
-// the character's footprint across the shooting schedule.
-function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId: string; userId: string | null; concepts: any[]; scenes: any[]; crew: any[] }) {
-  const { toast } = useToast();
-  type Char = { id?: string; name: string; color: string };
-  type Look = { id: string; image_url: string; title: string | null };
-  const [chars, setChars] = useState<Char[]>([]);
-  const [castings, setCastings] = useState<Record<string, Casting>>({});
-  const [looks, setLooks] = useState<Record<string, Look[]>>({});
-  const [selected, setSelected] = useState<string | null>(null);
-  const [assigning, setAssigning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
-
-  const loadCastings = async () => {
-    try { setCastings(await getCastingsForProject(projectId)); } catch { /* table may be empty */ }
-  };
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', projectId).order('updated_at', { ascending: false });
-      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
-      const parsedNames: string[] = withContent?.content ? parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean) : [];
-      const savedById = new Map<string, any>();
-      if (withContent) {
-        const { data: saved } = await supabase.from('script_characters').select('id,name,color').eq('script_id', withContent.id);
-        (saved || []).forEach((r: any) => savedById.set(r.name, r));
-      }
-      const names = Array.from(new Set([...parsedNames, ...Array.from(savedById.keys())]));
-      const list = names.map((name, i) => { const r = savedById.get(name); return { id: r?.id, name, color: r?.color || palette[i % palette.length] }; });
-      setChars(list);
-      setSelected(prev => prev && names.includes(prev) ? prev : names[0] || null);
-      // Look-board references keyed by character_id
-      const { data: refData } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
-      const lookMap: Record<string, Look[]> = {};
-      (refData || []).forEach((r: any) => { (lookMap[r.character_id] ||= []).push({ id: r.id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
-      setLooks(lookMap);
-      await loadCastings();
-    } finally { setLoading(false); }
-  };
-  useEffect(() => { load(); }, [projectId, scenes.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Footprint of a character across the shooting schedule, matched on cast_list.
-  const footprint = (name: string) => {
-    const up = name.toUpperCase();
-    const inScenes = scenes.filter(s => String(s.cast_list || '').toUpperCase().split(',').map((c: string) => c.trim()).includes(up));
-    const days = Array.from(new Set(inScenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
-    return { sceneNums: inScenes.map(s => s.scene_number).sort((a, b) => a - b), days };
-  };
-
-  const assign = async (crewUserId: string) => {
-    if (!selected || !userId) { toast('Sign in to cast', 'error'); return; }
-    try {
-      await setCasting(projectId, selected, crewUserId, userId);
-      await loadCastings();
-      setAssigning(false);
-      toast(`Cast ${selected}`, 'success');
-    } catch (e: any) { toast(e?.message || 'Could not cast', 'error'); }
-  };
-  const clearCasting = async (name: string) => {
-    try { await removeCasting(projectId, name); await loadCastings(); toast(`${name} reopened`, 'info'); }
-    catch (e: any) { toast(e?.message || 'Could not update', 'error'); }
-  };
-
-  const sel = chars.find(c => c.name === selected) || null;
-  const castCount = chars.filter(c => castings[c.name.toUpperCase()]).length;
-
-  return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-        <Users size={16} /> Casting Board
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', fontWeight: 400 }}>· {castCount}/{chars.length} cast · from ScriptOS</span>
-      </div>
-      {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Loading…</div>}
-      {!loading && chars.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the casting board.</div>}
-      {chars.length > 0 && (
-        <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 }}>
-          {/* Character roster */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {chars.map(c => {
-              const cast = castings[c.name.toUpperCase()];
-              const active = selected === c.name;
-              return (
-                <button key={c.name} onClick={() => { setSelected(c.name); setAssigning(false); }} style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', textAlign: 'left',
-                  background: active ? `${c.color}18` : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${active ? `${c.color}55` : 'rgba(255,255,255,0.06)'}`,
-                  borderLeft: `3px solid ${c.color}`, borderRadius: 8, cursor: 'pointer',
-                }}>
-                  <span style={{ flex: 1, fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, color: active ? c.color : 'var(--fg)' }}>{c.name}</span>
-                  {cast ? (
-                    <span title={`Cast: ${cast.username || 'crew'}`} style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
-                  ) : (
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>open</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Detail panel */}
-          {sel && (() => {
-            const cast = castings[sel.name.toUpperCase()];
-            const looksFor = sel.id ? (looks[sel.id] || []) : [];
-            const fp = footprint(sel.name);
-            return (
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${sel.color}33`, borderRadius: 12, padding: 24 }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: sel.color, marginBottom: 20 }}>{sel.name}</div>
-
-                {/* Casting slot */}
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
-                {cast ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, marginBottom: 24 }}>
-                    <Avatar src={cast.avatar_url} name={cast.username || 'Crew'} size={38} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>{cast.username || 'Crew member'}</div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#34d399', textTransform: 'uppercase', letterSpacing: 1 }}>Cast</div>
-                    </div>
-                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Recast</button>
-                    <button onClick={() => clearCasting(sel.name)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#ef4444', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}>Remove</button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: assigning ? 12 : 24 }}>
-                    <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
-                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: sel.color, background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
-                    <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
-                  </div>
-                )}
-
-                {/* Crew picker */}
-                {assigning && (
-                  <div style={{ marginBottom: 24, padding: 12, background: 'rgba(0,0,0,0.3)', borderRadius: 10 }}>
-                    {crew.length === 0 ? (
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No crew recruited yet — recruit talent in the Crew tab or post the role to Jobs.</span>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {crew.map((m: any) => (
-                          <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
-                            <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
-                            <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{m.role}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Look-board */}
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
-                {looksFor.length > 0 ? (
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
-                    {looksFor.map(l => (
-                      <div key={l.id} style={{ width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: `1px solid ${sel.color}44` }} title={l.title || 'look'}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={l.image_url} alt={l.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginBottom: 24 }}>No look references yet — link concept images to this character in the Character Bible.</div>
-                )}
-
-                {/* Scene footprint */}
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
-                {fp.sceneNums.length > 0 ? (
-                  <div>
-                    <div style={{ display: 'flex', gap: 20, marginBottom: 10, fontFamily: 'var(--mono)', fontSize: 12 }}>
-                      <span><span style={{ color: sel.color, fontSize: 18, fontWeight: 700 }}>{fp.sceneNums.length}</span> <span style={{ color: 'var(--fg-dim)' }}>scenes</span></span>
-                      <span><span style={{ color: sel.color, fontSize: 18, fontWeight: 700 }}>{fp.days.length}</span> <span style={{ color: 'var(--fg-dim)' }}>shoot day{fp.days.length === 1 ? '' : 's'}</span></span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                      {fp.sceneNums.map(n => (
-                        <span key={n} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 7px' }}>#{n}</span>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>Not tagged into any scene yet — add this character to scene cast lists in the schedule.</div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Stripboard + Day-Out-of-Days. The stripboard colours each scene by shoot
-// condition (INT/EXT × day/night, the Movie Magic convention), sizes it by
-// page eighths and groups the strips under their shoot day. The DOOD grid
-// derives each actor's Start/Work/Hold/Finish pattern from the scene cast
-// lists — all read straight off the same `scenes` rows the schedule edits.
-function Stripboard({ scenes }: { scenes: any[] }) {
-  const [view, setView] = useState<'strips' | 'dood'>('strips');
-
-  // Movie Magic strip colours: white = INT day, yellow = EXT day,
-  // blue = INT night, green = EXT night.
-  const stripColor = (s: any) => {
-    const head = `${s.title || ''} ${s.location || ''}`.toUpperCase();
-    const isExt = /\bEXT\b/.test(head) || (!/\bINT\b/.test(head) && false);
-    const tod = String(s.time_of_day || 'DAY').toUpperCase();
-    const isNight = tod === 'NIGHT' || tod === 'DUSK' || tod === 'EVENING';
-    if (isExt && isNight) return { bg: 'rgba(16,185,129,0.16)', bar: '#10b981', label: 'EXT · NIGHT' };
-    if (isExt) return { bg: 'rgba(245,158,11,0.16)', bar: '#f59e0b', label: 'EXT · DAY' };
-    if (isNight) return { bg: 'rgba(59,130,246,0.16)', bar: '#3b82f6', label: 'INT · NIGHT' };
-    return { bg: 'rgba(255,255,255,0.05)', bar: 'rgba(255,255,255,0.5)', label: 'INT · DAY' };
-  };
-  const eighths = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\/8/); return m ? Number(m[1]) : 1; };
-
-  const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
-
-  // Day-Out-of-Days: for every actor, the span of shoot days they touch.
-  const castRows = (() => {
-    const map: Record<string, Set<number>> = {};
-    scenes.forEach(s => {
-      const day = s.shoot_day || 1;
-      String(s.cast_list || '').split(',').map((c: string) => c.trim()).filter(Boolean).forEach(name => {
-        (map[name.toUpperCase()] ||= new Set()).add(day);
-      });
-    });
-    return Object.entries(map).map(([name, set]) => {
-      const dset = set as Set<number>;
-      const worked = Array.from(dset).sort((a, b) => a - b);
-      const start = worked[0]; const finish = worked[worked.length - 1];
-      // cell state per shoot day: S start, W work, H hold (between), F finish, · idle
-      const cells = days.map(d => {
-        if (!dset.has(d)) return d > start && d < finish ? 'H' : '·';
-        if (d === start && d === finish) return 'SF';
-        if (d === start) return 'S';
-        if (d === finish) return 'F';
-        return 'W';
-      });
-      const total = worked.length;
-      return { name, cells, total };
-    }).sort((a, b) => b.total - a.total);
-  })();
-
-  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#d7340b', SF: '#10b981', '·': 'rgba(255,255,255,0.12)' };
-
-  if (scenes.length === 0) return null;
-
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{view === 'strips' ? 'Stripboard' : 'Day Out of Days'}</div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {(['strips', 'dood'] as const).map(v => (
-            <button key={v} onClick={() => setView(v)} style={{
-              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase',
-              padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
-              background: view === v ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${view === v ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-              color: view === v ? '#a5b4fc' : 'var(--fg-muted)',
-            }}>{v === 'strips' ? 'Strips' : 'DOOD'}</button>
-          ))}
-        </div>
-      </div>
-
-      {view === 'strips' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 480 }}>
-          {days.map(day => {
-            const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
-            const dayEighths = dayScenes.reduce((t, s) => t + eighths(s), 0);
-            return (
-              <div key={day}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#6366f1' }}>DAY {day}</span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{dayScenes.length} scene{dayScenes.length === 1 ? '' : 's'} · {(dayEighths / 8).toFixed(1)} pg</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {dayScenes.map(s => {
-                    const c = stripColor(s);
-                    const e = eighths(s);
-                    return (
-                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: c.bg, borderLeft: `4px solid ${c.bar}`, borderRadius: 4, padding: '7px 10px', minHeight: 22 + Math.min(e, 8) * 3 }}>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, width: 28, flexShrink: 0 }}>{s.scene_number}</span>
-                        <span style={{ flex: 1, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title || 'Untitled'}</span>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: c.bar, letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', width: 32, textAlign: 'right', flexShrink: 0 }}>{e}/8</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            {[['#10b981', 'EXT Night'], ['#f59e0b', 'EXT Day'], ['#3b82f6', 'INT Night'], ['rgba(255,255,255,0.5)', 'INT Day']].map(([col, lbl]) => (
-              <span key={lbl} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: col }} /> {lbl}
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : (
-        castRows.length === 0 ? (
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No cast tagged into scenes yet — add actors to scene cast lists to build the Day Out of Days.</div>
-        ) : (
-          <div style={{ minWidth: 120 + days.length * 34 }}>
-            <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 6, marginBottom: 6 }}>
-              <div style={{ width: 120, fontFamily: 'var(--mono)', fontSize: 9, color: '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Actor</div>
-              {days.map(d => <div key={d} style={{ width: 30, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: '#888' }}>{d}</div>)}
-              <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 9, color: '#888' }}>Days</div>
-            </div>
-            {castRows.map(row => (
-              <div key={row.name} style={{ display: 'flex', alignItems: 'center', padding: '4px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                <div style={{ width: 120, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 6 }}>{row.name}</div>
-                {row.cells.map((cell, i) => (
-                  <div key={i} style={{ width: 30, textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: cell === '·' ? codeColor['·'] : codeColor[cell] }}>{cell === 'SF' ? 'SF' : cell}</span>
-                  </div>
-                ))}
-                <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{row.total}</div>
-              </div>
-            ))}
-            {/* Legend */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              {[['S', 'Start'], ['W', 'Work'], ['H', 'Hold'], ['F', 'Finish']].map(([code, lbl]) => (
-                <span key={code} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
-                  <span style={{ fontWeight: 700, color: codeColor[code] }}>{code}</span> {lbl}
-                </span>
-              ))}
-            </div>
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-// Real call sheets generated by grouping the schedule's scenes by shoot day.
-function CallSheets({ scenes, crew, projectTitle }: { scenes: any[]; crew: any[]; projectTitle: string }) {
-  const [openDay, setOpenDay] = useState<number | null>(null);
-  const days = Array.from(new Set(scenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
-
-  const dayData = (day: number) => {
-    const dayScenes = scenes.filter(s => (s.shoot_day || 1) === day).sort((a, b) => a.scene_number - b.scene_number);
-    const locations = Array.from(new Set(dayScenes.map(s => s.location).filter(Boolean)));
-    const cast = Array.from(new Set(dayScenes.flatMap(s => (s.cast_list ? String(s.cast_list).split(',').map((c: string) => c.trim()) : [])).filter(Boolean)));
-    const eighths = dayScenes.reduce((t, s) => { const m = String(s.est_duration || '').match(/(\d+)\/8/); return t + (m ? Number(m[1]) : 0); }, 0);
-    return { dayScenes, locations, cast, pages: eighths ? (eighths / 8).toFixed(1) : null };
-  };
-
-  const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
-  const printDay = (day: number) => {
-    const d = dayData(day);
-    const w = window.open('', '_blank', 'width=820,height=1060');
-    if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>${esc(projectTitle)} — Call Sheet Day ${day}</title>
-      <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px;line-height:1.5}
-      h1{font-size:20px;margin:0 0 2px;letter-spacing:2px}h2{font-size:11px;color:#b45309;letter-spacing:3px;margin:0 0 20px}
-      h3{font-size:10px;letter-spacing:2px;color:#666;border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
-      .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:#999}</style></head><body>
-      <h1>${esc(projectTitle).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}</h2>
-      <div class="row"><div class="col"><h3>SCENES (${d.dayScenes.length}${d.pages ? ` · ${d.pages} pg` : ''})</h3>
-      ${d.dayScenes.map((s: any) => `<div class="sc"><span class="num">${s.scene_number}.</span> ${esc(s.title)} ${s.time_of_day ? `<span class="num">(${esc(s.time_of_day)})</span>` : ''}</div>`).join('')}</div>
-      <div class="col"><h3>LOCATIONS</h3>${d.locations.length ? d.locations.map((l: any) => `<div>${esc(l)}</div>`).join('') : '—'}
-      <h3>CAST</h3>${d.cast.length ? esc(d.cast.join(', ')) : '—'}</div>
-      <div class="col"><h3>CREW</h3>${crew.length ? crew.map((c: any) => `<div>${esc(c.name || c.profiles?.username || 'Crew')}${c.role ? ` — ${esc(c.role)}` : ''}</div>`).join('') : 'No crew assigned'}</div></div>
-      <script>window.onload=()=>{window.print()}</script></body></html>`);
-    w.document.close();
-  };
-
-  return (
-    <div style={{ marginTop: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-        <FileText size={16} /> Call Sheets <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', fontWeight: 400 }}>· {days.length} shoot {days.length === 1 ? 'day' : 'days'}</span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-        {days.map(day => {
-          const d = dayData(day);
-          const open = openDay === day;
-          return (
-            <div key={day} style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 14, gridColumn: open ? '1 / -1' : 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setOpenDay(open ? null : day)}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>DAY {day}</span>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{d.dayScenes.length} sc · {d.cast.length} cast{d.pages ? ` · ${d.pages} pg` : ''}</span>
-              </div>
-              {!open && (
-                <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 8.5, color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {d.locations.slice(0, 2).join(' · ') || 'No locations set'}
-                </div>
-              )}
-              {open && (
-                <div style={{ marginTop: 12, fontFamily: 'var(--mono)', fontSize: 10, lineHeight: 1.7 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: 1 }}>{projectTitle.toUpperCase()} — CALL SHEET · DAY {day}</div>
-                    <button onClick={() => printDay(day)} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#ddd', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', letterSpacing: 1 }}>⎙ PRINT / PDF</button>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                    <div>
-                      <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 }}>SCENES</div>
-                      {d.dayScenes.map(s => (
-                        <div key={s.id} style={{ color: '#ddd', marginBottom: 2 }}>
-                          <span style={{ color: '#888' }}>{s.scene_number}.</span> {s.title} {s.time_of_day ? <span style={{ color: '#666' }}>({s.time_of_day})</span> : null}
-                        </div>
-                      ))}
-                    </div>
-                    <div>
-                      <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 }}>LOCATIONS</div>
-                      {d.locations.length ? d.locations.map(l => <div key={l} style={{ color: '#ddd' }}>{l}</div>) : <div style={{ color: '#555' }}>—</div>}
-                      <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, margin: '12px 0 4px' }}>CAST</div>
-                      {d.cast.length ? <div style={{ color: '#ddd' }}>{d.cast.join(', ')}</div> : <div style={{ color: '#555' }}>—</div>}
-                    </div>
-                    <div>
-                      <div style={{ color: '#666', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 }}>CREW</div>
-                      {crew.length ? crew.slice(0, 12).map((c, i) => <div key={i} style={{ color: '#ddd' }}>{(c.name || c.profiles?.username || 'Crew')}{c.role ? <span style={{ color: '#666' }}> — {c.role}</span> : null}</div>) : <div style={{ color: '#555' }}>No crew assigned</div>}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number; onDelete?: (id: string) => void; onPush?: (beat: any) => void }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      transition={{ delay: index * 0.05 }}
-      style={{
-        padding: 20,
-        background: 'rgba(255,255,255,0.03)',
-        border: `1px solid ${beat.color || 'rgba(255,255,255,0.06)'}`,
-        borderTop: `4px solid ${beat.color || 'var(--accent)'}`,
-        borderRadius: 8,
-        minHeight: 140,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        position: 'relative',
-        transition: 'box-shadow 0.3s',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(215, 52, 11,0.08)'}`)}
-      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-    >
-      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
-        {onPush && (
-          <button 
-            onClick={() => onPush(beat)}
-            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
-            title="Push to ScriptOS"
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-            onMouseLeave={e => e.currentTarget.style.color = '#444'}
-          >
-            <Share2 size={12} />
-          </button>
-        )}
-        {onDelete && (
-          <button 
-            onClick={() => onDelete(beat.id)}
-            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
-            title="Delete Beat"
-            onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
-            onMouseLeave={e => e.currentTarget.style.color = '#444'}
-          >
-            <Trash2 size={12} />
-          </button>
-        )}
-      </div>
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
-        </div>
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
-      </div>
-      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
-    </motion.div>
-  );
-}
-
-function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
-  const router = useRouter();
-  // Hovering a crew card sharpens the Pill down from "studio" to this person
-  // — their role, live online status, and a real "Message" action that jumps
-  // straight to the Lounge, instead of the page-level context alone.
-  const zoneHandlers = usePillZone(member.userId ? {
-    module: 'studio',
-    title: member.name,
-    accent: isOnline ? '#10b981' : undefined,
-    fields: [
-      { label: 'Role', value: member.role || '—' },
-      { label: 'Status', value: isOnline ? 'Online' : (member.status || 'pending'), color: isOnline ? '#10b981' : undefined },
-    ],
-    actions: [
-      { id: 'message-crew', label: '→ Message in Lounge', onClick: () => router.push('/lounge') },
-    ],
-  } : null, 2);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      whileHover={{ x: 2 }}
-      transition={{ delay: index * 0.05 }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 12,
-        transition: 'border-color 0.3s, box-shadow 0.3s',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
-      onClick={zoneHandlers.onClick}
-    >
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        <Avatar src={member.avatar} name={member.name} size={44} />
-        {isOnline && (
-          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
-        )}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
-        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
-      </div>
-      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
-        {member.status || 'pending'}
-      </div>
-    </motion.div>
-  );
-}
-function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen: boolean; onClose: () => void; projectId: string; onSuccess: () => void }) {
-  useEscapeKey(onClose, isOpen);
-  const { toast } = useToast();
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [role, setRole] = useState('Production Assistant');
-
-  const handleSearch = async () => {
-    if (!query) return;
-    setLoading(true);
-    const users = await searchProfiles(query);
-    setResults(users);
-    setLoading(false);
-  };
-
-  const handleInvite = async () => {
-    if (!selectedUser || !projectId) return;
-    setLoading(true);
-    try {
-      await inviteToCrew(projectId, selectedUser.id, role);
-      toast(`Invited ${selectedUser.username || 'member'} as ${role || 'crew'}`, 'success');
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      console.error(err);
-      toast(err?.message || 'Failed to invite', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-            onClick={e => e.stopPropagation()}
-            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
-          >
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
-            
-            {!selectedUser ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ position: 'relative' }}>
-                  <input 
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                    placeholder="Search by username..."
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: '12px 40px 12px 16px', borderRadius: 8, fontSize: 13 }}
-                  />
-                  <Search size={16} style={{ position: 'absolute', right: 14, top: 14, color: '#666' }} />
-                </div>
-                
-                <div style={{ minHeight: 200, maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {loading ? <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>Searching...</div> : 
-                   results.map(u => (
-                    <div 
-                      key={u.id}
-                      onClick={() => setSelectedUser(u)}
-                      style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                    >
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
-                        {u.username.charAt(0).toUpperCase()}
-                      </div>
-                      <div style={{ fontSize: 14 }}>{u.username}</div>
-                    </div>
-                  ))}
-                  {results.length === 0 && !loading && query && <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>No results found.</div>}
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
-                      {selectedUser.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>{selectedUser.username}</div>
-                      <div style={{ fontSize: 12, color: 'var(--accent)' }}>Active Professional</div>
-                    </div>
-                 </div>
-
-                 <div>
-                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Assigned Role</label>
-                   <select 
-                     value={role}
-                     onChange={e => setRole(e.target.value)}
-                     style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 12, borderRadius: 8, fontSize: 13 }}
-                   >
-                     <option>Director</option>
-                     <option>Director of Photography</option>
-                     <option>Lead Actor</option>
-                     <option>Sound Mixer</option>
-                     <option>Editor</option>
-                     <option>Production Assistant</option>
-                   </select>
-                 </div>
-
-                 <div style={{ display: 'flex', gap: 12 }}>
-                    <Button variant="outline" onClick={() => setSelectedUser(null)} style={{ flex: 1 }}>Back</Button>
-                    <Button onClick={handleInvite} disabled={loading} isLoading={loading} style={{ flex: 2 }}>
-                      Send Invitation
-                    </Button>
-                 </div>
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
+import { useOSGate } from '@/lib/os';
+import { awaitOSUser } from '@/lib/os';
+import type { Asset } from '@/components/studio/constants';
+import { STAGES, TYPE_ICONS, TYPE_COLORS } from '@/components/studio/constants';
+import { AssetCard, AssetReviewModal, IntakeModal } from '@/components/studio/AssetLibrary';
+import { ProjectCard, StageIndicator } from '@/components/studio/ProjectCards';
+import { ConceptLightbox, ConceptCard, ReferenceSearchModal } from '@/components/studio/ConceptBoard';
+import { ProjectPitchDeck } from '@/components/studio/PitchDeck';
+import { CharacterBible } from '@/components/studio/CharacterBible';
+import { CastingBoard } from '@/components/studio/CastingBoard';
+import { Stripboard, CallSheets } from '@/components/studio/ProductionBoards';
+import { BeatCard, CrewMemberCard, RecruitModal } from '@/components/studio/CrewBoards';
+import { AssetsTab } from '@/components/studio/tabs/AssetsTab';
+import { ConceptTab } from '@/components/studio/tabs/ConceptTab';
+import { MarketingTab } from '@/components/studio/tabs/MarketingTab';
+import { OverviewTab } from '@/components/studio/tabs/OverviewTab';
+import { PitchTab } from '@/components/studio/tabs/PitchTab';
+import { ProductionTab } from '@/components/studio/tabs/ProductionTab';
+import type { StudioCtx } from '@/components/studio/tabs/ctx';
 
 export default function StudioPage() {
-  useRequireAuth();
+  useOSGate();
   const { toast } = useToast();
   const confirm = useConfirm();
   const { activeProject, setActiveProject, projects, updateProject, refreshProject } = useProject();
   const [activeTab, setActiveTab] = useState<'overview' | 'concept' | 'production' | 'assets' | 'marketing' | 'pitch'>('overview');
-  // Production suite is split into three sub-surfaces so the story work, the
-  // shooting schedule and the people no longer share one crowded grid.
+
   const [prodTab, setProdTab] = useState<'story' | 'schedule' | 'crew'>('story');
   const [filter, setFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
@@ -1717,8 +80,6 @@ export default function StudioPage() {
   const [showRecruit, setShowRecruit] = useState(false);
   const onlineIds = useOnlinePresence(user?.id);
 
-  // Publish the studio's live context to the Pill: the active project, the tab
-  // you're in, and its real crew/asset counts, with a one-tap tab cycle.
   const STUDIO_TABS = ['overview', 'concept', 'production', 'assets', 'marketing', 'pitch'] as const;
   usePillStage(
     {
@@ -1748,10 +109,6 @@ export default function StudioPage() {
   const [showRefSearch, setShowRefSearch] = useState(false);
   const [activeConceptBoard, setActiveConceptBoard] = useState<string>('All');
 
-  // Pin a searched reference straight into the real Concept board
-  // (concept_assets — the same table the "Paste an image URL" flow writes
-  // to), so results actually show up on the board instead of a disconnected
-  // media table nothing else reads.
   const addReferenceToBoard = async (ref: ReferenceResult) => {
     if (!user || !activeProject) return;
     const existing = (activeProject.concept_assets || []) as any[];
@@ -1767,7 +124,7 @@ export default function StudioPage() {
       if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
       await refreshProject(activeProject.id);
       toast('Reference added', 'success');
-    } catch { /* keep board state unchanged on failure */ }
+    } catch {  }
   };
   const [adding, setAdding] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -1800,7 +157,6 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
-  // Export the whole shooting schedule (all scenes grouped by day) to print/PDF.
   const printSchedule = () => {
     if (!activeProject) return;
     const scenes = (activeProject.scenes || []) as any[];
@@ -1823,36 +179,31 @@ export default function StudioPage() {
     w.document.close();
   };
 
-  // Auto-schedule: real 1st-AD board logic. Groups scenes by location to
-  // minimise company moves, then packs each location's scenes into shoot days
-  // respecting a daily page capacity (in eighths). NIGHT scenes are clustered
-  // together within a location so the unit isn't bouncing between day/night.
   const [autoScheduling, setAutoScheduling] = useState(false);
   const eighthsOf = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\s*\/\s*8/); return m ? Number(m[1]) : 8; };
   const autoSchedule = async () => {
     if (!activeProject) return;
     const scenes = ((activeProject.scenes || []) as any[]).slice();
     if (scenes.length === 0) { toast('No scenes to schedule yet — import from the screenplay first.', 'info'); return; }
-    const CAP = 40; // eighths/day ≈ 5 script pages, standard indie pace
-    // Group by location (unset locations bucket together at the end).
+    const CAP = 40;
+
     const groups = new Map<string, any[]>();
     for (const s of scenes) {
       const key = (s.location || '').trim().toUpperCase() || '￿UNSET';
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(s);
     }
-    // Sort groups by size desc (anchor the biggest locations first), and
-    // within a group cluster NIGHT scenes after DAY ones.
+
     const ordered = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
     const nightRank = (s: any) => /NIGHT|DUSK|NUIT/i.test(String(s.time_of_day || '')) ? 1 : 0;
-    let day = 0, used = CAP + 1; // force day 1 on first scene
+    let day = 0, used = CAP + 1;
     const updates: { id: string; shoot_day: number }[] = [];
     for (const [, list] of ordered) {
       list.sort((a, b) => nightRank(a) - nightRank(b) || a.scene_number - b.scene_number);
       let first = true;
       for (const s of list) {
         const e = eighthsOf(s);
-        // New location always starts a fresh day (a company move = new day).
+
         if (first || used + e > CAP) { day += 1; used = 0; first = false; }
         used += e;
         if ((s.shoot_day || 1) !== day) updates.push({ id: s.id, shoot_day: day });
@@ -1869,7 +220,6 @@ export default function StudioPage() {
     }
   };
 
-  // Cycle a scene's shoot status: planned → shot → wrapped → planned.
   const cycleSceneStatus = async (s: any) => {
     if (!activeProject) return;
     const order = ['planned', 'shot', 'wrapped'];
@@ -1879,9 +229,6 @@ export default function StudioPage() {
     await refreshProject(activeProject.id);
   };
 
-  // Generate the production scene list directly from the screenplay. Adds a
-  // scenes row for every parsed scene whose number isn't already present, so
-  // ScriptOS becomes the source of the shooting schedule.
   const [importingScenes, setImportingScenes] = useState(false);
   const importScenesFromScript = async () => {
     if (!activeProject) return;
@@ -1890,7 +237,7 @@ export default function StudioPage() {
       const { data } = await supabase.from('scripts').select('content').eq('project_id', activeProject.id).order('updated_at', { ascending: false });
       const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
       if (!withContent) { toast('No script content yet — write one in ScriptOS first.', 'info'); return; }
-      const parsed = parseScript(withContent.content);
+      const parsed = parseScript(withContent.content ?? '');
       const existingNums = new Set((activeProject.scenes || []).map((s: any) => s.scene_number));
       const rows = parsed.scenes
         .filter((s: any) => !s.omitted)
@@ -1916,9 +263,6 @@ export default function StudioPage() {
     }
   };
 
-  // The real breakdown hinge: re-tag every scene's production elements from
-  // the current script, then roll the unique counts per category into
-  // budget_items — replacing the fake hardcoded breakdown with a live sync.
   const [syncingBreakdown, setSyncingBreakdown] = useState(false);
   const syncBreakdown = async () => {
     if (!activeProject) return;
@@ -1944,7 +288,6 @@ export default function StudioPage() {
   const [campaignDemo, setCampaignDemo] = useState('');
   const [campaignBudget, setCampaignBudget] = useState('');
 
-  // Scene ↔ concept references (assets linked to scenes)
   type SceneRef = { id: string; concept_asset_id: string; image_url: string; title: string | null };
   const [sceneRefs, setSceneRefs] = useState<Record<string, SceneRef[]>>({});
   const [linkScene, setLinkScene] = useState<string | null>(null);
@@ -1976,8 +319,6 @@ export default function StudioPage() {
     if (activeProject) loadSceneRefs(activeProject.id);
   };
 
-  // 'marketing' (Promos) is gated by the active project's Distribution
-  // module toggle — same switch that hides the hub's Distribution tile.
   const studioModules = getProjectModules(activeProject?.settings);
   const tabs = [
     { id: 'overview', name: 'Overview', icon: LayoutGrid },
@@ -1992,22 +333,21 @@ export default function StudioPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await awaitOSUser();
       if (!user) return;
       setUser(user);
-      
-      // Load Boards for Project
+
       if (activeProject) {
         setLoadingBoards(true);
         try {
           const projectBoards = await getProjectBoards(activeProject.id);
           setBoards(projectBoards);
-          
+
           let currentBoard = projectBoards[0];
           if (projectBoards.length > 0) {
             setActiveBoard(currentBoard);
           } else {
-            // Auto-create a default board if none exist
+
             currentBoard = await createStudioBoard({
               user_id: user.id,
               project_id: activeProject.id,
@@ -2018,7 +358,6 @@ export default function StudioPage() {
             setActiveBoard(currentBoard);
           }
 
-          // Fetch assets for this board specifically
           const boardAssets = await getStudioAssets(currentBoard.id);
           setAssetsList(boardAssets.map((a: any) => ({
             id: a.id,
@@ -2027,7 +366,7 @@ export default function StudioPage() {
             category: a.category || 'Studio',
             url: a.asset_url,
             size: 'Unknown',
-            dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+            dateAdded: (a.created_at ? new Date(a.created_at) : new Date()).toISOString().split('T')[0]
           })));
 
         } catch (err) {
@@ -2037,7 +376,6 @@ export default function StudioPage() {
         }
       }
 
-      // Load activities
       try {
         const acts = await getActivities(5);
         setActivities(acts);
@@ -2045,7 +383,6 @@ export default function StudioPage() {
         console.error('Error loading activities:', err);
       }
 
-      // Load Beats
       if (activeProject) {
         try {
           const projectBeats = await getProjectBeats(activeProject.id);
@@ -2053,7 +390,7 @@ export default function StudioPage() {
         } catch (err) {
           console.error('Error loading beats:', err);
         }
-        
+
         try {
           const crew = await getProjectCrew(activeProject.id);
           setCrewList(crew);
@@ -2087,7 +424,7 @@ export default function StudioPage() {
           category: a.category || 'Studio',
           url: a.asset_url,
           size: 'Unknown',
-          dateAdded: new Date(a.created_at).toISOString().split('T')[0]
+          dateAdded: (a.created_at ? new Date(a.created_at) : new Date()).toISOString().split('T')[0]
         })));
       }
     } catch (err) {
@@ -2126,18 +463,18 @@ export default function StudioPage() {
   const handlePushToScript = async (beat: any) => {
     if (!activeProject || !user) return;
     try {
-      const sceneTitle = beat.title.toUpperCase().startsWith('EXT.') || beat.title.toUpperCase().startsWith('INT.') 
-        ? beat.title.toUpperCase() 
+      const sceneTitle = beat.title.toUpperCase().startsWith('EXT.') || beat.title.toUpperCase().startsWith('INT.')
+        ? beat.title.toUpperCase()
         : `INT. ${beat.title.toUpperCase()} - DAY`;
-        
+
       const content = `${sceneTitle}\n\n${beat.content}`;
-      
+
       const newScript = await saveScript({
         title: `${activeProject.title} - ${beat.title}`,
         content,
         project_id: activeProject.id
       });
-      
+
       if (newScript) {
         toast('Beat pushed to ScriptOS! You can find it in your scripts list.', 'success');
       }
@@ -2172,11 +509,12 @@ export default function StudioPage() {
     setCrewList(crew);
   };
 
+  const studioCtx: StudioCtx = { activeConceptBoard, activeProject, activities, adding, assetsList, autoSchedule, autoScheduling, beatContent, beatTitle, beats, boards, campaignBudget, campaignDemo, campaignPlatform, campaignTitle, conceptBoard, conceptTitle, conceptUrl, confirm, crewList, cycleSceneStatus, editScene, editSceneId, filter, filtered, handlePushToScript, importScenesFromScript, importingScenes, lightboxIdx, linkConceptToScene, linkScene, loadingBoards, onlineIds, printSchedule, prodTab, projects, refreshProject, saveScene, sceneDay, sceneLocation, sceneRefs, sceneTitle, setActiveConceptBoard, setAdding, setBeatContent, setBeatTitle, setCampaignBudget, setCampaignDemo, setCampaignPlatform, setCampaignTitle, setConceptBoard, setConceptTitle, setConceptUrl, setEditScene, setEditSceneId, setFilter, setLightboxIdx, setLinkScene, setProdTab, setReviewAsset, setSceneDay, setSceneLocation, setSceneTitle, setShowAddBeat, setShowAddCampaign, setShowAddConcept, setShowAddScene, setShowRecruit, setShowRefSearch, showAddBeat, showAddCampaign, showAddConcept, showAddScene, startEditScene, syncBreakdown, syncingBreakdown, tabs, toast, types, unlinkConcept, user };
+
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      {/* Nav */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, width: '100%',
         padding: '0 28px', height: 62,
@@ -2197,11 +535,10 @@ export default function StudioPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#6366f1', textTransform: 'uppercase' }}>Studio</div>
 
-          {/* Project Selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ fontSize: 8, fontFamily: 'var(--mono)', color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Project:</span>
-            <select 
-              value={activeProject?.id || ''} 
+            <select
+              value={activeProject?.id || ''}
               onChange={(e) => {
                 const p = projects.find(p => p.id === e.target.value);
                 if (p) setActiveProject(p);
@@ -2230,7 +567,7 @@ export default function StudioPage() {
       <RecruitModal
         isOpen={showRecruit}
         onClose={() => setShowRecruit(false)}
-        projectId={activeProject?.id}
+        projectId={activeProject?.id ?? ''}
         onSuccess={refreshCrew}
       />
       <AssetReviewModal asset={reviewAsset} isOpen={!!reviewAsset} onClose={() => setReviewAsset(null)} />
@@ -2242,7 +579,6 @@ export default function StudioPage() {
         onAdd={addReferenceToBoard}
       />
 
-      {/* TABS BAR */}
       <div className="mc-studio-tabs" style={{
         position: 'fixed', top: 62, left: 0, width: '100%',
         height: 52, background: 'rgba(6,6,6,0.88)',
@@ -2308,681 +644,16 @@ export default function StudioPage() {
           </div>
         )}
 
-        {activeTab === 'overview' && activeProject && (
-          <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 60 }}>
-            <div>
-              <StageIndicator currentStage={activeProject.status} />
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <SectionLabel text="Project Summary" />
-                <h1 style={{ fontFamily: 'var(--display)', fontSize: '4rem', letterSpacing: 4, lineHeight: 1.1, marginBottom: 24 }}>{activeProject.title}</h1>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: '1.2rem', color: 'var(--fg-muted)', lineHeight: 1.6, maxWidth: 600 }}>
-                  {activeProject.description || "No project description provided. Update your script metadata to populate this field."}
-                </p>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginTop: 60 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Production Stats</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Status</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#ffaa00' }}>{activeProject.status}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Completion</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{(activeProject as any).completion || 0}%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 12 }}>Crew</div>
-                    {(activeProject.crew && activeProject.crew.length > 0) ? (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        {activeProject.crew.slice(0, 3).map((c, i) => (
-                          <div key={c.id} title={`${c.name} — ${c.role}`}>
-                            <Avatar src={c.avatar} name={c.name} size={32} accent={`hsl(${(i * 97) % 360}, 40%, 30%)`} style={{ color: '#fff' }} />
-                          </div>
-                        ))}
-                        {activeProject.crew.length > 3 && (
-                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>+{activeProject.crew.length - 3}</div>
-                        )}
-                      </div>
-                    ) : (
-                      <Link href={`/projects/${activeProject.id}?tab=crew`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No crew yet — add some →</Link>
-                    )}
-                  </div>
-                </div>
+        {activeTab === 'overview' && activeProject && <OverviewTab ctx={studioCtx} />}
 
-                {/* Production budget — pulled from this project's budget_items */}
-                <div style={{ marginTop: 60, padding: 32, background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                      <DollarSign size={16} color="var(--accent)" /> Production Budget
-                    </div>
-                    <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20 }}>USD</span>
-                  </div>
-                  {(activeProject.budget_items && activeProject.budget_items.length > 0) ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
-                      <div>
-                        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', marginBottom: 4 }}>Total Estimated Budget</div>
-                        <div style={{ fontSize: '2.5rem', fontFamily: 'var(--display)', color: '#fff', letterSpacing: 2 }}>
-                          ${activeProject.budget_items.reduce((s, b) => s + Number(b.amount || 0), 0).toLocaleString()}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
-                        {activeProject.budget_items.slice(0, 4).map(b => (
-                          <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}>
-                            <span style={{ color: 'var(--fg-muted)' }}>{b.category}</span>
-                            <span>${Number(b.amount || 0).toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p style={{ fontSize: 11, color: 'var(--fg-dim)' }}>No budget line items tracked for this project yet.</p>
-                  )}
-                </div>
+        {activeTab === 'concept' && <ConceptTab ctx={studioCtx} />}
 
-                {/* Milestones — pulled from this project's timeline_items */}
-                <div style={{ marginTop: 40 }}>
-                   <SectionLabel text="Project Milestones" />
-                   {(activeProject.timeline_items && activeProject.timeline_items.length > 0) ? (
-                     <div style={{ position: 'relative', paddingLeft: 24, borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-                        {activeProject.timeline_items.map((m) => (
-                          <div key={m.id} style={{ position: 'relative' }}>
-                             <div style={{ position: 'absolute', left: -28, top: 4, width: 8, height: 8, borderRadius: '50%', background: m.completion >= 100 ? 'var(--accent)' : '#222', border: m.completion >= 100 ? 'none' : '1px solid #444' }} />
-                             <div style={{ fontSize: 12, fontWeight: 700, color: m.completion >= 100 ? '#fff' : '#666' }}>{m.title}</div>
-                             <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)' }}>{new Date(m.end_date).toLocaleDateString()} · {m.completion}%</div>
-                          </div>
-                        ))}
-                     </div>
-                   ) : (
-                     <Link href={`/projects/${activeProject.id}?tab=schedule`} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>No milestones yet — add some →</Link>
-                   )}
-                </div>
-              </motion.div>
-            </div>
+        {activeTab === 'production' && <ProductionTab ctx={studioCtx} />}
 
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 32 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClipboardList size={16} /> Recent Activity
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {activities.length > 0 ? activities.map((act, i) => (
-                  <div key={act.id} style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700 }}>
-                      {act.profiles?.username?.charAt(0) || 'U'}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 11, color: '#eee' }}><span style={{ fontWeight: 700 }}>{act.profiles?.username || 'Someone'}</span> {act.action}</div>
-                      <div style={{ fontSize: 9, color: 'var(--fg-subtle)' }}>{new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
-                  </div>
-                )) : (
-                  <div style={{ fontSize: 11, color: '#444', textAlign: 'center', padding: '20px 0' }}>No recent activity</div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === 'assets' && <AssetsTab ctx={studioCtx} />}
 
-        {activeTab === 'concept' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-              <div>
-                <SectionLabel text="Visual Research" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Concept Board</h2>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="link-btn" onClick={() => setShowRefSearch(true)}>
-                  <Search size={12} style={{ marginRight: 4, verticalAlign: -2 }} /> Search References
-                </button>
-                <button className="link-btn" onClick={() => setShowAddConcept(s => !s)}>+ New Ref</button>
-              </div>
-            </div>
-
-            {showAddConcept && (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
-                <input autoFocus placeholder="Title" value={conceptTitle} onChange={e => setConceptTitle(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                <input placeholder="Image URL" value={conceptUrl} onChange={e => setConceptUrl(e.target.value)} style={{ flex: 2, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                <input placeholder="Board (e.g. Lighting)" value={conceptBoard} onChange={e => setConceptBoard(e.target.value)} list="mc-board-list" style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                <button
-                  className="link-btn"
-                  disabled={adding || !conceptUrl.trim()}
-                  onClick={async () => {
-                    if (!activeProject || !conceptUrl.trim() || adding) return;
-                    setAdding(true);
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      const board = (conceptBoard.trim() || (activeConceptBoard !== 'All' ? activeConceptBoard : '')) || null;
-                      const { error } = await supabase.from('concept_assets').insert({ project_id: activeProject.id, title: conceptTitle.trim() || null, image_url: conceptUrl.trim(), board, created_by: user?.id });
-                      if (error) { toast(error.message || 'Could not add reference', 'error'); return; }
-                      await refreshProject(activeProject.id);
-                      toast('Reference added', 'success');
-                      setConceptTitle(''); setConceptUrl(''); setConceptBoard(''); setShowAddConcept(false);
-                    } finally { setAdding(false); }
-                  }}
-                >{adding ? 'Adding…' : 'Add'}</button>
-              </div>
-            )}
-
-            {(() => {
-              const all = (activeProject?.concept_assets || []) as any[];
-              const boards = Array.from(new Set(all.map(a => (a.board || '').trim()).filter(Boolean))).sort();
-              const filtered = activeConceptBoard === 'All' ? all : activeConceptBoard === 'Unsorted' ? all.filter(a => !a.board) : all.filter(a => a.board === activeConceptBoard);
-              const tabs = ['All', ...boards, ...(all.some(a => !a.board) ? ['Unsorted'] : [])];
-              return (
-                <>
-                  <datalist id="mc-board-list">{boards.map(b => <option key={b} value={b} />)}</datalist>
-                  {all.length > 0 && tabs.length > 1 && (
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-                      {tabs.map(b => {
-                        const count = b === 'All' ? all.length : b === 'Unsorted' ? all.filter(a => !a.board).length : all.filter(a => a.board === b).length;
-                        const on = activeConceptBoard === b;
-                        return (
-                          <button key={b} onClick={() => setActiveConceptBoard(b)} style={{ padding: '6px 14px', borderRadius: 99, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1px solid ${on ? 'rgba(168,85,247,0.5)' : 'rgba(255,255,255,0.1)'}`, background: on ? 'rgba(168,85,247,0.14)' : 'transparent', color: on ? '#c084fc' : 'var(--fg-muted)', fontFamily: 'var(--mono)', letterSpacing: 0.5, display: 'flex', gap: 6, alignItems: 'center' }}>
-                            {b} <span style={{ fontSize: 9, opacity: 0.6 }}>{count}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {filtered.length > 0 ? (
-                    <div className="mc-masonry">
-                      {filtered.map((img, i) => {
-                        const sceneCount = Object.values(sceneRefs).reduce((n, arr) => n + (arr.some(r => r.concept_asset_id === img.id) ? 1 : 0), 0);
-                        return (
-                        <ConceptCard key={img.id} image={{ id: img.id, url: img.image_url, title: img.title }} index={i} sceneCount={sceneCount} board={img.board} onOpen={() => setLightboxIdx(i)} onRemove={async () => { if (!await confirm('Delete this reference from the board?')) return; await supabase.from('concept_assets').delete().eq('id', img.id); await refreshProject(activeProject!.id); }} />
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <EmptyState icon={<Image size={28} aria-label="no images" />} title={all.length === 0 ? 'No concept references yet' : `Nothing in "${activeConceptBoard}" yet`} subtitle="Paste an image URL above to start your visual moodboard. Group pins into boards like Lighting, Wardrobe or Locations." />
-                  )}
-
-                  {lightboxIdx !== null && filtered[lightboxIdx] && (
-                    <ConceptLightbox
-                      images={filtered}
-                      index={lightboxIdx}
-                      onIndex={setLightboxIdx}
-                      onClose={() => setLightboxIdx(null)}
-                      onSetBoard={async (id, board) => { const { error } = await supabase.from('concept_assets').update({ board }).eq('id', id); if (error) { toast(error.message || 'Could not move to board', 'error'); return; } await refreshProject(activeProject!.id); toast(board ? `Moved to "${board}"` : 'Removed from board', 'success'); }}
-                      boards={boards}
-                    />
-                  )}
-                </>
-              );
-            })()}
-          </motion.div>
-        )}
-
-        {activeTab === 'production' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
-              <div>
-                <SectionLabel text="Pre-Production" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Production Suite</h2>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {prodTab === 'schedule' && <button className="link-btn" onClick={printSchedule}>⎙ Export Schedule</button>}
-                {prodTab === 'story' && <button className="link-btn" onClick={() => setShowAddBeat(s => !s)}>+ New Beat</button>}
-                {prodTab === 'crew' && <button className="link-btn" onClick={() => setShowRecruit(true)}>+ Recruit Crew</button>}
-              </div>
-            </div>
-
-            {/* Production sub-tabs — Story / Schedule / Crew */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 36, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {([
-                ['story', 'Story', BookOpen],
-                ['schedule', 'Schedule', Calendar],
-                ['crew', 'Crew', Users],
-              ] as const).map(([key, label, Icon]) => {
-                const active = prodTab === key;
-                return (
-                  <button key={key} onClick={() => setProdTab(key)} style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    borderBottom: active ? '2px solid #6366f1' : '2px solid transparent',
-                    color: active ? 'var(--fg)' : 'var(--fg-dim)', marginBottom: -1,
-                    fontSize: 13, fontWeight: 600, letterSpacing: 0.5, transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--fg-muted)'; }}
-                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--fg-dim)'; }}
-                  >
-                    <Icon size={15} /> {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* ── STORY ── beat board + character bible */}
-            {prodTab === 'story' && (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-               <div>
-                 <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
-                   <BookOpen size={16} /> Beat Board / Outline
-                 </div>
-                 {showAddBeat && (
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
-                     <input autoFocus placeholder="Beat title" value={beatTitle} onChange={e => setBeatTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                     <textarea placeholder="What happens in this beat?" value={beatContent} onChange={e => setBeatContent(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12, minHeight: 60, resize: 'vertical' }} />
-                     <button
-                       className="link-btn"
-                       disabled={adding || !beatTitle.trim()}
-                       onClick={async () => {
-                         if (!activeProject || !beatTitle.trim() || adding) return;
-                         setAdding(true);
-                         try {
-                           const { error } = await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
-                           if (error) { toast(error.message || 'Could not add beat', 'error'); return; }
-                           await refreshProject(activeProject.id);
-                           setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
-                         } finally { setAdding(false); }
-                       }}
-                     >{adding ? 'Adding…' : 'Add Beat'}</button>
-                   </div>
-                 )}
-
-                 {(activeProject?.beats && activeProject.beats.length > 0) ? (
-                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-                     {activeProject.beats.map((beat, i) => (
-                       <BeatCard key={beat.id} beat={beat} index={i} onDelete={async (id) => { if (!await confirm('Delete this beat?')) return; await supabase.from('project_beats').delete().eq('id', id); await refreshProject(activeProject.id); }} onPush={handlePushToScript} />
-                     ))}
-                   </div>
-                 ) : (
-                   <EmptyState icon={<BookOpen size={28} />} title="No beats outlined yet" subtitle="Break the story into beats above" />
-                 )}
-               </div>
-
-               {activeProject && <CharacterBible projectId={activeProject.id} userId={user?.id ?? null} concepts={(activeProject.concept_assets || []) as any[]} />}
-             </div>
-            )}
-
-            {/* ── CREW ── cast & crew hub + casting board */}
-            {prodTab === 'crew' && (
-               <div>
-                 <div style={{ maxWidth: 720 }}>
-                   <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)' }}>
-                     <Users size={16} /> Cast & Crew Hub
-                   </div>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {crewList.length > 0 ? crewList.map((member, i) => (
-                        <CrewMemberCard key={member.id} member={{
-                          name: member.profiles?.username || 'Unknown',
-                          role: member.role,
-                          status: member.status,
-                          avatar: member.profiles?.avatar_url,
-                          userId: member.user_id,
-                        }} index={i} isOnline={onlineIds.has(member.user_id)} />
-                      )) : (
-                        <EmptyState icon={<Users size={28} />} title="No crew members recruited yet" />
-                      )}
-                      <button
-                        onClick={() => setShowRecruit(true)}
-                        style={{ padding: 12, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', color: '#666', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}
-                      >
-                        + Recruit Crew / Invite Talent
-                      </button>
-                    </div>
-                 </div>
-
-                 {activeProject && (
-                   <div style={{ marginTop: 44, maxWidth: 'none' }}>
-                     <CastingBoard
-                       projectId={activeProject.id}
-                       userId={user?.id ?? null}
-                       concepts={(activeProject.concept_assets || []) as any[]}
-                       scenes={(activeProject.scenes || []) as any[]}
-                       crew={crewList}
-                     />
-                   </div>
-                 )}
-               </div>
-            )}
-
-            {/* ── SCHEDULE ── scene gantt + call sheets */}
-            {prodTab === 'schedule' && (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-                 {/* Scene Gantt Timeline (StudioBinder style) */}
-                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24, overflowX: 'auto' }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     {(() => {
-                       const all = activeProject?.scenes || [];
-                       const wrapped = all.filter((s: any) => s.status === 'wrapped').length;
-                       const pct = all.length ? Math.round((wrapped / all.length) * 100) : 0;
-                       return (
-                         <div>
-                           <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Shooting Schedule</div>
-                           {all.length > 0 && (
-                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
-                               <div style={{ width: 120, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-                                 <div style={{ width: `${pct}%`, height: '100%', background: '#10b981' }} />
-                               </div>
-                               <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{wrapped}/{all.length} wrapped</span>
-                             </div>
-                           )}
-                         </div>
-                       );
-                     })()}
-                     <div style={{ display: 'flex', gap: 8 }}>
-                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(215, 52, 11,0.12)', borderColor: 'rgba(215, 52, 11,0.3)', color: '#ff7a4d' }} onClick={importScenesFromScript} disabled={importingScenes}><FileText size={12}/> {importingScenes ? 'Importing…' : 'Import from screenplay'}</button>
-                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }} onClick={autoSchedule} disabled={autoScheduling} title="Group scenes by location and pack into shoot days (~5 pg/day)"><Calendar size={12}/> {autoScheduling ? 'Optimising…' : 'Auto-schedule'}</button>
-                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(99,102,241,0.12)', borderColor: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }} onClick={syncBreakdown} disabled={syncingBreakdown} title="Re-tag every scene's production elements from the script and roll them into the budget by category"><Tags size={12}/> {syncingBreakdown ? 'Syncing…' : 'Sync Breakdown → Budget'}</button>
-                       <button className="link-btn" style={{ fontSize: 9, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setShowAddScene(s => !s)}><Calendar size={12}/> + Add Scene</button>
-                     </div>
-                   </div>
-
-                   {showAddScene && (
-                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                       <input autoFocus placeholder="Scene title (e.g. EXT. ABANDONED PIER)" value={sceneTitle} onChange={e => setSceneTitle(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                       <div style={{ display: 'flex', gap: 8 }}>
-                         <input placeholder="Location" value={sceneLocation} onChange={e => setSceneLocation(e.target.value)} style={{ flex: 1, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                         <input placeholder="Shoot day #" type="number" min="1" value={sceneDay} onChange={e => setSceneDay(e.target.value)} style={{ width: 100, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                       </div>
-                       <button
-                         className="link-btn"
-                         disabled={adding || !sceneTitle.trim()}
-                         onClick={async () => {
-                           if (!activeProject || !sceneTitle.trim() || adding) return;
-                           setAdding(true);
-                           try {
-                             const nextNum = (activeProject.scenes?.length || 0) + 1;
-                             const { error } = await supabase.from('scenes').insert({ project_id: activeProject.id, scene_number: nextNum, title: sceneTitle.trim(), time_of_day: 'DAY', location: sceneLocation.trim() || null, shoot_day: Number(sceneDay) || 1 });
-                             if (error) { toast(error.message || 'Could not add scene', 'error'); return; }
-                             await refreshProject(activeProject.id);
-                             setSceneTitle(''); setSceneLocation(''); setSceneDay('1'); setShowAddScene(false);
-                           } finally { setAdding(false); }
-                         }}
-                       >Add Scene</button>
-                     </div>
-                   )}
-
-                   {(activeProject?.scenes && activeProject.scenes.length > 0) ? (
-                     <>
-                       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8, marginBottom: 12, fontSize: 10, fontFamily: 'var(--mono)', color: '#888' }}>
-                         <div style={{ width: 60 }}>Scene</div>
-                         <div style={{ flex: 1, minWidth: 200 }}>Location</div>
-                         <div style={{ width: 80 }}>Day</div>
-                         <div style={{ width: 30 }}></div>
-                       </div>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                         {activeProject.scenes.map(s => {
-                           const refs = sceneRefs[s.id] || [];
-                           const concepts = (activeProject.concept_assets || []) as any[];
-                           const linkedIds = new Set(refs.map(r => r.concept_asset_id));
-                           const available = concepts.filter(c => !linkedIds.has(c.id));
-                           const picking = linkScene === s.id;
-                           return (
-                           <div key={s.id} style={{ padding: '8px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                             {editSceneId === s.id ? (
-                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                 <div style={{ width: 54, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
-                                 <input value={editScene.title} onChange={e => setEditScene(p => ({ ...p, title: e.target.value }))} placeholder="Title" style={{ flex: 2, minWidth: 0, padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                                 <input value={editScene.location} onChange={e => setEditScene(p => ({ ...p, location: e.target.value }))} placeholder="Location" style={{ flex: 1, minWidth: 0, padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                                 <select value={editScene.time_of_day} onChange={e => setEditScene(p => ({ ...p, time_of_day: e.target.value }))} style={{ padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 10 }}>
-                                   {['DAY', 'NIGHT', 'DAWN', 'DUSK', 'MORNING', 'EVENING', 'CONTINUOUS'].map(t => <option key={t} value={t}>{t}</option>)}
-                                 </select>
-                                 <input type="number" min="1" value={editScene.shoot_day} onChange={e => setEditScene(p => ({ ...p, shoot_day: e.target.value }))} style={{ width: 56, padding: '6px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11 }} />
-                                 <button onClick={saveScene} style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 10 }}>Save</button>
-                                 <button onClick={() => setEditSceneId(null)} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
-                               </div>
-                             ) : (
-                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                               <div style={{ width: 60, fontSize: 11, fontWeight: 700 }}>{s.scene_number}</div>
-                               <div style={{ flex: 1, minWidth: 200 }}>
-                                 <div style={{ fontSize: 11, fontWeight: 600 }}>{s.title}{s.time_of_day ? <span style={{ color: '#666', fontFamily: 'var(--mono)', fontSize: 9, marginLeft: 6 }}>{s.time_of_day}</span> : null}</div>
-                                 {s.location && <div style={{ fontSize: 9, color: '#888', fontFamily: 'var(--mono)' }}>{s.location}</div>}
-                               </div>
-                               <div style={{ width: 80, fontSize: 10, color: '#aaa', fontFamily: 'var(--mono)' }}>Day {s.shoot_day}</div>
-                               {(() => { const st = s.status || 'planned'; const col = st === 'wrapped' ? '#10b981' : st === 'shot' ? '#f59e0b' : '#6b7280'; return (
-                                 <button onClick={() => cycleSceneStatus(s)} title="cycle shoot status" style={{ width: 64, fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}40`, borderRadius: 99, padding: '2px 0', cursor: 'pointer', flexShrink: 0 }}>{st}</button>
-                               ); })()}
-                               <div style={{ width: 54, textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                                 <button onClick={() => startEditScene(s)} aria-label="edit scene" style={{ background: 'none', border: 'none', color: '#888', fontSize: 11, cursor: 'pointer' }}>✎</button>
-                                 <button title="Delete scene" onClick={async () => { if (!await confirm(`Delete scene "${s.title || s.scene_number}"? This cannot be undone.`)) return; await supabase.from('scenes').delete().eq('id', s.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 11, cursor: 'pointer' }}>✕</button>
-                               </div>
-                             </div>
-                             )}
-                             {/* Linked concept references */}
-                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
-                               {refs.map(r => (
-                                 <div key={r.id} style={{ position: 'relative', width: 40, height: 28, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }} title={r.title || 'reference'}>
-                                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                                   <img src={r.image_url} alt={r.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                   <button onClick={() => unlinkConcept(r.id)} aria-label="unlink" style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 8, lineHeight: 1, cursor: 'pointer', padding: '1px 3px' }}>✕</button>
-                                 </div>
-                               ))}
-                               {concepts.length > 0 && (
-                                 <button onClick={() => setLinkScene(picking ? null : s.id)} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 4, padding: '3px 7px', cursor: 'pointer' }}>
-                                   {picking ? 'close' : '+ ref'}
-                                 </button>
-                               )}
-                               {refs.length === 0 && concepts.length === 0 && (
-                                 <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.5 }}>add concept images to link references</span>
-                               )}
-                             </div>
-                             {/* Tagged production elements — synced from the script via "Sync Breakdown → Budget" */}
-                             {(() => {
-                               const els = s.elements || {};
-                               const chips = ELEMENT_CATEGORIES.flatMap((cat: ElementCategory) => (els[cat] || []).map((name: string) => ({ cat, name })));
-                               if (chips.length === 0) return null;
-                               const catColor: Record<ElementCategory, string> = { props: '#ffaa00', wardrobe: '#d7340b', vehicles: '#0099ff', sfx: '#a855f7', vfx: '#6366f1' };
-                               return (
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, paddingLeft: 60, flexWrap: 'wrap' }}>
-                                   {chips.map(({ cat, name }) => (
-                                     <span key={`${cat}-${name}`} title={cat} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: catColor[cat], background: `${catColor[cat]}14`, border: `1px solid ${catColor[cat]}33`, borderRadius: 4, padding: '2px 6px' }}>{name}</span>
-                                   ))}
-                                 </div>
-                               );
-                             })()}
-                             {/* Concept picker */}
-                             {picking && (
-                               <div style={{ marginTop: 8, marginLeft: 60, padding: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                 {available.length === 0 ? (
-                                   <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>All concept images already linked.</span>
-                                 ) : available.map(c => (
-                                   <button key={c.id} onClick={() => linkConceptToScene(s.id, c.id)} title={c.title || 'link'} style={{ width: 52, height: 36, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', padding: 0, background: 'none' }}>
-                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                     <img src={c.image_url} alt={c.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                   </button>
-                                 ))}
-                               </div>
-                             )}
-                           </div>
-                           );
-                         })}
-                       </div>
-                     </>
-                   ) : (
-                     <EmptyState icon={<Calendar size={28} />} title="No scenes scheduled yet" />
-                   )}
-                 </div>
-
-               {activeProject?.scenes && activeProject.scenes.length > 0 && (
-                 <Stripboard scenes={activeProject.scenes as any[]} />
-               )}
-               {activeProject?.scenes && activeProject.scenes.length > 0 && (
-                 <CallSheets scenes={activeProject.scenes as any[]} crew={crewList} projectTitle={activeProject.title} />
-               )}
-             </div>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === 'assets' && (
-          <AnimatedSection>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-              <div>
-                <SectionLabel text="Asset Library" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Digital Assets</h2>
-              </div>
-            </div>
-
-            {/* Filter tabs */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
-              {types.map(t => (
-                <button
-                  key={t}
-                  onClick={() => setFilter(t)}
-                  style={{
-                    padding: '7px 16px',
-                    background: filter === t ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${filter === t ? 'var(--accent)' : 'rgba(255,255,255,0.06)'}`,
-                    color: filter === t ? 'var(--bg)' : 'var(--fg-muted)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    textTransform: 'uppercase',
-                    borderRadius: 'var(--radius-full)',
-                    transition: 'all 0.3s',
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            {loadingBoards ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-                {[0, 1, 2, 3].map(i => (
-                  <div key={i} className="skeleton" style={{ height: 180, borderRadius: 14 }} />
-                ))}
-              </div>
-            ) : filtered.length === 0 ? (
-              <EmptyState
-                icon={<Archive size={28} />}
-                title={assetsList.length === 0 ? 'Vault is empty' : 'No assets match this filter'}
-                subtitle={assetsList.length === 0 ? 'Use Intake above to track files hosted elsewhere' : undefined}
-              />
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
-                {filtered.map((asset, i) => <AssetCard key={asset.id} asset={asset} index={i} onClick={setReviewAsset} />)}
-              </div>
-            )}
-          </AnimatedSection>
-        )}
-
-        {activeTab === 'pitch' && (
-          activeProject ? (
-            <ProjectPitchDeck project={activeProject} concepts={(activeProject.concept_assets || []) as any[]} beats={beats} />
-          ) : (
-            <div style={{ padding: '64px 0', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>SELECT A PROJECT TO BUILD A PITCH</div>
-          )
-        )}
-        {activeTab === 'marketing' && studioModules.distribution && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
-              <div>
-                <SectionLabel text="Delivery & Promotion" />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Marketing Hub</h2>
-              </div>
-              <button className="link-btn" onClick={() => setShowAddCampaign(s => !s)}>+ New Campaign</button>
-            </div>
-
-            <div className="mc-collapse" style={{ gridTemplateColumns: '2fr 1fr', display: 'grid', gap: 40 }}>
-               {/* Campaign Planner */}
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  {showAddCampaign && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
-                      <input autoFocus placeholder="Campaign title" value={campaignTitle} onChange={e => setCampaignTitle(e.target.value)} style={{ flex: '1 1 160px', padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                      <select value={campaignPlatform} onChange={e => setCampaignPlatform(e.target.value)} style={{ padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }}>
-                        <option>Instagram</option>
-                        <option>X / Twitter</option>
-                        <option>YouTube</option>
-                        <option>TikTok</option>
-                      </select>
-                      <input placeholder="Target demographic" value={campaignDemo} onChange={e => setCampaignDemo(e.target.value)} style={{ flex: '1 1 140px', padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                      <input type="number" placeholder="Budget $" value={campaignBudget} onChange={e => setCampaignBudget(e.target.value)} style={{ width: 100, padding: 10, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 12 }} />
-                      <button
-                        className="link-btn"
-                        disabled={adding || !campaignTitle.trim()}
-                        onClick={async () => {
-                          if (!activeProject || !campaignTitle.trim() || adding) return;
-                          setAdding(true);
-                          try {
-                            const { data: { user } } = await supabase.auth.getUser();
-                            const { error } = await supabase.from('campaigns').insert({
-                              project_id: activeProject.id, title: campaignTitle.trim(), platform: campaignPlatform, status: 'drafting', created_by: user?.id,
-                              target_demographic: campaignDemo.trim() || null, budget: Number(campaignBudget) || 0,
-                            });
-                            if (error) { toast(error.message || 'Could not add campaign', 'error'); return; }
-                            await refreshProject(activeProject.id);
-                            setCampaignTitle(''); setCampaignDemo(''); setCampaignBudget(''); setShowAddCampaign(false);
-                          } finally { setAdding(false); }
-                        }}
-                      >{adding ? 'Adding…' : 'Add'}</button>
-                    </div>
-                  )}
-
-                  {(activeProject?.campaigns && activeProject.campaigns.length > 0) ? (
-                    activeProject.campaigns.map((campaign) => (
-                      <div
-                        key={campaign.id}
-                        style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'border-color 0.3s, box-shadow 0.3s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
-                      >
-                         <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                               <span style={{ fontSize: 9, fontFamily: 'var(--mono)', padding: '2px 6px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderRadius: 4, textTransform: 'uppercase' }}>{campaign.platform}</span>
-                               <span style={{ fontSize: 11, color: 'var(--fg-subtle)' }}>{campaign.status}</span>
-                               {campaign.target_demographic && <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#a5b4fc' }}>{campaign.target_demographic}</span>}
-                            </div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{campaign.title}</div>
-                            {!!campaign.budget && (
-                              <div style={{ fontSize: 10.5, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', marginTop: 4 }}>
-                                ${Number(campaign.spend || 0).toLocaleString()} spent / ${Number(campaign.budget).toLocaleString()} budget
-                              </div>
-                            )}
-                         </div>
-                         <button title="Delete campaign" onClick={async () => { if (!await confirm(`Delete campaign "${campaign.title}"?`)) return; await supabase.from('campaigns').delete().eq('id', campaign.id); await refreshProject(activeProject.id); }} style={{ background: 'none', border: 'none', color: '#666', fontSize: 12, cursor: 'pointer' }}>✕</button>
-                      </div>
-                    ))
-                  ) : (
-                    <EmptyState icon={<Megaphone size={28} />} title="No campaigns planned yet" subtitle="Use + New Campaign above" />
-                  )}
-               </div>
-
-               {/* Campaign Overview — real */}
-               {(() => {
-                 const camps = (activeProject?.campaigns || []) as any[];
-                 const byStatus: Record<string, number> = {};
-                 const byPlatform: Record<string, number> = {};
-                 camps.forEach(c => { byStatus[c.status || 'planned'] = (byStatus[c.status || 'planned'] || 0) + 1; byPlatform[c.platform || 'Other'] = (byPlatform[c.platform || 'Other'] || 0) + 1; });
-                 const totalCampaignBudget = camps.reduce((s, c) => s + Number(c.budget || 0), 0);
-                 const totalCampaignSpend = camps.reduce((s, c) => s + Number(c.spend || 0), 0);
-                 return (
-                   <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>
-                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Megaphone size={16} /> Campaign Overview</div>
-                     {camps.length === 0 ? (
-                       <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No campaigns yet — create one to start planning your rollout.</div>
-                     ) : (
-                       <>
-                         <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 2 }}>{camps.length}<span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', marginLeft: 8 }}>campaigns</span></div>
-                         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                           {Object.entries(byStatus).map(([st, n]) => (
-                             <div key={st} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontFamily: 'var(--mono)' }}><span style={{ color: 'var(--fg-muted)', textTransform: 'capitalize' }}>{st}</span><span>{n}</span></div>
-                           ))}
-                         </div>
-                         <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                           {Object.entries(byPlatform).map(([pl, n]) => (
-                             <span key={pl} style={{ fontFamily: 'var(--mono)', fontSize: 9, color: '#a5b4fc', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 99, padding: '2px 8px' }}>{pl} · {n}</span>
-                           ))}
-                         </div>
-                         {totalCampaignBudget > 0 && (
-                           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 11 }}>
-                             <span style={{ color: 'var(--fg-dim)' }}>${totalCampaignSpend.toLocaleString()} spent / ${totalCampaignBudget.toLocaleString()} budget</span>
-                             <span style={{ color: totalCampaignSpend > totalCampaignBudget ? '#ff6b6b' : '#10b981' }}>{Math.round((totalCampaignSpend / totalCampaignBudget) * 100)}%</span>
-                           </div>
-                         )}
-                       </>
-                     )}
-                   </div>
-                 );
-               })()}
-            </div>
-          </motion.div>
-        )}
+        {activeTab === 'pitch' && <PitchTab ctx={studioCtx} />}
+        {activeTab === 'marketing' && studioModules.distribution && <MarketingTab ctx={studioCtx} />}
       </section>
     </main>
   );

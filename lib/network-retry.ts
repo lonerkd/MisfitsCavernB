@@ -1,4 +1,4 @@
-// Network error handling and retry logic for async operations
+
 
 export type NetworkErrorCode =
   | 'fetch_failed'
@@ -81,12 +81,10 @@ export async function retryAsync<T>(
       lastError = error as Error;
       const networkError = classifyError(error);
 
-      // Don't retry non-retryable errors
       if (!networkError.retryable || attempt === maxAttempts - 1) {
         throw networkError;
       }
 
-      // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, delay));
       delay = Math.min(delay * backoffMultiplier, maxDelayMs);
     }

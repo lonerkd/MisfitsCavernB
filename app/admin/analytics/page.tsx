@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
-import { ProtectedPage } from '@/lib/permissions/access-control';
+import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, TrendingUp, Users, Zap, Clock } from 'lucide-react';
 
 interface Analytics {
@@ -14,7 +14,7 @@ interface Analytics {
   completedProjects: number;
   totalScripts: number;
   totalJobs: number;
-  avgProjectDuration: number | null; // null when no completed project has both start_date and end_date set
+  avgProjectDuration: number | null;
 }
 
 export default function AdminAnalyticsPage() {
@@ -35,13 +35,6 @@ export default function AdminAnalyticsPage() {
       setLoading(true);
       const platformStats = await getPlatformStats();
 
-      // Active users: distinct users with a real user_login audit event
-      // within the selected range, not an arbitrary 0.65x multiplier of the
-      // total user count. completedProjects reads the real
-      // projects.status = 'completed' value instead of a 0.35x guess.
-      // avgProjectDuration averages start_date -> end_date over completed
-      // projects that actually have both dates set, instead of a hardcoded
-      // constant. Completion rate is completed / total, not a fixed 64%.
       const rangeStart = new Date();
       if (timeRange === 'week') rangeStart.setDate(rangeStart.getDate() - 7);
       else if (timeRange === 'month') rangeStart.setMonth(rangeStart.getMonth() - 1);
@@ -85,7 +78,6 @@ export default function AdminAnalyticsPage() {
   return (
     <ProtectedPage requiredPermission="manage_users">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-        {/* Header */}
         <header style={{
           position: 'fixed',
           top: 0,
@@ -114,9 +106,7 @@ export default function AdminAnalyticsPage() {
           </Link>
         </header>
 
-        {/* Content */}
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
-          {/* Navigation */}
           <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
@@ -166,7 +156,6 @@ export default function AdminAnalyticsPage() {
             </Link>
           </div>
 
-          {/* Time Range Selector */}
           <div style={{ marginBottom: 32, display: 'flex', gap: 12 }}>
             {(['week', 'month', 'year'] as const).map(range => (
               <button
@@ -190,7 +179,6 @@ export default function AdminAnalyticsPage() {
             ))}
           </div>
 
-          {/* Analytics Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24, marginBottom: 40 }}>
             {[
               { label: 'Total Users', value: analytics.totalUsers, icon: Users },
@@ -220,7 +208,6 @@ export default function AdminAnalyticsPage() {
             ))}
           </div>
 
-          {/* Detailed Stats */}
           <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, marginBottom: 16 }}>
               DETAILED METRICS
@@ -244,7 +231,6 @@ export default function AdminAnalyticsPage() {
             </div>
           </div>
 
-          {/* Info */}
           <div style={{ marginTop: 24, padding: 16, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 4, fontSize: 11 }}>
             <p style={{ margin: 0, opacity: 0.7 }}>
               Fetched on page load and whenever the time range above changes — not a live/streaming feed.

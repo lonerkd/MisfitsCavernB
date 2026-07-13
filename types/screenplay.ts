@@ -1,15 +1,15 @@
-// Screenplay Types for ScriptOS Integration
 
-export type LineType = 
-  | 'slug' 
-  | 'action' 
-  | 'character' 
-  | 'dialogue' 
-  | 'parenthetical' 
-  | 'transition' 
-  | 'shot' 
-  | 'text' 
-  | 'title' 
+
+export type LineType =
+  | 'slug'
+  | 'action'
+  | 'character'
+  | 'dialogue'
+  | 'parenthetical'
+  | 'transition'
+  | 'shot'
+  | 'text'
+  | 'title'
   | 'centered'
   | 'scene'
   | 'empty';
@@ -20,16 +20,16 @@ export interface ScriptLineMeta {
   timeOfDay?: string;
   isDualDialogue?: boolean;
   isContinued?: boolean;
-  visualDensity?: number; // 0-100 score
+  visualDensity?: number;
   classifiedAsShot?: boolean;
-  // Smart formatter extended fields
+
   fromSmartFormat?: boolean;
   isDialogueContinued?: boolean;
   sceneHeading?: string;
   intExt?: string;
   location?: string;
   characterName?: string;
-  [key: string]: unknown; // allow parser to attach arbitrary metadata
+  [key: string]: unknown;
 }
 
 export interface ScriptLine {
@@ -38,11 +38,11 @@ export interface ScriptLine {
   text: string;
   type: LineType;
   confidence: number;
-  // Parser extended fields — present after full parse
+
   scores?: Record<string, number>;
   reasoning?: string;
   meta?: ScriptLineMeta;
-  metadata?: ScriptLineMeta; // alias used by some older callers
+  metadata?: ScriptLineMeta;
 }
 
 export interface Scene {
@@ -85,7 +85,7 @@ export interface ScriptMetadata {
   wordCount?: number;
   sceneCount?: number;
   characterCount?: number;
-  sceneAssets?: Record<string, string[]>; // sceneHeading -> array of studio_asset IDs
+  sceneAssets?: Record<string, string[]>;
 }
 
 export interface ScreenplayDocument {
@@ -110,5 +110,5 @@ export interface ParseResult {
 export interface StashItem {
   id: string;
   text: string;
-  date: number; // unix timestamp
+  date: number;
 }

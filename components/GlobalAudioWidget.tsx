@@ -22,10 +22,10 @@ const PLAYLISTS = [
 ];
 
 export default function GlobalAudioWidget() {
-  const { 
-    isAuthenticated, isPremium, currentTrack, isPlaying, progressMs, durationMs, 
+  const {
+    isAuthenticated, isPremium, currentTrack, isPlaying, progressMs, durationMs,
     volume, setVolumeLevel, togglePlay, nextTrack, prevTrack,
-    useIframeFallback, setUseIframeFallback, logout 
+    useIframeFallback, setUseIframeFallback, logout
   } = useSpotify();
 
   const [expanded, setExpanded] = useState(false);
@@ -33,8 +33,7 @@ export default function GlobalAudioWidget() {
   const [hovered, setHovered] = useState(false);
 
   if (!isAuthenticated) {
-    // Icon-only, matching every other dock button's size/hover treatment —
-    // a bordered text pill here reads far louder than search/home/profile/etc.
+
     return (
       <div style={{ position: 'relative' }}>
         <motion.button
@@ -75,7 +74,6 @@ export default function GlobalAudioWidget() {
 
   const renderPremiumUI = () => (
     <div style={{ padding: 16 }}>
-      {/* Track Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         {currentTrack?.album?.images?.[0]?.url ? (
           <Image src={currentTrack.album.images[0].url} alt="" width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
@@ -94,7 +92,6 @@ export default function GlobalAudioWidget() {
         </div>
       </div>
 
-      {/* Progress */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
           <div style={{ width: `${durationMs ? (progressMs / durationMs) * 100 : 0}%`, height: '100%', background: '#10b981', transition: 'width 1s linear' }} />
@@ -105,10 +102,9 @@ export default function GlobalAudioWidget() {
         </div>
       </div>
 
-      {/* Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <button onClick={prevTrack} aria-label="Previous track" style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipBack size={18} /></button>
-        <button 
+        <button
           onClick={togglePlay}
           style={{ width: 40, height: 40, borderRadius: 20, background: 'var(--fg)', color: 'var(--bg)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
@@ -117,11 +113,10 @@ export default function GlobalAudioWidget() {
         <button onClick={nextTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipForward size={18} /></button>
       </div>
 
-      {/* Footer / Meta */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={12} color="var(--fg-muted)" />
-          <input 
+          <input
             type="range" min={0} max={1} step={0.01} value={volume}
             onChange={(e) => setVolumeLevel(parseFloat(e.target.value))}
             style={{ width: 60, accentColor: '#10b981' }}
@@ -230,12 +225,11 @@ export default function GlobalAudioWidget() {
               zIndex: 9000
             }}
           >
-            {/* Header Settings Toggle */}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-muted)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
                 Mode: {useIframeFallback ? 'Free' : 'Premium'}
               </span>
-              <button 
+              <button
                 onClick={() => setUseIframeFallback(!useIframeFallback)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
@@ -252,7 +246,7 @@ export default function GlobalAudioWidget() {
                 <Link2Off size={24} color="#d7340b" style={{ marginBottom: 12 }} />
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#d7340b', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', marginBottom: 16 }}>Spotify blocked the Web Playback connection. You must use Free Mode.</div>
-                <button 
+                <button
                   onClick={() => setUseIframeFallback(true)}
                   style={{ background: '#d7340b', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase', cursor: 'pointer' }}
                 >

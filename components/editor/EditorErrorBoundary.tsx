@@ -4,11 +4,7 @@ import React from 'react';
 
 interface Props {
   children: React.ReactNode;
-  /** Called once, synchronously, the instant a render error is caught —
-   *  before React unmounts anything — so the caller can flush whatever's
-   *  still in memory to localStorage. A crash inside one modal (e.g. an
-   *  update-depth loop from a runaway effect) must never cost a writer
-   *  their unsaved draft. */
+
   onCrash?: () => void;
 }
 
@@ -16,10 +12,6 @@ interface State {
   hasError: boolean;
 }
 
-// Scoped tightly around individual editor modals/panels rather than the
-// whole page: if one of them throws (e.g. "Maximum update depth exceeded"),
-// only that piece unmounts and shows a recoverable fallback — the writing
-// surface, content state, and the rest of the editor chrome stay intact.
 export class EditorErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false };
 

@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-// Context the cursor can adapt to. Each maps to a distinct visual treatment so
-// the pointer tells you what a target does before you click it.
 type CursorMode = 'default' | 'action' | 'text' | 'grab' | 'view' | 'disabled' | 'help';
 
 export default function CustomCursor() {
@@ -14,10 +12,6 @@ export default function CustomCursor() {
   const [mode, setMode] = useState<CursorMode>('default');
   const [enabled, setEnabled] = useState(false);
 
-  // Only run the custom cursor on real fine-pointer devices (mouse/trackpad),
-  // and honour the user's preference toggled from Settings. On touch we leave
-  // the native cursor alone entirely.
-  // Apply the reduce-motion preference (or the OS setting) app-wide on load.
   useEffect(() => {
     const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let pref: string | null = null;
@@ -30,7 +24,7 @@ export default function CustomCursor() {
     const updateTheme = () => {
       try {
         const theme = localStorage.getItem('mc_theme') || 'default';
-        // Convert classList to array to safely remove during iteration
+
         const classesToRemove = Array.from(document.body.classList).filter(cls => cls.startsWith('theme-'));
         classesToRemove.forEach(cls => document.body.classList.remove(cls));
         if (theme !== 'default') {
@@ -62,18 +56,15 @@ export default function CustomCursor() {
     };
   }, []);
 
-  // Resolve which mode an element under the pointer should trigger.
   const resolveMode = (el: HTMLElement | null): CursorMode => {
     if (!el) return 'default';
-    
-    // Explicit data attribute overrides
+
     const explicit = el.closest('[data-cursor]') as HTMLElement | null;
     if (explicit) {
       const val = explicit.dataset.cursor as CursorMode;
       if (val) return val;
     }
 
-    // Computed style check (automatic fallback)
     try {
       const style = window.getComputedStyle(el);
       if (style.cursor === 'pointer') {
@@ -91,27 +82,39 @@ export default function CustomCursor() {
       return 'grab';
     }
     if (el.closest('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"]')) return 'text';
-    
+
     const actionable = el.closest('a, button, [role="button"], [role="link"], select, label[for], [data-cursor-hover]');
     if (actionable) {
       if (actionable.matches('[disabled], [aria-disabled="true"]') || actionable.closest('[disabled], [aria-disabled="true"]')) return 'disabled';
       return 'action';
     }
     if (el.closest('img, video')) return 'view';
-    
+
     return 'default';
   };
+
+  // Position/velocity live in refs, not state — clicking flips `clicking`
+  // state on every mousedown/up, and if that were a dependency here the
+  // whole rAF loop would tear down and rebuild, resetting mx/my/rx/ry to
+  // 0,0 and visibly snapping the cursor to the top-left corner on every
+  // click before the next mousemove arrived to correct it.
+  const posRef = useRef({ mx: 0, my: 0, rx: 0, ry: 0, hasMoved: false });
+  const clickingRef = useRef(false);
+  useEffect(() => { clickingRef.current = clicking; }, [clicking]);
 
   useEffect(() => {
     if (!enabled) return;
     let raf: number;
-    let mx = 0, my = 0;
-    let rx = 0, ry = 0;
 
     const onMove = (e: MouseEvent) => {
-      mx = e.clientX;
-      my = e.clientY;
-      if (!visible) setVisible(true);
+      posRef.current.mx = e.clientX;
+      posRef.current.my = e.clientY;
+      if (!posRef.current.hasMoved) {
+        posRef.current.rx = e.clientX;
+        posRef.current.ry = e.clientY;
+        posRef.current.hasMoved = true;
+      }
+      setVisible(true);
       setMode(prev => { const next = resolveMode(e.target as HTMLElement); return next === prev ? prev : next; });
     };
     const onLeave = () => setVisible(false);
@@ -120,14 +123,16 @@ export default function CustomCursor() {
     const onUp = () => setClicking(false);
 
     const tick = () => {
-      rx += (mx - rx) * 0.28;
-      ry += (my - ry) * 0.28;
+      const p = posRef.current;
+      p.rx += (p.mx - p.rx) * 0.28;
+      p.ry += (p.my - p.ry) * 0.28;
+      const isClicking = clickingRef.current;
 
       if (dotRef.current) {
-        dotRef.current.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%) ${clicking ? 'scale(0.6)' : 'scale(1)'}`;
+        dotRef.current.style.transform = `translate(${p.mx}px, ${p.my}px) translate(-50%, -50%) ${isClicking ? 'scale(0.6)' : 'scale(1)'}`;
       }
       if (ringRef.current) {
-        ringRef.current.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%) ${clicking ? 'scale(0.82)' : 'scale(1)'}`;
+        ringRef.current.style.transform = `translate(${p.rx}px, ${p.ry}px) translate(-50%, -50%) ${isClicking ? 'scale(0.82)' : 'scale(1)'}`;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -148,17 +153,15 @@ export default function CustomCursor() {
       window.removeEventListener('mouseup', onUp);
       cancelAnimationFrame(raf);
     };
-  }, [visible, enabled, clicking]);
+  }, [enabled]);
 
   if (!enabled) return null;
 
   const accent = 'var(--accent)';
 
-  // Dot: an I-beam bar in text mode, a solid dot otherwise.
   const isText = mode === 'text';
   const dotColor = mode === 'action' || mode === 'grab' ? accent : mode === 'disabled' ? '#ff5c5c' : 'var(--fg)';
 
-  // Ring geometry + treatment per mode.
   const ring = (() => {
     switch (mode) {
       case 'action': return { size: 48, border: `1px solid ${accent}`, radius: '50%', bg: 'rgba(255,255,255,0.08)', backdrop: 'blur(2px)' };
@@ -175,7 +178,6 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Fast dot / I-beam */}
       <div
         ref={dotRef}
         style={{
@@ -194,7 +196,6 @@ export default function CustomCursor() {
           willChange: 'transform, width, height',
         }}
       />
-      {/* Lagging ring */}
       <div
         ref={ringRef}
         style={{

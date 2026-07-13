@@ -8,12 +8,6 @@ export interface PlatformStats {
   concepts: number;
 }
 
-// The same "count profiles/projects/scripts/jobs" query was independently
-// hand-written three times (homepage, /admin, /admin/analytics) with slightly
-// different column selections despite all three using `head: true` (which
-// returns a count only — any extra selected columns are silently ignored).
-// One shared query now backs all three; each page maps the result onto
-// whatever local field names its own UI already uses.
 export async function getPlatformStats(): Promise<PlatformStats> {
   const [users, projects, scripts, jobs, concepts] = await Promise.all([
     supabase.from('profiles').select('id', { count: 'exact', head: true }),

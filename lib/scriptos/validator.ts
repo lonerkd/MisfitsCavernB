@@ -1,7 +1,4 @@
-// ============================================================================
-// SCRIPTOS SCRIPT VALIDATOR / LINTER (The "Third Brain")
-// Checks screenplay formatting and provides deep structural analysis via AST.
-// ============================================================================
+
 
 import type { ScriptLine } from '@/types/screenplay';
 import { buildAST, ScriptAST, ASTDialogueBlock, ASTActionBeat } from '../advanced-parser';
@@ -17,8 +14,7 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
   const issues: LintIssue[] = [];
   const rawLines = content.split('\n');
   let hasSlug = false;
-  
-  // 1. Basic linear checks (Fast Pass)
+
   lines.forEach((line, i) => {
     if (line.type === 'dialogue' && !hasSlug) {
       issues.push({ line: i + 1, type: 'warning', message: 'Dialogue appears before any scene heading', rule: 'scene-first' });
@@ -38,7 +34,7 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
     }
 
     const trimText = line.text.trim();
-    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && !line.meta.classifiedAsShot && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
+    if ((line.type === 'action' || line.type === 'text' || line.type === 'dialogue') && !line.meta?.classifiedAsShot && trimText === trimText.toUpperCase() && trimText.length > 0 && trimText.length < 60 && /[A-Z]/.test(trimText)) {
       issues.push({ line: i + 1, type: 'warning', message: `Unrecognized uppercase format: "${trimText}"`, rule: 'unknown-caps' });
     }
 
@@ -77,34 +73,32 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
     issues.push({ line: 1, type: 'error', message: 'No scene headings detected. Use INT. or EXT. to start scenes.', rule: 'no-scenes' });
   }
 
-  // 2. Advanced AST Structural Analysis (The Third Brain)
   const ast = buildAST(lines);
-  
+
   if (ast.scenes.length > 0) {
     let runningWords = 0;
     const seenCharacters = new Set<string>();
 
     ast.scenes.forEach((scene, sceneIndex) => {
-      // Pacing check: Very long scenes drag down the narrative
+
       if (scene.wordCount > 750) {
-        issues.push({ 
-          line: scene.startIndex + 1, 
-          type: 'info', 
-          message: `Cinematic Polish: This scene is very dense (~${scene.wordCount} words). Consider breaking it up or ensuring pacing remains high.`, 
-          rule: 'scene-length-ast' 
+        issues.push({
+          line: scene.startIndex + 1,
+          type: 'info',
+          message: `Cinematic Polish: This scene is very dense (~${scene.wordCount} words). Consider breaking it up or ensuring pacing remains high.`,
+          rule: 'scene-length-ast'
         });
       }
 
       scene.children.forEach(child => {
         if (child.type === 'DIALOGUE_BLOCK') {
           const charName = (child as ASTDialogueBlock).character;
-          // Character intro check
+
           if (!seenCharacters.has(charName)) {
             seenCharacters.add(charName);
-            // Ideally they should be introduced in an ACTION block first, but we flag if their first appearance is speech
-            // unless they are explicitly V.O. or O.S.
+
             if (!charName.includes('V.O.') && !charName.includes('O.S.')) {
-              // It's a heuristic, but powerful for structure
+
               issues.push({
                 line: child.startIndex + 1,
                 type: 'info',
@@ -114,7 +108,6 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
             }
           }
 
-          // Dialogue length/consistency check (Monologue detection)
           if (child.wordCount > 100) {
             issues.push({
               line: child.startIndex + 1,
@@ -124,7 +117,7 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
             });
           }
         } else if (child.type === 'ACTION_BEAT') {
-          // Track characters introduced in action beats
+
           const actionBeat = child as ASTActionBeat;
           const actionText = actionBeat.text.toUpperCase();
           ast.globalCharacters.forEach((_, charName) => {
@@ -137,14 +130,13 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
       });
 
       runningWords += scene.wordCount;
-      
-      // Act II Timing check (typically around 25% of the way in)
+
       if (ast.totalWords > 5000) {
         const percentProgress = runningWords / ast.totalWords;
-        // If we cross 35% and haven't transitioned strongly, it might be dragging
+
         if (percentProgress > 0.35 && sceneIndex < ast.scenes.length * 0.2) {
           if (scene.wordCount > 500) {
-             // Too dense early on
+
              issues.push({
                line: scene.startIndex + 1,
                type: 'warning',

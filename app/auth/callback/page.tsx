@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import type { Session } from '@supabase/supabase-js';
 
-// Discord's raw OAuth payload, as Supabase stores it under identities[].identity_data
 interface DiscordIdentityData {
   id?: string;
   username?: string;
@@ -45,7 +44,7 @@ async function ensureProfile(session: Session) {
   if (!profile) {
     await supabase.from('profiles').insert(fields);
   } else if (fields.discord_id && !profile.discord_username) {
-    // Backfill Discord identity onto a profile created before linking Discord
+
     await supabase.from('profiles').update({
       discord_id: fields.discord_id,
       discord_username: fields.discord_username,
@@ -58,13 +57,7 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    // Hash-based (implicit) and code-based (PKCE) OAuth both eventually land
-    // on a real session, but racing sequential getSession()/code-exchange
-    // calls could resolve before the client's own detectSessionInUrl
-    // processing finishes, bouncing the user back to /auth. Listen for the
-    // SIGNED_IN event as the primary signal, keep the manual code-exchange
-    // path as a parallel attempt, and guard both (plus a timeout fallback)
-    // behind one idempotent `finish` so only the first resolution wins.
+
     let done = false;
     const finish = (path: string, session?: Session) => {
       if (done) return;
@@ -92,7 +85,6 @@ export default function AuthCallback() {
       if (session) finish('/profile', session);
     })();
 
-    // Fallback: if nothing resolves, send back to sign in instead of hanging.
     const timeout = setTimeout(() => finish('/auth'), 5000);
 
     return () => { subscription.unsubscribe(); clearTimeout(timeout); };

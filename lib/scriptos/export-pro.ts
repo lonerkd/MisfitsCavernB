@@ -1,6 +1,5 @@
 import type { ScriptLine } from '@/types/screenplay';
 
-// Professional Fountain export
 export function exportFountainPro(lines: ScriptLine[], title: string, author = '', date = new Date().toLocaleDateString()): string {
   let fountain = `Title: ${title}\n`;
   if (author) fountain += `Author: ${author}\n`;
@@ -27,16 +26,13 @@ export function exportFountainPro(lines: ScriptLine[], title: string, author = '
   return fountain;
 }
 
-// PDF-ready formatted text export
 export function exportFormattedText(lines: ScriptLine[], title: string): string {
   let text = '';
-  const pageWidth = 80; // Characters per line
+  const pageWidth = 80;
 
-  // Title page
   text += title.padStart(Math.floor((pageWidth - title.length) / 2)) + '\n\n';
   text += '\n'.repeat(10);
 
-  // Content
   lines.forEach(line => {
     const { formatted, lines: wrappedLines } = formatLineForExport(line, pageWidth);
     text += formatted;
@@ -104,7 +100,6 @@ function wrapText(text: string, width: number): string {
   return lines.join('\n');
 }
 
-// Export as downloadable file
 export function downloadExport(content: string, filename: string, mimeType = 'text/plain') {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -117,7 +112,6 @@ export function downloadExport(content: string, filename: string, mimeType = 'te
   URL.revokeObjectURL(url);
 }
 
-// Statistics for the screenplay
 export function getScreenplayStats(lines: ScriptLine[], title: string) {
   const words = lines.reduce((acc, line) => {
     if (['dialogue', 'action'].includes(line.type)) {
@@ -135,7 +129,7 @@ export function getScreenplayStats(lines: ScriptLine[], title: string) {
   ).size;
 
   const pages = Math.ceil(lines.length / 55);
-  const readTime = Math.ceil(words / 150); // 150 WPM average
+  const readTime = Math.ceil(words / 150);
 
   return {
     title,
@@ -143,7 +137,7 @@ export function getScreenplayStats(lines: ScriptLine[], title: string) {
     scenes,
     characters,
     pages,
-    readTime, // in minutes
+    readTime,
     created: new Date().toISOString()
   };
 }

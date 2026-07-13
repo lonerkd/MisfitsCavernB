@@ -47,13 +47,11 @@ export default function ProfilePage() {
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).single();
       if (prof) setProfile(prof);
 
-      // Load quick stats and actual items
       const userId = data.session.user.id;
       const [scriptsRes, projectsRes, jobsRes] = await Promise.all([
         supabase.from('scripts').select('id, title, updated_at').or(`created_by.eq.${userId},last_edited_by.eq.${userId}`).order('updated_at', { ascending: false }),
         supabase.from('projects').select('id, title, status, accent_color').eq('creator_id', userId).order('updated_at', { ascending: false }),
-        // jobs has no company/location columns — selecting them errored the
-        // whole Promise.all, blanking every profile list and stat count
+
         supabase.from('jobs').select('id, title, role, status, created_at').eq('created_by', userId).order('created_at', { ascending: false }),
       ]);
 
@@ -152,7 +150,6 @@ export default function ProfilePage() {
 
       <div style={{ marginTop: 60, maxWidth: 640, margin: '60px auto 0', padding: '40px 24px 80px' }}>
 
-        {/* Avatar + name section */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
           <div>
             <Avatar src={profile.avatar_url} name={profile.username || user.email} size={72} style={{ border: '2px solid rgba(215, 52, 11,0.3)' }} />
@@ -177,7 +174,6 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Quick stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: activeTab ? 12 : 40 }}>
           {[
             { id: 'scripts', icon: <FileText size={14} />, count: stats.scripts, label: 'Scripts' },
@@ -203,7 +199,6 @@ export default function ProfilePage() {
           })}
         </div>
 
-        {/* Expanded list section */}
         {activeTab && (
           <div style={{
             background: 'rgba(255,255,255,0.01)',
@@ -314,7 +309,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Form fields */}
         <div style={{ display: 'grid', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
@@ -375,7 +369,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Quick links */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Link href="/portfolio/manage" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>
               → MANAGE PORTFOLIO

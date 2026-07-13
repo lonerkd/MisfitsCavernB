@@ -245,9 +245,6 @@ CREATE POLICY "Profiles readable by all" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
--- Membership-check helpers. SECURITY DEFINER bypasses RLS on the referenced
--- tables, which prevents the projects <-> project_crew policies from recursing
--- into each other (Postgres error 42P17: infinite recursion).
 CREATE OR REPLACE FUNCTION public.is_project_creator(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
@@ -272,7 +269,6 @@ CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH 
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
 CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_id = auth.uid());
 
--- RLS Policies: Project crew (uses is_project_creator to avoid recursion)
 CREATE POLICY "Project crew viewable by project members" ON project_crew FOR SELECT USING (
   user_id = auth.uid() OR public.is_project_creator(project_id)
 );
@@ -287,10 +283,6 @@ CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USIN
 );
 
 -- NOTE (performance): on the live DB, migration
--- performance_pass_fk_indexes_and_initplan (a) indexed every unindexed foreign
--- key and (b) rewrote all policies to wrap auth.uid()/auth.role() in a scalar
--- subquery — (SELECT auth.uid()) — so they evaluate once per statement instead
--- of per row. Policies below are shown unwrapped for readability.
 
 -- RLS Policies: Scripts
 CREATE POLICY "Script members can view" ON scripts FOR SELECT TO authenticated USING (
@@ -303,11 +295,8 @@ CREATE POLICY "Script members can view" ON scripts FOR SELECT TO authenticated U
     SELECT project_id FROM project_crew WHERE user_id = auth.uid()
   ))
 );
--- Public share links (/s/[token]): shared scripts are readable logged-out.
--- Without this anon policy, share links 404'd for visitors without accounts.
 CREATE POLICY "Shared scripts publicly viewable" ON scripts FOR SELECT TO anon USING (shared = TRUE);
 CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());
--- Project crew (not just the owner) can co-write the shared screenplay.
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
   created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
@@ -315,8 +304,6 @@ CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
 );
 CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
 
--- Script metadata: shared title page + character bible (was localStorage-only).
--- Applied live via migration script_metadata_table.
 CREATE TABLE IF NOT EXISTS script_metadata (
   script_id UUID PRIMARY KEY REFERENCES scripts(id) ON DELETE CASCADE,
   title_page JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -325,10 +312,6 @@ CREATE TABLE IF NOT EXISTS script_metadata (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
--- can_access_script: owner/editor of a personal script, or creator/member of
--- the owning project. Shared by script_metadata and script_revisions (migration
--- tighten_script_revisions_rls) so personal scripts are NOT open to every
--- authenticated user.
 CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
@@ -379,7 +362,6 @@ CREATE POLICY "Portfolio media owner delete" ON portfolio_media FOR DELETE USING
   project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
 
--- RLS Policies: Project Tasks (single ALL policy covers SELECT/INSERT/UPDATE/DELETE)
 CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
@@ -388,7 +370,6 @@ CREATE POLICY "Project task members can manage" ON project_tasks FOR ALL USING (
   )
 );
 
--- RLS Policies: Project Beats (single ALL policy covers SELECT/INSERT/UPDATE/DELETE)
 CREATE POLICY "Project beats members can manage" ON project_beats FOR ALL USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
@@ -457,13 +438,11 @@ CREATE POLICY "Project marketing members can manage" ON marketing_campaigns FOR 
 );
 
 -- Storage Buckets Setup
--- Note: This requires the storage schema to be active (standard in Supabase)
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('studio-assets', 'studio-assets', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS Policies for storage.objects (studio-assets bucket)
--- We use DO blocks to avoid errors if policies already exist in some environments
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -486,7 +465,6 @@ BEGIN
 END
 $$;
 
--- Scene ↔ concept references: link concept-board images to specific scenes
 CREATE TABLE IF NOT EXISTS scene_references (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -504,7 +482,6 @@ CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticate
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
   USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
 
--- Casting/look references: link concept-board images to characters
 CREATE TABLE IF NOT EXISTS character_references (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -525,16 +502,10 @@ CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authentic
 -- Scene shoot status tracking
 ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
 
--- Notifications: per-user feed (bell). Insert allowed for any authenticated
--- user so actors can notify recipients; read/update/delete scoped to owner.
 CREATE POLICY "Users can delete their own notifications" ON notifications FOR DELETE TO authenticated
   USING (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications (user_id, read, created_at DESC);
 
--- Direct-message reactions run through a SECURITY DEFINER RPC because the
--- messages table intentionally has no row-level UPDATE policy. The function
--- toggles auth.uid() into the reactions JSONB and only for messages the caller
--- can already see (channel messages or their own DMs).
 CREATE OR REPLACE FUNCTION public.toggle_message_reaction(p_message uuid, p_emoji text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE uid text := auth.uid()::text; r jsonb; arr jsonb; m record;
@@ -558,17 +529,12 @@ BEGIN
 END; $$;
 GRANT EXECUTE ON FUNCTION public.toggle_message_reaction(uuid, text) TO authenticated;
 
--- Chat threads: a message can be a reply to another via parent_message_id.
--- Top-level channel reads filter parent_message_id IS NULL; replies load per thread.
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS parent_message_id uuid REFERENCES messages(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS messages_parent_idx ON messages (parent_message_id);
 
--- Concept board organisation into named boards (Pinterest-style).
 ALTER TABLE concept_assets ADD COLUMN IF NOT EXISTS board text;
 CREATE INDEX IF NOT EXISTS concept_assets_project_board_idx ON concept_assets (project_id, board);
 
--- Bulletproof profile creation: a trigger on auth.users creates the profile
--- server-side so it never depends on a best-effort client insert.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE uname text;
@@ -580,7 +546,6 @@ END; $$;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ── Project-connected channels (Discord-style) ──────────────────────────────
 CREATE TABLE IF NOT EXISTS channels (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID REFERENCES projects(id) ON DELETE CASCADE,  -- null = global/community
@@ -604,36 +569,11 @@ CREATE TABLE IF NOT EXISTS channel_members (
 );
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS channel_uuid UUID REFERENCES channels(id) ON DELETE CASCADE;
 
--- SECURITY DEFINER permission helpers: can_view_channel / can_post_channel /
--- can_manage_channel. View = global, project owner, project crew (public), or
--- explicit member (private). Post gated by post_policy (viewers/members/
--- managers). Manage = project owner or channel member with can_manage.
--- (Full definitions committed in supabase-migration-project-channels-system.sql,
 -- recovered from the live DB on 2026-07-09.)
 
--- Root cause (found while verifying Phase 5's auto-channel-creation against
--- the live DB with a real account): the original channels INSERT policy's
 -- WITH CHECK required created_by = auth.uid() in addition to
--- is_project_creator(project_id). Both clauses independently proved true in
--- isolation, yet the INSERT still failed for every real user, including a
--- project's own creator.
 --
--- The deeper bug lived in can_view_channel() (the SELECT/USING policy):
--- INSERT ... RETURNING (what supabase-js's .select().single() generates)
--- requires Postgres to re-check the SELECT policy against the row just
--- inserted, within the SAME command as the INSERT. Under MVCC command-counter
--- rules, a statement's own just-inserted row isn't visible to nested
--- re-queries of the same table within that command, so can_view_channel's
--- internal lookup never found the row, even though the identical check
--- against the same row succeeds an instant later as its own statement. This
 -- wasn't specific to new code: createChannel() has always used
--- .select().single(), so the Lounge's own "+ New Channel" button had likely
--- been silently broken for every real user. Fixed by (1) simplifying the
--- INSERT policy below to the same proven creator-or-crew pattern already
--- working for project_crew and character_castings, dropping the redundant
--- created_by self-check, and (2) createChannel() in lib/supabase/channels.ts
--- inserting with Prefer: return=minimal then doing a separate follow-up
--- SELECT, instead of chaining .select().single() onto the insert.
 DROP POLICY IF EXISTS "channels create by project owner" ON channels;
 CREATE POLICY "channels create by project creator or crew" ON channels FOR INSERT
   WITH CHECK (
@@ -641,9 +581,6 @@ CREATE POLICY "channels create by project creator or crew" ON channels FOR INSER
     AND (public.is_project_creator(project_id) OR public.is_project_member(project_id))
   );
 
--- Timeline and budget: ProjectContext.tsx queried these since the project hub
--- was built, but they were never defined above, so crew/schedule/budget data
--- on project pages silently came back empty until this was applied.
 CREATE TABLE IF NOT EXISTS timeline_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -689,12 +626,6 @@ CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON timeline_items
 CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON budget_items
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
--- Studio's Beat Board, Concept Board, Scene scheduling, and Marketing Hub
--- backing tables. These previously rendered static fabricated data with no
--- way to persist anything a user added. (NOTE: scene_references and
--- character_references above reference scenes/concept_assets — this section
--- must exist before those for a from-scratch run; pre-existing file-order
--- issue, not fixed here to avoid reshuffling unrelated content.)
 CREATE TABLE IF NOT EXISTS beats (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -771,22 +702,11 @@ CREATE POLICY "Campaigns: project members can manage" ON campaigns FOR ALL USING
   )
 );
 
--- Link Jobs postings back to the Budget line item they were posted from, so
--- Studio/Projects can show "posted as job" status on a budget row and avoid
--- accidental duplicate postings. Part of the Jobs <-> Crew <-> Budget
--- interconnection (accepting a job application also creates real
--- project_crew membership — see app/jobs/[id]/page.tsx).
 ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS budget_item_id UUID REFERENCES budget_items(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_jobs_budget_item ON jobs(budget_item_id);
 
--- Real casting links between screenplay characters and crew members. The old
--- script_characters/character_references tables model a relational Character
 -- Bible that was superseded by the JSONB-based one in
--- script_metadata.character_bible (see lib/scriptos/bible.ts) and are unused
--- (0 rows, no app code reads/writes them). So casting gets its own small,
--- purpose-built table instead: cheap to join both directions, doesn't touch
--- the JSONB bible, and doesn't resurrect the orphaned tables.
 CREATE TABLE IF NOT EXISTS character_castings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -803,20 +723,10 @@ CREATE POLICY "Castings writable by project creator or crew" ON character_castin
   USING (public.is_project_creator(project_id) OR public.is_project_member(project_id))
   WITH CHECK (public.is_project_creator(project_id) OR public.is_project_member(project_id));
 
--- Link portfolio_projects back to their originating production project.
--- Without this, the Showcase tab on a project has no real table to
--- read/write to — portfolio_projects exists only as a standalone per-user
--- collection. Adding source_project_id lets a project's finished work
--- surface in both places.
 ALTER TABLE portfolio_projects
   ADD COLUMN IF NOT EXISTS source_project_id UUID REFERENCES projects(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_portfolio_projects_source ON portfolio_projects(source_project_id);
 
--- Persist Spotify OAuth tokens per-account instead of localStorage only.
--- Every other piece of state in this suite is tied to the Supabase account
--- and survives across devices/browsers; Spotify auth was the one exception,
--- requiring a full reconnect on every new device. This table lets
--- lib/spotify/auth.ts read/write a real, RLS-protected per-user record.
 CREATE TABLE IF NOT EXISTS spotify_connections (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   access_token TEXT NOT NULL,
@@ -834,17 +744,7 @@ CREATE POLICY "Users can update own spotify connection" ON spotify_connections
 CREATE POLICY "Users can delete own spotify connection" ON spotify_connections
   FOR DELETE USING (auth.uid() = user_id);
 
--- Pitch-board blocks for portfolio projects: a project can be assembled into
--- an ordered, drag-and-drop board of blocks (concept art, scenes, budget,
--- crew, script excerpts, custom text/media) that doubles as a public
--- showcase and a pitch deck. Blocks store SNAPSHOTS, not references: the
--- public share page (/p/[token]) is viewed by anonymous visitors who, by
--- RLS, cannot read the source project tables (concept_assets/scenes/
--- budget_items/project_crew are creator/crew-only), so each block copies the
--- data it needs (image URL, scene text, budget totals, crew name+role) into
 -- this publicly-readable table at add-time — the same pattern
--- portfolio_media already uses (open read, owner-only write; portfolio
--- sharing is gated in-app via share_token, not an is_public column).
 CREATE TABLE IF NOT EXISTS portfolio_blocks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   portfolio_project_id UUID NOT NULL REFERENCES portfolio_projects(id) ON DELETE CASCADE,
@@ -872,22 +772,11 @@ CREATE POLICY "Portfolio blocks owner delete" ON portfolio_blocks FOR DELETE USI
   portfolio_project_id IN (SELECT id FROM portfolio_projects WHERE user_id = auth.uid())
 );
 
--- Per-project settings (default script format override + ecosystem module
--- visibility toggles — ScriptOS/Studio/Lounge/Portfolio/Distribution can
--- each be switched off per project, hiding that department's hub tile and
--- taskbar icon without touching its underlying data) and a lightweight
--- festival-submissions tracker. Both are JSONB on `projects` rather than
--- new relational tables — settings is a small fixed shape read as a whole,
--- and festival submissions have no cross-table relations of their own, so
--- either a real table would be pure ceremony.
 ALTER TABLE projects
   ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{"modules":{"scriptos":true,"studio":true,"lounge":true,"portfolio":true,"distribution":true}}'::jsonb;
 ALTER TABLE projects
   ADD COLUMN IF NOT EXISTS festival_submissions JSONB NOT NULL DEFAULT '[]'::jsonb;
 
--- Campaign budget tracking: target demographic + planned budget/actual spend
--- + a flight window, so the Studio Promos tab's Campaign Overview can show
--- real spend-vs-budget instead of just counts.
 ALTER TABLE campaigns
   ADD COLUMN IF NOT EXISTS target_demographic TEXT,
   ADD COLUMN IF NOT EXISTS budget NUMERIC DEFAULT 0,

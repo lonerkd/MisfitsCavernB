@@ -1,7 +1,4 @@
-// ============================================================================
-// SCRIPTOS SHOOTING SCHEDULE REPORT
-// Group scenes by location, INT/EXT, DAY/NIGHT for production planning
-// ============================================================================
+
 
 import type { ScriptLine, Scene } from '@/types/screenplay';
 
@@ -16,7 +13,7 @@ export function generateShootingSchedule(
   lines: ScriptLine[],
   scenes: Scene[]
 ): { byLocation: ScheduleGroup[]; byTimeOfDay: ScheduleGroup[]; byIntExt: ScheduleGroup[]; summary: ScheduleSummary } {
-  
+
   const locationMap = new Map<string, ScheduleGroup>();
   const todMap = new Map<string, ScheduleGroup>();
   const ieMap = new Map<string, ScheduleGroup>();
@@ -24,23 +21,20 @@ export function generateShootingSchedule(
   scenes.forEach((scene, i) => {
     const heading = scene.heading || '';
     const upper = heading.toUpperCase();
-    
-    // Extract location (between prefix and dash)
+
     const locMatch = upper.match(/(?:INT\.|EXT\.|INT\/EXT\.|INT\.\/?EXT\.)\s*(.+?)(?:\s*-\s*|$)/);
     const location = locMatch ? locMatch[1].trim() : 'UNKNOWN';
-    
-    // INT/EXT
+
     let intExt = 'OTHER';
     if (upper.includes('INT') && upper.includes('EXT')) intExt = 'INT/EXT';
     else if (upper.includes('INT')) intExt = 'INT';
     else if (upper.includes('EXT')) intExt = 'EXT';
-    
-    // Time of day
+
     const tod = scene.timeOfDay || 'UNSPECIFIED';
-    
+
     const wc = scene.wordCount || 0;
     const est = Math.max(1, Math.round(wc / 185 * 0.8));
-    
+
     const entry = {
       index: i + 1,
       heading,
@@ -49,7 +43,6 @@ export function generateShootingSchedule(
       estMinutes: est,
     };
 
-    // Group by location
     if (!locationMap.has(location)) {
       locationMap.set(location, { label: location, scenes: [], totalWords: 0, totalMinutes: 0 });
     }
@@ -58,7 +51,6 @@ export function generateShootingSchedule(
     locGroup.totalWords += wc;
     locGroup.totalMinutes += est;
 
-    // Group by time of day
     if (!todMap.has(tod)) {
       todMap.set(tod, { label: tod, scenes: [], totalWords: 0, totalMinutes: 0 });
     }
@@ -67,7 +59,6 @@ export function generateShootingSchedule(
     todGroup.totalWords += wc;
     todGroup.totalMinutes += est;
 
-    // Group by INT/EXT
     if (!ieMap.has(intExt)) {
       ieMap.set(intExt, { label: intExt, scenes: [], totalWords: 0, totalMinutes: 0 });
     }

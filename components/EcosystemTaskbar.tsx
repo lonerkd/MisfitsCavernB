@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useProject } from '@/lib/context/ProjectContext';
+import { useProject } from '@/lib/os';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import NotificationBell from './NotificationBell';
@@ -49,7 +50,6 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         zIndex: 10,
       }}
     >
-      {/* Header */}
       <div style={{
         fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5,
         textTransform: 'uppercase', color: 'rgba(224, 221, 174,0.3)',
@@ -59,7 +59,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         Projects
-        <Link href="/projects" onClick={onClose} style={{
+        <Link href="/projects" prefetch={false} onClick={onClose} style={{
           color: 'rgba(215, 52, 11,0.7)', textDecoration: 'none', fontSize: 7,
           letterSpacing: 1.5,
           transition: 'color 0.2s',
@@ -71,7 +71,6 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         </Link>
       </div>
 
-      {/* Project list — real, sets the global active project */}
       {projects.length === 0 && (
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(224, 221, 174,0.3)', padding: '10px 8px', letterSpacing: 1 }}>
           No projects yet.
@@ -144,11 +143,6 @@ function TransientView({ label, tone }: { label: string; tone: 'default' | 'succ
   );
 }
 
-// ── Context capsule — the live module context, budded off the dock like a
-// Dynamic-Island activity. Collapsed it's a glanceable beacon + lead read-out;
-// expanded (on hover, an in-page zone, or the armed keyboard layer) it blooms
-// into the full strip of live fields, real toggles and real actions. Every
-// control here is wired — a toggle flips genuine page state, never decoration.
 function ContextCapsule({
   descriptor, accent, expanded, zoneChain, kbActive, focusedId,
 }: {
@@ -166,7 +160,6 @@ function ContextCapsule({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, pointerEvents: 'auto' }}>
-      {/* Depth cues — the hovered nesting path, shallow → deep. */}
       <AnimatePresence>
         {showBreadcrumb && (
           <motion.div
@@ -210,7 +203,6 @@ function ContextCapsule({
           boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 22px ${accent}20, inset 0 1px 0 rgba(255,255,255,0.04)`,
         }}
       >
-        {/* Live beacon — the "active" pulse */}
         <motion.span
           layout
           animate={{ scale: [1, 1.3, 1], opacity: [0.65, 1, 0.65] }}
@@ -221,7 +213,6 @@ function ContextCapsule({
           }}
         />
 
-        {/* Collapsed: a single glanceable read-out keeps the capsule tight */}
         {!expanded && lead && (
           <motion.span layout style={{
             fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
@@ -231,7 +222,6 @@ function ContextCapsule({
           </motion.span>
         )}
 
-        {/* Expanded: title + the full strip blooms open */}
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -340,12 +330,7 @@ function ContextCapsule({
 }
 
 // ── App icon carousel ───────────────────────────────────────────────────────
-// The department-icon row shrinks (when the context pill to its right
-// expands and needs the room) into a narrow, infinitely-looping scroll strip
-// instead of relayouting/shoving the rest of the dock around. The icon list
-// is tripled and the scroll position is silently rewound by one set-width
-// whenever it strays into an outer copy, so there's no hard stop scrolling
-// in either direction — like a fidget spinner, not a bounded carousel.
+
 const APP_ICON = 46;
 const APP_GAP = 2;
 
@@ -356,8 +341,17 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
   onHoverStart: () => void;
 }) {
   const Icon = app.icon;
+  const iconRef = useRef<HTMLAnchorElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ left: number; bottom: number } | null>(null);
+
+  useEffect(() => {
+    if (!isHovered || !iconRef.current) { setTooltipPos(null); return; }
+    const rect = iconRef.current.getBoundingClientRect();
+    setTooltipPos({ left: rect.left + rect.width / 2, bottom: window.innerHeight - rect.top });
+  }, [isHovered]);
+
   return (
-    <Link href={app.path} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
+    <Link ref={iconRef} href={app.path} prefetch={false} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
       <motion.div
         onHoverStart={onHoverStart}
         whileHover={{ scale: 1.18, y: -6 }}
@@ -382,44 +376,53 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
           )}
         </AnimatePresence>
       </motion.div>
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }}
-            transition={{ duration: 0.18 }}
-            style={{
-              position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-              background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
-              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-              padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
-            }}
-          >
-            {app.name}
-            <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {typeof document !== 'undefined' && tooltipPos && createPortal(
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: 'fixed', left: tooltipPos.left, bottom: tooltipPos.bottom, transform: 'translateX(-50%)',
+                background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
+                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
+                padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
+                zIndex: 100000,
+              }}
+            >
+              {app.name}
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </Link>
   );
 }
 
-function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
+function AppIconCarousel({ apps, pathname, shrunk }: {
   apps: typeof APPS;
   pathname: string;
-  hoveredId: string | null;
-  setHoveredId: (id: string | null) => void;
   shrunk: boolean;
 }) {
+  // Local, per-copy hover state — the carousel triples every app for its
+  // infinite-scroll loop, so keying hover off app.id (shared across all
+  // three copies) lit up and tooltip'd all three at once whenever any one
+  // was hovered. Keyed by loop index instead: only the physical icon under
+  // the cursor reacts.
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean; vx: number; lastX: number; lastT: number } | null>(null);
+  const momentumRaf = useRef<number | null>(null);
   const setWidth = apps.length * (APP_ICON + APP_GAP);
   const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
 
-  // Start scrolled into the middle copy so a full set is available to
-  // scroll into in either direction before a loop-reset needs to fire.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
   }, [setWidth]);
+
+  useEffect(() => () => stopMomentum(), []);
 
   const normalize = () => {
     const el = scrollRef.current;
@@ -438,21 +441,93 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
     normalize();
   };
 
-  // Desktop mouse drag-to-scroll (touch already scrolls natively). A click
-  // that ends without meaningfully moving still navigates normally; one that
-  // dragged past a few px is treated as a swipe, not a click on whatever
-  // icon happens to be under the pointer when it's released.
+  const DRAG_THRESHOLD = 6;
+  const STEP = APP_ICON + APP_GAP;
+
+  const stopMomentum = () => {
+    if (momentumRaf.current !== null) {
+      cancelAnimationFrame(momentumRaf.current);
+      momentumRaf.current = null;
+    }
+  };
+
+  // Snaps to the nearest icon's center with an eased tween — the
+  // "magnetic" feel — instead of leaving the carousel wherever a drag or
+  // fling happened to stop.
+  const snapToNearest = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = Math.round(el.scrollLeft / STEP) * STEP;
+    const start = el.scrollLeft;
+    const delta = target - start;
+    if (Math.abs(delta) < 0.5) { normalize(); return; }
+    const duration = 260;
+    const startTime = performance.now();
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      el.scrollLeft = start + delta * ease(t);
+      if (t < 1) {
+        momentumRaf.current = requestAnimationFrame(tick);
+      } else {
+        momentumRaf.current = null;
+        normalize();
+      }
+    };
+    momentumRaf.current = requestAnimationFrame(tick);
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false };
+    stopMomentum();
+    const now = performance.now();
+    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false, vx: 0, lastX: e.clientX, lastT: now };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current || !scrollRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
-    if (Math.abs(dx) > 3) dragRef.current.moved = true;
+    // Only commit to a drag (and move the carousel) once the pointer has
+    // travelled past the threshold — otherwise a stationary click on an
+    // icon visibly nudges every icon under the cursor before the click
+    // even registers, and then gets suppressed as a "drag".
+    if (!dragRef.current.moved) {
+      if (Math.abs(dx) <= DRAG_THRESHOLD) return;
+      dragRef.current.moved = true;
+    }
+    const now = performance.now();
+    const dt = Math.max(1, now - dragRef.current.lastT);
+    // Instantaneous velocity (px/ms), smoothed against the last sample so
+    // a single jittery frame doesn't dominate the momentum on release.
+    const instVx = (e.clientX - dragRef.current.lastX) / dt;
+    dragRef.current.vx = dragRef.current.vx * 0.7 + instVx * 0.3;
+    dragRef.current.lastX = e.clientX;
+    dragRef.current.lastT = now;
     scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
   };
-  const onPointerUp = () => normalize();
+  const onPointerUp = () => {
+    const drag = dragRef.current;
+    const el = scrollRef.current;
+    if (drag) drag.moved = false;
+    if (drag && el && Math.abs(drag.vx) > 0.05) {
+      // Fling: keep coasting in the release direction with exponential
+      // friction, then hand off to snapToNearest for the magnetic settle.
+      let velocity = -drag.vx * 16; // px per frame at ~60fps
+      const friction = 0.94;
+      const tick = () => {
+        el.scrollLeft += velocity;
+        velocity *= friction;
+        if (Math.abs(velocity) > 0.3) {
+          momentumRaf.current = requestAnimationFrame(tick);
+        } else {
+          momentumRaf.current = null;
+          snapToNearest();
+        }
+      };
+      momentumRaf.current = requestAnimationFrame(tick);
+    } else {
+      snapToNearest();
+    }
+  };
 
   return (
     <motion.div
@@ -474,21 +549,19 @@ function AppIconCarousel({ apps, pathname, hoveredId, setHoveredId, shrunk }: {
           display: 'flex', alignItems: 'center', gap: APP_GAP, height: '100%',
           overflowX: 'auto', overflowY: 'hidden', cursor: 'grab', touchAction: 'pan-x',
           scrollbarWidth: 'none', msOverflowStyle: 'none' as any,
+          scrollSnapType: 'x proximity',
         }}
       >
         {loopApps.map((app, i) => {
           const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
           return (
-            <div key={`${app.id}-${i}`} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
-              <AppIcon app={app} isActive={isActive} isHovered={hoveredId === app.id} onHoverStart={() => setHoveredId(app.id)} />
+            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'center' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
+              <AppIcon app={app} isActive={isActive} isHovered={hoveredIndex === i} onHoverStart={() => setHoveredIndex(i)} />
             </div>
           );
         })}
       </div>
 
-      {/* Edge fade masks — the strip loops infinitely both ways, so both
-          edges always have more to scroll to; the fade reads as "more here"
-          instead of an abrupt clip. */}
       <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 14, background: 'linear-gradient(to right, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 14, background: 'linear-gradient(to left, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
 
@@ -503,8 +576,7 @@ export default function EcosystemTaskbar() {
   const { activeProject } = useProject();
   const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
   const activeColor = activeProject?.accent_color || '#d7340b';
-  // Per-project module toggles hide a dock icon entirely when its department
-  // is switched off for the active project — 'home' has no toggle of its own.
+
   const modules = getProjectModules(activeProject?.settings);
   const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -512,11 +584,6 @@ export default function EcosystemTaskbar() {
   const [contextExpanded, setContextExpanded] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
-  // Dock can shrink to a small handle so it doesn't sit as a full bar across
-  // the bottom of every page. Collapsed state persists across pages/reloads;
-  // the toggle lives inside the same layout-animated flex row as the context
-  // capsule, so collapsing/expanding the dock's width also slides the capsule
-  // over in sync (framer-motion's `layout` prop on both, no extra wiring).
   const [dockCollapsed, setDockCollapsed] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('mc_taskbar_collapsed') === '1') setDockCollapsed(true);
@@ -529,8 +596,6 @@ export default function EcosystemTaskbar() {
     });
   };
 
-  // Flatten the active descriptor's toggles + actions into one orderable list
-  // — this is the order the hotkeys and Tab-focus ring walk through.
   const hotkeyItems = React.useMemo(() => {
     const toggles = activeDescriptor?.toggles ?? [];
     const actions = activeDescriptor?.actions ?? [];
@@ -543,11 +608,8 @@ export default function EcosystemTaskbar() {
   useEffect(() => { if (!kbActive) setKbFocusIndex(-1); }, [kbActive]);
   useEffect(() => { setKbFocusIndex(-1); }, [hotkeyItems.length]);
 
-  // Close switcher and drop any clicked-and-pinned zone on route change —
-  // a pin from the previous page shouldn't keep steering hotkeys on the new one.
   useEffect(() => { setProjectsOpen(false); clearPin(); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close on outside click
   useEffect(() => {
     if (!projectsOpen) return;
     const handler = (e: MouseEvent) => {
@@ -558,9 +620,6 @@ export default function EcosystemTaskbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [projectsOpen]);
 
-  // While Caps Lock is held: digits/QWERTY fire the matching toggle/action;
-  // Tab/Shift+Tab walk a focus ring (Enter activates); arrows switch app
-  // (left/right) or open/close the context capsule (up/down).
   useEffect(() => {
     if (!kbActive) return;
     const handler = (e: KeyboardEvent) => {
@@ -586,7 +645,7 @@ export default function EcosystemTaskbar() {
         });
         return;
       }
-      
+
       if (e.key === '[' || e.key === 'ArrowLeft') {
         if (!hotkeyItems.length) return;
         e.preventDefault();
@@ -612,12 +671,9 @@ export default function EcosystemTaskbar() {
 
   if (pathname === '/login' || pathname === '/auth') return null;
 
-  // Determine active module color for contextual glow
   const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
   const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#d7340b';
-  // The context capsule shows whenever a page publishes a descriptor (or a
-  // transient activity is firing). It blooms open on hover, an in-page zone
-  // hover, or when the keyboard-hotkey layer is armed.
+
   const showContext = !!activeDescriptor || !!transient;
   const contextOpen = contextExpanded || zoneActive || kbActive;
   const focusedId = kbFocusIndex >= 0 ? hotkeyItems[kbFocusIndex]?.id ?? null : null;
@@ -634,8 +690,6 @@ export default function EcosystemTaskbar() {
         pointerEvents: 'none',
       }}
     >
-      {/* The row binds the dock and its context capsule into one hover region,
-          so crossing the gap between them never collapses the context. */}
       <motion.div
         layout
         initial={{ y: 100, opacity: 0 }}
@@ -643,7 +697,6 @@ export default function EcosystemTaskbar() {
         transition={{ layout: MORPH, default: { delay: 0.4, duration: 0.9, ease: [0.16, 1, 0.3, 1] } }}
         style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'none' }}
       >
-        {/* ── Main dock — main's proven, fully-clickable taskbar, unchanged ── */}
         <motion.div
           layout
           className="mc-taskbar"
@@ -663,9 +716,6 @@ export default function EcosystemTaskbar() {
           }}
           onMouseLeave={() => setHoveredId(null)}
         >
-          {/* Collapse handle — shrinks the dock to a small pill so it stops
-              covering page content underneath; the active module's color
-              stays visible as a dot even when collapsed. */}
           <motion.button
             onClick={toggleDock}
             aria-label={dockCollapsed ? 'Expand taskbar' : 'Collapse taskbar'}
@@ -694,7 +744,6 @@ export default function EcosystemTaskbar() {
             transition={MORPH}
             style={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}
           >
-          {/* Command palette trigger */}
           <div style={{ position: 'relative' }}>
             <motion.button
               onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))}
@@ -724,20 +773,15 @@ export default function EcosystemTaskbar() {
             </AnimatePresence>
           </div>
 
-          {/* Divider */}
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
-          {/* App icons — shrinks into an infinite-loop scroll carousel while
-              the context pill is expanded, instead of relayouting the dock. */}
-          <AppIconCarousel apps={visibleApps} pathname={pathname} hoveredId={hoveredId} setHoveredId={setHoveredId} shrunk={contextOpen} />
+          <AppIconCarousel apps={visibleApps} pathname={pathname} shrunk={contextOpen} />
 
-          {/* Divider */}
           <div style={{
             width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
             margin: '0 4px', flexShrink: 0,
           }} />
 
-          {/* Project switcher button */}
           <div style={{ position: 'relative' }}>
             <motion.button
               onClick={() => setProjectsOpen(v => !v)}
@@ -761,7 +805,6 @@ export default function EcosystemTaskbar() {
                 transition: 'background 0.25s',
               }}
             >
-              {/* Active project color swatch */}
               {activeProject && (
                 <div style={{
                   position: 'absolute',
@@ -792,7 +835,6 @@ export default function EcosystemTaskbar() {
               </motion.div>
             </motion.button>
 
-            {/* Switcher tooltip */}
             <AnimatePresence>
               {hoveredId === 'projects' && !projectsOpen && (
                 <motion.div
@@ -833,7 +875,6 @@ export default function EcosystemTaskbar() {
               )}
             </AnimatePresence>
 
-            {/* Project switcher panel */}
             <AnimatePresence>
               {projectsOpen && (
                 <ProjectSwitcher onClose={() => setProjectsOpen(false)} />
@@ -841,18 +882,14 @@ export default function EcosystemTaskbar() {
             </AnimatePresence>
           </div>
 
-          {/* Divider */}
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
 
-          {/* Notifications */}
           <NotificationBell />
 
-          {/* Audio Engine */}
           <div style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
             <GlobalAudioWidget />
           </div>
 
-          {/* Account: profile + settings */}
           {([
             { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
             { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
@@ -861,7 +898,7 @@ export default function EcosystemTaskbar() {
             const isHovered = hoveredId === item.id;
             const Icon = item.icon;
             return (
-              <Link key={item.id} href={item.path} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
+              <Link key={item.id} href={item.path} prefetch={false} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
                 <motion.div
                   onHoverStart={() => setHoveredId(item.id)}
                   whileHover={{ scale: 1.18, y: -6 }}
@@ -903,9 +940,6 @@ export default function EcosystemTaskbar() {
           </AnimatePresence>
         </motion.div>
 
-        {/* ── Context capsule: the live module context, budded off the dock.
-            Shows a transient activity ("Saved") or the page's live descriptor
-            (fields/toggles/actions published via usePillStage / usePillZone). ── */}
         <AnimatePresence>
           {showContext && (
             <motion.div
