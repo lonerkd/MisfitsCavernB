@@ -36,6 +36,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Dev bypass: BYPASS_AUTH_SECRET env var must be set for this to work.
+  // Set the cookie via GET /api/dev/bypass?secret=<value>.
+  const bypassSecret = process.env.BYPASS_AUTH_SECRET;
+  if (bypassSecret && request.cookies.get('dev_bypass')?.value === bypassSecret) {
+    return NextResponse.next();
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {

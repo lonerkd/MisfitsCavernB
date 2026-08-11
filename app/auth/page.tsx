@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,8 @@ import { osSignIn as signIn, osSignUp as signUp } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
 import { supabase } from '@/lib/supabase/client';
+
+const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 
 type Mode = 'signin' | 'signup';
 
@@ -32,6 +34,13 @@ export default function AuthPage() {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
+  const [bypassActive, setBypassActive] = useState(false);
+
+  useEffect(() => {
+    if (DEV_MODE) {
+      setBypassActive(document.cookie.includes('dev_bypass='));
+    }
+  }, []);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -106,6 +115,20 @@ export default function AuthPage() {
       } else {
         setError('Something went wrong. Please try again.');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const devSignIn = async (email: string, password: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      await withTimeout(signIn(email, password), 15000, 'Sign-in timed out.');
+      toast('Dev sign-in OK.', 'success');
+      setTimeout(() => router.push('/projects'), 400);
+    } catch (err: any) {
+      setError(err.message || 'Dev sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -334,6 +357,116 @@ export default function AuthPage() {
           </p>
         </motion.div>
       </div>
+
+      {DEV_MODE && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            zIndex: 50,
+            background: 'rgba(0,0,0,0.92)',
+            border: '1px solid rgba(255,200,0,0.3)',
+            borderRadius: 8,
+            padding: '14px 18px',
+            fontFamily: 'var(--mono)',
+            fontSize: 10,
+            width: 260,
+          }}
+        >
+          <div style={{ color: 'rgba(255,200,0,0.9)', letterSpacing: 2, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>⚙ DEV PANEL</span>
+            {bypassActive && <span style={{ fontSize: 9, color: 'rgba(100,255,100,0.8)' }}>BYPASS ON</span>}
+          </div>
+
+          {/* Quick-login persona buttons */}
+          {[
+            { label: 'SAM (owner)', email: process.env.NEXT_PUBLIC_DEV_SAM_EMAIL, pass: process.env.NEXT_PUBLIC_DEV_SAM_PASS },
+            { label: 'JORDAN (crew)', email: process.env.NEXT_PUBLIC_DEV_JORDAN_EMAIL, pass: process.env.NEXT_PUBLIC_DEV_JORDAN_PASS },
+            { label: 'RILEY (outsider)', email: process.env.NEXT_PUBLIC_DEV_RILEY_EMAIL, pass: process.env.NEXT_PUBLIC_DEV_RILEY_PASS },
+          ].map(({ label, email, pass }) => (
+            email && pass ? (
+              <button
+                key={label}
+                onClick={() => devSignIn(email, pass)}
+                disabled={loading}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginBottom: 6,
+                  padding: '7px 10px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'var(--fg)',
+                  fontFamily: 'var(--mono)',
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  textAlign: 'left',
+                  borderRadius: 4,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.09)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+              >
+                → {label}
+              </button>
+            ) : null
+          ))}
+
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '10px 0' }} />
+
+          {/* Middleware bypass controls */}
+          <div style={{ color: 'var(--fg-muted)', fontSize: 9, letterSpacing: 1, marginBottom: 6 }}>MIDDLEWARE BYPASS</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <a
+              href={`/api/dev/bypass?secret=${process.env.NEXT_PUBLIC_DEV_BYPASS_HINT || ''}&redirect=/projects`}
+              style={{
+                flex: 1,
+                padding: '6px 8px',
+                background: bypassActive ? 'rgba(100,255,100,0.08)' : 'rgba(255,200,0,0.07)',
+                border: `1px solid ${bypassActive ? 'rgba(100,255,100,0.25)' : 'rgba(255,200,0,0.2)'}`,
+                color: bypassActive ? 'rgba(100,255,100,0.9)' : 'rgba(255,200,0,0.8)',
+                fontFamily: 'var(--mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                textAlign: 'center' as const,
+                borderRadius: 4,
+                textDecoration: 'none',
+                display: 'block',
+              }}
+            >
+              {bypassActive ? 'ACTIVE' : 'ENABLE'}
+            </a>
+            <a
+              href="/api/dev/bypass?clear=1"
+              style={{
+                flex: 1,
+                padding: '6px 8px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'var(--fg-muted)',
+                fontFamily: 'var(--mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                textAlign: 'center' as const,
+                borderRadius: 4,
+                textDecoration: 'none',
+                display: 'block',
+              }}
+            >
+              CLEAR
+            </a>
+          </div>
+          <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.2)', fontSize: 8, letterSpacing: 0.5, lineHeight: 1.5 }}>
+            Bypass lets you visit protected pages without auth. Pages show guest state — no user data.
+          </div>
+        </motion.div>
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
