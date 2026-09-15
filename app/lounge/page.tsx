@@ -340,8 +340,16 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     setErr(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setErr('Your session has expired — sign in again to connect a webhook.');
+        setDiscordBusy(false);
+        return;
+      }
+
       const testRes = await fetch('/api/discord/test', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ webhookUrl: url }),
       });
       const test = await testRes.json();

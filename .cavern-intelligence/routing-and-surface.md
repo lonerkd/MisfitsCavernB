@@ -62,32 +62,39 @@ mid-OAuth from an authed session.
 | Route | Method | Auth | Purpose |
 |---|---|---|---|
 | `/api/discord/notify` | POST | **Bearer access token** (401 without); derives sender from verified JWT; 403 unless caller can view the channel under RLS | posts a channel message to a Discord webhook |
-| `/api/discord/test` | POST | Bearer | webhook connectivity test |
-| `/api/references/search` | GET | — | reference-image search for Studio boards |
+| `/api/discord/test` | POST | **Bearer access token** (401 without) + rate limited | webhook connectivity test |
+| `/api/references/search` | GET | — (public; IP rate limited) | reference-image search for Studio boards |
 
 `/api/discord/notify` uses `SUPABASE_SERVICE_ROLE_KEY` server-side to read
-`discord_integrations.webhook_url` (no client-readable RLS by design). It must
-lazily construct the admin client so `next build` survives a missing key —
-**this is the current CI blocker** (tracked, not fixed here).
+`discord_integrations.webhook_url` (no client-readable RLS by design). Both
+Discord routes construct their clients lazily *inside* the handler and return a
+clean 500 when env vars are missing, so `next build` never needs a runtime
+secret. The stored webhook URL is re-validated before every fetch (SSRF guard).
 
 ---
 
 ## 4. Global providers (`app/layout.tsx`)
 
-Mounted for the whole app, in order:
-`ToastProvider` → `ConfirmProvider` → `AuthProvider` → `ProjectProvider` →
-`PresenceProvider` → `PillProvider` → `SpotifyProvider`.
+Mounted for the whole app, in order (`app/layout.tsx`):
+`ToastProvider` → `ConfirmProvider` → `OSProvider` → `PresenceProvider` →
+`PillProvider` → `SpotifyProvider`.
 
 - **ToastProvider / ConfirmProvider** — the only sanctioned feedback +
   confirmation surfaces (`useToast()`, `useConfirm()`; never native dialogs).
-- **AuthProvider** (`lib/context/AuthContext`) — session + `projectAccess`.
-- **ProjectProvider** — active project scope.
+- **OSProvider** (`lib/os/OSProvider.tsx`) — boots the core state backbone
+  (`bootOS`): identity, active project, permissions, and the project-scoped
+  realtime channel. `AuthContext` / `ProjectContext` were deleted, not shimmed.
 - **PresenceProvider** — realtime presence (avatars, typing, voice rings).
+- **PillProvider** — ScriptOS stage/pill UI state.
 - **SpotifyProvider** — soundtrack widget state.
 
-Chrome components always present: `Navigation` / `RoleBasedNav`,
-`EcosystemTaskbar`, `LoungeDock`, `NotificationBell`, `CommandPalette`
-(⌘K), `CustomCursor`, `GrainOverlay`, `NetworkStatus`.
+Chrome lives in two places, and nothing else mounts itself globally:
+- `components/ClientShell.tsx` (root layout) renders `CustomCursor`,
+  `CommandPalette` (⌘K), `ShortcutsOverlay`, `ThemeInitializer`, and
+  `EcosystemTaskbar` — the taskbar is how every authed surface navigates, and
+  it embeds `NotificationBell`.
+- The landing page (`app/page.tsx`) additionally renders `Navigation`.
+- `GrainOverlay` is rendered per-page, not globally.
 
 ---
 

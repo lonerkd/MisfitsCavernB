@@ -245,7 +245,17 @@ CREATE POLICY "Profiles readable by all" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
-CREATE OR REPLACE FUNCTION public.is_project_creator(pid uuid)
+-- Membership-check helpers. SECURITY DEFINER bypasses RLS on the referenced
+-- tables, which prevents the projects <-> project_crew policies from recursing
+-- into each other (Postgres error 42P17: infinite recursion).
+--
+-- They live in the `internal` schema on purpose: only `public` (and explicitly
+-- exposed schemas) are reachable through PostgREST, so `anon` cannot call these
+-- as RPC endpoints to probe whether a project or script exists. EXECUTE is
+-- revoked from PUBLIC/anon and granted to authenticated only.
+CREATE SCHEMA IF NOT EXISTS internal;
+
+CREATE OR REPLACE FUNCTION internal.is_project_creator(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public
@@ -253,7 +263,7 @@ AS $$
   SELECT EXISTS (SELECT 1 FROM projects WHERE id = pid AND creator_id = auth.uid());
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_project_member(pid uuid)
+CREATE OR REPLACE FUNCTION internal.is_project_member(pid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
 SET search_path = public
@@ -263,26 +273,30 @@ $$;
 
 -- RLS Policies: Projects
 CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
-  creator_id = auth.uid() OR public.is_project_member(id)
+  creator_id = auth.uid() OR internal.is_project_member(id)
 );
 CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
 CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_id = auth.uid());
 
 CREATE POLICY "Project crew viewable by project members" ON project_crew FOR SELECT USING (
-  user_id = auth.uid() OR public.is_project_creator(project_id)
+  user_id = auth.uid() OR internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can manage crew" ON project_crew FOR INSERT WITH CHECK (
-  public.is_project_creator(project_id)
+  internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can update crew" ON project_crew FOR UPDATE USING (
-  public.is_project_creator(project_id)
+  internal.is_project_creator(project_id)
 );
 CREATE POLICY "Project creators can remove crew" ON project_crew FOR DELETE USING (
-  public.is_project_creator(project_id) OR user_id = auth.uid()
+  internal.is_project_creator(project_id) OR user_id = auth.uid()
 );
 
 -- NOTE (performance): on the live DB, migration
+-- performance_pass_fk_indexes_and_initplan (a) indexed every unindexed foreign
+-- key and (b) rewrote all policies to wrap auth.uid()/auth.role() in a scalar
+-- subquery — (SELECT auth.uid()) — so they evaluate once per statement instead
+-- of per row. Policies below are shown unwrapped for readability.
 
 -- RLS Policies: Scripts
 CREATE POLICY "Script members can view" ON scripts FOR SELECT TO authenticated USING (
@@ -300,7 +314,7 @@ CREATE POLICY "Authenticated users create scripts" ON scripts FOR INSERT WITH CH
 CREATE POLICY "Script editors can update" ON scripts FOR UPDATE USING (
   created_by = auth.uid() OR
   last_edited_by = auth.uid() OR
-  (project_id IS NOT NULL AND (public.is_project_creator(project_id) OR public.is_project_member(project_id)))
+  (project_id IS NOT NULL AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
 );
 CREATE POLICY "Script owners can delete" ON scripts FOR DELETE USING (created_by = auth.uid());
 
@@ -312,16 +326,47 @@ CREATE TABLE IF NOT EXISTS script_metadata (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE script_metadata ENABLE ROW LEVEL SECURITY;
-CREATE OR REPLACE FUNCTION public.can_access_script(sid uuid)
+CREATE OR REPLACE FUNCTION internal.can_access_script(sid uuid)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.scripts s WHERE s.id = sid AND (
       s.created_by = auth.uid() OR s.last_edited_by = auth.uid()
-      OR (s.project_id IS NOT NULL AND (public.is_project_creator(s.project_id) OR public.is_project_member(s.project_id)))
+      OR (s.project_id IS NOT NULL AND (internal.is_project_creator(s.project_id) OR internal.is_project_member(s.project_id)))
     )
   );
 $$;
-CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (public.can_access_script(script_id)) WITH CHECK (public.can_access_script(script_id));
+-- Lock the helpers down: nothing but `authenticated` may execute them. Without
+-- this, `anon` could call them through PostgREST as RPC to probe existence of
+-- projects/scripts (the SECURITY DEFINER body bypasses RLS by design).
+REVOKE ALL ON FUNCTION internal.is_project_creator(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION internal.is_project_member(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION internal.can_access_script(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION internal.is_project_creator(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION internal.is_project_member(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION internal.can_access_script(uuid) TO authenticated;
+
+-- ScriptOS margin gutter: typed, line-anchored annotations on a script.
+-- Mirrored from the cavern-suite redesign migration.
+CREATE TABLE IF NOT EXISTS script_annotations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  line_index INT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('shot', 'beat', 'note', 'revision', 'reference', 'todo')),
+  text TEXT NOT NULL,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_script_annotations_script ON script_annotations(script_id);
+ALTER TABLE script_annotations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "script_annotations view" ON script_annotations FOR SELECT TO authenticated
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+CREATE POLICY "script_annotations insert" ON script_annotations FOR INSERT TO authenticated
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
+CREATE POLICY "script_annotations delete" ON script_annotations FOR DELETE TO authenticated
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
+
+CREATE POLICY "metadata writable by script members" ON script_metadata FOR ALL USING (internal.can_access_script(script_id)) WITH CHECK (internal.can_access_script(script_id));
 
 -- RLS Policies: Jobs
 CREATE POLICY "Jobs publicly readable" ON jobs FOR SELECT USING (status = 'open' OR created_by = auth.uid());
@@ -414,28 +459,8 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
--- Marketing campaigns
-CREATE TABLE IF NOT EXISTS marketing_campaigns (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  platform TEXT,
-  status TEXT DEFAULT 'draft',
-  reach_estimate TEXT,
-  accent_color TEXT DEFAULT '#ffffff',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE marketing_campaigns ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Project marketing members can manage" ON marketing_campaigns FOR ALL USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
+-- (marketing_campaigns was removed — superseded by `campaigns`. Dropped in the
+--  cavern-suite redesign migration; see supabase-migration-cavern-suite-redesign.sql.)
 
 -- Storage Buckets Setup
 INSERT INTO storage.buckets (id, name, public) 
@@ -476,11 +501,11 @@ CREATE TABLE IF NOT EXISTS scene_references (
 );
 ALTER TABLE scene_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "scene_refs view" ON scene_references FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "scene_refs insert" ON scene_references FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "scene_refs delete" ON scene_references FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 CREATE TABLE IF NOT EXISTS character_references (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -493,11 +518,11 @@ CREATE TABLE IF NOT EXISTS character_references (
 );
 ALTER TABLE character_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "char_refs view" ON character_references FOR SELECT TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 CREATE POLICY "char_refs insert" ON character_references FOR INSERT TO authenticated
-  WITH CHECK ((public.is_project_creator(project_id) OR public.is_project_member(project_id)) AND created_by = auth.uid());
+  WITH CHECK ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND created_by = auth.uid());
 CREATE POLICY "char_refs delete" ON character_references FOR DELETE TO authenticated
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 -- Scene shoot status tracking
 ALTER TABLE scenes ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'planned';
@@ -578,7 +603,7 @@ DROP POLICY IF EXISTS "channels create by project owner" ON channels;
 CREATE POLICY "channels create by project creator or crew" ON channels FOR INSERT
   WITH CHECK (
     project_id IS NOT NULL
-    AND (public.is_project_creator(project_id) OR public.is_project_member(project_id))
+    AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
   );
 
 CREATE TABLE IF NOT EXISTS timeline_items (
@@ -626,15 +651,8 @@ CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON timeline_items
 CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON budget_items
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
-CREATE TABLE IF NOT EXISTS beats (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  content TEXT DEFAULT '',
-  color TEXT,
-  position INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- (the dead `beats` table was removed — `project_beats` is what every Studio and
+--  ScriptOS code path uses. Dropped in the cavern-suite redesign migration.)
 CREATE TABLE IF NOT EXISTS concept_assets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -653,6 +671,9 @@ CREATE TABLE IF NOT EXISTS scenes (
   cast_list TEXT,
   est_duration TEXT,
   shoot_day INT DEFAULT 1,
+  -- Per-scene production elements tagged from the screenplay (props/wardrobe/
+  -- vehicles/sfx/vfx) — the script -> schedule -> budget breakdown hinge.
+  elements JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS campaigns (
@@ -665,21 +686,12 @@ CREATE TABLE IF NOT EXISTS campaigns (
   created_by UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_beats_project ON beats(project_id);
 CREATE INDEX IF NOT EXISTS idx_concept_assets_project ON concept_assets(project_id);
 CREATE INDEX IF NOT EXISTS idx_scenes_project ON scenes(project_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_project ON campaigns(project_id);
-ALTER TABLE beats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE concept_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scenes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Beats: project members can manage" ON beats FOR ALL USING (
-  project_id IN (
-    SELECT id FROM projects WHERE creator_id = auth.uid()
-    UNION
-    SELECT project_id FROM project_crew WHERE user_id = auth.uid()
-  )
-);
 CREATE POLICY "Concept assets: project members can manage" ON concept_assets FOR ALL USING (
   project_id IN (
     SELECT id FROM projects WHERE creator_id = auth.uid()
@@ -720,8 +732,8 @@ CREATE INDEX IF NOT EXISTS idx_character_castings_project ON character_castings(
 CREATE INDEX IF NOT EXISTS idx_character_castings_crew_user ON character_castings(crew_user_id);
 ALTER TABLE character_castings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Castings writable by project creator or crew" ON character_castings FOR ALL
-  USING (public.is_project_creator(project_id) OR public.is_project_member(project_id))
-  WITH CHECK (public.is_project_creator(project_id) OR public.is_project_member(project_id));
+  USING (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+  WITH CHECK (internal.is_project_creator(project_id) OR internal.is_project_member(project_id));
 
 ALTER TABLE portfolio_projects
   ADD COLUMN IF NOT EXISTS source_project_id UUID REFERENCES projects(id) ON DELETE SET NULL;

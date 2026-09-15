@@ -100,9 +100,10 @@ Server-only (**never** `NEXT_PUBLIC_`): `SUPABASE_SERVICE_ROLE_KEY` — used by
 `app/api/discord/notify` to read `discord_integrations.webhook_url` (a table
 with no client-readable RLS policy by design).
 
-CI (`.github/workflows/ci.yml`) needs `NEXT_PUBLIC_SUPABASE_URL` and
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` populated as Actions **secrets** (the anon key
-is publishable, so a repo *variable* + `vars.` reference works too). The build
-fails at `/api/discord/notify` if the anon key is blank.
+CI (`.github/workflows/ci.yml`) reads `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` from Actions **variables** (`vars.*`) — they are
+publishable; only `SUPABASE_SERVICE_ROLE_KEY` is a secret. Both Discord routes
+construct their clients lazily *inside* the handler, so a missing key fails at
+request time with a clean 500 rather than breaking `next build`.
 
 Full template: `.env.example`. Reading `.env*` is `deny`-blocked for agents.

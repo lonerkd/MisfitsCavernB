@@ -38,6 +38,7 @@ export interface EditorRightPanelsProps {
   charStats: CharacterStats[];
   handleLockRevision: () => void;
   revisions: Revision[];
+  onViewRevision: (revisionId: string) => void;
   setContent: (v: string) => void;
   toast: (msg: string, kind?: any) => void;
   showSceneNumbers: boolean;
@@ -94,7 +95,7 @@ export function EditorRightPanels({
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
   sprintActive, setSprintActive, sprintTime, wordCount, dailyGoal, goalProgress,
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
-  setNightModePreview, elements, chars, charStats, handleLockRevision, revisions,
+  setNightModePreview, elements, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
 }: EditorRightPanelsProps) {
@@ -402,7 +403,7 @@ export function EditorRightPanels({
                                     Restore
                                   </button>
                                   <button
-                                    onClick={() => { alert("Snapshot Content:\n\n" + rev.snapshot.substring(0, 1000) + "..."); }}
+                                    onClick={() => onViewRevision(rev.id)}
                                     style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}
                                   >
                                     View
