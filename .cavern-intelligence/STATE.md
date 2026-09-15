@@ -1,6 +1,78 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Harness access + intelligence hub rebuild
+## Latest Session — Dead-code purge, zod validation layer, doc/schema reconciliation
+
+Branch: `chore/production-hardening`. All verified: `tsc --noEmit` clean,
+`npm run lint` clean, **94 unit tests pass** (was 63), `npm run build` green.
+
+- **Cleaned a broken local environment first** (this had been silently blocking
+  local verification): `node_modules` had a corrupt `@next/swc-win32-x64-msvc`
+  binary and a missing `lucide-react` .d.ts, so `npm run build` failed locally
+  even though CI was green. Full clean `npm ci` fixed it. `next.config.js` now
+  pins `outputFileTracingRoot` so a stray `package-lock.json` above the repo
+  can't be picked as the workspace root.
+- **Deleted 23 verified-dead modules** (zero inbound references, checked by
+  basename scan *and* import-graph scan): `lib/scriptos/{advanced-formatter,
+  auto-save,editor-utils,export-pro,fountain-export,parser.worker,pdfGenerator}.ts`,
+  `lib/{api-validation,network-retry,useScript,animations/variants}.ts`,
+  `components/{AnimatedText,CrewManagementModal,LoungeDock,MagBtn,PageTransition,
+  PhotoScatter,RoleBasedNav,NetworkStatus}.tsx`, `components/canvas/{CanvasPin,
+  PannableCanvas}.tsx`, `components/editor/DiffModal.tsx` (restored — see below),
+  `lib/hooks/useNetworkStatus.ts`. Dropped unused deps `tailwind-merge` +
+  `recharts` — **not done yet, see "Not done" below.**
+- **Revision "View" button was a native `alert()`** and `showDiff`/
+  `diffRevisionId` in `app/editor/page.tsx` were dead, never-wired state — a
+  half-implemented feature. Fixed properly: restored `DiffModal`, wired it to
+  the revisions panel (`onViewRevision`), and removed the `alert()`. Zero
+  native `alert()`/`confirm()` remain in the app (every `confirm(` left is the
+  shared `useConfirm()` hook).
+- **Zod (v4) implemented** as the single validation seam: new
+  `lib/validation/index.ts` (schemas + `parseJsonBody`/`firstIssue`/`issueMap`,
+  types derived with `z.infer`). Wired into all three API routes —
+  `/api/discord/notify` (body), `/api/discord/test` (body), and
+  `/api/references/search` (query) — and into the auth form (sign-in/sign-up).
+  31 new unit tests cover the schemas, including lookalike-host webhook
+  rejections. Replaced the hand-rolled `lib/api-validation.ts` (which was dead).
+- **Security hardening found by that work:** `/api/discord/test` had **no auth
+  and no rate limiting** even though `RETROSPECTIVE_2026-07.md` claimed it was
+  fixed. Now requires a Bearer token + is rate limited (caller updated to send
+  the token). `/api/references/search` is now rate limited too. `/api/discord/
+  notify` re-validates the stored webhook URL before fetching it (SSRF guard)
+  and no longer uses `!`-asserted env vars.
+- **Schema reference reconciled** (`supabase-schema.sql`): helpers moved
+  `public.*` → `internal.*` (matching live + all docs; `public.*` was dropped on
+  live and caused the documented 42883 outage), added `CREATE SCHEMA internal`
+  + REVOKE/GRANT, added the missing `script_annotations` table and
+  `scenes.elements` column (both used by live app code but absent from the
+  reference), and removed the two dead `beats`/`marketing_campaigns` tables.
+  The previously **untracked** redesign migration is now committed as
+  `supabase-migration-cavern-suite-redesign.sql` (was a schema-mirror gap).
+- **Intelligence hub repaired**: restored the 8 `.cavern-intelligence/*.md` docs
+  that `AGENTS.md`/`INDEX.md` referenced but PR #39 had deleted, and restored
+  `scripts/sync-intel.js` + the `npm run sync-intel` script they instruct agents
+  to run. Fixed real drift in the *new* docs: `conventions.md` pointed at the
+  deleted `lib/permissions/` tree and claimed `strict: false` (it is `true`);
+  `routing-and-surface.md` documented `AuthProvider`/`ProjectProvider` (the
+  app mounts `OSProvider`) and listed chrome components that aren't mounted;
+  `tools-and-access.md` described CI env as secrets (they're `vars.*`).
+- Manifest regenerated: 201 tracked files.
+
+### Not done in this session (needs owner or infra)
+
+1. `tailwind-merge` + `recharts` are still in `package.json` (zero usages) —
+   removal was deferred so this PR stays reviewable.
+2. `lib/scriptos/schedule.ts` is referenced **only by its own test**; the real
+   auto-scheduler lives inline in `app/studio/page.tsx`. Either wire the lib
+   function into the UI or delete it — decided to leave for the owner.
+3. Persona e2e in CI (Sam/Jordan/Riley) — needs a seeded Supabase test project
+   (infra, flagged by both prior audits).
+4. Production error sink (Sentry or similar) — needs a vendor choice.
+5. Live-DB verification of the schema changes could **not** be run from this
+   environment (no network access to `supabase.co`); the `internal.*` alignment
+   is based on STATE.md history + `database-and-security.md` + `CLAW.md`.
+   Worth one `list_tables` check.
+
+## Prior Session — Harness access + intelligence hub rebuild
 
 - **Committed Claude Code access config** (`.claude/settings.json`, was absent):
   `enableAllProjectMcpServers`; `allow` for safe dev/verify/git + read MCP tools;

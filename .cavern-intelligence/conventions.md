@@ -18,7 +18,7 @@ lib/supabase/
   projects.ts crew-management.ts scripts.ts channels.ts messages.ts
   studio.ts breakdown.ts casting.ts portfolio.ts jobs.ts profiles.ts
   notifications.ts activity.ts audit.ts stats.ts annotations.ts
-  auth.ts withTimeout.ts
+  withTimeout.ts
 ```
 
 Rules:
@@ -29,6 +29,12 @@ Rules:
   error is a bug (this class of defect has shipped before; see STATE.md history).
 - After any schema change, **regenerate** `database.types.ts` and let TypeScript
   find the drift. Generated types have caught real column-drift bugs repeatedly.
+- Validate every untrusted boundary with **zod** (`lib/validation/`): API route
+  bodies and query params, and auth/forms. Never hand-roll `typeof` checks or
+  one-off regex validators — add a schema, derive its type with `z.infer`, and
+  use the `parseJsonBody()` / `firstIssue()` helpers so every route returns the
+  same shape of error. Schemas live in one file so the client and the route
+  cannot disagree about what is valid.
 
 ---
 
@@ -68,8 +74,10 @@ Rules:
 - Server/DB truth: RLS + `internal.*` SECURITY DEFINER helpers
   (`is_project_creator`, `is_project_member`, `can_access_script`,
   `can_view/post/manage_channel`). See `database-and-security.md`.
-- Client mirror (for gating UI, never for security): `lib/permissions/` —
-  `access-matrix.ts` (unit-tested), `role-permissions.ts`, `usePermissions.ts`.
+- Client mirror (for gating UI, never for security): `lib/os/access-matrix.ts`
+  (unit-tested) and `lib/os/permissions.ts`. The old `lib/permissions/` tree
+  (`access-control.tsx`, `role-permissions.ts`, `usePermissions.ts`) was deleted
+  in the core-state consolidation.
   Gate destructive controls (e.g. crew role dropdowns) on the matrix so they
   don't render enabled and then silently fail at RLS.
 
@@ -77,8 +85,8 @@ Rules:
 
 ## 6. TypeScript & styling
 
-- No `any`, no `@ts-ignore`. Fix the type. (`tsconfig` is `strict: false` today
-  — treat it as strict anyway; tightening it is a tracked goal.)
+- No `any`, no `@ts-ignore`. `tsconfig` is `strict: true` — `npm run build`
+  fails on type errors, so fix the type rather than silencing it.
 - Tailwind utilities + CSS custom properties from `app/globals.css`. Reuse
   existing classes (`.btn-primary`, `.card`, `.glass`, film-grain/chrome
   aesthetic) before writing new CSS. Full rubric: `design-tokens.md`.
@@ -90,7 +98,7 @@ Rules:
 
 ## 7. Verify before claiming
 
-Every change: `npx tsc --noEmit && npm run build && npm run lint`.
+Every change: `npx tsc --noEmit && npm run lint && npm run test && npm run build`.
 DB/RLS changes: persona-simulated SQL for **all three** directions —
 Sam ✅ (owner), Jordan ✅ (scoped crew), Riley ❌ (outsider; any leak is P0).
 The `verify` skill can drive this end-to-end.

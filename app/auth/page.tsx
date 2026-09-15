@@ -12,6 +12,7 @@ import { useToast } from '@/components/Toast';
 import { osSignIn as signIn, osSignUp as signUp } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
+import { signInSchema, signUpSchema, firstIssue } from '@/lib/validation';
 import { supabase } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
@@ -42,26 +43,19 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!form.email.trim()) {
-      setError('Please enter your email address.');
-      return;
-    }
-    if (!emailRegex.test(form.email.trim())) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (mode === 'signup' && !form.username.trim()) {
-      setError('Please choose a username.');
-      return;
-    }
-    if (!form.password) {
-      setError('Please enter your password.');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
+    if (mode === 'signup') {
+      const parsed = signUpSchema.safeParse({
+        email: form.email.trim(),
+        password: form.password,
+        username: form.username.trim(),
+      });
+      if (!parsed.success) { setError(firstIssue(parsed.error)); return; }
+    } else {
+      const parsed = signInSchema.safeParse({
+        email: form.email.trim(),
+        password: form.password,
+      });
+      if (!parsed.success) { setError(firstIssue(parsed.error)); return; }
     }
     if (mode === 'signup') {
       const weak = checkPasswordWeakness(form.password, form.email, form.username);

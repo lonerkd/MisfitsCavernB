@@ -39,6 +39,7 @@ import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCen
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
+import { DiffModal } from '@/components/editor/DiffModal';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
@@ -1106,6 +1107,7 @@ export default function EditorPage() {
                   nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
                   elements={elements} chars={chars} charStats={charStats}
                   handleLockRevision={handleLockRevision} revisions={revisions}
+                  onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
                   setContent={setContent} toast={toast}
                   showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
                   showWatermark={showWatermark} setShowWatermark={setShowWatermark}
@@ -1121,6 +1123,14 @@ export default function EditorPage() {
         </AnimatePresence>
 
       </div>
+
+      <DiffModal
+        isOpen={showDiff}
+        onClose={() => { setShowDiff(false); setDiffRevisionId(null); }}
+        originalText={revisions.find(r => r.id === diffRevisionId)?.snapshot ?? ''}
+        modifiedText={content}
+        label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
+      />
 
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{

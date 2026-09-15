@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
+import { discordNotifyBodySchema, discordWebhookUrlSchema, parseJsonBody } from '@/lib/validation';
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -34,21 +35,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { channelId?: string; content?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ ok: false }, { status: 400 });
+  const parsed = await parseJsonBody(req, discordNotifyBodySchema);
+  if (!parsed.ok) {
+    return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
   }
+  const { channelId, content } = parsed.data;
 
-  const { channelId, content } = body;
-  if (!channelId || typeof channelId !== 'string' || !content || typeof content !== 'string') {
-    return NextResponse.json({ ok: false }, { status: 400 });
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonKey) {
+    return NextResponse.json({ ok: false, error: 'Server not configured' }, { status: 500 });
   }
 
   const supabaseAsUser = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    anonKey,
     {
       auth: { autoRefreshToken: false, persistSession: false },
       global: { headers: { Authorization: `Bearer ${token}` } },
@@ -71,12 +71,18 @@ export async function POST(req: NextRequest) {
 
   if (error || !data?.webhook_url) return NextResponse.json({ ok: true, bridged: false });
 
+  // Re-validate the stored URL before fetching it. Rows are written through
+  // /api/discord/test, but a direct insert (or a future writer) must not be able
+  // to turn this route into an SSRF probe against an arbitrary URL.
+  const storedUrl = discordWebhookUrlSchema.safeParse(data.webhook_url);
+  if (!storedUrl.success) return NextResponse.json({ ok: true, bridged: false });
+
   let senderName = 'Misfits Cavern';
   const { data: profile } = await supabaseAdmin.from('profiles').select('username').eq('id', user.id).maybeSingle();
   if (profile?.username) senderName = profile.username;
 
   try {
-    const discordRes = await fetch(data.webhook_url, {
+    const discordRes = await fetch(storedUrl.data, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

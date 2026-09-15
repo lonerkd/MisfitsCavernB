@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
+import { referenceSearchQuerySchema } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
+  // Open endpoint that fans out to a third-party API — cap it so it can't be
+  // used to hammer Openverse (or us) from one client.
+  const rateLimit = checkRateLimit(getClientIp(req), { maxRequests: 60, windowMs: 60_000 });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { results: [], totalPages: 0, page: 1 },
+      { status: 429, headers: { 'X-RateLimit-Reset': rateLimit.resetAt.toString() } },
+    );
+  }
+
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get('q') || '').trim().slice(0, 200);
-  const pageNum = Math.min(Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1), 50);
+  const parsed = referenceSearchQuerySchema.safeParse({
+    q: searchParams.get('q') ?? undefined,
+    page: searchParams.get('page') ?? undefined,
+  });
+  if (!parsed.success) {
+    return NextResponse.json({ results: [], totalPages: 0, page: 1 }, { status: 400 });
+  }
+
+  const { q, page: pageNum } = parsed.data;
 
   if (!q) return NextResponse.json({ results: [], totalPages: 0, page: 1 });
 
