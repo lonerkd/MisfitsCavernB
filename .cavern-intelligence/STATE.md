@@ -1,6 +1,26 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Dead-code purge, zod validation layer, doc/schema reconciliation
+## Latest Session — Scheduler wired into the UI, unused deps dropped
+
+Branch: `chore/scheduler-and-deps`. Verified: `next build` green with **zero
+lint warnings**, 94 unit tests pass.
+
+- **`lib/scriptos/schedule.ts` is no longer dead code.** It was referenced only
+  by its own test while the real auto-scheduler lived inline in
+  `app/studio/page.tsx`. The Studio page now runs the tested
+  `generateShootingSchedule` over the parsed screenplay and the Production →
+  Schedule tab renders a **Script Breakdown** card from it: scene count,
+  estimated runtime, unique locations, unique characters, word count, and the
+  top location groups ranked by scene count with per-group minute estimates.
+  Derived from what is *written*, so it is useful before anything is imported
+  into the scene list. Added an exported `ShootingSchedule` type rather than
+  threading `any` through `StudioCtx`.
+- **Dropped the two unused dependencies**: `tailwind-merge` and `recharts`
+  (zero references in app/lib/components/config). 39 packages removed.
+- Fixed a `react-hooks/exhaustive-deps` warning introduced by the new effect
+  (project id captured outside the effect, used as the dependency).
+
+## Prior Session — Dead-code purge, zod validation layer, doc/schema reconciliation
 
 Branch: `chore/production-hardening`. All verified: `tsc --noEmit` clean,
 `npm run lint` clean, **94 unit tests pass** (was 63), `npm run build` green.

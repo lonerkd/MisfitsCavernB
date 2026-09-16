@@ -1,4 +1,5 @@
 import type { Project } from '@/lib/os';
+import type { ShootingSchedule } from '@/lib/scriptos/schedule';
 
 export interface StudioCtx {
   activeConceptBoard: any;
@@ -39,6 +40,7 @@ export interface StudioCtx {
   projects: any[];
   refreshProject: any;
   saveScene: any;
+  scheduleSummary: ShootingSchedule | null;
   sceneDay: any;
   sceneLocation: any;
   sceneRefs: Record<string, any[]>;

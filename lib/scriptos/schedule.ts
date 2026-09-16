@@ -88,3 +88,5 @@ export interface ScheduleSummary {
   uniqueChars: number;
   estRuntime: number;
 }
+
+export type ShootingSchedule = ReturnType<typeof generateShootingSchedule>;
