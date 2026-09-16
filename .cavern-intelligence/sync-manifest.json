@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-15T00:24:36.257Z",
+  "last_synchronized": "2026-09-16T23:39:04.197Z",
   "stats": {
     "totalFiles": 201,
-    "totalSize": 1994238,
+    "totalSize": 1983211,
     "byExtension": {
       ".json": 8,
       ".md": 6,
@@ -421,8 +421,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 32363,
-      "last_modified": "2026-09-15T00:00:09.827Z"
+      "size": 33733,
+      "last_modified": "2026-09-16T23:37:05.884Z"
     },
     {
       "path": "CLAUDE.md",
@@ -631,8 +631,8 @@
     },
     {
       "path": "components/studio/tabs/ctx.ts",
-      "size": 1917,
-      "last_modified": "2026-09-15T00:00:09.962Z"
+      "size": 2028,
+      "last_modified": "2026-09-16T23:35:40.071Z"
     },
     {
       "path": "components/studio/tabs/MarketingTab.tsx",
@@ -651,8 +651,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 28531,
-      "last_modified": "2026-09-15T00:00:09.961Z"
+      "size": 31961,
+      "last_modified": "2026-09-16T23:33:27.613Z"
     },
     {
       "path": "components/ThemeInitializer.tsx",
@@ -926,8 +926,8 @@
     },
     {
       "path": "lib/scriptos/schedule.ts",
-      "size": 3132,
-      "last_modified": "2026-09-15T00:00:10.189Z"
+      "size": 3211,
+      "last_modified": "2026-09-16T23:35:39.925Z"
     },
     {
       "path": "lib/scriptos/storage.ts",
@@ -1111,13 +1111,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 361768,
-      "last_modified": "2026-09-15T00:12:36.339Z"
+      "size": 345811,
+      "last_modified": "2026-09-16T23:31:12.185Z"
     },
     {
       "path": "package.json",
-      "size": 1534,
-      "last_modified": "2026-09-15T00:12:35.929Z"
+      "size": 1474,
+      "last_modified": "2026-09-16T23:31:11.867Z"
     },
     {
       "path": "playwright.config.ts",

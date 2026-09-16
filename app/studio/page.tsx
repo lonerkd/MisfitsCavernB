@@ -28,6 +28,7 @@ import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
+import { generateShootingSchedule, type ShootingSchedule } from '@/lib/scriptos/schedule';
 import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
@@ -262,6 +263,26 @@ export default function StudioPage() {
       setImportingScenes(false);
     }
   };
+
+  // Script-derived breakdown for the Schedule tab. Runs the tested
+  // generateShootingSchedule over the parsed screenplay (grouped by location,
+  // time-of-day and INT/EXT), so the summary reflects what is *written* —
+  // useful before anything has been imported into the scene list.
+  const [scheduleSummary, setScheduleSummary] = useState<ShootingSchedule | null>(null);
+  const activeProjectId = activeProject?.id ?? null;
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeProjectId) { setScheduleSummary(null); return; }
+    (async () => {
+      const { data } = await supabase.from('scripts').select('content').eq('project_id', activeProjectId).order('updated_at', { ascending: false });
+      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
+      if (!withContent) { if (!cancelled) setScheduleSummary(null); return; }
+      const parsed = parseScript(withContent.content ?? '');
+      const summary = generateShootingSchedule([], parsed.scenes.filter((s: any) => !s.omitted) as any);
+      if (!cancelled) setScheduleSummary(summary);
+    })().catch(() => { if (!cancelled) setScheduleSummary(null); });
+    return () => { cancelled = true; };
+  }, [activeProjectId]);
 
   const [syncingBreakdown, setSyncingBreakdown] = useState(false);
   const syncBreakdown = async () => {
@@ -509,7 +530,7 @@ export default function StudioPage() {
     setCrewList(crew);
   };
 
-  const studioCtx: StudioCtx = { activeConceptBoard, activeProject, activities, adding, assetsList, autoSchedule, autoScheduling, beatContent, beatTitle, beats, boards, campaignBudget, campaignDemo, campaignPlatform, campaignTitle, conceptBoard, conceptTitle, conceptUrl, confirm, crewList, cycleSceneStatus, editScene, editSceneId, filter, filtered, handlePushToScript, importScenesFromScript, importingScenes, lightboxIdx, linkConceptToScene, linkScene, loadingBoards, onlineIds, printSchedule, prodTab, projects, refreshProject, saveScene, sceneDay, sceneLocation, sceneRefs, sceneTitle, setActiveConceptBoard, setAdding, setBeatContent, setBeatTitle, setCampaignBudget, setCampaignDemo, setCampaignPlatform, setCampaignTitle, setConceptBoard, setConceptTitle, setConceptUrl, setEditScene, setEditSceneId, setFilter, setLightboxIdx, setLinkScene, setProdTab, setReviewAsset, setSceneDay, setSceneLocation, setSceneTitle, setShowAddBeat, setShowAddCampaign, setShowAddConcept, setShowAddScene, setShowRecruit, setShowRefSearch, showAddBeat, showAddCampaign, showAddConcept, showAddScene, startEditScene, syncBreakdown, syncingBreakdown, tabs, toast, types, unlinkConcept, user };
+  const studioCtx: StudioCtx = { activeConceptBoard, activeProject, activities, adding, assetsList, autoSchedule, autoScheduling, beatContent, beatTitle, beats, boards, campaignBudget, campaignDemo, campaignPlatform, campaignTitle, conceptBoard, conceptTitle, conceptUrl, confirm, crewList, cycleSceneStatus, editScene, editSceneId, filter, filtered, handlePushToScript, importScenesFromScript, importingScenes, lightboxIdx, linkConceptToScene, linkScene, loadingBoards, onlineIds, printSchedule, prodTab, projects, refreshProject, saveScene, scheduleSummary, sceneDay, sceneLocation, sceneRefs, sceneTitle, setActiveConceptBoard, setAdding, setBeatContent, setBeatTitle, setCampaignBudget, setCampaignDemo, setCampaignPlatform, setCampaignTitle, setConceptBoard, setConceptTitle, setConceptUrl, setEditScene, setEditSceneId, setFilter, setLightboxIdx, setLinkScene, setProdTab, setReviewAsset, setSceneDay, setSceneLocation, setSceneTitle, setShowAddBeat, setShowAddCampaign, setShowAddConcept, setShowAddScene, setShowRecruit, setShowRefSearch, showAddBeat, showAddCampaign, showAddConcept, showAddScene, startEditScene, syncBreakdown, syncingBreakdown, tabs, toast, types, unlinkConcept, user };
 
   return (
     <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>

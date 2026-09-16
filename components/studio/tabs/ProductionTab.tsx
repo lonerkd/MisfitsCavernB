@@ -51,7 +51,7 @@ import { BeatCard, CrewMemberCard, RecruitModal } from '@/components/studio/Crew
 import type { StudioCtx } from './ctx';
 
 export function ProductionTab({ ctx }: { ctx: StudioCtx }) {
-  const { activeProject, adding, autoSchedule, autoScheduling, beatContent, beatTitle, beats, confirm, crewList, cycleSceneStatus, editScene, editSceneId, filter, handlePushToScript, importScenesFromScript, importingScenes, linkConceptToScene, linkScene, onlineIds, printSchedule, prodTab, refreshProject, saveScene, sceneDay, sceneLocation, sceneRefs, sceneTitle, setAdding, setBeatContent, setBeatTitle, setEditScene, setEditSceneId, setLinkScene, setProdTab, setSceneDay, setSceneLocation, setSceneTitle, setShowAddBeat, setShowAddScene, setShowRecruit, showAddBeat, showAddScene, startEditScene, syncBreakdown, syncingBreakdown, toast, unlinkConcept, user } = ctx;
+  const { activeProject, adding, autoSchedule, autoScheduling, beatContent, beatTitle, beats, confirm, crewList, cycleSceneStatus, editScene, editSceneId, filter, handlePushToScript, importScenesFromScript, importingScenes, linkConceptToScene, linkScene, onlineIds, printSchedule, prodTab, refreshProject, saveScene, scheduleSummary, sceneDay, sceneLocation, sceneRefs, sceneTitle, setAdding, setBeatContent, setBeatTitle, setEditScene, setEditSceneId, setLinkScene, setProdTab, setSceneDay, setSceneLocation, setSceneTitle, setShowAddBeat, setShowAddScene, setShowRecruit, showAddBeat, showAddScene, startEditScene, syncBreakdown, syncingBreakdown, toast, unlinkConcept, user } = ctx;
   if (!activeProject) return null;
   return (
 
@@ -327,6 +327,52 @@ export function ProductionTab({ ctx }: { ctx: StudioCtx }) {
                      <EmptyState icon={<Calendar size={28} />} title="No scenes scheduled yet" />
                    )}
                  </div>
+
+               {scheduleSummary && scheduleSummary.summary.totalScenes > 0 && (
+                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 24 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                     <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Script Breakdown</div>
+                     <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>straight from the screenplay</div>
+                   </div>
+                   {(() => {
+                     const s = scheduleSummary.summary;
+                     const runtime = `${Math.floor(s.estRuntime / 60)}h ${s.estRuntime % 60}m`;
+                     const stats: [string, string][] = [
+                       ['Scenes', String(s.totalScenes)],
+                       ['Est. runtime', runtime],
+                       ['Locations', String(s.uniqueLocations)],
+                       ['Characters', String(s.uniqueChars)],
+                       ['Words', s.totalWords.toLocaleString()],
+                     ];
+                     return (
+                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, marginBottom: 20 }}>
+                         {stats.map(([label, value]) => (
+                           <div key={label}>
+                             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, color: 'var(--fg-dim)' }}>{label.toUpperCase()}</div>
+                             <div style={{ fontFamily: 'var(--display)', fontSize: 22, letterSpacing: 1, marginTop: 2 }}>{value}</div>
+                           </div>
+                         ))}
+                       </div>
+                     );
+                   })()}
+                   {scheduleSummary.byLocation.length > 0 && (
+                     <div>
+                       <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, color: 'var(--fg-dim)', marginBottom: 8 }}>BY LOCATION — MOST SCENES FIRST</div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                         {scheduleSummary.byLocation.slice(0, 6).map(g => (
+                           <div key={g.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                             <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#ddd', minWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.label}</span>
+                             <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                               <div style={{ width: `${Math.round((g.scenes.length / scheduleSummary.summary.totalScenes) * 100)}%`, height: '100%', background: '#6366f1' }} />
+                             </div>
+                             <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-muted)', minWidth: 96, textAlign: 'right' }}>{g.scenes.length} sc · ~{g.totalMinutes}m</span>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               )}
 
                {activeProject?.scenes && activeProject.scenes.length > 0 && (
                  <Stripboard scenes={activeProject.scenes as any[]} />
