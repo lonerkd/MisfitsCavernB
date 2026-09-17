@@ -71,6 +71,26 @@ async function loadProjects() {
 }
 
 
+/**
+ * Adopt the current Supabase session into the OS store, resolving the profile
+ * and the project list. Awaited by osSignIn/osSignUp so that, the moment the
+ * auth page navigates, the store is already authoritative.
+ *
+ * Without this the store only caught up via the onAuthStateChange listener —
+ * which is async and can land *after* the destination page has rendered. Any
+ * page behind useOSGate then saw status 'anon' and bounced straight back to
+ * /auth, which read to users as a sign-in loop.
+ */
+export async function osHydrateSession(): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  await resolveSessionUser(user.id, user.email ?? null);
+  await loadProjects();
+  syncProjectList();
+  syncActiveProject(osState().project.active?.id ?? null);
+  return true;
+}
+
 export function resetOS() {
   teardownSync();
   if (typeof window !== 'undefined') {

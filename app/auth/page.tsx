@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useToast } from '@/components/Toast';
-import { osSignIn as signIn, osSignUp as signUp } from '@/lib/os';
+import { osSignIn as signIn, osSignUp as signUp, useSession } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
 import { signInSchema, signUpSchema, firstIssue } from '@/lib/validation';
@@ -33,6 +33,27 @@ export default function AuthPage() {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
+
+  // ── Where to land after auth ─────────────────────────────────────
+  // middleware.ts sends gated visitors here as /auth?redirect=<path>. Honour it
+  // (same-origin absolute paths only — never a protocol-relative or /auth-loop
+  // target), instead of dumping everyone on /projects.
+  const { status } = useSession();
+  const [redirectTo, setRedirectTo] = useState('/projects');
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('redirect') || '';
+    const safe = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth');
+    if (safe) setRedirectTo(raw);
+  }, []);
+
+  // Navigate when the session is actually established in the OS store — not on a
+  // timer. osSignIn/osSignUp await osHydrateSession(), so by the time status is
+  // 'authed' the store already knows the user and the destination page's gate
+  // cannot bounce them back here. This also forwards someone who is already
+  // signed in and lands on /auth.
+  useEffect(() => {
+    if (status === 'authed') router.replace(redirectTo);
+  }, [status, redirectTo, router]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -70,13 +91,19 @@ export default function AuthPage() {
 
       if (mode === 'signin') {
         await withTimeout(signIn(form.email, form.password), 30000, 'Sign-in timed out.');
+        toast('Welcome back.', 'success');
       } else {
-        await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
+        const created = await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
+        // Email-confirmation deployments return a user but no session: stay put
+        // and tell them what to do rather than bouncing into a gated page.
+        if (created && !created.session) {
+          setError('Account created — check your email to confirm it, then sign in.');
+          return;
+        }
+        toast('Account created.', 'success');
       }
-
-      toast(mode === 'signin' ? 'Welcome back.' : 'Account created.', 'success');
-
-      setTimeout(() => router.push('/projects'), 600);
+      // No navigation here: the status effect above moves us once the OS store
+      // reports 'authed' (osSignIn/osSignUp already awaited hydration).
     } catch (err: any) {
       const code = err.code || '';
       const msg = err.message || '';

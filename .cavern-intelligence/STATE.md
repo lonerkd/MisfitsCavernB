@@ -1,6 +1,77 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Scheduler wired into the UI, unused deps dropped
+## Latest Session — Auth journey tested live; post-login redirect + hydration race fixed
+
+Branch: `chore/auth-journey-fix`. Verified: `next build` green (zero warnings),
+94 unit tests pass, and a **live end-to-end run** against the real Supabase
+project (3/3 passing).
+
+### What was actually tested (not assumed)
+
+Added `e2e/auth-journey.spec.ts` — opt-in (`E2E_LIVE_AUTH=1`) because it creates
+real accounts. It drives the real form and the real backend. Findings:
+
+- **Account creation works.** `/auth/v1/settings` reports
+  `disable_signup: false`, `mailer_autoconfirm: true`; signup returns a session
+  immediately, and the `on_auth_user_created` trigger creates the profile row
+  (verified the new row, username taken from signup metadata).
+- **RLS holds for a brand-new user**: 0 projects visible, and creating one
+  returns 201 with default project settings.
+- **All 10 authed surfaces opened for a fresh account** — `/projects`, `/studio`,
+  `/editor`, `/lounge`, `/soundtrack`, `/portfolio`, `/crew`, `/jobs`,
+  `/settings`, `/profile` (recorded in the run log; no surface bounced).
+- **Schema reconciliation confirmed against live**: `script_annotations` exists,
+  `scenes.elements` exists, `beats` + `marketing_campaigns` are gone.
+
+### The real bug that was found and fixed
+
+`middleware.ts` correctly sends gated visitors to `/auth?redirect=<path>`
+(observed: `/auth?redirect=%2Fstudio`), but the auth page **ignored it** and did
+`setTimeout(() => router.push('/projects'), 600)`. Two defects in one line:
+
+1. Deep-linked users (e.g. opening `/studio` while logged out) were always
+   dumped on `/projects` instead of their destination.
+2. The blind 600 ms timer raced the async session resolution. `useOSGate()` on
+   the destination reads the OS store, so if the store still said `anon` the
+   page bounced straight back to `/auth` — and `/auth` had no "already signed
+   in, move along" behaviour, so the user sat stranded on the sign-in form. That
+   is the "sometimes looped" report.
+
+Fixes:
+- `osHydrateSession()` (`lib/os/boot.ts`, exported through `lib/os`) resolves
+  profile + projects into the OS store. `osSignIn`/`osSignUp` now **await** it,
+  so the store is authoritative before any navigation happens.
+- `osSignUp` settles back to `anon` when signup returns no session (the
+  email-confirmation path), instead of stranding the store in `resolving`.
+- The auth page navigates on the store reporting `authed` — no timer — and
+  honours `?redirect=` (same-origin absolute paths only; `//` and `/auth`
+  rejected), so a signed-in visitor to `/auth` is also forwarded onward.
+- Signup with confirmation enabled now keeps the user on `/auth` and tells them
+  to confirm, rather than bouncing into a gated page.
+
+### Open finding — `profiles.is_admin` is world-readable (needs a decision)
+
+Reading `profiles` as a brand-new account returned **every** profile row,
+including accounts with `is_admin: true`. `profiles` has
+`SELECT USING (true)` (the public crew/showcase directory depends on that), but
+`is_admin` leaks admin identity and enables user enumeration.
+
+Not fixed here on purpose: a column-level `REVOKE SELECT (is_admin)` breaks the
+five `select('*')` call sites — including `lib/os/boot.ts`, which drives
+permissions — so the correct fix is either (a) `internal.is_admin(uid)` exposed
+to the client plus explicit column lists everywhere, or (b) moving the flag to a
+separate table readable only by admins/self. That is an RLS change with persona
+testing, so it wants its own PR.
+
+### Also
+
+- Test accounts created by the verification were **deleted** afterwards
+  (projects, then dependent rows — `scripts_last_edited_by_fkey` blocks the
+  user delete — then the auth users). 0 probe accounts remain. Note: ~8 older
+  `mctestuser*` / `logintest*` / `qa*` accounts from previous sessions are still
+  in the project; they were left alone as they are not ours to judge.
+
+## Prior Session — Scheduler wired into the UI, unused deps dropped
 
 Branch: `chore/scheduler-and-deps`. Verified: `next build` green with **zero
 lint warnings**, 94 unit tests pass.
