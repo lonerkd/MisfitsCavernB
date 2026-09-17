@@ -1,21 +1,11 @@
 import { supabase } from './client';
 import type { Json } from './database.types';
 import { parseScript } from '@/lib/scriptos/parser';
+import { ELEMENT_CATEGORIES, CATEGORY_PREFIX, aggregateElements, computeBudgetLines } from '@/lib/scriptos/breakdown';
+import type { ElementCategory, SceneElements } from '@/lib/scriptos/breakdown';
 
-export type ElementCategory = 'props' | 'wardrobe' | 'vehicles' | 'sfx' | 'vfx';
-export const ELEMENT_CATEGORIES: ElementCategory[] = ['props', 'wardrobe', 'vehicles', 'sfx', 'vfx'];
-
-const BUDGET_RATE: Record<ElementCategory, number> = { props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500 };
-const CATEGORY_LABEL: Record<ElementCategory, (n: number) => string> = {
-  props: n => `Props (${n} items)`,
-  wardrobe: n => `Wardrobe (${n} items)`,
-  vehicles: n => `Vehicles (${n})`,
-  sfx: n => `Special FX (${n})`,
-  vfx: n => `Visual FX (${n})`,
-};
-const CATEGORY_PREFIX: Record<ElementCategory, string> = { props: 'Props (', wardrobe: 'Wardrobe (', vehicles: 'Vehicles (', sfx: 'Special FX (', vfx: 'Visual FX (' };
-
-export interface SceneElements { props?: string[]; wardrobe?: string[]; vehicles?: string[]; sfx?: string[]; vfx?: string[] }
+export { ELEMENT_CATEGORIES };
+export type { ElementCategory, SceneElements };
 
 export async function syncSceneElementsFromScript(projectId: string, existingScenes: { id: string; scene_number: number }[]): Promise<Record<string, SceneElements>> {
   const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
@@ -47,24 +37,28 @@ export async function syncBudgetFromSceneElements(
   scenes: { elements?: SceneElements }[],
   existingBudget: { id: string; category: string }[],
 ): Promise<{ category: string; amount: number }[]> {
+  const aggregated = aggregateElements(scenes);
+  const lines = computeBudgetLines(aggregated);
   const synced: { category: string; amount: number }[] = [];
+
   for (const cat of ELEMENT_CATEGORIES) {
-    const set = new Set<string>();
-    scenes.forEach(s => (s.elements?.[cat] || []).forEach(v => set.add(v)));
-    const count = set.size;
     const existing = existingBudget.find(b => b.category.startsWith(CATEGORY_PREFIX[cat]));
-    if (count === 0) {
+    const line = lines.find(l => l.category.startsWith(CATEGORY_PREFIX[cat]));
+
+    if (!line) {
+      // Category has no elements: remove the stale line rather than leaving a
+      // phantom cost in the budget.
       if (existing) await supabase.from('budget_items').delete().eq('id', existing.id);
       continue;
     }
-    const category = CATEGORY_LABEL[cat](count);
-    const amount = count * BUDGET_RATE[cat];
+
     if (existing) {
-      await supabase.from('budget_items').update({ category, amount }).eq('id', existing.id);
+      await supabase.from('budget_items').update({ category: line.category, amount: line.amount }).eq('id', existing.id);
     } else {
-      await supabase.from('budget_items').insert({ project_id: projectId, category, amount });
+      await supabase.from('budget_items').insert({ project_id: projectId, category: line.category, amount: line.amount });
     }
-    synced.push({ category, amount });
+    synced.push({ category: line.category, amount: line.amount });
   }
+
   return synced;
 }

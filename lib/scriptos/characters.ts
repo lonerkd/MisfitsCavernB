@@ -22,7 +22,9 @@ export function analyzeCharacters(lines: ScriptLine[], scenes: Scene[]): Charact
 
   lines.forEach((line, i) => {
     if (line.type === 'character') {
-      const name = line.text.trim().replace(/\s*\(.*?\)\s*/g, '').trim();
+      // Prefer the parser's resolved name (handles '@MAYA' and 'STEEL (beer
+      // raised)' correctly) rather than stripping the raw text again.
+      const name = line.meta?.characterName || line.text.trim().replace(/^[@^]\s*/, '').replace(/\s*\(.*?\)\s*$/, '').trim();
       if (!name) return;
 
       currentCharacter = name;

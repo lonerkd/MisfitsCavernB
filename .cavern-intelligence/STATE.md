@@ -1,6 +1,31 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Offline foundation: PWA shell, delete tombstones, offline session
+## Latest Session — Script→suite bridge: real breakdown elements + budget core
+
+Branch: `chore/suite-bridge`. Verified: **114 tests pass** (4 new); `next build`
+green (zero warnings). No AI, no new dependencies, offline.
+
+The bridge (screenplay → breakdown → scenes → budget → casting) was wired but
+produced almost nothing: the parser's element tagger matched a tiny hardcoded
+vocab, so `parseScript(...).scenes[].elements` came back `{}` on a real scene.
+
+- **Deterministic element extraction** (`extractElementsFromAction`): reads the
+  ALL-CAPS runs in *action* text — the industry convention for tagging
+  production elements — skips stopwords and the scene's own character names,
+  categorises with the existing dictionaries, and defaults unmatched items to
+  the props bucket. Dialogue never feeds it. Wire into `extractScenes` (replaces
+  `tagElements`).
+- **Pure breakdown core** (`lib/scriptos/breakdown.ts`): `aggregateElements` +
+  `computeBudgetLines` (count × per-category rate). `lib/supabase/breakdown.ts`
+  is now a thin adapter over it (same exports, so callers are unchanged).
+- **`analyzeCharacters`** now uses the parser's resolved `characterName`, so
+  `@MAYA` and `STEEL (beer raised)` produce a clean character, not `@MAYA`.
+- `lib/scriptos/breakdown.test.ts` pins: categorisation (GLOCK→props,
+  TRENCHCOAT→wardrobe, GUNSHOT→sfx, SMOKE→vfx), name-leak rejection,
+  aggregation, budget synthesis (count × rate + no phantom "Vehicles (0)" line),
+  and the empty-script case.
+
+## Prior Session — Offline foundation: PWA shell, delete tombstones, offline session
 
 Branch: `chore/offline-foundation`. Verified: **110 tests pass**; `next build`
 green (zero warnings). No AI, no new dependencies.

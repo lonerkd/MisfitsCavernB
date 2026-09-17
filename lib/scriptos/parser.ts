@@ -643,7 +643,14 @@ export class ScriptParser {
       sc.wordCount = words;
 
       sc.eighths = Math.max(1, Math.round((words / 190) * 8));
-      sc.elements = this.tagElements(body);
+      // Production elements come from ACTION text only (never dialogue or
+      // character cues), and exclude the scene's own character names.
+      const actionText = lines
+        .slice(sc.startIndex, sc.endIndex + 1)
+        .filter(l => l.type === 'action' || l.type === 'shot')
+        .map(l => l.text)
+        .join(' ');
+      sc.elements = extractElementsFromAction(actionText, sc.characters);
     });
 
     return scenes;
@@ -680,18 +687,53 @@ export class ScriptParser {
     return 'UNKNOWN';
   }
 
-  private tagElements(text: string): { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] } {
-    const words = new Set(text.toUpperCase().split(/[^A-Z]+/).filter(Boolean));
-    const pick = (dict: Set<string>) => [...dict].filter(w => words.has(w));
-    return {
-      props: pick(KNOWLEDGE.PROPS),
-      wardrobe: pick(KNOWLEDGE.WARDROBE),
-      vehicles: pick(KNOWLEDGE.VEHICLES),
-      sfx: pick(KNOWLEDGE.SOUNDS),
-      vfx: pick(KNOWLEDGE.VFX),
-    };
-  }
+}
 
+// Production-element extraction (the script -> props/wardrobe/vehicles/sfx/vfx
+// breakdown). Deterministic, offline: reads the ALL-CAPS runs that are the
+// industry convention for tagging elements in action lines, skips common
+// stopwords and the scene's own character names, then categorises with the same
+// dictionaries the editor already uses. Anything unmatched defaults to props —
+// the catch-all bucket a real breakdown uses too.
+const BREAKDOWN_STOPWORDS = new Set([
+  'A', 'AN', 'THE', 'AND', 'BUT', 'OR', 'HE', 'SHE', 'IT', 'WE', 'THEY', 'THEM',
+  'YOU', 'I', 'IS', 'ARE', 'WAS', 'WERE', 'BE', 'TO', 'OF', 'IN', 'ON', 'AT',
+  'FOR', 'WITH', 'NOT', 'NO', 'YES', 'AS', 'BY', 'FROM', 'INTO', 'OVER', 'UNDER',
+  'DOES', 'DO', 'DID', 'HAS', 'HAVE', 'HAD', 'CAN', 'COULD', 'WOULD', 'WILL',
+  'SHALL', 'MAY', 'MIGHT', 'MUST', 'ALL', 'SOME', 'ANY', 'EVERY', 'NOW', 'THEN',
+  'HIS', 'HER', 'THEIR', 'OUR', 'MY', 'YOUR', 'JUST', 'ONLY', 'STILL', 'BACK',
+  'DOWN', 'UP', 'OUT', 'OFF', 'THIS', 'THAT', 'THOSE', 'THESE', 'THERE', 'HERE',
+  'WHEN', 'WHERE', 'WHO', 'WHAT', 'WHILE', 'AFTER', 'BEFORE', 'THROUGH', 'ACROSS',
+  'AGAINST', 'ALONG', 'AROUND', 'BETWEEN', 'BEYOND', 'SUDDENLY', 'FINALLY', 'SOON',
+  'LATER', 'SLOWLY', 'QUICKLY', 'ANGLE', 'POV', 'CLOSE', 'HOLD', 'DAY', 'NIGHT',
+  'INT', 'EXT', 'CONTINUOUS', 'MORE', 'TITLE', 'CARD', 'SUPER', 'CHYRON', 'INSERT',
+]);
+
+export function extractElementsFromAction(text: string, characters: string[] = []): { props: string[]; wardrobe: string[]; vehicles: string[]; sfx: string[]; vfx: string[] } {
+  const result = { props: [] as string[], wardrobe: [] as string[], vehicles: [] as string[], sfx: [] as string[], vfx: [] as string[] };
+  const seen = new Set<string>();
+  const knownNames = new Set(
+    characters.map(c => c.toUpperCase().replace(/[^A-Z0-9]/g, '').trim()).filter(Boolean),
+  );
+  const add = (cat: keyof typeof result, w: string) => {
+    const k = w.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    result[cat].push(w);
+  };
+  const tokens = text.match(/\b[A-Z][A-Z0-9'’.&/-]{1,}\b/g) || [];
+  for (const raw of tokens) {
+    const w = raw.replace(/[’']s$/i, '').trim();
+    if (w.length < 2) continue;
+    const upper = w.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!upper || BREAKDOWN_STOPWORDS.has(upper) || knownNames.has(upper)) continue;
+    if (KNOWLEDGE.SOUNDS.has(upper)) add('sfx', w);
+    else if (KNOWLEDGE.VFX.has(upper)) add('vfx', w);
+    else if (KNOWLEDGE.VEHICLES.has(upper)) add('vehicles', w);
+    else if (KNOWLEDGE.WARDROBE.has(upper)) add('wardrobe', w);
+    else add('props', w);
+  }
+  return result;
 }
 
 export function parseScript(text: string, format: ScriptFormat = 'screenplay', learnedNames?: Set<string>): ParseResult {
