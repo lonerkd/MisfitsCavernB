@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T01:40:33.592Z",
+  "last_synchronized": "2026-09-17T02:54:51.817Z",
   "stats": {
-    "totalFiles": 202,
-    "totalSize": 1991958,
+    "totalFiles": 203,
+    "totalSize": 2003016,
     "byExtension": {
       ".json": 8,
       ".md": 6,
       ".tsx": 92,
-      ".ts": 86,
+      ".ts": 87,
       ".js": 6,
       ".sql": 4
     }
@@ -22,6 +22,7 @@
         "lib/scriptos/blocks.ts",
         "lib/scriptos/characters.ts",
         "lib/scriptos/export.ts",
+        "lib/scriptos/fountain.test.ts",
         "lib/scriptos/import.ts",
         "lib/scriptos/normalize.test.ts",
         "lib/scriptos/normalize.ts",
@@ -267,7 +268,7 @@
     {
       "path": "app/auth/page.tsx",
       "size": 15114,
-      "last_modified": "2026-09-17T01:31:07.629Z"
+      "last_modified": "2026-09-17T01:47:36.123Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -511,8 +512,8 @@
     },
     {
       "path": "components/editor/editorPageParts.tsx",
-      "size": 6132,
-      "last_modified": "2026-09-15T00:00:09.928Z"
+      "size": 7751,
+      "last_modified": "2026-09-17T02:51:50.998Z"
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
@@ -702,7 +703,7 @@
     {
       "path": "e2e/auth-journey.spec.ts",
       "size": 5499,
-      "last_modified": "2026-09-17T01:34:54.526Z"
+      "last_modified": "2026-09-17T01:47:36.124Z"
     },
     {
       "path": "e2e/auth-validation.spec.ts",
@@ -782,12 +783,12 @@
     {
       "path": "lib/os/actions.ts",
       "size": 6508,
-      "last_modified": "2026-09-17T01:30:47.439Z"
+      "last_modified": "2026-09-17T01:47:36.124Z"
     },
     {
       "path": "lib/os/boot.ts",
       "size": 5248,
-      "last_modified": "2026-09-17T01:30:26.216Z"
+      "last_modified": "2026-09-17T01:47:36.127Z"
     },
     {
       "path": "lib/os/guards.tsx",
@@ -807,7 +808,7 @@
     {
       "path": "lib/os/index.ts",
       "size": 1766,
-      "last_modified": "2026-09-17T01:30:26.258Z"
+      "last_modified": "2026-09-17T01:47:36.128Z"
     },
     {
       "path": "lib/os/notify.ts",
@@ -885,6 +886,11 @@
       "last_modified": "2026-09-15T00:00:10.088Z"
     },
     {
+      "path": "lib/scriptos/fountain.test.ts",
+      "size": 4314,
+      "last_modified": "2026-09-17T02:49:08.399Z"
+    },
+    {
       "path": "lib/scriptos/import.ts",
       "size": 3089,
       "last_modified": "2026-09-15T00:00:10.090Z"
@@ -906,8 +912,8 @@
     },
     {
       "path": "lib/scriptos/parser.ts",
-      "size": 23783,
-      "last_modified": "2026-09-15T00:00:10.157Z"
+      "size": 28807,
+      "last_modified": "2026-09-17T02:52:36.863Z"
     },
     {
       "path": "lib/scriptos/pdfImport.ts",
@@ -1182,7 +1188,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-17T01:36:47.368Z"
+      "last_modified": "2026-09-17T01:49:23.140Z"
     },
     {
       "path": "tsconfig.json",
@@ -1191,8 +1197,8 @@
     },
     {
       "path": "types/screenplay.ts",
-      "size": 2172,
-      "last_modified": "2026-09-15T00:00:10.274Z"
+      "size": 2273,
+      "last_modified": "2026-09-17T02:47:36.397Z"
     },
     {
       "path": "vitest.config.ts",

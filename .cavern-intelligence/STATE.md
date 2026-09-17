@@ -1,6 +1,42 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Auth journey tested live; post-login redirect + hydration race fixed
+## Latest Session — Fountain conformance layer on the parser (Stage 1, offline, no AI)
+
+Branch: `chore/fountain-conformance`. Verified: `next build` green (zero
+warnings), **106 unit tests pass** (12 new Fountain conformance tests).
+
+- Ran a Fountain torture-test through the real parser and fixed **15 concrete
+  correctness defects**, all deterministic/offline. The big one: a character cue
+  with an inline parenthetical — `STEEL (beer raised)` — was misread as `action`
+  because `isCaps()` tested the *whole line* instead of the name, silently
+  corrupting dialogue attribution **and** scene cast lists. Now: name-part
+  evaluation, correct `characterName`, cast lists populated.
+- Added a **spec layer (`preClassify`)** that resolves unambiguous Fountain
+  syntax *before* the scored heuristic, so forced elements can't be overridden:
+  forced scene heading (`.`), forced character (`@`), forced action (`!`),
+  forced transition (`>`), centered (`> <`), lyrics (`~`), synopses (`=`),
+  sections (`#`), page breaks (`===`), notes (`[[ ]]`), and **boneyard (`/* */`)**.
+- Scene numbers `#1#` now extracted; forced-slug heading strips the leading `.`.
+- Dual dialogue: the `^` caret is typed `dual` (not a bogus dialogue line) and
+  marks both the preceding and following blocks `isDualDialogue`.
+- Added `LineType` members: `note | lyric | section | synopsis | dual |
+  pagebreak | boneyard`. Preview now renders them honestly (boneyard struck,
+  notes muted, sections bold, centered/lyric/synopsis styled, `^` hidden,
+  page break shown as a gap) — no raw `#`/`===`/`/*`/`^` markup in preview.
+- Boneyard is **typed, not discarded** (lossless round-trip: every source line
+  still maps to one parsed line); fountains that drop it are a *render/export*
+  concern, which is the next increment (serializer).
+- `lib/scriptos/fountain.test.ts` pins all of it (source-losslessness, scene
+  numbers, forced markers, cast lists, dual dialogue, boneyard/notes/sections).
+
+### What "comparable to Fountain" still needs (not done)
+
+`emit.ts` (a real serializer — the Fountain export is still a raw dump) and the
+round-trip property harness; emphasis-mark rendering in the *write* surface is
+rich-text work and stays for later. Then the suite bridge (breakdown → schedule
+→ budget) re-hydrates from the now-correct scene/element data.
+
+## Prior Session — Auth journey tested live; post-login redirect + hydration race fixed
 
 Branch: `chore/auth-journey-fix`. Verified: `next build` green (zero warnings),
 94 unit tests pass, and a **live end-to-end run** against the real Supabase
