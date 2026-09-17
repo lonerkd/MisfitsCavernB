@@ -14,11 +14,33 @@ export interface StoredScript {
   syncPending?: boolean;
 }
 
+// ── Offline deletes (tombstones) ─────────────────────────────────────────────
+// A local list of script ids deleted while offline, replayed against the server
+// on the next sync so a delete never resurrects on reconnect — and so deleted
+// content never lingers on the server.
+
+const TOMBSTONE_KEY = 'mc_deleted_scripts';
+
+async function getDeletedIds(): Promise<string[]> {
+  try { return (await get<string[]>(TOMBSTONE_KEY)) || []; } catch { return []; }
+}
+
+async function setDeletedIds(ids: string[]): Promise<void> {
+  try { await set(TOMBSTONE_KEY, ids); } catch { /* storage unavailable */ }
+}
+
 // ── Offline Queue / Sync Manager ─────────────────────────────────────────────
 
 export async function syncPendingScripts() {
   const user = await awaitOSUser();
   if (!user) return;
+
+  // Replay offline deletes first — a delete wins over any queued upsert.
+  const tombstoned = await getDeletedIds();
+  for (const sid of tombstoned) {
+    const { error } = await supabase.from('scripts').delete().eq('id', sid);
+    if (!error) await setDeletedIds((await getDeletedIds()).filter((x) => x !== sid));
+  }
 
   const allKeys = await keys();
   for (const k of allKeys) {
@@ -65,6 +87,7 @@ if (typeof window !== 'undefined') {
 export async function getAllScripts(projectId?: string): Promise<StoredScript[]> {
   const user = await awaitOSUser();
   if (!user) return [];
+  const deleted = new Set(await getDeletedIds());
 
   let query = supabase
     .from('scripts')
@@ -86,7 +109,7 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
     for (const k of allKeys) {
       if (typeof k === 'string' && k.startsWith('script_')) {
         const script = await get<StoredScript>(k);
-        if (script && script.user_id === user.id && (!projectId || script.project_id === projectId)) {
+        if (script && !deleted.has(script.id) && script.user_id === user.id && (!projectId || script.project_id === projectId)) {
           localScripts.push(script);
         }
       }
@@ -94,7 +117,9 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
     return localScripts.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }
 
-  const scripts: StoredScript[] = data.map(s => ({
+  const scripts: StoredScript[] = data
+    .filter((s: any) => !deleted.has(s.id))
+    .map((s: any) => ({
     id: s.id,
     title: s.title,
     content: s.content ?? '',
@@ -217,8 +242,13 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 
 export async function deleteScript(id: string): Promise<boolean> {
   await del(`script_${id}`);
+  // Record the intent so the server-side delete is replayed on next sync.
+  const tombstones = await getDeletedIds();
+  if (!tombstones.includes(id)) await setDeletedIds([...tombstones, id]);
+
   if (navigator.onLine) {
     const { error } = await supabase.from('scripts').delete().eq('id', id);
+    if (!error) await setDeletedIds((await getDeletedIds()).filter((x) => x !== id));
     return !error;
   }
 

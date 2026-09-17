@@ -1,15 +1,15 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T03:25:00.896Z",
+  "last_synchronized": "2026-09-17T03:49:59.383Z",
   "stats": {
-    "totalFiles": 205,
-    "totalSize": 2011268,
+    "totalFiles": 207,
+    "totalSize": 2017768,
     "byExtension": {
       ".json": 8,
       ".md": 6,
-      ".tsx": 92,
+      ".tsx": 93,
       ".ts": 89,
-      ".js": 6,
+      ".js": 7,
       ".sql": 4
     }
   },
@@ -155,6 +155,7 @@
         "components/NotificationBell.tsx",
         "components/ParticleBackground.tsx",
         "components/SectionLabel.tsx",
+        "components/ServiceWorkerRegister.tsx",
         "components/ShortcutsOverlay.tsx",
         "components/studio/AssetLibrary.tsx",
         "components/studio/CastingBoard.tsx",
@@ -300,7 +301,7 @@
     {
       "path": "app/editor/page.tsx",
       "size": 68136,
-      "last_modified": "2026-09-17T03:22:48.067Z"
+      "last_modified": "2026-09-17T03:31:13.690Z"
     },
     {
       "path": "app/error.tsx",
@@ -319,8 +320,8 @@
     },
     {
       "path": "app/layout.tsx",
-      "size": 2089,
-      "last_modified": "2026-09-15T00:00:09.796Z"
+      "size": 2345,
+      "last_modified": "2026-09-17T03:47:09.081Z"
     },
     {
       "path": "app/loading.tsx",
@@ -449,8 +450,8 @@
     },
     {
       "path": "components/ClientShell.tsx",
-      "size": 749,
-      "last_modified": "2026-09-15T00:00:09.838Z"
+      "size": 861,
+      "last_modified": "2026-09-17T03:46:53.935Z"
     },
     {
       "path": "components/CommandPalette.tsx",
@@ -490,7 +491,7 @@
     {
       "path": "components/editor/editorCtx.ts",
       "size": 1313,
-      "last_modified": "2026-09-17T03:22:48.651Z"
+      "last_modified": "2026-09-17T03:31:13.713Z"
     },
     {
       "path": "components/editor/EditorErrorBoundary.tsx",
@@ -500,7 +501,7 @@
     {
       "path": "components/editor/EditorHeader.tsx",
       "size": 16083,
-      "last_modified": "2026-09-17T03:23:07.474Z"
+      "last_modified": "2026-09-17T03:31:13.693Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -571,6 +572,11 @@
       "path": "components/SectionLabel.tsx",
       "size": 1488,
       "last_modified": "2026-04-29T08:24:05.124Z"
+    },
+    {
+      "path": "components/ServiceWorkerRegister.tsx",
+      "size": 611,
+      "last_modified": "2026-09-17T03:46:53.855Z"
     },
     {
       "path": "components/ShortcutsOverlay.tsx",
@@ -789,8 +795,8 @@
     },
     {
       "path": "lib/os/boot.ts",
-      "size": 5248,
-      "last_modified": "2026-09-17T01:47:36.127Z"
+      "size": 6631,
+      "last_modified": "2026-09-17T03:48:10.480Z"
     },
     {
       "path": "lib/os/guards.tsx",
@@ -885,7 +891,7 @@
     {
       "path": "lib/scriptos/export.ts",
       "size": 9311,
-      "last_modified": "2026-09-17T03:22:37.060Z"
+      "last_modified": "2026-09-17T03:31:13.723Z"
     },
     {
       "path": "lib/scriptos/fountain-export.ts",
@@ -954,8 +960,8 @@
     },
     {
       "path": "lib/scriptos/storage.ts",
-      "size": 7584,
-      "last_modified": "2026-09-15T00:00:10.189Z"
+      "size": 9051,
+      "last_modified": "2026-09-17T03:47:41.691Z"
     },
     {
       "path": "lib/scriptos/sync.ts",
@@ -1151,6 +1157,11 @@
       "path": "postcss.config.js",
       "size": 89,
       "last_modified": "2026-04-29T08:02:41.252Z"
+    },
+    {
+      "path": "public/sw.js",
+      "size": 2671,
+      "last_modified": "2026-09-17T03:46:53.782Z"
     },
     {
       "path": "README.md",
