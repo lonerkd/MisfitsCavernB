@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T03:49:59.383Z",
+  "last_synchronized": "2026-09-17T04:10:53.618Z",
   "stats": {
-    "totalFiles": 207,
-    "totalSize": 2017768,
+    "totalFiles": 209,
+    "totalSize": 2025105,
     "byExtension": {
       ".json": 8,
       ".md": 6,
       ".tsx": 93,
-      ".ts": 89,
+      ".ts": 91,
       ".js": 7,
       ".sql": 4
     }
@@ -20,6 +20,8 @@
       "files": [
         "lib/scriptos/bible.ts",
         "lib/scriptos/blocks.ts",
+        "lib/scriptos/breakdown.test.ts",
+        "lib/scriptos/breakdown.ts",
         "lib/scriptos/characters.ts",
         "lib/scriptos/export.ts",
         "lib/scriptos/fountain-export.ts",
@@ -321,7 +323,7 @@
     {
       "path": "app/layout.tsx",
       "size": 2345,
-      "last_modified": "2026-09-17T03:47:09.081Z"
+      "last_modified": "2026-09-17T03:55:39.174Z"
     },
     {
       "path": "app/loading.tsx",
@@ -451,7 +453,7 @@
     {
       "path": "components/ClientShell.tsx",
       "size": 861,
-      "last_modified": "2026-09-17T03:46:53.935Z"
+      "last_modified": "2026-09-17T03:55:39.176Z"
     },
     {
       "path": "components/CommandPalette.tsx",
@@ -576,7 +578,7 @@
     {
       "path": "components/ServiceWorkerRegister.tsx",
       "size": 611,
-      "last_modified": "2026-09-17T03:46:53.855Z"
+      "last_modified": "2026-09-17T03:55:39.177Z"
     },
     {
       "path": "components/ShortcutsOverlay.tsx",
@@ -796,7 +798,7 @@
     {
       "path": "lib/os/boot.ts",
       "size": 6631,
-      "last_modified": "2026-09-17T03:48:10.480Z"
+      "last_modified": "2026-09-17T03:55:39.180Z"
     },
     {
       "path": "lib/os/guards.tsx",
@@ -884,9 +886,19 @@
       "last_modified": "2026-09-15T00:00:10.082Z"
     },
     {
+      "path": "lib/scriptos/breakdown.test.ts",
+      "size": 2240,
+      "last_modified": "2026-09-17T04:08:45.278Z"
+    },
+    {
+      "path": "lib/scriptos/breakdown.ts",
+      "size": 2768,
+      "last_modified": "2026-09-17T04:05:40.338Z"
+    },
+    {
       "path": "lib/scriptos/characters.ts",
-      "size": 2750,
-      "last_modified": "2026-09-15T00:00:10.084Z"
+      "size": 2952,
+      "last_modified": "2026-09-17T04:05:52.935Z"
     },
     {
       "path": "lib/scriptos/export.ts",
@@ -930,8 +942,8 @@
     },
     {
       "path": "lib/scriptos/parser.ts",
-      "size": 28807,
-      "last_modified": "2026-09-17T03:01:36.536Z"
+      "size": 31375,
+      "last_modified": "2026-09-17T04:04:39.449Z"
     },
     {
       "path": "lib/scriptos/pdfImport.ts",
@@ -961,7 +973,7 @@
     {
       "path": "lib/scriptos/storage.ts",
       "size": 9051,
-      "last_modified": "2026-09-17T03:47:41.691Z"
+      "last_modified": "2026-09-17T03:55:39.181Z"
     },
     {
       "path": "lib/scriptos/sync.ts",
@@ -1020,8 +1032,8 @@
     },
     {
       "path": "lib/supabase/breakdown.ts",
-      "size": 3433,
-      "last_modified": "2026-09-15T00:00:10.228Z"
+      "size": 2992,
+      "last_modified": "2026-09-17T04:05:13.615Z"
     },
     {
       "path": "lib/supabase/casting.ts",
@@ -1161,7 +1173,7 @@
     {
       "path": "public/sw.js",
       "size": 2671,
-      "last_modified": "2026-09-17T03:46:53.782Z"
+      "last_modified": "2026-09-17T03:55:39.184Z"
     },
     {
       "path": "README.md",
