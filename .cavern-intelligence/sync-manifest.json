@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T03:10:15.807Z",
+  "last_synchronized": "2026-09-17T03:25:00.896Z",
   "stats": {
     "totalFiles": 205,
-    "totalSize": 2009213,
+    "totalSize": 2011268,
     "byExtension": {
       ".json": 8,
       ".md": 6,
@@ -299,8 +299,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 67473,
-      "last_modified": "2026-09-16T23:44:29.257Z"
+      "size": 68136,
+      "last_modified": "2026-09-17T03:22:48.067Z"
     },
     {
       "path": "app/error.tsx",
@@ -489,8 +489,8 @@
     },
     {
       "path": "components/editor/editorCtx.ts",
-      "size": 1288,
-      "last_modified": "2026-09-15T00:00:09.927Z"
+      "size": 1313,
+      "last_modified": "2026-09-17T03:22:48.651Z"
     },
     {
       "path": "components/editor/EditorErrorBoundary.tsx",
@@ -499,8 +499,8 @@
     },
     {
       "path": "components/editor/EditorHeader.tsx",
-      "size": 15083,
-      "last_modified": "2026-09-15T00:00:09.913Z"
+      "size": 16083,
+      "last_modified": "2026-09-17T03:23:07.474Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -884,18 +884,18 @@
     },
     {
       "path": "lib/scriptos/export.ts",
-      "size": 8944,
-      "last_modified": "2026-09-15T00:00:10.088Z"
+      "size": 9311,
+      "last_modified": "2026-09-17T03:22:37.060Z"
     },
     {
       "path": "lib/scriptos/fountain-export.ts",
       "size": 3338,
-      "last_modified": "2026-09-17T03:08:03.220Z"
+      "last_modified": "2026-09-17T03:15:53.721Z"
     },
     {
       "path": "lib/scriptos/fountain-roundtrip.test.ts",
       "size": 2859,
-      "last_modified": "2026-09-17T03:08:28.379Z"
+      "last_modified": "2026-09-17T03:15:53.723Z"
     },
     {
       "path": "lib/scriptos/fountain.test.ts",

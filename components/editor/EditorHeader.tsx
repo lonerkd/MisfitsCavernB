@@ -49,7 +49,7 @@ import {
 import type { EditorCtx } from './editorCtx';
 
 export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
-  const { activeProject, activeView, currentScript, handleExport, handleLockRevision, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
+  const { activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
   return (
         <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
@@ -236,6 +236,17 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                       .{fmt.toUpperCase()}
                     </button>
                   ))}
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 6px' }} />
+                  <button onClick={() => { handleNormalize(); setShowFormatMenu(false); }} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+                    padding: '9px 14px', background: 'transparent', border: 'none',
+                    color: 'var(--fg-muted)', fontSize: 10, cursor: 'pointer', borderRadius: 7,
+                    textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--mono)', fontWeight: 500,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(215,52,11,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>
+                    Normalize formatting
+                  </button>
                 </div>
               )}
             </div>

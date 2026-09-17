@@ -1,6 +1,19 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Fountain serializer + round-trip proof (Stage 1 complete)
+## Latest Session — ScriptOS: Normalize formatting + canonical Fountain export
+
+Branch: `chore/scriptos-normalize`. Verified: **110 tests pass**; `next build`
+green (zero warnings). Offline, no AI.
+
+- `exportScriptAsText(…, 'fountain')` now downloads a **canonically-formatted**
+  Fountain document (parse → serialize) instead of a raw content dump; `.txt`
+  stays the author's source verbatim.
+- Added a **"Normalize formatting"** action to the editor's Export dropdown. It
+  runs `canonicalizeFountain(content)`, commits a history entry first so it is a
+  single undo away, and toasts when the document is already canonical. Exposed
+  through `EditorCtx.handleNormalize`.
+
+## Prior Session — Fountain serializer + round-trip proof (Stage 1 complete)
 
 Branch: `chore/fountain-serializer`. Verified: **110 unit tests pass** (4 new
 round-trip tests), `next build` green (zero warnings). Offline, no AI.
