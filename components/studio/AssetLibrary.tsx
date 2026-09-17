@@ -11,6 +11,7 @@ import { notify } from '@/lib/supabase/notifications';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import { useEffect } from 'react';
 import { addStudioAsset, uploadStudioFile } from '@/lib/supabase/studio';
+import { logActivity } from '@/lib/supabase/activity';
 import { List as Download } from 'lucide-react';
 import { awaitOSUser } from '@/lib/os';
 import { Asset, TYPE_ICONS, TYPE_COLORS } from './constants';
@@ -188,7 +189,7 @@ export function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { i
         finalUrl = await uploadStudioFile(filePath, file);
       }
 
-      await addStudioAsset({
+      const created = await addStudioAsset({
         board_id: boardId,
         user_id: userId,
         title: title || (file ? file.name : 'Untitled Asset'),
@@ -196,6 +197,7 @@ export function IntakeModal({ isOpen, onClose, boardId, userId, onSuccess }: { i
         asset_type: type,
         category: category
       });
+      logActivity(`added the asset "${title || (file ? file.name : 'Untitled')}"`, 'asset', created?.id || boardId);
       onSuccess();
       onClose();
 

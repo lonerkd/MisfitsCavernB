@@ -16,6 +16,7 @@ import { usePillStage } from '@/lib/context/PillContext';
 import { useProject } from '@/lib/os';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
+import { logActivity } from '@/lib/supabase/activity';
 import { awaitOSUser } from '@/lib/os';
 
 const ROLES = [
@@ -71,6 +72,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       return;
     }
     if (data) logAuditAction(userId, 'job_created', 'job', data.id, { title: form.title, role: form.role });
+    if (data) logActivity(`opened the position "${form.title}"`, 'job', data.id);
     onCreated(); onClose();
   };
 

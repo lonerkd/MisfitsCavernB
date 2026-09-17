@@ -377,7 +377,7 @@ export default function EditorPage() {
       setLines(result.lines);
       if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
-      setLintIssues(validateScript(result.lines, content));
+      setLintIssues(validateScript(result.lines, content, result.scenes, result.characters));
     } else {
       setLines([]);
       setElements({});

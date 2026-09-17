@@ -1,7 +1,6 @@
 
 
-import type { ScriptLine } from '@/types/screenplay';
-import { buildAST, ScriptAST, ASTDialogueBlock, ASTActionBeat } from '../advanced-parser';
+import type { ScriptLine, Scene, Character } from '@/types/screenplay';
 
 export interface LintIssue {
   line: number;
@@ -10,7 +9,7 @@ export interface LintIssue {
   rule: string;
 }
 
-export function validateScript(lines: ScriptLine[], content: string): LintIssue[] {
+export function validateScript(lines: ScriptLine[], content: string, scenes: Scene[] = [], characters: Character[] = []): LintIssue[] {
   const issues: LintIssue[] = [];
   const rawLines = content.split('\n');
   let hasSlug = false;
@@ -73,77 +72,78 @@ export function validateScript(lines: ScriptLine[], content: string): LintIssue[
     issues.push({ line: 1, type: 'error', message: 'No scene headings detected. Use INT. or EXT. to start scenes.', rule: 'no-scenes' });
   }
 
-  const ast = buildAST(lines);
+  // ── Structure checks from the shared parser (single source of truth) ──
+  // These used to run through a second, private parser (lib/advanced-parser.ts)
+  // that disagreed with what the editor renders. Now they read the same
+  // scenes/characters the editor and Studio use.
+  const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-  if (ast.scenes.length > 0) {
+  if (scenes.length > 0) {
     let runningWords = 0;
+    const totalWords = scenes.reduce((n, s) => n + (s.wordCount || 0), 0);
+    const cast = new Set(characters.map((c) => norm(c.name)).filter(Boolean));
     const seenCharacters = new Set<string>();
 
-    ast.scenes.forEach((scene, sceneIndex) => {
+    // A character named in action text counts as already "introduced".
+    for (const line of lines) {
+      if (line.type === 'action') {
+        const upper = line.text.toUpperCase();
+        cast.forEach((name) => {
+          if (name.length > 2 && upper.includes(name)) seenCharacters.add(name);
+        });
+      }
+    }
 
-      if (scene.wordCount > 750) {
+    scenes.forEach((scene, sceneIndex) => {
+      if (scene.wordCount && scene.wordCount > 750) {
         issues.push({
           line: scene.startIndex + 1,
           type: 'info',
           message: `Cinematic Polish: This scene is very dense (~${scene.wordCount} words). Consider breaking it up or ensuring pacing remains high.`,
-          rule: 'scene-length-ast'
+          rule: 'scene-length',
         });
       }
 
-      scene.children.forEach(child => {
-        if (child.type === 'DIALOGUE_BLOCK') {
-          const charName = (child as ASTDialogueBlock).character;
-
-          if (!seenCharacters.has(charName)) {
-            seenCharacters.add(charName);
-
-            if (!charName.includes('V.O.') && !charName.includes('O.S.')) {
-
-              issues.push({
-                line: child.startIndex + 1,
-                type: 'info',
-                message: `Character "${charName}" speaks for the first time here. Ensure they are properly introduced in action lines prior to this.`,
-                rule: 'character-intro-ast'
-              });
-            }
-          }
-
-          if (child.wordCount > 100) {
+      // First-speech introduction + monologue detection, from the shared lines.
+      let blockWords = 0;
+      for (const line of lines.slice(scene.startIndex, scene.endIndex + 1)) {
+        if (line.type === 'character') {
+          blockWords = 0;
+          const name = line.meta?.characterName || norm(line.text);
+          if (name && !seenCharacters.has(name) && !name.includes('V.O.') && !name.includes('O.S.')) {
+            seenCharacters.add(name);
             issues.push({
-              line: child.startIndex + 1,
+              line: line.index + 1,
               type: 'info',
-              message: `Monologue detected (${child.wordCount} words). Ensure this lengthy speech is structurally earned.`,
-              rule: 'dialogue-length-ast'
+              message: `Character "${name}" speaks for the first time here. Ensure they are properly introduced in action lines prior to this.`,
+              rule: 'character-intro',
             });
           }
-        } else if (child.type === 'ACTION_BEAT') {
-
-          const actionBeat = child as ASTActionBeat;
-          const actionText = actionBeat.text.toUpperCase();
-          ast.globalCharacters.forEach((_, charName) => {
-            const baseName = charName.replace(/\s*\(.*\)/, '').trim();
-            if (baseName.length > 2 && actionText.includes(baseName)) {
-              seenCharacters.add(charName);
-            }
-          });
-        }
-      });
-
-      runningWords += scene.wordCount;
-
-      if (ast.totalWords > 5000) {
-        const percentProgress = runningWords / ast.totalWords;
-
-        if (percentProgress > 0.35 && sceneIndex < ast.scenes.length * 0.2) {
-          if (scene.wordCount > 500) {
-
-             issues.push({
-               line: scene.startIndex + 1,
-               type: 'warning',
-               message: `Structural Pacing: Act I seems to be dragging. You are 35% through the script's word count but still in early scenes.`,
-               rule: 'act1-pacing-ast'
-             });
+        } else if (line.type === 'parenthetical') {
+          blockWords = 0;
+        } else if (line.type === 'dialogue') {
+          blockWords += line.text.split(/\s+/).filter(Boolean).length;
+          if (blockWords > 100) {
+            issues.push({
+              line: line.index + 1,
+              type: 'info',
+              message: `Monologue detected (${blockWords} words). Ensure this lengthy speech is structurally earned.`,
+              rule: 'dialogue-length',
+            });
           }
+        }
+      }
+
+      runningWords += scene.wordCount || 0;
+      if (totalWords > 5000) {
+        const percentProgress = runningWords / totalWords;
+        if (percentProgress > 0.35 && sceneIndex < scenes.length * 0.2 && (scene.wordCount || 0) > 500) {
+          issues.push({
+            line: scene.startIndex + 1,
+            type: 'warning',
+            message: "Structural Pacing: Act I seems to be dragging. You are 35% through the script's word count but still in early scenes.",
+            rule: 'act1-pacing',
+          });
         }
       }
     });

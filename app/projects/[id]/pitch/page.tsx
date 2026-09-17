@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { parseScript } from '@/lib/scriptos/parser';
+import { logActivity } from '@/lib/supabase/activity';
 import { awaitOSUser } from '@/lib/os';
 import {
   createPortfolioProject,
@@ -112,6 +113,7 @@ export default function PitchBoardPage() {
             source_project_id: projectId,
           });
           pid = created.id; token = created.share_token ?? '';
+          logActivity(`published a pitch board for "${proj.title}"`, 'portfolio', pid);
         }
         if (!alive) return;
         setPortfolioId(pid); setShareToken(token);

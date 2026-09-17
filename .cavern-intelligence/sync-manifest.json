@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T05:10:17.648Z",
+  "last_synchronized": "2026-09-17T07:07:14.614Z",
   "stats": {
-    "totalFiles": 218,
-    "totalSize": 2039681,
+    "totalFiles": 219,
+    "totalSize": 2048144,
     "byExtension": {
       ".json": 8,
       ".md": 6,
-      ".tsx": 100,
-      ".ts": 93,
+      ".tsx": 101,
+      ".ts": 92,
       ".js": 7,
-      ".sql": 4
+      ".sql": 5
     }
   },
   "modules": {
@@ -126,6 +126,7 @@
         "app/s/[token]/page.tsx",
         "app/settings/loading.tsx",
         "app/settings/page.tsx",
+        "app/shared/[token]/page.tsx",
         "app/showcase/page.tsx",
         "app/soundtrack/loading.tsx",
         "app/soundtrack/page.tsx",
@@ -199,6 +200,7 @@
         "supabase-migration-cavern-suite-redesign.sql",
         "supabase-migration-portfolio-blocks.sql",
         "supabase-migration-project-channels-system.sql",
+        "supabase-migration-project-visibility.sql",
         "supabase-schema.sql"
       ]
     }
@@ -292,7 +294,7 @@
     {
       "path": "app/crew/loading.tsx",
       "size": 723,
-      "last_modified": "2026-09-17T05:05:51.056Z"
+      "last_modified": "2026-09-17T05:28:10.319Z"
     },
     {
       "path": "app/crew/page.tsx",
@@ -316,8 +318,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 68136,
-      "last_modified": "2026-09-17T03:31:13.690Z"
+      "size": 68170,
+      "last_modified": "2026-09-17T06:58:29.065Z"
     },
     {
       "path": "app/error.tsx",
@@ -327,12 +329,12 @@
     {
       "path": "app/jobs/loading.tsx",
       "size": 684,
-      "last_modified": "2026-09-17T05:05:51.057Z"
+      "last_modified": "2026-09-17T05:28:10.320Z"
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 34756,
-      "last_modified": "2026-09-15T00:00:09.794Z"
+      "size": 34895,
+      "last_modified": "2026-09-17T06:55:51.542Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
@@ -382,7 +384,7 @@
     {
       "path": "app/portfolio/loading.tsx",
       "size": 735,
-      "last_modified": "2026-09-17T05:05:51.057Z"
+      "last_modified": "2026-09-17T05:28:10.321Z"
     },
     {
       "path": "app/portfolio/manage/page.tsx",
@@ -397,7 +399,7 @@
     {
       "path": "app/profile/loading.tsx",
       "size": 1069,
-      "last_modified": "2026-09-17T05:05:51.058Z"
+      "last_modified": "2026-09-17T05:28:10.321Z"
     },
     {
       "path": "app/profile/page.tsx",
@@ -421,13 +423,13 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 58661,
-      "last_modified": "2026-09-15T00:00:09.813Z"
+      "size": 61965,
+      "last_modified": "2026-09-17T07:01:09.939Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
-      "size": 31227,
-      "last_modified": "2026-09-15T00:00:09.814Z"
+      "size": 31372,
+      "last_modified": "2026-09-17T06:56:20.447Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -437,12 +439,17 @@
     {
       "path": "app/settings/loading.tsx",
       "size": 687,
-      "last_modified": "2026-09-17T05:05:51.059Z"
+      "last_modified": "2026-09-17T05:28:10.322Z"
     },
     {
       "path": "app/settings/page.tsx",
       "size": 19442,
       "last_modified": "2026-09-15T00:00:09.819Z"
+    },
+    {
+      "path": "app/shared/[token]/page.tsx",
+      "size": 5212,
+      "last_modified": "2026-09-17T07:03:21.521Z"
     },
     {
       "path": "app/showcase/page.tsx",
@@ -452,7 +459,7 @@
     {
       "path": "app/soundtrack/loading.tsx",
       "size": 676,
-      "last_modified": "2026-09-17T05:05:51.060Z"
+      "last_modified": "2026-09-17T05:28:10.324Z"
     },
     {
       "path": "app/soundtrack/page.tsx",
@@ -467,12 +474,12 @@
     {
       "path": "app/studio/loading.tsx",
       "size": 1545,
-      "last_modified": "2026-09-17T05:05:51.060Z"
+      "last_modified": "2026-09-17T05:28:10.324Z"
     },
     {
       "path": "app/studio/page.tsx",
       "size": 33327,
-      "last_modified": "2026-09-17T05:05:50.933Z"
+      "last_modified": "2026-09-17T05:28:10.326Z"
     },
     {
       "path": "CLAUDE.md",
@@ -631,13 +638,13 @@
     },
     {
       "path": "components/studio/AssetLibrary.tsx",
-      "size": 17107,
-      "last_modified": "2026-09-15T00:00:09.931Z"
+      "size": 17297,
+      "last_modified": "2026-09-17T06:57:05.425Z"
     },
     {
       "path": "components/studio/CastingBoard.tsx",
       "size": 13908,
-      "last_modified": "2026-09-17T05:08:05.825Z"
+      "last_modified": "2026-09-17T05:28:10.328Z"
     },
     {
       "path": "components/studio/CharacterBible.tsx",
@@ -692,7 +699,7 @@
     {
       "path": "components/studio/tabs/MarketingTab.tsx",
       "size": 14034,
-      "last_modified": "2026-09-17T05:07:26.907Z"
+      "last_modified": "2026-09-17T05:28:10.328Z"
     },
     {
       "path": "components/studio/tabs/OverviewTab.tsx",
@@ -707,7 +714,7 @@
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
       "size": 32084,
-      "last_modified": "2026-09-17T05:06:39.935Z"
+      "last_modified": "2026-09-17T05:28:10.329Z"
     },
     {
       "path": "components/ThemeInitializer.tsx",
@@ -788,11 +795,6 @@
       "path": "hooks/useColorExtractor.ts",
       "size": 634,
       "last_modified": "2026-07-05T01:13:07.150Z"
-    },
-    {
-      "path": "lib/advanced-parser.ts",
-      "size": 5949,
-      "last_modified": "2026-09-15T00:00:09.994Z"
     },
     {
       "path": "lib/api-rate-limit.ts",
@@ -1051,8 +1053,8 @@
     },
     {
       "path": "lib/scriptos/validator.ts",
-      "size": 6190,
-      "last_modified": "2026-09-15T00:00:10.198Z"
+      "size": 6775,
+      "last_modified": "2026-09-17T06:58:14.098Z"
     },
     {
       "path": "lib/spotify/auth.ts",
@@ -1107,7 +1109,7 @@
     {
       "path": "lib/supabase/crew-management.ts",
       "size": 3776,
-      "last_modified": "2026-09-17T05:08:19.238Z"
+      "last_modified": "2026-09-17T05:28:10.331Z"
     },
     {
       "path": "lib/supabase/database.types.ts",
@@ -1136,13 +1138,13 @@
     },
     {
       "path": "lib/supabase/profiles.ts",
-      "size": 1785,
-      "last_modified": "2026-09-15T00:00:10.244Z"
+      "size": 1910,
+      "last_modified": "2026-09-17T06:55:31.823Z"
     },
     {
       "path": "lib/supabase/projects.ts",
-      "size": 2378,
-      "last_modified": "2026-09-15T00:00:10.244Z"
+      "size": 4098,
+      "last_modified": "2026-09-17T07:05:42.857Z"
     },
     {
       "path": "lib/supabase/scripts.ts",
@@ -1265,9 +1267,14 @@
       "last_modified": "2026-09-15T00:00:10.269Z"
     },
     {
+      "path": "supabase-migration-project-visibility.sql",
+      "size": 1882,
+      "last_modified": "2026-09-17T06:52:41.549Z"
+    },
+    {
       "path": "supabase-schema.sql",
-      "size": 35905,
-      "last_modified": "2026-09-16T23:44:29.282Z"
+      "size": 36981,
+      "last_modified": "2026-09-17T06:53:34.868Z"
     },
     {
       "path": "tailwind.config.js",
