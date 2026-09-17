@@ -2,7 +2,7 @@
 
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/types/screenplay';
 
-const KNOWLEDGE = {
+export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
     'INT.', 'EXT.', 'INT', 'EXT', 'INT./EXT.', 'EXT./INT.', 'INT/EXT', 'EXT/INT',
     'I/E', 'E/I', 'EST.', 'ESTABLISHING', 'INT-', 'EXT-', 'INT ', 'EXT ',
@@ -695,7 +695,7 @@ export class ScriptParser {
 // stopwords and the scene's own character names, then categorises with the same
 // dictionaries the editor already uses. Anything unmatched defaults to props —
 // the catch-all bucket a real breakdown uses too.
-const BREAKDOWN_STOPWORDS = new Set([
+export const BREAKDOWN_STOPWORDS = new Set([
   'A', 'AN', 'THE', 'AND', 'BUT', 'OR', 'HE', 'SHE', 'IT', 'WE', 'THEY', 'THEM',
   'YOU', 'I', 'IS', 'ARE', 'WAS', 'WERE', 'BE', 'TO', 'OF', 'IN', 'ON', 'AT',
   'FOR', 'WITH', 'NOT', 'NO', 'YES', 'AS', 'BY', 'FROM', 'INTO', 'OVER', 'UNDER',

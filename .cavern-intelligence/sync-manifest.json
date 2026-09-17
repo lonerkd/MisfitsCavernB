@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T04:10:53.618Z",
+  "last_synchronized": "2026-09-17T04:24:53.969Z",
   "stats": {
-    "totalFiles": 209,
-    "totalSize": 2025105,
+    "totalFiles": 211,
+    "totalSize": 2033105,
     "byExtension": {
       ".json": 8,
       ".md": 6,
       ".tsx": 93,
-      ".ts": 91,
+      ".ts": 93,
       ".js": 7,
       ".sql": 4
     }
@@ -18,6 +18,8 @@
       "description": "Fountain screenplay rendering, AST parsing, real-time sync, revisions and PDF generation",
       "path": "lib/scriptos",
       "files": [
+        "lib/scriptos/analyze.test.ts",
+        "lib/scriptos/analyze.ts",
         "lib/scriptos/bible.ts",
         "lib/scriptos/blocks.ts",
         "lib/scriptos/breakdown.test.ts",
@@ -876,6 +878,16 @@
       "last_modified": "2026-09-15T00:00:10.070Z"
     },
     {
+      "path": "lib/scriptos/analyze.test.ts",
+      "size": 2161,
+      "last_modified": "2026-09-17T04:24:01.236Z"
+    },
+    {
+      "path": "lib/scriptos/analyze.ts",
+      "size": 5825,
+      "last_modified": "2026-09-17T04:22:31.982Z"
+    },
+    {
       "path": "lib/scriptos/bible.ts",
       "size": 4781,
       "last_modified": "2026-09-15T00:00:10.073Z"
@@ -888,17 +900,17 @@
     {
       "path": "lib/scriptos/breakdown.test.ts",
       "size": 2240,
-      "last_modified": "2026-09-17T04:08:45.278Z"
+      "last_modified": "2026-09-17T04:16:41.500Z"
     },
     {
       "path": "lib/scriptos/breakdown.ts",
       "size": 2768,
-      "last_modified": "2026-09-17T04:05:40.338Z"
+      "last_modified": "2026-09-17T04:16:41.501Z"
     },
     {
       "path": "lib/scriptos/characters.ts",
       "size": 2952,
-      "last_modified": "2026-09-17T04:05:52.935Z"
+      "last_modified": "2026-09-17T04:16:41.520Z"
     },
     {
       "path": "lib/scriptos/export.ts",
@@ -942,8 +954,8 @@
     },
     {
       "path": "lib/scriptos/parser.ts",
-      "size": 31375,
-      "last_modified": "2026-09-17T04:04:39.449Z"
+      "size": 31389,
+      "last_modified": "2026-09-17T04:20:36.814Z"
     },
     {
       "path": "lib/scriptos/pdfImport.ts",
@@ -1033,7 +1045,7 @@
     {
       "path": "lib/supabase/breakdown.ts",
       "size": 2992,
-      "last_modified": "2026-09-17T04:05:13.615Z"
+      "last_modified": "2026-09-17T04:16:41.525Z"
     },
     {
       "path": "lib/supabase/casting.ts",

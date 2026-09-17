@@ -1,6 +1,37 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Script→suite bridge: real breakdown elements + budget core
+## Latest Session — Deterministic analysis engine (the "neural-inspired" layer)
+
+Branch: `chore/analyze-engine`. Verified: **118 tests pass** (4 new); `next build`
+green (zero warnings). Offline, no AI, no new deps.
+
+`lib/scriptos/analyze.ts` — `analyzeScript(parseResult)` returns, with the rule
+that produced each result and a confidence (explainability is the point):
+
+- **Entity disambiguation** — ALL-CAPS action tokens resolved to
+  `character` (if a cast member — "BRICK" is a person, not a prop) /
+  `vehicles` / `wardrobe` / `sfx` / `vfx` / `props`, with an extra suffix vocab
+  (`PICKUP`, `BLAZER`, …). Fixes the "names tagged as props" noise.
+- **Continuity flags** — duplicate scene headings (warn), silent characters
+  (info), scenes with no established location (info).
+- **Pacing** — scene count, est. runtime, dialogue ratio, avg scene words,
+  time-of-day histogram.
+
+Exposed `KNOWLEDGE` / `BREAKDOWN_STOPWORDS` from the parser so the analyzer
+reasons over the same vocabulary. `lib/scriptos/analyze.test.ts` pins
+disambiguation, explanation strings, flags, and pacing.
+
+### The on-device neural upgrade (next, opt-in)
+
+This is the *deterministic* floor. The true "neural" step is a lazy
+`transformers.js` dynamic import (runs in-browser via WebGPU/ONNX — no server,
+no egress, model cached by the service worker) doing NER / zero-shot
+classification behind `analyzeScript`'s interface, with the deterministic engine
+as the fallback. That's a dependency + ~100–400MB opt-in model download, so it
+wants its own PR with a feature flag; wired so it can never regress the offline
+path. UI wiring (surface the analysis in the Studio) is also the next slice.
+
+## Prior Session — Script→suite bridge: real breakdown elements + budget core
 
 Branch: `chore/suite-bridge`. Verified: **114 tests pass** (4 new); `next build`
 green (zero warnings). No AI, no new dependencies, offline.
