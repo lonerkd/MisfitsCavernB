@@ -3,7 +3,7 @@ import { hasPermission, getProjectPermissions, type ProjectRole } from './permis
 import { logAuditAction } from '@/lib/supabase/audit';
 import type { Permission, AccessContext, UserRole } from '@/lib/context/types';
 import { osState } from './store';
-import { resetOS, refreshActiveProject, ACTIVE_PROJECT_KEY } from './boot';
+import { resetOS, refreshActiveProject, osHydrateSession, ACTIVE_PROJECT_KEY } from './boot';
 import { fetchProjectDetails } from './queries';
 import { syncActiveProject, hydrateActiveProject } from './sync';
 import { osNotify } from './notify';
@@ -16,6 +16,9 @@ export async function osSignIn(email: string, password: string) {
     osState().setSession({ error: error.message || 'Sign in failed' });
     throw error;
   }
+  // Resolve identity + projects into the store BEFORE the caller navigates, so
+  // a gated page can never render while the store still says 'anon'.
+  await osHydrateSession();
 }
 
 export async function osSignUp(email: string, password: string, username: string) {
@@ -30,6 +33,14 @@ export async function osSignUp(email: string, password: string, username: string
   }
   // Profile row is created by the DB trigger on_auth_user_created
   // (public.handle_new_user) from options.data.username.
+  //
+  // With email confirmation enabled signUp returns no session, so hydration
+  // finds nothing: settle back to 'anon' rather than leaving the store stuck in
+  // 'resolving' (which would strand every gated page on a loading state), and
+  // let the caller show its "check your email" message.
+  osState().setSession({ status: 'resolving' });
+  const authed = await osHydrateSession();
+  if (!authed) osState().setSession({ status: 'anon' });
   return data;
 }
 

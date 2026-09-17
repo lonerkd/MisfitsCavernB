@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-16T23:39:04.197Z",
+  "last_synchronized": "2026-09-17T01:40:33.592Z",
   "stats": {
-    "totalFiles": 201,
-    "totalSize": 1983211,
+    "totalFiles": 202,
+    "totalSize": 1991958,
     "byExtension": {
       ".json": 8,
       ".md": 6,
       ".tsx": 92,
-      ".ts": 85,
+      ".ts": 86,
       ".js": 6,
       ".sql": 4
     }
@@ -242,17 +242,17 @@
     {
       "path": "app/api/discord/notify/route.ts",
       "size": 4003,
-      "last_modified": "2026-09-15T00:13:45.294Z"
+      "last_modified": "2026-09-16T23:44:29.246Z"
     },
     {
       "path": "app/api/discord/test/route.ts",
       "size": 3233,
-      "last_modified": "2026-09-15T00:14:27.917Z"
+      "last_modified": "2026-09-16T23:44:29.247Z"
     },
     {
       "path": "app/api/references/search/route.ts",
       "size": 2198,
-      "last_modified": "2026-09-15T00:16:28.764Z"
+      "last_modified": "2026-09-16T23:44:29.249Z"
     },
     {
       "path": "app/auth/callback/page.tsx",
@@ -266,8 +266,8 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 13455,
-      "last_modified": "2026-09-15T00:15:03.348Z"
+      "size": 15114,
+      "last_modified": "2026-09-17T01:31:07.629Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -297,7 +297,7 @@
     {
       "path": "app/editor/page.tsx",
       "size": 67473,
-      "last_modified": "2026-09-15T00:09:51.894Z"
+      "last_modified": "2026-09-16T23:44:29.257Z"
     },
     {
       "path": "app/error.tsx",
@@ -337,7 +337,7 @@
     {
       "path": "app/lounge/page.tsx",
       "size": 67469,
-      "last_modified": "2026-09-15T00:14:40.882Z"
+      "last_modified": "2026-09-16T23:44:29.260Z"
     },
     {
       "path": "app/not-found.tsx",
@@ -422,7 +422,7 @@
     {
       "path": "app/studio/page.tsx",
       "size": 33733,
-      "last_modified": "2026-09-16T23:37:05.884Z"
+      "last_modified": "2026-09-16T23:44:29.262Z"
     },
     {
       "path": "CLAUDE.md",
@@ -517,7 +517,7 @@
     {
       "path": "components/editor/EditorSidePanels.tsx",
       "size": 37495,
-      "last_modified": "2026-09-15T00:09:31.372Z"
+      "last_modified": "2026-09-16T23:44:29.265Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -632,7 +632,7 @@
     {
       "path": "components/studio/tabs/ctx.ts",
       "size": 2028,
-      "last_modified": "2026-09-16T23:35:40.071Z"
+      "last_modified": "2026-09-16T23:44:29.267Z"
     },
     {
       "path": "components/studio/tabs/MarketingTab.tsx",
@@ -652,7 +652,7 @@
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
       "size": 31961,
-      "last_modified": "2026-09-16T23:33:27.613Z"
+      "last_modified": "2026-09-16T23:44:29.266Z"
     },
     {
       "path": "components/ThemeInitializer.tsx",
@@ -698,6 +698,11 @@
       "path": "docs/TECHNICAL_AUDIT_2026-07.md",
       "size": 26340,
       "last_modified": "2026-09-15T00:00:09.979Z"
+    },
+    {
+      "path": "e2e/auth-journey.spec.ts",
+      "size": 5499,
+      "last_modified": "2026-09-17T01:34:54.526Z"
     },
     {
       "path": "e2e/auth-validation.spec.ts",
@@ -776,13 +781,13 @@
     },
     {
       "path": "lib/os/actions.ts",
-      "size": 5853,
-      "last_modified": "2026-09-15T00:00:10.020Z"
+      "size": 6508,
+      "last_modified": "2026-09-17T01:30:47.439Z"
     },
     {
       "path": "lib/os/boot.ts",
-      "size": 4389,
-      "last_modified": "2026-09-15T00:00:10.022Z"
+      "size": 5248,
+      "last_modified": "2026-09-17T01:30:26.216Z"
     },
     {
       "path": "lib/os/guards.tsx",
@@ -801,8 +806,8 @@
     },
     {
       "path": "lib/os/index.ts",
-      "size": 1748,
-      "last_modified": "2026-09-15T00:00:10.026Z"
+      "size": 1766,
+      "last_modified": "2026-09-17T01:30:26.258Z"
     },
     {
       "path": "lib/os/notify.ts",
@@ -927,7 +932,7 @@
     {
       "path": "lib/scriptos/schedule.ts",
       "size": 3211,
-      "last_modified": "2026-09-16T23:35:39.925Z"
+      "last_modified": "2026-09-16T23:44:29.268Z"
     },
     {
       "path": "lib/scriptos/storage.ts",
@@ -1081,13 +1086,13 @@
     },
     {
       "path": "lib/validation/index.test.ts",
-      "size": 6025,
-      "last_modified": "2026-09-15T00:23:06.335Z"
+      "size": 6026,
+      "last_modified": "2026-09-16T23:44:29.270Z"
     },
     {
       "path": "lib/validation/index.ts",
       "size": 4496,
-      "last_modified": "2026-09-15T00:24:06.046Z"
+      "last_modified": "2026-09-16T23:44:29.270Z"
     },
     {
       "path": "lib/webrtc/voice.ts",
@@ -1107,17 +1112,17 @@
     {
       "path": "next.config.js",
       "size": 1101,
-      "last_modified": "2026-09-15T00:10:05.993Z"
+      "last_modified": "2026-09-16T23:44:29.272Z"
     },
     {
       "path": "package-lock.json",
       "size": 345811,
-      "last_modified": "2026-09-16T23:31:12.185Z"
+      "last_modified": "2026-09-16T23:44:29.276Z"
     },
     {
       "path": "package.json",
       "size": 1474,
-      "last_modified": "2026-09-16T23:31:11.867Z"
+      "last_modified": "2026-09-16T23:44:29.279Z"
     },
     {
       "path": "playwright.config.ts",
@@ -1142,7 +1147,7 @@
     {
       "path": "scripts/sync-intel.js",
       "size": 4147,
-      "last_modified": "2026-09-15T00:10:52.297Z"
+      "last_modified": "2026-09-16T23:44:29.280Z"
     },
     {
       "path": "scripts/test-anon-rls.js",
@@ -1151,8 +1156,8 @@
     },
     {
       "path": "supabase-migration-cavern-suite-redesign.sql",
-      "size": 3286,
-      "last_modified": "2026-09-15T00:19:10.915Z"
+      "size": 3342,
+      "last_modified": "2026-09-16T23:44:29.280Z"
     },
     {
       "path": "supabase-migration-portfolio-blocks.sql",
@@ -1167,7 +1172,7 @@
     {
       "path": "supabase-schema.sql",
       "size": 35905,
-      "last_modified": "2026-09-15T00:18:52.173Z"
+      "last_modified": "2026-09-16T23:44:29.282Z"
     },
     {
       "path": "tailwind.config.js",
@@ -1177,7 +1182,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-07-10T04:09:27.786Z"
+      "last_modified": "2026-09-17T01:36:47.368Z"
     },
     {
       "path": "tsconfig.json",
