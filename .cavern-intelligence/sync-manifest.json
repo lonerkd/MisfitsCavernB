@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-17T02:54:51.817Z",
+  "last_synchronized": "2026-09-17T03:10:15.807Z",
   "stats": {
-    "totalFiles": 203,
-    "totalSize": 2003016,
+    "totalFiles": 205,
+    "totalSize": 2009213,
     "byExtension": {
       ".json": 8,
       ".md": 6,
       ".tsx": 92,
-      ".ts": 87,
+      ".ts": 89,
       ".js": 6,
       ".sql": 4
     }
@@ -22,6 +22,8 @@
         "lib/scriptos/blocks.ts",
         "lib/scriptos/characters.ts",
         "lib/scriptos/export.ts",
+        "lib/scriptos/fountain-export.ts",
+        "lib/scriptos/fountain-roundtrip.test.ts",
         "lib/scriptos/fountain.test.ts",
         "lib/scriptos/import.ts",
         "lib/scriptos/normalize.test.ts",
@@ -513,7 +515,7 @@
     {
       "path": "components/editor/editorPageParts.tsx",
       "size": 7751,
-      "last_modified": "2026-09-17T02:51:50.998Z"
+      "last_modified": "2026-09-17T03:01:36.534Z"
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
@@ -886,9 +888,19 @@
       "last_modified": "2026-09-15T00:00:10.088Z"
     },
     {
+      "path": "lib/scriptos/fountain-export.ts",
+      "size": 3338,
+      "last_modified": "2026-09-17T03:08:03.220Z"
+    },
+    {
+      "path": "lib/scriptos/fountain-roundtrip.test.ts",
+      "size": 2859,
+      "last_modified": "2026-09-17T03:08:28.379Z"
+    },
+    {
       "path": "lib/scriptos/fountain.test.ts",
       "size": 4314,
-      "last_modified": "2026-09-17T02:49:08.399Z"
+      "last_modified": "2026-09-17T03:01:36.534Z"
     },
     {
       "path": "lib/scriptos/import.ts",
@@ -913,7 +925,7 @@
     {
       "path": "lib/scriptos/parser.ts",
       "size": 28807,
-      "last_modified": "2026-09-17T02:52:36.863Z"
+      "last_modified": "2026-09-17T03:01:36.536Z"
     },
     {
       "path": "lib/scriptos/pdfImport.ts",
@@ -1198,7 +1210,7 @@
     {
       "path": "types/screenplay.ts",
       "size": 2273,
-      "last_modified": "2026-09-17T02:47:36.397Z"
+      "last_modified": "2026-09-17T03:01:36.537Z"
     },
     {
       "path": "vitest.config.ts",

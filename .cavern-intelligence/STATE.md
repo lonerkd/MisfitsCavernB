@@ -1,6 +1,35 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Fountain conformance layer on the parser (Stage 1, offline, no AI)
+## Latest Session — Fountain serializer + round-trip proof (Stage 1 complete)
+
+Branch: `chore/fountain-serializer`. Verified: **110 unit tests pass** (4 new
+round-trip tests), `next build` green (zero warnings). Offline, no AI.
+
+- `lib/scriptos/fountain-export.ts` — a real **Fountain writer**
+  (`serializeLine` per element + `serializeFountain` + `canonicalizeFountain`),
+  closing the "reader but not writer" gap. The old `exportScriptAsText(...,
+  'fountain')` was a raw content dump; this is the canonicalizer that doubles as
+  the auto-format engine.
+- **Round-trip contract, proven by test:** `parse(serializeFountain(parse(x)))`
+  loses nothing at the *structural* level — same element-type sequence, same
+  scenes (+ scene numbers + cast lists), same named characters. Fixed a subtle
+  slug bug the property caught (a `#1#` strip left a trailing space → double
+  space before the scene number).
+- Canonical emission per element: forced markers resolved to their standard
+  form (`.slug`, `@character` → bare word, `> transition`, `> centered <`,
+  `~lyric`, `= synopsis`, `# section`, `[[ note ]]`, `/* boneyard */`, `^`,
+  `===`), and an ALL-CAPS action is emitted with `!` so it can never re-parse
+  as a character cue.
+- `canonicalizeFountain` is **idempotent** (fixed point) — normalizing twice
+  changes nothing, which is the property that lets a future "Normalize" button
+  be safe to press.
+
+Still deferred (as flagged): emphasis rendering in the *write* surface (rich
+text), and wiring `canonicalizeFountain` to a UI action / the Fountain export
+path. The suite bridge (breakdown → schedule → budget) re-hydrates from the
+now-correct scene/element data.
+
+## Prior Session — Fountain conformance layer on the parser (Stage 1, offline, no AI)
 
 Branch: `chore/fountain-conformance`. Verified: `next build` green (zero
 warnings), **106 unit tests pass** (12 new Fountain conformance tests).
