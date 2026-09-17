@@ -1,6 +1,41 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Suite completeness: cross-tool sync, skeletons, dead code
+## Latest Session — Project visibility model, global activity, parser consolidation
+
+Branch: `chore/visibility-activity-consolidate`. Verified: **118 tests pass**;
+`next build` green (zero warnings). No AI.
+
+### 1. Project visibility (private / team / link / public)
+
+`supabase-migration-project-visibility.sql` + schema + app:
+- `projects.visibility` ('private' owner-only / 'team' crew (default) / 'link'
+  anyone with the token / 'public' anyone) + `share_token` (backfilled).
+- Level-aware RLS (private→owner only; team→members; link→anon with token;
+  public→anon). `is_public` kept in sync for legacy readers.
+- Hub header: owner-only visibility selector + "Copy link" when `link`, linking
+  to a new **public** `/shared/[token]` route (read-only overview; scenes/budget/
+  chat stay member-gated). Portfolio stays the manual pitch board as requested.
+- **Action needed:** the migration must be applied on the live DB (this
+  environment can't run DDL). The app casts the new columns until generated
+  types are regenerated post-migration.
+
+### 2. Activity logging is now global
+
+`logActivity` wired at every meaningful mutation across the suite (previous
+pass covered casting/beats/campaign/breakdown/scenes): crew invite, job opened,
+asset uploaded, pitch board published — on top of projects/studio/jobs feeds.
+The Studio Overview feed now reflects real work.
+
+### 3. Consolidation — one parser, not two
+
+`lib/scriptos/validator.ts` used a **second private parser**
+(`lib/advanced-parser.ts`) that disagreed with what the editor renders, causing
+phantom lint diagnostics. Rewrote its structure checks (scene density,
+character-intro, monologue, Act-I pacing) on the shared parser's
+scenes/characters (the same the editor and Studio use) and **deleted
+`lib/advanced-parser.ts`**.
+
+## Prior Session — Suite completeness: cross-tool sync, skeletons, dead code
 
 Branch: `chore/suite-completeness`. Verified: **118 tests pass**; `next build`
 green (zero warnings). Offline, no AI, no new deps.

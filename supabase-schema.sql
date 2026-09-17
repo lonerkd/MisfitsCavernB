@@ -31,6 +31,11 @@ CREATE TABLE IF NOT EXISTS projects (
   start_date DATE,
   end_date DATE,
   is_public BOOLEAN DEFAULT false,
+  -- Visibility model: private (owner only) / team (confirmed crew) / link
+  -- (anyone with the share token) / public (anyone). is_public is kept in sync
+  -- for the legacy boolean readers.
+  visibility TEXT NOT NULL DEFAULT 'team' CHECK (visibility IN ('private', 'team', 'link', 'public')),
+  share_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
   featured BOOLEAN DEFAULT false,
   cover_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -271,14 +276,23 @@ AS $$
   SELECT EXISTS (SELECT 1 FROM project_crew WHERE project_id = pid AND user_id = auth.uid());
 $$;
 
--- RLS Policies: Projects
+-- RLS Policies: Projects (level-aware)
+--   private → owner only; team → confirmed crew (the default); link → anyone
+--   with the share token (the token IS the capability — unguessable, but "anyone
+--   with the link" can read the row); public → anyone incl. anon.
 CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
-  creator_id = auth.uid() OR internal.is_project_member(id)
+  visibility <> 'private' AND (creator_id = (SELECT auth.uid()) OR internal.is_project_member(id))
 );
+CREATE POLICY "Private projects viewable by owner only" ON projects FOR SELECT USING (
+  visibility = 'private' AND creator_id = (SELECT auth.uid())
+);
+CREATE POLICY "Public projects viewable by all" ON projects FOR SELECT USING (visibility = 'public');
+CREATE POLICY "Link-shared projects readable by anyone with the link" ON projects FOR SELECT USING (visibility = 'link');
 CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
 CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_id = auth.uid());
 
+-- RLS Policies: Project crew
 CREATE POLICY "Project crew viewable by project members" ON project_crew FOR SELECT USING (
   user_id = auth.uid() OR internal.is_project_creator(project_id)
 );

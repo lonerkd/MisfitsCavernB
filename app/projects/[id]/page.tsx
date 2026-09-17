@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/database.types';
 import { parseScript } from '@/lib/scriptos/parser';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
+import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { usePillZone } from '@/lib/context/PillContext';
 import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/os';
 import type { ProjectSettings } from '@/lib/types/settings';
@@ -43,6 +44,9 @@ interface ProjectHubViewModel {
   assetGB?: number;
   publishedWork?: number;
   settings?: ProjectSettings;
+  visibility: 'private' | 'team' | 'link' | 'public';
+  shareUrl: string;
+  isOwner: boolean;
 }
 
 // ─── Production phases ───────────────────────────────────────────────────────
@@ -304,6 +308,7 @@ function PortfolioPreview({ published }: { published: number }) {
 
 export default function ProjectHubPage() {
   const confirm = useConfirm();
+  const { toast } = useToast();
   const params = useParams();
   const router = useRouter();
   const id = String(params.id);
@@ -314,25 +319,33 @@ export default function ProjectHubPage() {
 
   useEffect(() => {
     let active = true;
-    supabase.from('projects').select('*').eq('id', id).single().then(({ data, error }) => {
-      if (!active) return;
-      if (error || !data) { router.push('/projects'); return; }
-      const phase = mapStatusToPhase(data.status ?? undefined);
-      setRealProject({
-        id: data.id,
-        title: data.title,
-        type: data.project_type || 'Project',
-        phase,
-        progress: Math.round((phaseIndex(phase) / (PHASES.length - 1)) * 100),
-        deadline: data.end_date || '',
-        description: data.description || '',
-        color: data.accent_color || '#d7340b',
-        team: [],
-        settings: data.settings as unknown as ProjectSettings,
+    (async () => {
+      supabase.from('projects').select('*').eq('id', id).single().then(async ({ data, error }) => {
+        if (!active) return;
+        if (error || !data) { router.push('/projects'); return; }
+        const row = data as any; // visibility/share_token land after the migration + type regen
+        const phase = mapStatusToPhase(row.status ?? undefined);
+        const me = (await awaitOSUser()) || null;
+        const token = (row.share_token as string) || '';
+        setRealProject({
+          id: row.id,
+          title: row.title,
+          type: row.project_type || 'Project',
+          phase,
+          progress: Math.round((phaseIndex(phase) / (PHASES.length - 1)) * 100),
+          deadline: row.end_date || '',
+          description: row.description || '',
+          color: row.accent_color || '#d7340b',
+          team: [],
+          settings: row.settings as unknown as ProjectSettings,
+          visibility: (row.visibility as ProjectHubViewModel['visibility']) || 'team',
+          shareUrl: token ? `/shared/${token}` : '',
+          isOwner: me?.id === row.creator_id,
+        });
+        setLoading(false);
+        if (activeProject?.id !== data.id) refreshProject(data.id);
       });
-      setLoading(false);
-      if (activeProject?.id !== data.id) refreshProject(data.id);
-    });
+    })();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshProject is stable from context; activeProject?.id intentionally omitted to avoid re-fetch loop
   }, [id, router]);
@@ -388,6 +401,31 @@ export default function ProjectHubPage() {
   const typePhases = getPhasesForType(project.type);
   const typePhaseIdx = phaseIndexForType(project.type, project.phase);
   const modules = getProjectModules(project.settings);
+
+  const changeVisibility = async (v: 'private' | 'team' | 'link' | 'public') => {
+    try {
+      const shareUrl = await updateProjectVisibility(id, v);
+      setRealProject(p => p ? { ...p, visibility: v, shareUrl: shareUrl || p.shareUrl } : p);
+      const msg = v === 'private' ? 'Project is now private (you only).'
+        : v === 'team' ? 'Project is now team-only.'
+        : v === 'link' ? 'Anyone with the link can now view this project.'
+        : 'Project is now public.';
+      toast(msg, 'success');
+      refreshProject(id);
+    } catch (e: any) {
+      toast(e?.message || 'Could not update visibility', 'error');
+    }
+  };
+
+  const copyShareLink = async () => {
+    if (!project.shareUrl) { toast('Share link is not ready yet.', 'error'); return; }
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${project.shareUrl}`);
+      toast('Share link copied.', 'success');
+    } catch {
+      toast('Could not copy — copy it manually: ' + window.location.origin + project.shareUrl, 'info');
+    }
+  };
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
@@ -467,6 +505,36 @@ export default function ProjectHubPage() {
           }}>
             {project.progress}% complete
           </div>
+          {project.isOwner && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <select
+                value={project.visibility}
+                onChange={e => changeVisibility(e.target.value as 'private' | 'team' | 'link' | 'public')}
+                aria-label="Project visibility"
+                title="Who can see this project"
+                style={{
+                  fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.2, color: 'var(--fg-muted)',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6, padding: '5px 8px', cursor: 'pointer', outline: 'none',
+                }}
+              >
+                {PROJECT_VISIBILITY.map(v => (
+                  <option key={v.id} value={v.id}>{v.label}</option>
+                ))}
+              </select>
+              {project.visibility === 'link' && (
+                <button
+                  onClick={copyShareLink}
+                  title="Copy the share link — anyone with it can view this project"
+                  style={{
+                    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.2, color: '#8b5cf6',
+                    background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
+                    borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
+                  }}
+                >Copy link</button>
+              )}
+            </div>
+          )}
         </div>
       </motion.header>
 
