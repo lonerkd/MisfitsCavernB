@@ -1,6 +1,37 @@
 # Misfits Cavern — Project State
 
-## Latest Session — ScriptOS: Normalize formatting + canonical Fountain export
+## Latest Session — Offline foundation: PWA shell, delete tombstones, offline session
+
+Branch: `chore/offline-foundation`. Verified: **110 tests pass**; `next build`
+green (zero warnings). No AI, no new dependencies.
+
+Closes the gap between "the parse/edit path is already network-free" and "the
+app actually works offline":
+
+- **PWA shell** — `public/sw.js` (network-first navigations with cache fallback,
+  cache-first `/_next/static`, stale-while-revalidate images/fonts, cross-origin
+  never intercepted), `public/manifest.webmanifest`, `public/icon.svg`,
+  `components/ServiceWorkerRegister.tsx` (prod-only), and layout `manifest` /
+  `themeColor` metadata. The app can now load and reopen offline after a first
+  visit.
+- **Delete tombstones** — `deleteScript` records the id locally and replays the
+  server delete on the next `syncPendingScripts` (replayed first, so a delete
+  wins over any queued upsert); `getAllScripts` filters tombstones. Deleting
+  offline can no longer resurrect on reconnect, and deleted content doesn't
+  linger on the server.
+- **Offline session** — `boot.ts` now uses `getOfflineSafeUser()` (`getUser()`
+  with a `getSession()` fallback, since the former is a network-validating call)
+  and `resolveSessionUser` falls back to a **device-level cached profile**
+  (`localStorage 'mc_offline_profile'`). A returning signed-in user boots as
+  `authed` with no network instead of being bounced to `/auth`. `osHydrateSession`
+  and `bootOS` both route through it.
+
+Combined with the existing `syncPending` outbox in `saveScript`, the core write
+loop is now: save locally first → sync when back online. The one thing still
+needing a real-device check is an airplane-mode cold start through the full
+journey (Playwright `context.setOffline(true)` is the natural harness for it).
+
+## Prior Session — ScriptOS: Normalize formatting + canonical Fountain export
 
 Branch: `chore/scriptos-normalize`. Verified: **110 tests pass**; `next build`
 green (zero warnings). Offline, no AI.

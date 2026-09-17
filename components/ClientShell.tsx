@@ -8,9 +8,12 @@ const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ss
 const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
 const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
 
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+
 export default function ClientShell() {
   return (
     <>
+      <ServiceWorkerRegister />
       <CustomCursor />
       <CommandPalette />
       <ShortcutsOverlay />

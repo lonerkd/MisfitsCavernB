@@ -1,0 +1,14 @@
+{
+  "name": "Misfits Cavern",
+  "short_name": "Misfits Cavern",
+  "description": "Screenplay editor and production suite for indie filmmakers.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#040710",
+  "theme_color": "#040710",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

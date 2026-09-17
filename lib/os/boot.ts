@@ -23,14 +23,53 @@ export async function refreshActiveProject(id: string) {
   });
 }
 
+const OFFLINE_PROFILE_KEY = 'mc_offline_profile';
+
+// getUser() validates the token against the auth server (fails offline);
+// getSession() reads the locally cached cookie session. Prefer the stricter
+// call, fall back to the local one so a returning user still boots offline.
+async function getOfflineSafeUser(): Promise<{ id: string; email: string | null } | null> {
+  try {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) return { id: data.user.id, email: data.user.email ?? null };
+  } catch { /* offline: use local session */ }
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) return { id: data.session.user.id, email: data.session.user.email ?? null };
+  } catch { /* not signed in */ }
+  return null;
+}
+
 async function resolveSessionUser(userId: string, email: string | null) {
   const { setSession } = osState();
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  let profile: any = null;
+
+  try {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (data) {
+      profile = data;
+      // Device-level cache so identity resolves on a cold start with no network.
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify({ ...data, __uid: userId }));
+      }
+    }
+  } catch { /* offline */ }
+
+  if (!profile && typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(OFFLINE_PROFILE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.__uid === userId) profile = parsed;
+      }
+    } catch { /* corrupt cache */ }
+  }
+
   if (profile) {
     const userRole = determineUserRole(profile);
     setSession({
       status: 'authed',
-      user: profile as any,
+      user: profile,
       userId,
       email,
       userRole,
@@ -82,9 +121,9 @@ async function loadProjects() {
  * /auth, which read to users as a sign-in loop.
  */
 export async function osHydrateSession(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getOfflineSafeUser();
   if (!user) return false;
-  await resolveSessionUser(user.id, user.email ?? null);
+  await resolveSessionUser(user.id, user.email);
   await loadProjects();
   syncProjectList();
   syncActiveProject(osState().project.active?.id ?? null);
@@ -111,9 +150,9 @@ export async function bootOS() {
   const { setSession, setProject } = osState();
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getOfflineSafeUser();
     if (user) {
-      await resolveSessionUser(user.id, user.email ?? null);
+      await resolveSessionUser(user.id, user.email);
       await loadProjects();
       syncProjectList();
       syncActiveProject(osState().project.active?.id ?? null);

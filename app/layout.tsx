@@ -34,11 +34,17 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: 'Misfits Cavern — Creative Collaboration Platform',
   description: 'The ultimate creative platform for screenwriting, portfolio showcase, and immersive digital collaboration.',
+  applicationName: 'Misfits Cavern',
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/icon.svg' },
+  appleWebApp: { capable: true, title: 'Misfits Cavern', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#040710',
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
