@@ -1,9 +1,14 @@
 import { StoredScript } from './storage';
 import { parseScript } from './parser';
+import { serializeFountain } from './fountain-export';
 import { jsPDF } from 'jspdf';
 
 export function exportScriptAsText(script: StoredScript, format: 'txt' | 'fountain' = 'txt'): void {
-  const blob = new Blob([script.content], { type: 'text/plain' });
+  // '.fountain' downloads a canonically-formatted Fountain document — parse and
+  // re-emit — rather than a raw dump, so the file is clean and round-trips.
+  // '.txt' is the author's source verbatim.
+  const text = format === 'fountain' ? serializeFountain(parseScript(script.content).lines) : script.content;
+  const blob = new Blob([text], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

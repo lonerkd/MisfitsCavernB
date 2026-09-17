@@ -15,6 +15,7 @@ export interface EditorCtx {
   handleEditorKeyDown: any;
   handleExport: any;
   handleLockRevision: any;
+  handleNormalize: any;
   handleSave: any;
   highlightRef: any;
   lines: any;
