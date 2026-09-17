@@ -29,8 +29,8 @@ import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
 import { generateShootingSchedule, type ShootingSchedule } from '@/lib/scriptos/schedule';
-import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
-import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
+import { getActivities, subscribeToActivities, logActivity, type Activity } from '@/lib/supabase/activity';
+import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
@@ -227,6 +227,7 @@ export default function StudioPage() {
     const next = order[(order.indexOf(s.status || 'planned') + 1) % order.length];
     const { error } = await supabase.from('scenes').update({ status: next }).eq('id', s.id);
     if (error) { toast(error.message || 'Could not update status', 'error'); return; }
+    if (next === 'wrapped') logActivity(`wrapped scene ${s.scene_number} "${s.title}"`, 'scene', s.id);
     await refreshProject(activeProject.id);
   };
 
@@ -258,6 +259,7 @@ export default function StudioPage() {
       if (rows.length === 0) { toast('Schedule is already in sync with the script.', 'info'); return; }
       const { error } = await supabase.from('scenes').insert(rows);
       if (error) { toast(error.message, 'error'); return; }
+      logActivity(`imported ${rows.length} scene${rows.length === 1 ? '' : 's'} from the screenplay`, 'project', activeProject.id);
       await refreshProject(activeProject.id);
     } finally {
       setImportingScenes(false);
@@ -294,6 +296,7 @@ export default function StudioPage() {
       const elementsById = await syncSceneElementsFromScript(activeProject.id, scenes);
       const withElements = scenes.map(s => ({ ...s, elements: elementsById[s.id] ?? s.elements ?? {} }));
       const synced = await syncBudgetFromSceneElements(activeProject.id, withElements, (activeProject.budget_items || []) as any[]);
+      logActivity(`synced the production breakdown into the budget`, 'project', activeProject.id);
       await refreshProject(activeProject.id);
       toast(synced.length > 0 ? `Breakdown synced — ${synced.length} budget categor${synced.length === 1 ? 'y' : 'ies'} updated` : 'Breakdown synced — no production elements detected', 'success');
     } catch (e: any) {
@@ -463,24 +466,6 @@ export default function StudioPage() {
     }
   };
 
-  const handleAddBeat = async () => {
-    if (!activeProject) return;
-    const title = prompt('Beat Title:');
-    if (!title) return;
-    const content = prompt('Beat Content:');
-    try {
-      await createProjectBeat({
-        project_id: activeProject.id,
-        title,
-        content,
-        order_index: beats.length
-      });
-      refreshBeats();
-    } catch (err) {
-      console.error('Error adding beat:', err);
-    }
-  };
-
   const handlePushToScript = async (beat: any) => {
     if (!activeProject || !user) return;
     try {
@@ -501,16 +486,6 @@ export default function StudioPage() {
       }
     } catch (err) {
       console.error('Error pushing beat to script:', err);
-    }
-  };
-
-  const handleDeleteBeat = async (id: string) => {
-    if (!await confirm('Delete this beat?')) return;
-    try {
-      await deleteProjectBeat(id);
-      refreshBeats();
-    } catch (err) {
-      console.error('Error deleting beat:', err);
     }
   };
 

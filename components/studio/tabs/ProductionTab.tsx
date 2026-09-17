@@ -27,7 +27,7 @@ import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
-import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
+import { getActivities, subscribeToActivities, logActivity, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
@@ -111,6 +111,7 @@ export function ProductionTab({ ctx }: { ctx: StudioCtx }) {
                          try {
                            const { error } = await supabase.from('project_beats').insert({ project_id: activeProject.id, title: beatTitle.trim(), content: beatContent.trim() });
                            if (error) { toast(error.message || 'Could not add beat', 'error'); return; }
+                           logActivity(`added the beat "${beatTitle.trim()}"`, 'project', activeProject.id);
                            await refreshProject(activeProject.id);
                            setBeatTitle(''); setBeatContent(''); setShowAddBeat(false);
                          } finally { setAdding(false); }

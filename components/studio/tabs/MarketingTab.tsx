@@ -27,7 +27,7 @@ import { usePillStage, usePillZone } from '@/lib/context/PillContext';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { saveScript } from '@/lib/scriptos/storage';
 import { parseScript } from '@/lib/scriptos/parser';
-import { getActivities, subscribeToActivities, type Activity } from '@/lib/supabase/activity';
+import { getActivities, subscribeToActivities, logActivity, type Activity } from '@/lib/supabase/activity';
 import { getAllStudioAssets, getStudioBoards, getProjectBoards, createStudioBoard, getStudioAssets, deleteStudioAsset, addStudioAsset, getProjectBeats, createProjectBeat, deleteProjectBeat, uploadStudioFile } from '@/lib/supabase/studio';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
@@ -90,6 +90,7 @@ export function MarketingTab({ ctx }: { ctx: StudioCtx }) {
                               target_demographic: campaignDemo.trim() || null, budget: Number(campaignBudget) || 0,
                             });
                             if (error) { toast(error.message || 'Could not add campaign', 'error'); return; }
+                            logActivity(`launched the campaign "${campaignTitle.trim()}"`, 'project', activeProject.id);
                             await refreshProject(activeProject.id);
                             setCampaignTitle(''); setCampaignDemo(''); setCampaignBudget(''); setShowAddCampaign(false);
                           } finally { setAdding(false); }

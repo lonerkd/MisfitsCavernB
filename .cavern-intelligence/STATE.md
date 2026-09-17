@@ -1,6 +1,53 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Deterministic analysis engine (the "neural-inspired" layer)
+## Latest Session — Suite completeness: cross-tool sync, skeletons, dead code
+
+Branch: `chore/suite-completeness`. Verified: **118 tests pass**; `next build`
+green (zero warnings). Offline, no AI, no new deps.
+
+Full sweep for "things connected in code but not in the product":
+
+- **7 missing route skeletons added** — `studio` (the heaviest page), `jobs`,
+  `crew`, `portfolio`, `soundtrack`, `settings`, `profile`. Previously only
+  `projects`/`editor`/`lounge` had `loading.tsx`, so navigating into Studio (or
+  any of the others) flashed blank instead of showing structure.
+- **Casting → Jobs is now a real handoff.** Studio's casting board "Post to
+  Jobs →" just linked to `/jobs`; it now passes `?title=&role=Actor`, which the
+  Jobs page already supports (it auto-opens the post modal prefilled), and the
+  job inherits `project_id` from the active project.
+- **Activity feed actually fed.** The Studio Overview "Recent Activity" panel
+  was fed by only 2 call sites (project create / phase move). Now logs:
+  scene wrapped, scenes imported from screenplay, breakdown→budget synced, beat
+  added, campaign launched, performer cast / casting reopened. Action strings
+  read as verb phrases to match the feed's `{user} {action}` rendering.
+- **Crew role changes now notify the member.** `updateCrewMemberRole` only wrote
+  an admin audit-log row; the affected member was never told. Now sends a
+  `crew` notification with a deep link to the project.
+- **Removed dead + rule-breaking code:** `handleAddBeat` / `handleDeleteBeat` /
+  `handleDeleteAsset` in `app/studio/page.tsx` were never passed into
+  `StudioCtx` (unreachable), and `handleAddBeat` used native `prompt()` — an
+  AGENTS.md violation. Deleted; the live paths are ProductionTab's inline beat
+  form and AssetsTab's own delete. Dropped the now-unused
+  `createProjectBeat`/`deleteProjectBeat` imports.
+
+### Audit findings NOT fixed (need an owner decision)
+
+1. **Portfolio "verified credits" is not implemented.** `studio-and-preproduction.md`
+   claims public portfolios "pull direct production history from actual,
+   completed Misfits Cavern projects, ensuring credentials are verified and
+   authentic." Reality: `portfolio_projects` is a **manually assembled pitch
+   board** (blocks added by hand). Auto-populating credits from a user's
+   completed projects is a real feature, not a wiring fix — it needs a product
+   decision (which projects count, what a "credit" shows, privacy of private
+   projects).
+2. **`logActivity` is still partial** — casting/beats/campaign/breakdown/scene
+   are covered; asset uploads, crew invites, script revisions and portfolio
+   publishes are not. Worth finishing in a follow-up.
+3. **`lib/scriptos/schedule.ts` vs the inline scheduler** in `studio/page.tsx`
+   remain two implementations (the lib one now also powers the Schedule tab's
+   breakdown card). Consolidating them is a small follow-up.
+
+## Prior Session — Deterministic analysis engine (the "neural-inspired" layer)
 
 Branch: `chore/analyze-engine`. Verified: **118 tests pass** (4 new); `next build`
 green (zero warnings). Offline, no AI, no new deps.

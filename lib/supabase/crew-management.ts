@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { logAuditAction } from './audit';
+import { notify } from './notifications';
 
 export type CrewRole = 'owner' | 'lead' | 'contributor' | 'viewer';
 
@@ -140,6 +141,13 @@ export async function updateCrewMemberRole(
       'project_crew',
       `${projectId}:${userId}`,
       { newRole, action: 'role_updated' },
+    );
+
+    // Tell the member — a role change otherwise only reaches the admin audit log.
+    await notify(
+      userId,
+      { type: 'crew', title: `Your role is now ${newRole}`, body: 'Your access on this project was updated.', link: `/projects/${projectId}` },
+      currentUserId,
     );
 
     return data;
