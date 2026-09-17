@@ -12,6 +12,13 @@ export type LineType =
   | 'title'
   | 'centered'
   | 'scene'
+  | 'note'
+  | 'lyric'
+  | 'section'
+  | 'synopsis'
+  | 'dual'
+  | 'pagebreak'
+  | 'boneyard'
   | 'empty';
 
 export interface ScriptLineMeta {

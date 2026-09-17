@@ -112,6 +112,8 @@ export class ScriptParser {
   private sceneIndex: number = -1;
   private lastSpeaker: string | null = null;
   private insideDialogueBlock: boolean = false;
+  private insideBoneyard: boolean = false;
+  private requestDual: boolean = false;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set()) {
     this.rawLines = text ? text.split(/\r?\n/) : [];
@@ -165,11 +167,26 @@ export class ScriptParser {
       if (!trim) {
         this.lines.push(this.line(i, '', 'empty', 100));
         this.insideDialogueBlock = false;
+        this.requestDual = false;
         continue;
       }
 
-      if (i < 50 && this.isTitlePageContent(trim)) {
-        this.lines.push(this.line(i, raw, 'title', 100, ['Title page keyword detected']));
+      // Fountain boneyard `/* ... */` is source-only commentary. Keep the lines
+      // (lossless round-trip) but type them 'boneyard' so the renderer/export
+      // drops them and structure never reads them as screenplay.
+      if (this.insideBoneyard || trim.startsWith('/*')) {
+        const closes = trim.endsWith('*/');
+        this.lines.push(this.line(i, raw, 'boneyard', 100, [this.insideBoneyard ? 'Boneyard contents' : 'Boneyard block']));
+        this.insideBoneyard = this.insideBoneyard ? !closes : !trim.includes('*/');
+        continue;
+      }
+
+      // Dual-dialogue caret. Mark the block above and the next one as dual, and
+      // keep the marker itself (type 'dual') for lossless round-trip.
+      if (trim === '^') {
+        this.markPreviousDual();
+        this.requestDual = true;
+        this.lines.push(this.line(i, raw, 'dual', 100, ['Dual dialogue caret']));
         continue;
       }
 
@@ -180,18 +197,27 @@ export class ScriptParser {
         lastSpeaker: this.lastSpeaker
       };
 
-      const analysis = this.usesScreenplayGrammar()
-        ? this.analyzeLine(trim, context)
-        : this.analyzeNonScreenplayLine(trim, context);
+      const forced = this.preClassify(trim);
+      let analysis: ReturnType<typeof this.analyzeLine>;
+      if (forced) {
+        analysis = forced;
+      } else if (i < 50 && this.isTitlePageContent(trim)) {
+        analysis = { type: 'title', confidence: 100, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
+      } else {
+        analysis = this.usesScreenplayGrammar()
+          ? this.analyzeLine(trim, context)
+          : this.analyzeNonScreenplayLine(trim, context);
+      }
 
       if (analysis.type === 'slug') {
         this.sceneIndex++;
         this.lastSpeaker = null;
         this.insideDialogueBlock = false;
+        this.requestDual = false;
       } else if (analysis.type === 'character') {
         const charName = analysis.meta?.characterName || trim;
 
-        const isDual = trim.startsWith('^');
+        const isDual = trim.startsWith('^') || this.requestDual;
 
         const isContinued = this.lastSpeaker !== null &&
           this.clean(charName) === this.lastSpeaker &&
@@ -200,7 +226,7 @@ export class ScriptParser {
         analysis.meta = {
           ...analysis.meta,
           isDualDialogue: isDual,
-          characterName: isDual ? charName.replace(/^\^/, '').trim() : charName,
+          characterName: charName.replace(/^\^/, '').trim(),
         };
 
         if (isContinued && !charName.includes("CONT'D") && !charName.includes("(CONT'D)")) {
@@ -209,8 +235,13 @@ export class ScriptParser {
 
         this.lastSpeaker = this.clean(analysis.meta.characterName || charName);
         this.insideDialogueBlock = true;
-      } else if (analysis.type === 'action' || analysis.type === 'transition') {
+      } else if (analysis.type === 'action' || analysis.type === 'transition' || analysis.type === 'centered') {
         this.insideDialogueBlock = false;
+        this.requestDual = false;
+      }
+
+      if (this.requestDual && (analysis.type === 'dialogue' || analysis.type === 'parenthetical')) {
+        analysis.meta = { ...analysis.meta, isDualDialogue: true };
       }
 
       this.lines.push({
@@ -276,11 +307,7 @@ export class ScriptParser {
     type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any
   } {
     const reasoning: string[] = [];
-    const scores: Record<LineType, number> = {
-      slug: 0, action: 0, character: 0, dialogue: 0,
-      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0,
-      centered: 0, scene: 0
-    };
+    const scores = this.emptyScores();
 
     if (this.format === 'podcast') {
 
@@ -343,14 +370,54 @@ export class ScriptParser {
     return { type: 'action', confidence: 60, scores, reasoning, meta: {} };
   }
 
+  private emptyScores(): Record<LineType, number> {
+    return {
+      slug: 0, action: 0, character: 0, dialogue: 0, parenthetical: 0,
+      transition: 0, shot: 0, text: 0, title: 0, centered: 0, scene: 0,
+      note: 0, lyric: 0, section: 0, synopsis: 0, dual: 0, pagebreak: 0, boneyard: 0, empty: 0,
+    };
+  }
+
+  // Fountain spec layer: unambiguous syntax that never needs heuristics. This
+  // runs BEFORE the scored classifier so a forced element can never be
+  // overridden. Marker prefixes are classified, not deleted — the raw text is
+  // preserved for lossless round-trip, and `meta` carries the clean value where
+  // the suite needs it (scene heading, character name).
+  private preClassify(trim: string): { type: LineType; confidence: number; scores: Record<LineType, number>; reasoning: string[]; meta?: any } | null {
+    if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: 100, scores: this.emptyScores(), reasoning: ['Page break'] };
+    if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: 100, scores: this.emptyScores(), reasoning: ['Note'] };
+    if (/^#{1,6}\s/.test(trim)) return { type: 'section', confidence: 100, scores: this.emptyScores(), reasoning: ['Section'], meta: { level: (trim.match(/^#+/) || ['#'])[0].length } };
+    if (/^=\s*(?![\s=])/.test(trim)) return { type: 'synopsis', confidence: 100, scores: this.emptyScores(), reasoning: ['Synopsis'] };
+    if (trim.startsWith('~')) return { type: 'lyric', confidence: 100, scores: this.emptyScores(), reasoning: ['Lyric'] };
+    if (trim.startsWith('>') && trim.endsWith('<')) return { type: 'centered', confidence: 100, scores: this.emptyScores(), reasoning: ['Centered text'] };
+    if (trim.startsWith('>')) return { type: 'transition', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced transition'], meta: { text: trim.slice(1).trim() } };
+    if (/^\.[^.\s]/.test(trim)) return { type: 'slug', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced scene heading'], meta: { heading: trim.slice(1).trim(), sceneNumber: this.extractSceneNumber(trim) } };
+    if (trim.startsWith('@')) return { type: 'character', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced character'], meta: { characterName: this.clean(trim.slice(1)) } };
+    if (trim.startsWith('!')) return { type: 'action', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced action'], meta: { text: trim.slice(1).trim() } };
+    return null;
+  }
+
+  private markPreviousDual(): void {
+    const lines = this.lines;
+    let charIdx = -1;
+    for (let k = lines.length - 1; k >= 0; k--) {
+      if (lines[k].type === 'character') { charIdx = k; break; }
+      if (lines[k].type === 'slug' || lines[k].type === 'transition' || lines[k].type === 'empty') break;
+    }
+    if (charIdx >= 0) {
+      lines[charIdx].meta = { ...lines[charIdx].meta, isDualDialogue: true };
+      for (let k = charIdx + 1; k < lines.length; k++) {
+        if (lines[k].type === 'dialogue' || lines[k].type === 'parenthetical') {
+          lines[k].meta = { ...lines[k].meta, isDualDialogue: true };
+        } else break;
+      }
+    }
+  }
+
   private analyzeLine(text: string, context: any): {
     type: LineType, confidence: number, scores: any, reasoning: string[], meta?: any
   } {
-    const scores: Record<LineType, number> = {
-      slug: 0, action: 0, character: 0, dialogue: 0,
-      parenthetical: 0, transition: 0, shot: 0, text: 0, title: 0, empty: 0,
-      centered: 0, scene: 0
-    };
+    const scores = this.emptyScores();
     const reasoning: string[] = [];
     const upper = text.toUpperCase();
     const cleanName = this.clean(text);
@@ -383,7 +450,12 @@ export class ScriptParser {
       }
     }
 
-    if (this.isCaps(text) && text.length < 60) {
+    // A Character line may carry an inline parenthetical ('STEEL (beer raised)')
+    // or a trailing extension. Evaluate the NAME portion for caps/length — not
+    // the whole line — or these get misread as action and silently corrupt
+    // dialogue attribution and scene cast lists.
+    const namePart = text.replace(/\s*\([^)]*\)\s*$/, '').trim();
+    if (this.isCaps(namePart) && namePart.length >= 2 && namePart.length < 60) {
       let charScore = 30;
 
       if (this.characterStats.get(cleanName)! >= 1) {
@@ -497,6 +569,8 @@ export class ScriptParser {
   }
 
   private extractSceneNumber(text: string): string | undefined {
+    const hashNum = text.match(/#([\w.-]+)#/);
+    if (hashNum) return hashNum[1];
     const match = text.match(/^(\d+[A-Z]?)\.?\s/);
     return match ? match[1] : undefined;
   }
@@ -535,14 +609,15 @@ export class ScriptParser {
           currentScene.endIndex = i - 1;
           scenes.push(currentScene);
         }
+        const slugText = (line.meta?.heading as string) || line.text.trim().replace(/^\.\s*/, '').replace(/#[\w.-]+#\s*$/, '');
         currentScene = {
           id: line.id,
           startIndex: i,
           endIndex: -1,
-          heading: line.text.trim(),
+          heading: slugText.trim(),
           sceneNumber: line.meta?.sceneNumber || '',
-          location: this.parseLocation(line.text),
-          timeOfDay: this.parseTime(line.text),
+          location: this.parseLocation(slugText),
+          timeOfDay: this.parseTime(slugText),
           characters: [],
           omitted: false
         };

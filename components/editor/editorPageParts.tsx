@@ -172,6 +172,35 @@ export function LinePreview({ line, index, nightModePreview, sceneNumber, showSc
   if (line.type === 'transition') {
     return <div style={{ ...style, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', marginTop: 16, marginBottom: 16 }}>{displayContent}</div>;
   }
+  if (line.type === 'note') {
+    const clean = displayContent.replace(/^\[\[\s*/, '').replace(/\s*\]\]$/, '');
+    return <div style={{ ...style, color: 'var(--fg-muted)', background: 'rgba(234,179,8,0.08)', borderLeft: '2px solid #eab308', padding: '4px 8px', borderRadius: 4, fontStyle: 'italic', opacity: 0.75 }}>{clean}</div>;
+  }
+  if (line.type === 'boneyard') {
+    return <div style={{ ...style, color: 'var(--fg-dim)', opacity: 0.35, textDecoration: 'line-through' }}>{displayContent}</div>;
+  }
+  if (line.type === 'dual') {
+    return null; // the caret is a marker, not content
+  }
+  if (line.type === 'pagebreak') {
+    return <div style={{ ...style, textAlign: 'center', color: 'var(--fg-dim)', fontSize: 10, letterSpacing: 4, margin: '12px 0' }}>· · ·</div>;
+  }
+  if (line.type === 'centered') {
+    const clean = displayContent.replace(/^>\s*/, '').replace(/\s*<$/, '');
+    return <div style={{ ...style, textAlign: 'center' }}>{clean}</div>;
+  }
+  if (line.type === 'section') {
+    const clean = displayContent.replace(/^#{1,6}\s*/, '');
+    return <div style={{ ...style, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginTop: 16, marginBottom: 8, fontSize: 16 }}>{clean}</div>;
+  }
+  if (line.type === 'synopsis') {
+    const clean = displayContent.replace(/^=\s*/, '');
+    return <div style={{ ...style, fontStyle: 'italic', opacity: 0.7 }}>{clean}</div>;
+  }
+  if (line.type === 'lyric') {
+    const clean = displayContent.replace(/^~\s*/, '');
+    return <div style={{ ...style, fontStyle: 'italic', marginLeft: '10ch' }}>{clean}</div>;
+  }
 
   return <div style={style}>{displayContent || <span style={{ opacity: 0.2 }}>—</span>}</div>;
 }
