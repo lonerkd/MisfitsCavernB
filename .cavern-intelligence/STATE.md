@@ -1,5 +1,19 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Live state assessment (no code changes)
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Full report:
+`docs/STATE_ASSESSMENT_2026-09.md`. Tested `b39f241` (= production).
+
+Gates green (tsc, lint, 118 tests, build). Live crawl of every route plus journeys
+found: **(1)** an identity race: pages read the user once on mount, so a slow
+boot leaves a signed-in user "signed out" ("Sign in to create projects").
+**(2)** The editor silently drops typing when its first-visit `createNewScript`
+fails. **(3)** `/showcase` crashes (R3F v8 vs React 19). **(4)** The visibility
+migration is not applied in prod, would fail as written (`is_public` missing),
+and its link policy has no token check (anon could enumerate). Next: fix #1/#2
+via a subscribing `useOSUser()`, then correct and apply the visibility migration.
+
 ## Latest Session — Project visibility model, global activity, parser consolidation
 
 Branch: `chore/visibility-activity-consolidate`. Verified: **118 tests pass**;
