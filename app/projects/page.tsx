@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { withTimeout } from '@/lib/supabase/withTimeout';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
@@ -354,7 +353,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
 
-    withTimeout(awaitOSUser(), 12000, 'auth timed out').then((user) => {
+    awaitOSUser().then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
       getUserProjects(user.id).then(data => {

@@ -4,7 +4,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
 import { fetchProjectDetails } from './queries';
 import { syncActiveProject, syncProjectList, teardownSync } from './sync';
-import type { Project } from './types';
+import type { Project, UserProfile } from './types';
 
 export const ACTIVE_PROJECT_KEY = 'mc_active_project';
 export const SCRIPT_POINTER_PREFIX = 'mc_active_script:';
@@ -28,10 +28,18 @@ const OFFLINE_PROFILE_KEY = 'mc_offline_profile';
 // getUser() validates the token against the auth server (fails offline);
 // getSession() reads the locally cached cookie session. Prefer the stricter
 // call, fall back to the local one so a returning user still boots offline.
+//
+// getUser() is bounded: on a slow link it can take long enough that every page
+// waiting on identity gives up, so after GET_USER_TIMEOUT_MS we fall back to the
+// local session rather than stranding the boot.
+const GET_USER_TIMEOUT_MS = 8000;
+
 async function getOfflineSafeUser(): Promise<{ id: string; email: string | null } | null> {
   try {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) return { id: data.user.id, email: data.user.email ?? null };
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), GET_USER_TIMEOUT_MS));
+    const res = await Promise.race([supabase.auth.getUser(), timeout]);
+    const user = res?.data.user;
+    if (user) return { id: user.id, email: user.email ?? null };
   } catch { /* offline: use local session */ }
   try {
     const { data } = await supabase.auth.getSession();
@@ -44,16 +52,21 @@ async function resolveSessionUser(userId: string, email: string | null) {
   const { setSession } = osState();
   let profile: any = null;
 
-  try {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (data) {
-      profile = data;
-      // Device-level cache so identity resolves on a cold start with no network.
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify({ ...data, __uid: userId }));
+  // A transient failure here must not demote a signed-in user to anon, so retry
+  // briefly before falling back to the cache / a minimal identity below.
+  for (let attempt = 0; attempt < 3 && !profile; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * attempt));
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (data) {
+        profile = data;
+        // Device-level cache so identity resolves on a cold start with no network.
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify({ ...data, __uid: userId }));
+        }
       }
-    }
-  } catch { /* offline */ }
+    } catch { /* offline */ }
+  }
 
   if (!profile && typeof window !== 'undefined') {
     try {
@@ -65,27 +78,33 @@ async function resolveSessionUser(userId: string, email: string | null) {
     } catch { /* corrupt cache */ }
   }
 
-  if (profile) {
-    const userRole = determineUserRole(profile);
-    setSession({
-      status: 'authed',
-      user: profile,
-      userId,
-      email,
-      userRole,
-      permissions: getPermissionsForRole(userRole),
-      error: null,
-    });
-  } else {
-    setSession({
-      status: 'anon',
-      user: null,
-      userId: null,
-      email: null,
-      userRole: 'guest',
-      permissions: getPermissionsForRole('guest'),
-    });
+  // A valid auth session is the source of truth for "signed in". If the profile
+  // row couldn't be read (network, or the signup trigger hasn't landed yet), run
+  // on a minimal identity rather than reporting anon — anon makes every page
+  // treat a signed-in user as signed out and silently drop their writes.
+  if (!profile) {
+    const now = new Date().toISOString();
+    profile = {
+      id: userId,
+      email: email ?? '',
+      username: email?.split('@')[0] ?? 'member',
+      role: 'Creator',
+      status: 'OPEN',
+      created_at: now,
+      updated_at: now,
+    } satisfies UserProfile;
   }
+
+  const userRole = determineUserRole(profile);
+  setSession({
+    status: 'authed',
+    user: profile,
+    userId,
+    email,
+    userRole,
+    permissions: getPermissionsForRole(userRole),
+    error: null,
+  });
 }
 
 async function loadProjects() {

@@ -89,6 +89,9 @@ export default function EditorPage() {
   }, [playUri]);
 
   const { toast } = useToast();
+  // Latest toast for the run-once init effect, without re-running it.
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
@@ -252,6 +255,10 @@ export default function EditorPage() {
           setScripts([fresh]);
           setContent('');
           setSessionStartWords(0);
+        } else {
+          // Without a script, autosave has nothing to write to — say so rather
+          // than letting the writer type into a buffer that is never saved.
+          toastRef.current('Could not open a script — your writing will not be saved. Reload to try again.', 'error');
         }
       }
     };

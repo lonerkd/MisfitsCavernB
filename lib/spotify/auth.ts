@@ -147,7 +147,7 @@ async function loadTokensFromAccount(): Promise<string | null> {
       .from('spotify_connections')
       .select('access_token, refresh_token, expires_at')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     if (error || !data) return null;
 
     if (Date.now() < data.expires_at - 60000) {

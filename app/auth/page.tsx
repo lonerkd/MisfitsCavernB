@@ -118,7 +118,7 @@ export default function AuthPage() {
         setError('Password must be at least 8 characters with uppercase, lowercase, and numbers.');
       } else if (code === 'otp_expired') {
         setError('Confirmation code has expired. Please try again.');
-      } else if (msg.includes('Invalid API key') || msg.includes('fetch failed')) {
+      } else if (msg.includes('Invalid API key') || /fetch failed|failed to fetch|networkerror|load failed/i.test(msg)) {
         setError('Unable to connect. Please try again later.');
       } else if (msg.includes('timed out')) {
         setError('This is taking too long — check your connection and try again.');

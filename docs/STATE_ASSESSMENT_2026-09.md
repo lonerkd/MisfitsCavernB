@@ -30,6 +30,13 @@ database migration.
 | DB: 50 tables, all RLS-enabled; all 41 code-referenced tables + 4 RPCs exist | ✅ |
 | E2E in CI | ⚠️ only 2 of 5 spec files run |
 
+## Update: fixed in this PR
+
+P0/P1 items #1–#4 and P2 items #5, #6 and #10 are fixed on this branch. The
+visibility migration (#4) was corrected and applied to production, and verified
+with persona SQL. Still open: #7 (schema drift beyond `projects`), #8
+(advisors) and #9 (bucket privacy).
+
 ## Bugs, ranked
 
 ### P0 / P1

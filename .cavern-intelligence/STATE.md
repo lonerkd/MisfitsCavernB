@@ -1,18 +1,30 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Live state assessment (no code changes)
+## Latest Session — Live assessment + fixes for the blocking bugs
 
-Branch: `claude/state-assessment-testing-r0tf3y`. Full report:
-`docs/STATE_ASSESSMENT_2026-09.md`. Tested `b39f241` (= production).
+Branch: `claude/state-assessment-testing-r0tf3y`. Report:
+`docs/STATE_ASSESSMENT_2026-09.md`. Verified: **123 tests pass** (5 new),
+tsc/lint/build green, 20/20 CI smoke specs pass locally.
 
-Gates green (tsc, lint, 118 tests, build). Live crawl of every route plus journeys
-found: **(1)** an identity race: pages read the user once on mount, so a slow
-boot leaves a signed-in user "signed out" ("Sign in to create projects").
-**(2)** The editor silently drops typing when its first-visit `createNewScript`
-fails. **(3)** `/showcase` crashes (R3F v8 vs React 19). **(4)** The visibility
-migration is not applied in prod, would fail as written (`is_public` missing),
-and its link policy has no token check (anon could enumerate). Next: fix #1/#2
-via a subscribing `useOSUser()`, then correct and apply the visibility migration.
+- **Identity race fixed at the source** (`lib/os/boot.ts`): `getUser()` is
+  bounded (8 s, then local session) and a profile-read failure retries, then
+  falls back to a minimal identity. A valid session can no longer resolve to
+  `anon`, which was what made signed-in users look signed out and the editor
+  drop writes. `lib/os/boot.test.ts` pins it (3 of 5 fail on the old code).
+- Editor toasts if it cannot open a script instead of failing silently;
+  `/projects` no longer gives up on identity after 12 s.
+- `/showcase` crash fixed: 3D gallery (R3F v8, incompatible with Next 15's
+  React 19) replaced with a 2D grid; `three`/fiber/drei removed.
+- **Visibility migration corrected and APPLIED to prod** (`project_visibility_and_share_links`):
+  private = owner only; no anon row access; share links resolve via
+  `get_shared_project(token)`. Persona SQL (owner/crew/outsider/anon) verified.
+- Spotify `.maybeSingle()` (no more 406 per page); browser network errors map
+  to "Unable to connect"; `route-smoke` added to CI (stale `/settings` test fixed).
+
+Still open: security advisors (incl. the intentional anon-executable
+`get_shared_project`), public storage buckets, generated types not regenerated
+for `visibility`/`share_token` (code casts), `sync-intel` broken by a missing
+`.claude/skills/supabase` path.
 
 ## Latest Session — Project visibility model, global activity, parser consolidation
 
