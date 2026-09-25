@@ -105,8 +105,8 @@ database migration.
 ## Test accounts created
 
 Three `e2e.qa.*@example.com` accounts were created on the live project during
-this run. They now appear in the public crew directory. Delete them when
-convenient.
+this run. They were deleted afterwards, along with the one empty script and the
+log rows they generated. The user count is back to 11.
 
 ## Suggested order
 
