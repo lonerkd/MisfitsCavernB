@@ -26,9 +26,11 @@ export const BUDGET_RATE: Record<ElementCategory, number> = {
   vfx: 500,
 };
 
+const items = (n: number) => `${n} item${n === 1 ? '' : 's'}`;
+
 export const CATEGORY_LABEL: Record<ElementCategory, (n: number) => string> = {
-  props: (n) => `Props (${n} items)`,
-  wardrobe: (n) => `Wardrobe (${n} items)`,
+  props: (n) => `Props (${items(n)})`,
+  wardrobe: (n) => `Wardrobe (${items(n)})`,
   vehicles: (n) => `Vehicles (${n})`,
   sfx: (n) => `Special FX (${n})`,
   vfx: (n) => `Visual FX (${n})`,
@@ -84,4 +86,26 @@ export function computeBudgetLines(aggregated: Record<ElementCategory, string[]>
     });
   }
   return lines;
+}
+// Lines a breakdown can't count as tagged items: speaking roles and the
+// shooting days implied by page count.
+export const CAST_RATE = 500;
+export const CREW_RATE_PER_PAGE = 200;
+
+/**
+ * First-pass budget from a parsed script: one line per speaking-role count,
+ * per tagged element category, and camera & crew by page count (8 eighths =
+ * 1 page, at least one page).
+ */
+export function estimateBudgetFromScript(script: {
+  characters?: unknown[];
+  scenes: { eighths?: number; elements?: SceneElements }[];
+}): { category: string; amount: number }[] {
+  const cast = script.characters?.length ?? 0;
+  const pages = Math.max(1, Math.round(script.scenes.reduce((s, sc) => s + (sc.eighths || 0), 0) / 8));
+  return [
+    ...(cast ? [{ category: `Cast (${cast} role${cast === 1 ? '' : 's'})`, amount: cast * CAST_RATE }] : []),
+    ...computeBudgetLines(aggregateElements(script.scenes)).map(({ category, amount }) => ({ category, amount })),
+    { category: `Camera & Crew (${pages} pg)`, amount: pages * CREW_RATE_PER_PAGE },
+  ];
 }
