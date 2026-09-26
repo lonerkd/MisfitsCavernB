@@ -1,5 +1,38 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Foundation: migrations as truth, drift gate, real-DB persona tests
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: CI `database` job
+sequence from a clean stack (drift ✓, types ✓, **18 integration tests** ✓),
+tsc/lint/133 unit tests/build ✓.
+
+- **`supabase/migrations/` is now the schema source of truth.**
+  `20260926000000_baseline.sql` reconstructs production object-by-object from
+  the live catalog; proven identical to production across 14 object categories
+  (1,049 objects: columns, constraints, indexes, RLS, 129 policies, 16 function
+  bodies, grants, triggers, views, buckets, realtime). Root `supabase-*.sql`
+  files (drifted) are deleted; docs rewritten (`database-and-security.md` §3).
+- **Drift gate:** `supabase/fingerprint.sql` + `scripts/db-drift.mjs` +
+  committed `supabase/schema.fingerprint`. `npm run db:drift` fails CI if the
+  migrations don't build exactly the snapshot; `--target` checks a deployed DB
+  (`.github/workflows/production-drift.yml`, needs `PRODUCTION_DB_URL` secret).
+- **Generated types are gated:** `npm run db:types` (pinned CLI + prettier,
+  deterministic); CI fails if `database.types.ts` is stale. Regeneration removed
+  three `as any` casts and caught one real null-into-NOT-NULL write.
+- **Real-DB integration tests** (`tests/integration/`, `npm run test:integration`):
+  Sam/Jordan/Riley/anon as real accounts through PostgREST + RLS. Covers project
+  visibility + share links, script content + metadata access, signup → profile.
+  Verified they fail when the old link-leak policy is reintroduced.
+- **Production bug found + fixed (migration `20260926000100`):**
+  `internal.can_access_script` called non-existent `public.is_project_*`, so
+  every title-page / character-bible / revision read or write failed for all
+  users. Test fails before, passes after. **Must be applied to production.**
+
+Found, not yet fixed (next): realtime publication only covers chat/presence/
+collab — the app's project & notification live-sync subscriptions can never
+fire; `scripts.stash_items` exists but the editor stash is memory-only; scene
+notes/colours are device-only localStorage; 112 direct DB calls in UI files.
+
 ## Latest Session — Sign-in persistence + no-silent-data-loss saves
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Verified: **133 tests pass**

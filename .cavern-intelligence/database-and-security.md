@@ -56,7 +56,27 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 
 ---
 
-## 3. Database Syncing and Migration Rules
-1. **The Live DB is Source of Truth:** Live changes are applied directly as named migrations on Supabase.
-2. **Schema Mirroring:** Every live schema modification must be mirrored verbatim into the repository's `supabase-schema.sql` file. This allows local development environments to be bootstrapped from scratch.
-3. **No Destructive Operations:** Never drop columns, alter tables, truncate data, or modify existing `SECURITY DEFINER` function parameters on production databases without explicit user consent and testing the rollback paths.
+## 3. Database Changes — the migration workflow (authoritative)
+
+`supabase/migrations/` is the **single source of truth** for the schema. It
+starts from `20260926000000_baseline.sql` (production reconstructed from the
+live catalog) and every change is a new, never-edited file after it. Production
+is changed *only* by applying those files — never by ad-hoc SQL.
+
+1. **Write it:** `npx supabase migration new <name>` → edit the new file.
+2. **Build it locally:** `npm run db:start` (once) → `npm run db:reset`
+   (rebuilds from all migrations).
+3. **Snapshot it:** `npm run db:drift -- --update` rewrites
+   `supabase/schema.fingerprint`; the diff shows reviewers exactly which
+   columns / policies / functions / grants changed.
+4. **Type it:** `npm run db:types` regenerates `lib/supabase/database.types.ts`.
+   Never cast around a missing column — regenerate.
+5. **Prove it:** add or extend a test in `tests/integration/` that exercises the
+   change as Sam / Jordan / Riley / anon through the real API, and show it
+   failing before the migration where it fixes a bug. `npm run test:integration`.
+6. **PR:** CI's `database` job rebuilds from scratch and fails on schema drift,
+   stale types, or any persona test.
+7. **After merge:** apply the same migration file to production, then run the
+   *Production schema drift* workflow — it must be green.
+
+**No Destructive Operations:** Never drop columns, alter tables, truncate data, or modify existing `SECURITY DEFINER` function parameters on production databases without explicit user consent and testing the rollback paths.

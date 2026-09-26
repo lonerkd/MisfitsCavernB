@@ -107,9 +107,9 @@ The `verify` skill can drive this end-to-end.
 
 ## 8. Migrations
 
-- Live DB is source of truth; change it via **named** migrations
-  (`apply_migration` is allow-listed — no prompt, so be deliberate).
-- Mirror every migration verbatim into `supabase-schema.sql` **in the same PR**.
+- `supabase/migrations/` is the source of truth; follow the workflow in
+  `database-and-security.md` §3. Production only ever receives migration files
+  that are already merged — never ad-hoc SQL.
 - Never drop columns / alter definer-fn signatures / truncate on prod without
   explicit consent and a tested rollback path.
 

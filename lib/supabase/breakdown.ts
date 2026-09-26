@@ -28,7 +28,7 @@ export async function syncSceneElementsFromScript(projectId: string, existingSce
   });
 
   if (updates.length === 0) return {};
-  await Promise.all(updates.map(u => supabase.from('scenes').update({ elements: u.elements as unknown as Json }).eq('id', u.id)));
+  await Promise.all(updates.map(u => supabase.from('scenes').update({ elements: u.elements as unknown as NonNullable<Json> }).eq('id', u.id)));
   return elementsById;
 }
 

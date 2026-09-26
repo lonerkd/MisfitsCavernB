@@ -11,7 +11,13 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "postinstall": "node scripts/copy-pdf-worker.js",
-    "sync-intel": "node scripts/sync-intel.js"
+    "sync-intel": "node scripts/sync-intel.js",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,mailpit,supavisor,postgres-meta",
+    "db:reset": "supabase db reset --local",
+    "db:drift": "node scripts/db-drift.mjs",
+    "db:types": "supabase gen types typescript --local --schema public | prettier --parser typescript > lib/supabase/database.types.ts",
+    "db:types:check": "npm run db:types && git diff --exit-code -- lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -43,6 +49,8 @@
     "eslint-config-next": "^15.5.20",
     "pg": "^8.20.0",
     "postcss": "^8.5.10",
+    "prettier": "3.9.9",
+    "supabase": "2.118.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
