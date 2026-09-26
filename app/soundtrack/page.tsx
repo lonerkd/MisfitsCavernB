@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plus, Trash, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
@@ -14,21 +13,23 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/Toast';
 import { awaitOSUser } from '@/lib/os';
 
+// Moods are live Spotify searches, not fixed playlist ids: editorial playlist
+// ids can't be verified (and aren't served to newer Spotify apps), and two
+// of the old ones were the same list.
 const MOODS = [
+  { category: 'Cinematic Moods', name: 'Tension', query: 'tense cinematic score', color: '#8b0000' },
+  { category: 'Cinematic Moods', name: 'Ethereal', query: 'ethereal ambient soundtrack', color: '#4169e1' },
+  { category: 'Cinematic Moods', name: 'Cyberpunk', query: 'cyberpunk soundtrack', color: '#ff00ff' },
+  { category: 'Cinematic Moods', name: 'Orchestral Sweep', query: 'epic orchestral film score', color: '#daa520' },
+  { category: 'Cinematic Moods', name: 'Dark Ambient', query: 'dark ambient', color: '#2f4f4f' },
 
-  { category: 'Cinematic Moods', name: 'Tension', uri: 'spotify:playlist:37i9dQZF1EIeO67Lh9iQ3Y', color: '#8b0000' },
-  { category: 'Cinematic Moods', name: 'Ethereal', uri: 'spotify:playlist:37i9dQZF1DXc8kgYqQLKc1', color: '#4169e1' },
-  { category: 'Cinematic Moods', name: 'Cyberpunk', uri: 'spotify:playlist:37i9dQZF1DXdLEN7aqioJC', color: '#ff00ff' },
-  { category: 'Cinematic Moods', name: 'Orchestral Sweep', uri: 'spotify:playlist:37i9dQZF1DX1qHzZWvoGZu', color: '#daa520' },
-  { category: 'Cinematic Moods', name: 'Dark Ambient', uri: 'spotify:playlist:37i9dQZF1DX1n9dp3223e7', color: '#2f4f4f' },
+  { category: 'Eras & Genres', name: '80s Synthwave', query: '80s synthwave', color: '#ff1493' },
+  { category: 'Eras & Genres', name: 'Noir Jazz', query: 'film noir jazz', color: '#708090' },
+  { category: 'Eras & Genres', name: 'Western Acoustic', query: 'western acoustic soundtrack', color: '#cd853f' },
 
-  { category: 'Eras & Genres', name: '80s Synthwave', uri: 'spotify:playlist:37i9dQZF1DXdLEN7aqioJC', color: '#ff1493' },
-  { category: 'Eras & Genres', name: 'Noir Jazz', uri: 'spotify:playlist:37i9dQZF1DX0b1hHYPNzaU', color: '#708090' },
-  { category: 'Eras & Genres', name: 'Western Acoustic', uri: 'spotify:playlist:37i9dQZF1DWZqzjeJjC6n4', color: '#cd853f' },
-
-  { category: 'Pacing & Action', name: 'Chase Sequences', uri: 'spotify:playlist:37i9dQZF1DWTx0ygoZScW3', color: '#ff4500' },
-  { category: 'Pacing & Action', name: 'Slow Burn', uri: 'spotify:playlist:37i9dQZF1DX2pCG3h42yA9', color: '#483d8b' },
-  { category: 'Pacing & Action', name: 'Suspense', uri: 'spotify:playlist:37i9dQZF1DWZq91oqsEAqw', color: '#000000' },
+  { category: 'Pacing & Action', name: 'Chase Sequences', query: 'action chase soundtrack', color: '#ff4500' },
+  { category: 'Pacing & Action', name: 'Slow Burn', query: 'slow burn cinematic', color: '#483d8b' },
+  { category: 'Pacing & Action', name: 'Suspense', query: 'suspense thriller score', color: '#000000' },
 ];
 
 export default function SoundtrackPage() {
@@ -74,6 +75,19 @@ export default function SoundtrackPage() {
     try {
       const results = await searchSpotify(searchQuery, 'track');
       setSearchResults(results || []);
+    } catch (err: any) {
+      toast('Search failed: ' + err.message, 'error');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const searchMood = async (mood: typeof MOODS[number]) => {
+    setActiveTab('search');
+    setSearchQuery(mood.query);
+    setIsSearching(true);
+    try {
+      setSearchResults(await searchSpotify(mood.query, 'playlist'));
     } catch (err: any) {
       toast('Search failed: ' + err.message, 'error');
     } finally {
@@ -161,7 +175,7 @@ export default function SoundtrackPage() {
 
         uri: type === 'spotify' ? item.uri : item.audio_url,
         title: type === 'spotify' ? item.name : item.title,
-        description: type === 'spotify' ? (item.artists?.[0]?.name || 'Spotify Playist') : (item.tags?.[0] || 'Custom SFX')
+        description: type === 'spotify' ? (item.artists?.[0]?.name || (item.type === 'playlist' ? 'Spotify playlist' : 'Spotify')) : (item.tags?.[0] || 'Custom SFX')
       });
       if (error) throw error;
       toast('Saved to Project Audio Bible', 'success');
@@ -238,7 +252,8 @@ export default function SoundtrackPage() {
                       <div
                         key={mood.name}
                         className="p-6 rounded-2xl border border-white/5 bg-black/40 hover:bg-white/5 transition-all cursor-pointer group flex flex-col items-center justify-center text-center gap-4 hover:-translate-y-1 relative overflow-hidden"
-                        onClick={() => playUri(mood.uri)}
+                        onClick={() => void searchMood(mood)}
+                        title={`Find “${mood.query}” playlists`}
                       >
                         <div
                           className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
@@ -410,14 +425,15 @@ export default function SoundtrackPage() {
                 {searchResults.map((item: any) => (
                   <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                     <div className="flex items-center gap-4 overflow-hidden">
-                      {item.album?.images?.[2]?.url ? (
-                        <Image src={item.album.images[2].url} alt="" width={48} height={48} className="rounded object-cover" />
+                      {(item.album?.images?.[2]?.url || item.images?.[0]?.url) ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- playlist art comes from several Spotify CDNs
+                        <img src={item.album?.images?.[2]?.url || item.images[0].url} alt="" width={48} height={48} loading="lazy" className="w-12 h-12 rounded object-cover" />
                       ) : (
                         <div className="w-12 h-12 rounded bg-white/5 flex items-center justify-center"><Disc size={16} className="opacity-40" /></div>
                       )}
                       <div className="min-w-0">
                         <h4 className="mc-title text-sm truncate">{item.name}</h4>
-                        <p className="mc-text text-xs opacity-50 truncate">{item.artists?.[0]?.name}</p>
+                        <p className="mc-text text-xs opacity-50 truncate">{item.artists?.[0]?.name ?? (item.type === 'playlist' ? `Playlist · ${item.owner?.display_name ?? 'Spotify'}` : '')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
