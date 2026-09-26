@@ -133,14 +133,14 @@ export default function AdminDashboard() {
                 key={stat.label}
                 style={{
                   padding: 24,
-                  background: 'rgba(215, 52, 11,0.05)',
-                  border: '1px solid rgba(215, 52, 11,0.2)',
+                  background: 'rgba(232, 67, 26,0.05)',
+                  border: '1px solid rgba(232, 67, 26,0.2)',
                   borderRadius: 8,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <stat.icon size={16} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.6 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
                     {stat.label}
                   </span>
                 </div>

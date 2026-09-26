@@ -107,12 +107,12 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: hover ? 'rgba(215, 52, 11,0.12)' : 'rgba(0,0,0,0.3)',
+          background: hover ? 'rgba(232, 67, 26,0.12)' : 'rgba(0,0,0,0.3)',
           backdropFilter: 'blur(6px)',
           transition: 'border-color 0.4s, background 0.4s',
         }}
       >
-        <Play size={16} fill={hover ? '#d7340b' : '#fff'} color={hover ? '#d7340b' : '#fff'} style={{ marginLeft: 2 }} />
+        <Play size={16} fill={hover ? '#e8431a' : '#fff'} color={hover ? '#e8431a' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
 
       <motion.div
@@ -126,7 +126,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           width: '100%',
         }}
       >
-        <h3 style={{
+        <h2 style={{
           fontFamily: 'var(--display)',
           fontSize: 'clamp(1rem, 2vw, 1.5rem)',
           letterSpacing: 2,
@@ -134,8 +134,8 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           marginBottom: 4,
         }}>
           {video.title}
-        </h3>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
+        </h2>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {[video.role, video.year].filter(Boolean).join(' · ')}
         </div>
         {hover && (
@@ -146,7 +146,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
             style={{
               fontFamily: 'var(--serif)',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.45)',
+              color: 'var(--fg-dim)',
               marginTop: 6,
               fontStyle: 'italic',
               maxWidth: 380,
@@ -178,7 +178,7 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
         onClick={onClose}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
-          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
+          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
             <X size={18} /> Close Bible
           </button>
 
@@ -221,7 +221,7 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {project.description && (
                 <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
-                  <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Summary</h3>
+                  <h2 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Summary</h2>
                   <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>{project.description}</p>
                 </div>
               )}
@@ -338,7 +338,7 @@ export default function PortfolioPage() {
 
   return (
     <ProtectedPage requiredPermission="manage_portfolio">
-      <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       <nav style={{
@@ -353,7 +353,7 @@ export default function PortfolioPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
@@ -361,14 +361,14 @@ export default function PortfolioPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {videosList.length} Projects
         </span>
       </nav>
 
       <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(215, 52, 11,0.08), transparent 55%), #060606' }} />
+           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(232, 67, 26,0.08), transparent 55%), #060606' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
@@ -457,7 +457,7 @@ export default function PortfolioPage() {
               {loading ? 'LOADING…' : loadError ? `⚠ ${loadError}` : 'NO PUBLISHED WORK YET'}
             </div>
             {!loading && (
-              <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)', opacity: 0.6 }}>
+              <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)'}}>
                 Published portfolio projects will appear here.
               </div>
             )}
@@ -496,8 +496,7 @@ export default function PortfolioPage() {
               fontSize: '1rem',
               letterSpacing: 6,
               flexShrink: 0,
-              color: i % 2 === 0 ? 'var(--accent)' : 'var(--fg)',
-              opacity: i % 2 === 0 ? 1 : 0.1,
+              color: i % 2 === 0 ? 'var(--accent)' : 'var(--fg-dim)',
             }}>
               {text}
             </span>
@@ -508,7 +507,7 @@ export default function PortfolioPage() {
       </>)}
 
       <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
-      </main>
+      </div>
     </ProtectedPage>
   );
 }

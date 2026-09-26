@@ -199,7 +199,7 @@ export function EditorRightPanels({
                     <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
-                        <button onClick={() => setSprintActive(!sprintActive)} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#d7340b' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
+                        <button type="button" aria-label={sprintActive ? 'Pause sprint' : 'Start sprint'} onClick={() => setSprintActive(!sprintActive)} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#e8431a' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
                       </div>
                       <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
                     </div>
@@ -287,7 +287,7 @@ export function EditorRightPanels({
                                 </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                                   {items.map(item => (
-                                    <span key={item} style={{ fontSize: 11, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(215,52,11,0.28)', padding: '4px 10px', borderRadius: 4, color: '#fff' }}>{item}</span>
+                                    <span key={item} style={{ fontSize: 11, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(232,67,26,0.28)', padding: '4px 10px', borderRadius: 4, color: '#fff' }}>{item}</span>
                                   ))}
                                 </div>
                               </div>
@@ -489,11 +489,11 @@ export function EditorRightPanels({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {projectAudioRefs.map((ref: any) => (
                           <div key={ref.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <button
+                            <button aria-label="Play"
                               onClick={() => playAudioRef?.(ref)}
                               disabled={!playAudioRef}
                               title="Play"
-                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
+                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
                             >
                               <Play size={13} />
                             </button>

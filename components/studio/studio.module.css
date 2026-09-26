@@ -5,7 +5,8 @@
 .page section { padding: 0; }
 
 .page {
-  --studio: var(--studio-color, #6366f1);
+  --studio: var(--studio-color, #4f46e5);
+  --studio-text: #818cf8;
   --studio-dim: rgba(99, 102, 241, 0.14);
   --studio-line: rgba(99, 102, 241, 0.32);
   --ok: #10b981;
@@ -29,7 +30,7 @@
   font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--studio);
+  color: var(--studio-text);
   margin-bottom: 6px;
 }
 .title {
@@ -301,8 +302,8 @@
   transition: background 0.2s;
 }
 .addRef:hover { background: var(--studio-dim); }
-.swatches { display: flex; gap: 5px; }
-.swatch { width: 14px; height: 14px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.swatches { display: flex; gap: 0; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 3px; background-clip: content-box !important; }
 .swatchOn { border-color: var(--fg); }
 .noteBox { font-size: 11px; min-height: 38px; }
 
@@ -412,7 +413,7 @@
 }
 .shot_shot { color: #10b981; border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.1); }
 .shot_omitted { color: var(--fg-dim); }
-.refRemoveInline { background: none; border: none; color: var(--fg-dim); cursor: pointer; padding: 4px; border-radius: 6px; }
+.refRemoveInline { background: none; border: none; color: var(--fg-dim); cursor: pointer; padding: 4px; border-radius: 6px; min-width: 24px; min-height: 24px; display: inline-flex; align-items: center; justify-content: center; }
 .refRemoveInline:hover { color: #ff6b6b; background: var(--panel-2); }
 @media (max-width: 560px) { .shotRow { grid-template-columns: 36px 64px 1fr auto; } .refRemoveInline { grid-column: 4; } }
 
@@ -448,7 +449,7 @@
 .noteTime { font-family: var(--mono); font-size: 11px; color: #c7c9ff; background: var(--studio-dim); border: 1px solid var(--studio-line); border-radius: 6px; padding: 3px 7px; cursor: pointer; flex-shrink: 0; }
 .noteMeta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 3px; }
 .noteBody { font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.iconBtnPlain { background: none; border: none; color: var(--fg-muted); cursor: pointer; padding: 3px; border-radius: 6px; flex-shrink: 0; }
+.iconBtnPlain { background: none; border: none; color: var(--fg-muted); cursor: pointer; padding: 3px; border-radius: 6px; flex-shrink: 0; min-width: 24px; min-height: 24px; display: inline-flex; align-items: center; justify-content: center; }
 .iconBtnPlain:hover { color: var(--fg); background: var(--panel-2); }
 .dept_edit { color: #a5b4fc; } .dept_sound { color: #34d399; } .dept_music { color: #f472b6; } .dept_color { color: #fbbf24; }
 .dept_vfx { color: #60a5fa; } .dept_titles { color: #e5e7eb; } .dept_general { color: var(--fg-muted); }

@@ -8,7 +8,7 @@ export const ANNOTATION_META: Record<AnnotationType, { label: string; color: str
   shot: { label: 'Shot', color: '#0099ff', routesTo: 'the scene’s shot list (Studio › Scenes)', href: '/studio?tab=scenes' },
   beat: { label: 'Beat', color: '#6366f1', routesTo: 'the beat board (Studio › Production)', href: '/studio?tab=production' },
   note: { label: 'Note', color: '#eab308', routesTo: 'this line of the script' },
-  revision: { label: 'Revision', color: '#d7340b', routesTo: 'this line of the script' },
+  revision: { label: 'Revision', color: '#e8431a', routesTo: 'this line of the script' },
   reference: { label: 'Reference', color: '#a855f7', routesTo: 'this line (add media in the Refs tab)' },
   todo: { label: 'To-do', color: '#10b981', routesTo: 'the project’s tasks', href: '/projects' },
 };

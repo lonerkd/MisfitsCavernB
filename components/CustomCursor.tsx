@@ -170,7 +170,7 @@ export default function CustomCursor() {
 
   return (
     <>
-      <div
+      <div aria-hidden
         ref={dotRef}
         style={{
           position: 'fixed',
@@ -188,7 +188,7 @@ export default function CustomCursor() {
           willChange: 'transform, width, height',
         }}
       />
-      <div
+      <div aria-hidden
         ref={ringRef}
         style={{
           position: 'fixed',

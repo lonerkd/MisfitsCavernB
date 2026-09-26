@@ -65,7 +65,7 @@ export default function StudioPage() {
           module: 'studio',
           title: activeProject.title,
           accent: activeProject.accent_color || '#6366f1',
-          fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: '#6366f1' }],
+          fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: '#818cf8' }],
           actions: [{ id: 'next-tab', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) }],
         }
       : null,
@@ -73,7 +73,8 @@ export default function StudioPage() {
   );
 
   return (
-    <main className={cx(s.page, page.main)}>
+    <div className={cx(s.page, page.main)}>
+      <h1 className="sr-only">Studio{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
       <header className={page.bar}>
         <div className={page.barLeft}>
@@ -147,6 +148,6 @@ export default function StudioPage() {
           </StudioProvider>
         )}
       </div>
-    </main>
+    </div>
   );
 }

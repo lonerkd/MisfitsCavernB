@@ -19,11 +19,17 @@ const getPref = (k: string, dflt: boolean) => {
   try { const v = localStorage.getItem(k); return v == null ? dflt : v === 'on'; } catch { return dflt; }
 };
 
+// A Row's label names the control inside it (switches have no visible text).
+const RowLabel = React.createContext<string | undefined>(undefined);
+
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  const label = React.useContext(RowLabel);
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={on}
+      aria-label={label}
       onClick={() => onChange(!on)}
       style={{
         width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
@@ -58,9 +64,9 @@ function Row({ label, hint, control }: { label: string; hint?: string; control: 
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>{label}</div>
-        {hint && <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
+        {hint && <div style={{ fontSize: 10.5, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
       </div>
-      <div style={{ flexShrink: 0 }}>{control}</div>
+      <div style={{ flexShrink: 0 }}><RowLabel.Provider value={label}>{control}</RowLabel.Provider></div>
     </div>
   );
 }
@@ -98,7 +104,7 @@ export default function SettingsPage() {
   const [leakCheck, setLeakCheck] = useState(true);
 
   const [customBg, setCustomBg] = useState('#040710');
-  const [customAccent, setCustomAccent] = useState('#d7340b');
+  const [customAccent, setCustomAccent] = useState('#e8431a');
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -117,7 +123,7 @@ export default function SettingsPage() {
     try {
       setTheme(localStorage.getItem('mc_theme') || 'default');
       setCustomBg(localStorage.getItem('mc_theme_custom_bg') || '#040710');
-      setCustomAccent(localStorage.getItem('mc_theme_custom_accent') || '#d7340b');
+      setCustomAccent(localStorage.getItem('mc_theme_custom_accent') || '#e8431a');
       setTaskbarScale(parseFloat(localStorage.getItem('mc_taskbar_scale') || '1'));
     } catch {}
   }, [router]);
@@ -231,7 +237,7 @@ export default function SettingsPage() {
   };
 
   if (!loaded) {
-    return <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5 }}>Loading settings…</div>;
+    return <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11}}>Loading settings…</div>;
   }
 
   return (
@@ -258,7 +264,7 @@ export default function SettingsPage() {
         <Section icon={<User size={15} />} title="Account">
           <Row label="Email address" hint="Changing this sends a confirmation link to the new address." control={
             <div style={{ display: 'flex', gap: 8 }}>
-              <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} style={inputStyle} />
+              <input type="email" aria-label="New email address" autoComplete="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} style={inputStyle} />
               <button style={btnStyle} onClick={changeEmail} disabled={busy === 'email'}>{busy === 'email' ? '…' : 'UPDATE'}</button>
             </div>
           } />
@@ -279,6 +285,7 @@ export default function SettingsPage() {
           <Row label="Color Theme" hint="Choose a color palette for the entire platform interface." control={
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-end' }}>
               <select
+                aria-label="Color theme"
                 value={theme}
                 onChange={e => setThemePref(e.target.value)}
                 style={{
@@ -298,7 +305,7 @@ export default function SettingsPage() {
               {theme === 'custom' && (
                 <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Background Base</label>
+                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Background Base</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input type="color" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
                       <input type="text" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
@@ -306,7 +313,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Accent Core</label>
+                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Accent Core</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input type="color" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
                       <input type="text" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
@@ -320,6 +327,7 @@ export default function SettingsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input
                 type="range"
+                aria-label="Taskbar scale"
                 min="0.8"
                 max="1.3"
                 step="0.05"
@@ -358,7 +366,7 @@ export default function SettingsPage() {
           } />
         </Section>
 
-        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, color: 'rgba(255,255,255,0.2)', marginTop: 40 }}>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
           MISFITS CAVERN · {user.email}
         </div>
       </div>

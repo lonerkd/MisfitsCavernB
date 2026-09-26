@@ -107,7 +107,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
         ))}
       </div>
 
-      <div style={{ marginTop: 40, padding: 24, background: 'rgba(215, 52, 11,0.05)', border: '1px solid rgba(215, 52, 11,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ marginTop: 40, padding: 24, background: 'rgba(232, 67, 26,0.05)', border: '1px solid rgba(232, 67, 26,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
         <Info size={20} color="var(--accent)" />
         <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, the Library, the Character Bible and story beats — update them and this updates.</div>
       </div>
@@ -123,7 +123,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
             </div>
             <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: idx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
             <button onClick={() => setIdx(i => Math.min(slides.length - 1, i + 1))} disabled={idx === slides.length - 1} aria-label="next" style={{ position: 'fixed', right: 28, top: '50%', background: 'none', border: 'none', color: idx === slides.length - 1 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>›</button>
-            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: '#666', letterSpacing: 2 }}>{idx + 1} / {slides.length}</div>
+            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', letterSpacing: 2 }}>{idx + 1} / {slides.length}</div>
           </motion.div>
         )}
       </AnimatePresence>

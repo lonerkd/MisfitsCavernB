@@ -201,7 +201,7 @@ export default function Navigation() {
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.3)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(232, 67, 26,0.3)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = '';
@@ -214,7 +214,10 @@ export default function Navigation() {
         </div>
 
         <button
+          type="button"
           onClick={() => setOpen(!open)}
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
           className="show-mobile"
           style={{ background: 'none', border: 'none', color: 'var(--fg)', padding: 4, cursor: 'pointer' }}
         >

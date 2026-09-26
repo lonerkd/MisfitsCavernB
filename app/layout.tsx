@@ -52,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
       <body>
+        <a href="#main-content" className="skip-link">Skip to content</a>
         <MotionPreference>
         <ToastProvider>
           <ConfirmProvider>
@@ -60,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <PillProvider>
                   <SpotifyProvider>
                     <ClientShell />
-                    <div className="main-content-container">{children}</div>
+                    <main id="main-content" className="main-content-container" tabIndex={-1}>{children}</main>
                   </SpotifyProvider>
                   </PillProvider>
               </PresenceProvider>

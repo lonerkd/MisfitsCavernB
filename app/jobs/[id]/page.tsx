@@ -38,9 +38,9 @@ const statusBadgeStyle = (status: string): React.CSSProperties => {
     case 'in-progress':
       return { ...base, color: '#facc15', borderColor: '#facc15', background: 'rgba(250,204,21,0.08)' };
     case 'closed':
-      return { ...base, color: 'rgba(224, 221, 174,0.4)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
+      return { ...base, color: 'var(--fg-dim)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
     default:
-      return { ...base, color: 'rgba(224, 221, 174,0.4)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
+      return { ...base, color: 'var(--fg-dim)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
   }
 };
 
@@ -202,7 +202,7 @@ export default function JobDetailPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, letterSpacing: 2 }}>LOADING...</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</span>
       </div>
     );
   }
@@ -229,7 +229,7 @@ export default function JobDetailPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
@@ -244,7 +244,7 @@ export default function JobDetailPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{
             fontFamily: 'var(--display)', fontSize: '0.85rem', letterSpacing: 2,
-            color: 'var(--fg)', opacity: 0.7,
+            color: 'var(--fg-dim)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260,
           }}>
             {job.title}
@@ -254,7 +254,7 @@ export default function JobDetailPage() {
         <span style={statusBadgeStyle(job.status)}>{job.status}</span>
       </header>
 
-      <main style={{ maxWidth: 720, margin: '58px auto 0', padding: '48px 24px 100px' }}>
+      <div style={{ maxWidth: 720, margin: '58px auto 0', padding: '48px 24px 100px' }}>
 
         <div style={{ marginBottom: 40 }}>
           <div style={{ marginBottom: 14 }}>
@@ -266,7 +266,7 @@ export default function JobDetailPage() {
               {job.role}
             </span>
             {job.projects?.title && (
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, opacity: 0.4, marginLeft: 12 }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, marginLeft: 12, color: 'var(--fg-dim)' }}>
                 · {job.projects.title}
               </span>
             )}
@@ -286,13 +286,13 @@ export default function JobDetailPage() {
                 <span>${job.rate}/hr</span>
               </div>
             )}
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
               Posted by{' '}
               <span style={{ opacity: 1, color: 'var(--fg)' }}>
                 {job.profiles?.username || 'unknown'}
               </span>
               {job.profiles?.role && (
-                <span style={{ opacity: 0.6 }}> · {job.profiles.role}</span>
+                <span style={{ color: 'var(--fg-dim)' }}> · {job.profiles.role}</span>
               )}
               {'  ·  '}
               {new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -332,13 +332,12 @@ export default function JobDetailPage() {
             </div>
 
             {appsLoading ? (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, letterSpacing: 2 }}>LOADING...</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</div>
             ) : applications.length === 0 ? (
               <div style={{
                 padding: 40, textAlign: 'center',
                 border: '1px dashed rgba(255,255,255,0.08)',
-                fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, letterSpacing: 2,
-              }}>
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--fg-dim)' }}>
                 NO APPLICATIONS YET
               </div>
             ) : (
@@ -355,8 +354,8 @@ export default function JobDetailPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                           width: 32, height: 32,
-                          background: 'rgba(215, 52, 11,0.15)',
-                          border: '1px solid rgba(215, 52, 11,0.3)',
+                          background: 'rgba(232, 67, 26,0.15)',
+                          border: '1px solid rgba(232, 67, 26,0.3)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0,
                         }}>
@@ -375,7 +374,7 @@ export default function JobDetailPage() {
                             {app.profiles?.username || 'unknown'}
                           </div>
                           {app.profiles?.role && (
-                            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.4, letterSpacing: 1, marginTop: 2 }}>
+                            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, marginTop: 2, color: 'var(--fg-dim)' }}>
                               {app.profiles.role}
                             </div>
                           )}
@@ -384,7 +383,7 @@ export default function JobDetailPage() {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {app.status === 'pending' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, opacity: 0.4 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
                             <Clock size={10} /> PENDING
                           </span>
                         )}
@@ -394,14 +393,14 @@ export default function JobDetailPage() {
                           </span>
                         )}
                         {app.status === 'rejected' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174,0.3)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
                             <XCircle size={10} /> REJECTED
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.3, letterSpacing: 1, marginBottom: app.cover_note ? 16 : 0 }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, marginBottom: app.cover_note ? 16 : 0, color: 'var(--fg-dim)' }}>
                       Applied {new Date(app.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
 
@@ -409,7 +408,7 @@ export default function JobDetailPage() {
                       <div style={{
                         marginTop: 12, padding: '12px 16px',
                         background: 'rgba(255,255,255,0.03)',
-                        borderLeft: '2px solid rgba(215, 52, 11,0.3)',
+                        borderLeft: '2px solid rgba(232, 67, 26,0.3)',
                       }}>
                         <p style={{
                           fontFamily: 'var(--serif)', fontSize: '1rem', lineHeight: 1.65,
@@ -441,12 +440,12 @@ export default function JobDetailPage() {
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)',
-                            color: 'rgba(224, 221, 174,0.5)', fontFamily: 'var(--mono)', fontSize: 9,
+                            color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9,
                             letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.5)';
-                            e.currentTarget.style.color = 'rgba(215, 52, 11,0.8)';
+                            e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.5)';
+                            e.currentTarget.style.color = 'rgba(232, 67, 26,0.8)';
                           }}
                           onMouseLeave={e => {
                             e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
@@ -465,7 +464,7 @@ export default function JobDetailPage() {
                           marginTop: 16,
                           padding: '6px 14px',
                           background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                          color: 'rgba(224, 221, 174,0.3)', fontFamily: 'var(--mono)', fontSize: 9,
+                          color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9,
                           letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                         }}
                         onMouseEnter={e => {
@@ -499,7 +498,7 @@ export default function JobDetailPage() {
                 padding: 32, border: '1px solid rgba(255,255,255,0.08)',
                 textAlign: 'center',
               }}>
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, margin: '0 0 16px', letterSpacing: 1 }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 11, margin: '0 0 16px', letterSpacing: 1, color: 'var(--fg-dim)' }}>
                   You need to be signed in to apply.
                 </p>
                 <Link href="/auth" style={{
@@ -523,7 +522,7 @@ export default function JobDetailPage() {
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: '#22c55e', marginBottom: 4 }}>
                     APPLICATION SUBMITTED
                   </div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.45, letterSpacing: 1 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
                     The creator will review your application and get back to you.
                   </div>
                 </div>
@@ -552,7 +551,7 @@ export default function JobDetailPage() {
                   style={{
                     alignSelf: 'flex-start',
                     padding: '12px 36px',
-                    background: applying ? 'rgba(215, 52, 11,0.3)' : 'var(--accent)',
+                    background: applying ? 'rgba(232, 67, 26,0.3)' : 'var(--accent)',
                     color: 'var(--bg)', border: 'none',
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
                     cursor: applying ? 'not-allowed' : 'pointer',
@@ -568,7 +567,7 @@ export default function JobDetailPage() {
             )}
           </section>
         )}
-      </main>
+      </div>
     </div>
   );
 }

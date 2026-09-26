@@ -44,7 +44,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
     }).sort((a, b) => b.total - a.total);
   })();
 
-  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#d7340b', SF: '#10b981', '·': 'rgba(255,255,255,0.12)' };
+  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#e8431a', SF: '#10b981', '·': 'rgba(255,255,255,0.12)' };
 
   if (scenes.length === 0) return null;
 
@@ -73,7 +73,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
             return (
               <div key={day}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#6366f1' }}>DAY {day}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#818cf8' }}>DAY {day}</span>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{dayScenes.length} scene{dayScenes.length === 1 ? '' : 's'} · {(dayEighths / 8).toFixed(1)} pg</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

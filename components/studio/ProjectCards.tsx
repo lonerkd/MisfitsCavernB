@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
+import { readable } from '@/lib/color';
 import { getPhasesForType, mapStatusToPhase, phaseIndexForType } from '@/lib/os/phases';
 
-const PHASE_COLORS = ['#ffaa00', '#0099ff', '#d7340b', '#a855f7', '#10b981'];
+const PHASE_COLORS = ['#ffaa00', '#0099ff', '#e8431a', '#a855f7', '#10b981'];
 
 /** Where the project is in its lifecycle, with phase names for its type. */
 export function StageIndicator({ status, projectType }: { status: string; projectType?: string | null }) {
@@ -17,7 +18,7 @@ export function StageIndicator({ status, projectType }: { status: string; projec
         return (
           <li key={p.id} aria-current={state === 'current' ? 'step' : undefined} style={{ flex: 1 }}>
             <div style={{ height: 3, borderRadius: 2, marginBottom: 10, background: state === 'next' ? 'rgba(224,221,174,0.08)' : color, opacity: state === 'done' ? 0.45 : 1 }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: state === 'next' ? 'var(--fg-dim)' : color, opacity: state === 'next' ? 0.6 : 1 }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: state === 'next' ? 'var(--fg-dim)' : readable(color) }}>
               {p.label}
             </span>
           </li>

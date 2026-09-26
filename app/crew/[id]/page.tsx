@@ -95,7 +95,7 @@ export default function CrewMemberPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, letterSpacing: 2 }}>LOADING...</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</div>
       </div>
     );
   }
@@ -118,8 +118,8 @@ export default function CrewMemberPage() {
         </header>
         <div style={{ marginTop: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', gap: 16 }}>
           <User size={40} style={{ opacity: 0.2 }} />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, opacity: 0.3 }}>PROFILE NOT FOUND</div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.4, marginTop: 4 }}>This crew member doesn&apos;t exist or has been removed.</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg-dim)' }}>PROFILE NOT FOUND</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 4, color: 'var(--fg-dim)' }}>This crew member doesn&apos;t exist or has been removed.</div>
           <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
             BACK TO CREW
           </Link>
@@ -152,7 +152,7 @@ export default function CrewMemberPage() {
         <span style={{
           fontSize: 9, padding: '4px 10px',
           border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(255,255,255,0.15)'}`,
-          color: profile.status === 'OPEN' ? '#00c850' : 'rgba(255,255,255,0.35)',
+          color: profile.status === 'OPEN' ? '#00c850' : 'var(--fg-dim)',
           fontFamily: 'var(--mono)', letterSpacing: 2
         }}>
           {profile.status}
@@ -201,7 +201,7 @@ export default function CrewMemberPage() {
               <span style={{
                 fontSize: 9, padding: '3px 9px',
                 border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
-                color: profile.status === 'OPEN' ? '#00c850' : 'rgba(255,255,255,0.3)',
+                color: profile.status === 'OPEN' ? '#00c850' : 'var(--fg-dim)',
                 fontFamily: 'var(--mono)', letterSpacing: 2
               }}>
                 {profile.status}
@@ -228,7 +228,7 @@ export default function CrewMemberPage() {
                 </div>
               )}
               {joinYear && (
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.28 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
                   member since {joinYear}
                 </div>
               )}
@@ -242,7 +242,7 @@ export default function CrewMemberPage() {
         {/* ── Bio ──────────────────────────────────────────────────────────────── */}
         {profile.bio && (
           <div style={{ marginBottom: 56 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, opacity: 0.4, marginBottom: 16, textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, marginBottom: 16, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
               About
             </div>
             <p style={{
@@ -257,7 +257,7 @@ export default function CrewMemberPage() {
         {/* ── Casting Section ───────────────────────────────────────────────────── */}
         {castings.length > 0 && (
           <div style={{ marginBottom: 48 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, opacity: 0.4, marginBottom: 16, textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, marginBottom: 16, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
               Playing
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -266,7 +266,7 @@ export default function CrewMemberPage() {
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#10b981' }}>{c.character_name}</span>
                   {c.project_title && (
                     <>
-                      <span style={{ opacity: 0.3, fontSize: 11 }}>in</span>
+                      <span style={{fontSize: 11, color: 'var(--fg-dim)' }}>in</span>
                       <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(224, 221, 174,0.8)' }}>{c.project_title}</span>
                     </>
                   )}
@@ -279,11 +279,11 @@ export default function CrewMemberPage() {
         {/* ── Portfolio Section ─────────────────────────────────────────────────── */}
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, opacity: 0.4, textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
               Portfolio
             </div>
             {projects.length > 0 && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.25 }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
                 {projects.length} {projects.length === 1 ? 'project' : 'projects'} · {totalClips} {totalClips === 1 ? 'clip' : 'clips'}
               </div>
             )}
@@ -303,7 +303,7 @@ export default function CrewMemberPage() {
                     style={{
                       padding: '20px 22px',
                       background: '#0a0a0a',
-                      border: `1px solid ${hoveredCard === project.id ? 'rgba(215, 52, 11,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      border: `1px solid ${hoveredCard === project.id ? 'rgba(232, 67, 26,0.3)' : 'rgba(255,255,255,0.06)'}`,
                       boxShadow: hoveredCard === project.id ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
                       transition: 'border-color 0.2s, box-shadow 0.2s',
                       cursor: 'pointer'
@@ -349,7 +349,7 @@ export default function CrewMemberPage() {
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 600, marginBottom: 6, lineHeight: 1.3 }}>
                       {project.title}
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.35, letterSpacing: 1 }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
                       {project.portfolio_media.length} {project.portfolio_media.length === 1 ? 'CLIP' : 'CLIPS'}
                     </div>
                   </div>

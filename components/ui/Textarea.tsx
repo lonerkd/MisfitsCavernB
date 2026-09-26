@@ -84,7 +84,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             text-[var(--fg)] font-serif text-sm leading-relaxed
             outline-none transition-all duration-300
             hover:border-[rgba(255,255,255,0.2)]
-            ${isFocused && !error && !isOverLimit ? 'shadow-[0_0_0_3px_rgba(215,52,11,0.05)]' : ''}
+            ${isFocused && !error && !isOverLimit ? 'shadow-[0_0_0_3px_rgba(232,67,26,0.05)]' : ''}
             ${(error || isOverLimit) ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}
           `}
           {...props}

@@ -90,8 +90,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
           fontFamily: 'var(--mono)',
           fontSize: 11,
           letterSpacing: 3,
-          color: 'var(--fg)',
-          opacity: 0.3,
+          color: 'var(--fg-dim)',
           animation: 'pulse 1.6s ease-in-out infinite',
         }}>
           LOADING
@@ -124,10 +123,10 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
         }}>
           404
         </div>
-        <p style={{ fontSize: 13, letterSpacing: 2, opacity: 0.5 }}>
+        <p style={{ fontSize: 13, letterSpacing: 2, color: 'var(--fg-dim)' }}>
           PORTFOLIO NOT FOUND
         </p>
-        <p style={{ fontSize: 11, opacity: 0.3, maxWidth: 320, textAlign: 'center', lineHeight: 1.7 }}>
+        <p style={{ fontSize: 11, maxWidth: 320, textAlign: 'center', lineHeight: 1.7, color: 'var(--fg-dim)' }}>
           This portfolio link may have expired or the project no longer exists.
         </p>
         <Link
@@ -177,7 +176,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
         position: 'relative',
         width: '100%',
         minHeight: 'clamp(260px, 38vw, 480px)',
-        background: 'linear-gradient(160deg, #111 0%, #080808 60%, rgba(215, 52, 11,0.06) 100%)',
+        background: 'linear-gradient(160deg, #111 0%, #080808 60%, rgba(232, 67, 26,0.06) 100%)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex',
         flexDirection: 'column',
@@ -228,8 +227,8 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               width: 34,
               height: 34,
               borderRadius: '50%',
-              background: profiles.avatar_url ? 'transparent' : 'rgba(215, 52, 11,0.25)',
-              border: '1px solid rgba(215, 52, 11,0.3)',
+              background: profiles.avatar_url ? 'transparent' : 'rgba(232, 67, 26,0.25)',
+              border: '1px solid rgba(232, 67, 26,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -264,9 +263,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                   fontFamily: 'var(--mono)',
                   fontSize: 9,
                   letterSpacing: 2,
-                  opacity: 0.4,
-                  marginTop: 2,
-                }}>
+                  marginTop: 2, color: 'var(--fg-dim)' }}>
                   {profiles.role.toUpperCase()}
                 </div>
               )}
@@ -293,9 +290,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                   fontFamily: 'var(--mono)',
                   fontSize: 8,
                   letterSpacing: 3,
-                  opacity: 0.35,
-                  marginBottom: 6,
-                }}>
+                  marginBottom: 6, color: 'var(--fg-dim)' }}>
                   YEAR
                 </div>
                 <div style={{
@@ -314,9 +309,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                   fontFamily: 'var(--mono)',
                   fontSize: 8,
                   letterSpacing: 3,
-                  opacity: 0.35,
-                  marginBottom: 6,
-                }}>
+                  marginBottom: 6, color: 'var(--fg-dim)' }}>
                   ROLE
                 </div>
                 <div style={{
@@ -338,8 +331,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             fontFamily: 'var(--serif)',
             fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             lineHeight: 1.8,
-            color: 'var(--fg)',
-            opacity: 0.75,
+            color: 'var(--fg-dim)',
             maxWidth: 720,
             marginTop: (year || role) ? 0 : 0,
           }}>
@@ -370,9 +362,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             fontFamily: 'var(--mono)',
             fontSize: 8,
             letterSpacing: 3,
-            opacity: 0.3,
-            marginBottom: 20,
-          }}>
+            marginBottom: 20, color: 'var(--fg-dim)' }}>
             {portfolio_media.length === 1 ? '1 CLIP' : `${portfolio_media.length} CLIPS`}
           </div>
 
@@ -457,7 +447,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                 transition: 'background 0.2s',
                 zIndex: 9001,
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(215, 52, 11,0.18)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(232, 67, 26,0.18)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -508,14 +498,14 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
 
 function DeckBlock({ block }: { block: PortfolioBlock }) {
   const label: React.CSSProperties = {
-    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, opacity: 0.3, marginBottom: 8, textTransform: 'uppercase',
+    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'uppercase',
   };
   const wrap: React.CSSProperties = {
     padding: 'clamp(16px, 3vw, 24px)', borderRadius: 12,
     background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
   };
   const heading: React.CSSProperties = { fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 1, margin: 0 };
-  const body: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.7, opacity: 0.75, marginTop: 8 };
+  const body: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.7, color: 'var(--fg-muted)', marginTop: 8 };
 
   switch (block.block_type) {
     case 'concept':
@@ -536,7 +526,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
         <div style={wrap}>
           <div style={label}>Scene</div>
           <h3 style={heading}>{block.title}</h3>
-          {loc && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.4, marginTop: 4 }}>{loc}</div>}
+          {loc && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginTop: 4, color: 'var(--fg-dim)' }}>{loc}</div>}
         </div>
       );
     }
@@ -551,7 +541,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
           {lines.length > 0 && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {lines.map((l, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 10.5, opacity: 0.6 }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }}>
                   <span>{l.category}</span>
                   <span>${Number(l.amount).toLocaleString()}</span>
                 </div>
@@ -569,12 +559,12 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
             // eslint-disable-next-line @next/next/no-img-element -- avatars from any host
             <img src={block.image_url} alt={block.title || ''} width={48} height={48} loading="lazy" referrerPolicy="no-referrer" style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
           ) : (
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(215,52,11,0.15)', flexShrink: 0 }} />
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(232,67,26,0.15)', flexShrink: 0 }} />
           )}
           <div>
             <div style={label}>Crew</div>
             <h3 style={{ ...heading, marginTop: -6 }}>{block.title}</h3>
-            {block.body && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.5, marginTop: 2 }}>{block.body}</div>}
+            {block.body && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginTop: 2, color: 'var(--fg-dim)' }}>{block.body}</div>}
           </div>
         </div>
       );
@@ -646,7 +636,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         aspectRatio: '16/9',
         background: '#111',
         border: `1px solid ${hovered ? 'var(--accent)' : 'rgba(255,255,255,0.07)'}`,
-        boxShadow: hovered ? '0 12px 28px rgba(0,0,0,0.5), 0 0 16px rgba(215, 52, 11,0.25)' : 'none',
+        boxShadow: hovered ? '0 12px 28px rgba(0,0,0,0.5), 0 0 16px rgba(232, 67, 26,0.25)' : 'none',
         cursor: 'pointer',
         overflow: 'hidden',
         position: 'relative',
@@ -659,7 +649,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
       // eslint-disable-next-line @next/next/no-img-element -- YouTube and custom thumbnails aren't next/image hosts
       <img
         src={thumb}
-        alt={media.title}
+        alt=""
         referrerPolicy="no-referrer"
         style={{
           position: 'absolute',
@@ -740,8 +730,7 @@ function FooterLink() {
       fontFamily: 'var(--mono)',
       fontSize: 9,
       letterSpacing: 2,
-      color: 'var(--fg)',
-      opacity: 0.25,
+      color: 'var(--fg-dim)',
     }}>
       POWERED BY{' '}
       <Link

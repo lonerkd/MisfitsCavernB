@@ -74,7 +74,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     <div key={i} style={{
                       position: 'relative',
                       color, fontWeight: bold ? 700 : 400,
-                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
+                      background: isReadingLine ? 'rgba(232, 67, 26,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
                       boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : isCurrentLine ? 'inset 2px 0 0 rgba(255,255,255,0.25)' : undefined,
                     }}>
                       {lineText.length ? lineText : ' '}
@@ -98,7 +98,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                           title="Add margin note"
                           style={{
                             position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
-                            border: '1px dashed rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.5)',
+                            border: '1px dashed rgba(255,255,255,0.35)', color: 'var(--fg-dim)',
                             fontSize: 9, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
                           }}
                         >+</span>
@@ -121,8 +121,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase',
                                   padding: '3px 7px', borderRadius: 99, cursor: 'pointer',
                                   background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(255,255,255,0.04)',
-                                  border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.1)'}`,
-                                  color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.5)',
+                                  border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)'}`,
+                                  color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)',
                                 }}
                               >{ANNOTATION_META[t].label}</button>
                             ))}
@@ -174,7 +174,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 20, padding: '6px 10px', backdropFilter: 'blur(12px)',
                 }}>
-                  <button
+                  <button type="button" aria-label={tableReadPlaying ? 'Pause table read' : 'Resume table read'}
                     onClick={() => (tableReadPlaying ? pauseTableRead() : (tableReadLineIdx != null ? resumeTableRead() : startTableRead(0)))}
                     title={tableReadPlaying ? 'Pause table read' : 'Play table read'}
                     style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -182,15 +182,15 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     {tableReadPlaying ? <Pause size={15} /> : <Play size={15} />}
                   </button>
                   {tableReadLineIdx != null && (
-                    <button
+                    <button aria-label="Stop table read"
                       onClick={stopTableRead}
                       title="Stop table read"
-                      style={{ background: 'transparent', border: 'none', color: 'rgba(224, 221, 174,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                     Table Read
                   </span>
                 </div>
@@ -208,7 +208,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 0.5,
                   }}>
                     <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
-                    <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{status.hint}</span>
+                    <span style={{ color: 'var(--fg-dim)' }}>{status.hint}</span>
                   </div>
                 );
               })()}

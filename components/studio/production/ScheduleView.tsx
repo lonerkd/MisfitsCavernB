@@ -19,7 +19,7 @@ import s from '../studio.module.css';
 
 const STATUS_ORDER = ['planned', 'shot', 'wrapped'] as const;
 const STATUS_COLOR: Record<string, string> = { planned: '#6b7280', shot: '#f59e0b', wrapped: '#10b981' };
-const CAT_COLOR: Record<ElementCategory, string> = { props: '#ffaa00', wardrobe: '#d7340b', vehicles: '#0099ff', sfx: '#a855f7', vfx: '#6366f1' };
+const CAT_COLOR: Record<ElementCategory, string> = { props: '#ffaa00', wardrobe: '#e8431a', vehicles: '#0099ff', sfx: '#a855f7', vfx: '#6366f1' };
 
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 

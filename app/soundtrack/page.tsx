@@ -197,7 +197,7 @@ export default function SoundtrackPage() {
       <div className="mc-page p-12 flex flex-col items-center justify-center text-center">
         <Disc size={48} className="mb-6 opacity-20" />
         <h1 className="mc-title text-4xl mb-4">Cinematic Audio Engine</h1>
-        <p className="mc-text mb-8 max-w-md opacity-60">Connect your Spotify account to unlock the global background player and cinematic mood library.</p>
+        <p className="mc-text mb-8 max-w-md text-[var(--fg-dim)]">Connect your Spotify account to unlock the global background player and cinematic mood library.</p>
         <Button variant="solid" onClick={redirectToSpotifyAuth} className="gap-2 px-8">
           <Disc size={16} /> Connect Spotify
         </Button>
@@ -216,7 +216,7 @@ export default function SoundtrackPage() {
       <header className="mb-12 flex items-end justify-between">
         <div>
           <h1 className="mc-title text-4xl tracking-wide">Soundtrack & Audio</h1>
-          <p className="mc-text opacity-60 uppercase tracking-widest text-xs mt-2">Manage cinematic moods, SFX, and project references</p>
+          <p className="mc-text text-[var(--fg-dim)] uppercase tracking-widest text-xs mt-2">Manage cinematic moods, SFX, and project references</p>
         </div>
       </header>
 
@@ -246,7 +246,7 @@ export default function SoundtrackPage() {
             <div className="space-y-12">
               {Object.entries(groupedMoods).map(([category, moods]) => (
                 <div key={category}>
-                  <h2 className="mc-title text-xl opacity-60 mb-6">{category}</h2>
+                  <h2 className="mc-title text-xl text-[var(--fg-dim)] mb-6">{category}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {moods.map(mood => (
                       <div
@@ -279,7 +279,7 @@ export default function SoundtrackPage() {
               <div className="flex justify-between items-center bg-black/20 p-6 rounded-2xl border border-white/5">
                 <div>
                   <h3 className="mc-title text-xl mb-1">Custom SFX Library</h3>
-                  <p className="mc-text text-sm opacity-50">Upload raw .wav or .mp3 files to your Cavern Created library.</p>
+                  <p className="mc-text text-sm text-[var(--fg-dim)]">Upload raw .wav or .mp3 files to your Cavern Created library.</p>
                 </div>
                 <div>
                   <input
@@ -299,7 +299,7 @@ export default function SoundtrackPage() {
                 {sfxAssets.length === 0 ? (
                   <div className="col-span-full p-12 text-center border border-dashed border-white/10 rounded-2xl">
                     <Folder size={32} className="opacity-20 mb-4 mx-auto" />
-                    <h4 className="mc-title opacity-60">No custom SFX uploaded yet</h4>
+                    <h4 className="mc-title text-[var(--fg-dim)]">No custom SFX uploaded yet</h4>
                   </div>
                 ) : (
                   sfxAssets.map(asset => {
@@ -308,7 +308,7 @@ export default function SoundtrackPage() {
                     return (
                       <div key={asset.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                         <div className="flex items-center gap-4 overflow-hidden">
-                          <button
+                          <button aria-label="Play"
                             className="w-10 h-10 shrink-0 rounded-full bg-[#1ed760]/10 flex items-center justify-center hover:bg-[#1ed760]/20 text-[#1ed760]"
                             onClick={() => new Audio(publicUrl).play()}
                           >
@@ -316,10 +316,10 @@ export default function SoundtrackPage() {
                           </button>
                           <div className="min-w-0">
                             <h4 className="mc-title text-sm truncate">{asset.title}</h4>
-                            <p className="mc-text text-xs opacity-50 truncate">{asset.tags?.[0] || 'Custom SFX'}</p>
+                            <p className="mc-text text-xs text-[var(--fg-dim)] truncate">{asset.tags?.[0] || 'Custom SFX'}</p>
                           </div>
                         </div>
-                        <button
+                        <button aria-label="Save to Active Project"
                           className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-white/50 hover:text-white shrink-0"
                           title="Save to Active Project"
                           onClick={() => saveToProject(asset, 'custom_upload')}
@@ -340,7 +340,7 @@ export default function SoundtrackPage() {
                 <div className="p-12 rounded-2xl border border-dashed border-white/10 text-center">
                   <ShieldAlert size={32} className="opacity-20 mb-4 mx-auto" />
                   <h3 className="mc-title text-xl mb-2">No Active Project</h3>
-                  <p className="mc-text text-sm opacity-50">Select an active project in the Hub to view its Audio Bible.</p>
+                  <p className="mc-text text-sm text-[var(--fg-dim)]">Select an active project in the Hub to view its Audio Bible.</p>
                 </div>
               ) : (
                 <>
@@ -350,7 +350,7 @@ export default function SoundtrackPage() {
                     </div>
                     <div>
                       <h2 className="mc-title text-2xl">{activeProject.title} Audio Bible</h2>
-                      <p className="mc-text text-sm opacity-50">Global audio references saved to this project</p>
+                      <p className="mc-text text-sm text-[var(--fg-dim)]">Global audio references saved to this project</p>
                     </div>
                   </div>
 
@@ -360,14 +360,14 @@ export default function SoundtrackPage() {
                     <div className="p-12 rounded-2xl border border-dashed border-white/10 text-center">
                       <Music size={32} className="opacity-20 mb-4 mx-auto" />
                       <h3 className="mc-title text-lg mb-2">Bible is empty</h3>
-                      <p className="mc-text text-sm opacity-50">Search for tracks or upload SFX, then click &quot;+&quot; to save them here.</p>
+                      <p className="mc-text text-sm text-[var(--fg-dim)]">Search for tracks or upload SFX, then click &quot;+&quot; to save them here.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {projectRefs.map(ref => (
                         <div key={ref.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
                           <div className="flex items-center gap-4 overflow-hidden">
-                            <button
+                            <button aria-label="Play"
                               className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
                               onClick={() => {
                                 if (ref.reference_type === 'spotify') playUri(ref.uri);
@@ -381,13 +381,13 @@ export default function SoundtrackPage() {
                             </button>
                             <div className="min-w-0">
                               <h4 className="mc-title text-sm truncate">{ref.title}</h4>
-                              <p className="mc-text text-xs opacity-50 truncate flex items-center gap-1">
+                              <p className="mc-text text-xs text-[var(--fg-dim)] truncate flex items-center gap-1">
                                 {ref.reference_type === 'spotify' ? <Disc size={10} /> : <UploadCloud size={10} />}
                                 {ref.description}
                               </p>
                             </div>
                           </div>
-                          <button
+                          <button aria-label="Delete"
                             className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-400 transition-all shrink-0"
                             onClick={() => deleteProjectRef(ref.id)}
                           >
@@ -433,17 +433,17 @@ export default function SoundtrackPage() {
                       )}
                       <div className="min-w-0">
                         <h4 className="mc-title text-sm truncate">{item.name}</h4>
-                        <p className="mc-text text-xs opacity-50 truncate">{item.artists?.[0]?.name ?? (item.type === 'playlist' ? `Playlist · ${item.owner?.display_name ?? 'Spotify'}` : '')}</p>
+                        <p className="mc-text text-xs text-[var(--fg-dim)] truncate">{item.artists?.[0]?.name ?? (item.type === 'playlist' ? `Playlist · ${item.owner?.display_name ?? 'Spotify'}` : '')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
+                      <button aria-label="Play"
                         className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[#1ed760]/20 text-[#1ed760] transition-all"
                         onClick={() => playUri(item.uri)}
                       >
                         <Play size={16} />
                       </button>
-                      <button
+                      <button aria-label="Save to Project Bible"
                         className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 text-white/60 hover:text-white transition-all"
                         title="Save to Project Bible"
                         onClick={() => saveToProject(item, 'spotify')}
@@ -455,10 +455,10 @@ export default function SoundtrackPage() {
                 ))}
               </div>
 
-              <div className="p-6 mt-8 rounded-2xl bg-[#d7340b]/10 border border-[#d7340b]/20 flex gap-4 items-start">
-                <ShieldAlert size={20} className="text-[#d7340b] shrink-0 mt-1" />
-                <p className="mc-text text-xs leading-relaxed text-[#d7340b]/80">
-                  <strong className="text-[#d7340b]">Copyright Notice:</strong> Searching the public Spotify catalog will return copyrighted material. You may link these to your projects as private references or mood inspiration, but they cannot be exported as part of your final mixed media without a license.
+              <div className="p-6 mt-8 rounded-2xl bg-[#e8431a]/10 border border-[#e8431a]/20 flex gap-4 items-start">
+                <ShieldAlert size={20} className="text-[#e8431a] shrink-0 mt-1" />
+                <p className="mc-text text-xs leading-relaxed text-[#e8431a]/80">
+                  <strong className="text-[#e8431a]">Copyright Notice:</strong> Searching the public Spotify catalog will return copyrighted material. You may link these to your projects as private references or mood inspiration, but they cannot be exported as part of your final mixed media without a license.
                 </p>
               </div>
             </div>

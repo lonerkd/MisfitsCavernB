@@ -18,7 +18,7 @@ export function AmbientGradient({
 }: AmbientGradientProps) {
   const yPos = position === 'top' ? '20%' : position === 'bottom' ? '80%' : '50%';
 
-  const baseColor = color || 'rgba(215, 52, 11, 1)';
+  const baseColor = color || 'rgba(232, 67, 26, 1)';
 
   return (
     <motion.div

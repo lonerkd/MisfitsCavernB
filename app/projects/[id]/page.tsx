@@ -25,6 +25,7 @@ import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import type { ScriptFormat } from '@/lib/scriptos/parser';
 import { awaitOSUser } from '@/lib/os';
+import { readable } from '@/lib/color';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 
 
@@ -63,8 +64,9 @@ interface DeptWindowProps {
   span?: 'single' | 'double';
 }
 
-function DeptWindow({ title, tag, color, href, stats, preview, delay = 0, span = 'single' }: DeptWindowProps) {
+function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay = 0, span = 'single' }: DeptWindowProps) {
   const [hovered, setHovered] = useState(false);
+  const color = readable(rawColor);
 
   return (
     <motion.div
@@ -172,7 +174,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
 function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }) {
   const total = concepts + scenes;
   const filled = Math.min(6, concepts);
-  const palette = ['#6366f1', '#d7340b', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  const palette = ['#6366f1', '#e8431a', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
       <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} reference{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
@@ -234,7 +236,7 @@ function TimelinePreview({ deadline, milestones }: { deadline: string; milestone
           <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>No end date set</span>
         ) : (
           <>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{Math.abs(daysLeft)}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#e8431a' : 'var(--fg)', lineHeight: 1 }}>{Math.abs(daysLeft)}</span>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{daysLeft < 0 ? 'days past the end date' : 'days to the end date'}</span>
           </>
         )}
@@ -303,7 +305,7 @@ export default function ProjectHubPage() {
           phase,
           deadline: row.end_date || '',
           description: row.description || '',
-          color: row.accent_color || '#d7340b',
+          color: readable(row.accent_color || '#e8431a'),
           team: [],
           settings: row.settings as unknown as ProjectSettings,
           visibility: (row.visibility as ProjectHubViewModel['visibility']) || 'team',
@@ -369,9 +371,9 @@ export default function ProjectHubPage() {
 
   if (loading || !project) {
     return (
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, opacity: 0.4 }}>LOADING</div>
-      </main>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>LOADING</div>
+      </div>
     );
   }
 
@@ -409,7 +411,7 @@ export default function ProjectHubPage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
       <GrainOverlay />
 
       <div style={{
@@ -430,7 +432,7 @@ export default function ProjectHubPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link href="/projects" style={{ color: 'var(--fg-dim)', display: 'flex', transition: 'color 0.2s' }}
+          <Link href="/projects" aria-label="Back to projects" style={{ color: 'var(--fg-dim)', display: 'flex', transition: 'color 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--fg)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--fg-dim)'}
           >
@@ -530,7 +532,7 @@ export default function ProjectHubPage() {
           style={{ marginBottom: 24 }}
         >
           <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 0.9 }}>{project.title}</div>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 400, letterSpacing: 2, lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', color: 'var(--fg-dim)', marginTop: 10, maxWidth: 560 }}>{project.description}</p>
         </motion.div>
 
@@ -552,7 +554,7 @@ export default function ProjectHubPage() {
             <DeptWindow
               title="ScriptOS"
               tag="Screenplay"
-              color="#d7340b"
+              color="#e8431a"
               href="/editor"
               delay={0.05}
               stats={[
@@ -656,7 +658,7 @@ export default function ProjectHubPage() {
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
-    </main>
+    </div>
   );
 }
 
@@ -1093,10 +1095,10 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{children}</div>;
 }
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.6, padding: '2px 0' }}>{children}</div>;
+  return <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', padding: '2px 0' }}>{children}</div>;
 }
 function DelBtn({ onClick }: { onClick: () => void }) {
-  return <button onClick={onClick} aria-label="delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, opacity: 0.5, flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.5')}>×</button>;
+  return <button type="button" onClick={onClick} aria-label="Delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, flexShrink: 0, minWidth: 24, minHeight: 24 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>×</button>;
 }
 
 function BudgetRowItem({

@@ -110,7 +110,7 @@ export function EditorLeftNav({
                       fontFamily: 'var(--mono)', letterSpacing: 1,
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >{key}</button>
                   ))}
@@ -124,7 +124,7 @@ export function EditorLeftNav({
                   display: 'flex', justifyContent: 'space-between',
                 }}>
                   <span>Story Map</span>
-                  <span style={{ opacity: 0.5 }}>{scenesList.length} sc</span>
+                  <span style={{ color: 'var(--fg-dim)' }}>{scenesList.length} sc</span>
                 </div>
 
                 {scenesList.length === 0 && (
@@ -198,7 +198,7 @@ export function EditorLeftNav({
                             }}>
                               {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                             </span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', flexShrink: 0, opacity: 0.8 }}>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', flexShrink: 0}}>
                               {wc > 0 ? `${wc}w` : ''}
                             </span>
                           </div>

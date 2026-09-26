@@ -99,7 +99,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg)', opacity: 0.3, animation: 'pulse 1.6s ease-in-out infinite' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', animation: 'pulse 1.6s ease-in-out infinite' }}>
           LOADING
         </div>
         <style>{`@keyframes pulse { 0%,100%{opacity:.15} 50%{opacity:.5} }`}</style>
@@ -115,8 +115,8 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
         gap: 24, fontFamily: 'var(--mono)',
       }}>
         <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: 6, color: 'var(--accent)', lineHeight: 1 }}>404</div>
-        <p style={{ fontSize: 13, letterSpacing: 2, opacity: 0.5 }}>SCRIPT NOT FOUND</p>
-        <p style={{ fontSize: 11, opacity: 0.3, maxWidth: 320, textAlign: 'center', lineHeight: 1.7 }}>
+        <p style={{ fontSize: 13, letterSpacing: 2, color: 'var(--fg-dim)' }}>SCRIPT NOT FOUND</p>
+        <p style={{ fontSize: 11, maxWidth: 320, textAlign: 'center', lineHeight: 1.7, color: 'var(--fg-dim)' }}>
           This link may have expired, or the author has turned off public sharing.
         </p>
         <Link href="/" style={{
@@ -140,7 +140,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
         <div>
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 2, color: '#fff' }}>{script.title}</div>
           {script.profile && (
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
               by {script.profile.username}{script.profile.role ? ` · ${script.profile.role}` : ''}
             </div>
           )}
@@ -160,7 +160,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
           borderRadius: 2,
         }}>
           {lines.length === 0 ? (
-            <div style={{ fontFamily: 'Courier Prime, monospace', fontSize: 13, opacity: 0.4, textAlign: 'center', padding: 40 }}>
+            <div style={{ fontFamily: 'Courier Prime, monospace', fontSize: 13, textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>
               This script is empty.
             </div>
           ) : (
@@ -170,7 +170,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
       </div>
 
       <footer style={{ textAlign: 'center', paddingBottom: 28 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.25)' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--fg-dim)' }}>
           POWERED BY{' '}
           <Link href="/auth" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
             MISFITS CAVERN

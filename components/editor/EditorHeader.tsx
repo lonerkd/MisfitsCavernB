@@ -66,7 +66,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Link href="/" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
+            <Link href="/" aria-label="Home" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
               <ArrowLeft size={18} />
@@ -79,14 +79,14 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1,
-                  color: activeProject.accent_color || '#d7340b',
-                  background: `${activeProject.accent_color || '#d7340b'}14`,
-                  border: `1px solid ${activeProject.accent_color || '#d7340b'}30`,
+                  color: activeProject.accent_color || '#e8431a',
+                  background: `${activeProject.accent_color || '#e8431a'}14`,
+                  border: `1px solid ${activeProject.accent_color || '#e8431a'}30`,
                   padding: '4px 10px', borderRadius: 9999, textDecoration: 'none',
                   maxWidth: 160, overflow: 'hidden',
                 }}
               >
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: activeProject.accent_color || '#d7340b', flexShrink: 0 }} />
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: activeProject.accent_color || '#e8431a', flexShrink: 0 }} />
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeProject.title}</span>
               </Link>
             )}
@@ -94,13 +94,19 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
             <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="link-btn"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}
-              >
-                <List size={14} className="text-indigo-400" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowSidebar(!showSidebar)}
+                  className="link-btn"
+                  aria-label={showSidebar ? 'Hide scene list' : 'Show scene list'}
+                  aria-pressed={showSidebar}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 28, minHeight: 28 }}
+                >
+                  <List size={14} className="text-indigo-400" />
+                </button>
                 <input
+                  aria-label="Script title"
                   value={currentScript?.title || ''}
                   onChange={async (e) => {
                     if (currentScript) {
@@ -125,11 +131,11 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   onFocus={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
                   onBlur={(e) => e.target.style.background = 'transparent'}
                 />
-              </button>
+              </div>
 
-              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#0099ff' : 'var(--fg-subtle)', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+              <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
-              </span>
+              </button>
             </div>
           </div>
 
@@ -175,7 +181,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
               { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
               { icon: Lock,       title: 'Lock Revision', onClick: handleLockRevision },
             ].map(({ icon: Icon, title, onClick }) => (
-              <button
+              <button aria-label={title}
                 key={title}
                 onClick={onClick}
                 title={title}
@@ -208,7 +214,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   border: 'none', cursor: 'pointer',
                   transition: 'box-shadow 0.25s, transform 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(232, 67, 26,0.3)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = ''; }}
               >
                 <Download size={12} /> Export <ChevronDown size={11} />
@@ -243,7 +249,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                     color: 'var(--fg-muted)', fontSize: 10, cursor: 'pointer', borderRadius: 7,
                     textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--mono)', fontWeight: 500,
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(215,52,11,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,67,26,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>
                     Normalize formatting
                   </button>
@@ -252,7 +258,10 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
             </div>
 
             <button
+              type="button"
               onClick={handleSave}
+              aria-label={saving ? 'Saving…' : 'Save'}
+              title="Save (⌘S)"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 36, height: 36,

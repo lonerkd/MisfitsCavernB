@@ -16,7 +16,11 @@ category.
   platform-wide, portfolio media/players for YouTube/Vimeo/Drive, custom
   avatars load.
 
-Queued (user): accessibility audit of every page (WCAG 2.2 AA / Lighthouse);
+Accessibility: every page passes WCAG 2.2 A/AA (axe-core) signed out, signed in,
+admin and mobile — from ~800 violations to 0 — and CI now enforces it
+(`e2e/accessibility.spec.ts`; rules in `design-tokens.md`).
+
+Queued (user):
 the phase-unlocked "Lego" ecosystem — design from the suite's dream users
 (writers, directors, producers, crew, editors, composers, the community)
 before building.

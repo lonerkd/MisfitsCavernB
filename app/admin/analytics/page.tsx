@@ -88,7 +88,7 @@ export default function AdminAnalyticsPage() {
           zIndex: 100,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Link href="/admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
+            <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
               <ArrowLeft size={20} />
             </Link>
             <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
@@ -185,14 +185,14 @@ export default function AdminAnalyticsPage() {
                 key={stat.label}
                 style={{
                   padding: 24,
-                  background: 'rgba(215, 52, 11,0.05)',
-                  border: '1px solid rgba(215, 52, 11,0.2)',
+                  background: 'rgba(232, 67, 26,0.05)',
+                  border: '1px solid rgba(232, 67, 26,0.2)',
                   borderRadius: 8,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <stat.icon size={16} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.6 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
                     {stat.label}
                   </span>
                 </div>
@@ -215,7 +215,7 @@ export default function AdminAnalyticsPage() {
                 { label: 'Completion Rate', value: analytics.totalProjects > 0 ? `${Math.round((analytics.completedProjects / analytics.totalProjects) * 100)}%` : '—' },
               ].map(metric => (
                 <div key={metric.label} style={{ padding: 16, background: 'rgba(0,153,255,0.05)', borderRadius: 4 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.6, marginBottom: 8 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, marginBottom: 8, color: 'var(--fg-dim)' }}>
                     {metric.label}
                   </div>
                   <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', fontWeight: 700 }}>
@@ -227,7 +227,7 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div style={{ marginTop: 24, padding: 16, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 4, fontSize: 11 }}>
-            <p style={{ margin: 0, opacity: 0.7 }}>
+            <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
               Fetched on page load and whenever the time range above changes — not a live/streaming feed.
             </p>
           </div>

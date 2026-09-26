@@ -188,7 +188,7 @@ export function OutlineView({
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
       </div>
       {filteredScenes.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#666', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
+        <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
       ) : (
         filteredScenes.map((scene, i) => {
           const globalIdx = scenesList.indexOf(scene);
@@ -263,9 +263,9 @@ export function StatsView({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
         {[
-          { label: 'Words',   value: wordCount.toLocaleString(), color: '#6366f1', sub: `${pageEst} pages` },
+          { label: 'Words',   value: wordCount.toLocaleString(), color: '#818cf8', sub: `${pageEst} pages` },
           { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
-          { label: 'Scenes',  value: `${scenesList.length}`, color: '#d7340b', sub: `${uniqueLocations.length} locations` },
+          { label: 'Scenes',  value: `${scenesList.length}`, color: '#e8431a', sub: `${uniqueLocations.length} locations` },
           { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
           { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
         ].map(s => (
@@ -275,7 +275,7 @@ export function StatsView({
           >
             <div style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: 6 }}>{s.value}</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 3 }}>{s.label}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.6 }}>{s.sub}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)'}}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -289,7 +289,7 @@ export function StatsView({
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               {[
-                { label: 'INT/Day', color: '#6366f1' }, { label: 'INT/Night', color: '#4338ca' },
+                { label: 'INT/Day', color: '#818cf8' }, { label: 'INT/Night', color: '#9194f6' },
                 { label: 'EXT/Day', color: '#d97706' }, { label: 'EXT/Night', color: '#92400e' },
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -348,7 +348,7 @@ export function StatsView({
                 return (
                   <div key={scene.id} style={{ flex: `0 0 ${w}%`, minWidth: 4, display: 'flex', justifyContent: 'center' }}>
                     {w > 3 && (
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', opacity: 0.5 }}>{i + 1}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)'}}>{i + 1}</span>
                     )}
                   </div>
                 );
@@ -399,7 +399,7 @@ export function StatsView({
                 {scenesList.map((_, si) => (
                   <div key={si} style={{ flex: 1, minWidth: 8 }}>
                     {(si + 1) % Math.max(1, Math.floor(scenesList.length / 8)) === 0 && (
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', opacity: 0.4, textAlign: 'center' }}>{si + 1}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', textAlign: 'center' }}>{si + 1}</div>
                     )}
                   </div>
                 ))}
@@ -413,11 +413,11 @@ export function StatsView({
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
         <div style={{ display: 'flex', gap: 1, borderRadius: 6, overflow: 'hidden', height: 20 }}>
           <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
-          <div style={{ flex: 1, background: '#d7340b' }} />
+          <div style={{ flex: 1, background: '#e8431a' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#6366f1' }}>{dialogueRatio}% Dialogue</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#d7340b' }}>{100 - dialogueRatio}% Action</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#818cf8' }}>{dialogueRatio}% Dialogue</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#e8431a' }}>{100 - dialogueRatio}% Action</span>
         </div>
       </div>
 
@@ -477,7 +477,7 @@ export function StatsView({
           {[
             { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: '#ef4444' },
             { count: lintIssues.filter(i => i.type === 'warning').length, label: 'Warnings', color: '#eab308' },
-            { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: '#6366f1' },
+            { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: '#818cf8' },
           ].map(({ count, label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? '#10b981' : color, lineHeight: 1 }}>{count}</span>
