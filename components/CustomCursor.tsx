@@ -13,14 +13,6 @@ export default function CustomCursor() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let pref: string | null = null;
-    try { pref = localStorage.getItem('mc_reduce_motion'); } catch {}
-    const reduce = pref === 'on' || (pref == null && osReduced);
-    document.body.classList.toggle('reduce-motion', reduce);
-  }, []);
-
-  useEffect(() => {
     const updateTheme = () => {
       try {
         const theme = localStorage.getItem('mc_theme') || 'default';

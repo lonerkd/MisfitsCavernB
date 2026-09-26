@@ -9,6 +9,7 @@ import { PillProvider } from '@/lib/context/PillContext';
 import { SpotifyProvider } from '@/lib/context/SpotifyContext';
 
 import ClientShell from '@/components/ClientShell';
+import MotionPreference from '@/components/MotionPreference';
 
 const bebasNeue = Bebas_Neue({
   weight: '400',
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
       <body>
+        <MotionPreference>
         <ToastProvider>
           <ConfirmProvider>
             <OSProvider>
@@ -65,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </OSProvider>
           </ConfirmProvider>
         </ToastProvider>
+        </MotionPreference>
       </body>
     </html>
   );

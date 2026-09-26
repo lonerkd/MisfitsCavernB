@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
+import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -141,7 +142,7 @@ export default function SettingsPage() {
   };
   const setMotionPref = (v: boolean) => {
     setMotion(v); savePref(PREF_KEYS.motion, v);
-    document.body.classList.toggle('reduce-motion', v);
+    window.dispatchEvent(new Event(MOTION_PREF_EVENT));
   };
   const setThemePref = (v: string) => {
     setTheme(v);
