@@ -6,7 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Archive, Clapperboard, Globe, LayoutGrid, Maximize2, Megaphone, Video } from 'lucide-react';
+import { Archive, Clapperboard, Film, Globe, LayoutGrid, Maximize2, Megaphone, Video } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useOSGate, useProject } from '@/lib/os';
 import { getProjectModules } from '@/lib/types/settings';
@@ -16,6 +16,7 @@ import { OverviewTab } from '@/components/studio/tabs/OverviewTab';
 import { LibraryTab } from '@/components/studio/tabs/LibraryTab';
 import { ScenesTab } from '@/components/studio/tabs/ScenesTab';
 import { ProductionTab } from '@/components/studio/tabs/ProductionTab';
+import { PostTab } from '@/components/studio/tabs/PostTab';
 import { PromosTab } from '@/components/studio/tabs/PromosTab';
 import { PitchTab } from '@/components/studio/tabs/PitchTab';
 import { ShareTab } from '@/components/studio/tabs/ShareTab';
@@ -23,12 +24,13 @@ import { cx } from '@/components/studio/ui';
 import s from '@/components/studio/studio.module.css';
 import page from './studio-page.module.css';
 
-type TabId = 'overview' | 'library' | 'scenes' | 'production' | 'promos' | 'pitch' | 'share';
+type TabId = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
 const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'overview', label: 'Overview', icon: <LayoutGrid size={12} /> },
   { id: 'library', label: 'Library', icon: <Archive size={12} /> },
   { id: 'scenes', label: 'Scenes', icon: <Clapperboard size={12} /> },
   { id: 'production', label: 'Production', icon: <Video size={12} /> },
+  { id: 'post', label: 'Post', icon: <Film size={12} /> },
   { id: 'promos', label: 'Promos', icon: <Megaphone size={12} /> },
   { id: 'pitch', label: 'Pitch', icon: <Maximize2 size={12} /> },
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
@@ -137,6 +139,7 @@ export default function StudioPage() {
               {tab === 'library' && <LibraryTab />}
               {tab === 'scenes' && <ScenesTab />}
               {tab === 'production' && <ProductionTab />}
+              {tab === 'post' && <PostTab />}
               {tab === 'promos' && <PromosTab />}
               {tab === 'pitch' && <PitchTab />}
               {tab === 'share' && <ShareTab />}

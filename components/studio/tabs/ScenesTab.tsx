@@ -132,7 +132,8 @@ export function ScenesTab() {
 }
 
 function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void }) {
-  const { scenes, links } = useStudio();
+  const { scenes, links, postNotes } = useStudio();
+  const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
   const { toast } = useToast();
   const [note, setNote] = useState(scene.note ?? '');
   const [noteState, setNoteState] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -180,6 +181,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; re
           <div style={{ minWidth: 0 }}>
             <div className={s.sceneHeading}>{scene.heading ?? scene.title}</div>
             {meta && <div className={s.sceneMeta}>{meta}</div>}
+            {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: '#fbbf24' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
           </div>
           <div className={s.swatches} role="group" aria-label="Scene colour">
             {CARD_COLORS.map((c) => (

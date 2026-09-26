@@ -1016,6 +1016,199 @@ export type Database = {
           },
         ];
       };
+      post_cuts: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          media_id: string | null;
+          project_id: string;
+          title: string;
+          url: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          media_id?: string | null;
+          project_id: string;
+          title: string;
+          url?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          media_id?: string | null;
+          project_id?: string;
+          title?: string;
+          url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_cuts_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_cuts_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "post_cuts_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      post_items: {
+        Row: {
+          assigned_to: string | null;
+          created_at: string;
+          created_by: string | null;
+          department: string | null;
+          due_date: string | null;
+          id: string;
+          kind: string;
+          notes: string | null;
+          position: number;
+          project_id: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          assigned_to?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          department?: string | null;
+          due_date?: string | null;
+          id?: string;
+          kind: string;
+          notes?: string | null;
+          position?: number;
+          project_id: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          assigned_to?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          department?: string | null;
+          due_date?: string | null;
+          id?: string;
+          kind?: string;
+          notes?: string | null;
+          position?: number;
+          project_id?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_items_assigned_to_fkey";
+            columns: ["assigned_to"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_items_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_items_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      post_notes: {
+        Row: {
+          at_seconds: number;
+          body: string;
+          created_at: string;
+          created_by: string | null;
+          cut_id: string;
+          department: string;
+          id: string;
+          project_id: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          scene_id: string | null;
+        };
+        Insert: {
+          at_seconds: number;
+          body: string;
+          created_at?: string;
+          created_by?: string | null;
+          cut_id: string;
+          department?: string;
+          id?: string;
+          project_id: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          scene_id?: string | null;
+        };
+        Update: {
+          at_seconds?: number;
+          body?: string;
+          created_at?: string;
+          created_by?: string | null;
+          cut_id?: string;
+          department?: string;
+          id?: string;
+          project_id?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          scene_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_notes_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_notes_cut_fkey";
+            columns: ["cut_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "post_cuts";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "post_notes_resolved_by_fkey";
+            columns: ["resolved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_notes_scene_fkey";
+            columns: ["scene_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;

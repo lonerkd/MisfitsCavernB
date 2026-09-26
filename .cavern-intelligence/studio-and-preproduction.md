@@ -13,7 +13,7 @@ the same data, live.
 | Live hooks | `lib/studio/index.ts`, `lib/studio/live.ts` | `useLiveRows` (subscribe → load → merge Realtime; reload on reconnect/focus; local writes survive stale reloads), `useProjectMedia`, `useSceneMedia`, `useScriptScenes`, `useSceneIndexSync`, `useSignedUrls` (cached, renewed before expiry). |
 | Pure logic | `lib/studio/scene-sync.ts`, `media-kind.ts`, `shoot-days.ts` | Scene alignment, media classification/embeds/upload checks, auto-schedule. Unit tested. |
 | Page state | `components/studio/StudioContext.tsx` | One typed provider per project: library, links, scripts, selected script, its scenes, sync state. |
-| UI | `components/studio/**`, `studio.module.css` | Tabs: Overview · Library · Scenes · Production (Story / Schedule / Cast & crew) · Promos · Pitch · Share. |
+| UI | `components/studio/**`, `studio.module.css` | Tabs: Overview · Library · Scenes · Production (Story / Schedule / Cast & crew) · Post (Cut review / Pipeline & deliverables) · Promos · Pitch · Share. |
 | Editor | `components/editor/useEditorScenes.ts`, `SceneReferencesPanel.tsx` | Scene index sync while writing; per-scene references, note and colour in the **Refs** tab. |
 | Share | `app/shared/[token]`, `app/m/[id]` | Server-rendered lookbook with link previews; stable permalinks for published files. |
 
@@ -61,16 +61,34 @@ pitch boards and portfolios.
 - **Schedule**: shoot day and status per scene; auto-schedule
   (`packShootDays`: location clusters, day before night, ~5 pages/day);
   Breakdown → Budget from the elements the sync extracts from action lines;
-  print; stripboard; call sheets.
+  print; stripboard; call sheets (saved per shoot day: date, calls, wrap,
+  address, weather, notes, per-person call times — `call_sheets`,
+  `call_sheet_calls`).
+- **Shot list**: per scene in Scenes (`shots`); also created by "Shot" margin
+  notes in ScriptOS (`add_script_annotation`).
 - **Story**: beat board; character bible with a look-board per character
   (`character_media`).
 - **Cast & crew**: crew, presence, recruiting, casting with each character's
   scene footprint.
 
-## 6. Tests
+## 6. Post
 
-- `lib/studio/*.test.ts` — alignment, classification, scheduling.
-- `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed}.test.ts`
+- **Cut review** (`post_cuts`, `post_notes`): a cut is a link (YouTube, Vimeo,
+  Google Drive, …) or a library video. Notes carry a timecode, department and
+  optional scene; anyone on the team resolves them (recorded as themselves),
+  only the author edits the text (`internal.post_notes_guard`).
+  `components/studio/post/CutPlayer.tsx` reports/sets the playhead for library
+  videos (`<video>`), YouTube and Vimeo (their postMessage player APIs) so
+  "Now" and click-to-seek work; Drive and other links take typed timecodes.
+  Scene cards in Scenes show their open post notes.
+- **Pipeline & deliverables** (`post_items`): stages and deliverables with
+  status, due date and owner; "Set up the standard pipeline" seeds
+  `STANDARD_POST`.
+
+## 7. Tests
+
+- `lib/studio/*.test.ts` — alignment, classification (incl. YouTube/Vimeo/Drive embeds), scheduling, shot numbering, timecodes.
+- `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed,production-records,post-production,privacy}.test.ts`
   — personas through PostgREST/Storage/Realtime/RLS.
 - `e2e/studio-journey.spec.ts` — real browser, local stack: upload → link to a
   scene → editor → publish → logged-out share link → revoke → live crew sync.

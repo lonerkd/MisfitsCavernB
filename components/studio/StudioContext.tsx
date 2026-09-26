@@ -13,6 +13,8 @@ import {
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
+  usePostCuts,
+  usePostNotes,
   useSceneMedia,
   useScriptScenes,
   type LiveRows,
@@ -21,6 +23,8 @@ import {
   type SceneMedia,
   type SceneRow,
   type Shot,
+  type PostCut,
+  type PostNote,
   type SyncState,
 } from '@/lib/studio';
 
@@ -31,6 +35,8 @@ export interface StudioData {
   media: LiveRows<Media>;
   links: LiveRows<SceneMedia>;
   shots: LiveRows<Shot>;
+  cuts: LiveRows<PostCut>;
+  postNotes: LiveRows<PostNote>;
   scripts: ProjectScript[];
   scriptsStatus: 'loading' | 'ready' | 'error';
   scriptId: string | null;
@@ -58,6 +64,8 @@ export function StudioProvider({ project, userId, children }: { project: Project
   const media = useProjectMedia(projectId);
   const links = useSceneMedia(projectId);
   const shots = useProjectShots(projectId);
+  const cuts = usePostCuts(projectId);
+  const postNotes = usePostNotes(projectId);
   const { scripts, status: scriptsStatus } = useProjectScripts(projectId);
 
   // Which script's scenes the Studio shows: the last one chosen on this device,
@@ -118,6 +126,8 @@ export function StudioProvider({ project, userId, children }: { project: Project
     media,
     links,
     shots,
+    cuts,
+    postNotes,
     scripts,
     scriptsStatus,
     scriptId,
