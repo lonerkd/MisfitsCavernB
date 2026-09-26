@@ -35,6 +35,7 @@ column call_sheet_calls.character_name text
 column call_sheet_calls.created_at timestamp with time zone default now()
 column call_sheet_calls.crew_user_id uuid
 column call_sheet_calls.id uuid default uuid_generate_v4() not null
+column call_sheet_calls.project_id uuid not null
 column call_sheet_calls.remarks text
 column call_sheet_calls.role_label text
 column call_sheets.created_at timestamp with time zone default now()
@@ -48,7 +49,7 @@ column call_sheets.shoot_date date
 column call_sheets.shoot_day integer not null
 column call_sheets.shooting_call time without time zone
 column call_sheets.updated_at timestamp with time zone default now()
-column call_sheets.updated_by uuid
+column call_sheets.updated_by uuid default auth.uid()
 column call_sheets.weather text
 column campaigns.budget numeric default 0
 column campaigns.created_at timestamp with time zone default now()
@@ -397,12 +398,17 @@ constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) RE
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
 constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-constraint call_sheet_calls.call_sheet_calls_call_sheet_id_fkey FOREIGN KEY (call_sheet_id) REFERENCES call_sheets(id) ON DELETE CASCADE
 constraint call_sheet_calls.call_sheet_calls_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint call_sheet_calls.call_sheet_calls_pkey PRIMARY KEY (id)
+constraint call_sheet_calls.call_sheet_calls_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
+constraint call_sheet_calls.call_sheet_calls_text_len CHECK (((char_length(character_name) <= 200) AND (char_length(role_label) <= 200) AND (char_length(remarks) <= 1000)))
+constraint call_sheet_calls.call_sheet_calls_who CHECK (((crew_user_id IS NULL) <> (character_name IS NULL)))
+constraint call_sheets.call_sheets_day_positive CHECK ((shoot_day >= 1))
+constraint call_sheets.call_sheets_id_project_key UNIQUE (id, project_id)
 constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
+constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
 constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
 constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint campaigns.campaigns_pkey PRIMARY KEY (id)
@@ -626,6 +632,9 @@ grant function public.toggle_message_reaction(p_message uuid, p_emoji text) auth
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
+index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
+index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
+index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
 index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
@@ -696,7 +705,10 @@ index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (s
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
+index CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE (character_name IS NOT NULL)
+index CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE (crew_user_id IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_pkey ON public.call_sheet_calls USING btree (id)
+index CREATE UNIQUE INDEX call_sheets_id_project_key ON public.call_sheets USING btree (id, project_id)
 index CREATE UNIQUE INDEX call_sheets_pkey ON public.call_sheets USING btree (id)
 index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sheets USING btree (project_id, shoot_day)
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
@@ -751,10 +763,8 @@ policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated u
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
 policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.call_sheet_calls "Call sheet calls viewable by project creator or crew" PERMISSIVE SELECT to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check -
-policy public.call_sheet_calls "Call sheet calls writable by project creator or crew" PERMISSIVE ALL to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id))))
-policy public.call_sheets "Call sheets viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.call_sheets "Call sheets writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.channel_members "channel_members manage" PERMISSIVE ALL to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
 policy public.channel_members "channel_members viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(channel_id) check -
@@ -854,6 +864,8 @@ policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticate
 policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))
 realtime public.activity_feed
 realtime public.budget_items
+realtime public.call_sheet_calls
+realtime public.call_sheets
 realtime public.campaigns
 realtime public.character_media
 realtime public.media
@@ -909,6 +921,7 @@ rls timeline_items enabled=true forced=false
 schema internal
 schema public
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()

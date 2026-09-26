@@ -1,11 +1,12 @@
--- Script annotations route to real work, and the shot list exists.
+-- Production records: margin notes that route to real work, the shot list,
+-- a persistent editor stash, and saved call sheets.
 --
 -- The editor's margin notes said "Routes to: Shot List / Beat Board /
 -- Call Sheet" but went nowhere: annotations were only dots on the page and
 -- nothing read the shots table. Now a Shot, Beat or To-do annotation creates
 -- the shot (on that scene), the beat or the project task in the same
 -- transaction, and remembers what it created. The editor stash is
--- persisted too (script_stash).
+-- persisted too (script_stash), and call sheets are saved.
 
 -- ── Shots ──────────────────────────────────────────────────────────────────
 -- A shot's scene must belong to the shot's project.
@@ -130,3 +131,48 @@ BEGIN
   END IF;
 END $$;
 ALTER TABLE public.scripts DROP COLUMN stash_items;
+
+-- ── Call sheets ────────────────────────────────────────────────────────────
+-- The call sheet UI was derived on the fly and saved nothing: no date, call
+-- times, address, weather or per-person calls. These tables existed unused
+-- (empty in production). Calls carry project_id (pinned to their sheet's) so
+-- access and live updates work per project.
+ALTER TABLE public.call_sheets
+  ADD CONSTRAINT call_sheets_id_project_key UNIQUE (id, project_id),
+  ADD CONSTRAINT call_sheets_day_positive CHECK (shoot_day >= 1),
+  ADD CONSTRAINT call_sheets_text_len CHECK (
+    char_length(location_address) <= 500 AND char_length(weather) <= 200 AND char_length(notes) <= 5000
+  ),
+  ALTER COLUMN updated_by SET DEFAULT auth.uid();
+CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.call_sheet_calls) THEN
+    RAISE EXCEPTION 'call_sheet_calls holds rows — backfill project_id before adding it.';
+  END IF;
+END $$;
+ALTER TABLE public.call_sheet_calls
+  ADD COLUMN project_id uuid NOT NULL,
+  DROP CONSTRAINT call_sheet_calls_call_sheet_id_fkey,
+  ADD CONSTRAINT call_sheet_calls_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES public.call_sheets(id, project_id) ON DELETE CASCADE,
+  ADD CONSTRAINT call_sheet_calls_who CHECK ((crew_user_id IS NULL) <> (character_name IS NULL)),
+  ADD CONSTRAINT call_sheet_calls_text_len CHECK (
+    char_length(character_name) <= 200 AND char_length(role_label) <= 200 AND char_length(remarks) <= 1000
+  );
+CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE crew_user_id IS NOT NULL;
+CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE character_name IS NOT NULL;
+CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id);
+CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id);
+CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by);
+
+DROP POLICY "Call sheets viewable by project creator or crew" ON public.call_sheets;
+DROP POLICY "Call sheets writable by project creator or crew" ON public.call_sheets;
+CREATE POLICY "call_sheets access" ON public.call_sheets FOR ALL TO authenticated
+  USING (internal.can_access_project(project_id)) WITH CHECK (internal.can_access_project(project_id));
+DROP POLICY "Call sheet calls viewable by project creator or crew" ON public.call_sheet_calls;
+DROP POLICY "Call sheet calls writable by project creator or crew" ON public.call_sheet_calls;
+CREATE POLICY "call_sheet_calls access" ON public.call_sheet_calls FOR ALL TO authenticated
+  USING (internal.can_access_project(project_id)) WITH CHECK (internal.can_access_project(project_id));
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.call_sheets, public.call_sheet_calls;

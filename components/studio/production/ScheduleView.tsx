@@ -11,7 +11,8 @@ import { logActivity } from '@/lib/supabase/activity';
 import { syncBudgetFromSceneElements, ELEMENT_CATEGORIES, type ElementCategory, type SceneElements } from '@/lib/supabase/breakdown';
 import { studio, type SceneRow } from '@/lib/studio';
 import { packShootDays } from '@/lib/studio/shoot-days';
-import { Stripboard, CallSheets } from '../ProductionBoards';
+import { Stripboard } from '../ProductionBoards';
+import { CallSheetsPanel } from './CallSheetsPanel';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
@@ -179,7 +180,7 @@ export function ScheduleView({ crew }: { crew: Array<{ user_id: string; role: st
       </div>
 
       <Stripboard scenes={list} />
-      <CallSheets scenes={list} crew={crew} projectTitle={project.title} />
+      <CallSheetsPanel scenes={list} crew={crew} />
     </div>
   );
 }

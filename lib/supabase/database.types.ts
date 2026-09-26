@@ -160,6 +160,7 @@ export type Database = {
           created_at: string | null;
           crew_user_id: string | null;
           id: string;
+          project_id: string;
           remarks: string | null;
           role_label: string | null;
         };
@@ -170,6 +171,7 @@ export type Database = {
           created_at?: string | null;
           crew_user_id?: string | null;
           id?: string;
+          project_id: string;
           remarks?: string | null;
           role_label?: string | null;
         };
@@ -180,23 +182,24 @@ export type Database = {
           created_at?: string | null;
           crew_user_id?: string | null;
           id?: string;
+          project_id?: string;
           remarks?: string | null;
           role_label?: string | null;
         };
         Relationships: [
-          {
-            foreignKeyName: "call_sheet_calls_call_sheet_id_fkey";
-            columns: ["call_sheet_id"];
-            isOneToOne: false;
-            referencedRelation: "call_sheets";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "call_sheet_calls_crew_user_id_fkey";
             columns: ["crew_user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "call_sheet_calls_sheet_fkey";
+            columns: ["call_sheet_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "call_sheets";
+            referencedColumns: ["id", "project_id"];
           },
         ];
       };

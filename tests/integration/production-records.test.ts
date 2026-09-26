@@ -4,7 +4,8 @@ import { createCrewedProject, createScript } from './support/project';
 import { createStudioApi } from '@/lib/studio/api';
 import { parseScript } from '@/lib/scriptos/parser';
 
-// Margin notes route to real work: a shot on the scene, a beat, a task.
+// Production records as personas: margin notes that route to real work, the
+// shot list, the editor stash and call sheets.
 let cast: Cast;
 let projectId: string;
 let scriptId: string;
@@ -97,5 +98,39 @@ describe('the editor stash', () => {
     const { data: s } = await cast.sam.client.from('scripts').insert({ title: 'Solo', content: '', created_by: cast.sam.id }).select('id').single();
     expect((await cast.sam.client.from('script_stash').insert({ script_id: s!.id, text: 'mine' })).error).toBeNull();
     expect((await cast.jordan.client.from('script_stash').select('id').eq('script_id', s!.id)).data).toEqual([]);
+  });
+});
+
+describe('call sheets', () => {
+  it('save per shoot day and per person, shared with the crew', async () => {
+    const { data: sheet, error } = await cast.jordan.client.from('call_sheets')
+      .upsert({ project_id: projectId, shoot_day: 1, general_call: '06:30', weather: 'Rain' }, { onConflict: 'project_id,shoot_day' }).select('*').single();
+    expect(error).toBeNull();
+    const again = await cast.sam.client.from('call_sheets')
+      .upsert({ project_id: projectId, shoot_day: 1, location_address: '12 Quarry Rd' }, { onConflict: 'project_id,shoot_day' }).select('*').single();
+    expect(again.data).toMatchObject({ id: sheet!.id, general_call: '06:30:00', weather: 'Rain', location_address: '12 Quarry Rd' });
+
+    expect((await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, character_name: 'SAM', call_time: '07:00' })).error).toBeNull();
+    expect((await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, crew_user_id: cast.jordan.id, call_time: '06:00' })).error).toBeNull();
+    expect((await cast.jordan.client.from('call_sheet_calls').select('call_time').eq('call_sheet_id', sheet!.id)).data).toHaveLength(2);
+  });
+
+  it('a person is called once per sheet, and a call names exactly one person', async () => {
+    const { data: sheet } = await cast.sam.client.from('call_sheets').select('id').eq('project_id', projectId).eq('shoot_day', 1).single();
+    const dup = await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, character_name: 'SAM', call_time: '08:00' });
+    expect(dup.error).not.toBeNull();
+    const both = await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, character_name: 'X', crew_user_id: cast.sam.id });
+    expect(both.error).not.toBeNull();
+  });
+
+  it('outsiders see nothing and cannot attach calls to another project’s sheet', async () => {
+    expect((await cast.riley.client.from('call_sheets').select('id').eq('project_id', projectId)).data).toEqual([]);
+    const { data: sheet } = await cast.sam.client.from('call_sheets').select('id').eq('project_id', projectId).eq('shoot_day', 1).single();
+    const { projectId: rileys } = await (async () => {
+      const p = await cast.riley.client.from('projects').insert({ title: 'Riley film', creator_id: cast.riley.id }).select('id').single();
+      return { projectId: p.data!.id };
+    })();
+    const sneak = await cast.riley.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: rileys, character_name: 'SPY' });
+    expect(sneak.error).not.toBeNull();
   });
 });
