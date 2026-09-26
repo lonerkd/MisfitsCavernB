@@ -2589,6 +2589,10 @@ export type Database = {
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
+      set_user_admin: {
+        Args: { p_admin: boolean; p_user: string };
+        Returns: undefined;
+      };
       sync_script_scenes: {
         Args: { p_base_ids: string[]; p_scenes: Json; p_script_id: string };
         Returns: string[];

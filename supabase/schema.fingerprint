@@ -666,6 +666,7 @@ constraint user_presence.user_presence_status_check CHECK ((status = ANY (ARRAY[
 constraint user_presence.user_presence_user_id_key UNIQUE (user_id)
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
+function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=3a0642113cf58675a47823de93072763
 function internal.can_view_channel(cid uuid) body=77b1106f662af404bb454df94955e3f2
@@ -674,6 +675,7 @@ function internal.is_project_member(pid uuid) body=9bc22fabe31cfa7b62f0ce463e762
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
+function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
 function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5ed
 function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
 function public.clean_old_presences() body=4648f0ec4b89e3a862fb51bc79c0d38a
@@ -685,6 +687,7 @@ function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
+function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=f17cf0815fab6fec6c97d226bebd2d01
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=1058ca6cb1756882a87ec3d0f3007311
 function public.update_collaborator_cursor(p_screenplay_id text, p_user_id text, p_line integer, p_col integer) body=52f3c8a968880f372b7a5a229507fa6d
@@ -692,6 +695,7 @@ function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 function public.update_user_presence(p_user_id text, p_status text, p_location text, p_activity text) body=0f3b2e9baaedf02afc81371abe4640ce
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
+grant function internal.caller_is_admin() authenticated,postgres,service_role
 grant function internal.can_access_project(pid uuid) authenticated,postgres,service_role
 grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
 grant function internal.can_view_channel(cid uuid) authenticated,postgres,service_role
@@ -700,6 +704,7 @@ grant function internal.is_project_member(pid uuid) authenticated,postgres,servi
 grant function internal.is_shared_media_object(object_name text) anon,authenticated,postgres,service_role
 grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
+grant function internal.profiles_guard() postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.clean_old_presences() PUBLIC,anon,authenticated,postgres,service_role
@@ -711,6 +716,7 @@ grant function public.get_shared_project(p_token text) anon,authenticated,postgr
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) PUBLIC,anon,authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
+grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
 grant function public.toggle_message_reaction(p_message uuid, p_emoji text) authenticated,postgres,service_role
 grant function public.update_collaborator_cursor(p_screenplay_id text, p_user_id text, p_line integer, p_col integer) PUBLIC,anon,authenticated,postgres,service_role
@@ -1068,6 +1074,7 @@ schema public
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
+trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
