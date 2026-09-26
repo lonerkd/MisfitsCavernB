@@ -1,7 +1,7 @@
-// Public, read-only project snapshot — the destination of a "anyone with the
-// link" share URL. RLS decides who may see the row: only `link` and `public`
-// projects are visible to anon. It deliberately shows only the overview (never
-// scenes, budget, chat or scripts — those stay member-gated).
+// Public, read-only project snapshot — the destination of an "anyone with the
+// link" share URL. Anon has no row access to `projects`; the token is resolved
+// by the get_shared_project() RPC, which returns only overview fields for a
+// link/public project (never scenes, budget, chat or scripts).
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -15,7 +15,6 @@ interface SharedProject {
   description: string | null;
   status: string;
   accent_color: string | null;
-  cover_url: string | null;
   visibility: string;
   creator?: { username?: string } | null;
 }
@@ -29,24 +28,19 @@ export default function SharedProjectPage() {
   useEffect(() => {
     let active = true;
     (async () => {
-      // Cast pending migration + type regen (share_token / visibility are new).
-      const { data, error } = await (supabase as any)
-        .from('projects')
-        .select('title, description, status, accent_color, cover_url, visibility, profiles:creator_id(username)')
-        .eq('share_token', token)
-        .maybeSingle();
+      // Cast pending the generated-type regen (get_shared_project is new).
+      const { data, error } = await (supabase as any).rpc('get_shared_project', { p_token: token });
       if (!active) return;
       setLoading(false);
-      if (error || !data) { setProject('missing'); return; }
-      const row = data as any; // visibility lands after the migration + type regen
+      const row = Array.isArray(data) ? data[0] : null;
+      if (error || !row) { setProject('missing'); return; }
       setProject({
         title: row.title,
         description: row.description,
         status: row.status,
         accent_color: row.accent_color,
-        cover_url: row.cover_url,
         visibility: row.visibility,
-        creator: Array.isArray(row.profiles) ? row.profiles[0] : row.profiles,
+        creator: row.creator_username ? { username: row.creator_username } : null,
       });
     })();
     return () => { active = false; };

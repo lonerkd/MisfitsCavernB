@@ -37,11 +37,10 @@ export async function shareUrlFor(token: string | null | undefined): Promise<str
 }
 
 export async function updateProjectVisibility(projectId: string, visibility: ProjectVisibility): Promise<string> {
-  // is_public stays in sync for the legacy boolean readers (showcase etc.).
-  // `visibility` is cast pending the migration + generated-type regen.
+  // `visibility` is cast pending the generated-type regen.
   const { data, error } = await supabase
     .from('projects')
-    .update({ visibility, is_public: visibility === 'public' } as any)
+    .update({ visibility } as any)
     .eq('id', projectId)
     .select('share_token')
     .single();

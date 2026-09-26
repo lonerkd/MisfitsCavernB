@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { withTimeout } from '@/lib/supabase/withTimeout';
 import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
@@ -18,7 +17,7 @@ import { usePillStage } from '@/lib/context/PillContext';
 import { useOSGate } from '@/lib/os';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import { logActivity } from '@/lib/supabase/activity';
-import { awaitOSUser } from '@/lib/os';
+import { awaitOSUser, osUserId } from '@/lib/os';
 
 const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
 
@@ -354,7 +353,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
 
-    withTimeout(awaitOSUser(), 12000, 'auth timed out').then((user) => {
+    awaitOSUser().then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
       getUserProjects(user.id).then(data => {
@@ -386,15 +385,20 @@ export default function ProjectsPage() {
     return map;
   }, [projectsList]);
 
+  // The page's own `user` is read once on mount; fall back to the live session
+  // so a user who signed in after mount is never told to sign in.
+  const currentUserId = () => user?.id ?? osUserId();
+
   const handleNewProject = () => {
-    if (!user) { toast('Sign in to create projects', 'error'); return; }
+    if (!currentUserId()) { toast('Sign in to create projects', 'error'); return; }
     setShowNew(true);
   };
 
   const createFromModal = async (title: string, type: string, logline: string) => {
-    if (!user) return;
+    const uid = currentUserId();
+    if (!uid) { toast('Sign in to create projects', 'error'); return; }
     try {
-      const p = await createDBProject(user.id, title, logline, type);
+      const p = await createDBProject(uid, title, logline, type);
       const newP: ProjectCardViewModel = {
         id: p.id, title: p.title, type, phase: 'development',
         progress: 0, deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
@@ -405,7 +409,7 @@ export default function ProjectsPage() {
       setShowNew(false);
       toast('Project created — opening studio', 'success');
 
-      await logActivity(`started project "${title}"`, 'project', p.id);
+      void logActivity(`started project "${title}"`, 'project', p.id);
 
       router.push('/studio');
     } catch {
@@ -433,7 +437,7 @@ export default function ProjectsPage() {
       toast(`Project moved to ${targetPhase}`, 'success');
 
       if (targetProj) {
-        await logActivity(`moved project "${targetProj.title}" to ${targetPhase}`, 'project', projectId);
+        void logActivity(`moved project "${targetProj.title}" to ${targetPhase}`, 'project', projectId);
       }
     } catch (err: any) {
       console.error('Failed to move project:', err);

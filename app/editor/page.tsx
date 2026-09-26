@@ -89,6 +89,9 @@ export default function EditorPage() {
   }, [playUri]);
 
   const { toast } = useToast();
+  // Latest toast for the run-once init effect, without re-running it.
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
@@ -134,6 +137,10 @@ export default function EditorPage() {
   }, []);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
+  // True while the latest save is only on this device (server unreachable);
+  // storage retries it automatically. Drives the status bar + a one-time toast.
+  const [syncPending, setSyncPending] = useState(false);
+  const warnedUnsyncedRef = useRef(false);
   const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
@@ -252,6 +259,10 @@ export default function EditorPage() {
           setScripts([fresh]);
           setContent('');
           setSessionStartWords(0);
+        } else {
+          // Without a script, autosave has nothing to write to — say so rather
+          // than letting the writer type into a buffer that is never saved.
+          toastRef.current('Could not open a script — your writing will not be saved. Reload to try again.', 'error');
         }
       }
     };
@@ -426,7 +437,17 @@ export default function EditorPage() {
   useEffect(() => {
     if (!currentScript) return;
     const timer = setTimeout(async () => {
-      await saveScript({ id: currentScript.id, title: currentScript.title, content });
+      setSaving(true);
+      const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
+      setSaving(false);
+      const pending = !saved || !!saved.syncPending;
+      setSyncPending(pending);
+      if (pending && !warnedUnsyncedRef.current) {
+        warnedUnsyncedRef.current = true;
+        toastRef.current("Can't reach the server — your writing is saved on this device and will sync automatically.", 'error');
+      } else if (!pending) {
+        warnedUnsyncedRef.current = false;
+      }
     }, 2000);
     return () => clearTimeout(timer);
   }, [content, currentScript]);
@@ -448,7 +469,11 @@ export default function EditorPage() {
     const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
     if (saved) {
       setCurrentScript(saved);
-      toast('Screenplay saved to cloud.', 'success');
+      setSyncPending(!!saved.syncPending);
+      if (saved.syncPending) toast('Saved on this device — it will sync when the server is reachable.', 'error');
+      else toast('Screenplay saved to cloud.', 'success');
+    } else {
+      toast('Could not save — you appear to be signed out.', 'error');
     }
     setSaving(false);
   }, [currentScript, content, toast]);
@@ -951,13 +976,13 @@ export default function EditorPage() {
         { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
         { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
         { label: 'Pages', value: `${pageEst}` },
-        { label: 'Save', value: saving ? 'Saving…' : 'Saved', color: saving ? '#f59e0b' : '#10b981' },
+        { label: 'Save', value: saving ? 'Saving…' : syncPending ? 'On device — syncing' : 'Saved', color: saving || syncPending ? '#f59e0b' : '#10b981' },
       ],
       toggles: [
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
       ],
     },
-    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, focusMode],
+    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, syncPending, focusMode],
   );
 
   const actStructure = useMemo(() => {

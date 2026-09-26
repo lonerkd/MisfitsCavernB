@@ -30,14 +30,11 @@ CREATE TABLE IF NOT EXISTS projects (
   budget DECIMAL(12, 2),
   start_date DATE,
   end_date DATE,
-  is_public BOOLEAN DEFAULT false,
+  project_type TEXT,
   -- Visibility model: private (owner only) / team (confirmed crew) / link
-  -- (anyone with the share token) / public (anyone). is_public is kept in sync
-  -- for the legacy boolean readers.
+  -- (anyone with the share token) / public (anyone).
   visibility TEXT NOT NULL DEFAULT 'team' CHECK (visibility IN ('private', 'team', 'link', 'public')),
-  share_token TEXT UNIQUE DEFAULT encode(gen_random_bytes(16), 'hex'),
-  featured BOOLEAN DEFAULT false,
-  cover_url TEXT,
+  share_token TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(16), 'hex'),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -277,17 +274,13 @@ AS $$
 $$;
 
 -- RLS Policies: Projects (level-aware)
---   private → owner only; team → confirmed crew (the default); link → anyone
---   with the share token (the token IS the capability — unguessable, but "anyone
---   with the link" can read the row); public → anyone incl. anon.
-CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
-  visibility <> 'private' AND (creator_id = (SELECT auth.uid()) OR internal.is_project_member(id))
+--   private → owner only; team/link/public → owner + confirmed crew. Anon gets
+--   no rows: a share link resolves through get_shared_project(token) (end of file), so
+--   the token is a real capability and link-shared projects can't be listed.
+CREATE POLICY "Project members can view" ON projects FOR SELECT TO authenticated USING (
+  creator_id = (SELECT auth.uid())
+  OR (visibility <> 'private' AND internal.is_project_member(id))
 );
-CREATE POLICY "Private projects viewable by owner only" ON projects FOR SELECT USING (
-  visibility = 'private' AND creator_id = (SELECT auth.uid())
-);
-CREATE POLICY "Public projects viewable by all" ON projects FOR SELECT USING (visibility = 'public');
-CREATE POLICY "Link-shared projects readable by anyone with the link" ON projects FOR SELECT USING (visibility = 'link');
 CREATE POLICY "Authenticated users create projects" ON projects FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND creator_id = auth.uid());
 CREATE POLICY "Creators update projects" ON projects FOR UPDATE USING (creator_id = auth.uid());
 CREATE POLICY "Creators delete projects" ON projects FOR DELETE USING (creator_id = auth.uid());
@@ -809,3 +802,30 @@ ALTER TABLE campaigns
   ADD COLUMN IF NOT EXISTS spend NUMERIC DEFAULT 0,
   ADD COLUMN IF NOT EXISTS start_date DATE,
   ADD COLUMN IF NOT EXISTS end_date DATE;
+
+-- ── Project share links ──────────────────────────────────────────
+-- Token lookup for /shared/[token]. SECURITY DEFINER so it can read past RLS,
+-- but it returns only overview fields, only for link/public projects, and only
+-- for an exact token match.
+CREATE OR REPLACE FUNCTION public.get_shared_project(p_token TEXT)
+RETURNS TABLE (
+  title TEXT,
+  description TEXT,
+  status TEXT,
+  accent_color TEXT,
+  visibility TEXT,
+  creator_username TEXT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT p.title, p.description, p.status, p.accent_color, p.visibility, pr.username
+  FROM public.projects p
+  LEFT JOIN public.profiles pr ON pr.id = p.creator_id
+  WHERE p.share_token = p_token
+    AND p.visibility IN ('link', 'public');
+$$;
+REVOKE ALL ON FUNCTION public.get_shared_project(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_shared_project(TEXT) TO anon, authenticated;

@@ -6,9 +6,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
+import PhotoGallery from '@/components/PhotoGallery';
 import { supabase } from '@/lib/supabase/client';
 
-const OrbitGallery = dynamic(() => import('@/components/3D/OrbitGallery'), { ssr: false });
 const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
 
 export default function ShowcasePage() {
@@ -97,11 +97,11 @@ export default function ShowcasePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
               <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-                3D Orbit Gallery
+                Concept Gallery
               </span>
             </div>
 
-            <OrbitGallery photos={photos} />
+            <PhotoGallery photos={photos} />
 
             <p
               style={{
@@ -113,7 +113,7 @@ export default function ShowcasePage() {
                 fontStyle: 'italic'
               }}
             >
-              Interactive 3D photo gallery with auto-rotation. Hover over frames to highlight them.
+              Concept art from productions in the Cavern.
             </p>
           </div>
         </AnimatedSection>
@@ -155,7 +155,6 @@ export default function ShowcasePage() {
               </p>
 
               <p style={{ marginBottom: 20 }}>
-                The 3D orbit gallery uses React Three Fiber and WebGL to create smooth, performant animations.
                 Particle effects are powered by tsParticles for optimal performance.
               </p>
 
