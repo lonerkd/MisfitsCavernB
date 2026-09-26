@@ -18,6 +18,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { estimateBudgetFromScript } from '@/lib/scriptos/breakdown';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
+import { notify } from '@/lib/supabase/notifications';
 import { usePillZone } from '@/lib/context/PillContext';
 import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/os';
 import type { ProjectSettings } from '@/lib/types/settings';
@@ -344,7 +345,8 @@ export default function ProjectHubPage() {
       const festivals = (Array.isArray(pr.data?.festival_submissions) ? pr.data!.festival_submissions : []) as { status?: string }[];
       setCounts({
         scripts: sc.data?.length || 0,
-        pages: Math.round(eighths / 8),
+        // Short scripts in tenths (3/8 pg → 0.4), longer ones in whole pages.
+        pages: eighths < 80 ? Math.round(eighths / 0.8) / 10 : Math.round(eighths / 8),
         crew: cr.data?.length || 0,
         tasks: tasks.length,
         tasksDone: tasks.filter(t => t.completed).length,
@@ -650,7 +652,7 @@ export default function ProjectHubPage() {
         </div>
 
         {isRealProject && <div id="production" />}
-        {isRealProject && <ProductionManager projectId={id} accent={project.color} isOwner={project.isOwner} />}
+        {isRealProject && <ProductionManager projectId={id} projectTitle={project.title} accent={project.color} isOwner={project.isOwner} />}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
@@ -660,10 +662,10 @@ export default function ProjectHubPage() {
 
 // ─── Production Manager (live Supabase CRUD: tasks, budget, timeline, crew) ────
 
-interface TaskRow { id: string; title: string; completed: boolean }
+interface TaskRow { id: string; title: string; completed: boolean; assigned_to: string | null; due_date: string | null }
 interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
-interface CrewRow { id: string; role: string; profiles?: { username: string } | null }
+interface CrewRow { id: string; user_id: string; role: string; profiles?: { username: string } | null }
 interface PortfolioRow { id: string; title: string; share_token: string }
 interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
 
@@ -673,15 +675,18 @@ const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
   planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',
 };
 
+const MINI_INPUT: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', colorScheme: 'dark' };
+
 // Crew work tasks, budget and milestones with the owner; the crew list, festivals
 // and project settings live on the project row, which only its owner can change.
-function ProductionManager({ projectId, accent, isOwner }: { projectId: string; accent: string; isOwner: boolean }) {
+function ProductionManager({ projectId, projectTitle, accent, isOwner }: { projectId: string; projectTitle: string; accent: string; isOwner: boolean }) {
   const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
   const [crew, setCrew] = useState<CrewRow[]>([]);
+  const [owner, setOwner] = useState<{ id: string; username: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -696,12 +701,12 @@ function ProductionManager({ projectId, accent, isOwner }: { projectId: string; 
   const load = React.useCallback(async () => {
     try {
       const [t, b, tl, c, pf, proj] = await Promise.all([
-        supabase.from('project_tasks').select('id,title,completed').eq('project_id', projectId).order('created_at'),
+        supabase.from('project_tasks').select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at'),
         supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
-        supabase.from('project_crew').select('id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+        supabase.from('project_crew').select('id,user_id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
         supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
-        supabase.from('projects').select('settings,festival_submissions').eq('id', projectId).single(),
+        supabase.from('projects').select('settings,festival_submissions,creator_id').eq('id', projectId).single(),
       ]);
       setTasks((t.data as TaskRow[]) || []);
       setBudget((b.data as BudgetRow[]) || []);
@@ -711,6 +716,10 @@ function ProductionManager({ projectId, accent, isOwner }: { projectId: string; 
       setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
       if (proj.data?.settings) setSettings(proj.data.settings as unknown as ProjectSettings);
       setFestivals((proj.data?.festival_submissions as unknown as FestivalRow[]) || []);
+      if (proj.data?.creator_id) {
+        const { data: owner } = await supabase.from('profiles').select('id,username').eq('id', proj.data.creator_id).maybeSingle();
+        setOwner(owner ? { id: owner.id, username: owner.username } : null);
+      }
     } catch (e: any) {
       setErr(e.message);
     }
@@ -723,7 +732,7 @@ function ProductionManager({ projectId, accent, isOwner }: { projectId: string; 
 
   const addTask = async (title: string) => {
     const { data, error } = await supabase.from('project_tasks')
-      .insert({ project_id: projectId, title }).select('id,title,completed').single();
+      .insert({ project_id: projectId, title }).select('id,title,completed,assigned_to,due_date').single();
     if (error) return setErr(error.message);
     setTasks(p => [...p, data as TaskRow]);
   };
@@ -731,6 +740,14 @@ function ProductionManager({ projectId, accent, isOwner }: { projectId: string; 
     setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !t.completed } : x));
     const { error } = await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
     if (error) { setErr(error.message); setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x)); }
+  };
+  const setTaskField = async (t: TaskRow, patch: Partial<Pick<TaskRow, 'assigned_to' | 'due_date'>>) => {
+    setTasks(p => p.map(x => x.id === t.id ? { ...x, ...patch } : x));
+    const { error } = await supabase.from('project_tasks').update(patch).eq('id', t.id);
+    if (error) { setErr(error.message); setTasks(p => p.map(x => x.id === t.id ? t : x)); return; }
+    if (patch.assigned_to && patch.assigned_to !== t.assigned_to) {
+      notify(patch.assigned_to, { type: 'task', title: `You were assigned “${t.title}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
+    }
   };
   const delTask = async (id: string) => {
     if (!await confirm('Delete this task? This cannot be undone.')) return;
@@ -863,6 +880,12 @@ function ProductionManager({ projectId, accent, isOwner }: { projectId: string; 
     saveFestivals(festivals.filter(f => f.id !== id));
   };
 
+  // Who a task can go to: the owner and the crew.
+  const people = [
+    ...(owner ? [owner] : []),
+    ...crew.filter(c => c.user_id !== owner?.id).map(c => ({ id: c.user_id, username: c.profiles?.username || 'Crew' })),
+  ];
+
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
   const totalActual = budget.reduce((s, b) => s + Number(b.actual_cost || 0), 0);
   const hasActuals = budget.some(b => b.actual_cost != null);
@@ -876,11 +899,32 @@ function ProductionManager({ projectId, accent, isOwner }: { projectId: string; 
         <Panel title="Tasks" accent={accent}>
           {tasks.length === 0 && <Empty>No tasks yet</Empty>}
           {tasks.map(t => (
-            <Row key={t.id}>
+            <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <Row>
               <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(255,255,255,0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: '#10b981', fontSize: 10, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
-              <span style={{ flex: 1, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
+            <div style={{ display: 'flex', gap: 6, paddingLeft: 23 }}>
+                <input
+                  type="date"
+                  value={t.due_date ?? ''}
+                  onChange={e => setTaskField(t, { due_date: e.target.value || null })}
+                  aria-label={`Due date for ${t.title}`}
+                  title="Due date"
+                  style={{ ...MINI_INPUT, width: 104, color: !t.completed && t.due_date && t.due_date < new Date().toISOString().slice(0, 10) ? '#ff6b6b' : 'var(--fg-dim)' }}
+                />
+                <select
+                  value={t.assigned_to ?? ''}
+                  onChange={e => setTaskField(t, { assigned_to: e.target.value || null })}
+                  aria-label={`Assignee for ${t.title}`}
+                  style={{ ...MINI_INPUT, width: 92 }}
+                >
+                  <option value="">Unassigned</option>
+                  {people.map(p => <option key={p.id} value={p.id}>{p.username}</option>)}
+                </select>
+            </div>
+            </div>
           ))}
           <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
         </Panel>

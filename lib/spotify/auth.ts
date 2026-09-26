@@ -12,13 +12,19 @@ function getRedirectUri() {
   return `${baseUrl}/auth/spotify-callback`;
 }
 
+// PKCE verifier / OAuth state: must be unguessable, so crypto randomness only.
 function generateRandomString(length: number) {
-  let text = '';
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
+  const bytes = window.crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, (b) => possible[b % possible.length]).join('');
+}
+
+// Local token copies belong to one app user. Signing out (by any route) and
+// signing in as someone else must never hand them the previous Spotify account.
+const OWNER_KEY = 'spotify_owner';
+const TOKEN_KEYS = ['spotify_access_token', 'spotify_refresh_token', 'spotify_token_expires_at'];
+function clearLocalTokens() {
+  for (const k of [...TOKEN_KEYS, OWNER_KEY]) window.localStorage.removeItem(k);
 }
 
 async function generateCodeChallenge(codeVerifier: string) {
@@ -31,6 +37,9 @@ async function generateCodeChallenge(codeVerifier: string) {
 }
 
 async function persistTokens(accessToken: string, refreshToken: string | undefined, expiresAt: number) {
+  const user = await awaitOSUser();
+  if (!user) return;
+  window.localStorage.setItem(OWNER_KEY, user.id);
   window.localStorage.setItem('spotify_access_token', accessToken);
   if (refreshToken) {
     window.localStorage.setItem('spotify_refresh_token', refreshToken);
@@ -38,8 +47,6 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
   window.localStorage.setItem('spotify_token_expires_at', expiresAt.toString());
 
   try {
-    const user = await awaitOSUser();
-    if (!user) return;
     const storedRefreshToken = refreshToken || window.localStorage.getItem('spotify_refresh_token');
     if (!storedRefreshToken) return;
     await supabase.from('spotify_connections').upsert({
@@ -57,8 +64,10 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
 export async function redirectToSpotifyAuth() {
   const verifier = generateRandomString(128);
   const challenge = await generateCodeChallenge(verifier);
+  const state = generateRandomString(32);
 
-  window.localStorage.setItem('spotify_code_verifier', verifier);
+  window.sessionStorage.setItem('spotify_code_verifier', verifier);
+  window.sessionStorage.setItem('spotify_oauth_state', state);
 
   const scope = 'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state';
   const authUrl = new URL('https://accounts.spotify.com/authorize');
@@ -69,15 +78,23 @@ export async function redirectToSpotifyAuth() {
   authUrl.searchParams.append('code_challenge_method', 'S256');
   authUrl.searchParams.append('code_challenge', challenge);
   authUrl.searchParams.append('scope', scope);
+  authUrl.searchParams.append('state', state);
 
   window.location.href = authUrl.toString();
 }
 
-export async function getAccessToken(code: string): Promise<string> {
-  const verifier = window.localStorage.getItem('spotify_code_verifier');
+/**
+ * Finishes the Spotify sign-in. `state` must be the one this tab sent —
+ * otherwise someone could link their Spotify account to your session.
+ */
+export async function getAccessToken(code: string, state: string | null): Promise<string> {
+  const verifier = window.sessionStorage.getItem('spotify_code_verifier');
+  const expected = window.sessionStorage.getItem('spotify_oauth_state');
+  window.sessionStorage.removeItem('spotify_code_verifier');
+  window.sessionStorage.removeItem('spotify_oauth_state');
 
-  if (!verifier) {
-    throw new Error('No code verifier found in local storage.');
+  if (!verifier || !expected || state !== expected) {
+    throw new Error('This Spotify sign-in didn’t start here (or already finished). Connect again from Soundtrack.');
   }
 
   const params = new URLSearchParams();
@@ -151,6 +168,7 @@ async function loadTokensFromAccount(): Promise<string | null> {
     if (error || !data) return null;
 
     if (Date.now() < data.expires_at - 60000) {
+      window.localStorage.setItem(OWNER_KEY, user.id);
       window.localStorage.setItem('spotify_access_token', data.access_token);
       window.localStorage.setItem('spotify_refresh_token', data.refresh_token);
       window.localStorage.setItem('spotify_token_expires_at', data.expires_at.toString());
@@ -165,6 +183,9 @@ async function loadTokensFromAccount(): Promise<string | null> {
 
 export async function getValidToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
+  const user = await awaitOSUser();
+  if (!user) { clearLocalTokens(); return null; }
+  if (window.localStorage.getItem(OWNER_KEY) !== user.id) clearLocalTokens();
   const token = window.localStorage.getItem('spotify_access_token');
   const expiresAtStr = window.localStorage.getItem('spotify_token_expires_at');
 
@@ -181,10 +202,7 @@ export async function getValidToken(): Promise<string | null> {
 
 export function logoutSpotify() {
   if (typeof window === 'undefined') return;
-  window.localStorage.removeItem('spotify_access_token');
-  window.localStorage.removeItem('spotify_refresh_token');
-  window.localStorage.removeItem('spotify_token_expires_at');
-  window.localStorage.removeItem('spotify_code_verifier');
+  clearLocalTokens();
   window.dispatchEvent(new Event('spotify-auth-changed'));
 
   awaitOSUser().then((user) => {

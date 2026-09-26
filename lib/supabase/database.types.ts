@@ -160,6 +160,7 @@ export type Database = {
           created_at: string | null;
           crew_user_id: string | null;
           id: string;
+          project_id: string;
           remarks: string | null;
           role_label: string | null;
         };
@@ -170,6 +171,7 @@ export type Database = {
           created_at?: string | null;
           crew_user_id?: string | null;
           id?: string;
+          project_id: string;
           remarks?: string | null;
           role_label?: string | null;
         };
@@ -180,23 +182,24 @@ export type Database = {
           created_at?: string | null;
           crew_user_id?: string | null;
           id?: string;
+          project_id?: string;
           remarks?: string | null;
           role_label?: string | null;
         };
         Relationships: [
-          {
-            foreignKeyName: "call_sheet_calls_call_sheet_id_fkey";
-            columns: ["call_sheet_id"];
-            isOneToOne: false;
-            referencedRelation: "call_sheets";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "call_sheet_calls_crew_user_id_fkey";
             columns: ["crew_user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "call_sheet_calls_sheet_fkey";
+            columns: ["call_sheet_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "call_sheets";
+            referencedColumns: ["id", "project_id"];
           },
         ];
       };
@@ -1484,6 +1487,8 @@ export type Database = {
           id: string;
           line_index: number;
           project_id: string;
+          routed_id: string | null;
+          routed_table: string | null;
           script_id: string;
           text: string;
           type: string;
@@ -1494,6 +1499,8 @@ export type Database = {
           id?: string;
           line_index: number;
           project_id: string;
+          routed_id?: string | null;
+          routed_table?: string | null;
           script_id: string;
           text: string;
           type: string;
@@ -1504,6 +1511,8 @@ export type Database = {
           id?: string;
           line_index?: number;
           project_id?: string;
+          routed_id?: string | null;
+          routed_table?: string | null;
           script_id?: string;
           text?: string;
           type?: string;
@@ -1678,6 +1687,45 @@ export type Database = {
           },
         ];
       };
+      script_stash: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          script_id: string;
+          text: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          script_id: string;
+          text: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          script_id?: string;
+          text?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "script_stash_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "script_stash_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       scripts: {
         Row: {
           content: string | null;
@@ -1692,7 +1740,6 @@ export type Database = {
           share_token: string | null;
           shared: boolean | null;
           sprint_minutes: number | null;
-          stash_items: Json | null;
           status: string | null;
           title: string;
           title_page: Json | null;
@@ -1712,7 +1759,6 @@ export type Database = {
           share_token?: string | null;
           shared?: boolean | null;
           sprint_minutes?: number | null;
-          stash_items?: Json | null;
           status?: string | null;
           title: string;
           title_page?: Json | null;
@@ -1732,7 +1778,6 @@ export type Database = {
           share_token?: string | null;
           shared?: boolean | null;
           sprint_minutes?: number | null;
-          stash_items?: Json | null;
           status?: string | null;
           title?: string;
           title_page?: Json | null;
@@ -1873,11 +1918,11 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "shots_scene_id_fkey";
-            columns: ["scene_id"];
+            foreignKeyName: "shots_scene_fkey";
+            columns: ["scene_id", "project_id"];
             isOneToOne: false;
             referencedRelation: "scenes";
-            referencedColumns: ["id"];
+            referencedColumns: ["id", "project_id"];
           },
         ];
       };
@@ -2085,6 +2130,34 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_script_annotation: {
+        Args: {
+          p_line: number;
+          p_scene_heading?: string;
+          p_scene_ordinal?: number;
+          p_script: string;
+          p_text: string;
+          p_type: string;
+        };
+        Returns: {
+          created_at: string | null;
+          created_by: string | null;
+          id: string;
+          line_index: number;
+          project_id: string;
+          routed_id: string | null;
+          routed_table: string | null;
+          script_id: string;
+          text: string;
+          type: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "script_annotations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_list_users: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2095,6 +2168,14 @@ export type Database = {
           role: string;
           status: string;
           username: string;
+        }[];
+      };
+      admin_platform_analytics: {
+        Args: { p_since: string };
+        Returns: {
+          active_users: number;
+          avg_project_days: number;
+          completed_projects: number;
         }[];
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };

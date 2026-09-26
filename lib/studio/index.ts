@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -52,6 +52,41 @@ export function useCharacterMedia(projectId: string | null) {
     load: () => studio.listCharacterMedia(projectId!),
     keyOf: characterMediaKey,
     sort: (a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at),
+  });
+}
+
+// ── Shot list ──────────────────────────────────────────────────────────────
+
+export function useProjectShots(projectId: string | null) {
+  return useLiveRows<Shot>({
+    scope: projectId,
+    table: 'shots',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listShots(projectId!),
+    keyOf: (x) => String(x.id),
+    sort: (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0) || String(a.created_at).localeCompare(String(b.created_at)),
+  });
+}
+
+// ── Call sheets ────────────────────────────────────────────────────────────
+
+export function useCallSheets(projectId: string | null) {
+  return useLiveRows<CallSheet>({
+    scope: projectId,
+    table: 'call_sheets',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listCallSheets(projectId!),
+    keyOf: (x) => String(x.id),
+  });
+}
+
+export function useCallSheetCalls(projectId: string | null) {
+  return useLiveRows<CallSheetCall>({
+    scope: projectId,
+    table: 'call_sheet_calls',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listCalls(projectId!),
+    keyOf: (x) => String(x.id),
   });
 }
 

@@ -21,6 +21,8 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType, Scene as ParsedScene } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/Confirm';
+import { useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/context/SpotifyContext';
@@ -91,6 +93,7 @@ export default function EditorPage() {
   }, [playUri]);
 
   const { toast } = useToast();
+  const confirm = useConfirm();
   // Latest toast for the run-once init effect, without re-running it.
   const toastRef = useRef(toast);
   toastRef.current = toast;
@@ -98,33 +101,45 @@ export default function EditorPage() {
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+  const stash = useScriptStash(currentScript?.id ?? null);
   useEffect(() => {
     if (currentScript?.id) reloadAnnotations(currentScript.id);
     else setAnnotations([]);
   }, [currentScript?.id, reloadAnnotations]);
 
-  const submitAnnotation = useCallback(async () => {
-    if (!annotationDraft || !currentScript?.id || !activeProject?.id || !annotationDraft.text.trim()) return;
-    const auth = { user: await awaitOSUser() };
-    if (!auth.user) return;
-    try {
-      await addAnnotation({ scriptId: currentScript.id, projectId: activeProject.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), createdBy: auth.user.id });
-      reloadAnnotations(currentScript.id);
-      setAnnotationDraft(null);
-    } catch (e: any) {
-      console.error('Failed to add annotation:', e);
-    }
-  }, [annotationDraft, currentScript?.id, activeProject?.id, reloadAnnotations]);
-
-  const removeAnnotation = useCallback(async (id: string) => {
-    if (!currentScript?.id) return;
-    setAnnotations(prev => prev.filter(a => a.id !== id));
-    try { await deleteAnnotation(id); } catch (e) { console.error('Failed to delete annotation:', e); reloadAnnotations(currentScript.id); }
-  }, [currentScript?.id, reloadAnnotations]);
-
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [parsedScenes, setParsedScenes] = useState<ParsedScene[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
+  // The scene a line belongs to: the last heading at or above it.
+  const sceneAtLine = useCallback((line: number) => {
+    let ordinal = -1;
+    for (let i = 0; i <= line && i < lines.length; i++) if (lines[i].type === 'slug') ordinal++;
+    const heading = ordinal >= 0 ? parsedScenes[ordinal]?.heading : undefined;
+    return heading ? { ordinal, heading } : null;
+  }, [lines, parsedScenes]);
+
+  const submitAnnotation = useCallback(async () => {
+    if (!annotationDraft || !currentScript?.id || !annotationDraft.text.trim()) return;
+    try {
+      const a = await addAnnotation({ scriptId: currentScript.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), scene: sceneAtLine(annotationDraft.line) });
+      reloadAnnotations(currentScript.id);
+      setAnnotationDraft(null);
+      if (a.routed_table) toast(`${ANNOTATION_META[a.type].label} added to ${ANNOTATION_META[a.type].routesTo}`, 'success');
+    } catch (e: any) {
+      toast(e?.message || 'Could not add that note', 'error');
+    }
+  }, [annotationDraft, currentScript?.id, reloadAnnotations, sceneAtLine, toast]);
+
+  const removeAnnotation = useCallback(async (id: string) => {
+    if (!currentScript?.id) return;
+    const a = annotations.find(x => x.id === id);
+    const kept = a?.routed_table ? ` The ${ANNOTATION_META[a.type].label.toLowerCase()} it created stays.` : '';
+    if (!await confirm(`Remove this margin note?${kept}`)) return;
+    setAnnotations(prev => prev.filter(x => x.id !== id));
+    try { await deleteAnnotation(id); } catch (e: any) { toast(e?.message || 'Could not remove that note', 'error'); reloadAnnotations(currentScript.id); }
+  }, [annotations, confirm, currentScript?.id, reloadAnnotations, toast]);
+
+
   const [scripts, setScripts] = useState<StoredScript[]>([]);
 
   const [showSidebar, setShowSidebar] = useState(true);
@@ -187,7 +202,6 @@ export default function EditorPage() {
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
-  const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
@@ -1158,7 +1172,7 @@ export default function EditorPage() {
                   showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
                   showWatermark={showWatermark} setShowWatermark={setShowWatermark}
                   lintIssues={lintIssues}
-                  stashItems={stashItems} setStashItems={setStashItems} textareaRef={textareaRef}
+                  stash={stash} textareaRef={textareaRef}
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
@@ -11,6 +10,11 @@ import EmptyState from '@/components/EmptyState';
 import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import type { Profile } from '@/lib/supabase/profiles';
+import { videoEmbed } from '@/lib/studio/media-kind';
+
+const portfolioThumb = (m?: { thumbnail_url?: string | null; url: string } | null) =>
+  !m ? null : m.thumbnail_url || videoEmbed(m.url)?.thumbnail || (/\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(m.url) ? m.url : null);
+import Avatar from '@/components/Avatar';
 import { awaitOSUser } from '@/lib/os';
 
 interface MediaItem {
@@ -163,13 +167,7 @@ export default function CrewMemberPage() {
 
           <div style={{ flexShrink: 0 }}>
             {profile.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.username}
-                width={80}
-                height={80}
-                style={{ borderRadius: '50%', objectFit: 'cover', display: 'block' }}
-              />
+              <Avatar src={profile.avatar_url} name={profile.username} size={80} />
             ) : (
               <div style={{
                 width: 80, height: 80, borderRadius: '50%',
@@ -313,16 +311,17 @@ export default function CrewMemberPage() {
                     onMouseEnter={() => setHoveredCard(project.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
-                    {project.portfolio_media.length > 0 && project.portfolio_media[0].thumbnail_url && (
+                    {portfolioThumb(project.portfolio_media[0]) && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9', background: '#111',
                         marginBottom: 14, overflow: 'hidden', position: 'relative'
                       }}>
-                        <Image
-                          src={project.portfolio_media[0].thumbnail_url}
+                        {/* eslint-disable-next-line @next/next/no-img-element -- thumbnails come from YouTube, Drive or the owner's links */}
+                        <img
+                          src={portfolioThumb(project.portfolio_media[0])!}
                           alt={project.title}
-                          fill
-                          style={{ objectFit: 'cover', display: 'block', opacity: 0.75 }}
+                          loading="lazy"
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.75 }}
                         />
                         {project.portfolio_media.length > 1 && (
                           <div style={{

@@ -228,8 +228,7 @@ export default function ProfilePage() {
                   scriptsList.map(s => (
                     <Link
                       key={s.id}
-                      href="/editor"
-                      onClick={() => { if (typeof window !== 'undefined') localStorage.setItem('misfits_cavern_current_script', s.id); }}
+                      href={`/editor?script=${s.id}`}
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',

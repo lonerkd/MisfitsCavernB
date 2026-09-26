@@ -15,6 +15,19 @@ export type Media = Tables<'media'>;
 export type SceneRow = Tables<'scenes'>;
 export type SceneMedia = Tables<'scene_media'>;
 export type CharacterMedia = Tables<'character_media'>;
+export type Shot = Tables<'shots'>;
+export type CallSheet = Tables<'call_sheets'>;
+export type CallSheetCall = Tables<'call_sheet_calls'>;
+export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
+/** Who a call is for: a crew member, or a character (the actor playing them). */
+export type CallTarget = { crew_user_id: string } | { character_name: string };
+export type ShotPatch = Partial<Pick<Shot, 'shot_size' | 'angle' | 'movement' | 'lens' | 'description' | 'status'>>;
+
+/** Next shot number in a scene: one past the highest numeric one. */
+export function nextShotNumber(shots: Pick<Shot, 'shot_number'>[]): string {
+  const max = shots.reduce((m, x) => Math.max(m, parseInt(x.shot_number, 10) || 0), 0);
+  return String(max + 1);
+}
 
 export const MEDIA_BUCKET = 'project-media';
 
@@ -212,6 +225,84 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  // ── Shot list ────────────────────────────────────────────────────────────
+
+  async function listShots(projectId: string): Promise<Shot[]> {
+    const { data, error } = await db.from('shots').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load the shot list');
+    return data;
+  }
+
+  async function addShot(projectId: string, sceneId: string, existing: Shot[], description = ''): Promise<Shot> {
+    const { data, error } = await db.from('shots').insert({
+      project_id: projectId,
+      scene_id: sceneId,
+      shot_number: nextShotNumber(existing),
+      description: description || null,
+      order_index: existing.reduce((m, x) => Math.max(m, x.order_index ?? 0), -1) + 1,
+    }).select('*').single();
+    if (error) fail(error, 'Could not add the shot');
+    return data;
+  }
+
+  async function updateShot(id: string, patch: ShotPatch): Promise<Shot> {
+    const { data, error } = await db.from('shots').update(patch).eq('id', id).select('*').maybeSingle();
+    if (error) fail(error, 'Could not save the shot');
+    if (!data) throw new StudioError('That shot no longer exists, or you can’t edit it.');
+    return data;
+  }
+
+  async function deleteShot(id: string): Promise<void> {
+    const { error } = await db.from('shots').delete().eq('id', id);
+    if (error) fail(error, 'Could not delete the shot');
+  }
+
+  // ── Call sheets ──────────────────────────────────────────────────────────
+
+  async function listCallSheets(projectId: string): Promise<CallSheet[]> {
+    const { data, error } = await db.from('call_sheets').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load call sheets');
+    return data;
+  }
+
+  /** Creates the day's sheet on first save; later saves change only the given fields. */
+  async function saveCallSheet(projectId: string, day: number, patch: CallSheetPatch): Promise<CallSheet> {
+    const { data, error } = await db.from('call_sheets')
+      .upsert({ project_id: projectId, shoot_day: day, ...patch }, { onConflict: 'project_id,shoot_day' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save the call sheet');
+    return data;
+  }
+
+  async function listCalls(projectId: string): Promise<CallSheetCall[]> {
+    const { data, error } = await db.from('call_sheet_calls').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load call times');
+    return data;
+  }
+
+  /**
+   * Sets one person's call on a sheet. An empty time and remark clears it.
+   * Returns the saved row, or null when cleared.
+   */
+  async function saveCall(
+    sheet: Pick<CallSheet, 'id' | 'project_id'>, target: CallTarget, existing: CallSheetCall | undefined,
+    fields: { call_time: string | null; remarks: string | null; role_label?: string | null },
+  ): Promise<CallSheetCall | null> {
+    if (!fields.call_time && !fields.remarks) {
+      if (existing) {
+        const { error } = await db.from('call_sheet_calls').delete().eq('id', existing.id);
+        if (error) fail(error, 'Could not clear the call');
+      }
+      return null;
+    }
+    const q = existing
+      ? db.from('call_sheet_calls').update(fields).eq('id', existing.id)
+      : db.from('call_sheet_calls').insert({ call_sheet_id: sheet.id, project_id: sheet.project_id, ...target, ...fields });
+    const { data, error } = await q.select('*').single();
+    if (error) fail(error, 'Could not save the call');
+    return data;
+  }
+
   // ── Links ────────────────────────────────────────────────────────────────
 
   async function listSceneMedia(projectId: string): Promise<SceneMedia[]> {
@@ -270,6 +361,8 @@ export function createStudioApi(db: Client) {
   return {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
+    listShots, addShot, updateShot, deleteShot,
+    listCallSheets, saveCallSheet, listCalls, saveCall,
     listSceneMedia, linkMedia, unlinkMedia,
     listCharacterMedia, linkCharacterMedia, unlinkCharacterMedia,
     getLookbook,

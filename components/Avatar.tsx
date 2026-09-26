@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 
 export default function Avatar({ src, name, size = 40, radius, accent = 'var(--accent)', style }: {
   src?: string | null;
@@ -18,11 +17,16 @@ export default function Avatar({ src, name, size = 40, radius, accent = 'var(--a
 
   if (src && !broken) {
     return (
-      <Image
+      // Avatars can be any URL a person pastes in; next/image only serves listed
+      // hosts, so a plain img (with an initial as the fallback) is the honest choice.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
         src={src}
         alt={name || ''}
         width={size}
         height={size}
+        loading="lazy"
+        referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
         style={{ width: size, height: size, borderRadius: br, objectFit: 'cover', flexShrink: 0, ...style }}
       />

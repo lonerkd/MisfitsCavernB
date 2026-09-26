@@ -35,6 +35,7 @@ column call_sheet_calls.character_name text
 column call_sheet_calls.created_at timestamp with time zone default now()
 column call_sheet_calls.crew_user_id uuid
 column call_sheet_calls.id uuid default uuid_generate_v4() not null
+column call_sheet_calls.project_id uuid not null
 column call_sheet_calls.remarks text
 column call_sheet_calls.role_label text
 column call_sheets.created_at timestamp with time zone default now()
@@ -48,7 +49,7 @@ column call_sheets.shoot_date date
 column call_sheets.shoot_day integer not null
 column call_sheets.shooting_call time without time zone
 column call_sheets.updated_at timestamp with time zone default now()
-column call_sheets.updated_by uuid
+column call_sheets.updated_by uuid default auth.uid()
 column call_sheets.weather text
 column campaigns.budget numeric default 0
 column campaigns.created_at timestamp with time zone default now()
@@ -273,10 +274,12 @@ column scenes.time_of_day text default 'DAY'::text
 column scenes.title text not null
 column scenes.updated_at timestamp with time zone default now() not null
 column script_annotations.created_at timestamp with time zone default now()
-column script_annotations.created_by uuid
+column script_annotations.created_by uuid default auth.uid()
 column script_annotations.id uuid default uuid_generate_v4() not null
 column script_annotations.line_index integer not null
 column script_annotations.project_id uuid not null
+column script_annotations.routed_id uuid
+column script_annotations.routed_table text
 column script_annotations.script_id uuid not null
 column script_annotations.text text not null
 column script_annotations.type text not null
@@ -307,6 +310,11 @@ column script_revisions.id uuid default uuid_generate_v4() not null
 column script_revisions.label text not null
 column script_revisions.script_id uuid not null
 column script_revisions.snapshot text default ''::text not null
+column script_stash.created_at timestamp with time zone default now() not null
+column script_stash.created_by uuid default auth.uid()
+column script_stash.id uuid default gen_random_uuid() not null
+column script_stash.script_id uuid not null
+column script_stash.text text not null
 column scripts.content text default ''::text
 column scripts.created_at timestamp with time zone default now()
 column scripts.created_by uuid
@@ -319,7 +327,6 @@ column scripts.project_id uuid
 column scripts.share_token text default encode(gen_random_bytes(16), 'hex'::text)
 column scripts.shared boolean default false
 column scripts.sprint_minutes integer default 15
-column scripts.stash_items jsonb default '[]'::jsonb
 column scripts.status text default 'draft'::text
 column scripts.title text not null
 column scripts.title_page jsonb default '{}'::jsonb
@@ -335,7 +342,7 @@ column sfx_assets.title text not null
 column sfx_assets.user_id uuid not null
 column shots.angle text
 column shots.created_at timestamp with time zone default now()
-column shots.created_by uuid
+column shots.created_by uuid default auth.uid()
 column shots.description text
 column shots.id uuid default uuid_generate_v4() not null
 column shots.lens text
@@ -391,12 +398,17 @@ constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) RE
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
 constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-constraint call_sheet_calls.call_sheet_calls_call_sheet_id_fkey FOREIGN KEY (call_sheet_id) REFERENCES call_sheets(id) ON DELETE CASCADE
 constraint call_sheet_calls.call_sheet_calls_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint call_sheet_calls.call_sheet_calls_pkey PRIMARY KEY (id)
+constraint call_sheet_calls.call_sheet_calls_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
+constraint call_sheet_calls.call_sheet_calls_text_len CHECK (((char_length(character_name) <= 200) AND (char_length(role_label) <= 200) AND (char_length(remarks) <= 1000)))
+constraint call_sheet_calls.call_sheet_calls_who CHECK (((crew_user_id IS NULL) <> (character_name IS NULL)))
+constraint call_sheets.call_sheets_day_positive CHECK ((shoot_day >= 1))
+constraint call_sheets.call_sheets_id_project_key UNIQUE (id, project_id)
 constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
+constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
 constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
 constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint campaigns.campaigns_pkey PRIMARY KEY (id)
@@ -510,7 +522,9 @@ constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 
 constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
 constraint script_annotations.script_annotations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint script_annotations.script_annotations_routed_check CHECK ((((routed_table IS NULL) AND (routed_id IS NULL)) OR ((routed_table = ANY (ARRAY['shots'::text, 'project_beats'::text, 'project_tasks'::text])) AND (routed_id IS NOT NULL))))
 constraint script_annotations.script_annotations_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_annotations.script_annotations_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 2000)))
 constraint script_annotations.script_annotations_type_check CHECK ((type = ANY (ARRAY['shot'::text, 'beat'::text, 'note'::text, 'revision'::text, 'reference'::text, 'todo'::text])))
 constraint script_characters.script_characters_pkey PRIMARY KEY (id)
 constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
@@ -522,6 +536,10 @@ constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_
 constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint script_revisions.script_revisions_pkey PRIMARY KEY (id)
 constraint script_revisions.script_revisions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_stash.script_stash_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint script_stash.script_stash_pkey PRIMARY KEY (id)
+constraint script_stash.script_stash_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_stash.script_stash_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 20000)))
 constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
 constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id)
@@ -532,9 +550,11 @@ constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint shots.shots_description_len CHECK ((char_length(description) <= 2000))
+constraint shots.shots_number_len CHECK (((char_length(shot_number) >= 1) AND (char_length(shot_number) <= 12)))
 constraint shots.shots_pkey PRIMARY KEY (id)
 constraint shots.shots_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-constraint shots.shots_scene_id_fkey FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
@@ -563,7 +583,9 @@ function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
+function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
+function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
 function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5ed
 function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
@@ -592,7 +614,9 @@ grant function internal.is_shared_media_object(object_name text) anon,authentica
 grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
+grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
+grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
@@ -610,6 +634,9 @@ grant function public.toggle_message_reaction(p_message uuid, p_emoji text) auth
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
+index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
+index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
+index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
 index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
@@ -675,10 +702,15 @@ index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
+index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
+index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
+index CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE (character_name IS NOT NULL)
+index CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE (crew_user_id IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_pkey ON public.call_sheet_calls USING btree (id)
+index CREATE UNIQUE INDEX call_sheets_id_project_key ON public.call_sheets USING btree (id, project_id)
 index CREATE UNIQUE INDEX call_sheets_pkey ON public.call_sheets USING btree (id)
 index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sheets USING btree (project_id, shoot_day)
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
@@ -719,6 +751,7 @@ index CREATE UNIQUE INDEX script_characters_pkey ON public.script_characters USI
 index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_characters USING btree (script_id, name)
 index CREATE UNIQUE INDEX script_metadata_pkey ON public.script_metadata USING btree (script_id)
 index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING btree (id)
+index CREATE UNIQUE INDEX script_stash_pkey ON public.script_stash USING btree (id)
 index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
 index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
 index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
@@ -732,10 +765,8 @@ policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated u
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
 policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.call_sheet_calls "Call sheet calls viewable by project creator or crew" PERMISSIVE SELECT to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check -
-policy public.call_sheet_calls "Call sheet calls writable by project creator or crew" PERMISSIVE ALL to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id))))
-policy public.call_sheets "Call sheets viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.call_sheets "Call sheets writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.channel_members "channel_members manage" PERMISSIVE ALL to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
 policy public.channel_members "channel_members viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(channel_id) check -
@@ -806,6 +837,9 @@ policy public.script_characters "script_characters access" PERMISSIVE ALL to aut
 policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
 policy public.script_metadata "metadata writable by script members" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
 policy public.script_revisions "Script members can manage revisions" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_stash "script_stash delete" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
+policy public.script_stash "script_stash insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_script(script_id))
+policy public.script_stash "script_stash view" PERMISSIVE SELECT to authenticated using internal.can_access_script(script_id) check -
 policy public.scripts "Shared scripts publicly viewable" PERMISSIVE SELECT to anon using (shared = true) check -
 policy public.scripts "scripts delete" PERMISSIVE DELETE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))))) check -
 policy public.scripts "scripts insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
@@ -815,8 +849,7 @@ policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to pub
 policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
 policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
 policy public.sfx_assets "sfx_assets insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
-policy public.shots "Shots viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.shots "Shots writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.shots "shots access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.spotify_connections "Users can delete own spotify connection" PERMISSIVE DELETE to public using (auth.uid() = user_id) check -
 policy public.spotify_connections "Users can insert own spotify connection" PERMISSIVE INSERT to public using - check (auth.uid() = user_id)
 policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
@@ -833,6 +866,8 @@ policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticate
 policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))
 realtime public.activity_feed
 realtime public.budget_items
+realtime public.call_sheet_calls
+realtime public.call_sheets
 realtime public.campaigns
 realtime public.character_media
 realtime public.media
@@ -843,6 +878,8 @@ realtime public.project_crew
 realtime public.projects
 realtime public.scene_media
 realtime public.scenes
+realtime public.script_stash
+realtime public.shots
 realtime public.timeline_items
 rls activity_feed enabled=true forced=false
 rls audit_logs enabled=true forced=false
@@ -875,6 +912,7 @@ rls script_annotations enabled=true forced=false
 rls script_characters enabled=true forced=false
 rls script_metadata enabled=true forced=false
 rls script_revisions enabled=true forced=false
+rls script_stash enabled=true forced=false
 rls scripts enabled=true forced=false
 rls sfx_assets enabled=true forced=false
 rls shots enabled=true forced=false
@@ -885,6 +923,7 @@ rls timeline_items enabled=true forced=false
 schema internal
 schema public
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()

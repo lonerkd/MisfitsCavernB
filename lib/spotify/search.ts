@@ -21,7 +21,9 @@ export async function searchSpotify(query: string, type: 'track' | 'playlist' | 
   }
 
   const data = await res.json();
-  return type === 'playlist' ? data.playlists.items : (type === 'track' ? data.tracks.items : data.albums.items);
+  const items = (type === 'playlist' ? data.playlists?.items : type === 'track' ? data.tracks?.items : data.albums?.items) ?? [];
+  // Spotify returns null placeholders for items it won't serve (e.g. removed playlists).
+  return items.filter(Boolean);
 }
 
 export async function generateContextualSearchQuery(sceneText: string): Promise<string> {

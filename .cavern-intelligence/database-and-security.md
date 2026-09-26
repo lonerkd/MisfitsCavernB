@@ -19,9 +19,11 @@ Misfits Cavern is powered by a relational PostgreSQL database hosted on Supabase
 - **`scene_media` / `character_media`**: Links from scenes / `script_characters` to `media`. Composite foreign keys pin both ends to the same project.
 - **Storage buckets**: `project-media` (private, project library). `sfx_library` (public read; audio ≤ 20 MB, uploads only into `<your user id>/…`). `assets`, `studio-assets`, `sfx-library` are legacy and take no uploads.
 - **`studio_boards` & `studio_assets`**: Legacy, unused by the app since the Studio rebuild (2 orphaned rows in production, no project). To be dropped once confirmed.
-- **`shots`**: Shot list per scene.
+- **`shots`**: Shot list per scene (Studio › Scenes). The scene must belong to the shot's project (composite FK). Also created by "Shot" margin notes.
+- **`script_annotations`**: Margin notes on script lines. Add them through `add_script_annotation()`: shot/beat/to-do notes create the shot, beat or task in the same transaction and record it in `routed_table`/`routed_id`.
+- **`script_stash`**: The editor stash (snippets beside a script); access follows `can_access_script`.
 - **`activity_feed`**: Project activity. Entries carry `metadata.project_id`; readable by the author and by people with access to that project only.
-- **`call_sheets` & `call_sheet_calls`**: Daily call times and specific crew shifts, linked to project crew schedules.
+- **`call_sheets` & `call_sheet_calls`**: One sheet per project shoot day (date, calls, wrap, address, weather, notes); one call per person per sheet — a crew member or a character, never both. Calls carry `project_id` pinned to their sheet's.
 - **`budget_items` & `timeline_items`**: Manages the production costs and milestone timelines.
 - **`portfolio_projects` & `portfolio_media`**: Holds the public showcases for filmmaker directories.
 - **`spotify_connections`**: Stores persistent encrypted/OAuth access and refresh tokens per user for the Soundtrack widget.

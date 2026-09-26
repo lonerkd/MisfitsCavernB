@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Textarea } from '@/components/ui/Textarea';
@@ -11,6 +10,7 @@ import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
 import { assignCrewMember } from '@/lib/supabase/crew-management';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
+import Avatar from '@/components/Avatar';
 import { awaitOSUser } from '@/lib/os';
 
 interface Application {
@@ -361,7 +361,7 @@ export default function JobDetailPage() {
                           flexShrink: 0,
                         }}>
                           {app.profiles?.avatar_url ? (
-                            <Image src={app.profiles.avatar_url} alt="" width={32} height={32} style={{ objectFit: 'cover' }} />
+                            <Avatar src={app.profiles.avatar_url} name={app.profiles.username} size={32} radius={0} />
                           ) : (
                             <User size={14} style={{ color: 'var(--accent)', opacity: 0.6 }} />
                           )}

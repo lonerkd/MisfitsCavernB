@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import type { LiveRows } from '@/lib/studio/live';
+import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
 import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images } from 'lucide-react';
 import type { ScriptLine } from '@/types/screenplay';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
@@ -46,8 +48,7 @@ export interface EditorRightPanelsProps {
   showWatermark: boolean;
   setShowWatermark: (v: boolean) => void;
   lintIssues: { type: string; message: string; rule?: string; line?: number }[];
-  stashItems: { id: string; text: string; date: number }[];
-  setStashItems: React.Dispatch<React.SetStateAction<{ id: string; text: string; date: number }[]>>;
+  stash: LiveRows<StashItem>;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   currentScript: { title?: string, id?: string } | null;
   projectAudioRefs?: any[];
@@ -99,7 +100,7 @@ export function EditorRightPanels({
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
   setNightModePreview, elements, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
+  setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
   referencesPanel,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
@@ -426,34 +427,35 @@ export function EditorRightPanels({
                       <SectionHeader
                         icon={Bookmark}
                         label="The Stash"
-                        count={stashItems.length || null}
+                        count={stash.rows.length || null}
                         open={stashOpen}
                         onToggle={() => setStashOpen(o => !o)}
                         right={(
                           <button onClick={(e) => {
                             e.stopPropagation();
                             const sel = textareaRef.current?.value.substring(textareaRef.current.selectionStart, textareaRef.current.selectionEnd);
-                            if (sel) {
-                              setStashItems(prev => [{ id: Math.random().toString(), text: sel, date: Date.now() }, ...prev]);
-                              toast('Added to stash', 'success');
-                            } else {
-                              toast('Select text to stash', 'error');
-                            }
+                            if (!sel?.trim()) { toast('Select text to stash', 'error'); return; }
+                            if (!currentScript?.id) { toast('Open a script first', 'error'); return; }
+                            addToStash(currentScript.id, sel)
+                              .then((row) => { stash.upsertLocal(row); toast('Added to stash', 'success'); })
+                              .catch((err: Error) => toast(err.message || 'Could not stash that', 'error'));
                           }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
                         )}
                       />
                       {stashOpen && (
                         <>
                           <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4, padding: '0 4px' }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
-                          {stashItems.length === 0 ? (
+                          {stash.status === 'error' ? (
+                            <div style={{ fontSize: 12, color: '#ef4444', textAlign: 'center', padding: 12 }}>{stash.error || 'Could not load the stash'}</div>
+                          ) : stash.rows.length === 0 ? (
                             <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click &quot;+ Add Selected&quot; to save it here.</div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {stashItems.map(item => (
+                              {stash.rows.map(item => (
                                 <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
                                   <div style={{ fontSize: 12, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
+                                    <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(item.created_at).toLocaleDateString()}</span>
                                     <div style={{ display: 'flex', gap: 8 }}>
                                       <button onClick={() => {
                                         if (textareaRef.current) {
@@ -464,7 +466,7 @@ export function EditorRightPanels({
                                           toast('Inserted from stash', 'success');
                                         }
                                       }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
-                                      <button onClick={() => setStashItems(prev => prev.filter(i => i.id !== item.id))} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
+                                      <button onClick={() => { stash.removeLocal(item.id); removeFromStash(item.id).catch((err: Error) => { stash.upsertLocal(item); toast(err.message || 'Could not delete', 'error'); }); }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
                                     </div>
                                   </div>
                                 </div>

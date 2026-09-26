@@ -24,6 +24,14 @@ describe('classifyUrl', () => {
 });
 
 describe('videoEmbed', () => {
+  it('embeds Google Drive files from share, open and download links', () => {
+    const id = '1AbCdEfGhIjKlMnOpQrStUvWxYz';
+    for (const url of [`https://drive.google.com/file/d/${id}/view?usp=sharing`, `https://drive.google.com/open?id=${id}`, `https://drive.google.com/uc?id=${id}&export=download`]) {
+      expect(videoEmbed(url)).toEqual({ provider: 'drive', id, src: `https://drive.google.com/file/d/${id}/preview`, thumbnail: `https://drive.google.com/thumbnail?id=${id}&sz=w800` });
+    }
+    expect(videoEmbed('https://drive.google.com/drive/folders/abc')).toBeNull();
+  });
+
   it('builds privacy-friendly player URLs', () => {
     expect(videoEmbed('https://youtu.be/dQw4w9WgXcQ')?.src).toBe('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
     expect(videoEmbed('https://vimeo.com/76979871')?.src).toBe('https://player.vimeo.com/video/76979871');

@@ -1,5 +1,31 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Audit, part 2: production records that were never saved
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 106 integration
+tests, 171 unit tests, tsc/lint/build, Studio journey + screenshots of the
+new flows against the local stack. Migration `20260926040000` is **not yet
+applied to production** (part 1, `20260926030000`, is applied and production
+matches `main` on every fingerprint category).
+
+- **Margin notes route to real work** (`add_script_annotation`, one
+  transaction): Shot → numbered shot on that scene, Beat → beat board,
+  To-do → project task. Labels say where each goes.
+- **Shot list** per scene in Studio › Scenes (size, description, status),
+  live; shots are pinned to their scene's project.
+- **Editor stash persists** (`script_stash`, access follows the script,
+  live); `scripts.stash_items` dropped.
+- **Call sheets are saved**: date, calls, wrap, address, weather, notes,
+  per-person call times; printout uses them (and names crew correctly).
+- **Tasks** get assignee (notified) + due date.
+- **Reduce motion** applies app-wide (framer-motion too).
+- Profile "open script" opens that script.
+
+Next: Spotify rebuild (server-side tokens; live mood search instead of
+unverifiable editorial playlist ids, one of which was duplicated);
+post-production module; integrations; design/motion pass.
+`studio_boards`/`studio_assets` (2 orphan rows) still to drop.
+
 ## Latest Session — Suite audit: privacy, open doors, fake UI
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 94 integration

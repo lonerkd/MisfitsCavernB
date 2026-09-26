@@ -49,3 +49,15 @@ describe('admin rights', () => {
     expect(await isAdmin(cast.sam.id)).toBe(true);
   });
 });
+
+describe('platform analytics', () => {
+  it('are admins-only and count the whole platform, not the admin’s own rows', async () => {
+    expect((await cast.riley.client.rpc('admin_platform_analytics', { p_since: new Date(Date.now() - 86400000).toISOString() })).error).not.toBeNull();
+    await adminClient().from('projects').insert({ title: 'Done film', creator_id: cast.riley.id, status: 'completed', start_date: '2026-01-01', end_date: '2026-01-31' });
+    const { data, error } = await cast.sam.client.rpc('admin_platform_analytics', { p_since: new Date(Date.now() - 86400000).toISOString() });
+    expect(error).toBeNull();
+    expect(Number(data![0].completed_projects)).toBeGreaterThanOrEqual(1);
+    expect(Number(data![0].active_users)).toBeGreaterThanOrEqual(3);
+    expect(data![0].avg_project_days).not.toBeNull();
+  });
+});
