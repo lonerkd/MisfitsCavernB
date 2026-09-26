@@ -12,6 +12,7 @@ import { SectionHeader, StatusPill, ErrorBar, cx } from '../ui';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import { MediaDetail } from '../media/MediaDetail';
 import { MediaPicker } from '../media/MediaPicker';
+import { ShotList } from '../ShotList';
 import s from '../studio.module.css';
 
 /**
@@ -59,7 +60,7 @@ export function ScenesTab() {
         id="scenes-title"
         eyebrow="Scenes"
         title="Scene References"
-        subtitle="Every scene in the screenplay, with the images, clips and notes that explain it. Rewrite freely — references stay with their scene."
+        subtitle="Every scene in the screenplay, with its references, shot list and notes. Rewrite freely — they stay with their scene."
         actions={
           <>
             {scripts.length > 1 && (
@@ -208,6 +209,8 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; re
             <Plus size={14} /> Reference
           </button>
         </div>
+
+        <ShotList scene={scene} />
 
         <label>
           <span className={s.srOnly}>Scene note</span>

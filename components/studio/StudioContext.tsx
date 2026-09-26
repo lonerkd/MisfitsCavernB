@@ -12,6 +12,7 @@ import {
   studio,
   useProjectMedia,
   useProjectScripts,
+  useProjectShots,
   useSceneMedia,
   useScriptScenes,
   type LiveRows,
@@ -19,6 +20,7 @@ import {
   type ProjectScript,
   type SceneMedia,
   type SceneRow,
+  type Shot,
   type SyncState,
 } from '@/lib/studio';
 
@@ -28,6 +30,7 @@ export interface StudioData {
   isOwner: boolean;
   media: LiveRows<Media>;
   links: LiveRows<SceneMedia>;
+  shots: LiveRows<Shot>;
   scripts: ProjectScript[];
   scriptsStatus: 'loading' | 'ready' | 'error';
   scriptId: string | null;
@@ -54,6 +57,7 @@ export function StudioProvider({ project, userId, children }: { project: Project
   const projectId = project.id;
   const media = useProjectMedia(projectId);
   const links = useSceneMedia(projectId);
+  const shots = useProjectShots(projectId);
   const { scripts, status: scriptsStatus } = useProjectScripts(projectId);
 
   // Which script's scenes the Studio shows: the last one chosen on this device,
@@ -113,6 +117,7 @@ export function StudioProvider({ project, userId, children }: { project: Project
     isOwner: project.creator_id === userId,
     media,
     links,
+    shots,
     scripts,
     scriptsStatus,
     scriptId,

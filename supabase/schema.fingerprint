@@ -273,10 +273,12 @@ column scenes.time_of_day text default 'DAY'::text
 column scenes.title text not null
 column scenes.updated_at timestamp with time zone default now() not null
 column script_annotations.created_at timestamp with time zone default now()
-column script_annotations.created_by uuid
+column script_annotations.created_by uuid default auth.uid()
 column script_annotations.id uuid default uuid_generate_v4() not null
 column script_annotations.line_index integer not null
 column script_annotations.project_id uuid not null
+column script_annotations.routed_id uuid
+column script_annotations.routed_table text
 column script_annotations.script_id uuid not null
 column script_annotations.text text not null
 column script_annotations.type text not null
@@ -335,7 +337,7 @@ column sfx_assets.title text not null
 column sfx_assets.user_id uuid not null
 column shots.angle text
 column shots.created_at timestamp with time zone default now()
-column shots.created_by uuid
+column shots.created_by uuid default auth.uid()
 column shots.description text
 column shots.id uuid default uuid_generate_v4() not null
 column shots.lens text
@@ -510,7 +512,9 @@ constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 
 constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
 constraint script_annotations.script_annotations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint script_annotations.script_annotations_routed_check CHECK ((((routed_table IS NULL) AND (routed_id IS NULL)) OR ((routed_table = ANY (ARRAY['shots'::text, 'project_beats'::text, 'project_tasks'::text])) AND (routed_id IS NOT NULL))))
 constraint script_annotations.script_annotations_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_annotations.script_annotations_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 2000)))
 constraint script_annotations.script_annotations_type_check CHECK ((type = ANY (ARRAY['shot'::text, 'beat'::text, 'note'::text, 'revision'::text, 'reference'::text, 'todo'::text])))
 constraint script_characters.script_characters_pkey PRIMARY KEY (id)
 constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
@@ -532,9 +536,11 @@ constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint shots.shots_description_len CHECK ((char_length(description) <= 2000))
+constraint shots.shots_number_len CHECK (((char_length(shot_number) >= 1) AND (char_length(shot_number) <= 12)))
 constraint shots.shots_pkey PRIMARY KEY (id)
 constraint shots.shots_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-constraint shots.shots_scene_id_fkey FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
@@ -563,6 +569,7 @@ function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
+function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
 function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5ed
 function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
@@ -592,6 +599,7 @@ grant function internal.is_shared_media_object(object_name text) anon,authentica
 grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
+grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
@@ -815,8 +823,7 @@ policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to pub
 policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
 policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
 policy public.sfx_assets "sfx_assets insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
-policy public.shots "Shots viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.shots "Shots writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.shots "shots access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.spotify_connections "Users can delete own spotify connection" PERMISSIVE DELETE to public using (auth.uid() = user_id) check -
 policy public.spotify_connections "Users can insert own spotify connection" PERMISSIVE INSERT to public using - check (auth.uid() = user_id)
 policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
@@ -843,6 +850,7 @@ realtime public.project_crew
 realtime public.projects
 realtime public.scene_media
 realtime public.scenes
+realtime public.shots
 realtime public.timeline_items
 rls activity_feed enabled=true forced=false
 rls audit_logs enabled=true forced=false

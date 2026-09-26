@@ -1484,6 +1484,8 @@ export type Database = {
           id: string;
           line_index: number;
           project_id: string;
+          routed_id: string | null;
+          routed_table: string | null;
           script_id: string;
           text: string;
           type: string;
@@ -1494,6 +1496,8 @@ export type Database = {
           id?: string;
           line_index: number;
           project_id: string;
+          routed_id?: string | null;
+          routed_table?: string | null;
           script_id: string;
           text: string;
           type: string;
@@ -1504,6 +1508,8 @@ export type Database = {
           id?: string;
           line_index?: number;
           project_id?: string;
+          routed_id?: string | null;
+          routed_table?: string | null;
           script_id?: string;
           text?: string;
           type?: string;
@@ -1873,11 +1879,11 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "shots_scene_id_fkey";
-            columns: ["scene_id"];
+            foreignKeyName: "shots_scene_fkey";
+            columns: ["scene_id", "project_id"];
             isOneToOne: false;
             referencedRelation: "scenes";
-            referencedColumns: ["id"];
+            referencedColumns: ["id", "project_id"];
           },
         ];
       };
@@ -2085,6 +2091,34 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_script_annotation: {
+        Args: {
+          p_line: number;
+          p_scene_heading?: string;
+          p_scene_ordinal?: number;
+          p_script: string;
+          p_text: string;
+          p_type: string;
+        };
+        Returns: {
+          created_at: string | null;
+          created_by: string | null;
+          id: string;
+          line_index: number;
+          project_id: string;
+          routed_id: string | null;
+          routed_table: string | null;
+          script_id: string;
+          text: string;
+          type: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "script_annotations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_list_users: {
         Args: Record<PropertyKey, never>;
         Returns: {
