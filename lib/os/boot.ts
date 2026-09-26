@@ -48,8 +48,49 @@ async function getOfflineSafeUser(): Promise<{ id: string; email: string | null 
   return null;
 }
 
+function readCachedProfile(userId: string): any {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = localStorage.getItem(OFFLINE_PROFILE_KEY);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return parsed?.__uid === userId ? parsed : null;
+  } catch {
+    return null; // corrupt cache
+  }
+}
+
+// A valid auth session is the source of truth for "signed in". If the profile
+// row can't be read (network, or the signup trigger hasn't landed yet), run on a
+// minimal identity rather than reporting anon — anon makes every page treat a
+// signed-in user as signed out and silently drop their writes.
+function minimalProfile(userId: string, email: string | null): UserProfile {
+  const now = new Date().toISOString();
+  return {
+    id: userId,
+    email: email ?? '',
+    username: email?.split('@')[0] ?? 'member',
+    role: 'Creator',
+    status: 'OPEN',
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function setAuthed(userId: string, email: string | null, profile: any) {
+  const userRole = determineUserRole(profile);
+  osState().setSession({
+    status: 'authed',
+    user: profile,
+    userId,
+    email,
+    userRole,
+    permissions: getPermissionsForRole(userRole),
+    error: null,
+  });
+}
+
 async function resolveSessionUser(userId: string, email: string | null) {
-  const { setSession } = osState();
   let profile: any = null;
 
   // A transient failure here must not demote a signed-in user to anon, so retry
@@ -68,43 +109,7 @@ async function resolveSessionUser(userId: string, email: string | null) {
     } catch { /* offline */ }
   }
 
-  if (!profile && typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem(OFFLINE_PROFILE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed?.__uid === userId) profile = parsed;
-      }
-    } catch { /* corrupt cache */ }
-  }
-
-  // A valid auth session is the source of truth for "signed in". If the profile
-  // row couldn't be read (network, or the signup trigger hasn't landed yet), run
-  // on a minimal identity rather than reporting anon — anon makes every page
-  // treat a signed-in user as signed out and silently drop their writes.
-  if (!profile) {
-    const now = new Date().toISOString();
-    profile = {
-      id: userId,
-      email: email ?? '',
-      username: email?.split('@')[0] ?? 'member',
-      role: 'Creator',
-      status: 'OPEN',
-      created_at: now,
-      updated_at: now,
-    } satisfies UserProfile;
-  }
-
-  const userRole = determineUserRole(profile);
-  setSession({
-    status: 'authed',
-    user: profile,
-    userId,
-    email,
-    userRole,
-    permissions: getPermissionsForRole(userRole),
-    error: null,
-  });
+  setAuthed(userId, email, profile ?? readCachedProfile(userId) ?? minimalProfile(userId, email));
 }
 
 async function loadProjects() {
@@ -149,6 +154,29 @@ export async function osHydrateSession(): Promise<boolean> {
   return true;
 }
 
+/**
+ * Adopt a session the caller has just established (sign-in / sign-up), without
+ * waiting on the network. The store flips to 'authed' immediately — from the
+ * cached profile, else a minimal identity — so the auth page can navigate at
+ * once; the real profile, project list and realtime sync then load in the
+ * background. Blocking sign-in on that whole chain meant any slowness stranded
+ * the user on /auth, already signed in, behind a "taking too long" error.
+ */
+export function osAdoptSession(user: { id: string; email?: string | null }) {
+  const email = user.email ?? null;
+  setAuthed(user.id, email, readCachedProfile(user.id) ?? minimalProfile(user.id, email));
+  osState().setProject({ status: 'resolving' });
+  void (async () => {
+    await resolveSessionUser(user.id, email);
+    await loadProjects();
+    syncProjectList();
+    syncActiveProject(osState().project.active?.id ?? null);
+  })().catch((error) => {
+    console.error('OS session adopt error:', error);
+    osState().setProject({ status: 'ready' });
+  });
+}
+
 export function resetOS() {
   teardownSync();
   if (typeof window !== 'undefined') {
@@ -169,12 +197,19 @@ export async function bootOS() {
   const { setSession, setProject } = osState();
 
   try {
-    const user = await getOfflineSafeUser();
+    // Adopt the locally stored session immediately (no network), so every page of
+    // the suite opens already signed in instead of waiting on an auth round trip.
+    // The server still validates the token (middleware on every gated request,
+    // RLS on every query); the background check below only signs the client out
+    // when the auth server explicitly rejects the session.
+    const { data } = await supabase.auth.getSession();
+    const user = data.session?.user;
     if (user) {
-      await resolveSessionUser(user.id, user.email);
-      await loadProjects();
-      syncProjectList();
-      syncActiveProject(osState().project.active?.id ?? null);
+      osAdoptSession(user);
+      supabase.auth.getUser().then(({ data: fresh, error }) => {
+        const rejected = !fresh.user && error && (error.status === 401 || error.status === 403);
+        if (rejected) resetOS();
+      }).catch(() => { /* offline: keep the local session */ });
     } else {
       setSession({ status: 'anon' });
       setProject({ status: 'ready' });

@@ -1,5 +1,31 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Sign-in persistence + no-silent-data-loss saves
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: **133 tests pass**
+(8 new), tsc/lint/build green, 20/20 CI smoke specs; real-browser journey on
+the build: sign in → all 11 apps stay signed in → create project → Studio →
+write in editor → reload → text and project present (confirmed in the DB).
+
+Production (pre-fix) reproduction: sign-in left no session cookie and every
+app bounced to /auth. Fixes:
+- **Boot adopts the local session instantly** (`bootOS` → `getSession()` then
+  `osAdoptSession`); `getUser()` validates in the background and signs out only
+  on an explicit 401/403. Sign-in/up no longer block on profile + projects +
+  sync (`osAdoptSession`) — previously any slowness stranded the user on /auth.
+- **Auth form can't leak credentials**: `method="post"` + submit disabled until
+  hydrated (pre-hydration native submit put the password in the URL).
+- **Service worker v2**: no homepage fallback for failed navigations (it
+  rewrote the URL to "/"), never caches redirects, purges v1 caches.
+- `useOSGate` keeps `?redirect=`; nav hides Sign In/Out while identity loads.
+- **Editor data loss fixed** (`lib/scriptos/storage.ts`): load prefers unsynced
+  local edits over the stale server copy; failed saves retry on a timer (not
+  only on `online`); sync no longer clobbers text typed mid-upload. Status bar
+  shows "On device — syncing" instead of always "Saved"; one-time toast.
+  Pinned by `storage.test.ts` (2 of 4 fail on the old code).
+- Project creation uses the live session; activity logging is fire-and-forget
+  (it blocked navigation to Studio when slow).
+
 ## Latest Session — Live assessment + fixes for the blocking bugs
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Report:

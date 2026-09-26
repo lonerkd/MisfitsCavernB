@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // A controllable stand-in for the Supabase client: each test decides how the
 // auth server and the profiles table behave (slow, failing, or healthy).
 const { auth, profileLookup } = vi.hoisted(() => ({
-  auth: { getUser: vi.fn(), getSession: vi.fn() },
+  auth: { getUser: vi.fn(), getSession: vi.fn(), onAuthStateChange: vi.fn() },
   profileLookup: vi.fn(),
 }));
 
@@ -27,7 +27,7 @@ vi.mock('./sync', () => ({
 }));
 vi.mock('./queries', () => ({ fetchProjectDetails: vi.fn() }));
 
-import { osHydrateSession } from './boot';
+import { osHydrateSession, osAdoptSession } from './boot';
 import { osState } from './store';
 
 const USER = { id: 'user-1', email: 'sam@example.com' };
@@ -102,5 +102,80 @@ describe('osHydrateSession — a signed-in user is never demoted to anon', () =>
 
     await expect(osHydrateSession()).resolves.toBe(false);
     expect(profileLookup).not.toHaveBeenCalled();
+  });
+});
+
+describe('osAdoptSession — sign-in never waits on the network', () => {
+  it('marks the store authed immediately, even while the profile lookup hangs', () => {
+    profileLookup.mockReturnValue(new Promise(() => {})); // never settles
+
+    osAdoptSession({ id: USER.id, email: USER.email });
+
+    const s = osState().session;
+    expect(s.status).toBe('authed');
+    expect(s.userId).toBe(USER.id);
+    expect(s.user?.username).toBe('sam');
+  });
+
+  it('upgrades to the real profile once it loads in the background', async () => {
+    profileLookup.mockResolvedValue({ data: { id: USER.id, username: 'samwise' }, error: null });
+
+    osAdoptSession({ id: USER.id, email: USER.email });
+    await vi.waitFor(() => expect(osState().session.user?.username).toBe('samwise'));
+    await vi.waitFor(() => expect(osState().project.status).toBe('ready'));
+  });
+});
+
+describe('bootOS — every page opens signed in without waiting on the network', () => {
+  // bootOS runs once per module instance, so each case loads a fresh copy.
+  async function freshBoot() {
+    vi.resetModules();
+    const boot = await import('./boot');
+    const { osState: freshState } = await import('./store');
+    return { bootOS: boot.bootOS, state: freshState };
+  }
+
+  it('is authed from the local session even while the auth server hangs', async () => {
+    auth.getSession.mockResolvedValue(session);
+    auth.getUser.mockReturnValue(new Promise(() => {})); // never settles
+    profileLookup.mockReturnValue(new Promise(() => {}));
+    const { bootOS, state } = await freshBoot();
+
+    await bootOS();
+
+    expect(state().session.status).toBe('authed');
+    expect(state().session.userId).toBe(USER.id);
+  });
+
+  it('keeps the session when the background check fails for network reasons', async () => {
+    auth.getSession.mockResolvedValue(session);
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: Object.assign(new Error('Failed to fetch'), { status: 0 }) });
+    profileLookup.mockResolvedValue({ data: { id: USER.id, username: 'sam' }, error: null });
+    const { bootOS, state } = await freshBoot();
+
+    await bootOS();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(state().session.status).toBe('authed');
+  });
+
+  it('signs the client out when the auth server rejects the session', async () => {
+    auth.getSession.mockResolvedValue(session);
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: Object.assign(new Error('invalid JWT'), { status: 401 }) });
+    profileLookup.mockReturnValue(new Promise(() => {}));
+    const { bootOS, state } = await freshBoot();
+
+    await bootOS();
+    await vi.waitFor(() => expect(state().session.status).toBe('anon'));
+  });
+
+  it('is anon when there is no stored session', async () => {
+    auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    const { bootOS, state } = await freshBoot();
+
+    await bootOS();
+
+    expect(state().session.status).toBe('anon');
+    expect(auth.getUser).not.toHaveBeenCalled();
   });
 });

@@ -145,7 +145,7 @@ export default function Navigation() {
 
           {!isLoading && !isGuest && <NotificationBell />}
 
-          {!isLoading && !isGuest ? (
+          {isLoading ? null : !isGuest ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
               <Link
                 prefetch={false}
@@ -276,7 +276,7 @@ export default function Navigation() {
               transition={{ delay: 0.36 }}
               style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}
             >
-              {!isLoading && !isGuest ? (
+              {isLoading ? null : !isGuest ? (
                 <>
                   <Link
                     prefetch={false}

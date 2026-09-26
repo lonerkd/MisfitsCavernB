@@ -33,6 +33,8 @@ export default function AuthPage() {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
 
   // ── Where to land after auth ─────────────────────────────────────
   // middleware.ts sends gated visitors here as /auth?redirect=<path>. Honour it
@@ -47,10 +49,9 @@ export default function AuthPage() {
   }, []);
 
   // Navigate when the session is actually established in the OS store — not on a
-  // timer. osSignIn/osSignUp await osHydrateSession(), so by the time status is
-  // 'authed' the store already knows the user and the destination page's gate
-  // cannot bounce them back here. This also forwards someone who is already
-  // signed in and lands on /auth.
+  // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
+  // destination page's gate cannot bounce them back here. This also forwards
+  // someone who is already signed in and lands on /auth.
   useEffect(() => {
     if (status === 'authed') router.replace(redirectTo);
   }, [status, redirectTo, router]);
@@ -237,7 +238,10 @@ export default function AuthPage() {
             ))}
           </div>
 
-          <form onSubmit={handleSubmit}>
+          {/* method="post" + a submit button disabled until hydration: before the
+              JS loads, a native submit would otherwise GET /auth?email=…&password=…,
+              putting the password in the URL and browser history. */}
+          <form method="post" onSubmit={handleSubmit}>
             <Input
               name="email"
               label="Email"
@@ -301,6 +305,7 @@ export default function AuthPage() {
               type="submit"
               fullWidth
               isLoading={loading}
+              disabled={!hydrated}
               variant="solid"
             >
               {mode === 'signin' ? 'Sign In' : 'Create Account'}

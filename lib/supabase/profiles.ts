@@ -66,7 +66,7 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
       link: '/projects',
       read: false,
     });
-    await logActivity(`invited a crew member as ${role}`, 'project', projectId);
+    void logActivity(`invited a crew member as ${role}`, 'project', projectId);
   } catch {  }
   return data;
 }
