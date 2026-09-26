@@ -182,6 +182,37 @@ column portfolio_projects.title text not null
 column portfolio_projects.updated_at timestamp with time zone default now()
 column portfolio_projects.user_id uuid not null
 column portfolio_projects.year integer
+column post_cuts.created_at timestamp with time zone default now() not null
+column post_cuts.created_by uuid default auth.uid()
+column post_cuts.id uuid default gen_random_uuid() not null
+column post_cuts.media_id uuid
+column post_cuts.project_id uuid not null
+column post_cuts.title text not null
+column post_cuts.url text
+column post_items.assigned_to uuid
+column post_items.created_at timestamp with time zone default now() not null
+column post_items.created_by uuid default auth.uid()
+column post_items.department text
+column post_items.due_date date
+column post_items.id uuid default gen_random_uuid() not null
+column post_items.kind text not null
+column post_items.notes text
+column post_items.position integer default 0 not null
+column post_items.project_id uuid not null
+column post_items.status text default 'todo'::text not null
+column post_items.title text not null
+column post_items.updated_at timestamp with time zone default now() not null
+column post_notes.at_seconds numeric(9,2) not null
+column post_notes.body text not null
+column post_notes.created_at timestamp with time zone default now() not null
+column post_notes.created_by uuid default auth.uid()
+column post_notes.cut_id uuid not null
+column post_notes.department text default 'edit'::text not null
+column post_notes.id uuid default gen_random_uuid() not null
+column post_notes.project_id uuid not null
+column post_notes.resolved_at timestamp with time zone
+column post_notes.resolved_by uuid
+column post_notes.scene_id uuid
 column profiles.avatar_url text
 column profiles.bio text
 column profiles.created_at timestamp with time zone default now()
@@ -480,6 +511,32 @@ constraint portfolio_projects.portfolio_projects_pkey PRIMARY KEY (id)
 constraint portfolio_projects.portfolio_projects_share_token_key UNIQUE (share_token)
 constraint portfolio_projects.portfolio_projects_source_project_id_fkey FOREIGN KEY (source_project_id) REFERENCES projects(id) ON DELETE SET NULL
 constraint portfolio_projects.portfolio_projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint post_cuts.post_cuts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint post_cuts.post_cuts_id_project_key UNIQUE (id, project_id)
+constraint post_cuts.post_cuts_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
+constraint post_cuts.post_cuts_one_source CHECK (((url IS NULL) <> (media_id IS NULL)))
+constraint post_cuts.post_cuts_pkey PRIMARY KEY (id)
+constraint post_cuts.post_cuts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint post_cuts.post_cuts_title_len CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))
+constraint post_cuts.post_cuts_url_check CHECK (((url IS NULL) OR ((url ~* '^https?://'::text) AND (char_length(url) <= 2000))))
+constraint post_items.post_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
+constraint post_items.post_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint post_items.post_items_department_check CHECK (((department IS NULL) OR (department = ANY (ARRAY['edit'::text, 'sound'::text, 'music'::text, 'color'::text, 'vfx'::text, 'titles'::text, 'general'::text]))))
+constraint post_items.post_items_kind_check CHECK ((kind = ANY (ARRAY['stage'::text, 'deliverable'::text])))
+constraint post_items.post_items_notes_len CHECK ((char_length(notes) <= 2000))
+constraint post_items.post_items_pkey PRIMARY KEY (id)
+constraint post_items.post_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint post_items.post_items_status_check CHECK ((status = ANY (ARRAY['todo'::text, 'in_progress'::text, 'review'::text, 'done'::text])))
+constraint post_items.post_items_title_len CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))
+constraint post_notes.post_notes_at_check CHECK (((at_seconds >= (0)::numeric) AND (at_seconds < (360000)::numeric)))
+constraint post_notes.post_notes_body_len CHECK (((char_length(body) >= 1) AND (char_length(body) <= 4000)))
+constraint post_notes.post_notes_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint post_notes.post_notes_cut_fkey FOREIGN KEY (cut_id, project_id) REFERENCES post_cuts(id, project_id) ON DELETE CASCADE
+constraint post_notes.post_notes_department_check CHECK ((department = ANY (ARRAY['edit'::text, 'sound'::text, 'music'::text, 'color'::text, 'vfx'::text, 'titles'::text, 'general'::text])))
+constraint post_notes.post_notes_pkey PRIMARY KEY (id)
+constraint post_notes.post_notes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint post_notes.post_notes_resolved_check CHECK (((resolved_at IS NULL) = (resolved_by IS NULL)))
+constraint post_notes.post_notes_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE SET NULL (scene_id)
 constraint profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint profiles.profiles_pkey PRIMARY KEY (id)
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
@@ -582,6 +639,7 @@ function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
+function internal.post_notes_guard() body=a1a579173f403f5a56689d072bb9a438
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
@@ -613,6 +671,7 @@ grant function internal.is_project_member(pid uuid) authenticated,postgres,servi
 grant function internal.is_shared_media_object(object_name text) anon,authenticated,postgres,service_role
 grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
+grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
@@ -699,6 +758,17 @@ index CREATE INDEX messages_channel_uuid_idx ON public.messages USING btree (cha
 index CREATE INDEX messages_parent_idx ON public.messages USING btree (parent_message_id)
 index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
 index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
+index CREATE INDEX post_cuts_created_by_idx ON public.post_cuts USING btree (created_by)
+index CREATE INDEX post_cuts_media_idx ON public.post_cuts USING btree (media_id)
+index CREATE INDEX post_cuts_project_idx ON public.post_cuts USING btree (project_id, created_at)
+index CREATE INDEX post_items_assigned_to_idx ON public.post_items USING btree (assigned_to)
+index CREATE INDEX post_items_created_by_idx ON public.post_items USING btree (created_by)
+index CREATE INDEX post_items_project_idx ON public.post_items USING btree (project_id, kind, "position")
+index CREATE INDEX post_notes_created_by_idx ON public.post_notes USING btree (created_by)
+index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, at_seconds)
+index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
+index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
+index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
@@ -734,6 +804,10 @@ index CREATE UNIQUE INDEX portfolio_blocks_pkey ON public.portfolio_blocks USING
 index CREATE UNIQUE INDEX portfolio_media_pkey ON public.portfolio_media USING btree (id)
 index CREATE UNIQUE INDEX portfolio_projects_pkey ON public.portfolio_projects USING btree (id)
 index CREATE UNIQUE INDEX portfolio_projects_share_token_key ON public.portfolio_projects USING btree (share_token)
+index CREATE UNIQUE INDEX post_cuts_id_project_key ON public.post_cuts USING btree (id, project_id)
+index CREATE UNIQUE INDEX post_cuts_pkey ON public.post_cuts USING btree (id)
+index CREATE UNIQUE INDEX post_items_pkey ON public.post_items USING btree (id)
+index CREATE UNIQUE INDEX post_notes_pkey ON public.post_notes USING btree (id)
 index CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)
 index CREATE UNIQUE INDEX profiles_username_key ON public.profiles USING btree (username)
 index CREATE UNIQUE INDEX project_audio_references_pkey ON public.project_audio_references USING btree (id)
@@ -806,6 +880,15 @@ policy public.portfolio_media "Portfolio media readable" PERMISSIVE SELECT to pu
 policy public.portfolio_media "Portfolio owner can manage media" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_projects "Portfolio owner only write" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.portfolio_projects "Portfolio publicly readable" PERMISSIVE SELECT to public using true check -
+policy public.post_cuts "post_cuts delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
+policy public.post_cuts "post_cuts insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.post_cuts "post_cuts update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.post_cuts "post_cuts view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.post_items "post_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.post_notes "post_notes delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
+policy public.post_notes "post_notes insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (resolved_at IS NULL))
+policy public.post_notes "post_notes update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.post_notes "post_notes view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.profiles "Profiles readable by all" PERMISSIVE SELECT to public using true check -
 policy public.profiles "Users insert own profile" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = id)
 policy public.profiles "Users update own profile" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = id) check -
@@ -873,6 +956,9 @@ realtime public.character_media
 realtime public.media
 realtime public.messages
 realtime public.notifications
+realtime public.post_cuts
+realtime public.post_items
+realtime public.post_notes
 realtime public.project_beats
 realtime public.project_crew
 realtime public.projects
@@ -900,6 +986,9 @@ rls notifications enabled=true forced=false
 rls portfolio_blocks enabled=true forced=false
 rls portfolio_media enabled=true forced=false
 rls portfolio_projects enabled=true forced=false
+rls post_cuts enabled=true forced=false
+rls post_items enabled=true forced=false
+rls post_notes enabled=true forced=false
 rls profiles enabled=true forced=false
 rls project_audio_references enabled=true forced=false
 rls project_beats enabled=true forced=false
@@ -926,6 +1015,8 @@ trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_it
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
+trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()

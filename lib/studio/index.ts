@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type PostCut, type PostNote, type PostItem } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -87,6 +87,32 @@ export function useCallSheetCalls(projectId: string | null) {
     filter: `project_id=eq.${projectId}`,
     load: () => studio.listCalls(projectId!),
     keyOf: (x) => String(x.id),
+  });
+}
+
+// ── Post-production ────────────────────────────────────────────────────────
+
+export function usePostCuts(projectId: string | null) {
+  return useLiveRows<PostCut>({
+    scope: projectId, table: 'post_cuts', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listCuts(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => b.created_at.localeCompare(a.created_at),
+  });
+}
+
+export function usePostNotes(projectId: string | null) {
+  return useLiveRows<PostNote>({
+    scope: projectId, table: 'post_notes', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listPostNotes(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => Number(a.at_seconds) - Number(b.at_seconds) || a.created_at.localeCompare(b.created_at),
+  });
+}
+
+export function usePostItems(projectId: string | null) {
+  return useLiveRows<PostItem>({
+    scope: projectId, table: 'post_items', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listPostItems(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at),
   });
 }
 

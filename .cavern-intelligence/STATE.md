@@ -1,5 +1,26 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Post-production
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Migration
+`20260926050000_post_production.sql` (not yet in production). Audit parts 1
+and 2 are merged and applied; production matches `main` on every fingerprint
+category.
+
+- **Studio › Post**: cut review (link or library video; timecoded notes with
+  department + scene, resolve/reopen, click-to-seek; "Now" from YouTube,
+  Vimeo and library players) and the post pipeline + deliverables (status,
+  due, owner; standard set on one click). Scene cards show open post notes.
+- Also in part 2 (merged): Spotify sign-in hardening (OAuth state, crypto
+  PKCE, tokens tied to the app user), live mood searches, admin analytics
+  platform-wide, portfolio media/players for YouTube/Vimeo/Drive, custom
+  avatars load.
+
+Queued (user): accessibility audit of every page (WCAG 2.2 AA / Lighthouse);
+the phase-unlocked "Lego" ecosystem — design from the suite's dream users
+(writers, directors, producers, crew, editors, composers, the community)
+before building.
+
 ## Latest Session — Audit, part 2: production records that were never saved
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 106 integration

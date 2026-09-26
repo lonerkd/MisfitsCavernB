@@ -19,6 +19,33 @@ export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
+export type PostCut = Tables<'post_cuts'>;
+export type PostNote = Tables<'post_notes'>;
+export type PostItem = Tables<'post_items'>;
+export const POST_DEPARTMENTS = ['edit', 'sound', 'music', 'color', 'vfx', 'titles', 'general'] as const;
+export type PostDepartment = (typeof POST_DEPARTMENTS)[number];
+export const POST_STATUSES = ['todo', 'in_progress', 'review', 'done'] as const;
+export type PostStatus = (typeof POST_STATUSES)[number];
+
+/** The standard post pipeline and deliverables for a new project. */
+export const STANDARD_POST: Array<{ kind: 'stage' | 'deliverable'; title: string; department: PostDepartment | null }> = [
+  { kind: 'stage', title: 'Picture edit — assembly to picture lock', department: 'edit' },
+  { kind: 'stage', title: 'Sound edit & mix', department: 'sound' },
+  { kind: 'stage', title: 'Music — score & licensing', department: 'music' },
+  { kind: 'stage', title: 'Colour grade', department: 'color' },
+  { kind: 'stage', title: 'VFX', department: 'vfx' },
+  { kind: 'stage', title: 'Titles & credits', department: 'titles' },
+  { kind: 'deliverable', title: 'Picture master (ProRes)', department: 'edit' },
+  { kind: 'deliverable', title: 'Audio stems (dialogue / music / effects)', department: 'sound' },
+  { kind: 'deliverable', title: 'Subtitles (SRT)', department: 'titles' },
+  { kind: 'deliverable', title: 'Music cue sheet', department: 'music' },
+  { kind: 'deliverable', title: 'Trailer', department: 'edit' },
+  { kind: 'deliverable', title: 'Poster & key art', department: 'general' },
+  { kind: 'deliverable', title: 'Production stills', department: 'general' },
+  { kind: 'deliverable', title: 'Press kit (EPK)', department: 'general' },
+  { kind: 'deliverable', title: 'Festival screener link', department: 'edit' },
+];
+
 /** Who a call is for: a crew member, or a character (the actor playing them). */
 export type CallTarget = { crew_user_id: string } | { character_name: string };
 export type ShotPatch = Partial<Pick<Shot, 'shot_size' | 'angle' | 'movement' | 'lens' | 'description' | 'status'>>;
@@ -303,6 +330,75 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  // ── Post-production ──────────────────────────────────────────────────────
+
+  async function listCuts(projectId: string): Promise<PostCut[]> {
+    const { data, error } = await db.from('post_cuts').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load cuts');
+    return data;
+  }
+
+  async function addCut(projectId: string, title: string, source: { url: string } | { media_id: string }): Promise<PostCut> {
+    const { data, error } = await db.from('post_cuts').insert({ project_id: projectId, title, ...source }).select('*').single();
+    if (error) fail(error, 'Could not add the cut');
+    return data;
+  }
+
+  async function deleteCut(id: string): Promise<void> {
+    const { error } = await db.from('post_cuts').delete().eq('id', id);
+    if (error) fail(error, 'Could not delete the cut');
+  }
+
+  async function listPostNotes(projectId: string): Promise<PostNote[]> {
+    const { data, error } = await db.from('post_notes').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load notes');
+    return data;
+  }
+
+  async function addPostNote(note: Pick<PostNote, 'project_id' | 'cut_id' | 'at_seconds' | 'department' | 'body'> & { scene_id?: string | null }): Promise<PostNote> {
+    const { data, error } = await db.from('post_notes').insert(note).select('*').single();
+    if (error) fail(error, 'Could not add the note');
+    return data;
+  }
+
+  /** Resolve (as the caller) or reopen a note. */
+  async function setPostNoteResolved(id: string, userId: string, resolved: boolean): Promise<PostNote> {
+    const patch = resolved ? { resolved_at: new Date().toISOString(), resolved_by: userId } : { resolved_at: null, resolved_by: null };
+    const { data, error } = await db.from('post_notes').update(patch).eq('id', id).select('*').maybeSingle();
+    if (error) fail(error, 'Could not update the note');
+    if (!data) throw new StudioError('That note no longer exists.');
+    return data;
+  }
+
+  async function deletePostNote(id: string): Promise<void> {
+    const { error } = await db.from('post_notes').delete().eq('id', id);
+    if (error) fail(error, 'Could not delete the note');
+  }
+
+  async function listPostItems(projectId: string): Promise<PostItem[]> {
+    const { data, error } = await db.from('post_items').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load the post pipeline');
+    return data;
+  }
+
+  async function addPostItems(projectId: string, items: Array<Pick<PostItem, 'kind' | 'title'> & Partial<Pick<PostItem, 'department' | 'position'>>>): Promise<PostItem[]> {
+    const { data, error } = await db.from('post_items').insert(items.map((i) => ({ project_id: projectId, ...i }))).select('*');
+    if (error) fail(error, 'Could not add to the pipeline');
+    return data;
+  }
+
+  async function updatePostItem(id: string, patch: Partial<Pick<PostItem, 'status' | 'due_date' | 'assigned_to' | 'title' | 'notes'>>): Promise<PostItem> {
+    const { data, error } = await db.from('post_items').update(patch).eq('id', id).select('*').maybeSingle();
+    if (error) fail(error, 'Could not save');
+    if (!data) throw new StudioError('That item no longer exists.');
+    return data;
+  }
+
+  async function deletePostItem(id: string): Promise<void> {
+    const { error } = await db.from('post_items').delete().eq('id', id);
+    if (error) fail(error, 'Could not delete');
+  }
+
   // ── Links ────────────────────────────────────────────────────────────────
 
   async function listSceneMedia(projectId: string): Promise<SceneMedia[]> {
@@ -363,6 +459,8 @@ export function createStudioApi(db: Client) {
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot,
     listCallSheets, saveCallSheet, listCalls, saveCall,
+    listCuts, addCut, deleteCut, listPostNotes, addPostNote, setPostNoteResolved, deletePostNote,
+    listPostItems, addPostItems, updatePostItem, deletePostItem,
     listSceneMedia, linkMedia, unlinkMedia,
     listCharacterMedia, linkCharacterMedia, unlinkCharacterMedia,
     getLookbook,
