@@ -2170,6 +2170,14 @@ export type Database = {
           username: string;
         }[];
       };
+      admin_platform_analytics: {
+        Args: { p_since: string };
+        Returns: {
+          active_users: number;
+          avg_project_days: number;
+          completed_projects: number;
+        }[];
+      };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
       can_post_channel: { Args: { cid: string }; Returns: boolean };
       get_my_account: {

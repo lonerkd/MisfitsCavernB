@@ -176,3 +176,27 @@ CREATE POLICY "call_sheet_calls access" ON public.call_sheet_calls FOR ALL TO au
   USING (internal.can_access_project(project_id)) WITH CHECK (internal.can_access_project(project_id));
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.call_sheets, public.call_sheet_calls;
+
+-- ── Admin analytics ────────────────────────────────────────────────────────
+-- The analytics page counted completed projects through RLS (so an admin saw
+-- only their own) and "active users" from login audit entries that nothing
+-- writes any more. Platform-wide numbers, admins only.
+CREATE FUNCTION public.admin_platform_analytics(p_since timestamptz)
+ RETURNS TABLE(active_users bigint, completed_projects bigint, avg_project_days integer)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+begin
+  if not internal.caller_is_admin() then
+    raise exception 'Admins only' using errcode = '42501';
+  end if;
+  return query select
+    (select count(*) from auth.users u where u.last_sign_in_at >= p_since),
+    (select count(*) from public.projects p where p.status = 'completed'),
+    (select round(avg(p.end_date - p.start_date))::integer from public.projects p
+      where p.status = 'completed' and p.start_date is not null and p.end_date >= p.start_date);
+end;
+$function$;
+REVOKE ALL ON FUNCTION public.admin_platform_analytics(timestamptz) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_platform_analytics(timestamptz) TO authenticated, service_role;
