@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
+import { getProjectCardFacts, getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -77,8 +77,11 @@ interface ProjectCardViewModel {
   title: string;
   type: string;
   phase: Phase;
-  progress: number;
-  deadline: string;
+  /** Tasks completed / total; null when the project has no tasks. */
+  progress: { done: number; total: number } | null;
+  /** The project's end date, if one is set — never invented. */
+  deadline: string | null;
+  /** Usernames of the owner and crew. */
   team: string[];
   description: string;
   color: string;
@@ -116,8 +119,9 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
   const Icon = TYPE_ICONS[project.type] ?? Film;
-  const days = daysUntil(project.deadline);
-  const overdue = days < 0;
+  const days = project.deadline ? daysUntil(project.deadline) : null;
+  const overdue = days !== null && days < 0;
+  const pct = project.progress && project.progress.total ? Math.round((project.progress.done / project.progress.total) * 100) : null;
 
   return (
     <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }}>
@@ -196,20 +200,22 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           {project.description}
         </div>
 
-        <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
+        {pct !== null && (
+        <div title={`${project.progress!.done} of ${project.progress!.total} tasks done`} style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
           <motion.div
             initial={{ width: 0 }}
-            whileInView={{ width: `${project.progress}%` }}
+            whileInView={{ width: `${pct}%` }}
             viewport={{ once: true }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ height: '100%', background: `linear-gradient(90deg, ${phase}88, ${phase})`, borderRadius: 1 }}
           />
         </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: -4 }}>
-            {project.team.slice(0, 3).map((initials, i) => (
-              <div key={i} style={{
+            {project.team.slice(0, 3).map((name, i) => (
+              <div key={name} title={name} style={{
                 width: 20, height: 20, borderRadius: '50%',
                 background: `${phase}22`,
                 border: `1.5px solid rgba(8,8,8,0.9)`,
@@ -219,12 +225,13 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
                 zIndex: project.team.length - i,
                 position: 'relative',
               }}>
-                {initials.slice(0, 2)}
+                {name.slice(0, 2).toUpperCase()}
               </div>
             ))}
           </div>
 
-          <div style={{
+          {days !== null && (
+          <div title={`Ends ${new Date(project.deadline!).toLocaleDateString()}`} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             fontFamily: 'var(--mono)', fontSize: 8.5,
             color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'rgba(224, 221, 174,0.3)',
@@ -232,6 +239,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
             <Clock size={9} />
             {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
           </div>
+          )}
         </div>
       </motion.div>
     </Link>
@@ -356,15 +364,17 @@ export default function ProjectsPage() {
     awaitOSUser().then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
-      getUserProjects(user.id).then(data => {
-        const fetched: ProjectCardViewModel[] = (data || []).map(p => ({
+      getUserProjects(user.id).then(async data => {
+        const rows = data || [];
+        const facts = await getProjectCardFacts(rows).catch(() => ({} as Awaited<ReturnType<typeof getProjectCardFacts>>));
+        const fetched: ProjectCardViewModel[] = rows.map(p => ({
           id: p.id,
           title: p.title,
           type: p.project_type || 'Project',
           phase: mapStatusToPhase(p.status ?? undefined),
-          progress: 0,
-          deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
-          team: ['CR'],
+          progress: facts[p.id]?.tasksTotal ? { done: facts[p.id].tasksDone, total: facts[p.id].tasksTotal } : null,
+          deadline: p.end_date || null,
+          team: facts[p.id]?.team ?? [],
           description: p.description || 'No description.',
           color: p.accent_color || '#d7340b',
         }));
@@ -401,8 +411,8 @@ export default function ProjectsPage() {
       const p = await createDBProject(uid, title, logline, type);
       const newP: ProjectCardViewModel = {
         id: p.id, title: p.title, type, phase: 'development',
-        progress: 0, deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
-        team: ['CR'], description: p.description || '', color: p.accent_color || '#6366f1',
+        progress: null, deadline: p.end_date || null,
+        team: user?.username ? [user.username] : [], description: p.description || '', color: p.accent_color || '#6366f1',
       };
       setProjectsList(prev => [newP, ...prev]);
       setActiveProject(p as any);

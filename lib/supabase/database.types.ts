@@ -47,48 +47,6 @@ export type Database = {
           },
         ];
       };
-      asset_comments: {
-        Row: {
-          asset_id: string;
-          content: string;
-          created_at: string | null;
-          id: string;
-          timecode: string | null;
-          user_id: string;
-        };
-        Insert: {
-          asset_id: string;
-          content: string;
-          created_at?: string | null;
-          id?: string;
-          timecode?: string | null;
-          user_id: string;
-        };
-        Update: {
-          asset_id?: string;
-          content?: string;
-          created_at?: string | null;
-          id?: string;
-          timecode?: string | null;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "asset_comments_asset_id_fkey";
-            columns: ["asset_id"];
-            isOneToOne: false;
-            referencedRelation: "studio_assets";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "asset_comments_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       audit_logs: {
         Row: {
           action: string;
@@ -568,90 +526,6 @@ export type Database = {
           },
         ];
       };
-      chat_channels: {
-        Row: {
-          created_at: string | null;
-          description: string | null;
-          id: string;
-          members_json: string | null;
-          name: string;
-          project_id: string | null;
-          type: string;
-          updated_at: string | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          description?: string | null;
-          id: string;
-          members_json?: string | null;
-          name: string;
-          project_id?: string | null;
-          type?: string;
-          updated_at?: string | null;
-        };
-        Update: {
-          created_at?: string | null;
-          description?: string | null;
-          id?: string;
-          members_json?: string | null;
-          name?: string;
-          project_id?: string | null;
-          type?: string;
-          updated_at?: string | null;
-        };
-        Relationships: [];
-      };
-      chat_messages: {
-        Row: {
-          attachments_json: string | null;
-          channel_id: string;
-          content: string;
-          created_at: string | null;
-          edited_at: string | null;
-          id: string;
-          reactions_json: string | null;
-          sender_id: string;
-          type: string;
-        };
-        Insert: {
-          attachments_json?: string | null;
-          channel_id: string;
-          content: string;
-          created_at?: string | null;
-          edited_at?: string | null;
-          id: string;
-          reactions_json?: string | null;
-          sender_id: string;
-          type?: string;
-        };
-        Update: {
-          attachments_json?: string | null;
-          channel_id?: string;
-          content?: string;
-          created_at?: string | null;
-          edited_at?: string | null;
-          id?: string;
-          reactions_json?: string | null;
-          sender_id?: string;
-          type?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_channel_id_fkey";
-            columns: ["channel_id"];
-            isOneToOne: false;
-            referencedRelation: "channel_activity";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "chat_messages_channel_id_fkey";
-            columns: ["channel_id"];
-            isOneToOne: false;
-            referencedRelation: "chat_channels";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       discord_integrations: {
         Row: {
           channel_id: string;
@@ -947,6 +821,7 @@ export type Database = {
         Row: {
           body: string | null;
           created_at: string | null;
+          created_by: string | null;
           id: string;
           link: string | null;
           read: boolean;
@@ -957,6 +832,7 @@ export type Database = {
         Insert: {
           body?: string | null;
           created_at?: string | null;
+          created_by?: string | null;
           id?: string;
           link?: string | null;
           read?: boolean;
@@ -967,6 +843,7 @@ export type Database = {
         Update: {
           body?: string | null;
           created_at?: string | null;
+          created_by?: string | null;
           id?: string;
           link?: string | null;
           read?: boolean;
@@ -975,6 +852,13 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "notifications_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "notifications_user_id_fkey";
             columns: ["user_id"];
@@ -1512,70 +1396,6 @@ export type Database = {
           },
         ];
       };
-      scene_schedule: {
-        Row: {
-          created_at: string | null;
-          estimated_hours: number | null;
-          id: string;
-          location: string | null;
-          order_index: number | null;
-          project_id: string;
-          scene_heading: string | null;
-          scene_number: string | null;
-          script_id: string | null;
-          shoot_day_id: string | null;
-          updated_at: string | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          estimated_hours?: number | null;
-          id?: string;
-          location?: string | null;
-          order_index?: number | null;
-          project_id: string;
-          scene_heading?: string | null;
-          scene_number?: string | null;
-          script_id?: string | null;
-          shoot_day_id?: string | null;
-          updated_at?: string | null;
-        };
-        Update: {
-          created_at?: string | null;
-          estimated_hours?: number | null;
-          id?: string;
-          location?: string | null;
-          order_index?: number | null;
-          project_id?: string;
-          scene_heading?: string | null;
-          scene_number?: string | null;
-          script_id?: string | null;
-          shoot_day_id?: string | null;
-          updated_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "scene_schedule_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "scene_schedule_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "scene_schedule_shoot_day_id_fkey";
-            columns: ["shoot_day_id"];
-            isOneToOne: false;
-            referencedRelation: "shoot_days";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       scenes: {
         Row: {
           cast_list: string | null;
@@ -1656,42 +1476,6 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
-      };
-      screenplay_collaborators: {
-        Row: {
-          created_at: string | null;
-          cursor_col: number | null;
-          cursor_line: number | null;
-          id: string;
-          last_activity: string | null;
-          role: string;
-          screenplay_id: string;
-          updated_at: string | null;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string | null;
-          cursor_col?: number | null;
-          cursor_line?: number | null;
-          id?: string;
-          last_activity?: string | null;
-          role?: string;
-          screenplay_id: string;
-          updated_at?: string | null;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string | null;
-          cursor_col?: number | null;
-          cursor_line?: number | null;
-          id?: string;
-          last_activity?: string | null;
-          role?: string;
-          screenplay_id?: string;
-          updated_at?: string | null;
-          user_id?: string;
-        };
-        Relationships: [];
       };
       script_annotations: {
         Row: {
@@ -1817,45 +1601,6 @@ export type Database = {
           },
         ];
       };
-      script_collaborators: {
-        Row: {
-          id: string;
-          joined_at: string | null;
-          permissions: string | null;
-          script_id: string;
-          user_id: string;
-        };
-        Insert: {
-          id?: string;
-          joined_at?: string | null;
-          permissions?: string | null;
-          script_id: string;
-          user_id: string;
-        };
-        Update: {
-          id?: string;
-          joined_at?: string | null;
-          permissions?: string | null;
-          script_id?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "script_collaborators_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "script_collaborators_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       script_metadata: {
         Row: {
           character_bible: NonNullable<Json>;
@@ -1883,57 +1628,6 @@ export type Database = {
             foreignKeyName: "script_metadata_script_id_fkey";
             columns: ["script_id"];
             isOneToOne: true;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      script_notes: {
-        Row: {
-          created_at: string;
-          id: string;
-          line_id: string | null;
-          note: string;
-          project_id: string | null;
-          script_id: string | null;
-          selected_text: string | null;
-          status: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          line_id?: string | null;
-          note: string;
-          project_id?: string | null;
-          script_id?: string | null;
-          selected_text?: string | null;
-          status?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          line_id?: string | null;
-          note?: string;
-          project_id?: string | null;
-          script_id?: string | null;
-          selected_text?: string | null;
-          status?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "script_notes_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "script_notes_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
             referencedRelation: "scripts";
             referencedColumns: ["id"];
           },
@@ -1977,48 +1671,6 @@ export type Database = {
           },
           {
             foreignKeyName: "script_revisions_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      script_versions: {
-        Row: {
-          content: string;
-          created_at: string | null;
-          edited_by: string | null;
-          id: string;
-          script_id: string;
-          version: number;
-        };
-        Insert: {
-          content: string;
-          created_at?: string | null;
-          edited_by?: string | null;
-          id?: string;
-          script_id: string;
-          version: number;
-        };
-        Update: {
-          content?: string;
-          created_at?: string | null;
-          edited_by?: string | null;
-          id?: string;
-          script_id?: string;
-          version?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "script_versions_edited_by_fkey";
-            columns: ["edited_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "script_versions_script_id_fkey";
             columns: ["script_id"];
             isOneToOne: false;
             referencedRelation: "scripts";
@@ -2155,38 +1807,6 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      shoot_days: {
-        Row: {
-          created_at: string | null;
-          day_number: number | null;
-          id: string;
-          project_id: string;
-          shoot_date: string | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          day_number?: number | null;
-          id?: string;
-          project_id: string;
-          shoot_date?: string | null;
-        };
-        Update: {
-          created_at?: string | null;
-          day_number?: number | null;
-          id?: string;
-          project_id?: string;
-          shoot_date?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "shoot_days_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
             referencedColumns: ["id"];
           },
         ];
@@ -2460,91 +2080,32 @@ export type Database = {
           },
         ];
       };
-      user_presence: {
-        Row: {
-          current_activity: string | null;
-          current_location: string | null;
-          cursor_col: number | null;
-          cursor_line: number | null;
-          id: string;
-          last_seen: string | null;
-          status: string;
-          updated_at: string | null;
-          user_id: string;
-        };
-        Insert: {
-          current_activity?: string | null;
-          current_location?: string | null;
-          cursor_col?: number | null;
-          cursor_line?: number | null;
-          id?: string;
-          last_seen?: string | null;
-          status?: string;
-          updated_at?: string | null;
-          user_id: string;
-        };
-        Update: {
-          current_activity?: string | null;
-          current_location?: string | null;
-          cursor_col?: number | null;
-          cursor_line?: number | null;
-          id?: string;
-          last_seen?: string | null;
-          status?: string;
-          updated_at?: string | null;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
     };
     Views: {
-      active_users: {
-        Row: {
-          current_activity: string | null;
-          current_location: string | null;
-          id: string | null;
-          idle_seconds: number | null;
-          last_seen: string | null;
-          status: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          current_activity?: string | null;
-          current_location?: string | null;
-          id?: string | null;
-          idle_seconds?: never;
-          last_seen?: string | null;
-          status?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          current_activity?: string | null;
-          current_location?: string | null;
-          id?: string | null;
-          idle_seconds?: never;
-          last_seen?: string | null;
-          status?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [];
-      };
-      channel_activity: {
-        Row: {
-          id: string | null;
-          last_message: string | null;
-          message_count: number | null;
-          name: string | null;
-          unique_senders: number | null;
-        };
-        Relationships: [];
-      };
+      [_ in never]: never;
     };
     Functions: {
+      admin_list_users: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          avatar_url: string;
+          created_at: string;
+          id: string;
+          is_admin: boolean;
+          role: string;
+          status: string;
+          username: string;
+        }[];
+      };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
       can_post_channel: { Args: { cid: string }; Returns: boolean };
-      clean_old_presences: {
+      get_my_account: {
         Args: Record<PropertyKey, never>;
-        Returns: undefined;
+        Returns: {
+          discord_id: string;
+          is_admin: boolean;
+          notification_prefs: Json;
+        }[];
       };
       get_platform_stats: {
         Args: Record<PropertyKey, never>;
@@ -2600,56 +2161,6 @@ export type Database = {
       toggle_message_reaction: {
         Args: { p_emoji: string; p_message: string };
         Returns: Json;
-      };
-      update_collaborator_cursor: {
-        Args: {
-          p_col: number;
-          p_line: number;
-          p_screenplay_id: string;
-          p_user_id: string;
-        };
-        Returns: {
-          created_at: string | null;
-          cursor_col: number | null;
-          cursor_line: number | null;
-          id: string;
-          last_activity: string | null;
-          role: string;
-          screenplay_id: string;
-          updated_at: string | null;
-          user_id: string;
-        };
-        SetofOptions: {
-          from: "*";
-          to: "screenplay_collaborators";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      update_user_presence: {
-        Args: {
-          p_activity?: string;
-          p_location?: string;
-          p_status?: string;
-          p_user_id: string;
-        };
-        Returns: {
-          current_activity: string | null;
-          current_location: string | null;
-          cursor_col: number | null;
-          cursor_line: number | null;
-          id: string;
-          last_seen: string | null;
-          status: string;
-          updated_at: string | null;
-          user_id: string;
-        };
-        SetofOptions: {
-          from: "*";
-          to: "user_presence";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
       };
     };
     Enums: {

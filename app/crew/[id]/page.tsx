@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
 import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
@@ -54,7 +55,7 @@ export default function CrewMemberPage() {
       try {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select(PUBLIC_PROFILE_COLUMNS)
           .eq('id', id)
           .single();
 

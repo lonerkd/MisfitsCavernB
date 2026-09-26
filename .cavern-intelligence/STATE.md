@@ -1,5 +1,37 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Suite audit: privacy, open doors, fake UI
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 94 integration
+tests (personas), 169 unit tests, tsc/lint/build, Studio journey in a real
+browser against the local stack. Migration `20260926030000` is **not yet
+applied to production** — apply it right after the code deploys (the old
+code selects `profiles.*`, which the migration forbids).
+
+Fixed (security):
+- `is_admin` self-grant (migration `20260926020000`, applied; admins reset).
+- "Private" wasn't private for crew on older tables; crew lists were empty
+  for non-owners (they only saw their own row).
+- Notifications forgeable (any user → any user, any link).
+- Project soundtrack notes, `script_notes` and private profile fields
+  (admin flag, notification prefs, Discord id) readable by everyone.
+- Project script access outlived crew membership (via `last_edited_by`);
+  anyone could add scripts to any project; shared scripts' characters
+  writable by everyone; audit log forgeable; any user could upload anything
+  to four public buckets; outsiders could react to any channel message.
+
+Fixed (truth): project cards (fabricated deadline/team/progress), project
+hub (phase-derived "% complete", empty team, decorative previews), Lounge
+"crew" (first 20 site profiles), Lounge chat not live, production feed read
+a table nothing writes; hub/settings saves that ignored errors now roll back;
+crew no longer see owner-only controls; one budget estimator.
+
+Next (audit list): reduce-motion everywhere; annotations "routes to" wired
+to real destinations (shot list, beats, tasks); call sheets persisted;
+editor stash persisted; profile "open script" link; soundtrack duplicate
+playlists; task assignee/due date; post-production module; integrations;
+design/motion pass. `studio_boards`/`studio_assets` still to drop.
+
 ## Latest Session — The Studio, rebuilt: one library, scenes that follow the script, share links
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 68 integration

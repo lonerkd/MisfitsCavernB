@@ -15,6 +15,7 @@ import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/database.types';
 import { parseScript } from '@/lib/scriptos/parser';
+import { estimateBudgetFromScript } from '@/lib/scriptos/breakdown';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { usePillZone } from '@/lib/context/PillContext';
@@ -23,8 +24,8 @@ import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import type { ScriptFormat } from '@/lib/scriptos/parser';
 import { awaitOSUser } from '@/lib/os';
+import { useOnlinePresence } from '@/lib/hooks/usePresence';
 
-const BUDGET_RATES = { cast: 500, props: 75, wardrobe: 120, vehicles: 400, sfx: 300, vfx: 500, perPage: 200 };
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,6 @@ interface ProjectHubViewModel {
   title: string;
   type: string;
   phase: Phase;
-  progress: number;
   deadline: string;
   team: { name: string; role: string; online?: boolean }[];
   description: string;
@@ -48,18 +48,6 @@ interface ProjectHubViewModel {
   shareUrl: string;
   isOwner: boolean;
 }
-
-// ─── Production phases ───────────────────────────────────────────────────────
-
-const PHASES: { id: Phase; label: string; short: string }[] = [
-  { id: 'development',     label: 'Development',     short: 'DEV'  },
-  { id: 'pre-production',  label: 'Pre-Production',  short: 'PRE'  },
-  { id: 'production',      label: 'Production',      short: 'PROD' },
-  { id: 'post-production', label: 'Post-Production', short: 'POST' },
-  { id: 'delivery',        label: 'Delivery',        short: 'DEL'  },
-];
-
-const phaseIndex = (p: Phase) => PHASES.findIndex(ph => ph.id === p);
 
 // ─── Department window ───────────────────────────────────────────────────────
 
@@ -231,43 +219,38 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
 
 // ─── Timeline preview ────────────────────────────────────────────────────────
 
-function TimelinePreview({ deadline, progress, phase }: { deadline: string; progress: number; phase: Phase }) {
+interface MilestoneRow { id: string; title: string; end_date: string | null; status: string | null }
+
+function TimelinePreview({ deadline, milestones }: { deadline: string; milestones: MilestoneRow[] }) {
   const dl = deadline ? new Date(deadline).getTime() : NaN;
-  const daysLeft = isNaN(dl) ? 0 : Math.max(0, Math.ceil((dl - Date.now()) / 86400000));
-  const milestones = [
-    { label: 'Script Lock',     done: true  },
-    { label: 'Cast Confirmed',  done: phaseIndex(phase) >= 1 },
-    { label: 'Principal Shoot', done: phaseIndex(phase) >= 2 },
-    { label: 'Picture Lock',    done: phaseIndex(phase) >= 3 },
-    { label: 'Delivery',        done: phaseIndex(phase) >= 4 },
-  ];
+  const daysLeft = isNaN(dl) ? null : Math.ceil((dl - Date.now()) / 86400000);
+  const upcoming = [...milestones].sort((a, b) => String(a.end_date ?? '9999').localeCompare(String(b.end_date ?? '9999'))).slice(0, 5);
 
   return (
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{daysLeft}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>days to deadline</span>
-      </div>
-
-      <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          style={{ height: '100%', background: 'var(--accent)', borderRadius: 2 }}
-        />
+        {daysLeft === null ? (
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>No end date set</span>
+        ) : (
+          <>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#d7340b' : 'var(--fg)', lineHeight: 1 }}>{Math.abs(daysLeft)}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{daysLeft < 0 ? 'days past the end date' : 'days to the end date'}</span>
+          </>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {milestones.map((m, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-              background: m.done ? '#10b981' : 'rgba(255,255,255,0.1)',
-            }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: m.done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: m.done ? 'line-through' : 'none', opacity: m.done ? 0.5 : 1 }}>{m.label}</span>
-          </div>
-        ))}
+        {upcoming.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>No milestones yet — add them below.</span>}
+        {upcoming.map((m) => {
+          const done = m.status === 'done' || m.status === 'completed';
+          return (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: done ? '#10b981' : 'rgba(255,255,255,0.1)' }} />
+              <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 9, color: done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: done ? 'line-through' : 'none', opacity: done ? 0.5 : 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</span>
+              {m.end_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{new Date(m.end_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -275,31 +258,16 @@ function TimelinePreview({ deadline, progress, phase }: { deadline: string; prog
 
 // ─── Portfolio preview ───────────────────────────────────────────────────────
 
-function PortfolioPreview({ published }: { published: number }) {
+function PortfolioPreview({ pieces }: { pieces: { id: string; title: string }[] }) {
   return (
-    <div style={{ padding: '10px 12px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 6, height: 100 }}>
-        <div style={{
-          borderRadius: 8, overflow: 'hidden', position: 'relative',
-          background: 'linear-gradient(135deg, #1a0f00, #0d0d14)',
-        }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 60%, rgba(245,158,11,0.18) 0%, transparent 60%)' }} />
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '16%', background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', bottom: 6, right: 8, fontFamily: 'var(--mono)', fontSize: 6.5, color: 'rgba(224, 221, 174,0.3)', letterSpacing: 2 }}>2.35:1</div>
+    <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {pieces.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>Not in your portfolio yet.</span>}
+      {pieces.slice(0, 4).map((p) => (
+        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[0, 1].map(i => (
-            <div key={i} style={{ flex: 1, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {published > i ? (
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
-              ) : (
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)' }}>DRAFT</div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
@@ -332,7 +300,6 @@ export default function ProjectHubPage() {
           title: row.title,
           type: row.project_type || 'Project',
           phase,
-          progress: Math.round((phaseIndex(phase) / (PHASES.length - 1)) * 100),
           deadline: row.end_date || '',
           description: row.description || '',
           color: row.accent_color || '#d7340b',
@@ -350,36 +317,48 @@ export default function ProjectHubPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshProject is stable from context; activeProject?.id intentionally omitted to avoid re-fetch loop
   }, [id, router]);
 
-  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, portfolioPublished: 0 });
+  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, festivalsSubmitted: 0, festivalsAccepted: 0, campaigns: 0 });
+  const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
+  const [portfolioPieces, setPortfolioPieces] = useState<{ id: string; title: string }[]>([]);
+  const [crewTeam, setCrewTeam] = useState<{ id: string; name: string; role: string }[]>([]);
+  const onlineIds = useOnlinePresence(realProject ? 'me' : null);
   useEffect(() => {
     let active = true;
     (async () => {
-      const [sc, cr, tk, bd, tl, scn, cn, pf] = await Promise.all([
-
+      const [sc, cr, tk, bd, tl, scn, cn, pf, pr, cp] = await Promise.all([
         supabase.from('scripts').select('id').eq('project_id', id),
-        supabase.from('project_crew').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('project_crew').select('id, user_id, role, profiles!project_crew_user_id_fkey(username)').eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
         supabase.from('budget_items').select('amount').eq('project_id', id),
-        supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
-        supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id).is('removed_at', null),
+        supabase.from('timeline_items').select('id, title, end_date, status').eq('project_id', id),
+        supabase.from('scenes').select('est_duration').eq('project_id', id).is('removed_at', null),
         supabase.from('media').select('id', { count: 'exact', head: true }).eq('project_id', id),
-        supabase.from('portfolio_projects').select('id', { count: 'exact', head: true }).eq('source_project_id', id),
+        supabase.from('portfolio_projects').select('id, title').eq('source_project_id', id),
+        supabase.from('projects').select('festival_submissions').eq('id', id).single(),
+        supabase.from('campaigns').select('id', { count: 'exact', head: true }).eq('project_id', id),
       ]);
       if (!active) return;
-      const tasks = (tk.data as { completed: boolean }[]) || [];
+      const tasks = tk.data || [];
+      // Page count from the scene index: each scene's length in eighths.
+      const eighths = (scn.data || []).reduce((n, row) => n + (Number(String(row.est_duration || '').match(/(\d+)\s*\/\s*8/)?.[1]) || 0), 0);
+      const festivals = (Array.isArray(pr.data?.festival_submissions) ? pr.data!.festival_submissions : []) as { status?: string }[];
       setCounts({
         scripts: sc.data?.length || 0,
-        pages: 0,
-
-        crew: cr.count || 0,
+        pages: Math.round(eighths / 8),
+        crew: cr.data?.length || 0,
         tasks: tasks.length,
         tasksDone: tasks.filter(t => t.completed).length,
-        budget: (bd.data as { amount: number }[] | null)?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0,
-        timeline: tl.count || 0,
-        scenes: scn.count || 0,
+        budget: (bd.data || []).reduce((n, x) => n + Number(x.amount || 0), 0),
+        timeline: tl.data?.length || 0,
+        scenes: scn.data?.length || 0,
         concepts: cn.count || 0,
-        portfolioPublished: pf.count || 0,
+        festivalsSubmitted: festivals.filter(f => f.status === 'submitted' || f.status === 'accepted').length,
+        festivalsAccepted: festivals.filter(f => f.status === 'accepted').length,
+        campaigns: cp.count || 0,
       });
+      setMilestones(tl.data || []);
+      setPortfolioPieces(pf.data || []);
+      setCrewTeam((cr.data || []).map(c => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.role || 'Crew' })));
     })();
     return () => { active = false; };
   }, [id]);
@@ -395,8 +374,8 @@ export default function ProjectHubPage() {
   }
 
   const isRealProject = true;
-  const currentPhaseIdx = phaseIndex(project.phase);
-  const onlineCount = project.team.filter(m => m.online).length;
+  const team = crewTeam.map(m => ({ ...m, online: onlineIds.has(m.id) }));
+  const onlineCount = team.filter(m => m.online).length;
 
   const typePhases = getPhasesForType(project.type);
   const typePhaseIdx = phaseIndexForType(project.type, project.phase);
@@ -499,12 +478,14 @@ export default function ProjectHubPage() {
               {onlineCount} online
             </div>
           )}
-          <div style={{
+          {counts.tasks > 0 && (
+          <div title="Tasks completed" style={{
             fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5,
             padding: '5px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)',
           }}>
-            {project.progress}% complete
+            {counts.tasksDone}/{counts.tasks} tasks done
           </div>
+          )}
           {project.isOwner && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <select
@@ -606,7 +587,7 @@ export default function ProjectHubPage() {
                 { label: 'Crew',  value: counts.crew },
                 { label: 'Tasks', value: `${counts.tasksDone}/${counts.tasks}` },
               ]}
-              preview={<CrewPreview team={project.team} />}
+              preview={<CrewPreview team={team} />}
             />
           )}
 
@@ -614,13 +595,13 @@ export default function ProjectHubPage() {
             title="Timeline"
             tag="Schedule"
             color="#f59e0b"
-            href="/projects"
+            href="#production"
             delay={0.2}
             stats={[
               { label: 'Milestones', value: counts.timeline },
               { label: 'Budget', value: counts.budget > 0 ? `$${(counts.budget / 1000).toFixed(1)}k` : '$0' },
             ]}
-            preview={<TimelinePreview deadline={project.deadline} progress={project.progress} phase={project.phase} />}
+            preview={<TimelinePreview deadline={project.deadline} milestones={milestones} />}
           />
 
           {modules.portfolio && (
@@ -634,7 +615,7 @@ export default function ProjectHubPage() {
                 { label: 'Phase', value: typePhases[typePhaseIdx].abbr },
                 { label: 'Type',  value: project.type },
               ]}
-              preview={<PortfolioPreview published={counts.portfolioPublished} />}
+              preview={<PortfolioPreview pieces={portfolioPieces} />}
             />
           )}
 
@@ -643,23 +624,22 @@ export default function ProjectHubPage() {
               title="Distribution"
               tag="Launch"
               color="#ec4899"
-              href="/jobs"
+              href="/studio?tab=promos"
               delay={0.3}
               stats={[
-                { label: 'Phase',  value: typePhases[typePhaseIdx].abbr },
-                { label: 'Status', value: project.progress === 100 ? 'Done' : 'Active' },
+                { label: 'Festivals', value: counts.festivalsSubmitted },
+                { label: 'Campaigns', value: counts.campaigns },
               ]}
               preview={
                 <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[
-                    { label: 'Picture Lock', ready: currentPhaseIdx >= 3 },
-                    { label: 'Trailer Cut',  ready: currentPhaseIdx >= 3 },
-                    { label: 'Press Kit',    ready: currentPhaseIdx >= 4 },
-                    { label: 'Delivered',    ready: project.progress === 100 },
-                  ].map(({ label, ready }) => ({ label, value: ready ? 'Ready' : 'Not yet', color: ready ? '#10b981' : '#4b5563' })).map(({ label, value, color }) => (
+                    { label: 'Festival submissions', value: String(counts.festivalsSubmitted) },
+                    { label: 'Accepted', value: String(counts.festivalsAccepted) },
+                    { label: 'Campaigns planned', value: String(counts.campaigns) },
+                  ].map(({ label, value }) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color, background: `${color}12`, padding: '2px 8px', borderRadius: 4 }}>{value}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>{value}</span>
                     </div>
                   ))}
                 </div>
@@ -669,7 +649,8 @@ export default function ProjectHubPage() {
 
         </div>
 
-        {isRealProject && <ProductionManager projectId={id} accent={project.color} projectTitle={project.title} projectType={project.type} />}
+        {isRealProject && <div id="production" />}
+        {isRealProject && <ProductionManager projectId={id} accent={project.color} isOwner={project.isOwner} />}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
@@ -692,7 +673,9 @@ const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
   planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',
 };
 
-function ProductionManager({ projectId, accent, projectTitle, projectType }: { projectId: string; accent: string; projectTitle: string; projectType: string }) {
+// Crew work tasks, budget and milestones with the owner; the crew list, festivals
+// and project settings live on the project row, which only its owner can change.
+function ProductionManager({ projectId, accent, isOwner }: { projectId: string; accent: string; isOwner: boolean }) {
   const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
@@ -745,8 +728,9 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     setTasks(p => [...p, data as TaskRow]);
   };
   const toggleTask = async (t: TaskRow) => {
-    setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !x.completed } : x));
-    await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
+    setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !t.completed } : x));
+    const { error } = await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
+    if (error) { setErr(error.message); setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x)); }
   };
   const delTask = async (id: string) => {
     if (!await confirm('Delete this task? This cannot be undone.')) return;
@@ -784,8 +768,10 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     }
   };
   const setActual = async (id: string, actual: number | null) => {
+    const before = budget.find(x => x.id === id)?.actual_cost ?? null;
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
-    await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
+    const { error } = await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
+    if (error) { setErr(error.message); setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: before } : x)); }
   };
 
   const analyzeBudget = async () => {
@@ -794,25 +780,8 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
       const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
       const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
       if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setSuggestions([]); return; }
-      const parsed = parseScript(withContent.content ?? '');
-      const uniq = (key: 'props' | 'wardrobe' | 'vehicles' | 'sfx' | 'vfx') => {
-        const set = new Set<string>();
-        parsed.scenes.forEach(sc => (sc.elements?.[key] || []).forEach(v => set.add(v)));
-        return set.size;
-      };
-      const castN = parsed.characters?.length || 0;
-      const pages = Math.max(1, Math.round(parsed.scenes.reduce((s, sc) => s + (sc.eighths || 0), 0) / 8));
-      const props = uniq('props'), wardrobe = uniq('wardrobe'), vehicles = uniq('vehicles'), sfx = uniq('sfx'), vfx = uniq('vfx');
+      const sugg = estimateBudgetFromScript(parseScript(withContent.content ?? ''));
       const existing = new Set(budget.map(b => b.category.toLowerCase()));
-      const sugg = [
-        castN && { category: `Cast (${castN} roles)`, amount: castN * BUDGET_RATES.cast },
-        props && { category: `Props (${props} items)`, amount: props * BUDGET_RATES.props },
-        wardrobe && { category: `Wardrobe (${wardrobe} items)`, amount: wardrobe * BUDGET_RATES.wardrobe },
-        vehicles && { category: `Vehicles (${vehicles})`, amount: vehicles * BUDGET_RATES.vehicles },
-        sfx && { category: `Special FX (${sfx})`, amount: sfx * BUDGET_RATES.sfx },
-        vfx && { category: `Visual FX (${vfx})`, amount: vfx * BUDGET_RATES.vfx },
-        { category: `Camera & Crew (${pages} pg)`, amount: pages * BUDGET_RATES.perPage },
-      ].filter(Boolean) as { category: string; amount: number }[];
       setSuggestions(sugg.filter(s => !existing.has(s.category.toLowerCase())));
     } catch (e: any) {
       setErr(e.message);
@@ -864,9 +833,10 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
   };
 
   const saveSettings = async (next: ProjectSettings) => {
+    const prev = settings;
     setSettings(next);
     const { error } = await supabase.from('projects').update({ settings: next as unknown as Json }).eq('id', projectId);
-    if (error) setErr(error.message);
+    if (error) { setErr(error.message); setSettings(prev); }
   };
   const setDefaultFormat = (format: ScriptFormat | '') => {
     saveSettings({ ...settings, defaultScriptFormat: format || undefined });
@@ -875,23 +845,22 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
     saveSettings({ ...settings, modules: { ...settings.modules, [key]: !settings.modules[key] } });
   };
 
-  const addFestival = async (name: string, deadline: string) => {
-    if (!name.trim()) return;
-    const next = [...festivals, { id: crypto.randomUUID(), name: name.trim(), deadline: deadline || undefined, status: 'planned' as const }];
+  // Festivals live in one jsonb column: write the whole list, roll back on failure.
+  const saveFestivals = async (next: FestivalRow[]) => {
+    const prev = festivals;
     setFestivals(next);
     const { error } = await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
-    if (error) setErr(error.message);
+    if (error) { setErr(error.message); setFestivals(prev); }
   };
-  const setFestivalStatus = async (id: string, status: FestivalRow['status']) => {
-    const next = festivals.map(f => f.id === id ? { ...f, status } : f);
-    setFestivals(next);
-    await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
+  const addFestival = (name: string, deadline: string) => {
+    if (!name.trim()) return;
+    saveFestivals([...festivals, { id: crypto.randomUUID(), name: name.trim(), deadline: deadline || undefined, status: 'planned' }]);
   };
+  const setFestivalStatus = (id: string, status: FestivalRow['status']) =>
+    saveFestivals(festivals.map(f => f.id === id ? { ...f, status } : f));
   const delFestival = async (id: string) => {
     if (!await confirm('Remove this festival submission?')) return;
-    const next = festivals.filter(f => f.id !== id);
-    setFestivals(next);
-    await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
+    saveFestivals(festivals.filter(f => f.id !== id));
   };
 
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
@@ -977,10 +946,10 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
             <Row key={c.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.role}</span>
-              <DelBtn onClick={() => delCrew(c.id)} />
+              {isOwner && <DelBtn onClick={() => delCrew(c.id)} />}
             </Row>
           ))}
-          <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />
+          {isOwner && <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />}
         </Panel>
 
         <Panel title="Portfolio" accent={accent}>
@@ -1010,19 +979,20 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
               {f.deadline && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{new Date(f.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               <select
                 value={f.status}
+                disabled={!isOwner}
                 onChange={e => setFestivalStatus(f.id, e.target.value as FestivalRow['status'])}
                 aria-label={`${f.name} submission status`}
                 style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 8.5, textTransform: 'uppercase' }}
               >
                 {FESTIVAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <DelBtn onClick={() => delFestival(f.id)} />
+              {isOwner && <DelBtn onClick={() => delFestival(f.id)} />}
             </Row>
           ))}
-          <AddForm placeholder="Festival name" fields={['text', 'date']} dateLabels={['Deadline']} onSubmit={(v) => v[0] && addFestival(v[0], v[1])} accent={accent} />
+          {isOwner && <AddForm placeholder="Festival name" fields={['text', 'date']} dateLabels={['Deadline']} onSubmit={(v) => v[0] && addFestival(v[0], v[1])} accent={accent} />}
         </Panel>
 
-        <Panel title="Settings" accent={accent}>
+        {isOwner && <Panel title="Settings" accent={accent}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
           <select
             value={settings.defaultScriptFormat || ''}
@@ -1057,7 +1027,7 @@ function ProductionManager({ projectId, accent, projectTitle, projectType }: { p
               </button>
             </Row>
           ))}
-        </Panel>
+        </Panel>}
       </div>
     </div>
   );

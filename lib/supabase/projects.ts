@@ -89,6 +89,34 @@ export async function getUserProjects(_userId?: string) {
   return data;
 }
 
+/** Real per-project facts for the project cards: who's on it and how far the tasks are. */
+export async function getProjectCardFacts(projects: { id: string; creator_id: string }[]) {
+  const ids = projects.map((p) => p.id);
+  const facts: Record<string, { team: string[]; tasksDone: number; tasksTotal: number }> = {};
+  for (const id of ids) facts[id] = { team: [], tasksDone: 0, tasksTotal: 0 };
+  if (!ids.length) return facts;
+  const creatorIds = Array.from(new Set(projects.map((p) => p.creator_id)));
+  const [crew, owners, tasks] = await Promise.all([
+    supabase.from('project_crew').select('project_id, profiles!project_crew_user_id_fkey(username)').in('project_id', ids),
+    supabase.from('profiles').select('id, username').in('id', creatorIds),
+    supabase.from('project_tasks').select('project_id, completed').in('project_id', ids),
+  ]);
+  const ownerName = new Map((owners.data ?? []).map((o) => [o.id, o.username]));
+  for (const p of projects) {
+    const owner = ownerName.get(p.creator_id);
+    if (owner) facts[p.id].team.push(owner);
+  }
+  for (const c of crew.data ?? []) {
+    const name = c.profiles?.username;
+    if (name && !facts[c.project_id].team.includes(name)) facts[c.project_id].team.push(name);
+  }
+  for (const t of tasks.data ?? []) {
+    facts[t.project_id].tasksTotal++;
+    if (t.completed) facts[t.project_id].tasksDone++;
+  }
+  return facts;
+}
+
 export async function updateProject(projectId: string, updates: Partial<DBProject>) {
   // Cast while visibility/share_token await the migration + generated-type regen.
   const { data, error } = await supabase

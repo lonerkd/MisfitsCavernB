@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import Avatar from '@/components/Avatar';
 import { useConfirm } from '@/components/Confirm';
@@ -44,7 +45,7 @@ export default function ProfilePage() {
       }
       setUser(data.session.user);
 
-      const { data: prof } = await supabase.from('profiles').select('*').eq('id', data.session.user.id).single();
+      const { data: prof } = await supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', data.session.user.id).single();
       if (prof) setProfile(prof);
 
       const userId = data.session.user.id;

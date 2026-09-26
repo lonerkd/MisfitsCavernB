@@ -31,10 +31,7 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('admin_list_users');
 
       if (!error && data) {
         setUsers(data as UserRow[]);

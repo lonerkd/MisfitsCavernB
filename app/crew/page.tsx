@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
 import { Input } from '@/components/ui/Input';
 import Avatar from '@/components/Avatar';
@@ -71,7 +72,7 @@ export default function CrewPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).order('created_at', { ascending: false });
 
       if (searchTerm) {
         const clean = searchTerm.replace(/[(),.:\\]/g, ' ').trim();

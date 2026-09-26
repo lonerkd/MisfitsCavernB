@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { determineUserRole, getPermissionsForRole } from './permissions';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
@@ -98,9 +99,14 @@ async function resolveSessionUser(userId: string, email: string | null) {
   for (let attempt = 0; attempt < 3 && !profile; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * attempt));
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      const { data } = await supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', userId).maybeSingle();
       if (data) {
-        profile = data;
+        // is_admin is private (get_my_account). A failure here only means no
+        // admin UI — it must never block loading the profile itself.
+        const isAdmin = await Promise.resolve(supabase.rpc('get_my_account'))
+          .then(({ data: account }) => account?.[0]?.is_admin ?? false)
+          .catch(() => false);
+        profile = { ...data, is_admin: isAdmin };
         // Device-level cache so identity resolves on a cold start with no network.
         if (typeof window !== 'undefined') {
           localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify({ ...data, __uid: userId }));

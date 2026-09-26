@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseScript } from './parser';
-import { aggregateElements, computeBudgetLines } from './breakdown';
+import { aggregateElements, computeBudgetLines, estimateBudgetFromScript, CAST_RATE, CREW_RATE_PER_PAGE } from './breakdown';
 
 // Action lines written the way a 1st AD expects: production elements in CAPS.
 const SCRIPT = `INT. WAREHOUSE - NIGHT
@@ -59,3 +59,20 @@ describe('script -> breakdown bridge (pure)', () => {
   });
 });
 
+describe('estimateBudgetFromScript', () => {
+  it('prices cast, tagged elements and camera & crew by page count', () => {
+    expect(estimateBudgetFromScript(parseScript(SCRIPT))).toEqual([
+      { category: 'Cast (1 role)', amount: CAST_RATE },
+      { category: 'Props (9 items)', amount: 9 * 75 },
+      { category: 'Wardrobe (1 item)', amount: 120 },
+      { category: 'Special FX (1)', amount: 300 },
+      { category: 'Visual FX (1)', amount: 500 },
+      { category: 'Camera & Crew (1 pg)', amount: CREW_RATE_PER_PAGE },
+    ]);
+  });
+
+  it('bills at least one page and skips cast when there are no speaking roles', () => {
+    expect(estimateBudgetFromScript({ scenes: [] })).toEqual([{ category: 'Camera & Crew (1 pg)', amount: CREW_RATE_PER_PAGE }]);
+    expect(estimateBudgetFromScript({ characters: [], scenes: [{ eighths: 20 }] })).toEqual([{ category: 'Camera & Crew (3 pg)', amount: 3 * CREW_RATE_PER_PAGE }]);
+  });
+});
