@@ -512,6 +512,30 @@ export default function LoungePage() {
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
 
+  // The people on the active project: its owner and crew (not the whole platform).
+  useEffect(() => {
+    let alive = true;
+    const project = activeProject;
+    if (!project?.id) { setCrewList([]); return; }
+    (async () => {
+      const [{ data: crew }, { data: owner }] = await Promise.all([
+        supabase.from('project_crew').select('user_id, role, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
+        project.creator_id
+          ? supabase.from('profiles').select('id, username, avatar_url').eq('id', project.creator_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (!alive) return;
+      const team = [
+        ...(owner ? [{ id: owner.id, name: owner.username || 'Owner', role: 'Owner', avatar: owner.avatar_url }] : []),
+        ...(crew || [])
+          .filter((c) => c.user_id !== owner?.id)
+          .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.role || 'Crew', avatar: c.profiles?.avatar_url })),
+      ];
+      setCrewList(team);
+    })();
+    return () => { alive = false; };
+  }, [activeProject?.id, activeProject?.creator_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
   usePillStage(
     {
@@ -545,16 +569,6 @@ export default function LoungePage() {
         if (mounted) setMyProfile(mine);
       }
 
-      const { data } = await supabase.from('profiles').select('*').limit(20);
-      if (data && mounted) {
-        setCrewList(data.map(p => ({
-          id: p.id,
-          name: p.username || 'User',
-          role: p.role || 'Crew',
-          avatar: p.avatar_url,
-          online: p.status === 'OPEN'
-        })));
-      }
     })();
 
     const loadMessages = async () => {
@@ -771,7 +785,7 @@ export default function LoungePage() {
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-muted)' }}>
-              {onlineIds.size} online · {crewList.length} crew
+              {onlineCrew} of {crewList.length} online
             </span>
           </div>
         </div>

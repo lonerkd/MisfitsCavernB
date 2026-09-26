@@ -98,7 +98,7 @@ export async function applyForJob(jobId: string, userId: string) {
 export async function getJobApplications(jobId: string) {
   const { data, error } = await supabase
     .from('job_applications')
-    .select('*, profiles(*)')
+    .select('*, profiles(id, username, avatar_url, bio, role, location, status)')
     .eq('job_id', jobId);
 
   if (error) throw error;

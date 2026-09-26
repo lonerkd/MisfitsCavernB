@@ -5,6 +5,7 @@ import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, M
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 
@@ -196,8 +197,9 @@ export default function SettingsPage() {
     if (!user) return;
     setBusy('export');
     try {
-      const [profile, projects, scripts, jobs] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
+      const [profile, account, projects, scripts, jobs] = await Promise.all([
+        supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', user.id).single(),
+        supabase.rpc('get_my_account'),
         supabase.from('projects').select('*').eq('creator_id', user.id),
         supabase.from('scripts').select('*').eq('last_edited_by', user.id),
         supabase.from('jobs').select('*').eq('created_by', user.id),
@@ -205,7 +207,7 @@ export default function SettingsPage() {
       const payload = {
         exported_at: new Date().toISOString(),
         account: { id: user.id, email: user.email, created_at: user.created_at },
-        profile: profile.data ?? null,
+        profile: profile.data ? { ...profile.data, ...(account.data?.[0] ?? {}) } : null,
         projects: projects.data ?? [],
         scripts: scripts.data ?? [],
         jobs: jobs.data ?? [],

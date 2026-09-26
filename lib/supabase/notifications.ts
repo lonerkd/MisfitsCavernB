@@ -25,8 +25,10 @@ export function typeEnabled(type: string, prefs: NotificationPrefs = DEFAULT_NOT
 }
 
 export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
-  const { data } = await supabase.from('profiles').select('notification_prefs').eq('id', userId).single();
-  return { ...DEFAULT_NOTIFICATION_PREFS, ...((data?.notification_prefs as Partial<NotificationPrefs>) || {}) };
+  // Private column: only readable by its owner, through get_my_account().
+  void userId;
+  const { data } = await supabase.rpc('get_my_account');
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...((data?.[0]?.notification_prefs as Partial<NotificationPrefs>) || {}) };
 }
 
 export async function saveNotificationPrefs(userId: string, patch: Partial<NotificationPrefs>) {

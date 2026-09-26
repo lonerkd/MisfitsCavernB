@@ -10,6 +10,7 @@ const { auth, profileLookup } = vi.hoisted(() => ({
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
     auth,
+    rpc: async () => ({ data: [{ is_admin: false }], error: null }),
     from: (table: string) => {
       if (table === 'profiles') {
         return { select: () => ({ eq: () => ({ maybeSingle: profileLookup }) }) };
