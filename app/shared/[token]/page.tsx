@@ -112,23 +112,23 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
 
   if (!data) {
     return (
-      <main className={s.missing}>
+      <div className={s.missing}>
         <GrainOverlay />
         <div className={s.wordmark}>CAVERN</div>
         <p className={s.eyebrow}>This project isn’t shared, or the link is wrong.</p>
         <Link href="/" className={s.back}>← Misfits Cavern</Link>
-      </main>
+      </div>
     );
   }
 
   const { project, lookbook } = data;
-  const accent = project.accent_color || '#d7340b';
+  const accent = project.accent_color || '#e8431a';
   const byId = new Map(lookbook.media.map((m) => [m.id, m]));
   const inScenes = new Set(lookbook.scenes.flatMap((sc) => sc.media_ids));
   const more = lookbook.media.filter((m) => !inScenes.has(m.id));
 
   return (
-    <main className={s.main} style={{ ['--share-accent' as string]: accent }}>
+    <div className={s.main} style={{ ['--share-accent' as string]: accent }}>
       <GrainOverlay />
       <div className={s.glow} aria-hidden />
       <header className={s.hero}>
@@ -164,6 +164,6 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
         <span>Made in Misfits Cavern — the production suite for indie filmmakers.</span>
         <Link href="/auth" className={s.cta}>Join the Cavern</Link>
       </footer>
-    </main>
+    </div>
   );
 }

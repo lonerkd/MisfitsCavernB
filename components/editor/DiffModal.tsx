@@ -202,7 +202,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                     style={{
                       background: mode === m ? 'rgba(255,255,255,0.1)' : 'transparent',
                       border: 'none', borderRadius: 6, padding: '4px 10px',
-                      color: mode === m ? '#fff' : 'rgba(255,255,255,0.4)',
+                      color: mode === m ? '#fff' : 'var(--fg-dim)',
                       cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
                       transition: 'all 0.15s',
                     }}
@@ -212,7 +212,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                   </button>
                 ))}
               </div>
-              <button
+              <button aria-label="Close"
                 onClick={onClose}
                 style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: '6px 8px', display: 'flex', alignItems: 'center' }}
               >
@@ -223,7 +223,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
             {noChanges ? (
-              <div style={{ textAlign: 'center', padding: '60px 24px', color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--mono)', fontSize: 13 }}>
+              <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 13 }}>
                 No changes detected between snapshots.
               </div>
             ) : mode === 'words' ? (
@@ -364,7 +364,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             flexShrink: 0,
           }}>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--mono)' }}>
+            <span style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>
               {stats.unchanged} unchanged · {hunks.length} hunk{hunks.length !== 1 ? 's' : ''}
             </span>
             <button

@@ -139,14 +139,14 @@ export default function AuthPage() {
   };
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
       <GrainOverlay />
 
       <div style={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 40%, rgba(215, 52, 11,0.05) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(232, 67, 26,0.05) 0%, transparent 60%)',
       }} />
 
       <motion.div
@@ -182,15 +182,16 @@ export default function AuthPage() {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           style={{ textAlign: 'center', marginBottom: 48 }}
         >
-          <div style={{
+          <h1 style={{
             fontFamily: 'var(--display)',
             fontSize: 'clamp(2.2rem, 8vw, 3.4rem)',
+            fontWeight: 400,
             letterSpacing: 6,
             lineHeight: 1,
-            marginBottom: 10,
+            margin: '0 0 10px',
           }}>
             MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
-          </div>
+          </h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', fontStyle: 'italic', color: 'var(--fg-muted)', margin: 0 }}>
             {mode === 'signin' ? 'Welcome back, misfit.' : 'Join the cavern.'}
           </p>
@@ -262,6 +263,7 @@ export default function AuthPage() {
                   <Input
                     name="username"
                     label="Username"
+                    autoComplete="username"
                     type="text"
                     value={form.username}
                     onChange={handleChange}
@@ -273,6 +275,7 @@ export default function AuthPage() {
             <Input
               name="password"
               label="Password"
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               type="password"
               value={form.password}
               onChange={handleChange}
@@ -286,8 +289,8 @@ export default function AuthPage() {
                   exit={{ opacity: 0, y: -8 }}
                   style={{
                     padding: '10px 14px',
-                    background: 'rgba(215, 52, 11,0.08)',
-                    border: '1px solid rgba(215, 52, 11,0.2)',
+                    background: 'rgba(232, 67, 26,0.08)',
+                    border: '1px solid rgba(232, 67, 26,0.2)',
                     borderRadius: 'var(--radius-sm)',
                     fontFamily: 'var(--mono)',
                     fontSize: 11,
@@ -364,6 +367,6 @@ export default function AuthPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-    </main>
+    </div>
   );
 }

@@ -11,6 +11,7 @@ import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { parseScript } from '@/lib/scriptos/parser';
 import { logActivity } from '@/lib/supabase/activity';
 import { awaitOSUser } from '@/lib/os';
+import { textOn } from '@/lib/color';
 import {
   createPortfolioProject,
   getPortfolioBlocks,
@@ -255,6 +256,7 @@ export default function PitchBoardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+      <h1 className="sr-only">Pitch board</h1>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50, height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -290,7 +292,7 @@ export default function PitchBoardPage() {
                 display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 7, cursor: 'pointer',
                 fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, whiteSpace: 'nowrap',
                 background: tab === t.id ? accent : 'rgba(255,255,255,0.04)',
-                color: tab === t.id ? '#fff' : 'var(--fg-muted)',
+                color: tab === t.id ? textOn(accent) : 'var(--fg-muted)',
                 border: `1px solid ${tab === t.id ? accent : 'rgba(255,255,255,0.06)'}`,
               }}>
                 {t.icon}{t.label}
@@ -388,7 +390,7 @@ export default function PitchBoardPage() {
           )}
         </aside>
 
-        <main
+        <div
           onDragOver={e => { if (libDragRef.current) { e.preventDefault(); setCanvasHot(true); } }}
           onDragLeave={() => setCanvasHot(false)}
           onDrop={e => { e.preventDefault(); onCanvasDrop(); }}
@@ -425,7 +427,7 @@ export default function PitchBoardPage() {
               ))}
             </div>
           )}
-        </main>
+        </div>
       </div>
     </div>
   );
@@ -567,7 +569,7 @@ function Centered({ children }: { children: React.ReactNode }) {
   return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>{children}</div>;
 }
 function LibList({ children, empty }: { children?: React.ReactNode; empty?: string }) {
-  if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-dim)', opacity: 0.6, padding: '8px 0' }}>{empty}</div>;
+  if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-dim)', padding: '8px 0' }}>{empty}</div>;
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>;
 }
 function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: React.ReactNode; accent: string; onAdd: () => void; onDragStart: () => void; onDragEnd: () => void }) {
@@ -596,14 +598,14 @@ const chipLabel: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9.
 const previewTitle: React.CSSProperties = { fontFamily: 'var(--sans, var(--serif))', fontSize: 12.5, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 const previewBody: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', marginTop: 3 };
 const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 6 };
-const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', padding: 3, opacity: 0.6 };
+const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', padding: 3, opacity: 0.8, minWidth: 24, minHeight: 24, justifyContent: 'center' };
 
 function btnStyle(accent: string, filled: boolean): React.CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
     fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 1,
     background: filled ? accent : 'rgba(255,255,255,0.05)',
-    color: filled ? '#fff' : 'var(--fg)',
+    color: filled ? textOn(accent) : 'var(--fg)',
     border: `1px solid ${filled ? accent : 'rgba(255,255,255,0.1)'}`,
   };
 }

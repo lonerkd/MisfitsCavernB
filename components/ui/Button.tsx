@@ -71,7 +71,7 @@ export function Button({
 
     switch (variant) {
       case 'solid':
-        classes += 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] border border-[var(--accent)] hover:shadow-[0_4px_24px_rgba(215,52,11,0.25)] ';
+        classes += 'bg-[var(--accent)] text-[var(--bg)] hover:bg-[var(--accent-hover)] border border-[var(--accent)] hover:shadow-[0_4px_24px_rgba(232,67,26,0.25)] ';
         break;
       case 'ghost':
         classes += 'bg-transparent text-[var(--fg)] hover:bg-[rgba(255,255,255,0.05)] border border-transparent ';

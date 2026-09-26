@@ -110,7 +110,7 @@ export default function GlobalAudioWidget() {
         >
           {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
         </button>
-        <button onClick={nextTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipForward size={18} /></button>
+        <button aria-label="Next track" onClick={nextTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipForward size={18} /></button>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
@@ -142,7 +142,7 @@ export default function GlobalAudioWidget() {
                 padding: '6px 11px', borderRadius: 9999,
                 background: active ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${active ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                color: active ? '#10b981' : 'rgba(224, 221, 174,0.4)',
+                color: active ? '#10b981' : 'var(--fg-dim)',
                 fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
                 textTransform: 'uppercase', cursor: 'pointer',
                 transition: 'all 0.2s',
@@ -243,12 +243,12 @@ export default function GlobalAudioWidget() {
 
             {useIframeFallback ? renderFreeUI() : (!isPremium ? (
               <div style={{ padding: 24, textAlign: 'center' }}>
-                <Link2Off size={24} color="#d7340b" style={{ marginBottom: 12 }} />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#d7340b', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
+                <Link2Off size={24} color="#e8431a" style={{ marginBottom: 12 }} />
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#e8431a', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', marginBottom: 16 }}>Spotify blocked the Web Playback connection. You must use Free Mode.</div>
                 <button
                   onClick={() => setUseIframeFallback(true)}
-                  style={{ background: '#d7340b', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase', cursor: 'pointer' }}
+                  style={{ background: '#e8431a', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 9, textTransform: 'uppercase', cursor: 'pointer' }}
                 >
                   Switch to Free Mode
                 </button>

@@ -28,7 +28,7 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
         {title}
       </p>
       {subtitle && (
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', opacity: 0.6, marginTop: 8 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', marginTop: 8 }}>
           {subtitle}
         </p>
       )}

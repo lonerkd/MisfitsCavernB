@@ -56,9 +56,9 @@ export default function SpotifyCallback() {
       textTransform: 'uppercase'
     }}>
       {error ? (
-        <div style={{ color: '#d7340b', textAlign: 'center' }}>
+        <div style={{ color: '#e8431a', textAlign: 'center' }}>
           <p style={{ marginBottom: 16 }}>Authentication Failed</p>
-          <p style={{ fontSize: 10, opacity: 0.7, maxWidth: 400, textTransform: 'none' }}>{error}</p>
+          <p style={{ fontSize: 10, maxWidth: 400, textTransform: 'none', color: 'var(--fg-dim)' }}>{error}</p>
           <Button onClick={() => router.push('/')} style={{ marginTop: 24 }}>
             Return to Hub
           </Button>

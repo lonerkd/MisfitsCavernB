@@ -17,6 +17,7 @@ import { usePillStage } from '@/lib/context/PillContext';
 import { useOSGate } from '@/lib/os';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import { logActivity } from '@/lib/supabase/activity';
+import { readable } from '@/lib/color';
 import { awaitOSUser, osUserId } from '@/lib/os';
 
 const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
@@ -50,7 +51,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
                 <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Format</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {PROJECT_TYPES.map(t => (
-                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(215, 52, 11,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
+                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(232, 67, 26,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(232, 67, 26,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
                   ))}
                 </div>
               </div>
@@ -96,9 +97,9 @@ const PHASES: { id: Phase; label: string; abbr: string }[] = [
 ];
 
 const PHASE_COLORS: Record<Phase, string> = {
-  'development':     '#6366f1',
-  'pre-production':  '#8b5cf6',
-  'production':      '#d7340b',
+  'development':     '#818cf8',
+  'pre-production':  '#a78bfa',
+  'production':      '#e8431a',
   'post-production': '#f59e0b',
   'delivery':        '#10b981',
 };
@@ -190,7 +191,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           fontFamily: 'var(--mono)',
           fontSize: 9.5,
           lineHeight: 1.6,
-          color: 'rgba(224, 221, 174,0.4)',
+          color: 'var(--fg-dim)',
           marginBottom: 16,
           display: '-webkit-box',
           WebkitLineClamp: 2,
@@ -234,7 +235,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           <div title={`Ends ${new Date(project.deadline!).toLocaleDateString()}`} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             fontFamily: 'var(--mono)', fontSize: 8.5,
-            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'rgba(224, 221, 174,0.3)',
+            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'var(--fg-dim)',
           }}>
             <Clock size={9} />
             {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
@@ -267,7 +268,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
         </div>
         <div style={{
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-          color: 'rgba(224, 221, 174,0.2)',
+          color: 'var(--fg-dim)',
           paddingLeft: 4,
         }}>
           {phase.label}
@@ -275,7 +276,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
         <div style={{
           marginLeft: 'auto',
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-          color: 'rgba(224, 221, 174,0.25)',
+          color: 'var(--fg-dim)',
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 6,
@@ -323,7 +324,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
             border: '1px dashed rgba(255,255,255,0.05)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
-            color: 'rgba(224, 221, 174,0.12)',
+            color: 'var(--fg-dim)',
             textTransform: 'uppercase',
           }}>
             No projects
@@ -348,9 +349,9 @@ export default function ProjectsPage() {
     {
       module: 'home',
       title: 'Projects',
-      accent: '#d7340b',
+      accent: '#e8431a',
       fields: [
-        { label: 'Total', value: `${projectsList.length}`, color: '#d7340b' },
+        { label: 'Total', value: `${projectsList.length}`, color: '#e8431a' },
       ],
       actions: user ? [
         { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
@@ -376,7 +377,7 @@ export default function ProjectsPage() {
           deadline: p.end_date || null,
           team: facts[p.id]?.team ?? [],
           description: p.description || 'No description.',
-          color: p.accent_color || '#d7340b',
+          color: readable(p.accent_color || '#e8431a'),
         }));
         setProjectsList(fetched);
         setLoaded(true);
@@ -412,7 +413,7 @@ export default function ProjectsPage() {
       const newP: ProjectCardViewModel = {
         id: p.id, title: p.title, type, phase: 'development',
         progress: null, deadline: p.end_date || null,
-        team: user?.username ? [user.username] : [], description: p.description || '', color: p.accent_color || '#6366f1',
+        team: user?.username ? [user.username] : [], description: p.description || '', color: readable(p.accent_color || '#6366f1'),
       };
       setProjectsList(prev => [newP, ...prev]);
       setActiveProject(p as any);
@@ -460,7 +461,8 @@ export default function ProjectsPage() {
   const inFlight = projectsList.filter(p => p.phase !== 'delivery').length;
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', overflow: 'hidden' }}>
+      <h1 className="sr-only">Projects</h1>
       <GrainOverlay />
       <NewProjectModal open={showNew} onClose={() => setShowNew(false)} onCreate={createFromModal} />
 
@@ -476,7 +478,7 @@ export default function ProjectsPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{
             fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6,
-            color: 'var(--fg)', textDecoration: 'none', opacity: 0.7,
+            color: 'var(--fg-dim)', textDecoration: 'none',
             transition: 'opacity 0.2s',
           }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
@@ -487,7 +489,7 @@ export default function ProjectsPage() {
 
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
             Production Board
           </div>
         </div>
@@ -502,7 +504,7 @@ export default function ProjectsPage() {
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, lineHeight: 1 }}>
                   {value}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1.5, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                   {label}
                 </div>
               </div>
@@ -524,7 +526,7 @@ export default function ProjectsPage() {
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.35)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(232, 67, 26,0.35)';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.transform = '';
@@ -555,14 +557,14 @@ export default function ProjectsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px' }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%',
-                  background: count > 0 ? color : 'rgba(255,255,255,0.1)',
+                  background: count > 0 ? color : 'var(--fg-dim)',
                   boxShadow: count > 0 ? `0 0 6px ${color}` : 'none',
                   transition: 'background 0.3s, box-shadow 0.3s',
                 }} />
                 <span style={{
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
                   textTransform: 'uppercase',
-                  color: count > 0 ? color : 'rgba(255,255,255,0.2)',
+                  color: count > 0 ? color : 'var(--fg-dim)',
                   transition: 'color 0.3s',
                 }}>
                   {phase.abbr}
@@ -570,7 +572,7 @@ export default function ProjectsPage() {
                 {count > 0 && (
                   <span style={{
                     fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 0.5,
-                    color: 'rgba(255,255,255,0.25)',
+                    color: 'var(--fg-dim)',
                   }}>
                     {count}
                   </span>
@@ -649,6 +651,6 @@ export default function ProjectsPage() {
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
       `}</style>
-    </main>
+    </div>
   );
 }

@@ -27,7 +27,7 @@ export default function AdminError({
       }}
     >
       <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
-        <ShieldAlert size={48} style={{ color: '#d7340b', marginBottom: 24 }} />
+        <ShieldAlert size={48} style={{ color: '#e8431a', marginBottom: 24 }} />
         <h1
           style={{
             fontFamily: 'var(--display)',
@@ -42,10 +42,8 @@ export default function AdminError({
           style={{
             fontFamily: 'var(--mono)',
             fontSize: 11,
-            opacity: 0.6,
             lineHeight: 1.8,
-            marginBottom: 32,
-          }}
+            marginBottom: 32, color: 'var(--fg-dim)' }}
         >
           {error.message || 'An unexpected error occurred in the admin panel.'}
         </p>

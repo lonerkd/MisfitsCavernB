@@ -17,6 +17,7 @@ import { useProject } from '@/lib/os';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { logActivity } from '@/lib/supabase/activity';
+import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
 
 const ROLES = [
@@ -25,7 +26,7 @@ const ROLES = [
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  'Director':            '#d7340b',
+  'Director':            '#e8431a',
   'DP / Cinematographer':'#f59e0b',
   'Editor':              '#6366f1',
   'Sound Designer':      '#10b981',
@@ -113,7 +114,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
               Post a Position
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(224, 221, 174,0.3)', padding: 4 }}>
+          <button aria-label="Close" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-dim)', padding: 4 }}>
             <X size={16} />
           </button>
         </div>
@@ -132,7 +133,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {ROLES.map(r => {
                 const active = form.role === r;
@@ -145,7 +146,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
                       padding: '6px 12px', borderRadius: 9999,
                       background: active ? `${color}18` : 'rgba(255,255,255,0.03)',
                       border: `1px solid ${active ? color + '55' : 'rgba(255,255,255,0.06)'}`,
-                      color: active ? color : 'rgba(224, 221, 174,0.4)',
+                      color: active ? color : 'var(--fg-dim)',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
                       textTransform: 'uppercase', cursor: 'pointer',
                       transition: 'all 0.2s',
@@ -174,7 +175,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           />
 
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
               <DollarSign size={12} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
@@ -200,7 +201,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             style={{
               marginTop: 6, padding: '14px',
               background: form.title ? '#8b5cf6' : 'rgba(255,255,255,0.05)',
-              color: form.title ? '#fff' : 'rgba(224, 221, 174,0.3)',
+              color: form.title ? '#fff' : 'var(--fg-dim)',
               border: 'none', borderRadius: 12,
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
@@ -257,7 +258,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
               {job.role}
             </div>
             {job.projects?.title && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'rgba(224, 221, 174,0.25)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-dim)' }}>
                 {job.projects.title}
               </div>
             )}
@@ -270,7 +271,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           {job.description && (
             <div style={{
               fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.65,
-              color: 'rgba(224, 221, 174,0.45)',
+              color: 'var(--fg-dim)',
               display: '-webkit-box', WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical', overflow: 'hidden',
               marginBottom: 16,
@@ -285,7 +286,7 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
                 <DollarSign size={10} /> {job.rate}/hr
               </div>
             )}
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'rgba(224, 221, 174,0.25)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>
               {job.profiles?.username ?? 'creator'} · {daysAgo === 0 ? 'today' : `${daysAgo}d ago`}
             </div>
           </div>
@@ -293,14 +294,14 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
 
         <motion.button
           onClick={() => onApply(job.id)}
-          animate={{ opacity: hovered ? 1 : 0.5, scale: hovered ? 1 : 0.97 }}
+          animate={{ scale: hovered ? 1 : 0.97 }}
           transition={{ duration: 0.2 }}
           style={{
             flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
             padding: '10px 18px', borderRadius: 9999,
             background: `${color}18`,
             border: `1px solid ${color}44`,
-            color, cursor: 'pointer',
+            color: readable(color), cursor: 'pointer',
             fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
             textTransform: 'uppercase',
           }}
@@ -343,13 +344,13 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
               border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
               fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
-              color: job.status === 'open' ? '#10b981' : 'rgba(224, 221, 174,0.3)',
+              color: job.status === 'open' ? '#10b981' : 'var(--fg-dim)',
               textTransform: 'uppercase',
             }}>
               {job.status}
             </div>
             {(job.application_count ?? 0) > 0 && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(224, 221, 174,0.3)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
                 {job.application_count} applicant{job.application_count !== 1 ? 's' : ''}
               </div>
             )}
@@ -368,7 +369,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               padding: '7px 14px', borderRadius: 9999,
               background: 'transparent',
               border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(224, 221, 174,0.3)',
+              color: 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
               textTransform: 'uppercase', cursor: 'pointer',
               transition: 'border-color 0.2s, color 0.2s',
@@ -506,7 +507,8 @@ export default function JobsPage() {
   }, {});
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+      <h1 className="sr-only">Jobs</h1>
       <GrainOverlay />
 
       <nav style={{
@@ -520,7 +522,7 @@ export default function JobsPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
@@ -574,7 +576,7 @@ export default function JobsPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 16px', borderRadius: 9999,
-                background: '#8b5cf6', color: '#fff', border: 'none',
+                background: '#7c3aed', color: '#fff', border: 'none',
                 fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
                 textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.3s',
@@ -602,7 +604,7 @@ export default function JobsPage() {
           height: 'calc(100vh - 58px)', overflowY: 'auto',
           background: 'rgba(6,6,6,0.6)',
         }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'rgba(224, 221, 174,0.25)', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
           </div>
 
@@ -613,14 +615,14 @@ export default function JobsPage() {
               width: '100%', padding: '8px 10px', borderRadius: 8,
               background: !roleFilter ? 'rgba(255,255,255,0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
-              color: !roleFilter ? 'var(--fg)' : 'rgba(224, 221, 174,0.35)',
+              color: !roleFilter ? 'var(--fg)' : 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
               textTransform: 'uppercase', textAlign: 'left',
               transition: 'background 0.2s, color 0.2s',
             }}
           >
             All Roles
-            <span style={{ fontSize: 8, color: 'rgba(224, 221, 174,0.25)' }}>{jobs.length}</span>
+            <span style={{ fontSize: 8, color: 'var(--fg-dim)' }}>{jobs.length}</span>
           </button>
 
           {ROLES.map(r => {
@@ -636,7 +638,7 @@ export default function JobsPage() {
                   width: '100%', padding: '8px 10px', borderRadius: 8,
                   background: active ? `${color}12` : 'transparent',
                   border: 'none', cursor: 'pointer', marginBottom: 2,
-                  color: active ? color : 'rgba(224, 221, 174,0.35)',
+                  color: active ? color : 'var(--fg-dim)',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
                   textTransform: 'uppercase', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
@@ -645,10 +647,10 @@ export default function JobsPage() {
                 onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.35)')}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'rgba(255,255,255,0.15)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'var(--fg-dim)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
                   {r}
                 </div>
-                {count > 0 && <span style={{ fontSize: 8, color: active ? color : 'rgba(224, 221, 174,0.2)' }}>{count}</span>}
+                {count > 0 && <span style={{ fontSize: 8, color: active ? color : 'var(--fg-dim)' }}>{count}</span>}
               </button>
             );
           })}
@@ -724,7 +726,7 @@ export default function JobsPage() {
 
           {tab === 'mine' && !user && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
-              <Briefcase size={40} style={{ color: 'rgba(255,255,255,0.1)', marginBottom: 20 }} />
+              <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
               <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#060606', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
@@ -778,6 +780,6 @@ export default function JobsPage() {
         input::placeholder, textarea::placeholder { color: rgba(224, 221, 174,0.18); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
-    </main>
+    </div>
   );
 }

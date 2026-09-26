@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -11,7 +11,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, onFocus, onBlur, onChange, className = '', ...props }, ref) => {
+  ({ label, error, icon, onFocus, onBlur, onChange, className = '', id, ...props }, ref) => {
+    const autoId = useId();
+    const inputId = id ?? `in-${autoId}`;
+    const errorId = `${inputId}-error`;
     const [isFocused, setIsFocused] = useState(false);
     const [hasValue, setHasValue] = useState(Boolean(props.value || props.defaultValue));
     const [showPw, setShowPw] = useState(false);
@@ -42,7 +45,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </span>
         )}
 
-        <motion.div
+        <motion.label
+          htmlFor={inputId}
           className={`absolute top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${icon ? 'left-10' : 'left-4'} ${
             isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
           }`}
@@ -56,10 +60,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           style={{ originX: 0, originY: 0.5 }}
         >
           {label}
-        </motion.div>
+        </motion.label>
 
         <input
           ref={ref}
+          id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          autoComplete={props.autoComplete ?? (props.type === 'email' ? 'email' : props.type === 'password' ? 'current-password' : undefined)}
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChange={handleChange}
@@ -72,7 +80,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             outline-none transition-all duration-300
             hover:border-[rgba(255,255,255,0.2)]
             ${props.type === 'password' ? 'pr-12' : ''}
-            ${isFocused && !error ? 'shadow-[0_0_0_3px_rgba(215,52,11,0.05)]' : ''}
+            ${isFocused && !error ? 'shadow-[0_0_0_3px_rgba(232,67,26,0.05)]' : ''}
             ${error ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}
           `}
           {...props}
@@ -85,7 +93,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <button
             type="button"
             onClick={() => setShowPw(!showPw)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
+            aria-label={showPw ? 'Hide password' : 'Show password'}
+            aria-pressed={showPw}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-md text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors"
           >
             {showPw ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
@@ -97,6 +107,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         {error && (
           <motion.p
+            id={errorId}
+            role="alert"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             className="absolute -bottom-5 left-1 text-[0.65rem] font-mono text-red-500/90 tracking-widest uppercase"

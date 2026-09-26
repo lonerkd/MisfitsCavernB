@@ -71,7 +71,7 @@ export default function AdminUsersPage() {
           zIndex: 100,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Link href="/admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
+            <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
               <ArrowLeft size={20} />
             </Link>
             <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
                       key={user.id}
                       style={{
                         borderBottom: '1px solid rgba(255,255,255,0.05)',
-                        background: selectedUser === user.id ? 'rgba(215, 52, 11,0.05)' : undefined,
+                        background: selectedUser === user.id ? 'rgba(232, 67, 26,0.05)' : undefined,
                       }}
                       onClick={() => setSelectedUser(selectedUser === user.id ? null : user.id)}
                     >
@@ -195,7 +195,7 @@ export default function AdminUsersPage() {
                       <td style={{ padding: 16 }}>
                         <span style={{
                           padding: '4px 8px',
-                          background: user.is_admin ? 'rgba(215, 52, 11,0.1)' : 'rgba(0,153,255,0.1)',
+                          background: user.is_admin ? 'rgba(232, 67, 26,0.1)' : 'rgba(0,153,255,0.1)',
                           border: `1px solid ${user.is_admin ? 'var(--accent)' : 'rgba(0,153,255,0.3)'}`,
                           borderRadius: 4,
                           color: user.is_admin ? 'var(--accent)' : '#0099ff',
@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
                               alignItems: 'center',
                               padding: '6px 12px',
                               background: 'transparent',
-                              border: '1px solid rgba(215, 52, 11,0.3)',
+                              border: '1px solid rgba(232, 67, 26,0.3)',
                               color: 'var(--accent)',
                               borderRadius: 4,
                               fontSize: 10,
@@ -245,7 +245,7 @@ export default function AdminUsersPage() {
           </div>
 
           <div style={{ marginTop: 24, padding: 16, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 4, fontSize: 11 }}>
-            <p style={{ margin: 0, opacity: 0.7 }}>
+            <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
               <strong>Total Users:</strong> {users.length}
               {' | '}
               <strong>Admins:</strong> {users.filter(u => u.is_admin).length}

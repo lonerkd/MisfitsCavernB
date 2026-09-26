@@ -997,8 +997,8 @@ export default function EditorPage() {
       module: 'editor',
       title: currentScript?.title || 'Untitled',
       fields: [
-        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#d7340b' },
-        { label: 'Words', value: wordCount.toLocaleString(), color: '#6366f1' },
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#e8431a' },
+        { label: 'Words', value: wordCount.toLocaleString(), color: '#818cf8' },
         { label: 'Pages', value: `${pageEst}` },
         { label: 'Save', value: saving ? 'Saving…' : syncPending ? 'On device — syncing' : 'Saved', color: saving || syncPending ? '#f59e0b' : '#10b981' },
       ],
@@ -1042,6 +1042,7 @@ export default function EditorPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+      <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && (
         <EditorHeader ctx={editorCtx} />
@@ -1101,9 +1102,9 @@ export default function EditorPage() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
 
           {focusMode && (
-            <button onClick={() => setFocusMode(false)} style={{
+            <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{
               position: 'absolute', top: 20, right: 20, zIndex: 100,
-              background: 'transparent', border: 'none', color: '#666', cursor: 'pointer'
+              background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer'
             }}>
               <Minimize size={20} />
             </button>
@@ -1233,7 +1234,7 @@ export default function EditorPage() {
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Title Page</h2>
-                <button onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+                <button aria-label="Close" onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
               </div>
               {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
                 <Input
@@ -1254,7 +1255,7 @@ export default function EditorPage() {
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 680, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
-                <button onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+                <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
               </div>
               {chars.length === 0 ? (
                 <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 40 }}>No characters detected yet. Start writing dialogue!</div>
@@ -1366,13 +1367,13 @@ export default function EditorPage() {
           <span style={{
             padding: '1px 7px', borderRadius: 4,
             background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)',
-            color: revisionMode ? '#6366f1' : 'var(--fg-dim)',
+            color: revisionMode ? '#818cf8' : 'var(--fg-dim)',
             letterSpacing: 2,
           }}>
             {revisionMode ? 'REVISION' : 'DRAFT'}
           </span>
           {sprintActive && (
-            <span style={{ color: '#6366f1', letterSpacing: 2 }}>
+            <span style={{ color: '#818cf8', letterSpacing: 2 }}>
               ◉ {Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}
             </span>
           )}
@@ -1396,7 +1397,7 @@ export default function EditorPage() {
           )}
           <span style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            color: isSyncing ? '#6366f1' : '#10b981',
+            color: isSyncing ? '#818cf8' : '#10b981',
           }}>
             <span style={{
               width: 5, height: 5, borderRadius: '50%',

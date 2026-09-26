@@ -6,7 +6,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { fetchScriptContent } from '@/lib/studio';
 import type { Tables } from '@/lib/supabase/database.types';
 
-export const CHARACTER_PALETTE = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+export const CHARACTER_PALETTE = ['#e8431a', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
 
 export type SavedCharacter = Tables<'script_characters'>;
 export interface ScriptCharacter {

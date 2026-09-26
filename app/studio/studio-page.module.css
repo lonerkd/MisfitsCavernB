@@ -35,7 +35,7 @@
   font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--studio-color, #6366f1);
+  color: #818cf8;
 }
 .projectPicker select {
   max-width: 280px;

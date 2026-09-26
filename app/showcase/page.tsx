@@ -28,7 +28,7 @@ export default function ShowcasePage() {
   }, []);
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       <nav
@@ -89,9 +89,7 @@ export default function ShowcasePage() {
               fontFamily: 'var(--serif)',
               fontSize: 'clamp(1rem, 2vw, 1.3rem)',
               fontStyle: 'italic',
-              opacity: 0.5,
-              animation: 'slideUp 1s ease-out 0.2s both'
-            }}
+              animation: 'slideUp 1s ease-out 0.2s both', color: 'var(--fg-dim)' }}
           >
             Where technology meets artistry
           </p>
@@ -116,9 +114,7 @@ export default function ShowcasePage() {
                 fontSize: '1rem',
                 textAlign: 'center',
                 marginTop: 30,
-                opacity: 0.5,
-                fontStyle: 'italic'
-              }}
+                fontStyle: 'italic', color: 'var(--fg-dim)' }}
             >
               Concept art from productions in the Cavern.
             </p>
@@ -153,7 +149,7 @@ export default function ShowcasePage() {
                 fontFamily: 'var(--serif)',
                 fontSize: '1.1rem',
                 lineHeight: 2,
-                color: 'rgba(255, 255, 255, 0.5)'
+                color: 'var(--fg-dim)'
               }}
             >
               <p style={{ marginBottom: 20 }}>
@@ -172,6 +168,6 @@ export default function ShowcasePage() {
           </div>
         </AnimatedSection>
       </section>
-    </main>
+    </div>
   );
 }

@@ -100,7 +100,7 @@ function ReviewView() {
 
   return (
     <div className={s.postLayout}>
-      <aside className={s.panel}>
+      <section className={s.panel} aria-label="Cuts">
         <div className={s.panelTitle}><Film size={14} /> Cuts · {cuts.rows.length}</div>
         {cuts.status === 'error' && <ErrorBar message={cuts.error ?? 'Could not load cuts'} onRetry={() => void cuts.reload()} />}
         <div className={s.stack} style={{ gap: 6 }}>
@@ -132,7 +132,7 @@ function ReviewView() {
           )}
           <button type="button" className={cx(s.btnPrimary, s.small)} onClick={() => void addCut()} disabled={!source.trim()}><Plus size={11} /> Add cut</button>
         </div>
-      </aside>
+      </section>
 
       <div className={s.stack}>
         {!cut ? (
@@ -371,7 +371,7 @@ function ItemList({ kind, title, items, people }: { kind: 'stage' | 'deliverable
         <label className={s.srOnly} htmlFor={`add-${kind}`}>Add to {title.toLowerCase()}</label>
         <input id={`add-${kind}`} className={s.input} style={{ flex: 1 }} placeholder={kind === 'stage' ? 'Add a stage…' : 'Add a deliverable…'} value={draft} maxLength={200}
           onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void add(); }} />
-        <button type="button" className={cx(s.btn, s.small)} onClick={() => void add()} disabled={!draft.trim()}><Plus size={11} /></button>
+        <button aria-label="Add" type="button" className={cx(s.btn, s.small)} onClick={() => void add()} disabled={!draft.trim()}><Plus size={11} /></button>
       </div>
     </div>
   );

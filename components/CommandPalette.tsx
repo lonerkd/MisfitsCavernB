@@ -197,15 +197,15 @@ export default function CommandPalette() {
                 placeholder="Search actions, projects, pages…"
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--mono)' }}
               />
-              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
+              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
             </div>
 
             <div ref={listRef} style={{ maxHeight: '52vh', overflowY: 'auto', padding: 8 }}>
               {filtered.length === 0 ? (
-                <div style={{ padding: '28px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>
+                <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>
               ) : groups.map(g => (
                 <div key={g.group} style={{ marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(224, 221, 174, 0.3)', padding: '6px 10px 4px' }}>{g.group}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
                   {g.items.map(c => {
                     flatIdx++;
                     const idx = flatIdx;
@@ -218,13 +218,13 @@ export default function CommandPalette() {
                         onClick={() => c.run()}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8,
-                          background: active ? 'rgba(215, 52, 11,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+                          background: active ? 'rgba(232, 67, 26,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
                           color: active ? 'var(--fg)' : 'rgba(255,255,255,0.75)', transition: 'background 0.12s',
                         }}
                       >
-                        <span style={{ color: active ? 'var(--accent)' : 'rgba(255,255,255,0.4)', display: 'flex' }}>{c.icon}</span>
+                        <span style={{ color: active ? 'var(--accent)' : 'var(--fg-dim)', display: 'flex' }}>{c.icon}</span>
                         <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
-                        {c.hint && <span style={{ fontSize: 10, color: 'rgba(224, 221, 174, 0.3)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
+                        {c.hint && <span style={{ fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
                         {active && <CornerDownLeft size={13} color="rgba(255,255,255,0.4)" />}
                       </button>
                     );

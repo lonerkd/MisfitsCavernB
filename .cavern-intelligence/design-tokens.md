@@ -17,16 +17,16 @@ Source of truth: `tailwind.config.js` (Tailwind classes) + `app/globals.css` (CS
 | Token | Color | Opacity |
 |---|---|---|
 | `--fg` | `#e0ddae` | 1.0 |
-| `--fg-muted` | `#e0ddae` | 0.55 |
-| `--fg-dim` | `#e0ddae` | 0.30 |
+| `--fg-muted` | `#e0ddae` | 0.72 |
+| `--fg-dim` | `#e0ddae` | 0.58 (≥4.5:1 on every surface — WCAG AA; never go lower for text) |
 | `--fg-ghost` | `#e0ddae` | 0.12 |
 
 ### Accent (Sinopia)
 | Token | Color | Opacity |
 |---|---|---|
-| `--accent` | `#d7340b` | 1.0 |
-| `--accent-dim` | `#d7340b` | 0.18 |
-| `--accent-glow` | `#d7340b` | 0.10 |
+| `--accent` | `#e8431a` | 1.0 |
+| `--accent-dim` | `#e8431a` | 0.18 |
+| `--accent-glow` | `#e8431a` | 0.10 |
 
 ### Secondary (Caribbean)
 | Token | Color | Opacity |
@@ -39,12 +39,12 @@ Source of truth: `tailwind.config.js` (Tailwind classes) + `app/globals.css` (CS
 |---|---|---|
 | `--border` | `#e0ddae` | 0.07 |
 | `--border-2` | `#e0ddae` | 0.12 |
-| `--border-accent` | `#d7340b` | 0.32 |
+| `--border-accent` | `#e8431a` | 0.32 |
 
 ### Module Accent Colors
 | Module | Color |
 |---|---|
-| ScriptOS | `#d7340b` |
+| ScriptOS | `#e8431a` |
 | Studio | `#6366f1` |
 | Lounge | `#10b981` |
 | Portfolio | `#f59e0b` |
@@ -159,3 +159,24 @@ Alternative themes applied via `body.theme-*`:
 | `theme-vampire` | Warm cream fg, deep red accent |
 
 Each theme overrides `--bg`, `--fg`, `--accent`, `--border`, and module accent colors.
+
+
+## Accessibility (WCAG 2.2 AA — enforced in CI)
+
+`e2e/accessibility.spec.ts` runs axe-core (WCAG 2.0/2.1/2.2 A + AA) on every
+route — signed out, signed in, admin, mobile — against a local stack in the CI
+`database` job. Any violation fails the build.
+
+- **Text colour**: never below 4.5:1. Use `--fg`, `--fg-muted` (0.72) or
+  `--fg-dim` (0.58) — never `opacity` on text, never `rgba(…, 0.3)` text.
+  Accents used as text go through `readable()` (`lib/color.ts`); labels on a
+  filled accent use `textOn(accent)`.
+- **Accent** is `#e8431a` (5:1 as text and behind dark text). Studio indigo:
+  `--studio` `#4f46e5` for fills, `--studio-text` `#818cf8` for text.
+- **Names**: every icon-only button/link gets `aria-label`; every input/select
+  a label (`Input` wires `<label htmlFor>`, errors via `aria-describedby`).
+- **Structure**: the root layout owns the single `<main id="main-content">`
+  and the skip link — pages use `<div>`, never `<main>`. Each page has one
+  `<h1>` (visually hidden with `.sr-only` when the design has no title).
+- **Targets**: interactive controls ≥ 24×24px.
+- Focus is always visible (`:focus-visible` ring in `globals.css`).
