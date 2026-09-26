@@ -43,7 +43,7 @@ export function titleFromFileName(name: string): string {
 }
 
 export interface Embed {
-  provider: 'youtube' | 'vimeo';
+  provider: 'youtube' | 'vimeo' | 'drive';
   id: string;
   /** Privacy-friendly player URL for an iframe. */
   src: string;
@@ -66,6 +66,12 @@ export function videoEmbed(url: string | null | undefined): Embed | null {
   if (yt && /^[A-Za-z0-9_-]{6,20}$/.test(yt)) {
     return { provider: 'youtube', id: yt, src: `https://www.youtube-nocookie.com/embed/${yt}`, thumbnail: `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` };
   }
+  if (host === 'drive.google.com') {
+    const id = u.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]{10,})/)?.[1] ?? (u.pathname === '/open' || u.pathname === '/uc' ? u.searchParams.get('id') : null);
+    if (id && /^[A-Za-z0-9_-]{10,}$/.test(id)) {
+      return { provider: 'drive', id, src: `https://drive.google.com/file/d/${id}/preview`, thumbnail: `https://drive.google.com/thumbnail?id=${id}&sz=w800` };
+    }
+  }
   if (host === 'vimeo.com' || host === 'player.vimeo.com') {
     const m = u.pathname.match(/\/(?:video\/)?(\d{5,12})(?:\/|$)/);
     if (m) return { provider: 'vimeo', id: m[1], src: `https://player.vimeo.com/video/${m[1]}`, thumbnail: null };
@@ -83,7 +89,8 @@ export function classifyUrl(raw: string): { url: string; kind: MediaKind; title:
   const path = u.pathname.toLowerCase();
   const last = decodeURIComponent(u.pathname.split('/').filter(Boolean).pop() || '');
   const title = (last ? titleFromFileName(last) : u.hostname.replace(/^www\./, '')).slice(0, 200);
-  if (videoEmbed(url)) return { url, kind: 'video', title: u.hostname.includes('vimeo') ? 'Vimeo video' : 'YouTube video' };
+  const embed = videoEmbed(url);
+  if (embed) return { url, kind: 'video', title: embed.provider === 'vimeo' ? 'Vimeo video' : embed.provider === 'drive' ? 'Google Drive video' : 'YouTube video' };
   if (/\.(png|jpe?g|gif|webp|avif|svg)$/.test(path)) return { url, kind: 'image', title };
   if (/\.(mp4|webm|mov|m4v)$/.test(path)) return { url, kind: 'video', title };
   if (/\.(mp3|wav|m4a|aac|ogg|flac)$/.test(path)) return { url, kind: 'audio', title };

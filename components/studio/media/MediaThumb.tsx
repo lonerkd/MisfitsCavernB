@@ -38,7 +38,7 @@ export function MediaThumbVisual({ media, src }: { media: Pick<Media, 'kind' | '
       <>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={embed.thumbnail} alt={media.title} loading="lazy" onError={() => setBroken(true)} />
-        <span className={s.playBadge}><Play size={9} /> {embed.provider === 'youtube' ? 'YouTube' : 'Vimeo'}</span>
+        <span className={s.playBadge}><Play size={9} /> {embed.provider === 'youtube' ? 'YouTube' : embed.provider === 'vimeo' ? 'Vimeo' : 'Drive'}</span>
       </>
     );
   }

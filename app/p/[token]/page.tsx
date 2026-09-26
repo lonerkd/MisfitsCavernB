@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Film } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import EmptyState from '@/components/EmptyState';
 import type { PublicProfile } from '@/lib/supabase/profiles';
 import type { PortfolioBlock } from '@/lib/supabase/portfolio';
+import Avatar from '@/components/Avatar';
+import { videoEmbed } from '@/lib/studio/media-kind';
 
 interface MediaItem {
   id: string;
@@ -236,12 +237,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               flexShrink: 0,
             }}>
               {profiles.avatar_url ? (
-                <Image
-                  src={profiles.avatar_url}
-                  alt={profiles.username}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                />
+                <Avatar src={profiles.avatar_url} name={profiles.username} size={34} />
               ) : (
                 <span style={{
                   fontFamily: 'var(--display)',
@@ -471,15 +467,21 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             </button>
 
             <div style={{ aspectRatio: '16/9', background: '#000', width: '100%' }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${playingMedia.url}?autoplay=1&rel=0&modestbranding=1`}
-                width="100%"
-                height="100%"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                allowFullScreen
-                style={{ border: 'none', display: 'block' }}
-                title={playingMedia.title}
-              />
+              {videoEmbed(playingMedia.url) ? (
+                <iframe
+                  src={`${videoEmbed(playingMedia.url)!.src}?autoplay=1`}
+                  width="100%"
+                  height="100%"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  style={{ border: 'none', display: 'block' }}
+                  title={playingMedia.title}
+                />
+              ) : (
+                <a href={playingMedia.url} target="_blank" rel="noopener noreferrer" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>
+                  OPEN MEDIA ↗
+                </a>
+              )}
             </div>
 
             {playingMedia.title && playingMedia.title !== 'YouTube Video' && (
@@ -587,15 +589,15 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
       );
 
     case 'media': {
-      const isYt = block.meta?.media_type === 'youtube';
       const url = block.meta?.url;
-      if (isYt && url) {
+      const embed = videoEmbed(url);
+      if (embed) {
         return (
           <div style={wrap}>
             <div style={label}>Media</div>
             <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: 8, overflow: 'hidden' }}>
               <iframe
-                src={`https://www.youtube.com/embed/${extractYouTubeId(url)}?rel=0&modestbranding=1`}
+                src={embed.src}
                 width="100%" height="100%" style={{ border: 'none', display: 'block' }}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen title={block.title || 'Video'}
@@ -625,21 +627,12 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
   }
 }
 
-function extractYouTubeId(url: string): string {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
-    return u.searchParams.get('v') || url;
-  } catch {
-    return url;
-  }
-}
-
 function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }) {
   const [hovered, setHovered] = useState(false);
 
   const thumb = media.thumbnail_url
-    ?? `https://img.youtube.com/vi/${media.url}/hqdefault.jpg`;
+    ?? videoEmbed(media.url)?.thumbnail
+    ?? (/\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(media.url) ? media.url : null);
 
   return (
     <div
@@ -662,7 +655,8 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         outline: 'none',
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- YouTube and custom thumbnails aren't next/image hosts */}
+      {thumb && (
+      // eslint-disable-next-line @next/next/no-img-element -- YouTube and custom thumbnails aren't next/image hosts
       <img
         src={thumb}
         alt={media.title}
@@ -679,6 +673,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         }}
         loading="lazy"
       />
+      )}
 
       <div style={{
         position: 'absolute',
