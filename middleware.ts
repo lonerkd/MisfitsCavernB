@@ -78,12 +78,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAdminPath) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (!profile?.is_admin) {
+    // is_admin is private; get_my_account returns it to its owner only.
+    const { data: account } = await supabase.rpc('get_my_account');
+    if (!account?.[0]?.is_admin) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

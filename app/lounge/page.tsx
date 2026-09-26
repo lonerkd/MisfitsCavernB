@@ -8,7 +8,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
+import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
@@ -46,7 +46,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('script_notes').select('note,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('script_annotations').select('type,text,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
       ]);
       if (!on) return;
       const merged = [
@@ -55,7 +55,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#6366f1' })),
         ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
         ...(ca.data || []).map((x: any) => ({ label: `Reference — ${x.title || 'untitled'}`, t: x.created_at, color: '#a855f7' })),
-        ...(sn.data || []).map((x: any) => ({ label: `Script Note — "${x.note}"`, t: x.created_at, color: '#ef4444' })),
+        ...(sn.data || []).map((x: any) => ({ label: `Script ${x.type} — "${x.text}"`, t: x.created_at, color: '#ef4444' })),
       ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
       setItems(merged);
     })();
@@ -512,6 +512,30 @@ export default function LoungePage() {
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
 
+  // The people on the active project: its owner and crew (not the whole platform).
+  useEffect(() => {
+    let alive = true;
+    const project = activeProject;
+    if (!project?.id) { setCrewList([]); return; }
+    (async () => {
+      const [{ data: crew }, { data: owner }] = await Promise.all([
+        supabase.from('project_crew').select('user_id, role, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
+        project.creator_id
+          ? supabase.from('profiles').select('id, username, avatar_url').eq('id', project.creator_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (!alive) return;
+      const team = [
+        ...(owner ? [{ id: owner.id, name: owner.username || 'Owner', role: 'Owner', avatar: owner.avatar_url }] : []),
+        ...(crew || [])
+          .filter((c) => c.user_id !== owner?.id)
+          .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.role || 'Crew', avatar: c.profiles?.avatar_url })),
+      ];
+      setCrewList(team);
+    })();
+    return () => { alive = false; };
+  }, [activeProject?.id, activeProject?.creator_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
   usePillStage(
     {
@@ -545,16 +569,6 @@ export default function LoungePage() {
         if (mounted) setMyProfile(mine);
       }
 
-      const { data } = await supabase.from('profiles').select('*').limit(20);
-      if (data && mounted) {
-        setCrewList(data.map(p => ({
-          id: p.id,
-          name: p.username || 'User',
-          role: p.role || 'Crew',
-          avatar: p.avatar_url,
-          online: p.status === 'OPEN'
-        })));
-      }
     })();
 
     const loadMessages = async () => {
@@ -689,7 +703,7 @@ export default function LoungePage() {
     try {
       const from = myProfile?.username || 'Someone';
       if (dmTarget) {
-        await sendMessage(currentUser.id, text, undefined, dmTarget.id);
+        await sendDirectMessage(currentUser.id, dmTarget.id, text);
         notify(dmTarget.id, {
           type: 'reply',
           title: `Direct message from ${from}`,
@@ -771,7 +785,7 @@ export default function LoungePage() {
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-muted)' }}>
-              {onlineIds.size} online · {crewList.length} crew
+              {onlineCrew} of {crewList.length} online
             </span>
           </div>
         </div>

@@ -5,7 +5,8 @@ import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, M
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS } from '@/lib/supabase/notifications';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
+import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 
 const PREF_KEYS = {
@@ -120,14 +121,18 @@ export default function SettingsPage() {
     } catch {}
   }, [router]);
 
-  const setNotifyPref = (key: 'replies' | 'jobs' | 'product', v: boolean) => {
-    if (key === 'replies') setNotifyReplies(v);
-    if (key === 'jobs') setNotifyJobs(v);
-    if (key === 'product') setNotifyProduct(v);
-    if (user) saveNotificationPrefs(user.id, { [key]: v });
-  };
-
   const flash = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };
+
+  // Account prefs live in the DB: show the change, put it back if the save fails.
+  const savePrefs = (patch: Partial<NotificationPrefs>, apply: (v: boolean) => void, v: boolean) => {
+    apply(v);
+    if (!user) return;
+    saveNotificationPrefs(user.id, patch).catch((e: any) => { apply(!v); flash(e?.message || 'Could not save that setting', false); });
+  };
+  const setNotifyPref = (key: 'replies' | 'jobs' | 'product', v: boolean) => {
+    const apply = key === 'replies' ? setNotifyReplies : key === 'jobs' ? setNotifyJobs : setNotifyProduct;
+    savePrefs({ [key]: v }, apply, v);
+  };
   const savePref = (key: string, val: boolean) => { try { localStorage.setItem(key, val ? 'on' : 'off'); } catch {} };
 
   const setCursorPref = (v: boolean) => {
@@ -196,8 +201,9 @@ export default function SettingsPage() {
     if (!user) return;
     setBusy('export');
     try {
-      const [profile, projects, scripts, jobs] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
+      const [profile, account, projects, scripts, jobs] = await Promise.all([
+        supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', user.id).single(),
+        supabase.rpc('get_my_account'),
         supabase.from('projects').select('*').eq('creator_id', user.id),
         supabase.from('scripts').select('*').eq('last_edited_by', user.id),
         supabase.from('jobs').select('*').eq('created_by', user.id),
@@ -205,7 +211,7 @@ export default function SettingsPage() {
       const payload = {
         exported_at: new Date().toISOString(),
         account: { id: user.id, email: user.email, created_at: user.created_at },
-        profile: profile.data ?? null,
+        profile: profile.data ? { ...profile.data, ...(account.data?.[0] ?? {}) } : null,
         projects: projects.data ?? [],
         scripts: scripts.data ?? [],
         jobs: jobs.data ?? [],
@@ -332,7 +338,7 @@ export default function SettingsPage() {
         </Section>
 
         <Section icon={<ShieldCheck size={15} />} title="Data & Privacy">
-              <Row label="Leaked-password detection" hint="Checks passwords against known data breaches (k-anonymity — only a hash prefix leaves your device)." control={<Toggle on={leakCheck} onChange={v => { setLeakCheck(v); if (user) saveNotificationPrefs(user.id, { leak_check: v }); }} />} />
+              <Row label="Leaked-password detection" hint="Checks passwords against known data breaches (k-anonymity — only a hash prefix leaves your device)." control={<Toggle on={leakCheck} onChange={v => savePrefs({ leak_check: v }, setLeakCheck, v)} />} />
           <Row label="Export my data" hint="Download your profile, projects, scripts and jobs as JSON." control={
             <button style={{ ...ghostBtn, display: 'flex', alignItems: 'center', gap: 6 }} onClick={exportData} disabled={busy === 'export'}>
               <Download size={12} /> {busy === 'export' ? 'PREPARING…' : 'EXPORT'}
