@@ -55,7 +55,7 @@ function ShotRow({ shot, sceneNumber }: { shot: Shot; sceneNumber: number }) {
   };
 
   const remove = async () => {
-    if (!await confirm(`Delete shot ${sceneNumber}${shot.shot_number}?`)) return;
+    if (!await confirm(`Delete shot ${sceneNumber}.${shot.shot_number}?`)) return;
     shots.removeLocal(shot.id);
     try { await studio.deleteShot(shot.id); }
     catch (e) { shots.upsertLocal(shot); toast(e instanceof Error ? e.message : 'Could not delete the shot', 'error'); }
@@ -65,7 +65,7 @@ function ShotRow({ shot, sceneNumber }: { shot: Shot; sceneNumber: number }) {
   const nextStatus = STATUSES[(STATUSES.indexOf(status) + 1) % STATUSES.length]!;
   return (
     <div className={cx(s.shotRow, status === 'omitted' && s.shotOmitted)}>
-      <span className={s.shotNum}>{sceneNumber}{shot.shot_number}</span>
+      <span className={s.shotNum}>{sceneNumber}.{shot.shot_number}</span>
       <label>
         <span className={s.srOnly}>Shot size</span>
         <select className={cx(s.select, s.shotSize)} value={shot.shot_size ?? ''} onChange={(e) => void save({ shot_size: e.target.value || null })}>
@@ -94,7 +94,7 @@ function ShotRow({ shot, sceneNumber }: { shot: Shot; sceneNumber: number }) {
       >
         {status}
       </button>
-      <button type="button" className={s.refRemoveInline} onClick={() => void remove()} aria-label={`Delete shot ${sceneNumber}${shot.shot_number}`}><X size={11} /></button>
+      <button type="button" className={s.refRemoveInline} onClick={() => void remove()} aria-label={`Delete shot ${sceneNumber}.${shot.shot_number}`}><X size={11} /></button>
     </div>
   );
 }
