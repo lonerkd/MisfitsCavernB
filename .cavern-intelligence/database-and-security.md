@@ -12,8 +12,12 @@ Misfits Cavern is powered by a relational PostgreSQL database hosted on Supabase
 - **`script_characters`**: Represents distinct characters in the story, mapping script character sheets to casting look-boards.
 - **`channels` & `channel_members`**: Drives the Lounge communications, dividing project channels (Discord-style text/voice rooms) and community channels.
 - **`messages`**: Multi-use chat logs (supporting threads via `parent_message_id` and reactions via a secured JSONB column).
-- **`studio_boards` & `studio_assets`**: Backs the collaborative canvas board and visual pinboards.
-- **`scenes` & `shots`**: The backbone of pre-production scheduling, elements tracking, and call-sheet generation.
+- **`media`**: The project library — every reference photo, clip, track, PDF and link. Files live in the private `project-media` bucket at `<project_id>/<media_id>/<file>`; links use `external_url` (exactly one of the two). `shared` = included in the share link (owner-only, enforced by the `media_guard` trigger). Source and author are immutable.
+- **`scenes`**: One row per scene heading of a script (`script_id`), kept in step with the text by `sync_script_scenes` (see `lib/studio/scene-sync.ts`). Ids survive rewrites; removed scenes are soft-deleted (`removed_at`) so their links come back if the heading does. Script-derived fields (heading, location, time of day, cast, length, elements) are written only by the sync; people set `note`, `color`, `shoot_day`, `status`.
+- **`scene_media` / `character_media`**: Links from scenes / `script_characters` to `media`. Composite foreign keys pin both ends to the same project.
+- **`studio_boards` & `studio_assets`**: Legacy, unused by the app since the Studio rebuild (2 orphaned rows in production, no project). To be dropped once confirmed.
+- **`shots`**: Shot list per scene.
+- **`activity_feed`**: Project activity. Entries carry `metadata.project_id`; readable by the author and by people with access to that project only.
 - **`call_sheets` & `call_sheet_calls`**: Daily call times and specific crew shifts, linked to project crew schedules.
 - **`budget_items` & `timeline_items`**: Manages the production costs and milestone timelines.
 - **`portfolio_projects` & `portfolio_media`**: Holds the public showcases for filmmaker directories.
@@ -34,6 +38,9 @@ We use `SECURITY DEFINER` helper functions defined inside the `internal` schema 
 1. **`internal.is_project_creator(pid uuid)`**: Returns true if `auth.uid()` matches the project's creator.
 2. **`internal.is_project_member(pid uuid)`**: Returns true if `auth.uid()` matches a confirmed member in `project_crew` for that project.
 3. **`internal.can_access_script(sid uuid)`**: Checks if the user is the script owner, collaborator, or part of the parent project.
+4. **`internal.can_access_project(pid uuid)`**: Owner, or crew *unless the project is private* — the same rule as the `projects` row policy. Use it for every new project-scoped table (media, scenes, links, activity do). Older tables still use `is_project_creator OR is_project_member`, which ignores `private`; migrate them when touched.
+
+**Gotcha:** policies store function OIDs, so they can call `internal.*` without schema USAGE. PL/pgSQL resolves names at run time, so an invoker-rights plpgsql function or trigger that calls `internal.*` fails with `permission denied for schema internal`. Make such triggers `SECURITY DEFINER` (as `internal.media_guard`), or express the check through RLS (as `sync_script_scenes` does with a `projects` lookup).
 
 These helper functions are placed in the `internal` schema to prevent them from being automatically exposed as REST API RPC endpoints via PostgREST (which would let unauthorized users probe existence of projects and scripts).
 
@@ -53,6 +60,9 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 - **Scripts:** `CREATE POLICY "Shared scripts publicly viewable" ON scripts FOR SELECT TO anon USING (shared = TRUE);`
 - **Portfolios:** Scoped via `share_token` or `is_public = true`.
 - Private data (budgets, crew rosters, chats) must have **no** select policy granted to `anon`.
+- **Project share links** (`/shared/<share_token>`) resolve only through `SECURITY DEFINER` RPCs that check the exact token and `visibility in ('link','public')`: `get_shared_project` (overview fields) and `get_shared_lookbook` (published media + the scene headings they're linked to — never notes or unpublished items).
+- **Published files** are readable by anon only while `media.shared` and the project is link/public (storage policy `project-media: shared read`). `/m/<media_id>` is the stable permalink: it checks `get_published_media` and redirects to a fresh short-lived signed URL, uncached, so unpublishing takes effect at once.
+- **Showcase** (`get_public_showcase`) lists published media of `public` projects only. **Platform totals** come from `get_platform_stats` (counts only) — counting through RLS shows each person their own numbers.
 
 ---
 

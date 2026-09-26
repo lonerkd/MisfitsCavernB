@@ -69,7 +69,7 @@ export default function CommandPalette() {
         const [scriptsRes, assetsRes] = await Promise.all([
           supabase.from('scripts').select('id, title, project_id').eq('created_by', user.id).limit(20),
 
-          supabase.from('project_assets').select('id, title, project_id').eq('created_by', user.id).limit(20)
+          supabase.from('media').select('id, title, project_id').eq('created_by', user.id).order('created_at', { ascending: false }).limit(20)
         ]);
 
         if (scriptsRes.data) setScripts(scriptsRes.data);
@@ -126,14 +126,14 @@ export default function CommandPalette() {
       const projMatch = projects.find(p => p.id === a.project_id);
       return {
         id: `asset-${a.id}`,
-        label: a.title || 'Untitled Asset',
-        hint: projMatch ? `Asset in ${projMatch.title}` : 'Asset',
+        label: a.title || 'Untitled',
+        hint: projMatch ? `Library · ${projMatch.title}` : 'Library',
         icon: <LayoutGrid size={15} />,
-        group: 'Studio Assets',
-        keywords: 'asset image video file',
+        group: 'Studio Library',
+        keywords: 'asset reference image video file library media',
         run: () => {
           if (projMatch) setActiveProject(projMatch);
-          router.push('/studio');
+          router.push('/studio?tab=library');
           setOpen(false);
         },
       };

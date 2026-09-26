@@ -1,14 +1,22 @@
-// Public, read-only project snapshot — the destination of an "anyone with the
-// link" share URL. Anon has no row access to `projects`; the token is resolved
-// by the get_shared_project() RPC, which returns only overview fields for a
-// link/public project (never scenes, budget, chat or scripts).
-'use client';
+// The share link: a read-only lookbook anyone holding the link can open.
+// Server-rendered so link previews (iMessage, Slack, social) show the title,
+// logline and lead image. Everything shown comes from two SECURITY DEFINER
+// RPCs that resolve only for link/public projects with the exact token:
+//   get_shared_project  — title, logline, status, creator
+//   get_shared_lookbook — media the owner published, grouped by scene
+// Nothing is cached: switching the project to Team/Private closes it at once.
 
-import React, { useEffect, useState } from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { headers } from 'next/headers';
+import { ExternalLink, FileText } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
+import { publicClient } from '@/lib/supabase/public';
+import { createStudioApi, type Lookbook, type LookbookMedia } from '@/lib/studio/api';
+import { videoEmbed } from '@/lib/studio/media-kind';
+import s from './shared.module.css';
+
+export const dynamic = 'force-dynamic';
 
 interface SharedProject {
   title: string;
@@ -16,84 +24,146 @@ interface SharedProject {
   status: string;
   accent_color: string | null;
   visibility: string;
-  creator?: { username?: string } | null;
+  creator_username: string | null;
 }
 
-export default function SharedProjectPage() {
-  const params = useParams();
-  const token = String(params.token || '');
-  const [project, setProject] = useState<SharedProject | null | 'missing'>('missing');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data, error } = await supabase.rpc('get_shared_project', { p_token: token });
-      if (!active) return;
-      setLoading(false);
-      const row = Array.isArray(data) ? data[0] : null;
-      if (error || !row) { setProject('missing'); return; }
-      setProject({
-        title: row.title,
-        description: row.description,
-        status: row.status,
-        accent_color: row.accent_color,
-        visibility: row.visibility,
-        creator: row.creator_username ? { username: row.creator_username } : null,
-      });
-    })();
-    return () => { active = false; };
-  }, [token]);
-
-  if (loading) {
-    return (
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid var(--border-2)', borderTopColor: 'var(--accent)', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </main>
-    );
-  }
-
-  if (project === 'missing') {
-    return (
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40, textAlign: 'center' }}>
-        <GrainOverlay />
-        <div style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 4 }}>CAVERN</div>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 2, textTransform: 'uppercase' }}>This project is not shared (or the link is wrong).</div>
-        <Link href="/" style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--accent)', textDecoration: 'none', marginTop: 12 }}>← Back to Misfits Cavern</Link>
-      </main>
-    );
-  }
-
+async function load(token: string): Promise<{ project: SharedProject; lookbook: Lookbook } | null> {
+  const db = publicClient();
+  if (!db || !token) return null;
+  const [{ data }, lookbook] = await Promise.all([
+    db.rpc('get_shared_project', { p_token: token }),
+    createStudioApi(db).getLookbook(token).catch(() => null),
+  ]);
+  const project = data?.[0];
   if (!project) return null;
+  return { project, lookbook: lookbook ?? { media: [], scenes: [] } };
+}
 
-  const color = project.accent_color || '#d7340b';
+/** Where a published item is served from: our permalink for files, the link otherwise. */
+const srcOf = (m: LookbookMedia) => (m.storage_path ? `/m/${m.id}` : m.external_url);
+
+async function origin() {
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host');
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  return host ? `${proto}://${host}` : '';
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const data = await load(token);
+  if (!data) return { title: 'Misfits Cavern', robots: { index: false } };
+  const { project, lookbook } = data;
+  const lead = lookbook.media.find((m) => m.kind === 'image');
+  const leadSrc = lead ? srcOf(lead) : null;
+  const base = await origin();
+  const image = leadSrc ? (leadSrc.startsWith('/') ? `${base}${leadSrc}` : leadSrc) : undefined;
+  const description = project.description || `A project by ${project.creator_username ?? 'a Misfits Cavern filmmaker'}.`;
+  return {
+    title: `${project.title} — Misfits Cavern`,
+    description,
+    // Link-shared projects are unlisted: keep them out of search engines.
+    robots: { index: project.visibility === 'public', follow: false },
+    openGraph: { title: project.title, description, type: 'website', images: image ? [{ url: image }] : undefined },
+    twitter: { card: image ? 'summary_large_image' : 'summary', title: project.title, description, images: image ? [image] : undefined },
+  };
+}
+
+function hostOf(url: string | null) {
+  try { return url ? new URL(url).hostname.replace(/^www\./, '') : ''; } catch { return ''; }
+}
+
+function MediaItem({ m }: { m: LookbookMedia }) {
+  const src = srcOf(m);
+  const embed = m.kind === 'video' ? videoEmbed(m.external_url) : null;
+  let body: React.ReactNode = null;
+  if (embed) {
+    body = (
+      <div className={s.embed}>
+        <iframe src={embed.src} title={m.title || 'Video'} loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+      </div>
+    );
+  } else if (m.kind === 'image' && src) {
+    // eslint-disable-next-line @next/next/no-img-element -- permalinks and images from any host
+    body = <img className={s.image} src={src} alt={m.title} loading="lazy" referrerPolicy="no-referrer" width={m.width ?? undefined} height={m.height ?? undefined} />;
+  } else if (m.kind === 'video' && src) {
+    body = <video className={s.video} src={src} controls playsInline preload="metadata" />;
+  } else if (m.kind === 'audio' && src) {
+    body = <div className={s.audio}><audio src={src} controls preload="none" /></div>;
+  } else if (src) {
+    body = (
+      <a className={s.linkCard} href={src} target="_blank" rel="noopener noreferrer nofollow">
+        {m.kind === 'document' ? <FileText size={18} /> : <ExternalLink size={18} />}
+        <span>{m.kind === 'document' ? 'Open PDF' : hostOf(m.external_url) || 'Open link'}</span>
+      </a>
+    );
+  }
+  return (
+    <figure className={s.item}>
+      {body}
+      {m.title && <figcaption className={s.caption}>{m.title}</figcaption>}
+    </figure>
+  );
+}
+
+export default async function SharedProjectPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const data = await load(token);
+
+  if (!data) {
+    return (
+      <main className={s.missing}>
+        <GrainOverlay />
+        <div className={s.wordmark}>CAVERN</div>
+        <p className={s.eyebrow}>This project isn’t shared, or the link is wrong.</p>
+        <Link href="/" className={s.back}>← Misfits Cavern</Link>
+      </main>
+    );
+  }
+
+  const { project, lookbook } = data;
+  const accent = project.accent_color || '#d7340b';
+  const byId = new Map(lookbook.media.map((m) => [m.id, m]));
+  const inScenes = new Set(lookbook.scenes.flatMap((sc) => sc.media_ids));
+  const more = lookbook.media.filter((m) => !inScenes.has(m.id));
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', position: 'relative' }}>
+    <main className={s.main} style={{ ['--share-accent' as string]: accent }}>
       <GrainOverlay />
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '50vh', pointerEvents: 'none', zIndex: 0, background: `radial-gradient(ellipse at 50% -20%, ${color}0a 0%, transparent 65%)` }} />
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto', padding: '80px 24px 120px' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 16 }}>
-          Misfits Cavern · {project.visibility === 'public' ? 'Public project' : 'Shared project'}
-        </div>
-        <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 8vw, 4.5rem)', letterSpacing: 3, margin: 0, lineHeight: 1 }}>{project.title}</h1>
-        {project.creator?.username && (
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', marginTop: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            by {project.creator.username}
+      <div className={s.glow} aria-hidden />
+      <header className={s.hero}>
+        <div className={s.eyebrow}>{project.visibility === 'public' ? 'Public project' : 'Shared with you'} · Misfits Cavern</div>
+        <h1 className={s.title}>{project.title}</h1>
+        {project.creator_username && <div className={s.byline}>by {project.creator_username}</div>}
+        {project.description && <p className={s.logline}>{project.description}</p>}
+      </header>
+
+      {lookbook.scenes.length > 0 && (
+        <section className={s.section} aria-label="Scenes">
+          {lookbook.scenes.map((sc) => (
+            <article key={sc.id} className={s.scene}>
+              <h2 className={s.sceneHeading}><span className={s.sceneNum}>{sc.scene_number}</span>{sc.heading}</h2>
+              <div className={s.grid}>
+                {sc.media_ids.map((id) => byId.get(id)).filter(Boolean).map((m) => <MediaItem key={m!.id} m={m!} />)}
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {more.length > 0 && (
+        <section className={s.section} aria-label={lookbook.scenes.length ? 'More references' : 'References'}>
+          {lookbook.scenes.length > 0 && <h2 className={s.sectionTitle}>More references</h2>}
+          <div className={s.grid}>
+            {more.map((m) => <MediaItem key={m.id} m={m} />)}
           </div>
-        )}
-        {project.description && (
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 17, lineHeight: 1.7, color: 'var(--fg-muted)', marginTop: 24 }}>{project.description}</p>
-        )}
-        <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
-          <Link href="/auth" style={{
-            fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
-            color: 'var(--bg)', background: 'var(--accent)', borderRadius: 9999, padding: '12px 26px',
-            textDecoration: 'none',
-          }}>Enter the Cavern</Link>
-        </div>
-      </div>
+        </section>
+      )}
+
+      <footer className={s.footer}>
+        <span>Made in Misfits Cavern — the production suite for indie filmmakers.</span>
+        <Link href="/auth" className={s.cta}>Join the Cavern</Link>
+      </footer>
     </main>
   );
 }

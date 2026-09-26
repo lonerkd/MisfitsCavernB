@@ -35,7 +35,9 @@ jobs:
   #   1. the migrations build exactly the committed schema (no drift),
   #   2. the committed TypeScript types match that schema,
   #   3. real persona tests (Sam / Jordan / Riley / anon) pass against it —
-  #      real auth, real RLS, no mocks.
+  #      real auth, real RLS, no mocks,
+  #   4. the Studio journey works in a real browser against it: upload, link to
+  #      a scene, editor, publish, logged-out share link, live crew sync.
   database:
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +52,21 @@ jobs:
       - run: npm run db:drift
       - run: npm run db:types:check
       - run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - name: Studio journey (real browser, local stack)
+        run: |
+          STATUS=$(npx supabase status -o json)
+          export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
+          E2E_LOCAL_STACK=1 npx playwright test e2e/studio-journey.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: studio-journey-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
 
   e2e-smoke:
     runs-on: ubuntu-latest

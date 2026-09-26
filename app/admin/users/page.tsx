@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
 import { ActionButton, IfAccess } from '@/lib/os';
+import { useToast } from '@/components/Toast';
 
 interface UserRow {
   id: string;
@@ -18,6 +19,7 @@ interface UserRow {
 }
 
 export default function AdminUsersPage() {
+  const { toast } = useToast();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -44,19 +46,13 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Admin rights change only through set_user_admin (admins only; enforced in
+  // the database), and the list reflects the result only once it succeeded.
   const toggleAdminRole = async (userId: string, currentAdmin: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_admin: !currentAdmin })
-        .eq('id', userId);
-
-      if (!error) {
-        setUsers(users.map(u => u.id === userId ? { ...u, is_admin: !currentAdmin } : u));
-      }
-    } catch (error) {
-      console.error('Failed to update user role:', error);
-    }
+    const { error } = await supabase.rpc('set_user_admin', { p_user: userId, p_admin: !currentAdmin });
+    if (error) { toast(error.message || 'Could not change admin rights', 'error'); return; }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: !currentAdmin } : u));
+    toast(currentAdmin ? 'Admin rights removed' : 'Admin rights granted', 'success');
   };
 
   return (

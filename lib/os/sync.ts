@@ -9,14 +9,14 @@ import type { Project } from './types';
 // project's rows. Events patch OS state arrays in place; only crew
 // changes (which need a profile join) trigger a targeted refetch.
 
-type PatchableKey = 'budget_items' | 'timeline_items' | 'scenes' | 'beats' | 'concept_assets' | 'campaigns';
+// Scenes and the media library are not here: the Studio keeps its own live,
+// script-scoped copies (lib/studio).
+type PatchableKey = 'budget_items' | 'timeline_items' | 'beats' | 'campaigns';
 
 const TABLE_TO_KEY: Record<string, PatchableKey> = {
   budget_items: 'budget_items',
   timeline_items: 'timeline_items',
-  scenes: 'scenes',
   project_beats: 'beats',
-  concept_assets: 'concept_assets',
   campaigns: 'campaigns',
 };
 
@@ -47,7 +47,6 @@ function applyRowEvent(key: PatchableKey, eventType: string, newRow: any, oldRow
       const i = rows.findIndex((r) => r.id === oldRow.id);
       if (i !== -1) rows.splice(i, 1);
     }
-    if (key === 'scenes') rows.sort((a, b) => (a.scene_number ?? 0) - (b.scene_number ?? 0));
     return { ...active, [key]: rows };
   });
 }

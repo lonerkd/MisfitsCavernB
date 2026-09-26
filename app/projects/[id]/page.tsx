@@ -186,7 +186,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
   const palette = ['#6366f1', '#d7340b', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} concept{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} reference{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
       {total > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -361,8 +361,8 @@ export default function ProjectHubPage() {
         supabase.from('project_tasks').select('completed').eq('project_id', id),
         supabase.from('budget_items').select('amount').eq('project_id', id),
         supabase.from('timeline_items').select('id', { count: 'exact', head: true }).eq('project_id', id),
-        supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id),
-        supabase.from('concept_assets').select('id', { count: 'exact', head: true }).eq('project_id', id),
+        supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('project_id', id).is('removed_at', null),
+        supabase.from('media').select('id', { count: 'exact', head: true }).eq('project_id', id),
         supabase.from('portfolio_projects').select('id', { count: 'exact', head: true }).eq('source_project_id', id),
       ]);
       if (!active) return;
@@ -588,7 +588,7 @@ export default function ProjectHubPage() {
               href="/studio"
               delay={0.1}
               stats={[
-                { label: 'Concepts', value: counts.concepts },
+                { label: 'References', value: counts.concepts },
                 { label: 'Scenes',   value: counts.scenes },
               ]}
               preview={<AssetPreview concepts={counts.concepts} scenes={counts.scenes} />}

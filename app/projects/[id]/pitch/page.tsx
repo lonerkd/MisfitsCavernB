@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
@@ -63,6 +62,7 @@ export default function PitchBoardPage() {
 
   const [tab, setTab] = useState<LibTab>('concept');
   const [concepts, setConcepts] = useState<{ id: string; title: string | null; image_url: string }[]>([]);
+  const [unpublishedUploads, setUnpublishedUploads] = useState(0);
   const [scenes, setScenes] = useState<{ id: string; scene_number: number | null; title: string | null; location: string | null; time_of_day: string | null }[]>([]);
   const [budget, setBudget] = useState<{ category: string; amount: number }[]>([]);
   const [crew, setCrew] = useState<{ user_id: string; username?: string; role: string; avatar_url?: string }[]>([]);
@@ -136,14 +136,20 @@ export default function PitchBoardPage() {
         }
 
         const [c, s, b, cr, scr] = await Promise.all([
-          supabase.from('concept_assets').select('id, title, image_url').eq('project_id', projectId).order('created_at'),
-          supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).order('scene_number'),
+          supabase.from('media').select('id, title, storage_path, external_url, shared').eq('project_id', projectId).eq('kind', 'image').order('created_at'),
+          supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).is('removed_at', null).order('scene_number'),
           supabase.from('budget_items').select('category, amount').eq('project_id', projectId).order('created_at'),
           getProjectCrew(projectId),
           supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false }).limit(1),
         ]);
         if (!alive) return;
-        setConcepts((c.data as any) || []);
+        // A public pitch board needs URLs that keep working: linked images as-is,
+        // uploads through the /m/<id> permalink — which serves only published ones.
+        setConcepts((c.data || []).flatMap((m) => {
+          const url = m.storage_path ? (m.shared ? `${window.location.origin}/m/${m.id}` : null) : m.external_url;
+          return url ? [{ id: m.id, title: m.title || null, image_url: url }] : [];
+        }));
+        setUnpublishedUploads((c.data || []).filter((m) => m.storage_path && !m.shared).length);
         setScenes((s.data as any) || []);
         setBudget(((b.data as any) || []).map((x: any) => ({ category: x.category, amount: Number(x.amount || 0) })));
         setCrew((cr || []).map((m: any) => ({ user_id: m.user_id, username: m.username, role: m.role, avatar_url: m.avatar_url })));
@@ -293,10 +299,11 @@ export default function PitchBoardPage() {
           </div>
 
           {tab === 'concept' && (
-            <LibList empty={concepts.length === 0 ? 'No concept art in Studio yet' : undefined}>
+            <LibList empty={concepts.length === 0 ? (unpublishedUploads ? `${unpublishedUploads} upload${unpublishedUploads === 1 ? '' : 's'} in the Studio library — include them in the share link (Studio → Share) to use them here` : 'No images in the Studio library yet') : undefined}>
               {concepts.map(c => (
                 <Chip key={c.id} accent={accent} onAdd={() => addBlock(addConcept(c))} onDragStart={() => onLibDragStart(addConcept(c))} onDragEnd={onLibDragEnd}>
-                  {c.image_url && <Image src={c.image_url} alt="" width={26} height={26} style={{ borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
+                  {c.image_url && <img src={c.image_url} alt="" width={26} height={26} referrerPolicy="no-referrer" style={{ borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
                   <span style={chipLabel}>{c.title || 'Untitled concept'}</span>
                 </Chip>
               ))}
@@ -496,7 +503,8 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
     case 'media':
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {block.image_url && <Image src={block.image_url} alt="" width={56} height={40} style={{ borderRadius: 6, objectFit: 'cover' }} />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
+          {block.image_url && <img src={block.image_url} alt="" width={56} height={40} referrerPolicy="no-referrer" style={{ borderRadius: 6, objectFit: 'cover' }} />}
           <div style={{ minWidth: 0 }}>
             {block.title && <div style={previewTitle}>{block.title}</div>}
             {block.meta?.url && <div style={{ ...previewBody, wordBreak: 'break-all' }}>{block.meta.url}</div>}
@@ -516,7 +524,8 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
     case 'crew':
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {block.image_url && <Image src={block.image_url} alt="" width={32} height={32} style={{ borderRadius: '50%', objectFit: 'cover' }} />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
+          {block.image_url && <img src={block.image_url} alt="" width={32} height={32} referrerPolicy="no-referrer" style={{ borderRadius: '50%', objectFit: 'cover' }} />}
           <div>
             <div style={previewTitle}>{block.title}</div>
             {block.body && <div style={previewBody}>{block.body}</div>}

@@ -11,7 +11,7 @@ import {
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
+import { saveScript, getAllScripts, getScript, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
@@ -19,7 +19,7 @@ import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/character
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine, LineType } from '@/types/screenplay';
+import type { ScriptLine, LineType, Scene as ParsedScene } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
@@ -40,6 +40,8 @@ import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCen
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
+import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
+import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { DiffModal } from '@/components/editor/DiffModal';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
@@ -49,7 +51,7 @@ import { WriteFooter } from '@/components/editor/WriteFooter';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
 
-import { awaitOSUser } from '@/lib/os';
+import { awaitOSUser, osState } from '@/lib/os';
 
 import {
   PRINT_COLORS, TEMPLATES, PLACEHOLDER, TRANSITIONS, ELEMENT_STATUS,
@@ -58,7 +60,7 @@ import {
 } from '@/components/editor/editorPageParts';
 
 export default function EditorPage() {
-  useOSGate();
+  const { user: sessionUser } = useOSGate();
   const { activeProject } = useProject();
   const { playUri } = useSpotify();
 
@@ -121,6 +123,7 @@ export default function EditorPage() {
   }, [currentScript?.id, reloadAnnotations]);
 
   const [lines, setLines] = useState<ScriptLine[]>([]);
+  const [parsedScenes, setParsedScenes] = useState<ParsedScene[]>([]);
   const [elements, setElements] = useState<Record<string, string[]>>({});
   const [scripts, setScripts] = useState<StoredScript[]>([]);
 
@@ -185,8 +188,6 @@ export default function EditorPage() {
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
   const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
-  const [sceneColors, setSceneColors] = useState<Record<string, string>>({});
-  const [sceneNotes, setSceneNotes] = useState<Record<string, string>>({});
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
@@ -241,10 +242,58 @@ export default function EditorPage() {
     }
   }, [activeProject?.id, toast]);
 
+  // Which script opens: ?script=<id> (links from the Studio) wins; otherwise
+  // the active project's script (the effect below); otherwise the writer's
+  // latest. Every path goes through getScript/getAllScripts, which prefer
+  // unsynced local edits over the server copy.
+  // Read synchronously so the project effect (which runs first) can't race it.
+  const linkedScriptId = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('script') : null);
+  const projectAtLink = useRef<string | null>(null);
+  const currentScriptRef = useRef<StoredScript | null>(null);
+  currentScriptRef.current = currentScript;
+
+  /** Open a project's most recent script (creating one if it has none). */
+  const openProjectScript = useCallback(async (project: { id: string; title: string; type?: string; settings?: { defaultScriptFormat?: string } }, isCancelled: () => boolean = () => false) => {
+    const { data } = await supabase
+      .from('scripts')
+      .select('id')
+      .eq('project_id', project.id)
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    let id = data?.[0]?.id;
+    if (!id) {
+      const uid = (await awaitOSUser())?.id;
+      const ins = await supabase
+        .from('scripts')
+        .insert({ project_id: project.id, title: project.title, content: '', format: project.settings?.defaultScriptFormat || getDefaultScriptFormat(project.type), status: 'draft', created_by: uid, last_edited_by: uid })
+        .select('id,title')
+        .single();
+      id = ins.data?.id;
+      if (ins.data && uid) logAuditAction(uid, 'script_created', 'script', ins.data.id, { title: ins.data.title, project_id: project.id });
+    }
+    if (isCancelled() || !id || currentScriptRef.current?.id === id) return false;
+    // getScript prefers unsynced local edits — never open a stale server copy.
+    const script = await getScript(id);
+    if (isCancelled() || !script) return false;
+    handleLoadScript(script);
+    return true;
+  }, [handleLoadScript]);
+
   useEffect(() => {
     const init = async () => {
       const all = await getAllScripts();
       setScripts(all);
+      const wanted = linkedScriptId.current;
+      if (wanted) {
+        const linked = await getScript(wanted);
+        if (linked) { handleLoadScript(linked); return; }
+        linkedScriptId.current = null;
+        toastRef.current('That script couldn’t be opened — it may have been deleted, or it isn’t shared with you.', 'error');
+        const project = osState().project.active;
+        if (project && (await openProjectScript(project))) return;
+      }
+      if (osState().project.active?.id) return; // the project effect below opens its script
+      if (currentScriptRef.current) return;
       if (all.length > 0) {
         const latest = all[0];
         setCurrentScript(latest);
@@ -267,40 +316,21 @@ export default function EditorPage() {
       }
     };
     init();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- run once on mount
 
   useEffect(() => {
     if (!activeProject?.id) return;
+    // A script opened by link stays open while the session's project loads;
+    // switching to a different project afterwards opens that project's script.
+    if (linkedScriptId.current) {
+      if (projectAtLink.current === null || projectAtLink.current === activeProject.id) { projectAtLink.current = activeProject.id; return; }
+      linkedScriptId.current = null;
+    }
+    if (currentScriptRef.current?.project_id === activeProject.id) return;
     let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from('scripts')
-          .select('id,title,content')
-          .eq('project_id', activeProject.id)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        let row = data?.[0];
-        if (!row) {
-          const auth = { user: await awaitOSUser() };
-          const uid = auth.user?.id;
-          const ins = await supabase
-            .from('scripts')
-            .insert({ project_id: activeProject.id, title: activeProject.title, content: '', format: activeProject.settings?.defaultScriptFormat || getDefaultScriptFormat(activeProject.type), status: 'draft', created_by: uid, last_edited_by: uid })
-            .select('id,title,content')
-            .single();
-          row = ins.data || undefined;
-          if (row && uid) logAuditAction(uid, 'script_created', 'script', row.id, { title: row.title, project_id: activeProject.id });
-        }
-        if (cancelled || !row) return;
-        if (currentScript?.id === row.id) return;
-        const now = new Date().toISOString();
-        handleLoadScript({ id: row.id, title: row.title || activeProject.title, content: row.content || '', createdAt: now, updatedAt: now, project_id: activeProject.id });
-        toast(`Editing “${activeProject.title}” screenplay`, 'info');
-      } catch (e) {
-        console.error('Failed to load project script:', e);
-      }
-    })();
+    openProjectScript(activeProject, () => cancelled)
+      .then((opened) => { if (opened) toast(`Editing “${activeProject.title}” screenplay`, 'info'); })
+      .catch((e) => console.error('Failed to load project script:', e));
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -386,11 +416,13 @@ export default function EditorPage() {
     if (content) {
       const result = parseScript(content);
       setLines(result.lines);
+      setParsedScenes(result.scenes);
       if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
       setLintIssues(validateScript(result.lines, content, result.scenes, result.characters));
     } else {
       setLines([]);
+      setParsedScenes([]);
       setElements({});
       setCharStats([]);
       setLintIssues([]);
@@ -844,31 +876,9 @@ export default function EditorPage() {
     }
   };
 
-  useEffect(() => {
-    if (!currentScript?.id) { setSceneColors({}); setSceneNotes({}); return; }
-    try { const raw = localStorage.getItem(`mc_scene_colors_${currentScript.id}`); setSceneColors(raw ? JSON.parse(raw) : {}); } catch { setSceneColors({}); }
-    try { const raw = localStorage.getItem(`mc_scene_notes_${currentScript.id}`); setSceneNotes(raw ? JSON.parse(raw) : {}); } catch { setSceneNotes({}); }
-  }, [currentScript?.id]);
-
-  const setSceneNote = (sceneText: string, note: string) => {
-    const key = sceneText.trim().toUpperCase();
-    setSceneNotes(prev => {
-      const next = { ...prev };
-      if (note.trim()) next[key] = note; else delete next[key];
-      if (currentScript?.id) { try { localStorage.setItem(`mc_scene_notes_${currentScript.id}`, JSON.stringify(next)); } catch {} }
-      return next;
-    });
-  };
-
-  const tagScene = (sceneText: string, color: string) => {
-    const key = sceneText.trim().toUpperCase();
-    setSceneColors(prev => {
-      const next = { ...prev };
-      if (next[key] === color) delete next[key]; else next[key] = color;
-      if (currentScript?.id) { try { localStorage.setItem(`mc_scene_colors_${currentScript.id}`, JSON.stringify(next)); } catch {} }
-      return next;
-    });
-  };
+  // Scene index, notes and colours (public.scenes for project scripts; this
+  // device for personal ones) — see components/editor/useEditorScenes.
+  const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
@@ -1093,18 +1103,18 @@ export default function EditorPage() {
 
           {activeView === 'board' && (
             <BoardView
-              scenesList={scenesList} lines={lines} sceneColors={sceneColors} sceneNotes={sceneNotes}
+              scenesList={scenesList} lines={lines} sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
               sceneWordCounts={sceneWordCounts} dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
               dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx} jumpToScene={jumpToScene}
-              setSceneNote={setSceneNote} reorderScenes={reorderScenes}
+              setSceneNote={sceneIndex.setNote} reorderScenes={reorderScenes}
             />
           )}
 
           {activeView === 'outline' && (
             <OutlineView
               sceneFilter={sceneFilter} setSceneFilter={setSceneFilter} filteredScenes={filteredScenes}
-              scenesList={scenesList} lines={lines} sceneColors={sceneColors} sceneNotes={sceneNotes}
-              jumpToScene={jumpToScene} tagScene={tagScene}
+              scenesList={scenesList} lines={lines} sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
+              jumpToScene={jumpToScene} tagScene={sceneIndex.tag}
             />
           )}
 
@@ -1152,6 +1162,20 @@ export default function EditorPage() {
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}
+                  referencesPanel={
+                    <SceneReferencesPanel
+                      projectId={currentScript?.project_id ?? null}
+                      userId={sessionUser?.id ?? null}
+                      sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
+                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+                      row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
+                      note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
+                      color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
+                      onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
+                      onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
+                      syncState={sceneIndex.sync.state}
+                    />
+                  }
                 />
               </EditorErrorBoundary>
             </motion.div>
