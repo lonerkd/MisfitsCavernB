@@ -34,7 +34,8 @@ export async function getNotificationPrefs(userId: string): Promise<Notification
 export async function saveNotificationPrefs(userId: string, patch: Partial<NotificationPrefs>) {
   const current = await getNotificationPrefs(userId);
   const next = { ...current, ...patch };
-  await supabase.from('profiles').update({ notification_prefs: next }).eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ notification_prefs: next }).eq('id', userId);
+  if (error) throw error;
   return next;
 }
 

@@ -114,3 +114,91 @@ describe('profile privacy', () => {
     expect((await cast.riley.client.rpc('admin_list_users')).error).not.toBeNull();
   });
 });
+
+describe('script access follows the project', () => {
+  it('a crew member removed from the project loses the scripts they wrote there', async () => {
+    const { projectId: pid } = await createCrewedProject(cast, 'Removal');
+    const { data: s, error } = await cast.jordan.client.from('scripts')
+      .insert({ title: 'Jordan draft', content: 'x', project_id: pid, created_by: cast.jordan.id, last_edited_by: cast.jordan.id })
+      .select('id').single();
+    expect(error).toBeNull();
+    await cast.sam.client.from('project_crew').delete().eq('project_id', pid).eq('user_id', cast.jordan.id);
+
+    expect((await cast.jordan.client.from('scripts').select('id').eq('id', s!.id)).data).toEqual([]);
+    const upd = await cast.jordan.client.from('scripts').update({ content: 'vandalised' }).eq('id', s!.id).select('id');
+    expect(upd.data ?? []).toEqual([]);
+    expect((await cast.sam.client.from('scripts').select('content').eq('id', s!.id).single()).data?.content).toBe('x');
+  });
+
+  it('nobody can add a script to a project they are not on', async () => {
+    const { error } = await cast.riley.client.from('scripts')
+      .insert({ title: 'Spam', content: '', project_id: projectId, created_by: cast.riley.id });
+    expect(error).not.toBeNull();
+  });
+
+  it('characters of a shared script are not editable by its readers', async () => {
+    const { data: s } = await cast.sam.client.from('scripts')
+      .insert({ title: 'Public read', content: 'x', created_by: cast.sam.id, shared: true }).select('id').single();
+    expect((await cast.riley.client.from('scripts').select('id').eq('id', s!.id)).data).toHaveLength(1);
+    const { error } = await cast.riley.client.from('script_characters').insert({ script_id: s!.id, name: 'INTRUDER' });
+    expect(error).not.toBeNull();
+    expect((await cast.sam.client.from('script_characters').insert({ script_id: s!.id, name: 'MARA' })).error).toBeNull();
+  });
+});
+
+describe('audit log', () => {
+  it('entries can only be written in your own name, and only admins read them', async () => {
+    const forged = await cast.riley.client.from('audit_logs').insert({ user_id: cast.sam.id, action: 'user_login', resource_type: 'auth' });
+    expect(forged.error).not.toBeNull();
+    expect((await cast.riley.client.from('audit_logs').insert({ user_id: cast.riley.id, action: 'user_login', resource_type: 'auth' })).error).toBeNull();
+    expect((await cast.riley.client.from('audit_logs').select('id')).data).toEqual([]);
+
+    await adminClient().from('profiles').update({ is_admin: true }).eq('id', cast.sam.id);
+    const { data, error } = await cast.sam.client.from('audit_logs').select('user_id').eq('user_id', cast.riley.id);
+    await adminClient().from('profiles').update({ is_admin: false }).eq('id', cast.sam.id);
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+  });
+});
+
+describe('messages', () => {
+  it('go to a person or to a channel you can post in — nowhere else', async () => {
+    const legacy = await cast.riley.client.from('messages').insert({ sender_id: cast.riley.id, content: 'hi', channel_id: 'general' });
+    expect(legacy.error).not.toBeNull();
+    const dm = await cast.riley.client.from('messages').insert({ sender_id: cast.riley.id, receiver_id: cast.sam.id, content: 'hi' });
+    expect(dm.error).toBeNull();
+  });
+
+  it('crew can react to each other’s channel messages; outsiders cannot', async () => {
+    const { error: cErr } = await cast.sam.client.from('channels').insert({ project_id: projectId, name: 'set-talk', created_by: cast.sam.id });
+    expect(cErr).toBeNull();
+    const { data: ch } = await cast.sam.client.from('channels').select('id').eq('project_id', projectId).eq('name', 'set-talk').single();
+    const { data: msg, error } = await cast.sam.client.from('messages')
+      .insert({ sender_id: cast.sam.id, content: 'Call time 6am', channel_uuid: ch!.id }).select('id').single();
+    expect(error).toBeNull();
+
+    const r = await cast.jordan.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: '👍' });
+    expect(r.error).toBeNull();
+    expect(r.data).toEqual({ '👍': [cast.jordan.id] });
+    expect((await cast.riley.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: '👍' })).error).not.toBeNull();
+  });
+});
+
+describe('SFX uploads', () => {
+  const audio = () => new Blob([new Uint8Array([0x49, 0x44, 0x33, 0x04])], { type: 'audio/mpeg' });
+
+  it('go into your own folder, audio only', async () => {
+    const bucket = cast.riley.client.storage.from('sfx_library');
+    expect((await bucket.upload(`${cast.riley.id}/door.mp3`, audio())).error).toBeNull();
+    expect((await bucket.upload(`${cast.sam.id}/door.mp3`, audio())).error).not.toBeNull();
+    expect((await bucket.upload(`door.mp3`, audio())).error).not.toBeNull();
+    expect((await bucket.upload(`${cast.riley.id}/page.html`, new Blob(['<script>'], { type: 'text/html' }))).error).not.toBeNull();
+    expect((await bucket.remove([`${cast.riley.id}/door.mp3`])).data).toHaveLength(1);
+  });
+
+  it('the unused public buckets take no uploads', async () => {
+    for (const b of ['assets', 'studio-assets', 'sfx-library']) {
+      expect((await cast.riley.client.storage.from(b).upload(`${cast.riley.id}/x.mp3`, audio())).error, b).not.toBeNull();
+    }
+  });
+});

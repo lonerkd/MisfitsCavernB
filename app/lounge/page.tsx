@@ -8,7 +8,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
+import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
@@ -46,7 +46,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('script_notes').select('note,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('script_annotations').select('type,text,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
       ]);
       if (!on) return;
       const merged = [
@@ -55,7 +55,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#6366f1' })),
         ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
         ...(ca.data || []).map((x: any) => ({ label: `Reference — ${x.title || 'untitled'}`, t: x.created_at, color: '#a855f7' })),
-        ...(sn.data || []).map((x: any) => ({ label: `Script Note — "${x.note}"`, t: x.created_at, color: '#ef4444' })),
+        ...(sn.data || []).map((x: any) => ({ label: `Script ${x.type} — "${x.text}"`, t: x.created_at, color: '#ef4444' })),
       ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
       setItems(merged);
     })();
@@ -703,7 +703,7 @@ export default function LoungePage() {
     try {
       const from = myProfile?.username || 'Someone';
       if (dmTarget) {
-        await sendMessage(currentUser.id, text, undefined, dmTarget.id);
+        await sendDirectMessage(currentUser.id, dmTarget.id, text);
         notify(dmTarget.id, {
           type: 'reply',
           title: `Direct message from ${from}`,

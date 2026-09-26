@@ -119,7 +119,10 @@ export default function SoundtrackPage() {
       if (!userData.user) throw new Error('Not authenticated');
       if (!activeProject?.id) throw new Error('Select an active project first');
 
-      const fileName = `${Date.now()}_${file.name}`;
+      if (!file.type.startsWith('audio/')) throw new Error('SFX must be an audio file');
+      if (file.size > 20 * 1024 * 1024) throw new Error('SFX files are limited to 20 MB');
+      // Uploads go in the uploader's own folder (storage policy).
+      const fileName = `${userData.user.id}/${Date.now()}_${file.name.replace(/[^\w.-]+/g, '_')}`;
       const { error: uploadError } = await supabase.storage.from('sfx_library').upload(fileName, file);
       if (uploadError) throw uploadError;
 

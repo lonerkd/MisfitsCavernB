@@ -1601,45 +1601,6 @@ export type Database = {
           },
         ];
       };
-      script_collaborators: {
-        Row: {
-          id: string;
-          joined_at: string | null;
-          permissions: string | null;
-          script_id: string;
-          user_id: string;
-        };
-        Insert: {
-          id?: string;
-          joined_at?: string | null;
-          permissions?: string | null;
-          script_id: string;
-          user_id: string;
-        };
-        Update: {
-          id?: string;
-          joined_at?: string | null;
-          permissions?: string | null;
-          script_id?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "script_collaborators_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "script_collaborators_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       script_metadata: {
         Row: {
           character_bible: NonNullable<Json>;
@@ -1667,57 +1628,6 @@ export type Database = {
             foreignKeyName: "script_metadata_script_id_fkey";
             columns: ["script_id"];
             isOneToOne: true;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      script_notes: {
-        Row: {
-          created_at: string;
-          id: string;
-          line_id: string | null;
-          note: string;
-          project_id: string | null;
-          script_id: string | null;
-          selected_text: string | null;
-          status: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          line_id?: string | null;
-          note: string;
-          project_id?: string | null;
-          script_id?: string | null;
-          selected_text?: string | null;
-          status?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          line_id?: string | null;
-          note?: string;
-          project_id?: string | null;
-          script_id?: string | null;
-          selected_text?: string | null;
-          status?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "script_notes_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "script_notes_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
             referencedRelation: "scripts";
             referencedColumns: ["id"];
           },
@@ -1761,48 +1671,6 @@ export type Database = {
           },
           {
             foreignKeyName: "script_revisions_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
-            referencedRelation: "scripts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      script_versions: {
-        Row: {
-          content: string;
-          created_at: string | null;
-          edited_by: string | null;
-          id: string;
-          script_id: string;
-          version: number;
-        };
-        Insert: {
-          content: string;
-          created_at?: string | null;
-          edited_by?: string | null;
-          id?: string;
-          script_id: string;
-          version: number;
-        };
-        Update: {
-          content?: string;
-          created_at?: string | null;
-          edited_by?: string | null;
-          id?: string;
-          script_id?: string;
-          version?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "script_versions_edited_by_fkey";
-            columns: ["edited_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "script_versions_script_id_fkey";
             columns: ["script_id"];
             isOneToOne: false;
             referencedRelation: "scripts";

@@ -16,6 +16,15 @@
 -- 6. Chat messages are live (messages was missing from the publication).
 -- 7. Dead tables/functions/views from abandoned features are dropped
 --    (all empty in production; guarded below).
+-- 8. Doors left open: script access outlived crew membership (anyone who
+--    had once saved a project script kept reading and writing it after being
+--    removed, or after the project went private) and anyone could add a
+--    script to any project; characters of a shared script were writable by
+--    every signed-in user; audit log entries could be written in anyone's
+--    name, and admins' own reads of them broke with (5); every signed-in
+--    user could upload anything to four public buckets.
+-- 9. Reactions on channel messages failed for everyone but the sender —
+--    and, through a NULL in the permission check, were open to everyone.
 
 -- ── 1. Private means private ───────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION internal.is_project_member(pid uuid)
@@ -54,14 +63,7 @@ DROP POLICY "Timeline members can view" ON public.timeline_items;
 CREATE POLICY "timeline_items access" ON public.timeline_items FOR ALL TO authenticated
   USING (internal.can_access_project(project_id)) WITH CHECK (internal.can_access_project(project_id));
 
-DROP POLICY "Script members can view" ON public.scripts;
-CREATE POLICY "Script members can view" ON public.scripts FOR SELECT TO authenticated
-  USING (
-    shared = true
-    OR created_by = (SELECT auth.uid())
-    OR last_edited_by = (SELECT auth.uid())
-    OR (project_id IS NOT NULL AND internal.can_access_project(project_id))
-  );
+-- (scripts: see section 8.)
 
 -- ── 2. Crew see each other ─────────────────────────────────────────────────
 DROP POLICY "Project crew viewable by project members" ON public.project_crew;
@@ -183,3 +185,149 @@ DROP FUNCTION public.update_user_presence(text, text, text, text);
 DROP FUNCTION public.clean_old_presences();
 DROP TABLE public.chat_messages, public.chat_channels, public.screenplay_collaborators, public.user_presence,
            public.scene_schedule, public.shoot_days, public.asset_comments;
+
+-- ── 8. Doors left open ─────────────────────────────────────────────────────
+-- A project script belongs to the project: access follows the project, not
+-- who created or last saved it. A personal script belongs to its author.
+CREATE OR REPLACE FUNCTION internal.can_access_script(sid uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select exists (
+    select 1 from public.scripts s
+    where s.id = sid and (
+      (s.project_id is null and s.created_by = (select auth.uid()))
+      or (s.project_id is not null and internal.can_access_project(s.project_id))
+    )
+  );
+$function$;
+
+DROP POLICY "Script members can view" ON public.scripts;
+DROP POLICY "Script editors can update" ON public.scripts;
+DROP POLICY "Authenticated users create scripts" ON public.scripts;
+DROP POLICY "Script owners can delete" ON public.scripts;
+CREATE POLICY "scripts view" ON public.scripts FOR SELECT TO authenticated
+  USING (
+    shared = true
+    OR (project_id IS NULL AND created_by = (SELECT auth.uid()))
+    OR (project_id IS NOT NULL AND internal.can_access_project(project_id))
+  );
+CREATE POLICY "scripts insert" ON public.scripts FOR INSERT TO authenticated
+  WITH CHECK (
+    created_by = (SELECT auth.uid())
+    AND (project_id IS NULL OR internal.can_access_project(project_id))
+  );
+CREATE POLICY "scripts update" ON public.scripts FOR UPDATE TO authenticated
+  USING (
+    (project_id IS NULL AND created_by = (SELECT auth.uid()))
+    OR (project_id IS NOT NULL AND internal.can_access_project(project_id))
+  )
+  WITH CHECK (
+    (project_id IS NULL AND created_by = (SELECT auth.uid()))
+    OR (project_id IS NOT NULL AND internal.can_access_project(project_id))
+  );
+CREATE POLICY "scripts delete" ON public.scripts FOR DELETE TO authenticated
+  USING (
+    (project_id IS NULL AND created_by = (SELECT auth.uid()))
+    OR (project_id IS NOT NULL AND (
+      internal.is_project_creator(project_id)
+      OR (created_by = (SELECT auth.uid()) AND internal.can_access_project(project_id))
+    ))
+  );
+
+DROP POLICY "Script members can manage characters" ON public.script_characters;
+CREATE POLICY "script_characters access" ON public.script_characters FOR ALL TO authenticated
+  USING (internal.can_access_script(script_id)) WITH CHECK (internal.can_access_script(script_id));
+
+DROP POLICY "Authenticated users can create audit logs" ON public.audit_logs;
+DROP POLICY "Admins can view audit logs" ON public.audit_logs;
+CREATE POLICY "audit_logs insert own" ON public.audit_logs FOR INSERT TO authenticated
+  WITH CHECK (user_id = (SELECT auth.uid()));
+CREATE POLICY "audit_logs admins read" ON public.audit_logs FOR SELECT TO authenticated
+  USING (internal.caller_is_admin());
+
+-- Messages are direct (to one person) or in a channel you may post in.
+DROP POLICY "Authenticated users send messages" ON public.messages;
+CREATE POLICY "messages send" ON public.messages FOR INSERT TO authenticated
+  WITH CHECK (
+    sender_id = (SELECT auth.uid())
+    AND (
+      (receiver_id IS NOT NULL AND channel_uuid IS NULL)
+      OR (receiver_id IS NULL AND channel_uuid IS NOT NULL AND public.can_post_channel(channel_uuid))
+    )
+  );
+
+DROP POLICY "SFX assets owner only insert" ON public.sfx_assets;
+CREATE POLICY "sfx_assets insert" ON public.sfx_assets FOR INSERT TO authenticated
+  WITH CHECK (user_id = (SELECT auth.uid()) AND (project_id IS NULL OR internal.can_access_project(project_id)));
+
+-- Storage: the SFX library takes audio only, into the uploader's own folder.
+-- The other public buckets are unused (and empty in production): no uploads.
+UPDATE storage.buckets SET file_size_limit = 20971520, allowed_mime_types = ARRAY['audio/*'] WHERE id = 'sfx_library';
+DROP POLICY "Allow authenticated uploads to sfx_library" ON storage.objects;
+CREATE POLICY "sfx_library: upload to own folder" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'sfx_library' AND (storage.foldername(name))[1] = (SELECT auth.uid())::text);
+CREATE POLICY "sfx_library: read own" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'sfx_library' AND owner_id = (SELECT auth.uid())::text);
+CREATE POLICY "sfx_library: delete own" ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'sfx_library' AND owner_id = (SELECT auth.uid())::text);
+DROP POLICY "Auth Users Upload" ON storage.objects;
+DROP POLICY "Users Delete Own Files" ON storage.objects;
+DROP POLICY "Authenticated users can upload" ON storage.objects;
+DROP POLICY "Users can delete their own assets" ON storage.objects;
+DROP POLICY "Public Access" ON storage.objects;
+DROP POLICY "SFX files insertable by authenticated users" ON storage.objects;
+DROP POLICY "SFX files viewable by everyone" ON storage.objects;
+
+-- Unused and empty: script_notes (open to every signed-in user),
+-- script_versions and script_collaborators (nothing reads or writes them).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.script_notes) OR EXISTS (SELECT 1 FROM public.script_versions)
+     OR EXISTS (SELECT 1 FROM public.script_collaborators) THEN
+    RAISE EXCEPTION 'Refusing to drop script tables that hold rows — check before dropping.';
+  END IF;
+END $$;
+DROP TABLE public.script_notes, public.script_versions, public.script_collaborators;
+
+-- ── 9. Reactions ───────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.toggle_message_reaction(p_message uuid, p_emoji text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  uid text := auth.uid()::text;
+  r jsonb;
+  arr jsonb;
+  m record;
+begin
+  if uid is null then raise exception 'not authenticated'; end if;
+  if p_emoji is null or char_length(p_emoji) not between 1 and 16 then raise exception 'invalid reaction'; end if;
+  select id, channel_uuid, sender_id, receiver_id, reactions into m from messages where id = p_message;
+  if not found then raise exception 'message not found'; end if;
+  -- Only messages the caller can see: their DMs, or a channel they can view.
+  -- (IS NOT TRUE: receiver_id is null on channel messages, and NOT NULL
+  -- would let everyone through.)
+  if (m.sender_id::text = uid or m.receiver_id::text = uid
+      or (m.channel_uuid is not null and internal.can_view_channel(m.channel_uuid))) is not true then
+    raise exception 'not permitted';
+  end if;
+
+  r := coalesce(m.reactions, '{}'::jsonb);
+  arr := coalesce(r -> p_emoji, '[]'::jsonb);
+  if arr @> to_jsonb(uid) then
+    arr := (select coalesce(jsonb_agg(to_jsonb(e)), '[]'::jsonb) from jsonb_array_elements_text(arr) e where e <> uid);
+    if jsonb_array_length(arr) = 0 then r := r - p_emoji; else r := jsonb_set(r, array[p_emoji], arr); end if;
+  else
+    arr := arr || to_jsonb(uid);
+    r := jsonb_set(r, array[p_emoji], arr, true);
+  end if;
+
+  update messages set reactions = r where id = p_message;
+  return r;
+end;
+$function$;

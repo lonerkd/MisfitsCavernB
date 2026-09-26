@@ -1,7 +1,7 @@
 bucket assets public=true limit=- mime=-
 bucket project-media public=false limit=52428800 mime={image/*,video/*,audio/*,application/pdf}
 bucket sfx-library public=true limit=- mime=-
-bucket sfx_library public=true limit=- mime=-
+bucket sfx_library public=true limit=20971520 mime={audio/*}
 bucket studio-assets public=true limit=- mime=-
 column activity_feed.action text not null
 column activity_feed.created_at timestamp with time zone default now()
@@ -295,25 +295,11 @@ column script_characters.relationships text
 column script_characters.script_id uuid not null
 column script_characters.updated_at timestamp with time zone default now()
 column script_characters.updated_by uuid
-column script_collaborators.id uuid default uuid_generate_v4() not null
-column script_collaborators.joined_at timestamp with time zone default now()
-column script_collaborators.permissions text default 'view'::text
-column script_collaborators.script_id uuid not null
-column script_collaborators.user_id uuid not null
 column script_metadata.character_bible jsonb default '[]'::jsonb not null
 column script_metadata.script_id uuid not null
 column script_metadata.title_page jsonb default '{}'::jsonb not null
 column script_metadata.updated_at timestamp with time zone default now() not null
 column script_metadata.updated_by uuid
-column script_notes.created_at timestamp with time zone default timezone('utc'::text, now()) not null
-column script_notes.id uuid default gen_random_uuid() not null
-column script_notes.line_id text
-column script_notes.note text not null
-column script_notes.project_id uuid
-column script_notes.script_id uuid
-column script_notes.selected_text text
-column script_notes.status text default 'open'::text
-column script_notes.user_id uuid
 column script_revisions.color_index integer default 0 not null
 column script_revisions.created_at timestamp with time zone default now()
 column script_revisions.created_by uuid
@@ -321,12 +307,6 @@ column script_revisions.id uuid default uuid_generate_v4() not null
 column script_revisions.label text not null
 column script_revisions.script_id uuid not null
 column script_revisions.snapshot text default ''::text not null
-column script_versions.content text not null
-column script_versions.created_at timestamp with time zone default now()
-column script_versions.edited_by uuid
-column script_versions.id uuid default uuid_generate_v4() not null
-column script_versions.script_id uuid not null
-column script_versions.version integer not null
 column scripts.content text default ''::text
 column scripts.created_at timestamp with time zone default now()
 column scripts.created_by uuid
@@ -536,24 +516,12 @@ constraint script_characters.script_characters_pkey PRIMARY KEY (id)
 constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_characters.script_characters_script_id_name_key UNIQUE (script_id, name)
 constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
-constraint script_collaborators.script_collaborators_permissions_check CHECK ((permissions = ANY (ARRAY['view'::text, 'comment'::text, 'edit'::text])))
-constraint script_collaborators.script_collaborators_pkey PRIMARY KEY (id)
-constraint script_collaborators.script_collaborators_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
-constraint script_collaborators.script_collaborators_script_id_user_id_key UNIQUE (script_id, user_id)
-constraint script_collaborators.script_collaborators_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint script_metadata.script_metadata_pkey PRIMARY KEY (script_id)
 constraint script_metadata.script_metadata_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
-constraint script_notes.script_notes_pkey PRIMARY KEY (id)
-constraint script_notes.script_notes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-constraint script_notes.script_notes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
-constraint script_notes.script_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint script_revisions.script_revisions_pkey PRIMARY KEY (id)
 constraint script_revisions.script_revisions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
-constraint script_versions.script_versions_edited_by_fkey FOREIGN KEY (edited_by) REFERENCES profiles(id)
-constraint script_versions.script_versions_pkey PRIMARY KEY (id)
-constraint script_versions.script_versions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
 constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id)
@@ -586,7 +554,7 @@ event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
-function internal.can_access_script(sid uuid) body=3a0642113cf58675a47823de93072763
+function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
 function internal.can_view_channel(cid uuid) body=77b1106f662af404bb454df94955e3f2
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
@@ -609,7 +577,7 @@ function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=f17cf0815fab6fec6c97d226bebd2d01
-function public.toggle_message_reaction(p_message uuid, p_emoji text) body=1058ca6cb1756882a87ec3d0f3007311
+function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160ef64976bfa777db1932a6756003
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
@@ -684,12 +652,9 @@ index CREATE INDEX idx_scenes_project ON public.scenes USING btree (project_id)
 index CREATE INDEX idx_script_annotations_script ON public.script_annotations USING btree (script_id)
 index CREATE INDEX idx_script_characters_script ON public.script_characters USING btree (script_id)
 index CREATE INDEX idx_script_characters_updated_by ON public.script_characters USING btree (updated_by)
-index CREATE INDEX idx_script_collaborators_user_id ON public.script_collaborators USING btree (user_id)
 index CREATE INDEX idx_script_metadata_updated_by ON public.script_metadata USING btree (updated_by)
 index CREATE INDEX idx_script_revisions_created_by ON public.script_revisions USING btree (created_by)
 index CREATE INDEX idx_script_revisions_script ON public.script_revisions USING btree (script_id, created_at)
-index CREATE INDEX idx_script_versions_edited_by ON public.script_versions USING btree (edited_by)
-index CREATE INDEX idx_script_versions_script_id ON public.script_versions USING btree (script_id)
 index CREATE INDEX idx_scripts_created_by ON public.scripts USING btree (created_by)
 index CREATE INDEX idx_scripts_last_edited_by ON public.scripts USING btree (last_edited_by)
 index CREATE INDEX idx_scripts_project ON public.scripts USING btree (project_id)
@@ -752,12 +717,8 @@ index CREATE UNIQUE INDEX scenes_pkey ON public.scenes USING btree (id)
 index CREATE UNIQUE INDEX script_annotations_pkey ON public.script_annotations USING btree (id)
 index CREATE UNIQUE INDEX script_characters_pkey ON public.script_characters USING btree (id)
 index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_characters USING btree (script_id, name)
-index CREATE UNIQUE INDEX script_collaborators_pkey ON public.script_collaborators USING btree (id)
-index CREATE UNIQUE INDEX script_collaborators_script_id_user_id_key ON public.script_collaborators USING btree (script_id, user_id)
 index CREATE UNIQUE INDEX script_metadata_pkey ON public.script_metadata USING btree (script_id)
-index CREATE UNIQUE INDEX script_notes_pkey ON public.script_notes USING btree (id)
 index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING btree (id)
-index CREATE UNIQUE INDEX script_versions_pkey ON public.script_versions USING btree (id)
 index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
 index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
 index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
@@ -768,8 +729,8 @@ index CREATE UNIQUE INDEX studio_boards_pkey ON public.studio_boards USING btree
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
 policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
 policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
-policy public.audit_logs "Admins can view audit logs" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM profiles WHERE ((profiles.id = ( SELECT auth.uid() AS uid)) AND (profiles.is_admin = true)))) check -
-policy public.audit_logs "Authenticated users can create audit logs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) IS NOT NULL)
+policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
+policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheet_calls "Call sheet calls viewable by project creator or crew" PERMISSIVE SELECT to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check -
 policy public.call_sheet_calls "Call sheet calls writable by project creator or crew" PERMISSIVE ALL to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id))))
@@ -801,8 +762,8 @@ policy public.media "media delete" PERMISSIVE DELETE to authenticated using (int
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.media "media update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.media "media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
-policy public.messages "Authenticated users send messages" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (sender_id = ( SELECT auth.uid() AS uid)) AND ((receiver_id IS NOT NULL) OR ((channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid)) OR ((channel_uuid IS NULL) AND (channel_id IS NOT NULL))))
 policy public.messages "Channel messages readable" PERMISSIVE SELECT to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR (receiver_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND internal.can_view_channel(channel_uuid)) OR ((channel_uuid IS NULL) AND (channel_id IS NOT NULL))) check -
+policy public.messages "messages send" PERMISSIVE INSERT to authenticated using - check ((sender_id = ( SELECT auth.uid() AS uid)) AND (((receiver_id IS NOT NULL) AND (channel_uuid IS NULL)) OR ((receiver_id IS NULL) AND (channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid))))
 policy public.notifications "Users can delete their own notifications" PERMISSIVE DELETE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
@@ -841,26 +802,19 @@ policy public.scenes "scenes view" PERMISSIVE SELECT to authenticated using inte
 policy public.script_annotations "script_annotations delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = auth.uid()))
 policy public.script_annotations "script_annotations view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.script_characters "Script members can manage characters" PERMISSIVE ALL to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE ((scripts.project_id IS NULL) OR (scripts.project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid))))))) check -
-policy public.script_collaborators "Script collaborators viewable by participants" PERMISSIVE SELECT to authenticated using ((script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)))) OR (user_id = ( SELECT auth.uid() AS uid))) check -
-policy public.script_collaborators "Script owners can manage collaborators" PERMISSIVE INSERT to authenticated using - check (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid))))
-policy public.script_collaborators "Script owners can remove collaborators" PERMISSIVE DELETE to authenticated using ((script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)))) OR (user_id = ( SELECT auth.uid() AS uid))) check -
-policy public.script_collaborators "Script owners can update collaborators" PERMISSIVE UPDATE to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)))) check -
+policy public.script_characters "script_characters access" PERMISSIVE ALL to authenticated using internal.can_access_script(script_id) check internal.can_access_script(script_id)
 policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
 policy public.script_metadata "metadata writable by script members" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
-policy public.script_notes "Allow auth" PERMISSIVE ALL to public using (auth.role() = 'authenticated'::text) check -
 policy public.script_revisions "Script members can manage revisions" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
-policy public.script_versions "Script editors can create versions" PERMISSIVE INSERT to authenticated using - check (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)) UNION SELECT script_collaborators.script_id FROM script_collaborators WHERE ((script_collaborators.user_id = ( SELECT auth.uid() AS uid)) AND (script_collaborators.permissions = 'edit'::text))))
-policy public.script_versions "Script version viewable by script access" PERMISSIVE SELECT to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE ((scripts.created_by = ( SELECT auth.uid() AS uid)) OR (scripts.shared = true)) UNION SELECT script_collaborators.script_id FROM script_collaborators WHERE (script_collaborators.user_id = ( SELECT auth.uid() AS uid)))) check -
-policy public.scripts "Authenticated users create scripts" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)))
-policy public.scripts "Script editors can update" PERMISSIVE UPDATE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR (last_edited_by = ( SELECT auth.uid() AS uid)) OR ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))) check -
-policy public.scripts "Script members can view" PERMISSIVE SELECT to authenticated using ((shared = true) OR (created_by = ( SELECT auth.uid() AS uid)) OR (last_edited_by = ( SELECT auth.uid() AS uid)) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check -
-policy public.scripts "Script owners can delete" PERMISSIVE DELETE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
 policy public.scripts "Shared scripts publicly viewable" PERMISSIVE SELECT to anon using (shared = true) check -
+policy public.scripts "scripts delete" PERMISSIVE DELETE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))))) check -
+policy public.scripts "scripts insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
+policy public.scripts "scripts update" PERMISSIVE UPDATE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id)))
+policy public.scripts "scripts view" PERMISSIVE SELECT to authenticated using ((shared = true) OR ((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check -
 policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to public using (user_id = auth.uid()) check -
-policy public.sfx_assets "SFX assets owner only insert" PERMISSIVE INSERT to public using - check (user_id = auth.uid())
 policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
 policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
+policy public.sfx_assets "sfx_assets insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
 policy public.shots "Shots viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.shots "Shots writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
 policy public.spotify_connections "Users can delete own spotify connection" PERMISSIVE DELETE to public using (auth.uid() = user_id) check -
@@ -870,18 +824,13 @@ policy public.spotify_connections "Users can view own spotify connection" PERMIS
 policy public.studio_assets "Studio assets owner only" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.studio_boards "Studio boards owner only" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy storage.objects "Allow authenticated uploads to sfx_library" PERMISSIVE INSERT to public using - check ((bucket_id = 'sfx_library'::text) AND (auth.role() = 'authenticated'::text))
-policy storage.objects "Auth Users Upload" PERMISSIVE INSERT to public using - check ((bucket_id = 'assets'::text) AND (auth.role() = 'authenticated'::text))
-policy storage.objects "Authenticated users can upload" PERMISSIVE INSERT to public using - check ((bucket_id = 'studio-assets'::text) AND (auth.role() = 'authenticated'::text))
-policy storage.objects "Public Access" PERMISSIVE SELECT to public using (bucket_id = 'studio-assets'::text) check -
-policy storage.objects "SFX files insertable by authenticated users" PERMISSIVE INSERT to public using - check ((bucket_id = 'sfx-library'::text) AND (auth.role() = 'authenticated'::text))
-policy storage.objects "SFX files viewable by everyone" PERMISSIVE SELECT to public using (bucket_id = 'sfx-library'::text) check -
-policy storage.objects "Users Delete Own Files" PERMISSIVE DELETE to public using ((bucket_id = 'assets'::text) AND (auth.uid() = owner)) check -
-policy storage.objects "Users can delete their own assets" PERMISSIVE DELETE to public using ((bucket_id = 'studio-assets'::text) AND (auth.uid() = owner)) check -
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
 policy storage.objects "project-media: shared read" PERMISSIVE SELECT to anon,authenticated using ((bucket_id = 'project-media'::text) AND internal.is_shared_media_object(name)) check -
 policy storage.objects "project-media: uploader or owner deletes" PERMISSIVE DELETE to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)) AND ((owner_id = (( SELECT auth.uid() AS uid))::text) OR internal.is_project_creator(internal.path_project_id(name)))) check -
+policy storage.objects "sfx_library: delete own" PERMISSIVE DELETE to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
+policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
+policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))
 realtime public.activity_feed
 realtime public.budget_items
 realtime public.campaigns
@@ -924,11 +873,8 @@ rls scene_media enabled=true forced=false
 rls scenes enabled=true forced=false
 rls script_annotations enabled=true forced=false
 rls script_characters enabled=true forced=false
-rls script_collaborators enabled=true forced=false
 rls script_metadata enabled=true forced=false
-rls script_notes enabled=true forced=false
 rls script_revisions enabled=true forced=false
-rls script_versions enabled=true forced=false
 rls scripts enabled=true forced=false
 rls sfx_assets enabled=true forced=false
 rls shots enabled=true forced=false
