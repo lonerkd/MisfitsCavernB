@@ -4,17 +4,20 @@
 Misfits Cavern is powered by a relational PostgreSQL database hosted on Supabase. Row-Level Security (RLS) is enabled on every single table to enforce strict user boundaries.
 
 ### Core Tables & Relationships
-- **`profiles`**: Linked directly to Supabase Auth (`auth.users`). Auto-created on user signup via a trigger on `auth.users`. Holds username, bio, location, notification preferences, and admin roles.
+- **`profiles`**: Linked directly to Supabase Auth (`auth.users`). Auto-created on user signup via a trigger on `auth.users`. Holds username, bio, location, notification preferences, and admin roles. **Column-restricted:** anon/authenticated may only select the public columns (`PUBLIC_PROFILE_COLUMNS` in `lib/supabase/profile-columns.ts`); `select('*')` fails. The owner reads `is_admin`, `notification_prefs`, `discord_id` through `get_my_account()`; admins list users through `admin_list_users()`; admin rights change only through `set_user_admin()` (trigger `profiles_guard`).
 - **`projects`**: Created by profile owners (`creator_id`). Represents the workspace bounding box for all scripts, boards, and crew mappings.
 - **`project_crew`**: Junction table mapping `profiles` to `projects` with specific roles and status ('pending', 'confirmed', 'declined').
-- **`scripts`**: Stores the Fountain screenplay content, linked to a project (optional) and creator. Features a `share_token` for public viewing.
+- **`scripts`**: Stores the Fountain screenplay content, linked to a project (optional) and creator. A project script belongs to the project: access follows `can_access_project` (not who created or last saved it). A personal script (`project_id` null) belongs to its `created_by`. `shared = true` makes it readable by anyone.
 - **`script_metadata`**: Houses `title_page` JSONB and `character_bible` JSONB, preventing co-writers from overriding offline states.
 - **`script_characters`**: Represents distinct characters in the story, mapping script character sheets to casting look-boards.
 - **`channels` & `channel_members`**: Drives the Lounge communications, dividing project channels (Discord-style text/voice rooms) and community channels.
-- **`messages`**: Multi-use chat logs (supporting threads via `parent_message_id` and reactions via a secured JSONB column).
+- **`messages`**: Direct messages (`receiver_id`) or channel messages (`channel_uuid`, posting gated by `can_post_channel`); threads via `parent_message_id`; reactions only through `toggle_message_reaction`. The legacy text `channel_id` is unused.
+- **`notifications`**: `created_by` is recorded (defaults to the caller, can't be spoofed); you may notify only people you share a project, job, DM or channel with (`internal.can_notify`); `link` must be a site-relative path.
+- **`audit_logs`**: Written in your own name only; read by admins (`internal.caller_is_admin()`).
 - **`media`**: The project library — every reference photo, clip, track, PDF and link. Files live in the private `project-media` bucket at `<project_id>/<media_id>/<file>`; links use `external_url` (exactly one of the two). `shared` = included in the share link (owner-only, enforced by the `media_guard` trigger). Source and author are immutable.
 - **`scenes`**: One row per scene heading of a script (`script_id`), kept in step with the text by `sync_script_scenes` (see `lib/studio/scene-sync.ts`). Ids survive rewrites; removed scenes are soft-deleted (`removed_at`) so their links come back if the heading does. Script-derived fields (heading, location, time of day, cast, length, elements) are written only by the sync; people set `note`, `color`, `shoot_day`, `status`.
 - **`scene_media` / `character_media`**: Links from scenes / `script_characters` to `media`. Composite foreign keys pin both ends to the same project.
+- **Storage buckets**: `project-media` (private, project library). `sfx_library` (public read; audio ≤ 20 MB, uploads only into `<your user id>/…`). `assets`, `studio-assets`, `sfx-library` are legacy and take no uploads.
 - **`studio_boards` & `studio_assets`**: Legacy, unused by the app since the Studio rebuild (2 orphaned rows in production, no project). To be dropped once confirmed.
 - **`shots`**: Shot list per scene.
 - **`activity_feed`**: Project activity. Entries carry `metadata.project_id`; readable by the author and by people with access to that project only.
@@ -37,8 +40,10 @@ can easily trigger an infinite recursion loop (Postgres Error `42P17: infinite r
 We use `SECURITY DEFINER` helper functions defined inside the `internal` schema (which bypasses RLS on execution for the targeted tables, but executes under strict system constraints):
 1. **`internal.is_project_creator(pid uuid)`**: Returns true if `auth.uid()` matches the project's creator.
 2. **`internal.is_project_member(pid uuid)`**: Returns true if `auth.uid()` matches a confirmed member in `project_crew` for that project.
-3. **`internal.can_access_script(sid uuid)`**: Checks if the user is the script owner, collaborator, or part of the parent project.
-4. **`internal.can_access_project(pid uuid)`**: Owner, or crew *unless the project is private* — the same rule as the `projects` row policy. Use it for every new project-scoped table (media, scenes, links, activity do). Older tables still use `is_project_creator OR is_project_member`, which ignores `private`; migrate them when touched.
+3. **`internal.can_access_script(sid uuid)`**: Personal script → its author; project script → `can_access_project` of its project.
+4. **`internal.can_access_project(pid uuid)`**: Owner, or crew *unless the project is private* — the same rule as the `projects` row policy. Use it for every project-scoped table. (`is_project_member` also answers false for private projects since `20260926030000`, so older `is_project_creator OR is_project_member` policies are equivalent.)
+
+**NULL gotcha in PL/pgSQL checks:** `if not (a or b) then raise` does *not* raise when the expression is NULL (e.g. a null `receiver_id`). Write permission checks as `if (…) is not true then raise`.
 
 **Gotcha:** policies store function OIDs, so they can call `internal.*` without schema USAGE. PL/pgSQL resolves names at run time, so an invoker-rights plpgsql function or trigger that calls `internal.*` fails with `permission denied for schema internal`. Make such triggers `SECURITY DEFINER` (as `internal.media_guard`), or express the check through RLS (as `sync_script_scenes` does with a `projects` lookup).
 
