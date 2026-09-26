@@ -77,3 +77,25 @@ describe('margin notes route to real work', () => {
     expect(error).not.toBeNull();
   });
 });
+
+describe('the editor stash', () => {
+  it('is shared with the project team and hidden from everyone else', async () => {
+    const { data, error } = await cast.jordan.client.from('script_stash').insert({ script_id: scriptId, text: 'Alt line: "Who’s there?"' }).select('id, created_by').single();
+    expect(error).toBeNull();
+    expect(data!.created_by).toBe(cast.jordan.id);
+    expect((await cast.sam.client.from('script_stash').select('text').eq('script_id', scriptId)).data).toEqual([{ text: 'Alt line: "Who’s there?"' }]);
+    expect((await cast.riley.client.from('script_stash').select('id').eq('script_id', scriptId)).data).toEqual([]);
+    expect((await cast.riley.client.from('script_stash').insert({ script_id: scriptId, text: 'x' })).error).not.toBeNull();
+  });
+
+  it('cannot be written in someone else’s name', async () => {
+    const { error } = await cast.jordan.client.from('script_stash').insert({ script_id: scriptId, text: 'x', created_by: cast.sam.id });
+    expect(error).not.toBeNull();
+  });
+
+  it('on a personal script, belongs to its author alone', async () => {
+    const { data: s } = await cast.sam.client.from('scripts').insert({ title: 'Solo', content: '', created_by: cast.sam.id }).select('id').single();
+    expect((await cast.sam.client.from('script_stash').insert({ script_id: s!.id, text: 'mine' })).error).toBeNull();
+    expect((await cast.jordan.client.from('script_stash').select('id').eq('script_id', s!.id)).data).toEqual([]);
+  });
+});

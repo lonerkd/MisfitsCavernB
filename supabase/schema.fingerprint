@@ -309,6 +309,11 @@ column script_revisions.id uuid default uuid_generate_v4() not null
 column script_revisions.label text not null
 column script_revisions.script_id uuid not null
 column script_revisions.snapshot text default ''::text not null
+column script_stash.created_at timestamp with time zone default now() not null
+column script_stash.created_by uuid default auth.uid()
+column script_stash.id uuid default gen_random_uuid() not null
+column script_stash.script_id uuid not null
+column script_stash.text text not null
 column scripts.content text default ''::text
 column scripts.created_at timestamp with time zone default now()
 column scripts.created_by uuid
@@ -321,7 +326,6 @@ column scripts.project_id uuid
 column scripts.share_token text default encode(gen_random_bytes(16), 'hex'::text)
 column scripts.shared boolean default false
 column scripts.sprint_minutes integer default 15
-column scripts.stash_items jsonb default '[]'::jsonb
 column scripts.status text default 'draft'::text
 column scripts.title text not null
 column scripts.title_page jsonb default '{}'::jsonb
@@ -526,6 +530,10 @@ constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_
 constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint script_revisions.script_revisions_pkey PRIMARY KEY (id)
 constraint script_revisions.script_revisions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_stash.script_stash_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint script_stash.script_stash_pkey PRIMARY KEY (id)
+constraint script_stash.script_stash_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_stash.script_stash_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 20000)))
 constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
 constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id)
@@ -683,6 +691,8 @@ index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
+index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
+index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
@@ -727,6 +737,7 @@ index CREATE UNIQUE INDEX script_characters_pkey ON public.script_characters USI
 index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_characters USING btree (script_id, name)
 index CREATE UNIQUE INDEX script_metadata_pkey ON public.script_metadata USING btree (script_id)
 index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING btree (id)
+index CREATE UNIQUE INDEX script_stash_pkey ON public.script_stash USING btree (id)
 index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
 index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
 index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
@@ -814,6 +825,9 @@ policy public.script_characters "script_characters access" PERMISSIVE ALL to aut
 policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
 policy public.script_metadata "metadata writable by script members" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
 policy public.script_revisions "Script members can manage revisions" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_stash "script_stash delete" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
+policy public.script_stash "script_stash insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_script(script_id))
+policy public.script_stash "script_stash view" PERMISSIVE SELECT to authenticated using internal.can_access_script(script_id) check -
 policy public.scripts "Shared scripts publicly viewable" PERMISSIVE SELECT to anon using (shared = true) check -
 policy public.scripts "scripts delete" PERMISSIVE DELETE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))))) check -
 policy public.scripts "scripts insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
@@ -850,6 +864,7 @@ realtime public.project_crew
 realtime public.projects
 realtime public.scene_media
 realtime public.scenes
+realtime public.script_stash
 realtime public.shots
 realtime public.timeline_items
 rls activity_feed enabled=true forced=false
@@ -883,6 +898,7 @@ rls script_annotations enabled=true forced=false
 rls script_characters enabled=true forced=false
 rls script_metadata enabled=true forced=false
 rls script_revisions enabled=true forced=false
+rls script_stash enabled=true forced=false
 rls scripts enabled=true forced=false
 rls sfx_assets enabled=true forced=false
 rls shots enabled=true forced=false

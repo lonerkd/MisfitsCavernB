@@ -1684,6 +1684,45 @@ export type Database = {
           },
         ];
       };
+      script_stash: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          script_id: string;
+          text: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          script_id: string;
+          text: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          script_id?: string;
+          text?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "script_stash_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "script_stash_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       scripts: {
         Row: {
           content: string | null;
@@ -1698,7 +1737,6 @@ export type Database = {
           share_token: string | null;
           shared: boolean | null;
           sprint_minutes: number | null;
-          stash_items: Json | null;
           status: string | null;
           title: string;
           title_page: Json | null;
@@ -1718,7 +1756,6 @@ export type Database = {
           share_token?: string | null;
           shared?: boolean | null;
           sprint_minutes?: number | null;
-          stash_items?: Json | null;
           status?: string | null;
           title: string;
           title_page?: Json | null;
@@ -1738,7 +1775,6 @@ export type Database = {
           share_token?: string | null;
           shared?: boolean | null;
           sprint_minutes?: number | null;
-          stash_items?: Json | null;
           status?: string | null;
           title?: string;
           title_page?: Json | null;

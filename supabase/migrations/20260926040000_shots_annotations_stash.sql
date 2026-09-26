@@ -4,7 +4,8 @@
 -- Call Sheet" but went nowhere: annotations were only dots on the page and
 -- nothing read the shots table. Now a Shot, Beat or To-do annotation creates
 -- the shot (on that scene), the beat or the project task in the same
--- transaction, and remembers what it created.
+-- transaction, and remembers what it created. The editor stash is
+-- persisted too (script_stash).
 
 -- ── Shots ──────────────────────────────────────────────────────────────────
 -- A shot's scene must belong to the shot's project.
@@ -98,3 +99,34 @@ end;
 $function$;
 REVOKE ALL ON FUNCTION public.add_script_annotation(uuid, integer, text, text, integer, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.add_script_annotation(uuid, integer, text, text, integer, text) TO authenticated, service_role;
+
+-- ── The editor stash ───────────────────────────────────────────────────────
+-- Snippets, alt lines and cut scenes kept beside a script. It lived only in
+-- memory (lost on reload); scripts.stash_items was never written. Its own
+-- table, so stashing never touches the script row (whose updated_at the
+-- editor uses to tell whose text is newer), and collaborators share it live.
+CREATE TABLE public.script_stash (
+  id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+  script_id uuid NOT NULL REFERENCES public.scripts(id) ON DELETE CASCADE,
+  text text NOT NULL CONSTRAINT script_stash_text_len CHECK (char_length(text) BETWEEN 1 AND 20000),
+  created_by uuid DEFAULT auth.uid() REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at);
+CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by);
+ALTER TABLE public.script_stash ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "script_stash view" ON public.script_stash FOR SELECT TO authenticated
+  USING (internal.can_access_script(script_id));
+CREATE POLICY "script_stash insert" ON public.script_stash FOR INSERT TO authenticated
+  WITH CHECK (created_by = (SELECT auth.uid()) AND internal.can_access_script(script_id));
+CREATE POLICY "script_stash delete" ON public.script_stash FOR DELETE TO authenticated
+  USING (internal.can_access_script(script_id));
+ALTER PUBLICATION supabase_realtime ADD TABLE public.script_stash;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.scripts WHERE stash_items IS NOT NULL AND stash_items <> '[]'::jsonb) THEN
+    RAISE EXCEPTION 'scripts.stash_items holds data — migrate it before dropping.';
+  END IF;
+END $$;
+ALTER TABLE public.scripts DROP COLUMN stash_items;

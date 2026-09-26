@@ -22,6 +22,7 @@ import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type Chara
 import type { ScriptLine, LineType, Scene as ParsedScene } from '@/types/screenplay';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
+import { useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/context/SpotifyContext';
@@ -100,6 +101,7 @@ export default function EditorPage() {
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+  const stash = useScriptStash(currentScript?.id ?? null);
   useEffect(() => {
     if (currentScript?.id) reloadAnnotations(currentScript.id);
     else setAnnotations([]);
@@ -200,7 +202,6 @@ export default function EditorPage() {
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
-  const [stashItems, setStashItems] = useState<{id: string, text: string, date: number}[]>([]);
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
@@ -1171,7 +1172,7 @@ export default function EditorPage() {
                   showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
                   showWatermark={showWatermark} setShowWatermark={setShowWatermark}
                   lintIssues={lintIssues}
-                  stashItems={stashItems} setStashItems={setStashItems} textareaRef={textareaRef}
+                  stash={stash} textareaRef={textareaRef}
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}
