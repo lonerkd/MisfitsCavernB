@@ -521,7 +521,8 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
         <div style={wrap}>
           <div style={label}>Concept</div>
           {block.image_url && (
-            <Image src={block.image_url} alt={block.title || ''} width={800} height={420} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
+            // eslint-disable-next-line @next/next/no-img-element -- images from any host and /m/ permalinks
+            <img src={block.image_url} alt={block.title || ''} width={800} height={420} loading="lazy" referrerPolicy="no-referrer" style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />
           )}
           {block.title && <h3 style={{ ...heading, marginTop: 10 }}>{block.title}</h3>}
         </div>
@@ -563,7 +564,8 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
       return (
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', gap: 14 }}>
           {block.image_url ? (
-            <Image src={block.image_url} alt={block.title || ''} width={48} height={48} style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            // eslint-disable-next-line @next/next/no-img-element -- avatars from any host
+            <img src={block.image_url} alt={block.title || ''} width={48} height={48} loading="lazy" referrerPolicy="no-referrer" style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
           ) : (
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(215,52,11,0.15)', flexShrink: 0 }} />
           )}
@@ -605,7 +607,8 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
       return (
         <div style={wrap}>
           <div style={label}>Media</div>
-          {url && <Image src={url} alt={block.title || ''} width={800} height={420} style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- user-supplied image URLs from any host */}
+          {url && <img src={url} alt={block.title || ''} width={800} height={420} loading="lazy" referrerPolicy="no-referrer" style={{ width: '100%', maxHeight: 420, objectFit: 'cover', borderRadius: 8, display: 'block' }} />}
         </div>
       );
     }
@@ -659,11 +662,16 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         outline: 'none',
       }}
     >
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element -- YouTube and custom thumbnails aren't next/image hosts */}
+      <img
         src={thumb}
         alt={media.title}
-        fill
+        referrerPolicy="no-referrer"
         style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
           objectFit: 'cover',
           display: 'block',
           transition: 'transform 0.3s',

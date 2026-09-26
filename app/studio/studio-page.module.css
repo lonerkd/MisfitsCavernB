@@ -1,0 +1,126 @@
+.main {
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 58px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(4, 7, 16, 0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.barLeft { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.logo {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  letter-spacing: 6px;
+  color: var(--fg);
+  opacity: 0.75;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.logo:hover, .logo:focus-visible { opacity: 1; }
+.divider { width: 1px; height: 16px; background: var(--border-2); }
+.module {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--studio-color, #6366f1);
+}
+.projectPicker select {
+  max-width: 280px;
+  height: 30px;
+  padding: 0 28px 0 12px;
+  border-radius: var(--r-full);
+  background: rgba(224, 221, 174, 0.04);
+  border: 1px solid var(--border-2);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.projectPicker select:focus-visible { border-color: var(--studio-color, #6366f1); }
+.projectPicker option { background: #0b0f1a; }
+
+.tabs {
+  position: sticky;
+  top: 58px;
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+  background: rgba(4, 7, 16, 0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.tabList {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--r-full);
+  background: rgba(224, 221, 174, 0.03);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.tabList::-webkit-scrollbar { display: none; }
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, background 0.2s;
+}
+.tab:hover { color: var(--fg-muted); }
+.tab:focus-visible { outline: 2px solid var(--studio-color, #6366f1); outline-offset: 1px; }
+.tabOn {
+  color: var(--fg);
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 20px 96px;
+  position: relative;
+  z-index: 1;
+}
+.empty {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .bar { padding: 0 14px; }
+  .projectPicker select { max-width: 160px; }
+  .tabs { justify-content: flex-start; }
+}

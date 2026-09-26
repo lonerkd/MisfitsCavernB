@@ -8,15 +8,22 @@ import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
 import PhotoGallery from '@/components/PhotoGallery';
 import { supabase } from '@/lib/supabase/client';
+import { videoEmbed } from '@/lib/studio/media-kind';
 
 const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
 
 export default function ShowcasePage() {
 
-  const [photos, setPhotos] = useState<{ id: string; imageUrl: string; title: string }[]>([]);
+  // Published media from projects their owners made Public (get_public_showcase).
+  const [photos, setPhotos] = useState<{ id: string; imageUrl: string; title: string; href?: string; caption?: string }[]>([]);
   useEffect(() => {
-    supabase.from('concept_assets').select('id, title, image_url').not('image_url', 'is', null).limit(12).then(({ data }) => {
-      setPhotos((data || []).filter((a: any) => a.image_url).map((a: any) => ({ id: a.id, imageUrl: a.image_url, title: a.title || 'Concept' })));
+    supabase.rpc('get_public_showcase', { p_limit: 24 }).then(({ data }) => {
+      setPhotos((data || []).flatMap((m) => {
+        const imageUrl = m.kind === 'image'
+          ? (m.storage_path ? `/m/${m.media_id}` : m.external_url)
+          : videoEmbed(m.external_url)?.thumbnail ?? null;
+        return imageUrl ? [{ id: m.media_id, imageUrl, title: m.title || m.project_title, caption: m.project_title, href: `/shared/${m.share_token}` }] : [];
+      }));
     });
   }, []);
 

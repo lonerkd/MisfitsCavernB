@@ -1,77 +1,69 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import Avatar from '@/components/Avatar';
-import { useEffect } from 'react';
-import { parseScript } from '@/lib/scriptos/parser';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { logActivity } from '@/lib/supabase/activity';
+import { useCharacterMedia, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { List as Users } from 'lucide-react';
+import { useStudio } from './StudioContext';
+import { useScriptCharacters } from './production/useScriptCharacters';
+import { MediaThumbVisual } from './media/MediaThumb';
 
-export function CastingBoard({ projectId, userId, concepts, scenes, crew }: { projectId: string; userId: string | null; concepts: any[]; scenes: any[]; crew: any[] }) {
+type CrewRow = { id: string; user_id: string; role: string; profiles?: { username?: string | null; avatar_url?: string | null } | null };
+
+/** Who plays whom: characters from the selected script, cast from the crew. */
+export function CastingBoard({ crew }: { crew: CrewRow[] }) {
+  const { project, userId, scriptId, scenes, mediaById } = useStudio();
+  const projectId = project.id;
   const { toast } = useToast();
-  type Char = { id?: string; name: string; color: string };
-  type Look = { id: string; image_url: string; title: string | null };
-  const [chars, setChars] = useState<Char[]>([]);
+  const { chars: scriptChars, status } = useScriptCharacters(scriptId, userId);
+  const chars = scriptChars.map((c) => ({ id: c.row?.id, name: c.name, color: c.color }));
+  const loading = status === 'loading';
   const [castings, setCastings] = useState<Record<string, Casting>>({});
-  const [looks, setLooks] = useState<Record<string, Look[]>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const palette = ['#d7340b', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
+  const characterLooks = useCharacterMedia(projectId);
+  const looks = useMemo(() => {
+    const m: Record<string, Media[]> = {};
+    for (const l of characterLooks.rows) {
+      const item = mediaById.get(l.media_id);
+      if (item) (m[l.character_id] ||= []).push(item);
+    }
+    return m;
+  }, [characterLooks.rows, mediaById]);
+  const signed = useSignedUrls(characterLooks.rows.map((l) => mediaById.get(l.media_id)?.storage_path));
 
   const loadCastings = async () => {
-    try { setCastings(await getCastingsForProject(projectId)); } catch {  }
+    try { setCastings(await getCastingsForProject(projectId)); } catch { /* shown as open roles */ }
   };
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data: scripts } = await supabase.from('scripts').select('id,content').eq('project_id', projectId).order('updated_at', { ascending: false });
-      const withContent = (scripts || []).find((s: any) => s.content && s.content.trim().length > 0) || (scripts || [])[0];
-      const parsedNames: string[] = withContent?.content ? parseScript(withContent.content).characters.map((c: any) => c.name).filter(Boolean) : [];
-      const savedById = new Map<string, any>();
-      if (withContent) {
-        const { data: saved } = await supabase.from('script_characters').select('id,name,color').eq('script_id', withContent.id);
-        (saved || []).forEach((r: any) => savedById.set(r.name, r));
-      }
-      const names = Array.from(new Set([...parsedNames, ...Array.from(savedById.keys())]));
-      const list = names.map((name, i) => { const r = savedById.get(name); return { id: r?.id, name, color: r?.color || palette[i % palette.length] }; });
-      setChars(list);
-      setSelected(prev => prev && names.includes(prev) ? prev : names[0] || null);
-
-      const { data: refData } = await supabase.from('character_references').select('id,character_id,concept_assets(image_url,title)').eq('project_id', projectId);
-      const lookMap: Record<string, Look[]> = {};
-      (refData || []).forEach((r: any) => { (lookMap[r.character_id] ||= []).push({ id: r.id, image_url: r.concept_assets?.image_url, title: r.concept_assets?.title }); });
-      setLooks(lookMap);
-      await loadCastings();
-    } finally { setLoading(false); }
-  };
-  useEffect(() => { load(); }, [projectId, scenes.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void loadCastings(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setSelected((prev) => (prev && chars.some((c) => c.name === prev) ? prev : chars[0]?.name ?? null));
+  }, [scriptChars]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const footprint = (name: string) => {
     const up = name.toUpperCase();
-    const inScenes = scenes.filter(s => String(s.cast_list || '').toUpperCase().split(',').map((c: string) => c.trim()).includes(up));
-    const days = Array.from(new Set(inScenes.map(s => s.shoot_day || 1))).sort((a, b) => a - b);
-    return { sceneNums: inScenes.map(s => s.scene_number).sort((a, b) => a - b), days };
+    const inScenes = scenes.rows.filter((sc) => String(sc.cast_list || '').toUpperCase().split(',').map((c) => c.trim()).includes(up));
+    const days = Array.from(new Set(inScenes.map((sc) => sc.shoot_day || 1))).sort((a, b) => a - b);
+    return { sceneNums: inScenes.map((sc) => sc.scene_number).sort((a, b) => a - b), days };
   };
 
   const assign = async (crewUserId: string) => {
-    if (!selected || !userId) { toast('Sign in to cast', 'error'); return; }
+    if (!selected) return;
     try {
       await setCasting(projectId, selected, crewUserId, userId);
       logActivity(`cast a performer as ${selected}`, 'project', projectId);
       await loadCastings();
       setAssigning(false);
       toast(`Cast ${selected}`, 'success');
-    } catch (e: any) { toast(e?.message || 'Could not cast', 'error'); }
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not cast', 'error'); }
   };
   const clearCasting = async (name: string) => {
     try { await removeCasting(projectId, name); logActivity(`reopened casting for ${name}`, 'project', projectId); await loadCastings(); toast(`${name} reopened`, 'info'); }
-    catch (e: any) { toast(e?.message || 'Could not update', 'error'); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not update', 'error'); }
   };
 
   const sel = chars.find(c => c.name === selected) || null;
@@ -142,7 +134,7 @@ export function CastingBoard({ projectId, userId, concepts, scenes, crew }: { pr
                       <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>No crew recruited yet — recruit talent in the Crew tab or post the role to Jobs.</span>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {crew.map((m: any) => (
+                        {crew.map((m) => (
                           <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
                             <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
                             <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
@@ -158,14 +150,13 @@ export function CastingBoard({ projectId, userId, concepts, scenes, crew }: { pr
                 {looksFor.length > 0 ? (
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
                     {looksFor.map(l => (
-                      <div key={l.id} style={{ width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: `1px solid ${sel.color}44` }} title={l.title || 'look'}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={l.image_url} alt={l.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div key={l.id} style={{ width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: `1px solid ${sel.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }} title={l.title || 'look'}>
+                        <MediaThumbVisual media={l} src={mediaSrc(l, signed)} />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginBottom: 24 }}>No look references yet — link concept images to this character in the Character Bible.</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', marginBottom: 24 }}>No looks yet — add them to this character in the Character Bible (Story).</div>
                 )}
 
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>

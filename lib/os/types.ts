@@ -34,26 +34,6 @@ export interface TimelineItem {
   completion: number;
 }
 
-export interface ConceptAsset {
-  id: string;
-  image_url: string;
-  title?: string;
-  board?: string | null;
-}
-
-export interface Scene {
-  id: string;
-  scene_number: number;
-  title: string;
-  location?: string;
-  time_of_day?: string;
-  shoot_day?: number;
-  status?: string;
-  cast_list?: string;
-  est_duration?: string;
-  elements?: { props?: string[]; wardrobe?: string[]; vehicles?: string[]; sfx?: string[]; vfx?: string[] };
-}
-
 export interface Campaign {
   id: string;
   title: string;
@@ -78,15 +58,17 @@ export interface Project {
   id: string;
   title: string;
   description?: string;
+  creator_id?: string;
+  visibility?: 'private' | 'team' | 'link' | 'public';
+  share_token?: string;
   status: string;
   accent_color?: string;
   type?: string;
+  project_type?: string;
   beats?: Beat[];
   crew?: CrewMember[];
   budget_items?: BudgetItem[];
   timeline_items?: TimelineItem[];
-  concept_assets?: ConceptAsset[];
-  scenes?: Scene[];
   campaigns?: Campaign[];
   settings?: ProjectSettings;
   festival_submissions?: FestivalSubmission[];

@@ -1,5 +1,48 @@
 # Misfits Cavern — Project State
 
+## Latest Session — The Studio, rebuilt: one library, scenes that follow the script, share links
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 68 integration
+tests (personas, storage, realtime), 167 unit tests, tsc/lint/build, and the
+Studio journey in a real browser against a local stack (also in CI).
+
+- **One project library** (`media`, private `project-media` bucket) replaces
+  three disconnected systems (`concept_assets`, `project_assets`,
+  owner-only `studio_assets`). Upload files or add links (YouTube/Vimeo embed),
+  Openverse search, boards, filters, detail view. Shared with crew, live.
+- **Scenes follow the screenplay** (`scenes.script_id`, `sync_script_scenes`):
+  ids stay stable through rewrites, so references, notes, colours, shoot days
+  survive edits. Scene notes/colours moved from device-only localStorage into
+  the DB (one-time migration of existing device notes).
+- **References everywhere**: Studio → Scenes, and the editor's new **Refs** tab
+  (current scene's media, add/upload on the spot, note, colour).
+- **Share & pitch**: visibility (Private/Team/Link/Public), copy link,
+  per-item publish (owner only), server-rendered lookbook with link previews,
+  `/m/<id>` permalinks, Showcase lists Public projects' published media.
+- **Studio rebuilt** on a typed provider + CSS module (the 90-field `any`
+  context is gone); Production (story, schedule, cast & crew), Promos, Pitch
+  ported to the new data.
+- **Realtime publication** now includes the tables the app live-syncs
+  (projects, crew, budget, timeline, beats, campaigns, notifications,
+  activity, scenes, media, links) — before, those subscriptions never fired.
+
+Bugs found and fixed on the way: activity feed readable by every signed-in user
+(beat titles, scene headings — now scoped per project, backfilled);
+`scenes.time_of_day` rejected CONTINUOUS/LATER headings (whole-script imports
+failed); editor opened the server copy of a project script over unsynced local
+edits; "platform stats" were per-user RLS counts; `in-production` projects
+showed as Development; `next/image` on arbitrary hosts crashed public portfolio
+pages with YouTube or external images; "Public" promised discovery that didn't
+exist (now true via the Showcase).
+
+Removed: "Push beat to ScriptOS" (created a separate script per beat; a safe
+append needs server-side merge with unsynced editor edits — follow-up).
+
+Open: crew can still read child tables of *private* projects on older tables
+(they use `is_project_member`, not `can_access_project`); `studio_boards`/
+`studio_assets` (2 orphan rows) to drop; post-production workflow; Spotify /
+Pinterest / YouTube integrations; design & motion pass.
+
 ## Latest Session — Foundation: migrations as truth, drift gate, real-DB persona tests
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Verified: CI `database` job

@@ -670,6 +670,9 @@ export default function EcosystemTaskbar() {
   }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
 
   if (pathname === '/login' || pathname === '/auth') return null;
+  // Public share surfaces (lookbooks, public portfolios, shared scripts) are
+  // for people outside the app — no app chrome over them.
+  if (/^\/(shared|p|s)\//.test(pathname)) return null;
 
   const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
   const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#d7340b';

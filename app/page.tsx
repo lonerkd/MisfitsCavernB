@@ -451,17 +451,17 @@ export default function Home() {
       try {
 
         const platformStats = await getPlatformStats();
-        setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.concepts });
+        setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.media });
 
         const [scriptRes, assetRes, msgRes] = await Promise.all([
           supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
-          supabase.from('concept_assets').select('title').order('created_at', { ascending: false }).limit(6),
+          supabase.from('media').select('title').order('created_at', { ascending: false }).limit(6),
 
           supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
         ]);
         const script = scriptRes.data?.[0];
         const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
-        const assets = (assetRes.data || []).map((a: any, i: number) => ({ label: a.title || 'Concept asset', color: palette[i % palette.length] }));
+        const assets = (assetRes.data || []).map((a: any, i: number) => ({ label: a.title || 'Reference', color: palette[i % palette.length] }));
         const messages = (msgRes.data || []).slice().reverse().map((m: any) => ({ from: m.profiles?.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
         setLive({
           scriptLines,
@@ -710,7 +710,7 @@ export default function Home() {
               { n: stats.creators, label: 'Creators', color: '#10b981' },
               { n: stats.scripts, label: 'Screenplays', color: '#d7340b' },
               { n: stats.projects, label: 'Productions', color: '#6366f1' },
-              { n: stats.concepts, label: 'Concept Assets', color: '#f59e0b' },
+              { n: stats.concepts, label: 'References & Media', color: '#f59e0b' },
             ].map((s, i) => (
               <motion.div key={s.label}
                 initial={{ opacity: 0, y: 16 }}

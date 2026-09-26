@@ -8,8 +8,8 @@ export type ProjectVisibility = 'private' | 'team' | 'link' | 'public';
 export const PROJECT_VISIBILITY: { id: ProjectVisibility; label: string; hint: string }[] = [
   { id: 'private', label: 'Private', hint: 'Only you can see this project.' },
   { id: 'team', label: 'Team', hint: 'Confirmed crew can see and work on it.' },
-  { id: 'link', label: 'Anyone with the link', hint: 'Anybody holding the share URL can view it.' },
-  { id: 'public', label: 'Public', hint: 'Anyone can find and view it.' },
+  { id: 'link', label: 'Anyone with the link', hint: 'Anybody holding the share URL can view the lookbook.' },
+  { id: 'public', label: 'Public', hint: 'Like a link share, and its published media is featured in the Showcase.' },
 ];
 
 export interface DBProject {

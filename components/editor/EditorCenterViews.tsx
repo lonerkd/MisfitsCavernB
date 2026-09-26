@@ -18,15 +18,16 @@ export function BoardView({
 }: {
   scenesList: ScriptLine[];
   lines: ScriptLine[];
-  sceneColors: Record<string, string>;
-  sceneNotes: Record<string, string>;
+  /** Per scene, by index in scenesList. */
+  sceneColors: Array<string | null>;
+  sceneNotes: string[];
   sceneWordCounts: number[];
   dragSceneIdx: number | null;
   setDragSceneIdx: (i: number | null) => void;
   dropSceneIdx: number | null;
   setDropSceneIdx: (i: number | null) => void;
   jumpToScene: (sceneIndex: number) => void;
-  setSceneNote: (sceneText: string, note: string) => void;
+  setSceneNote: (sceneIndex: number, note: string) => void;
   reorderScenes: (from: number, to: number) => void;
 }) {
   if (scenesList.length === 0) {
@@ -41,13 +42,13 @@ export function BoardView({
       {scenesList.map((scene, i) => (
         <SceneBoardCard
           key={i} scene={scene} index={i} lines={lines}
-          cardColor={sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length]}
+          cardColor={sceneColors[i] || CARD_COLORS[i % CARD_COLORS.length]}
           wordCount={sceneWordCounts[i] || 0}
-          note={sceneNotes[scene.text.trim().toUpperCase()] || ''}
+          note={sceneNotes[i] || ''}
           isDragging={dragSceneIdx === i}
           isDropTarget={dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i}
           onJump={() => jumpToScene(i)}
-          onSetNote={note => setSceneNote(scene.text, note)}
+          onSetNote={note => setSceneNote(i, note)}
           onDragStart={(e) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
           onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
           onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
@@ -173,10 +174,10 @@ export function OutlineView({
   filteredScenes: ScriptLine[];
   scenesList: ScriptLine[];
   lines: ScriptLine[];
-  sceneColors: Record<string, string>;
-  sceneNotes: Record<string, string>;
+  sceneColors: Array<string | null>;
+  sceneNotes: string[];
   jumpToScene: (sceneIndex: number) => void;
-  tagScene: (sceneText: string, color: string) => void;
+  tagScene: (sceneIndex: number, color: string) => void;
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
@@ -199,7 +200,7 @@ export function OutlineView({
           const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
           return (
             <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              {(() => { const tag = sceneColors[scene.text.trim().toUpperCase()]; return (
+              {(() => { const tag = sceneColors[globalIdx]; return (
                 <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
               ); })()}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -207,18 +208,18 @@ export function OutlineView({
                   <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {CARD_COLORS.map(color => {
-                      const active = sceneColors[scene.text.trim().toUpperCase()] === color;
+                      const active = sceneColors[globalIdx] === color;
                       return (
                       <button
                         key={color}
                         title={active ? 'Remove tag' : 'Tag scene'}
-                        onClick={() => tagScene(scene.text, color)}
+                        onClick={() => tagScene(globalIdx, color)}
                         style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
                       />
                     ); })}
                   </div>
                 </div>
-                {sceneNotes[scene.text.trim().toUpperCase()] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[scene.text.trim().toUpperCase()]}”</div>}
+                {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}
                 {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}

@@ -7,30 +7,8 @@ import type { ElementCategory, SceneElements } from '@/lib/scriptos/breakdown';
 export { ELEMENT_CATEGORIES };
 export type { ElementCategory, SceneElements };
 
-export async function syncSceneElementsFromScript(projectId: string, existingScenes: { id: string; scene_number: number }[]): Promise<Record<string, SceneElements>> {
-  const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
-  const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
-  if (!withContent) throw new Error('No script content yet — write one in ScriptOS first.');
-
-  const parsed = parseScript(withContent.content ?? '');
-  const parsedScenes = parsed.scenes.filter((s: any) => !s.omitted);
-  const byNumber = new Map(existingScenes.map(s => [s.scene_number, s.id]));
-
-  const updates: { id: string; elements: SceneElements }[] = [];
-  const elementsById: Record<string, SceneElements> = {};
-  parsedScenes.forEach((s: any, i: number) => {
-    const num = i + 1;
-    const sceneId = byNumber.get(num);
-    if (!sceneId) return;
-    const elements: SceneElements = s.elements || {};
-    updates.push({ id: sceneId, elements });
-    elementsById[sceneId] = elements;
-  });
-
-  if (updates.length === 0) return {};
-  await Promise.all(updates.map(u => supabase.from('scenes').update({ elements: u.elements as unknown as NonNullable<Json> }).eq('id', u.id)));
-  return elementsById;
-}
+// Scene elements are kept current by the scene index sync (lib/studio): every
+// scene row carries the elements parsed from its own action lines.
 
 export async function syncBudgetFromSceneElements(
   projectId: string,

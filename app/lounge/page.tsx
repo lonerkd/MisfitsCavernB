@@ -41,11 +41,11 @@ function ProductionFeed({ projectId }: { projectId: string }) {
     let on = true;
     (async () => {
       const [sc, bd, tl, cr, ca, sn] = await Promise.all([
-        supabase.from('scenes').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('scenes').select('title,created_at').eq('project_id', projectId).is('removed_at', null).order('created_at', { ascending: false }).limit(4),
         supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('concept_assets').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('script_notes').select('note,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
       ]);
       if (!on) return;
@@ -54,7 +54,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         ...(bd.data || []).map((x: any) => ({ label: `Budget — ${x.category}`, t: x.created_at, color: '#10b981' })),
         ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#6366f1' })),
         ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
-        ...(ca.data || []).map((x: any) => ({ label: `Concept — ${x.title || 'image'}`, t: x.created_at, color: '#a855f7' })),
+        ...(ca.data || []).map((x: any) => ({ label: `Reference — ${x.title || 'untitled'}`, t: x.created_at, color: '#a855f7' })),
         ...(sn.data || []).map((x: any) => ({ label: `Script Note — "${x.note}"`, t: x.created_at, color: '#ef4444' })),
       ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
       setItems(merged);

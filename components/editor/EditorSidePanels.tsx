@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb } from 'lucide-react';
+import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images } from 'lucide-react';
 import type { ScriptLine } from '@/types/screenplay';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
 
 const CHARACTER_COLOR = '#ffaa00';
 
-export type RightPanelTab = 'write' | 'insights' | 'history' | 'audio';
+export type RightPanelTab = 'write' | 'refs' | 'insights' | 'history' | 'audio';
 
 export interface EditorRightPanelsProps {
   rightPanel: RightPanelTab;
@@ -52,6 +52,8 @@ export interface EditorRightPanelsProps {
   currentScript: { title?: string, id?: string } | null;
   projectAudioRefs?: any[];
   playAudioRef?: (ref: any) => void;
+  /** The current scene's references panel (rendered by the page, which owns the scene index). */
+  referencesPanel?: React.ReactNode;
 }
 
 function SectionHeader({
@@ -98,6 +100,7 @@ export function EditorRightPanels({
   setNightModePreview, elements, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
+  referencesPanel,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -112,6 +115,7 @@ export function EditorRightPanels({
 
   const TABS: [RightPanelTab, React.ComponentType<{ size?: number | string }>, string][] = [
     ['write', Wand2, 'Write'],
+    ['refs', Images, 'Refs'],
     ['insights', Lightbulb, 'Insights'],
     ['history', History, 'History'],
     ['audio', Music, 'Audio'],
@@ -121,8 +125,8 @@ export function EditorRightPanels({
     <>
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 {TABS.map(([key, Icon, label]) => (
-                  <button key={key} onClick={() => setRightPanel(key)} style={{
-                    flex: 1, padding: '8px 0', background: 'transparent', border: 'none',
+                  <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} style={{
+                    flex: 1, minWidth: 0, padding: '8px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',
                     color: rightPanel === key ? 'var(--fg)' : 'var(--fg-dim)',
                     cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
@@ -132,7 +136,7 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.3 }}>{label}</span>
+                    <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
                   </button>
                 ))}
               </div>
@@ -236,6 +240,8 @@ export function EditorRightPanels({
                     </div>
                   </>
                 )}
+
+                {rightPanel === 'refs' && referencesPanel}
 
                 {rightPanel === 'insights' && (
                   <>
