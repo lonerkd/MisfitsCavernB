@@ -37,15 +37,14 @@ export async function shareUrlFor(token: string | null | undefined): Promise<str
 }
 
 export async function updateProjectVisibility(projectId: string, visibility: ProjectVisibility): Promise<string> {
-  // `visibility` is cast pending the generated-type regen.
   const { data, error } = await supabase
     .from('projects')
-    .update({ visibility } as any)
+    .update({ visibility })
     .eq('id', projectId)
     .select('share_token')
     .single();
   if (error) throw error;
-  const token = ((data as any)?.share_token as string) || '';
+  const token = data?.share_token || '';
   if (visibility === 'link' || visibility === 'public') {
     const user = await awaitOSUser();
     if (user?.id) await logAuditAction(user.id, 'project_updated', 'project', projectId, { visibility });

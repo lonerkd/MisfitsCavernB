@@ -28,8 +28,7 @@ export default function SharedProjectPage() {
   useEffect(() => {
     let active = true;
     (async () => {
-      // Cast pending the generated-type regen (get_shared_project is new).
-      const { data, error } = await (supabase as any).rpc('get_shared_project', { p_token: token });
+      const { data, error } = await supabase.rpc('get_shared_project', { p_token: token });
       if (!active) return;
       setLoading(false);
       const row = Array.isArray(data) ? data[0] : null;

@@ -34,6 +34,6 @@ lib/context/          React context providers
 lib/permissions/      Client-side access gating
 lib/webrtc/           Voice room mesh
 e2e/                  Playwright tests
-supabase-schema.sql   Database schema + RLS reference
+supabase/            Migrations (schema source of truth), schema fingerprint, local stack config
 docs/                 Audit reports
 ```

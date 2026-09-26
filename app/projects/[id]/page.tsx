@@ -323,10 +323,10 @@ export default function ProjectHubPage() {
       supabase.from('projects').select('*').eq('id', id).single().then(async ({ data, error }) => {
         if (!active) return;
         if (error || !data) { router.push('/projects'); return; }
-        const row = data as any; // visibility/share_token land after the migration + type regen
+        const row = data;
         const phase = mapStatusToPhase(row.status ?? undefined);
         const me = (await awaitOSUser()) || null;
-        const token = (row.share_token as string) || '';
+        const token = row.share_token || '';
         setRealProject({
           id: row.id,
           title: row.title,

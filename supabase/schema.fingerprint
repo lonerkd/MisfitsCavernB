@@ -1,0 +1,1049 @@
+bucket assets public=true limit=- mime=-
+bucket sfx-library public=true limit=- mime=-
+bucket sfx_library public=true limit=- mime=-
+bucket studio-assets public=true limit=- mime=-
+column active_users.current_activity text
+column active_users.current_location text
+column active_users.id uuid
+column active_users.idle_seconds integer
+column active_users.last_seen timestamp with time zone
+column active_users.status text
+column active_users.user_id text
+column activity_feed.action text not null
+column activity_feed.created_at timestamp with time zone default now()
+column activity_feed.id uuid default uuid_generate_v4() not null
+column activity_feed.metadata jsonb
+column activity_feed.target_id uuid
+column activity_feed.target_type text
+column activity_feed.user_id uuid not null
+column asset_comments.asset_id uuid not null
+column asset_comments.content text not null
+column asset_comments.created_at timestamp with time zone default now()
+column asset_comments.id uuid default uuid_generate_v4() not null
+column asset_comments.timecode text
+column asset_comments.user_id uuid not null
+column audit_logs.action text not null
+column audit_logs.created_at timestamp with time zone default now()
+column audit_logs.details jsonb default '{}'::jsonb
+column audit_logs.id uuid default uuid_generate_v4() not null
+column audit_logs.ip_address text
+column audit_logs.resource_id uuid
+column audit_logs.resource_type text not null
+column audit_logs.user_agent text
+column audit_logs.user_id uuid
+column budget_items.actual_cost numeric(12,2)
+column budget_items.amount numeric(12,2) default 0 not null
+column budget_items.category text not null
+column budget_items.created_at timestamp with time zone default now()
+column budget_items.created_by uuid
+column budget_items.description text default ''::text
+column budget_items.id uuid default uuid_generate_v4() not null
+column budget_items.job_id uuid
+column budget_items.project_id uuid not null
+column budget_items.updated_at timestamp with time zone default now()
+column call_sheet_calls.call_sheet_id uuid not null
+column call_sheet_calls.call_time time without time zone
+column call_sheet_calls.character_name text
+column call_sheet_calls.created_at timestamp with time zone default now()
+column call_sheet_calls.crew_user_id uuid
+column call_sheet_calls.id uuid default uuid_generate_v4() not null
+column call_sheet_calls.remarks text
+column call_sheet_calls.role_label text
+column call_sheets.created_at timestamp with time zone default now()
+column call_sheets.estimated_wrap time without time zone
+column call_sheets.general_call time without time zone
+column call_sheets.id uuid default uuid_generate_v4() not null
+column call_sheets.location_address text
+column call_sheets.notes text
+column call_sheets.project_id uuid not null
+column call_sheets.shoot_date date
+column call_sheets.shoot_day integer not null
+column call_sheets.shooting_call time without time zone
+column call_sheets.updated_at timestamp with time zone default now()
+column call_sheets.updated_by uuid
+column call_sheets.weather text
+column campaigns.budget numeric default 0
+column campaigns.created_at timestamp with time zone default now()
+column campaigns.created_by uuid
+column campaigns.end_date date
+column campaigns.id uuid default uuid_generate_v4() not null
+column campaigns.notes text default ''::text
+column campaigns.platform text default 'Instagram'::text not null
+column campaigns.project_id uuid not null
+column campaigns.spend numeric default 0
+column campaigns.start_date date
+column campaigns.status text default 'Drafting'::text not null
+column campaigns.target_demographic text
+column campaigns.target_reach text default ''::text
+column campaigns.title text not null
+column campaigns.updated_at timestamp with time zone default now()
+column channel_activity.id text
+column channel_activity.last_message timestamp with time zone
+column channel_activity.message_count bigint
+column channel_activity.name text
+column channel_activity.unique_senders bigint
+column channel_members.can_manage boolean default false not null
+column channel_members.can_post boolean default true not null
+column channel_members.channel_id uuid not null
+column channel_members.created_at timestamp with time zone default now()
+column channel_members.id uuid default gen_random_uuid() not null
+column channel_members.user_id uuid not null
+column channels.created_at timestamp with time zone default now()
+column channels.created_by uuid
+column channels.id uuid default gen_random_uuid() not null
+column channels.is_private boolean default false not null
+column channels.name text not null
+column channels.position integer default 0
+column channels.post_policy text default 'viewers'::text not null
+column channels.project_id uuid
+column channels.topic text
+column channels.type text default 'text'::text not null
+column character_castings.character_name text not null
+column character_castings.created_at timestamp with time zone default now()
+column character_castings.created_by uuid
+column character_castings.crew_user_id uuid not null
+column character_castings.id uuid default gen_random_uuid() not null
+column character_castings.project_id uuid not null
+column character_references.character_id uuid not null
+column character_references.concept_asset_id uuid not null
+column character_references.created_at timestamp with time zone default now()
+column character_references.created_by uuid
+column character_references.id uuid default gen_random_uuid() not null
+column character_references.project_id uuid not null
+column chat_channels.created_at timestamp with time zone default now()
+column chat_channels.description text
+column chat_channels.id text not null
+column chat_channels.members_json text
+column chat_channels.name text not null
+column chat_channels.project_id text
+column chat_channels.type text default 'text'::text not null
+column chat_channels.updated_at timestamp with time zone default now()
+column chat_messages.attachments_json text
+column chat_messages.channel_id text not null
+column chat_messages.content text not null
+column chat_messages.created_at timestamp with time zone default now()
+column chat_messages.edited_at timestamp with time zone default now()
+column chat_messages.id text not null
+column chat_messages.reactions_json text
+column chat_messages.sender_id text not null
+column chat_messages.type text default 'text'::text not null
+column concept_assets.board text
+column concept_assets.created_at timestamp with time zone default now()
+column concept_assets.created_by uuid
+column concept_assets.id uuid default uuid_generate_v4() not null
+column concept_assets.image_url text not null
+column concept_assets.project_id uuid not null
+column concept_assets.title text
+column discord_integrations.channel_id uuid not null
+column discord_integrations.created_at timestamp with time zone default now()
+column discord_integrations.created_by uuid
+column discord_integrations.updated_at timestamp with time zone default now()
+column discord_integrations.webhook_url text not null
+column job_applications.applicant_id uuid not null
+column job_applications.applied_at timestamp with time zone default now()
+column job_applications.cover_note text
+column job_applications.id uuid default uuid_generate_v4() not null
+column job_applications.job_id uuid not null
+column job_applications.status text default 'pending'::text
+column jobs.budget_item_id uuid
+column jobs.created_at timestamp with time zone default now()
+column jobs.created_by uuid not null
+column jobs.description text
+column jobs.id uuid default uuid_generate_v4() not null
+column jobs.project_id uuid
+column jobs.rate numeric(10,2)
+column jobs.rate_type text default 'hourly'::text not null
+column jobs.role text not null
+column jobs.status text default 'open'::text
+column jobs.title text not null
+column jobs.updated_at timestamp with time zone default now()
+column messages.channel_id text
+column messages.channel_uuid uuid
+column messages.content text not null
+column messages.created_at timestamp with time zone default now()
+column messages.id uuid default uuid_generate_v4() not null
+column messages.parent_message_id uuid
+column messages.pinned boolean default false
+column messages.reactions jsonb default '{}'::jsonb
+column messages.receiver_id uuid
+column messages.sender_id uuid not null
+column notifications.body text
+column notifications.created_at timestamp with time zone default now()
+column notifications.id uuid default uuid_generate_v4() not null
+column notifications.link text
+column notifications.read boolean default false not null
+column notifications.title text not null
+column notifications.type text not null
+column notifications.user_id uuid not null
+column portfolio_blocks.block_type text not null
+column portfolio_blocks.body text
+column portfolio_blocks.created_at timestamp with time zone default now() not null
+column portfolio_blocks.id uuid default gen_random_uuid() not null
+column portfolio_blocks.image_url text
+column portfolio_blocks.meta jsonb
+column portfolio_blocks.portfolio_project_id uuid not null
+column portfolio_blocks.position integer default 0 not null
+column portfolio_blocks.source_ref_id uuid
+column portfolio_blocks.title text
+column portfolio_media.created_at timestamp with time zone default now()
+column portfolio_media.id uuid default uuid_generate_v4() not null
+column portfolio_media.media_type text default 'youtube'::text
+column portfolio_media.project_id uuid not null
+column portfolio_media.thumbnail_url text
+column portfolio_media.title text
+column portfolio_media.url text not null
+column portfolio_projects.accent_color text
+column portfolio_projects.category text
+column portfolio_projects.created_at timestamp with time zone default now()
+column portfolio_projects.description text
+column portfolio_projects.id uuid default uuid_generate_v4() not null
+column portfolio_projects.role text
+column portfolio_projects.share_token text default encode(gen_random_bytes(16), 'hex'::text)
+column portfolio_projects.source_project_id uuid
+column portfolio_projects.title text not null
+column portfolio_projects.updated_at timestamp with time zone default now()
+column portfolio_projects.user_id uuid not null
+column portfolio_projects.year integer
+column profiles.avatar_url text
+column profiles.bio text
+column profiles.created_at timestamp with time zone default now()
+column profiles.discord_avatar text
+column profiles.discord_id text
+column profiles.discord_username text
+column profiles.id uuid not null
+column profiles.is_admin boolean default false
+column profiles.location text
+column profiles.notification_prefs jsonb default '{}'::jsonb not null
+column profiles.role text default 'creator'::text
+column profiles.status text default 'OPEN'::text
+column profiles.updated_at timestamp with time zone default now()
+column profiles.username text not null
+column project_assets.created_at timestamp with time zone default now()
+column project_assets.created_by uuid
+column project_assets.id uuid default uuid_generate_v4() not null
+column project_assets.project_id uuid not null
+column project_assets.thumbnail_url text
+column project_assets.title text default ''::text not null
+column project_assets.type text default 'image'::text not null
+column project_assets.updated_at timestamp with time zone default now()
+column project_assets.url text default ''::text not null
+column project_audio_references.added_by uuid
+column project_audio_references.created_at timestamp with time zone default now()
+column project_audio_references.description text
+column project_audio_references.id uuid default gen_random_uuid() not null
+column project_audio_references.project_id uuid
+column project_audio_references.reference_type text
+column project_audio_references.scene_id text
+column project_audio_references.script_id uuid
+column project_audio_references.title text not null
+column project_audio_references.uri text not null
+column project_beats.color text default '#ff3c00'::text
+column project_beats.content text
+column project_beats.created_at timestamp with time zone default now()
+column project_beats.created_by uuid
+column project_beats.id uuid default uuid_generate_v4() not null
+column project_beats.order_index integer
+column project_beats.project_id uuid not null
+column project_beats.scene_number text
+column project_beats.script_id uuid
+column project_beats.title text
+column project_beats.updated_at timestamp with time zone default now()
+column project_crew.created_at timestamp with time zone default now()
+column project_crew.id uuid default uuid_generate_v4() not null
+column project_crew.invited_by uuid
+column project_crew.project_id uuid not null
+column project_crew.role text default 'team member'::text
+column project_crew.status text default 'confirmed'::text
+column project_crew.user_id uuid not null
+column project_tasks.assigned_to uuid
+column project_tasks.completed boolean default false
+column project_tasks.created_at timestamp with time zone default now()
+column project_tasks.due_date date
+column project_tasks.id uuid default uuid_generate_v4() not null
+column project_tasks.project_id uuid not null
+column project_tasks.title text not null
+column projects.accent_color text
+column projects.budget numeric(12,2)
+column projects.created_at timestamp with time zone default now()
+column projects.creator_id uuid not null
+column projects.description text
+column projects.end_date date
+column projects.festival_submissions jsonb default '[]'::jsonb
+column projects.id uuid default uuid_generate_v4() not null
+column projects.project_type text default 'Feature'::text not null
+column projects.settings jsonb default '{"modules": {"lounge": true, "studio": true, "scriptos": true, "portfolio": true, "distribution": true}, "contentType": "screenplay", "exportProfile": {"format": "fdx", "includeTitlePage": true}, "editorMechanics": {"spellcheck": "en-US", "autoComplete": true, "strictFormatting": true}}'::jsonb
+column projects.share_token text default encode(gen_random_bytes(16), 'hex'::text) not null
+column projects.start_date date
+column projects.status text default 'concept'::text
+column projects.title text not null
+column projects.updated_at timestamp with time zone default now()
+column projects.visibility text default 'team'::text not null
+column scene_links.asset_id uuid not null
+column scene_links.created_at timestamp with time zone default now()
+column scene_links.created_by uuid
+column scene_links.id uuid default uuid_generate_v4() not null
+column scene_links.scene_number text not null
+column scene_links.script_id uuid not null
+column scene_references.concept_asset_id uuid not null
+column scene_references.created_at timestamp with time zone default now()
+column scene_references.created_by uuid
+column scene_references.id uuid default gen_random_uuid() not null
+column scene_references.project_id uuid not null
+column scene_references.scene_id uuid not null
+column scene_schedule.created_at timestamp with time zone default now()
+column scene_schedule.estimated_hours numeric default 0
+column scene_schedule.id uuid default uuid_generate_v4() not null
+column scene_schedule.location text
+column scene_schedule.order_index integer
+column scene_schedule.project_id uuid not null
+column scene_schedule.scene_heading text
+column scene_schedule.scene_number text
+column scene_schedule.script_id uuid
+column scene_schedule.shoot_day_id uuid
+column scene_schedule.updated_at timestamp with time zone default now()
+column scenes.cast_list text
+column scenes.created_at timestamp with time zone default now()
+column scenes.elements jsonb default '{}'::jsonb not null
+column scenes.est_duration text
+column scenes.id uuid default uuid_generate_v4() not null
+column scenes.location text
+column scenes.project_id uuid not null
+column scenes.scene_number integer not null
+column scenes.shoot_day integer default 1
+column scenes.status text default 'planned'::text not null
+column scenes.time_of_day text default 'DAY'::text
+column scenes.title text not null
+column screenplay_collaborators.created_at timestamp with time zone default now()
+column screenplay_collaborators.cursor_col integer
+column screenplay_collaborators.cursor_line integer
+column screenplay_collaborators.id uuid default uuid_generate_v4() not null
+column screenplay_collaborators.last_activity timestamp with time zone default now()
+column screenplay_collaborators.role text default 'editor'::text not null
+column screenplay_collaborators.screenplay_id text not null
+column screenplay_collaborators.updated_at timestamp with time zone default now()
+column screenplay_collaborators.user_id text not null
+column script_annotations.created_at timestamp with time zone default now()
+column script_annotations.created_by uuid
+column script_annotations.id uuid default uuid_generate_v4() not null
+column script_annotations.line_index integer not null
+column script_annotations.project_id uuid not null
+column script_annotations.script_id uuid not null
+column script_annotations.text text not null
+column script_annotations.type text not null
+column script_characters.age text
+column script_characters.arc text
+column script_characters.backstory text
+column script_characters.color text default '#ff3c00'::text
+column script_characters.created_at timestamp with time zone default now()
+column script_characters.description text
+column script_characters.full_name text
+column script_characters.id uuid default uuid_generate_v4() not null
+column script_characters.motivation text
+column script_characters.name text not null
+column script_characters.notes text
+column script_characters.relationships text
+column script_characters.script_id uuid not null
+column script_characters.updated_at timestamp with time zone default now()
+column script_characters.updated_by uuid
+column script_collaborators.id uuid default uuid_generate_v4() not null
+column script_collaborators.joined_at timestamp with time zone default now()
+column script_collaborators.permissions text default 'view'::text
+column script_collaborators.script_id uuid not null
+column script_collaborators.user_id uuid not null
+column script_metadata.character_bible jsonb default '[]'::jsonb not null
+column script_metadata.script_id uuid not null
+column script_metadata.title_page jsonb default '{}'::jsonb not null
+column script_metadata.updated_at timestamp with time zone default now() not null
+column script_metadata.updated_by uuid
+column script_notes.created_at timestamp with time zone default timezone('utc'::text, now()) not null
+column script_notes.id uuid default gen_random_uuid() not null
+column script_notes.line_id text
+column script_notes.note text not null
+column script_notes.project_id uuid
+column script_notes.script_id uuid
+column script_notes.selected_text text
+column script_notes.status text default 'open'::text
+column script_notes.user_id uuid
+column script_revisions.color_index integer default 0 not null
+column script_revisions.created_at timestamp with time zone default now()
+column script_revisions.created_by uuid
+column script_revisions.id uuid default uuid_generate_v4() not null
+column script_revisions.label text not null
+column script_revisions.script_id uuid not null
+column script_revisions.snapshot text default ''::text not null
+column script_versions.content text not null
+column script_versions.created_at timestamp with time zone default now()
+column script_versions.edited_by uuid
+column script_versions.id uuid default uuid_generate_v4() not null
+column script_versions.script_id uuid not null
+column script_versions.version integer not null
+column scripts.content text default ''::text
+column scripts.created_at timestamp with time zone default now()
+column scripts.created_by uuid
+column scripts.daily_goal integer default 1000
+column scripts.format text default 'screenplay'::text
+column scripts.id uuid default uuid_generate_v4() not null
+column scripts.last_edited_by uuid
+column scripts.learned_rules jsonb
+column scripts.project_id uuid
+column scripts.share_token text default encode(gen_random_bytes(16), 'hex'::text)
+column scripts.shared boolean default false
+column scripts.sprint_minutes integer default 15
+column scripts.stash_items jsonb default '[]'::jsonb
+column scripts.status text default 'draft'::text
+column scripts.title text not null
+column scripts.title_page jsonb default '{}'::jsonb
+column scripts.updated_at timestamp with time zone default now()
+column scripts.version integer default 1
+column sfx_assets.audio_url text not null
+column sfx_assets.created_at timestamp with time zone default now()
+column sfx_assets.duration integer
+column sfx_assets.id uuid default uuid_generate_v4() not null
+column sfx_assets.project_id uuid not null
+column sfx_assets.tags text[]
+column sfx_assets.title text not null
+column sfx_assets.user_id uuid not null
+column shoot_days.created_at timestamp with time zone default now()
+column shoot_days.day_number integer
+column shoot_days.id uuid default uuid_generate_v4() not null
+column shoot_days.project_id uuid not null
+column shoot_days.shoot_date date
+column shots.angle text
+column shots.created_at timestamp with time zone default now()
+column shots.created_by uuid
+column shots.description text
+column shots.id uuid default uuid_generate_v4() not null
+column shots.lens text
+column shots.movement text
+column shots.order_index integer default 0
+column shots.project_id uuid not null
+column shots.scene_id uuid not null
+column shots.shot_number text not null
+column shots.shot_size text
+column shots.status text default 'planned'::text
+column spotify_connections.access_token text not null
+column spotify_connections.expires_at bigint not null
+column spotify_connections.refresh_token text not null
+column spotify_connections.updated_at timestamp with time zone default now() not null
+column spotify_connections.user_id uuid not null
+column studio_assets.asset_type text default 'image'::text
+column studio_assets.asset_url text not null
+column studio_assets.board_id uuid not null
+column studio_assets.category text
+column studio_assets.created_at timestamp with time zone default now()
+column studio_assets.height integer default 300
+column studio_assets.id uuid default uuid_generate_v4() not null
+column studio_assets.position_x integer default 0
+column studio_assets.position_y integer default 0
+column studio_assets.title text
+column studio_assets.user_id uuid not null
+column studio_assets.width integer default 300
+column studio_boards.background_color text default '#0a0a0a'::text
+column studio_boards.created_at timestamp with time zone default now()
+column studio_boards.description text
+column studio_boards.id uuid default uuid_generate_v4() not null
+column studio_boards.name text not null
+column studio_boards.project_id uuid
+column studio_boards.updated_at timestamp with time zone default now()
+column studio_boards.user_id uuid not null
+column timeline_items.assigned_to uuid
+column timeline_items.created_at timestamp with time zone default now()
+column timeline_items.created_by uuid
+column timeline_items.description text
+column timeline_items.end_date date
+column timeline_items.id uuid default uuid_generate_v4() not null
+column timeline_items.project_id uuid not null
+column timeline_items.start_date date
+column timeline_items.status text default 'pending'::text
+column timeline_items.title text default ''::text not null
+column timeline_items.type text default 'milestone'::text
+column timeline_items.updated_at timestamp with time zone default now()
+column user_presence.current_activity text
+column user_presence.current_location text
+column user_presence.cursor_col integer
+column user_presence.cursor_line integer
+column user_presence.id uuid default uuid_generate_v4() not null
+column user_presence.last_seen timestamp with time zone default now()
+column user_presence.status text default 'online'::text not null
+column user_presence.updated_at timestamp with time zone default now()
+column user_presence.user_id text not null
+constraint activity_feed.activity_feed_pkey PRIMARY KEY (id)
+constraint activity_feed.activity_feed_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint asset_comments.asset_comments_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES studio_assets(id) ON DELETE CASCADE
+constraint asset_comments.asset_comments_pkey PRIMARY KEY (id)
+constraint asset_comments.asset_comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint audit_logs.audit_logs_pkey PRIMARY KEY (id)
+constraint audit_logs.audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
+constraint budget_items.budget_items_pkey PRIMARY KEY (id)
+constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint call_sheet_calls.call_sheet_calls_call_sheet_id_fkey FOREIGN KEY (call_sheet_id) REFERENCES call_sheets(id) ON DELETE CASCADE
+constraint call_sheet_calls.call_sheet_calls_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint call_sheet_calls.call_sheet_calls_pkey PRIMARY KEY (id)
+constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
+constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
+constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
+constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint campaigns.campaigns_pkey PRIMARY KEY (id)
+constraint campaigns.campaigns_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint channel_members.channel_members_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
+constraint channel_members.channel_members_channel_id_user_id_key UNIQUE (channel_id, user_id)
+constraint channel_members.channel_members_pkey PRIMARY KEY (id)
+constraint channel_members.channel_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint channels.channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint channels.channels_pkey PRIMARY KEY (id)
+constraint channels.channels_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
+constraint channels.channels_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint channels.channels_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text])))
+constraint character_castings.character_castings_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint character_castings.character_castings_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint character_castings.character_castings_pkey PRIMARY KEY (id)
+constraint character_castings.character_castings_project_id_character_name_key UNIQUE (project_id, character_name)
+constraint character_castings.character_castings_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint character_references.character_references_character_id_concept_asset_id_key UNIQUE (character_id, concept_asset_id)
+constraint character_references.character_references_character_id_fkey FOREIGN KEY (character_id) REFERENCES script_characters(id) ON DELETE CASCADE
+constraint character_references.character_references_concept_asset_id_fkey FOREIGN KEY (concept_asset_id) REFERENCES concept_assets(id) ON DELETE CASCADE
+constraint character_references.character_references_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint character_references.character_references_pkey PRIMARY KEY (id)
+constraint character_references.character_references_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint chat_channels.chat_channels_pkey PRIMARY KEY (id)
+constraint chat_messages.chat_messages_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES chat_channels(id) ON DELETE CASCADE
+constraint chat_messages.chat_messages_pkey PRIMARY KEY (id)
+constraint concept_assets.concept_assets_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint concept_assets.concept_assets_pkey PRIMARY KEY (id)
+constraint concept_assets.concept_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
+constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
+constraint job_applications.job_applications_applicant_id_fkey FOREIGN KEY (applicant_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint job_applications.job_applications_job_id_applicant_id_key UNIQUE (job_id, applicant_id)
+constraint job_applications.job_applications_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+constraint job_applications.job_applications_pkey PRIMARY KEY (id)
+constraint job_applications.job_applications_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text])))
+constraint jobs.jobs_budget_item_id_fkey FOREIGN KEY (budget_item_id) REFERENCES budget_items(id) ON DELETE SET NULL
+constraint jobs.jobs_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint jobs.jobs_pkey PRIMARY KEY (id)
+constraint jobs.jobs_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint jobs.jobs_rate_type_check CHECK ((rate_type = ANY (ARRAY['hourly'::text, 'fixed'::text])))
+constraint jobs.jobs_status_check CHECK ((status = ANY (ARRAY['open'::text, 'in-progress'::text, 'closed'::text])))
+constraint messages.messages_channel_uuid_fkey FOREIGN KEY (channel_uuid) REFERENCES channels(id) ON DELETE CASCADE
+constraint messages.messages_parent_message_id_fkey FOREIGN KEY (parent_message_id) REFERENCES messages(id) ON DELETE CASCADE
+constraint messages.messages_pkey PRIMARY KEY (id)
+constraint messages.messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint notifications.notifications_pkey PRIMARY KEY (id)
+constraint notifications.notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint portfolio_blocks.portfolio_blocks_block_type_check CHECK ((block_type = ANY (ARRAY['cover'::text, 'concept'::text, 'scene'::text, 'budget'::text, 'crew'::text, 'script'::text, 'text'::text, 'media'::text])))
+constraint portfolio_blocks.portfolio_blocks_pkey PRIMARY KEY (id)
+constraint portfolio_blocks.portfolio_blocks_portfolio_project_id_fkey FOREIGN KEY (portfolio_project_id) REFERENCES portfolio_projects(id) ON DELETE CASCADE
+constraint portfolio_media.portfolio_media_media_type_check CHECK ((media_type = ANY (ARRAY['youtube'::text, 'gdrive'::text, 'image'::text])))
+constraint portfolio_media.portfolio_media_pkey PRIMARY KEY (id)
+constraint portfolio_media.portfolio_media_project_id_fkey FOREIGN KEY (project_id) REFERENCES portfolio_projects(id) ON DELETE CASCADE
+constraint portfolio_projects.portfolio_projects_pkey PRIMARY KEY (id)
+constraint portfolio_projects.portfolio_projects_share_token_key UNIQUE (share_token)
+constraint portfolio_projects.portfolio_projects_source_project_id_fkey FOREIGN KEY (source_project_id) REFERENCES projects(id) ON DELETE SET NULL
+constraint portfolio_projects.portfolio_projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint profiles.profiles_pkey PRIMARY KEY (id)
+constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
+constraint profiles.profiles_username_key UNIQUE (username)
+constraint project_assets.project_assets_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint project_assets.project_assets_pkey PRIMARY KEY (id)
+constraint project_assets.project_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_assets.project_assets_type_check CHECK ((type = ANY (ARRAY['youtube'::text, 'gdrive'::text, 'image'::text, 'video'::text])))
+constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id)
+constraint project_audio_references.project_audio_references_pkey PRIMARY KEY (id)
+constraint project_audio_references.project_audio_references_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_audio_references.project_audio_references_reference_type_check CHECK ((reference_type = ANY (ARRAY['spotify'::text, 'youtube'::text, 'custom_upload'::text])))
+constraint project_audio_references.project_audio_references_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
+constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint project_beats.project_beats_pkey PRIMARY KEY (id)
+constraint project_beats.project_beats_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_beats.project_beats_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
+constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id)
+constraint project_crew.project_crew_pkey PRIMARY KEY (id)
+constraint project_crew.project_crew_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_crew.project_crew_project_id_user_id_key UNIQUE (project_id, user_id)
+constraint project_crew.project_crew_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'declined'::text])))
+constraint project_crew.project_crew_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
+constraint project_tasks.project_tasks_pkey PRIMARY KEY (id)
+constraint project_tasks.project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint projects.projects_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint projects.projects_pkey PRIMARY KEY (id)
+constraint projects.projects_share_token_key UNIQUE (share_token)
+constraint projects.projects_visibility_check CHECK ((visibility = ANY (ARRAY['private'::text, 'team'::text, 'link'::text, 'public'::text])))
+constraint scene_links.scene_links_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES studio_assets(id) ON DELETE CASCADE
+constraint scene_links.scene_links_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint scene_links.scene_links_pkey PRIMARY KEY (id)
+constraint scene_links.scene_links_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint scene_links.scene_links_script_id_scene_number_asset_id_key UNIQUE (script_id, scene_number, asset_id)
+constraint scene_references.scene_references_concept_asset_id_fkey FOREIGN KEY (concept_asset_id) REFERENCES concept_assets(id) ON DELETE CASCADE
+constraint scene_references.scene_references_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint scene_references.scene_references_pkey PRIMARY KEY (id)
+constraint scene_references.scene_references_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint scene_references.scene_references_scene_id_concept_asset_id_key UNIQUE (scene_id, concept_asset_id)
+constraint scene_references.scene_references_scene_id_fkey FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+constraint scene_schedule.scene_schedule_pkey PRIMARY KEY (id)
+constraint scene_schedule.scene_schedule_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint scene_schedule.scene_schedule_project_id_scene_number_key UNIQUE (project_id, scene_number)
+constraint scene_schedule.scene_schedule_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
+constraint scene_schedule.scene_schedule_shoot_day_id_fkey FOREIGN KEY (shoot_day_id) REFERENCES shoot_days(id) ON DELETE SET NULL
+constraint scenes.scenes_pkey PRIMARY KEY (id)
+constraint scenes.scenes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint scenes.scenes_time_of_day_check CHECK ((time_of_day = ANY (ARRAY['DAY'::text, 'NIGHT'::text, 'DAWN'::text, 'DUSK'::text])))
+constraint screenplay_collaborators.screenplay_collaborators_pkey PRIMARY KEY (id)
+constraint screenplay_collaborators.screenplay_collaborators_screenplay_id_user_id_key UNIQUE (screenplay_id, user_id)
+constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
+constraint script_annotations.script_annotations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint script_annotations.script_annotations_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_annotations.script_annotations_type_check CHECK ((type = ANY (ARRAY['shot'::text, 'beat'::text, 'note'::text, 'revision'::text, 'reference'::text, 'todo'::text])))
+constraint script_characters.script_characters_pkey PRIMARY KEY (id)
+constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_characters.script_characters_script_id_name_key UNIQUE (script_id, name)
+constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
+constraint script_collaborators.script_collaborators_permissions_check CHECK ((permissions = ANY (ARRAY['view'::text, 'comment'::text, 'edit'::text])))
+constraint script_collaborators.script_collaborators_pkey PRIMARY KEY (id)
+constraint script_collaborators.script_collaborators_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_collaborators.script_collaborators_script_id_user_id_key UNIQUE (script_id, user_id)
+constraint script_collaborators.script_collaborators_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint script_metadata.script_metadata_pkey PRIMARY KEY (script_id)
+constraint script_metadata.script_metadata_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
+constraint script_notes.script_notes_pkey PRIMARY KEY (id)
+constraint script_notes.script_notes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint script_notes.script_notes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_notes.script_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint script_revisions.script_revisions_pkey PRIMARY KEY (id)
+constraint script_revisions.script_revisions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_versions.script_versions_edited_by_fkey FOREIGN KEY (edited_by) REFERENCES profiles(id)
+constraint script_versions.script_versions_pkey PRIMARY KEY (id)
+constraint script_versions.script_versions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
+constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id)
+constraint scripts.scripts_pkey PRIMARY KEY (id)
+constraint scripts.scripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint scripts.scripts_share_token_key UNIQUE (share_token)
+constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
+constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint shoot_days.shoot_days_pkey PRIMARY KEY (id)
+constraint shoot_days.shoot_days_project_id_day_number_key UNIQUE (project_id, day_number)
+constraint shoot_days.shoot_days_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint shots.shots_pkey PRIMARY KEY (id)
+constraint shots.shots_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint shots.shots_scene_id_fkey FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
+constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
+constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint studio_assets.studio_assets_board_id_fkey FOREIGN KEY (board_id) REFERENCES studio_boards(id) ON DELETE CASCADE
+constraint studio_assets.studio_assets_pkey PRIMARY KEY (id)
+constraint studio_assets.studio_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint studio_boards.studio_boards_pkey PRIMARY KEY (id)
+constraint studio_boards.studio_boards_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint studio_boards.studio_boards_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
+constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
+constraint timeline_items.timeline_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint timeline_items.timeline_items_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'in-progress'::text, 'completed'::text, 'cancelled'::text])))
+constraint timeline_items.timeline_items_type_check CHECK ((type = ANY (ARRAY['milestone'::text, 'task'::text, 'event'::text, 'deadline'::text])))
+constraint user_presence.user_presence_pkey PRIMARY KEY (id)
+constraint user_presence.user_presence_status_check CHECK ((status = ANY (ARRAY['online'::text, 'away'::text, 'offline'::text])))
+constraint user_presence.user_presence_user_id_key UNIQUE (user_id)
+event-trigger ensure_rls ddl_command_end rls_auto_enable
+function internal.can_access_script(sid uuid) body=3a0642113cf58675a47823de93072763
+function internal.can_view_channel(cid uuid) body=77b1106f662af404bb454df94955e3f2
+function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
+function internal.is_project_member(pid uuid) body=9bc22fabe31cfa7b62f0ce463e762b43
+function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5ed
+function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
+function public.clean_old_presences() body=4648f0ec4b89e3a862fb51bc79c0d38a
+function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
+function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
+function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
+function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
+function public.toggle_message_reaction(p_message uuid, p_emoji text) body=1058ca6cb1756882a87ec3d0f3007311
+function public.update_collaborator_cursor(p_screenplay_id text, p_user_id text, p_line integer, p_col integer) body=52f3c8a968880f372b7a5a229507fa6d
+function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
+function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
+function public.update_user_presence(p_user_id text, p_status text, p_location text, p_activity text) body=0f3b2e9baaedf02afc81371abe4640ce
+grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
+grant function internal.can_view_channel(cid uuid) authenticated,postgres,service_role
+grant function internal.is_project_creator(pid uuid) authenticated,postgres,service_role
+grant function internal.is_project_member(pid uuid) authenticated,postgres,service_role
+grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
+grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
+grant function public.clean_old_presences() PUBLIC,anon,authenticated,postgres,service_role
+grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
+grant function public.handle_new_user() postgres,service_role
+grant function public.has_discord_webhook(cid uuid) PUBLIC,anon,authenticated,postgres,service_role
+grant function public.rls_auto_enable() postgres,service_role
+grant function public.toggle_message_reaction(p_message uuid, p_emoji text) authenticated,postgres,service_role
+grant function public.update_collaborator_cursor(p_screenplay_id text, p_user_id text, p_line integer, p_col integer) PUBLIC,anon,authenticated,postgres,service_role
+grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
+grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
+grant function public.update_user_presence(p_user_id text, p_status text, p_location text, p_activity text) PUBLIC,anon,authenticated,postgres,service_role
+index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
+index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
+index CREATE INDEX concept_assets_project_board_idx ON public.concept_assets USING btree (project_id, board)
+index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
+index CREATE INDEX idx_activity_user ON public.activity_feed USING btree (user_id)
+index CREATE INDEX idx_asset_comments_asset_id ON public.asset_comments USING btree (asset_id)
+index CREATE INDEX idx_asset_comments_user_id ON public.asset_comments USING btree (user_id)
+index CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id)
+index CREATE INDEX idx_budget_items_created_by ON public.budget_items USING btree (created_by)
+index CREATE INDEX idx_budget_items_job_id ON public.budget_items USING btree (job_id)
+index CREATE INDEX idx_budget_items_project ON public.budget_items USING btree (project_id)
+index CREATE INDEX idx_call_sheet_calls_sheet ON public.call_sheet_calls USING btree (call_sheet_id)
+index CREATE INDEX idx_call_sheets_project ON public.call_sheets USING btree (project_id)
+index CREATE INDEX idx_campaigns_created_by ON public.campaigns USING btree (created_by)
+index CREATE INDEX idx_campaigns_project ON public.campaigns USING btree (project_id)
+index CREATE INDEX idx_channel_members_user_id ON public.channel_members USING btree (user_id)
+index CREATE INDEX idx_channels_created_by ON public.channels USING btree (created_by)
+index CREATE INDEX idx_character_castings_crew_user ON public.character_castings USING btree (crew_user_id)
+index CREATE INDEX idx_character_castings_project ON public.character_castings USING btree (project_id)
+index CREATE INDEX idx_character_references_char ON public.character_references USING btree (character_id)
+index CREATE INDEX idx_character_references_concept_asset_id ON public.character_references USING btree (concept_asset_id)
+index CREATE INDEX idx_character_references_created_by ON public.character_references USING btree (created_by)
+index CREATE INDEX idx_character_references_project ON public.character_references USING btree (project_id)
+index CREATE INDEX idx_chat_channels_created_at ON public.chat_channels USING btree (created_at DESC)
+index CREATE INDEX idx_chat_channels_project_id ON public.chat_channels USING btree (project_id)
+index CREATE INDEX idx_chat_messages_channel_id ON public.chat_messages USING btree (channel_id)
+index CREATE INDEX idx_chat_messages_created_at ON public.chat_messages USING btree (created_at DESC)
+index CREATE INDEX idx_chat_messages_sender_id ON public.chat_messages USING btree (sender_id)
+index CREATE INDEX idx_concept_assets_created_by ON public.concept_assets USING btree (created_by)
+index CREATE INDEX idx_concept_assets_project ON public.concept_assets USING btree (project_id)
+index CREATE INDEX idx_job_applications_applicant_id ON public.job_applications USING btree (applicant_id)
+index CREATE INDEX idx_jobs_budget_item ON public.jobs USING btree (budget_item_id)
+index CREATE INDEX idx_jobs_created_by ON public.jobs USING btree (created_by)
+index CREATE INDEX idx_jobs_project_id ON public.jobs USING btree (project_id)
+index CREATE INDEX idx_jobs_status ON public.jobs USING btree (status)
+index CREATE INDEX idx_messages_channel ON public.messages USING btree (channel_id)
+index CREATE INDEX idx_messages_receiver_id ON public.messages USING btree (receiver_id)
+index CREATE INDEX idx_messages_sender ON public.messages USING btree (sender_id)
+index CREATE INDEX idx_notifications_user ON public.notifications USING btree (user_id, created_at DESC)
+index CREATE INDEX idx_portfolio_media_project_id ON public.portfolio_media USING btree (project_id)
+index CREATE INDEX idx_portfolio_projects_source ON public.portfolio_projects USING btree (source_project_id)
+index CREATE INDEX idx_project_assets_created_by ON public.project_assets USING btree (created_by)
+index CREATE INDEX idx_project_assets_project ON public.project_assets USING btree (project_id)
+index CREATE INDEX idx_project_beats_created_by ON public.project_beats USING btree (created_by)
+index CREATE INDEX idx_project_beats_project ON public.project_beats USING btree (project_id)
+index CREATE INDEX idx_project_beats_script_id ON public.project_beats USING btree (script_id)
+index CREATE INDEX idx_project_crew_invited_by ON public.project_crew USING btree (invited_by)
+index CREATE INDEX idx_project_crew_user_id ON public.project_crew USING btree (user_id)
+index CREATE INDEX idx_project_tasks_assigned_to ON public.project_tasks USING btree (assigned_to)
+index CREATE INDEX idx_project_tasks_project_id ON public.project_tasks USING btree (project_id)
+index CREATE INDEX idx_projects_creator ON public.projects USING btree (creator_id)
+index CREATE INDEX idx_projects_status ON public.projects USING btree (status)
+index CREATE INDEX idx_scene_links_asset ON public.scene_links USING btree (asset_id)
+index CREATE INDEX idx_scene_links_created_by ON public.scene_links USING btree (created_by)
+index CREATE INDEX idx_scene_links_script ON public.scene_links USING btree (script_id, scene_number)
+index CREATE INDEX idx_scene_references_concept_asset_id ON public.scene_references USING btree (concept_asset_id)
+index CREATE INDEX idx_scene_references_created_by ON public.scene_references USING btree (created_by)
+index CREATE INDEX idx_scene_references_project ON public.scene_references USING btree (project_id)
+index CREATE INDEX idx_scene_references_scene ON public.scene_references USING btree (scene_id)
+index CREATE INDEX idx_scene_schedule_project ON public.scene_schedule USING btree (project_id)
+index CREATE INDEX idx_scene_schedule_script_id ON public.scene_schedule USING btree (script_id)
+index CREATE INDEX idx_scene_schedule_shoot_day_id ON public.scene_schedule USING btree (shoot_day_id)
+index CREATE INDEX idx_scenes_project ON public.scenes USING btree (project_id)
+index CREATE INDEX idx_screenplay_collaborators_screenplay_id ON public.screenplay_collaborators USING btree (screenplay_id)
+index CREATE INDEX idx_screenplay_collaborators_user_id ON public.screenplay_collaborators USING btree (user_id)
+index CREATE INDEX idx_script_annotations_script ON public.script_annotations USING btree (script_id)
+index CREATE INDEX idx_script_characters_script ON public.script_characters USING btree (script_id)
+index CREATE INDEX idx_script_characters_updated_by ON public.script_characters USING btree (updated_by)
+index CREATE INDEX idx_script_collaborators_user_id ON public.script_collaborators USING btree (user_id)
+index CREATE INDEX idx_script_metadata_updated_by ON public.script_metadata USING btree (updated_by)
+index CREATE INDEX idx_script_revisions_created_by ON public.script_revisions USING btree (created_by)
+index CREATE INDEX idx_script_revisions_script ON public.script_revisions USING btree (script_id, created_at)
+index CREATE INDEX idx_script_versions_edited_by ON public.script_versions USING btree (edited_by)
+index CREATE INDEX idx_script_versions_script_id ON public.script_versions USING btree (script_id)
+index CREATE INDEX idx_scripts_created_by ON public.scripts USING btree (created_by)
+index CREATE INDEX idx_scripts_last_edited_by ON public.scripts USING btree (last_edited_by)
+index CREATE INDEX idx_scripts_project ON public.scripts USING btree (project_id)
+index CREATE INDEX idx_shoot_days_project ON public.shoot_days USING btree (project_id)
+index CREATE INDEX idx_shots_project ON public.shots USING btree (project_id)
+index CREATE INDEX idx_shots_scene ON public.shots USING btree (scene_id)
+index CREATE INDEX idx_studio_assets_board_id ON public.studio_assets USING btree (board_id)
+index CREATE INDEX idx_studio_assets_user_id ON public.studio_assets USING btree (user_id)
+index CREATE INDEX idx_studio_boards_user_id ON public.studio_boards USING btree (user_id)
+index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING btree (assigned_to)
+index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
+index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
+index CREATE INDEX idx_user_presence_updated_at ON public.user_presence USING btree (updated_at DESC)
+index CREATE INDEX messages_channel_uuid_idx ON public.messages USING btree (channel_uuid)
+index CREATE INDEX messages_parent_idx ON public.messages USING btree (parent_message_id)
+index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
+index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
+index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
+index CREATE UNIQUE INDEX asset_comments_pkey ON public.asset_comments USING btree (id)
+index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
+index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
+index CREATE UNIQUE INDEX call_sheet_calls_pkey ON public.call_sheet_calls USING btree (id)
+index CREATE UNIQUE INDEX call_sheets_pkey ON public.call_sheets USING btree (id)
+index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sheets USING btree (project_id, shoot_day)
+index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
+index CREATE UNIQUE INDEX channel_members_channel_id_user_id_key ON public.channel_members USING btree (channel_id, user_id)
+index CREATE UNIQUE INDEX channel_members_pkey ON public.channel_members USING btree (id)
+index CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (id)
+index CREATE UNIQUE INDEX character_castings_pkey ON public.character_castings USING btree (id)
+index CREATE UNIQUE INDEX character_castings_project_id_character_name_key ON public.character_castings USING btree (project_id, character_name)
+index CREATE UNIQUE INDEX character_references_character_id_concept_asset_id_key ON public.character_references USING btree (character_id, concept_asset_id)
+index CREATE UNIQUE INDEX character_references_pkey ON public.character_references USING btree (id)
+index CREATE UNIQUE INDEX chat_channels_pkey ON public.chat_channels USING btree (id)
+index CREATE UNIQUE INDEX chat_messages_pkey ON public.chat_messages USING btree (id)
+index CREATE UNIQUE INDEX concept_assets_pkey ON public.concept_assets USING btree (id)
+index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
+index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfolio_projects USING btree (user_id, source_project_id) WHERE (source_project_id IS NOT NULL)
+index CREATE UNIQUE INDEX job_applications_job_id_applicant_id_key ON public.job_applications USING btree (job_id, applicant_id)
+index CREATE UNIQUE INDEX job_applications_pkey ON public.job_applications USING btree (id)
+index CREATE UNIQUE INDEX jobs_pkey ON public.jobs USING btree (id)
+index CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
+index CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)
+index CREATE UNIQUE INDEX portfolio_blocks_pkey ON public.portfolio_blocks USING btree (id)
+index CREATE UNIQUE INDEX portfolio_media_pkey ON public.portfolio_media USING btree (id)
+index CREATE UNIQUE INDEX portfolio_projects_pkey ON public.portfolio_projects USING btree (id)
+index CREATE UNIQUE INDEX portfolio_projects_share_token_key ON public.portfolio_projects USING btree (share_token)
+index CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)
+index CREATE UNIQUE INDEX profiles_username_key ON public.profiles USING btree (username)
+index CREATE UNIQUE INDEX project_assets_pkey ON public.project_assets USING btree (id)
+index CREATE UNIQUE INDEX project_audio_references_pkey ON public.project_audio_references USING btree (id)
+index CREATE UNIQUE INDEX project_beats_pkey ON public.project_beats USING btree (id)
+index CREATE UNIQUE INDEX project_crew_pkey ON public.project_crew USING btree (id)
+index CREATE UNIQUE INDEX project_crew_project_id_user_id_key ON public.project_crew USING btree (project_id, user_id)
+index CREATE UNIQUE INDEX project_tasks_pkey ON public.project_tasks USING btree (id)
+index CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)
+index CREATE UNIQUE INDEX projects_share_token_key ON public.projects USING btree (share_token)
+index CREATE UNIQUE INDEX scene_links_pkey ON public.scene_links USING btree (id)
+index CREATE UNIQUE INDEX scene_links_script_id_scene_number_asset_id_key ON public.scene_links USING btree (script_id, scene_number, asset_id)
+index CREATE UNIQUE INDEX scene_references_pkey ON public.scene_references USING btree (id)
+index CREATE UNIQUE INDEX scene_references_scene_id_concept_asset_id_key ON public.scene_references USING btree (scene_id, concept_asset_id)
+index CREATE UNIQUE INDEX scene_schedule_pkey ON public.scene_schedule USING btree (id)
+index CREATE UNIQUE INDEX scene_schedule_project_id_scene_number_key ON public.scene_schedule USING btree (project_id, scene_number)
+index CREATE UNIQUE INDEX scenes_pkey ON public.scenes USING btree (id)
+index CREATE UNIQUE INDEX screenplay_collaborators_pkey ON public.screenplay_collaborators USING btree (id)
+index CREATE UNIQUE INDEX screenplay_collaborators_screenplay_id_user_id_key ON public.screenplay_collaborators USING btree (screenplay_id, user_id)
+index CREATE UNIQUE INDEX script_annotations_pkey ON public.script_annotations USING btree (id)
+index CREATE UNIQUE INDEX script_characters_pkey ON public.script_characters USING btree (id)
+index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_characters USING btree (script_id, name)
+index CREATE UNIQUE INDEX script_collaborators_pkey ON public.script_collaborators USING btree (id)
+index CREATE UNIQUE INDEX script_collaborators_script_id_user_id_key ON public.script_collaborators USING btree (script_id, user_id)
+index CREATE UNIQUE INDEX script_metadata_pkey ON public.script_metadata USING btree (script_id)
+index CREATE UNIQUE INDEX script_notes_pkey ON public.script_notes USING btree (id)
+index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING btree (id)
+index CREATE UNIQUE INDEX script_versions_pkey ON public.script_versions USING btree (id)
+index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
+index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
+index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
+index CREATE UNIQUE INDEX shoot_days_pkey ON public.shoot_days USING btree (id)
+index CREATE UNIQUE INDEX shoot_days_project_id_day_number_key ON public.shoot_days USING btree (project_id, day_number)
+index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
+index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
+index CREATE UNIQUE INDEX studio_assets_pkey ON public.studio_assets USING btree (id)
+index CREATE UNIQUE INDEX studio_boards_pkey ON public.studio_boards USING btree (id)
+index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
+index CREATE UNIQUE INDEX user_presence_pkey ON public.user_presence USING btree (id)
+index CREATE UNIQUE INDEX user_presence_user_id_key ON public.user_presence USING btree (user_id)
+policy public.activity_feed "Activity readable by project members" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR ((metadata ->> 'project_id'::text) IS NULL) OR (((metadata ->> 'project_id'::text))::uuid IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid))))) check -
+policy public.activity_feed "Authenticated users log activity" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (user_id = ( SELECT auth.uid() AS uid)))
+policy public.asset_comments "Asset owner can comment" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (user_id = ( SELECT auth.uid() AS uid)) AND (asset_id IN ( SELECT studio_assets.id FROM studio_assets WHERE (studio_assets.user_id = ( SELECT auth.uid() AS uid)))))
+policy public.asset_comments "Asset owner can view comments" PERMISSIVE SELECT to authenticated using (asset_id IN ( SELECT studio_assets.id FROM studio_assets WHERE (studio_assets.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.audit_logs "Admins can view audit logs" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM profiles WHERE ((profiles.id = ( SELECT auth.uid() AS uid)) AND (profiles.is_admin = true)))) check -
+policy public.audit_logs "Authenticated users can create audit logs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) IS NOT NULL)
+policy public.budget_items "Budget members can manage" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.budget_items "Budget members can view" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.call_sheet_calls "Call sheet calls viewable by project creator or crew" PERMISSIVE SELECT to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check -
+policy public.call_sheet_calls "Call sheet calls writable by project creator or crew" PERMISSIVE ALL to public using (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id)))) check (call_sheet_id IN ( SELECT call_sheets.id FROM call_sheets WHERE (internal.is_project_creator(call_sheets.project_id) OR internal.is_project_member(call_sheets.project_id))))
+policy public.call_sheets "Call sheets viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.call_sheets "Call sheets writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.campaigns "Campaigns: project members can manage" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.campaigns "Campaigns: project members can view" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.channel_members "channel_members manage" PERMISSIVE ALL to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
+policy public.channel_members "channel_members viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(channel_id) check -
+policy public.channels "channels create by project creator or crew" PERMISSIVE INSERT to public using - check ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))
+policy public.channels "channels delete" PERMISSIVE DELETE to authenticated using can_manage_channel(id) check -
+policy public.channels "channels update" PERMISSIVE UPDATE to authenticated using can_manage_channel(id) check -
+policy public.channels "channels viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(id) check -
+policy public.character_castings "Castings viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.character_castings "Castings writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.character_references "char_refs delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.character_references "char_refs insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.character_references "char_refs view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.chat_channels "chat_channels_insert" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) IS NOT NULL)
+policy public.chat_channels "chat_channels_read" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) IS NOT NULL) check -
+policy public.chat_messages "chat_messages_insert" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid))::text = sender_id)
+policy public.chat_messages "chat_messages_read" PERMISSIVE SELECT to authenticated using true check -
+policy public.concept_assets "Concept assets: project members can manage" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.concept_assets "Concept assets: project members can view" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
+policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = auth.uid()))
+policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
+policy public.job_applications "Job owners can update application status" PERMISSIVE UPDATE to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))
+policy public.job_applications "Job owners can view applications" PERMISSIVE SELECT to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check -
+policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
+policy public.job_applications "Users can view their own applications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = applicant_id) check -
+policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
+policy public.jobs "Jobs publicly readable" PERMISSIVE SELECT to public using ((status = 'open'::text) OR (created_by = ( SELECT auth.uid() AS uid))) check -
+policy public.messages "Authenticated users send messages" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (sender_id = ( SELECT auth.uid() AS uid)) AND ((receiver_id IS NOT NULL) OR ((channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid)) OR ((channel_uuid IS NULL) AND (channel_id IS NOT NULL))))
+policy public.messages "Channel messages readable" PERMISSIVE SELECT to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR (receiver_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND internal.can_view_channel(channel_uuid)) OR ((channel_uuid IS NULL) AND (channel_id IS NOT NULL))) check -
+policy public.notifications "Authenticated users can create notifications" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) IS NOT NULL)
+policy public.notifications "Users can delete their own notifications" PERMISSIVE DELETE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
+policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
+policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
+policy public.portfolio_blocks "Portfolio blocks owner write" PERMISSIVE ALL to public using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = auth.uid()))) check -
+policy public.portfolio_blocks "Portfolio blocks readable" PERMISSIVE SELECT to public using true check -
+policy public.portfolio_media "Portfolio media owner write" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_media "Portfolio media readable" PERMISSIVE SELECT to public using true check -
+policy public.portfolio_media "Portfolio owner can manage media" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_projects "Portfolio owner only write" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_projects "Portfolio publicly readable" PERMISSIVE SELECT to public using true check -
+policy public.profiles "Profiles readable by all" PERMISSIVE SELECT to public using true check -
+policy public.profiles "Users insert own profile" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = id)
+policy public.profiles "Users update own profile" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = id) check -
+policy public.project_assets "Project creators can manage assets" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)))) check (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid))))
+policy public.project_assets "Project members can view assets" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.project_audio_references "Project audio refs are viewable by everyone" PERMISSIVE SELECT to public using true check -
+policy public.project_audio_references "Users can add project audio refs" PERMISSIVE INSERT to public using - check (auth.uid() = added_by)
+policy public.project_audio_references "Users can delete own audio refs" PERMISSIVE DELETE to public using (auth.uid() = added_by) check -
+policy public.project_beats "Project members can manage beats" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.project_crew "Project creators can manage crew" PERMISSIVE INSERT to authenticated using - check internal.is_project_creator(project_id)
+policy public.project_crew "Project creators can remove crew" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR (user_id = ( SELECT auth.uid() AS uid))) check -
+policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check -
+policy public.project_crew "Project crew viewable by project members" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id)) check -
+policy public.project_tasks "Project task members can manage" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.project_tasks "Project task members can view" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.projects "Authenticated users create projects" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (creator_id = ( SELECT auth.uid() AS uid)))
+policy public.projects "Creators delete projects" PERMISSIVE DELETE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
+policy public.projects "Creators update projects" PERMISSIVE UPDATE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
+policy public.projects "Project members can view" PERMISSIVE SELECT to authenticated using ((creator_id = ( SELECT auth.uid() AS uid)) OR ((visibility <> 'private'::text) AND internal.is_project_member(id))) check -
+policy public.scene_links "Project members can link scenes" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))))))
+policy public.scene_links "Project members can unlink scenes" PERMISSIVE DELETE to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))))) check -
+policy public.scene_links "Scene links readable by project members" PERMISSIVE SELECT to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))))) check -
+policy public.scene_references "scene_refs delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.scene_references "scene_refs insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.scene_references "scene_refs view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.scene_schedule "Project members can manage scene schedule" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.scenes "Scenes: project members can manage" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.scenes "Scenes: project members can view" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.screenplay_collaborators "screenplay_collab_read" PERMISSIVE SELECT to authenticated using true check -
+policy public.screenplay_collaborators "screenplay_collab_update" PERMISSIVE UPDATE to authenticated using ((( SELECT auth.uid() AS uid))::text = user_id) check -
+policy public.script_annotations "script_annotations delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = auth.uid()))
+policy public.script_annotations "script_annotations view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.script_characters "Script members can manage characters" PERMISSIVE ALL to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE ((scripts.project_id IS NULL) OR (scripts.project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid))))))) check -
+policy public.script_collaborators "Script collaborators viewable by participants" PERMISSIVE SELECT to authenticated using ((script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)))) OR (user_id = ( SELECT auth.uid() AS uid))) check -
+policy public.script_collaborators "Script owners can manage collaborators" PERMISSIVE INSERT to authenticated using - check (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid))))
+policy public.script_collaborators "Script owners can remove collaborators" PERMISSIVE DELETE to authenticated using ((script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)))) OR (user_id = ( SELECT auth.uid() AS uid))) check -
+policy public.script_collaborators "Script owners can update collaborators" PERMISSIVE UPDATE to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)))) check -
+policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
+policy public.script_metadata "metadata writable by script members" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_notes "Allow auth" PERMISSIVE ALL to public using (auth.role() = 'authenticated'::text) check -
+policy public.script_revisions "Script members can manage revisions" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_versions "Script editors can create versions" PERMISSIVE INSERT to authenticated using - check (script_id IN ( SELECT scripts.id FROM scripts WHERE (scripts.created_by = ( SELECT auth.uid() AS uid)) UNION SELECT script_collaborators.script_id FROM script_collaborators WHERE ((script_collaborators.user_id = ( SELECT auth.uid() AS uid)) AND (script_collaborators.permissions = 'edit'::text))))
+policy public.script_versions "Script version viewable by script access" PERMISSIVE SELECT to authenticated using (script_id IN ( SELECT scripts.id FROM scripts WHERE ((scripts.created_by = ( SELECT auth.uid() AS uid)) OR (scripts.shared = true)) UNION SELECT script_collaborators.script_id FROM script_collaborators WHERE (script_collaborators.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.scripts "Authenticated users create scripts" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.scripts "Script editors can update" PERMISSIVE UPDATE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR (last_edited_by = ( SELECT auth.uid() AS uid)) OR ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)))) check -
+policy public.scripts "Script members can view" PERMISSIVE SELECT to authenticated using ((shared = true) OR (created_by = ( SELECT auth.uid() AS uid)) OR (last_edited_by = ( SELECT auth.uid() AS uid)) OR ((project_id IS NOT NULL) AND (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))))) check -
+policy public.scripts "Script owners can delete" PERMISSIVE DELETE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
+policy public.scripts "Shared scripts publicly viewable" PERMISSIVE SELECT to anon using (shared = true) check -
+policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to public using (user_id = auth.uid()) check -
+policy public.sfx_assets "SFX assets owner only insert" PERMISSIVE INSERT to public using - check (user_id = auth.uid())
+policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
+policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
+policy public.shoot_days "Project members can manage shoot days" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.shots "Shots viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.shots "Shots writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.spotify_connections "Users can delete own spotify connection" PERMISSIVE DELETE to public using (auth.uid() = user_id) check -
+policy public.spotify_connections "Users can insert own spotify connection" PERMISSIVE INSERT to public using - check (auth.uid() = user_id)
+policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
+policy public.spotify_connections "Users can view own spotify connection" PERMISSIVE SELECT to public using (auth.uid() = user_id) check -
+policy public.studio_assets "Studio assets owner only" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.studio_boards "Studio boards owner only" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.timeline_items "Timeline members can manage" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.timeline_items "Timeline members can view" PERMISSIVE SELECT to authenticated using (project_id IN ( SELECT projects.id FROM projects WHERE (projects.creator_id = ( SELECT auth.uid() AS uid)) UNION SELECT project_crew.project_id FROM project_crew WHERE (project_crew.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.user_presence "presence_insert" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid))::text = user_id)
+policy public.user_presence "presence_read" PERMISSIVE SELECT to authenticated using true check -
+policy public.user_presence "presence_update" PERMISSIVE UPDATE to authenticated using ((( SELECT auth.uid() AS uid))::text = user_id) check -
+policy storage.objects "Allow authenticated uploads to sfx_library" PERMISSIVE INSERT to public using - check ((bucket_id = 'sfx_library'::text) AND (auth.role() = 'authenticated'::text))
+policy storage.objects "Auth Users Upload" PERMISSIVE INSERT to public using - check ((bucket_id = 'assets'::text) AND (auth.role() = 'authenticated'::text))
+policy storage.objects "Authenticated users can upload" PERMISSIVE INSERT to public using - check ((bucket_id = 'studio-assets'::text) AND (auth.role() = 'authenticated'::text))
+policy storage.objects "Public Access" PERMISSIVE SELECT to public using (bucket_id = 'studio-assets'::text) check -
+policy storage.objects "SFX files insertable by authenticated users" PERMISSIVE INSERT to public using - check ((bucket_id = 'sfx-library'::text) AND (auth.role() = 'authenticated'::text))
+policy storage.objects "SFX files viewable by everyone" PERMISSIVE SELECT to public using (bucket_id = 'sfx-library'::text) check -
+policy storage.objects "Users Delete Own Files" PERMISSIVE DELETE to public using ((bucket_id = 'assets'::text) AND (auth.uid() = owner)) check -
+policy storage.objects "Users can delete their own assets" PERMISSIVE DELETE to public using ((bucket_id = 'studio-assets'::text) AND (auth.uid() = owner)) check -
+realtime public.chat_messages
+realtime public.screenplay_collaborators
+realtime public.user_presence
+rls activity_feed enabled=true forced=false
+rls asset_comments enabled=true forced=false
+rls audit_logs enabled=true forced=false
+rls budget_items enabled=true forced=false
+rls call_sheet_calls enabled=true forced=false
+rls call_sheets enabled=true forced=false
+rls campaigns enabled=true forced=false
+rls channel_members enabled=true forced=false
+rls channels enabled=true forced=false
+rls character_castings enabled=true forced=false
+rls character_references enabled=true forced=false
+rls chat_channels enabled=true forced=false
+rls chat_messages enabled=true forced=false
+rls concept_assets enabled=true forced=false
+rls discord_integrations enabled=true forced=false
+rls job_applications enabled=true forced=false
+rls jobs enabled=true forced=false
+rls messages enabled=true forced=false
+rls notifications enabled=true forced=false
+rls portfolio_blocks enabled=true forced=false
+rls portfolio_media enabled=true forced=false
+rls portfolio_projects enabled=true forced=false
+rls profiles enabled=true forced=false
+rls project_assets enabled=true forced=false
+rls project_audio_references enabled=true forced=false
+rls project_beats enabled=true forced=false
+rls project_crew enabled=true forced=false
+rls project_tasks enabled=true forced=false
+rls projects enabled=true forced=false
+rls scene_links enabled=true forced=false
+rls scene_references enabled=true forced=false
+rls scene_schedule enabled=true forced=false
+rls scenes enabled=true forced=false
+rls screenplay_collaborators enabled=true forced=false
+rls script_annotations enabled=true forced=false
+rls script_characters enabled=true forced=false
+rls script_collaborators enabled=true forced=false
+rls script_metadata enabled=true forced=false
+rls script_notes enabled=true forced=false
+rls script_revisions enabled=true forced=false
+rls script_versions enabled=true forced=false
+rls scripts enabled=true forced=false
+rls sfx_assets enabled=true forced=false
+rls shoot_days enabled=true forced=false
+rls shots enabled=true forced=false
+rls spotify_connections enabled=true forced=false
+rls studio_assets enabled=true forced=false
+rls studio_boards enabled=true forced=false
+rls timeline_items enabled=true forced=false
+rls user_presence enabled=true forced=false
+schema internal
+schema public
+trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
+trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER update_chat_messages_updated_at BEFORE UPDATE ON public.chat_messages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
+trigger CREATE TRIGGER update_screenplay_collab_updated_at BEFORE UPDATE ON public.screenplay_collaborators FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
+trigger CREATE TRIGGER update_user_presence_updated_at BEFORE UPDATE ON public.user_presence FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
+view active_users 7516ff5a29f4e62afe3e36fce3917f5c
+view channel_activity 435c1ced2cfecbdd67790afab6664c25
+view-options active_users {security_invoker=on}
+view-options channel_activity {security_invoker=on}
