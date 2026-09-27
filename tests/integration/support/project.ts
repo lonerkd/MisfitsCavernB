@@ -11,7 +11,7 @@ export async function createCrewedProject(cast: Cast, title: string) {
 
   const crew = await cast.sam.client
     .from('project_crew')
-    .insert({ project_id: project.data.id, user_id: cast.jordan.id, role: 'Production Designer', status: 'confirmed' });
+    .insert({ project_id: project.data.id, user_id: cast.jordan.id, craft: 'Production designer', status: 'confirmed' });
   if (crew.error) throw crew.error;
 
   return { projectId: project.data.id, shareToken: project.data.share_token };

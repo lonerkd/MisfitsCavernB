@@ -77,7 +77,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
     setTagAt({
       ctx: c,
       top: lineEl.offsetTop - (ctx.highlightRef.current?.scrollTop ?? 0) + lineEl.offsetHeight + 6,
-      left: Math.max(16, lineEl.offsetLeft + Math.min(col, 48) * EDITOR_CHAR_WIDTH - 24),
+      // Under the selection, kept inside the page (the bar is up to 520px wide).
+      left: Math.max(16, Math.min(lineEl.offsetLeft + col * EDITOR_CHAR_WIDTH - 24, (ctx.highlightRef.current?.clientWidth ?? 900) - 536)),
     });
   };
 

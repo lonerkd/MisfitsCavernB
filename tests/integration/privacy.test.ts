@@ -46,7 +46,7 @@ describe('a private project is private everywhere', () => {
 describe('crew see their teammates', () => {
   it('a crew member sees the whole crew, not just their own row', async () => {
     const riley2 = cast.riley;
-    await cast.sam.client.from('project_crew').insert({ project_id: projectId, user_id: riley2.id, role: 'Gaffer', status: 'confirmed' });
+    await cast.sam.client.from('project_crew').insert({ project_id: projectId, user_id: riley2.id, craft: 'Gaffer', status: 'confirmed' });
     const { data } = await cast.jordan.client.from('project_crew').select('user_id').eq('project_id', projectId);
     expect(data?.map((r) => r.user_id).sort()).toEqual([cast.jordan.id, riley2.id].sort());
     await cast.sam.client.from('project_crew').delete().eq('project_id', projectId).eq('user_id', riley2.id);

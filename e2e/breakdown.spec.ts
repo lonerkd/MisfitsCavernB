@@ -96,6 +96,7 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     // The breakdown UI (panel, element card, highlights, tag bar) passes WCAG 2.2 AA.
     await selectInScript(page, 'checks');
     await expect(page.getByRole('dialog', { name: 'Tag “checks”' })).toBeVisible();
+    await page.screenshot({ path: 'test-results/breakdown-editor-axe.png' });
     const violations = await axeViolations(page);
     expect(violations, violations.join('\n')).toEqual([]);
     await page.screenshot({ path: 'test-results/breakdown-editor.png', fullPage: false });

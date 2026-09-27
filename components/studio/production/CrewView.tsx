@@ -10,7 +10,7 @@ import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
 
-export type CrewRow = { id: string; user_id: string; role: string; status?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
+export type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; status?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
 /** The crew, who's online, recruiting, and casting. */
 export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () => void }) {
@@ -32,7 +32,7 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
                 key={m.id}
                 index={i}
                 isOnline={online.has(m.user_id)}
-                member={{ name: m.profiles?.username || 'Unknown', role: m.role, status: m.status, avatar: m.profiles?.avatar_url, userId: m.user_id }}
+                member={{ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status, avatar: m.profiles?.avatar_url, userId: m.user_id }}
               />
             ))}
           </div>

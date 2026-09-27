@@ -19,28 +19,11 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { logActivity } from '@/lib/supabase/activity';
 import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
+import { useCrafts, type Craft } from '@/lib/crafts';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
 
-const ROLES = [
-  'Director', 'DP / Cinematographer', 'Editor', 'Sound Designer',
-  'Colorist', 'Producer', 'Writer', 'Actor', 'PA', 'Other',
-];
-
-const ROLE_COLORS: Record<string, string> = {
-  'Director':            '#e8431a',
-  'DP / Cinematographer':'#f59e0b',
-  'Editor':              '#6366f1',
-  'Sound Designer':      '#10b981',
-  'Colorist':            '#ec4899',
-  'Producer':            '#8b5cf6',
-  'Writer':              '#3b82f6',
-  'Actor':               '#14b8a6',
-  'PA':                  '#a3a3a3',
-  'Other':               '#737373',
-};
-
-function roleColor(role: string) {
-  return ROLE_COLORS[role] ?? '#737373';
-}
+// Crafts (and their colours) come from public.crafts — see lib/crafts.
+const craftColor = (byName: Map<string, Craft>, role: string) => byName.get(role)?.color ?? '#737373';
 
 function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole }: {
   onClose: () => void;
@@ -51,7 +34,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   initialTitle?: string;
   initialRole?: string;
 }) {
-  const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || 'Director', rate: '' });
+  const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || '', rate: '' });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -133,30 +116,8 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Role</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {ROLES.map(r => {
-                const active = form.role === r;
-                const color = roleColor(r);
-                return (
-                  <button
-                    key={r}
-                    onClick={() => setForm(f => ({ ...f, role: r }))}
-                    style={{
-                      padding: '6px 12px', borderRadius: 9999,
-                      background: active ? `${color}18` : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${active ? color + '55' : 'rgba(255,255,255,0.06)'}`,
-                      color: active ? color : 'var(--fg-dim)',
-                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
-                      textTransform: 'uppercase', cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {r}
-                  </button>
-                );
-              })}
-            </div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Craft</div>
+            <CraftPicker label="Craft" value={form.role || null} onChange={(craft) => setForm(f => ({ ...f, role: craft ?? '' }))} placeholder="Which craft is this for?" />
           </div>
 
           <Input
@@ -219,8 +180,9 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
 }
 
 function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => void; index: number }) {
+  const { byName } = useCrafts();
   const [hovered, setHovered] = useState(false);
-  const color = roleColor(job.role);
+  const color = craftColor(byName, job.role);
   const daysAgo = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 86400000);
 
   return (
@@ -314,7 +276,8 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
 }
 
 function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) => void; index: number }) {
-  const color = roleColor(job.role);
+  const { byName } = useCrafts();
+  const color = craftColor(byName, job.role);
   const [closing, setClosing] = useState(false);
 
   return (
@@ -402,6 +365,7 @@ export default function JobsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const { crafts, byName: craftByName } = useCrafts();
   const [showPost, setShowPost] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [tab, setTab] = useState<'open' | 'mine'>('open');
@@ -501,10 +465,9 @@ export default function JobsPage() {
     [tab, jobs.length, filtered.length, myJobs.length, roleFilter, user],
   );
 
-  const roleCounts = ROLES.reduce<Record<string, number>>((acc, r) => {
-    acc[r] = jobs.filter(j => j.role === r).length;
-    return acc;
-  }, {});
+  // The filter lists the crafts that have postings, in the crafts list's order.
+  const roleCounts = jobs.reduce<Record<string, number>>((acc, j) => { acc[j.role] = (acc[j.role] ?? 0) + 1; return acc; }, {});
+  const postedCrafts = [...crafts.filter((c) => roleCounts[c.name]).map((c) => c.name), ...Object.keys(roleCounts).filter((r) => !craftByName.has(r))];
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
@@ -625,10 +588,10 @@ export default function JobsPage() {
             <span style={{ fontSize: 8, color: 'var(--fg-dim)' }}>{jobs.length}</span>
           </button>
 
-          {ROLES.map(r => {
+          {postedCrafts.map(r => {
             const count = roleCounts[r] ?? 0;
             const active = roleFilter === r;
-            const color = roleColor(r);
+            const color = readable(craftColor(craftByName, r));
             return (
               <button
                 key={r}

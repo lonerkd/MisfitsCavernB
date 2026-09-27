@@ -44,7 +44,7 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         supabase.from('scenes').select('title,created_at').eq('project_id', projectId).is('removed_at', null).order('created_at', { ascending: false }).limit(4),
         supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('project_crew').select('role,craft,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('script_annotations').select('type,text,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
       ]);
@@ -519,7 +519,7 @@ export default function LoungePage() {
     if (!project?.id) { setCrewList([]); return; }
     (async () => {
       const [{ data: crew }, { data: owner }] = await Promise.all([
-        supabase.from('project_crew').select('user_id, role, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
+        supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
         project.creator_id
           ? supabase.from('profiles').select('id, username, avatar_url').eq('id', project.creator_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -529,7 +529,7 @@ export default function LoungePage() {
         ...(owner ? [{ id: owner.id, name: owner.username || 'Owner', role: 'Owner', avatar: owner.avatar_url }] : []),
         ...(crew || [])
           .filter((c) => c.user_id !== owner?.id)
-          .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.role || 'Crew', avatar: c.profiles?.avatar_url })),
+          .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
       ];
       setCrewList(team);
     })();

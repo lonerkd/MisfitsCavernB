@@ -117,6 +117,11 @@ column character_media.created_by uuid default auth.uid()
 column character_media.media_id uuid not null
 column character_media.position integer default 0 not null
 column character_media.project_id uuid not null
+column crafts.color text not null
+column crafts.created_at timestamp with time zone default now() not null
+column crafts.department text not null
+column crafts.name text not null
+column crafts.position integer default 0 not null
 column discord_integrations.channel_id uuid not null
 column discord_integrations.created_at timestamp with time zone default now()
 column discord_integrations.created_by uuid
@@ -246,7 +251,7 @@ column profiles.id uuid not null
 column profiles.is_admin boolean default false
 column profiles.location text
 column profiles.notification_prefs jsonb default '{}'::jsonb not null
-column profiles.role text default 'creator'::text
+column profiles.role text
 column profiles.status text default 'OPEN'::text
 column profiles.updated_at timestamp with time zone default now()
 column profiles.username text not null
@@ -271,11 +276,12 @@ column project_beats.scene_number text
 column project_beats.script_id uuid
 column project_beats.title text
 column project_beats.updated_at timestamp with time zone default now()
+column project_crew.craft text
 column project_crew.created_at timestamp with time zone default now()
 column project_crew.id uuid default uuid_generate_v4() not null
 column project_crew.invited_by uuid
 column project_crew.project_id uuid not null
-column project_crew.role text default 'team member'::text
+column project_crew.role text default 'contributor'::text not null
 column project_crew.status text default 'confirmed'::text
 column project_crew.user_id uuid not null
 column project_tasks.assigned_to uuid
@@ -512,6 +518,10 @@ constraint character_media.character_media_character_fkey FOREIGN KEY (character
 constraint character_media.character_media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_media.character_media_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint character_media.character_media_pkey PRIMARY KEY (character_id, media_id)
+constraint crafts.crafts_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
+constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) >= 1) AND (char_length(btrim(department)) <= 40)))
+constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
+constraint crafts.crafts_pkey PRIMARY KEY (name)
 constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
@@ -525,6 +535,7 @@ constraint jobs.jobs_created_by_fkey FOREIGN KEY (created_by) REFERENCES profile
 constraint jobs.jobs_pkey PRIMARY KEY (id)
 constraint jobs.jobs_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint jobs.jobs_rate_type_check CHECK ((rate_type = ANY (ARRAY['hourly'::text, 'fixed'::text])))
+constraint jobs.jobs_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE
 constraint jobs.jobs_status_check CHECK ((status = ANY (ARRAY['open'::text, 'in-progress'::text, 'closed'::text])))
 constraint media.media_board_check CHECK ((char_length(board) <= 60))
 constraint media.media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
@@ -589,6 +600,7 @@ constraint post_notes.post_notes_resolved_check CHECK (((resolved_at IS NULL) = 
 constraint post_notes.post_notes_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE SET NULL (scene_id)
 constraint profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint profiles.profiles_pkey PRIMARY KEY (id)
+constraint profiles.profiles_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
 constraint profiles.profiles_username_key UNIQUE (username)
 constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id)
@@ -600,10 +612,12 @@ constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) 
 constraint project_beats.project_beats_pkey PRIMARY KEY (id)
 constraint project_beats.project_beats_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_beats.project_beats_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
+constraint project_crew.project_crew_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
 constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id)
 constraint project_crew.project_crew_pkey PRIMARY KEY (id)
 constraint project_crew.project_crew_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_crew.project_crew_project_id_user_id_key UNIQUE (project_id, user_id)
+constraint project_crew.project_crew_role_check CHECK ((role = ANY (ARRAY['lead'::text, 'contributor'::text, 'viewer'::text])))
 constraint project_crew.project_crew_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'declined'::text])))
 constraint project_crew.project_crew_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
@@ -767,6 +781,7 @@ index CREATE INDEX channel_members_channel_idx ON public.channel_members USING b
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
 index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
 index CREATE INDEX character_media_project_idx ON public.character_media USING btree (project_id)
+index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
 index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
 index CREATE INDEX idx_activity_user ON public.activity_feed USING btree (user_id)
 index CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id)
@@ -819,6 +834,7 @@ index CREATE INDEX idx_studio_boards_user_id ON public.studio_boards USING btree
 index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING btree (assigned_to)
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
+index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
 index CREATE INDEX media_created_by_idx ON public.media USING btree (created_by)
 index CREATE INDEX media_project_created_idx ON public.media USING btree (project_id, created_at DESC)
 index CREATE INDEX messages_channel_uuid_idx ON public.messages USING btree (channel_uuid)
@@ -836,6 +852,8 @@ index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, 
 index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
 index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
+index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
+index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
 index CREATE INDEX scene_elements_project_idx ON public.scene_elements USING btree (project_id)
@@ -867,6 +885,7 @@ index CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (id)
 index CREATE UNIQUE INDEX character_castings_pkey ON public.character_castings USING btree (id)
 index CREATE UNIQUE INDEX character_castings_project_id_character_name_key ON public.character_castings USING btree (project_id, character_name)
 index CREATE UNIQUE INDEX character_media_pkey ON public.character_media USING btree (character_id, media_id)
+index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
 index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfolio_projects USING btree (user_id, source_project_id) WHERE (source_project_id IS NOT NULL)
 index CREATE UNIQUE INDEX job_applications_job_id_applicant_id_key ON public.job_applications USING btree (job_id, applicant_id)
@@ -937,6 +956,8 @@ policy public.character_castings "Castings writable by project creator or crew" 
 policy public.character_media "character_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.character_media "character_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (script_characters c JOIN scripts s ON ((s.id = c.script_id))) WHERE ((c.id = character_media.character_id) AND (s.project_id = character_media.project_id)))))
 policy public.character_media "character_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.crafts "crafts admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = auth.uid()))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
@@ -1069,6 +1090,7 @@ rls channel_members enabled=true forced=false
 rls channels enabled=true forced=false
 rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
+rls crafts enabled=true forced=false
 rls discord_integrations enabled=true forced=false
 rls job_applications enabled=true forced=false
 rls jobs enabled=true forced=false

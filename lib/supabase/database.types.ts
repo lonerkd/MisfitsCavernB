@@ -677,6 +677,30 @@ export type Database = {
           },
         ];
       };
+      crafts: {
+        Row: {
+          color: string;
+          created_at: string;
+          department: string;
+          name: string;
+          position: number;
+        };
+        Insert: {
+          color: string;
+          created_at?: string;
+          department: string;
+          name: string;
+          position?: number;
+        };
+        Update: {
+          color?: string;
+          created_at?: string;
+          department?: string;
+          name?: string;
+          position?: number;
+        };
+        Relationships: [];
+      };
       discord_integrations: {
         Row: {
           channel_id: string;
@@ -822,6 +846,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jobs_role_fkey";
+            columns: ["role"];
+            isOneToOne: false;
+            referencedRelation: "crafts";
+            referencedColumns: ["name"];
           },
         ];
       };
@@ -1406,7 +1437,15 @@ export type Database = {
           updated_at?: string | null;
           username?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_role_fkey";
+            columns: ["role"];
+            isOneToOne: false;
+            referencedRelation: "crafts";
+            referencedColumns: ["name"];
+          },
+        ];
       };
       project_audio_references: {
         Row: {
@@ -1528,33 +1567,43 @@ export type Database = {
       };
       project_crew: {
         Row: {
+          craft: string | null;
           created_at: string | null;
           id: string;
           invited_by: string | null;
           project_id: string;
-          role: string | null;
+          role: string;
           status: string | null;
           user_id: string;
         };
         Insert: {
+          craft?: string | null;
           created_at?: string | null;
           id?: string;
           invited_by?: string | null;
           project_id: string;
-          role?: string | null;
+          role?: string;
           status?: string | null;
           user_id: string;
         };
         Update: {
+          craft?: string | null;
           created_at?: string | null;
           id?: string;
           invited_by?: string | null;
           project_id?: string;
-          role?: string | null;
+          role?: string;
           status?: string | null;
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "project_crew_craft_fkey";
+            columns: ["craft"];
+            isOneToOne: false;
+            referencedRelation: "crafts";
+            referencedColumns: ["name"];
+          },
           {
             foreignKeyName: "project_crew_invited_by_fkey";
             columns: ["invited_by"];

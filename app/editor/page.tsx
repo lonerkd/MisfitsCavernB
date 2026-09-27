@@ -1055,7 +1055,7 @@ export default function EditorPage() {
   const editorCtx: EditorCtx = { bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && (
@@ -1075,7 +1075,7 @@ export default function EditorPage() {
         )}
       </AnimatePresence>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
         {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
           <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />

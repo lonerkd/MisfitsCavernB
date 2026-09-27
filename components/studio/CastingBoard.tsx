@@ -13,7 +13,7 @@ import { useScriptCharacters } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { readable } from '@/lib/color';
 
-type CrewRow = { id: string; user_id: string; role: string; profiles?: { username?: string | null; avatar_url?: string | null } | null };
+type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
 /** Who plays whom: characters from the selected script, cast from the crew. */
 export function CastingBoard({ crew }: { crew: CrewRow[] }) {
@@ -139,7 +139,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                           <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
                             <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
                             <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{m.role}</span>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{m.craft || (m.role === 'lead' ? 'Lead' : 'Crew')}</span>
                           </button>
                         ))}
                       </div>

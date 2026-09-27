@@ -24,7 +24,7 @@ beforeAll(async () => {
 
   const crew = await cast.sam.client
     .from('project_crew')
-    .insert({ project_id: projectId, user_id: cast.jordan.id, role: 'Editor', status: 'confirmed' });
+    .insert({ project_id: projectId, user_id: cast.jordan.id, craft: 'Editor', status: 'confirmed' });
   if (crew.error) throw crew.error;
 });
 

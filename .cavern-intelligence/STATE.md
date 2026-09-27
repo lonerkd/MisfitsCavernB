@@ -1,5 +1,24 @@
 # Misfits Cavern — Project State
 
+## Latest Session — One crafts list
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Migration
+`20260927020000_crafts.sql` — **apply to production before merging**.
+
+- `crafts` (49 crafts in 12 departments, admin-extendable) replaces the three
+  disagreeing hardcoded lists (Jobs, profile editor, Crew directory).
+  `profiles.role` / `jobs.role` reference it (renames cascade); legacy
+  `creator`/`admin` profile values cleared; free-text mapped (Cinematographer →
+  Director of photography, Sound Designer → Sound designer…).
+- `project_crew.craft` added; `role` is now only the permission level
+  (`lead`/`contributor`/`viewer`). Hiring from a job keeps the job's craft
+  (it used to become "contributor"). Budget lines posted as jobs pick the
+  closest craft (`suggestCraft`).
+- `CraftPicker`: searchable, department-grouped popover (no 49-option select).
+  Jobs filter lists only crafts that have postings.
+- Editor fixed-height shell (the page scrolled when the breakdown panel grew,
+  pushing the script under the header); tag bar laid out in columns.
+
 ## Latest Session — Phase engine + the breakdown, in the script
 
 Branch: `claude/state-assessment-testing-r0tf3y` (PR #60). Migrations
