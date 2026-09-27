@@ -338,6 +338,8 @@ column scenes.location text
 column scenes.note text
 column scenes.ordinal integer
 column scenes.project_id uuid not null
+column scenes.read_at timestamp with time zone
+column scenes.read_seconds numeric(7,1)
 column scenes.removed_at timestamp with time zone
 column scenes.scene_number integer not null
 column scenes.script_id uuid
@@ -640,6 +642,7 @@ constraint scenes.scenes_id_project_key UNIQUE (id, project_id)
 constraint scenes.scenes_note_check CHECK ((char_length(note) <= 5000))
 constraint scenes.scenes_pkey PRIMARY KEY (id)
 constraint scenes.scenes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint scenes.scenes_read_seconds_check CHECK (((read_seconds IS NULL) OR ((read_seconds > (0)::numeric) AND (read_seconds <= (36000)::numeric))))
 constraint scenes.scenes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 1) AND (char_length(time_of_day) <= 40)))
 constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)

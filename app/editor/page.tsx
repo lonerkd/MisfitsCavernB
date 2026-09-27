@@ -35,6 +35,7 @@ import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management'
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
+import { formatRuntime, timeCharacters, timeScript } from '@/lib/scriptos/timing';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -351,31 +352,70 @@ export default function EditorPage() {
     return () => { cancelled = true; };
   }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The table read times each scene it reads in full (from its heading to the
+  // next), pauses excluded; the times calibrate the runtime (lib/scriptos/timing).
+  const saveReadRef = useRef<(sceneIdx: number, seconds: number) => void>(() => {});
+  const readClock = useRef<{ scene: number; fromHeading: boolean; since: number | null; elapsed: number; timed: number[] }>({ scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] });
+  const sceneOfLine = useMemo(() => {
+    let n = -1;
+    return lines.map((l) => (l.type === 'slug' ? ++n : n));
+  }, [lines]);
+  const closeReadScene = useCallback(() => {
+    const c = readClock.current;
+    if (c.since != null) { c.elapsed += (performance.now() - c.since) / 1000; c.since = null; }
+    if (c.scene >= 0 && c.fromHeading && c.elapsed >= 1) {
+      saveReadRef.current(c.scene, c.elapsed);
+      c.timed.push(c.elapsed);
+    }
+  }, []);
+
   const startTableRead = useCallback((fromIndex = 0) => {
     if (!isTableReadSupported()) { toast('Table read isn’t supported in this browser', 'error'); return; }
     tableReadEngineRef.current?.stop();
+    readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
     const engine = getTableReadEngine(lines, {
-      onLineStart: setTableReadLineIdx,
-      onComplete: () => { setTableReadPlaying(false); setTableReadLineIdx(null); },
+      onLineStart: (idx) => {
+        setTableReadLineIdx(idx);
+        const c = readClock.current;
+        const scene = sceneOfLine[idx] ?? -1;
+        if (scene !== c.scene) {
+          closeReadScene();
+          readClock.current = { ...c, scene, fromHeading: lines[idx]?.type === 'slug', since: performance.now(), elapsed: 0 };
+        } else if (c.since == null) {
+          c.since = performance.now();
+        }
+      },
+      onComplete: () => {
+        closeReadScene();
+        const timed = readClock.current.timed;
+        if (timed.length) toast(`Table read timed ${timed.length} scene${timed.length === 1 ? '' : 's'} — ${formatRuntime(timed.reduce((a, b) => a + b, 0))}. The runtime now uses it.`, 'success');
+        readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
+        setTableReadPlaying(false); setTableReadLineIdx(null);
+      },
       rate: 1,
     });
     tableReadEngineRef.current = engine;
     setTableReadPlaying(true);
     engine.play(fromIndex);
-  }, [lines, toast]);
+  }, [lines, toast, sceneOfLine, closeReadScene]);
 
   const pauseTableRead = useCallback(() => {
     tableReadEngineRef.current?.pause();
+    const c = readClock.current;
+    if (c.since != null) { c.elapsed += (performance.now() - c.since) / 1000; c.since = null; }
     setTableReadPlaying(false);
   }, []);
 
   const resumeTableRead = useCallback(() => {
     tableReadEngineRef.current?.resume();
+    readClock.current.since = performance.now();
     setTableReadPlaying(true);
   }, []);
 
   const stopTableRead = useCallback(() => {
     tableReadEngineRef.current?.stop();
+    // A scene stopped half-way isn't a timing; the ones read in full are already saved.
+    readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
     setTableReadPlaying(false);
     setTableReadLineIdx(null);
   }, []);
@@ -894,6 +934,9 @@ export default function EditorPage() {
   // Scene index, notes and colours (public.scenes for project scripts; this
   // device for personal ones) — see components/editor/useEditorScenes.
   const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
+  saveReadRef.current = sceneIndex.saveRead;
+  const timing = useMemo(() => timeScript(lines, sceneIndex.reads), [lines, sceneIndex.reads]);
+  const characterTiming = useMemo(() => timeCharacters(lines), [lines]);
 
   // Breakdown mode: tag what the shoot needs right in the script.
   const sceneIds = useMemo(() => sceneIndex.rows.map((r) => r?.id ?? null), [sceneIndex.rows]);
@@ -962,7 +1005,7 @@ export default function EditorPage() {
   }, [scenesList, sceneFilter]);
   const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
   const wordCount = content.split(/\s+/).filter(Boolean).length;
-  const pageEst = Math.max(1, Math.round(wordCount / 185));
+  const pageEst = Math.max(1, Math.round(timing.pages));
   const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
   const dialogueLines = lines.filter(l => l.type === 'dialogue').length;
   const actionLines = lines.filter(l => l.type === 'action').length;
@@ -1180,6 +1223,9 @@ export default function EditorPage() {
               scenesList={scenesList} uniqueLocations={uniqueLocations} chars={chars} charStats={charStats}
               dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
               sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
+              timing={timing} characterTiming={characterTiming}
+              onJumpToScene={jumpToScene}
+              onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
             />
           )}
         </div>

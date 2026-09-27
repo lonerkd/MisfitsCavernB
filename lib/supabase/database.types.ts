@@ -1897,6 +1897,8 @@ export type Database = {
           note: string | null;
           ordinal: number | null;
           project_id: string;
+          read_at: string | null;
+          read_seconds: number | null;
           removed_at: string | null;
           scene_number: number;
           script_id: string | null;
@@ -1917,6 +1919,8 @@ export type Database = {
           note?: string | null;
           ordinal?: number | null;
           project_id: string;
+          read_at?: string | null;
+          read_seconds?: number | null;
           removed_at?: string | null;
           scene_number: number;
           script_id?: string | null;
@@ -1937,6 +1941,8 @@ export type Database = {
           note?: string | null;
           ordinal?: number | null;
           project_id?: string;
+          read_at?: string | null;
+          read_seconds?: number | null;
           removed_at?: string | null;
           scene_number?: number;
           script_id?: string | null;

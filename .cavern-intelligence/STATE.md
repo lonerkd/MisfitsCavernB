@@ -1,8 +1,25 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Shot designer
+## Latest Session — Table read & runtime
 
-Migration `20260927060000_shot_designer.sql` — **apply to production before merging**.
+Migration `20260927070000_table_read.sql` — **apply to production before merging**.
+
+- Page count and runtime are measured like the industry does
+  (`lib/scriptos/timing.ts`): 55 printed lines a page, each element wrapped at
+  its own width (dialogue narrow, action wide), notes/sections don't print,
+  about a minute a page. Replaces the word-count guesses (words ÷ 185 pages,
+  × 0.8 minutes, words ÷ 190 eighths) in the editor and the scene sync.
+- The table read now **times each scene** it reads in full (from its heading,
+  pauses excluded) and saves it (`scenes.read_seconds`/`read_at`; personal
+  scripts keep it on the device). Read scenes count at their read time; the
+  rest are scaled by how the read ones compared to estimate (clamped).
+- Editor › Stats › **Runtime**: total, pacing strip (read scenes green), per
+  scene length in eighths / estimate / read / runtime, jump to a scene or
+  table-read from it; **Who speaks**: speeches, words, scenes, talk time.
+
+## Earlier — Shot designer
+
+Migration `20260927060000_shot_designer.sql` — applied to production; PR #67 merged.
 
 - Studio › Scenes: each scene's shots are a **storyboard** (`components/studio/shots`).
   Each card is drawn by its framing (`FramingDiagram`, `lib/studio/framing.ts`:
