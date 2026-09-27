@@ -52,9 +52,13 @@ export interface StudioData {
   mediaById: Map<string, Media>;
   /** In a linked split screen: the scene the script's caret is in (changes as the writer moves). */
   followScene: { sceneId: string; at: number } | null;
-  /** Take the script to a scene: the other pane in a split screen, else the editor. */
-  openInScript: (scene: Pick<SceneRow, 'id' | 'script_id'>) => void;
+  /** Take the script to a scene (to a cut note's line, given the note): the other pane in a split screen, else the editor. */
+  openInScript: (scene: Pick<SceneRow, 'id' | 'script_id'>, noteId?: string) => void;
+  /** The open script's lines per scene id (index 0 is the heading), from its saved text. */
+  sceneLines: Map<string, ScriptLineLite[]>;
 }
+
+export interface ScriptLineLite { type: string; text: string }
 
 const Ctx = createContext<StudioData | null>(null);
 
@@ -97,12 +101,18 @@ export function StudioProvider({ project, userId, children }: { project: Project
   // made elsewhere or before this feature existed.
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [parsedScenes, setParsedScenes] = useState<{ scriptId: string; scenes: ScriptLineLite[][] } | null>(null);
   const run = useCallback(async () => {
     if (!scriptId) return;
     setSyncState('syncing');
     try {
       const text = await fetchScriptContent(scriptId);
-      await studio.syncScriptScenes(scriptId, parseScript(text).scenes);
+      const parsed = parseScript(text);
+      setParsedScenes({
+        scriptId,
+        scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text }))),
+      });
+      await studio.syncScriptScenes(scriptId, parsed.scenes);
       await scenes.reload();
       // Scenes count toward the phase milestones and open the Scenes tab.
       announceProgressChange(projectId);
@@ -136,11 +146,22 @@ export function StudioProvider({ project, userId, children }: { project: Project
     setFollowScene({ sceneId: msg.sceneId, at: Date.now() });
   });
   const router = useRouter();
-  const openInScript = useCallback((scene: Pick<SceneRow, 'id' | 'script_id'>) => {
+  const openInScript = useCallback((scene: Pick<SceneRow, 'id' | 'script_id'>, noteId?: string) => {
     if (!scene.script_id) return;
-    if (postToSplit({ type: 'open-scene', scriptId: scene.script_id, sceneId: scene.id })) return;
-    router.push(`/editor?script=${scene.script_id}&scene=${scene.id}`);
+    if (postToSplit({ type: 'open-scene', scriptId: scene.script_id, sceneId: scene.id, ...(noteId ? { noteId } : {}) })) return;
+    router.push(`/editor?script=${scene.script_id}&scene=${scene.id}${noteId ? `&note=${noteId}` : ''}`);
   }, [router]);
+
+  // The sync keeps rows in the parsed order, so a row's ordinal is its parsed scene.
+  const sceneLines = useMemo(() => {
+    const map = new Map<string, ScriptLineLite[]>();
+    if (!parsedScenes || parsedScenes.scriptId !== scriptId) return map;
+    for (const row of scenes.rows) {
+      const lines = row.ordinal != null ? parsedScenes.scenes[row.ordinal] : undefined;
+      if (lines) map.set(row.id, lines);
+    }
+    return map;
+  }, [parsedScenes, scriptId, scenes.rows]);
 
   const value: StudioData = {
     project,
@@ -162,6 +183,7 @@ export function StudioProvider({ project, userId, children }: { project: Project
     mediaById,
     followScene,
     openInScript,
+    sceneLines,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

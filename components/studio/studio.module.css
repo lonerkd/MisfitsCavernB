@@ -428,6 +428,13 @@
 .cutStage { border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border, rgba(255,255,255,0.06)); }
 .cutFrame { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; }
 .noteForm { display: grid; grid-template-columns: auto 140px minmax(0, 1fr); gap: 8px; align-items: center; }
+.cutWithScript { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; align-items: start; }
+@media (max-width: 1100px) { .cutWithScript { grid-template-columns: 1fr; } }
+.noteTie { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.noteTie .hint { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.noteLine { display: block; min-width: 0; font-family: 'Courier Prime', Courier, monospace; font-size: 12px; color: #f0d9b5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 2px 0 3px; }
+.noteTie .noteLine { margin: 0; }
+.noteScript { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); background: none; color: var(--fg-muted); font-family: var(--mono); font-size: 9.5px; cursor: pointer; }
 @media (max-width: 640px) { .noteForm { grid-template-columns: 1fr; } }
 .noteRow { display: flex; align-items: flex-start; gap: 10px; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .noteDone { opacity: 0.5; }

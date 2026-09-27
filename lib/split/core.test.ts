@@ -34,6 +34,8 @@ describe('messages', () => {
     expect(isSplitMessage({ [SPLIT_KEY]: true, type: 'navigated', href: '/editor', title: '' })).toBe(true);
     expect(isSplitMessage({ type: 'scene', scriptId: 's', sceneId: null })).toBe(false);
     expect(isSplitMessage({ [SPLIT_KEY]: true, type: 'open-scene', scriptId: 's' })).toBe(false);
+    expect(isSplitMessage({ [SPLIT_KEY]: true, type: 'open-scene', scriptId: 's', sceneId: 'x', noteId: 'n' })).toBe(true);
+    expect(isSplitMessage({ [SPLIT_KEY]: true, type: 'open-scene', scriptId: 's', sceneId: 'x', noteId: 5 })).toBe(false);
     expect(isSplitMessage({ [SPLIT_KEY]: true, type: 'eval', code: '1' })).toBe(false);
     expect(isSplitMessage('scene')).toBe(false);
   });

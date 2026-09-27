@@ -99,6 +99,20 @@ pitch boards and portfolios.
   videos (`<video>`), YouTube and Vimeo (their postMessage player APIs) so
   "Now" and click-to-seek work; Drive and other links take typed timecodes.
   Scene cards in Scenes show their open post notes.
+- **Cut notes on script lines**: beside the player, `post/CutScript.tsx` shows
+  the scene on screen as a script page. It follows the cut when the player
+  reports time: `cutMap` in `lib/studio/cutlines.ts` lays the scenes along the
+  cut by length (table-read time, else eighths) and pins them where notes
+  already say "this moment is scene N". The scene strip jumps to any scene.
+  Clicking a line pins the next note to it (`post_notes.line_offset` from the
+  heading + `line_text`); without a line, a note is tied to the scene shown.
+  `findLine` re-finds the line after edits (same text nearby, or mostly the
+  same words). In the editor the notes sit in the right margin on their line
+  (`components/editor/CutNoteMarkers.tsx`, live via `useLineCutNotes`), can be
+  resolved there, and link back to the moment:
+  `/studio?tab=post&project=…&cut=…&t=…` (the Post tab opens even before its
+  phase). "In script" on a note opens `/editor?…&note=…`, or goes to the other
+  pane in a split screen, on its line with the note open.
 - **Pipeline & deliverables** (`post_items`): stages and deliverables with
   status, due date and owner; "Set up the standard pipeline" seeds
   `STANDARD_POST`.
@@ -106,7 +120,7 @@ pitch boards and portfolios.
 ## 7. Tests
 
 - `lib/studio/*.test.ts` — alignment, classification (incl. YouTube/Vimeo/Drive embeds), scheduling, shot numbering, timecodes.
-- `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed,production-records,post-production,privacy}.test.ts`
+- `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed,production-records,post-production,cut-note-lines,privacy}.test.ts`
   — personas through PostgREST/Storage/Realtime/RLS.
 - `e2e/studio-journey.spec.ts` — real browser, local stack: upload → link to a
   scene → editor → publish → logged-out share link → revoke → live crew sync.

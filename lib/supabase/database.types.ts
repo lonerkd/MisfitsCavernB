@@ -1333,6 +1333,8 @@ export type Database = {
           cut_id: string;
           department: string;
           id: string;
+          line_offset: number | null;
+          line_text: string | null;
           project_id: string;
           resolved_at: string | null;
           resolved_by: string | null;
@@ -1346,6 +1348,8 @@ export type Database = {
           cut_id: string;
           department?: string;
           id?: string;
+          line_offset?: number | null;
+          line_text?: string | null;
           project_id: string;
           resolved_at?: string | null;
           resolved_by?: string | null;
@@ -1359,6 +1363,8 @@ export type Database = {
           cut_id?: string;
           department?: string;
           id?: string;
+          line_offset?: number | null;
+          line_text?: string | null;
           project_id?: string;
           resolved_at?: string | null;
           resolved_by?: string | null;

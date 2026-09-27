@@ -50,6 +50,7 @@ import { segments, type Mark } from '@/lib/breakdown/marks';
 import type { CaretContext } from './breakdown/useEditorBreakdown';
 import { TagBar } from './breakdown/TagBar';
 import { readable } from '@/lib/color';
+import { CutNoteMarkers } from './CutNoteMarkers';
 
 const EDITOR_CHAR_WIDTH = 9.6; // Courier Prime at 16px
 
@@ -244,6 +245,11 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
                   resize: 'none', outline: 'none',
                 }}
+              />
+              <CutNoteMarkers
+                byLine={ctx.cutNotes.byLine} highlightRef={highlightRef} textareaRef={textareaRef} content={content}
+                openLine={ctx.cutNotes.openLine} setOpenLine={ctx.cutNotes.setOpenLine}
+                onResolve={ctx.cutNotes.resolve} canResolve={ctx.cutNotes.canResolve}
               />
 
               {showMarks && tagAt && (

@@ -73,7 +73,19 @@ export default function StudioPage() {
   const { progress, reload: reloadProgress } = progressState;
   // Tabs looked at before their phase, this visit ("Open it now").
   const [peeked, setPeeked] = useState<Set<TabId>>(new Set());
-  useEffect(() => { setPeeked(new Set()); }, [activeProject?.id]);
+  // A link to a cut (?project=&tab=post&cut=, from a note in the script's
+  // margin) opens that project's Post tab even before its phase.
+  const [linked] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const q = new URLSearchParams(window.location.search);
+    return q.get('cut') ? { project: q.get('project'), tab: q.get('tab') as TabId | null } : null;
+  });
+  useEffect(() => {
+    if (!linked?.project || activeProject?.id === linked.project) return;
+    const p = projects.find((x) => x.id === linked.project);
+    if (p) setActiveProject(p);
+  }, [linked, projects, activeProject?.id, setActiveProject]);
+  useEffect(() => { setPeeked(new Set(linked?.tab ? [linked.tab] : [])); }, [activeProject?.id, linked]);
   const setTab = useCallback((t: TabId, v?: ProductionView) => {
     setTabRaw(t, v);
     void reloadProgress();
