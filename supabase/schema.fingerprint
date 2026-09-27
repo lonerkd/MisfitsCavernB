@@ -431,26 +431,6 @@ column spotify_connections.expires_at bigint not null
 column spotify_connections.refresh_token text not null
 column spotify_connections.updated_at timestamp with time zone default now() not null
 column spotify_connections.user_id uuid not null
-column studio_assets.asset_type text default 'image'::text
-column studio_assets.asset_url text not null
-column studio_assets.board_id uuid not null
-column studio_assets.category text
-column studio_assets.created_at timestamp with time zone default now()
-column studio_assets.height integer default 300
-column studio_assets.id uuid default uuid_generate_v4() not null
-column studio_assets.position_x integer default 0
-column studio_assets.position_y integer default 0
-column studio_assets.title text
-column studio_assets.user_id uuid not null
-column studio_assets.width integer default 300
-column studio_boards.background_color text default '#0a0a0a'::text
-column studio_boards.created_at timestamp with time zone default now()
-column studio_boards.description text
-column studio_boards.id uuid default uuid_generate_v4() not null
-column studio_boards.name text not null
-column studio_boards.project_id uuid
-column studio_boards.updated_at timestamp with time zone default now()
-column studio_boards.user_id uuid not null
 column timeline_items.assigned_to uuid
 column timeline_items.created_at timestamp with time zone default now()
 column timeline_items.created_by uuid
@@ -700,12 +680,6 @@ constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES 
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-constraint studio_assets.studio_assets_board_id_fkey FOREIGN KEY (board_id) REFERENCES studio_boards(id) ON DELETE CASCADE
-constraint studio_assets.studio_assets_pkey PRIMARY KEY (id)
-constraint studio_assets.studio_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
-constraint studio_boards.studio_boards_pkey PRIMARY KEY (id)
-constraint studio_boards.studio_boards_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-constraint studio_boards.studio_boards_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
 constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
@@ -847,9 +821,6 @@ index CREATE INDEX idx_scripts_last_edited_by ON public.scripts USING btree (las
 index CREATE INDEX idx_scripts_project ON public.scripts USING btree (project_id)
 index CREATE INDEX idx_shots_project ON public.shots USING btree (project_id)
 index CREATE INDEX idx_shots_scene ON public.shots USING btree (scene_id)
-index CREATE INDEX idx_studio_assets_board_id ON public.studio_assets USING btree (board_id)
-index CREATE INDEX idx_studio_assets_user_id ON public.studio_assets USING btree (user_id)
-index CREATE INDEX idx_studio_boards_user_id ON public.studio_boards USING btree (user_id)
 index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING btree (assigned_to)
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
@@ -950,8 +921,6 @@ index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree 
 index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
-index CREATE UNIQUE INDEX studio_assets_pkey ON public.studio_assets USING btree (id)
-index CREATE UNIQUE INDEX studio_boards_pkey ON public.studio_boards USING btree (id)
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
 policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
 policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
@@ -1067,8 +1036,6 @@ policy public.spotify_connections "Users can delete own spotify connection" PERM
 policy public.spotify_connections "Users can insert own spotify connection" PERMISSIVE INSERT to public using - check (auth.uid() = user_id)
 policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
 policy public.spotify_connections "Users can view own spotify connection" PERMISSIVE SELECT to public using (auth.uid() = user_id) check -
-policy public.studio_assets "Studio assets owner only" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
-policy public.studio_boards "Studio boards owner only" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
@@ -1085,6 +1052,7 @@ realtime public.budget_items
 realtime public.call_sheet_calls
 realtime public.call_sheets
 realtime public.campaigns
+realtime public.character_castings
 realtime public.character_media
 realtime public.media
 realtime public.messages
@@ -1146,8 +1114,6 @@ rls scripts enabled=true forced=false
 rls sfx_assets enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
-rls studio_assets enabled=true forced=false
-rls studio_boards enabled=true forced=false
 rls timeline_items enabled=true forced=false
 schema internal
 schema public

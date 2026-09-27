@@ -1,8 +1,23 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The breakdown remembers
+## Latest Session — Scene readiness
 
-Migration `20260927040000_breakdown_memory.sql` — **apply to production before merging**.
+Migration `20260927050000_readiness.sql` — **apply to production before merging**.
+
+- **Studio › Production › Readiness**: every scene against what it needs to
+  shoot — cast, breakdown (tagged + all ready), shots, a dated shoot day,
+  references (optional) — computed from the data (`lib/studio/readiness.ts`),
+  grouped by shoot day, next day to prepare, "what unblocks the most", each
+  blocker linked to its fix. Live: `character_castings` joins Realtime.
+- `studio_boards` / `studio_assets` dropped (owner approved; the two rows were
+  external links on a board with no project — recorded in PR #65's body).
+- Next (user-approved list): split screen (editor ↔ Studio, any pair, linked),
+  shot designer, table read + runtime, cut notes on script lines, rest of the
+  hardcoded sweep, ecosystem design from the dream users.
+
+## Earlier — The breakdown remembers
+
+Migration `20260927040000_breakdown_memory.sql` — applied to production; PR #64 merged.
 
 - `breakdown_memory()`: what you tagged in your other projects. The editor's
   suggestions now include things you've tagged before when a scene names them

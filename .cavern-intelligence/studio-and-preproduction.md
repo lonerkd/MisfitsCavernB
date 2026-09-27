@@ -13,7 +13,7 @@ the same data, live.
 | Live hooks | `lib/studio/index.ts`, `lib/studio/live.ts` | `useLiveRows` (subscribe → load → merge Realtime; reload on reconnect/focus; local writes survive stale reloads), `useProjectMedia`, `useSceneMedia`, `useScriptScenes`, `useSceneIndexSync`, `useSignedUrls` (cached, renewed before expiry). |
 | Pure logic | `lib/studio/scene-sync.ts`, `media-kind.ts`, `shoot-days.ts` | Scene alignment, media classification/embeds/upload checks, auto-schedule. Unit tested. |
 | Page state | `components/studio/StudioContext.tsx` | One typed provider per project: library, links, scripts, selected script, its scenes, sync state. |
-| UI | `components/studio/**`, `studio.module.css` | Tabs: Overview · Library · Scenes · Production (Story / Schedule / Cast & crew) · Post (Cut review / Pipeline & deliverables) · Promos · Pitch · Share. |
+| UI | `components/studio/**`, `studio.module.css` | Tabs: Overview · Library · Scenes · Production (Story / Breakdown / Readiness / Schedule / Cast & crew) · Post (Cut review / Pipeline & deliverables) · Promos · Pitch · Share. |
 | Editor | `components/editor/useEditorScenes.ts`, `SceneReferencesPanel.tsx` | Scene index sync while writing; per-scene references, note and colour in the **Refs** tab. |
 | Share | `app/shared/[token]`, `app/m/[id]` | Server-rendered lookbook with link previews; stable permalinks for published files. |
 
@@ -67,6 +67,12 @@ pitch boards and portfolios.
   (`breakdown.syncBudget`: updates in place, removes stale lines, leaves other
   lines alone); the project page's budget panel does the same. Printable
   breakdown sheets. No hardcoded rates remain.
+- **Readiness** (`ReadinessView`, `lib/studio/readiness.ts`): can we shoot
+  it? Every scene checked against cast (character_castings), breakdown
+  (tagged, all elements ready), shots planned, a dated shoot day, and
+  references (optional) — read from the data, never ticked. Grouped by shoot
+  day; the next day to prepare; "what unblocks the most" across all scenes;
+  every blocker links to where it's fixed. Live (castings are in Realtime).
 - **Schedule** (`StripboardView`, `lib/studio/stripboard.ts`): shoot days as
   columns, scenes as strips in the industry colours (INT/EXT × DAY/NIGHT);
   drag between days or Alt+←/→; each day shows pages against the project's

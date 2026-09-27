@@ -92,6 +92,26 @@ export function useCallSheetCalls(projectId: string | null) {
 
 // ── Post-production ────────────────────────────────────────────────────────
 
+/** Who plays whom (character_castings), live. Character names are stored upper case. */
+export type CastingRow = { id: string; project_id: string; character_name: string; crew_user_id: string; created_at: string | null };
+
+export function useCastings(projectId: string | null) {
+  return useLiveRows<CastingRow>({
+    scope: projectId,
+    table: 'character_castings',
+    filter: `project_id=eq.${projectId}`,
+    load: async () => {
+      const { data, error } = await supabase
+        .from('character_castings')
+        .select('id, project_id, character_name, crew_user_id, created_at')
+        .eq('project_id', projectId!);
+      if (error) throw new Error(error.message || 'Could not load castings');
+      return data;
+    },
+    keyOf: (x) => String(x.id),
+  });
+}
+
 export function usePostCuts(projectId: string | null) {
   return useLiveRows<PostCut>({
     scope: projectId, table: 'post_cuts', filter: `project_id=eq.${projectId}`,

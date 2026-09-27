@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T06:18:16.034Z",
+  "last_synchronized": "2026-09-27T06:57:59.858Z",
   "stats": {
-    "totalFiles": 315,
-    "totalSize": 2557497,
+    "totalFiles": 320,
+    "totalSize": 2586105,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 128,
-      ".ts": 153,
+      ".tsx": 129,
+      ".ts": 156,
       ".js": 7,
-      ".sql": 13
+      ".sql": 14
     }
   },
   "modules": {
@@ -206,6 +206,7 @@
         "components/studio/production/BreakdownView.tsx",
         "components/studio/production/CallSheetsPanel.tsx",
         "components/studio/production/CrewView.tsx",
+        "components/studio/production/ReadinessView.tsx",
         "components/studio/production/ScheduleView.tsx",
         "components/studio/production/StoryView.tsx",
         "components/studio/production/StripboardView.tsx",
@@ -241,7 +242,8 @@
         "supabase/migrations/20260927010000_breakdown.sql",
         "supabase/migrations/20260927020000_crafts.sql",
         "supabase/migrations/20260927030000_project_formats.sql",
-        "supabase/migrations/20260927040000_breakdown_memory.sql"
+        "supabase/migrations/20260927040000_breakdown_memory.sql",
+        "supabase/migrations/20260927050000_readiness.sql"
       ]
     }
   },
@@ -253,8 +255,8 @@
     },
     {
       "path": ".claude/settings.local.json",
-      "size": 77,
-      "last_modified": "2026-09-27T05:33:25.888Z"
+      "size": 188,
+      "last_modified": "2026-09-27T06:25:10.497Z"
     },
     {
       "path": ".eslintrc.json",
@@ -528,8 +530,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 9730,
-      "last_modified": "2026-09-27T04:29:40.710Z"
+      "size": 9765,
+      "last_modified": "2026-09-27T06:48:29.304Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -704,7 +706,7 @@
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
       "size": 10650,
-      "last_modified": "2026-09-27T06:15:52.622Z"
+      "last_modified": "2026-09-27T06:25:11.611Z"
     },
     {
       "path": "components/editor/breakdown/TagBar.tsx",
@@ -714,7 +716,7 @@
     {
       "path": "components/editor/breakdown/useEditorBreakdown.ts",
       "size": 5443,
-      "last_modified": "2026-09-27T06:15:52.622Z"
+      "last_modified": "2026-09-27T06:25:11.612Z"
     },
     {
       "path": "components/editor/editorConstants.ts",
@@ -857,6 +859,11 @@
       "last_modified": "2026-09-27T05:02:41.790Z"
     },
     {
+      "path": "components/studio/production/ReadinessView.tsx",
+      "size": 14985,
+      "last_modified": "2026-09-27T06:49:22.426Z"
+    },
+    {
       "path": "components/studio/production/ScheduleView.tsx",
       "size": 1633,
       "last_modified": "2026-09-27T04:26:57.789Z"
@@ -898,8 +905,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 3513,
-      "last_modified": "2026-09-27T04:29:58.201Z"
+      "size": 3951,
+      "last_modified": "2026-09-27T06:48:29.305Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -963,8 +970,8 @@
     },
     {
       "path": "e2e/accessibility.spec.ts",
-      "size": 6531,
-      "last_modified": "2026-09-27T06:03:02.568Z"
+      "size": 6619,
+      "last_modified": "2026-09-27T06:50:58.988Z"
     },
     {
       "path": "e2e/auth-journey.spec.ts",
@@ -997,6 +1004,11 @@
       "last_modified": "2026-09-24T20:05:03.636Z"
     },
     {
+      "path": "e2e/readiness.spec.ts",
+      "size": 6046,
+      "last_modified": "2026-09-27T06:52:38.469Z"
+    },
+    {
       "path": "e2e/route-smoke.spec.ts",
       "size": 5607,
       "last_modified": "2026-09-25T01:42:14.973Z"
@@ -1019,22 +1031,22 @@
     {
       "path": "lib/breakdown/api.ts",
       "size": 7972,
-      "last_modified": "2026-09-27T06:15:52.622Z"
+      "last_modified": "2026-09-27T06:25:11.612Z"
     },
     {
       "path": "lib/breakdown/core.test.ts",
       "size": 6951,
-      "last_modified": "2026-09-27T06:15:52.622Z"
+      "last_modified": "2026-09-27T06:25:11.612Z"
     },
     {
       "path": "lib/breakdown/core.ts",
       "size": 10044,
-      "last_modified": "2026-09-27T06:15:52.622Z"
+      "last_modified": "2026-09-27T06:25:11.612Z"
     },
     {
       "path": "lib/breakdown/index.ts",
       "size": 3466,
-      "last_modified": "2026-09-27T06:15:52.622Z"
+      "last_modified": "2026-09-27T06:25:11.613Z"
     },
     {
       "path": "lib/breakdown/marks.test.ts",
@@ -1044,7 +1056,7 @@
     {
       "path": "lib/breakdown/marks.ts",
       "size": 4677,
-      "last_modified": "2026-09-27T06:15:52.623Z"
+      "last_modified": "2026-09-27T06:25:11.613Z"
     },
     {
       "path": "lib/color.test.ts",
@@ -1193,8 +1205,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 16598,
-      "last_modified": "2026-09-27T05:37:38.184Z"
+      "size": 16612,
+      "last_modified": "2026-09-27T06:48:29.304Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1383,8 +1395,8 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 10904,
-      "last_modified": "2026-09-27T06:15:52.623Z"
+      "size": 11681,
+      "last_modified": "2026-09-27T06:48:29.304Z"
     },
     {
       "path": "lib/studio/live.ts",
@@ -1402,14 +1414,24 @@
       "last_modified": "2026-09-26T19:17:14.206Z"
     },
     {
+      "path": "lib/studio/readiness.test.ts",
+      "size": 3454,
+      "last_modified": "2026-09-27T06:43:24.202Z"
+    },
+    {
+      "path": "lib/studio/readiness.ts",
+      "size": 5181,
+      "last_modified": "2026-09-27T06:43:04.006Z"
+    },
+    {
       "path": "lib/studio/scene-sync.test.ts",
       "size": 6925,
-      "last_modified": "2026-09-27T06:15:52.623Z"
+      "last_modified": "2026-09-27T06:25:11.613Z"
     },
     {
       "path": "lib/studio/scene-sync.ts",
       "size": 7737,
-      "last_modified": "2026-09-27T06:15:52.623Z"
+      "last_modified": "2026-09-27T06:25:11.613Z"
     },
     {
       "path": "lib/studio/shoot-days.test.ts",
@@ -1483,8 +1505,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 86089,
-      "last_modified": "2026-09-27T06:17:27.612Z"
+      "size": 82860,
+      "last_modified": "2026-09-27T06:47:37.726Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1689,7 +1711,12 @@
     {
       "path": "supabase/migrations/20260927040000_breakdown_memory.sql",
       "size": 5820,
-      "last_modified": "2026-09-27T06:15:52.626Z"
+      "last_modified": "2026-09-27T06:25:11.613Z"
+    },
+    {
+      "path": "supabase/migrations/20260927050000_readiness.sql",
+      "size": 708,
+      "last_modified": "2026-09-27T06:45:43.842Z"
     },
     {
       "path": "tailwind.config.js",
@@ -1699,7 +1726,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-27T06:03:02.540Z"
+      "last_modified": "2026-09-27T06:57:34.538Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -1719,7 +1746,7 @@
     {
       "path": "tests/integration/breakdown-memory.test.ts",
       "size": 3074,
-      "last_modified": "2026-09-27T06:16:06.028Z"
+      "last_modified": "2026-09-27T06:25:11.614Z"
     },
     {
       "path": "tests/integration/breakdown.test.ts",
@@ -1774,7 +1801,7 @@
     {
       "path": "tests/integration/scene-index.test.ts",
       "size": 9233,
-      "last_modified": "2026-09-27T06:15:52.623Z"
+      "last_modified": "2026-09-27T06:25:11.614Z"
     },
     {
       "path": "tests/integration/scripts-access.test.ts",

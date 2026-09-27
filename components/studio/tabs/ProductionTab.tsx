@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { BookOpen, Calendar, Lock, Tags, Users } from 'lucide-react';
-import { PRODUCTION_VIEW_TOOL, toolState, type ProductionView } from '@/lib/os/progress';
+import { BookOpen, Calendar, ClipboardCheck, Lock, Tags, Users } from 'lucide-react';
+import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { useStudio } from '../StudioContext';
@@ -10,6 +10,7 @@ import { SectionHeader, cx } from '../ui';
 import { StoryView } from '../production/StoryView';
 import { ScheduleView } from '../production/ScheduleView';
 import { BreakdownView } from '../production/BreakdownView';
+import { ReadinessView } from '../production/ReadinessView';
 import { CrewView, type CrewRow } from '../production/CrewView';
 import s from '../studio.module.css';
 
@@ -17,12 +18,13 @@ type View = ProductionView;
 const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode }> = [
   { id: 'story', label: 'Story', icon: <BookOpen size={12} /> },
   { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} /> },
+  { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} /> },
   { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} /> },
   { id: 'crew', label: 'Cast & crew', icon: <Users size={12} /> },
 ];
 
 /** Story, schedule and people. The view is the Studio's (?view=), so milestones can link straight to it. */
-export function ProductionTab({ view, onView }: { view: View; onView: (view: View) => void }) {
+export function ProductionTab({ view, onView, onNavigate }: { view: View; onView: (view: View) => void; onNavigate?: (place: Place) => boolean }) {
   const { project } = useStudio();
   const progress = useProgressContext()?.progress ?? null;
   const [peeked, setPeeked] = useState<Set<View>>(new Set());
@@ -43,7 +45,7 @@ export function ProductionTab({ view, onView }: { view: View; onView: (view: Vie
 
   return (
     <section aria-labelledby="production-title">
-      <SectionHeader id="production-title" eyebrow="Pre-production" title="Production" subtitle="Story, breakdown, schedule and people — built from the screenplay and kept in step with it." />
+      <SectionHeader id="production-title" eyebrow="Pre-production" title="Production" subtitle="Story, breakdown, readiness, schedule and people — built from the screenplay and kept in step with it." />
       <div className={s.chips} role="tablist" aria-label="Production views" style={{ marginBottom: 24 }}>
         {VIEWS.map((v) => (
           <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
@@ -55,6 +57,7 @@ export function ProductionTab({ view, onView }: { view: View; onView: (view: Vie
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
       {!lock && view === 'story' && <StoryView />}
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
+      {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
       {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
     </section>
