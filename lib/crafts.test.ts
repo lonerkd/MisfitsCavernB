@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { byDepartment, searchCrafts, suggestCraft, type Craft } from './crafts';
+import { byDepartment, searchCrafts, suggestCraft, type Craft } from './crafts-core';
 
 const c = (name: string, department: string, position: number): Craft => ({ name, department, color: '#888888', position });
 const CRAFTS = [c('Director', 'Direction', 0), c('Prop master', 'Art', 63), c('Costume designer', 'Wardrobe', 70), c('Gaffer', 'Lighting & grip', 40), c('Editor', 'Editorial', 80), c('Other', 'Other', 111)];

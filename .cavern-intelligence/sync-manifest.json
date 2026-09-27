@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T05:15:22.006Z",
+  "last_synchronized": "2026-09-27T05:17:26.687Z",
   "stats": {
     "totalFiles": 306,
-    "totalSize": 2516915,
+    "totalSize": 2517099,
     "byExtension": {
-      ".json": 6,
+      ".json": 5,
       ".md": 7,
       ".tsx": 127,
-      ".ts": 148,
+      ".ts": 149,
       ".js": 7,
       ".sql": 11
     }
@@ -1064,14 +1064,19 @@
       "last_modified": "2026-09-24T20:05:03.637Z"
     },
     {
+      "path": "lib/crafts-core.ts",
+      "size": 2418,
+      "last_modified": "2026-09-27T05:17:02.053Z"
+    },
+    {
       "path": "lib/crafts.test.ts",
-      "size": 1328,
-      "last_modified": "2026-09-27T05:03:34.010Z"
+      "size": 1333,
+      "last_modified": "2026-09-27T05:17:02.053Z"
     },
     {
       "path": "lib/crafts.ts",
-      "size": 3566,
-      "last_modified": "2026-09-27T05:03:34.001Z"
+      "size": 1372,
+      "last_modified": "2026-09-27T05:17:02.053Z"
     },
     {
       "path": "lib/hooks/usePresence.ts",
@@ -1657,11 +1662,6 @@
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
-    },
-    {
-      "path": "test-results/.last-run.json",
-      "size": 45,
-      "last_modified": "2026-09-27T05:13:55.947Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
