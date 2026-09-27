@@ -1,9 +1,28 @@
 # Misfits Cavern — Project State
 
-## Latest Session — One crafts list
+## Latest Session — Project formats as data
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Migration
-`20260927020000_crafts.sql` — **apply to production before merging**.
+`20260927030000_project_formats.sql` — **apply to production before merging**.
+
+- `project_formats` (10 formats, admin-extendable) replaces four lists that
+  disagreed: the new-project modal's six types, `lib/projectTypes.ts` phase
+  templates (deleted), the phase label overrides in `lib/os/phases.ts`, the
+  engine's hardcoded Podcast/Documentary/Commercial milestone skips — and the
+  portfolio's categories. `projects.project_type` / `portfolio_projects.category`
+  reference it (renames cascade).
+- `project_progress()` returns the format's rules (`format`); `computeProgress`
+  reads them, so a new format (e.g. a stage show with "Rehearsals" and
+  "Opening night") works without a code change.
+- `FormatPicker`: format cards with the selected format's journey (its phases
+  and starting script format). Used when starting a project and — new — from
+  the phase panel, where the owner can change a project's format.
+- Also: shared `Textarea` label is a real `<label>`; floating labels use the
+  readable accent; new-project modal passes axe (now checked in CI).
+
+## Earlier — One crafts list
+
+Migration `20260927020000_crafts.sql` — applied to production; PR #62 merged.
 
 - `crafts` (49 crafts in 12 departments, admin-extendable) replaces the three
   disagreeing hardcoded lists (Jobs, profile editor, Crew directory).

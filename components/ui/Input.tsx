@@ -48,7 +48,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <motion.label
           htmlFor={inputId}
           className={`absolute top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${icon ? 'left-10' : 'left-4'} ${
-            isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
+            isActive ? 'text-[#ff7a4d]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
           animate={{

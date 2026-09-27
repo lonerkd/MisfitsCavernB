@@ -6,12 +6,14 @@
 // has started (a cut added during the shoot opens cut review). Owners can
 // open everything at once in project settings.
 
-import { type Phase, getPhasesForType, mapStatusToPhase, phaseIndexForType } from './phases';
+import { type Phase, type FormatRules, phasesFor, mapStatusToPhase, phaseIndexIn, toFormatRules } from './phases';
 
 /** Counts from `project_progress(project)` — what the caller can see. */
 export interface ProjectSignals {
   status: string | null;
   project_type: string | null;
+  /** The project's format rules (phase names, skipped phases and milestones). */
+  format: FormatRules | null;
   visibility: string | null;
   /** The owner opened every tool (project settings). */
   unlock_all: boolean;
@@ -44,7 +46,7 @@ export interface ProjectSignals {
 }
 
 export const EMPTY_SIGNALS: ProjectSignals = {
-  status: null, project_type: null, visibility: null, unlock_all: false, logline: false,
+  status: null, project_type: null, format: null, visibility: null, unlock_all: false, logline: false,
   scripts: 0, characters: 0, scenes: 0, scenes_wrapped: 0, beats: 0, media: 0, media_shared: 0,
   crew: 0, castings: 0, shots: 0, call_sheets: 0, tasks: 0, tasks_done: 0, budget_lines: 0, milestones: 0,
   cuts: 0, post_notes: 0, post_notes_open: 0, stages: 0, stages_done: 0, deliverables: 0, deliverables_done: 0,
@@ -77,11 +79,7 @@ export interface MilestoneDef {
   done: (s: ProjectSignals) => boolean;
   /** Partial progress toward `done`, when it is a count. */
   progress?: (s: ProjectSignals) => { value: number; of: number };
-  /** Project types this doesn't apply to. */
-  skipFor?: string[];
 }
-
-const NO_SHOOT = ['Podcast'];
 
 export const MILESTONES: MilestoneDef[] = [
   // Development — find the story.
@@ -90,7 +88,7 @@ export const MILESTONES: MilestoneDef[] = [
   { id: 'script', phase: 'development', label: 'Start the script', hint: 'Scene headings (INT./EXT.) become scenes in Studio as you write.',
     place: { kind: 'path', path: '/editor' }, done: (s) => s.scripts > 0 },
   { id: 'characters', phase: 'development', label: 'Build a character', hint: 'Characters panel in the editor: who they are, what they want.',
-    place: { kind: 'path', path: '/editor' }, done: (s) => s.characters > 0, skipFor: ['Podcast', 'Documentary'] },
+    place: { kind: 'path', path: '/editor' }, done: (s) => s.characters > 0 },
   { id: 'beats', phase: 'development', label: 'Outline three beats', hint: 'The spine of the story, on the beat board.',
     place: { kind: 'studio', tab: 'production', view: 'story' }, done: (s) => s.beats >= 3,
     progress: (s) => ({ value: Math.min(s.beats, 3), of: 3 }) },
@@ -102,20 +100,20 @@ export const MILESTONES: MilestoneDef[] = [
   { id: 'crew', phase: 'pre-production', label: 'Bring in your crew', hint: 'Invite collaborators, or post roles to the Jobs board.',
     place: { kind: 'hub', anchor: 'production' }, done: (s) => s.crew > 0 },
   { id: 'casting', phase: 'pre-production', label: 'Cast a role', hint: 'Match characters to people on the crew.',
-    place: { kind: 'studio', tab: 'production', view: 'crew' }, done: (s) => s.castings > 0, skipFor: ['Podcast', 'Documentary'] },
+    place: { kind: 'studio', tab: 'production', view: 'crew' }, done: (s) => s.castings > 0 },
   { id: 'shots', phase: 'pre-production', label: 'Plan your shots', hint: 'A shot list for each scene.',
-    place: { kind: 'studio', tab: 'scenes' }, done: (s) => s.shots > 0, skipFor: NO_SHOOT },
+    place: { kind: 'studio', tab: 'scenes' }, done: (s) => s.shots > 0 },
   { id: 'budget', phase: 'pre-production', label: 'Set a budget', hint: 'Estimate one from the script, then adjust.',
     place: { kind: 'hub', anchor: 'production' }, done: (s) => s.budget_lines > 0 },
   { id: 'schedule', phase: 'pre-production', label: 'Date your first shoot day', hint: 'Schedule → call sheet with a date.',
-    place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.call_sheets > 0, skipFor: NO_SHOOT },
+    place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.call_sheets > 0 },
 
   // Production — shoot it.
   { id: 'wrap-first', phase: 'production', label: 'Wrap your first scene', hint: 'Mark scenes wrapped as you shoot them.',
-    place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.scenes_wrapped > 0, skipFor: NO_SHOOT },
+    place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.scenes_wrapped > 0 },
   { id: 'wrap-all', phase: 'production', label: 'Wrap every scene', hint: 'The shoot is done when every scene is.',
     place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.scenes > 0 && s.scenes_wrapped >= s.scenes,
-    progress: (s) => ({ value: s.scenes_wrapped, of: s.scenes }), skipFor: NO_SHOOT },
+    progress: (s) => ({ value: s.scenes_wrapped, of: s.scenes }) },
   { id: 'tasks', phase: 'production', label: 'Clear the task list', hint: 'Every task on the project page done.',
     place: { kind: 'hub', anchor: 'production' }, done: (s) => s.tasks > 0 && s.tasks_done >= s.tasks,
     progress: (s) => ({ value: s.tasks_done, of: s.tasks }) },
@@ -139,7 +137,7 @@ export const MILESTONES: MilestoneDef[] = [
   { id: 'share', phase: 'delivery', label: 'Share it', hint: 'Open the project by link or to everyone.',
     place: { kind: 'studio', tab: 'share' }, done: (s) => s.visibility === 'link' || s.visibility === 'public' },
   { id: 'festival', phase: 'delivery', label: 'Submit to a festival', hint: 'Track submissions and results on the project page.',
-    place: { kind: 'hub', anchor: 'production' }, done: (s) => s.festivals_submitted > 0, skipFor: ['Podcast', 'Commercial'] },
+    place: { kind: 'hub', anchor: 'production' }, done: (s) => s.festivals_submitted > 0 },
   { id: 'portfolio', phase: 'delivery', label: 'Add it to your portfolio', hint: 'Show the work on your profile.',
     place: { kind: 'path', path: '/portfolio' }, done: (s) => s.portfolio > 0 },
 ];
@@ -224,7 +222,7 @@ export interface ToolState {
   label: string;
   blurb: string;
   place: Place;
-  /** Index into `phases` where this tool unlocks for this project type. */
+  /** Index into `phases` where this tool unlocks for this project's format. */
   phaseIndex: number;
   phaseLabel: string;
   unlocked: boolean;
@@ -248,14 +246,15 @@ export interface ProjectProgress {
 
 export function computeProgress(s: ProjectSignals, opts: { unlockAll?: boolean } = {}): ProjectProgress {
   const unlockAll = opts.unlockAll ?? s.unlock_all;
-  const type = s.project_type;
-  const visible = getPhasesForType(type);
-  const currentIndex = phaseIndexForType(type, mapStatusToPhase(s.status ?? undefined));
+  const format = s.format;
+  const visible = phasesFor(format);
+  const currentIndex = phaseIndexIn(format, mapStatusToPhase(s.status ?? undefined));
+  const skipped = new Set(format?.skip_milestones ?? []);
 
   const phases: PhaseState[] = visible.map((p, index) => ({ ...p, index, milestones: [], done: 0, total: 0 }));
   for (const m of MILESTONES) {
-    if (type && m.skipFor?.includes(type)) continue;
-    const phase = phases[phaseIndexForType(type, m.phase)];
+    if (skipped.has(m.id)) continue;
+    const phase = phases[phaseIndexIn(format, m.phase)];
     const done = m.done(s);
     const progress = m.progress ? m.progress(s) : null;
     phase.milestones.push({
@@ -273,7 +272,7 @@ export function computeProgress(s: ProjectSignals, opts: { unlockAll?: boolean }
   ].slice(0, 3);
 
   const tools: ToolState[] = TOOLS.map((t) => {
-    const phaseIndex = phaseIndexForType(type, t.phase);
+    const phaseIndex = phaseIndexIn(format, t.phase);
     const byPhase = currentIndex >= phaseIndex;
     const early = !byPhase && !!t.early?.(s);
     return {
@@ -311,6 +310,7 @@ export function toSignals(raw: unknown): ProjectSignals | null {
   const r = raw as Record<string, unknown>;
   const out = { ...EMPTY_SIGNALS } as unknown as Record<string, unknown>;
   for (const key of Object.keys(EMPTY_SIGNALS)) {
+    if (key === 'format') { out.format = toFormatRules(r.format); continue; }
     const base = (EMPTY_SIGNALS as unknown as Record<string, unknown>)[key];
     const v = r[key];
     if (typeof base === 'number') out[key] = typeof v === 'number' && Number.isFinite(v) ? v : Number(v) || 0;

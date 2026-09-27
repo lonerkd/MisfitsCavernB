@@ -19,7 +19,8 @@ import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
 import { usePillZone } from '@/lib/context/PillContext';
-import { type Phase, mapStatusToPhase, getPhasesForType, phaseIndexForType, useProject } from '@/lib/os';
+import { type Phase, mapStatusToPhase, phaseIndexIn, useProject } from '@/lib/os';
+import { findFormat, formatPhases, useFormats } from '@/lib/formats';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import type { ScriptFormat } from '@/lib/scriptos/parser';
@@ -331,6 +332,7 @@ export default function ProjectHubPage() {
   const [crewTeam, setCrewTeam] = useState<{ id: string; name: string; role: string }[]>([]);
   const onlineIds = useOnlinePresence(realProject ? 'me' : null);
   const progressState = useProjectProgress(id);
+  const { formats } = useFormats();
   useEffect(() => {
     let active = true;
     (async () => {
@@ -387,9 +389,10 @@ export default function ProjectHubPage() {
   const team = crewTeam.map(m => ({ ...m, online: onlineIds.has(m.id) }));
   const onlineCount = team.filter(m => m.online).length;
 
-  const typePhases = getPhasesForType(project.type);
-  // The phase panel re-reads the project after a phase change; the header follows it.
-  const typePhaseIdx = progressState.progress?.currentIndex ?? phaseIndexForType(project.type, project.phase);
+  // The phase panel re-reads the project after a phase or format change; the header follows it.
+  const format = findFormat(formats, project.type);
+  const typePhases = progressState.progress?.phases ?? formatPhases(format);
+  const typePhaseIdx = progressState.progress?.currentIndex ?? phaseIndexIn(format?.rules, project.phase);
   const modules = getProjectModules(project.settings);
 
   const changeVisibility = async (v: 'private' | 'team' | 'link' | 'public') => {
@@ -554,7 +557,8 @@ export default function ProjectHubPage() {
           transition={{ delay: 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.color} />
+          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.color}
+            onFormatChanged={(type) => { setRealProject(p => p ? { ...p, type } : p); refreshProject(id); }} />
         </motion.div>
 
         {/*
@@ -1050,7 +1054,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
             aria-label="Default script format"
             style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}
           >
-            <option value="">Use project-type default</option>
+            <option value="">Use the format’s default</option>
             {SCRIPT_FORMATS.map(f => <option key={f} value={f}>{SCRIPT_FORMAT_LABELS[f]}</option>)}
           </select>
 

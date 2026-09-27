@@ -26,6 +26,14 @@ export async function setProjectPhase(projectId: string, phase: Phase): Promise<
   announceProgressChange(projectId);
 }
 
+/** Owner only (RLS): the project's format (public.project_formats). */
+export async function setProjectFormat(projectId: string, format: string): Promise<void> {
+  const { data, error } = await supabase.from('projects').update({ project_type: format }).eq('id', projectId).select('id');
+  if (error) throw new Error(error.message || 'Could not change the format');
+  if (!data?.length) throw new Error('Only the project owner can change its format');
+  announceProgressChange(projectId);
+}
+
 /** Owner only (RLS). */
 export async function setProjectLogline(projectId: string, logline: string): Promise<void> {
   const { data, error } = await supabase.from('projects').update({ description: logline.trim() }).eq('id', projectId).select('id');

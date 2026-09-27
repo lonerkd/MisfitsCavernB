@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ArrowUpRight, Clock, Film, Tv, Video, Music } from 'lucide-react';
+import { Plus, ArrowUpRight, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,8 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { useProject, type Phase, mapStatusToPhase, PHASE_STATUS } from '@/lib/os';
+import { useProject, type Phase, mapStatusToPhase, PHASE_STATUS, PHASES } from '@/lib/os';
+import { FormatIcon, FormatPicker, useFormatIcon } from '@/components/formats/FormatPicker';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useOSGate } from '@/lib/os';
 import { useEscapeKey } from '@/lib/useEscapeKey';
@@ -20,12 +21,10 @@ import { logActivity } from '@/lib/supabase/activity';
 import { readable } from '@/lib/color';
 import { awaitOSUser, osUserId } from '@/lib/os';
 
-const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
-
 function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (title: string, type: string, logline: string) => Promise<void> }) {
   useEscapeKey(onClose, open);
   const [title, setTitle] = useState('');
-  const [type, setType] = useState(PROJECT_TYPES[0]);
+  const [type, setType] = useState('Feature');
   const [logline, setLogline] = useState('');
   const [busy, setBusy] = useState(false);
   const submit = async () => { if (!title.trim()) return; setBusy(true); try { await onCreate(title.trim(), type, logline.trim()); setTitle(''); setLogline(''); } finally { setBusy(false); } };
@@ -35,8 +34,8 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
-            style={{ width: 460, maxWidth: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 28 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
+            style={{ width: 560, maxWidth: '100%', maxHeight: '92dvh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 28 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Input
@@ -47,14 +46,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
                 onKeyDown={e => e.key === 'Enter' && submit()}
                 placeholder="e.g. Femme Fatale"
               />
-              <div>
-                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Format</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {PROJECT_TYPES.map(t => (
-                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(232, 67, 26,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(232, 67, 26,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
-                  ))}
-                </div>
-              </div>
+              <FormatPicker value={type} onChange={setType} />
               <Textarea
                 label="Logline (optional)"
                 value={logline}
@@ -88,28 +80,12 @@ interface ProjectCardViewModel {
   color: string;
 }
 
-const PHASES: { id: Phase; label: string; abbr: string }[] = [
-  { id: 'development',     label: 'Development',     abbr: 'DEV'  },
-  { id: 'pre-production',  label: 'Pre-Production',  abbr: 'PRE'  },
-  { id: 'production',      label: 'Production',      abbr: 'PROD' },
-  { id: 'post-production', label: 'Post-Production', abbr: 'POST' },
-  { id: 'delivery',        label: 'Delivery',        abbr: 'DEL'  },
-];
-
 const PHASE_COLORS: Record<Phase, string> = {
   'development':     '#818cf8',
   'pre-production':  '#a78bfa',
   'production':      '#e8431a',
   'post-production': '#f59e0b',
   'delivery':        '#10b981',
-};
-
-const TYPE_ICONS: Record<string, React.ElementType> = {
-  'Feature':         Film,
-  'Limited Series':  Tv,
-  'Short Film':      Film,
-  'Music Video':     Music,
-  'Documentary':     Video,
 };
 
 function daysUntil(dateStr: string): number {
@@ -119,7 +95,7 @@ function daysUntil(dateStr: string): number {
 function ProjectCard({ project }: { project: ProjectCardViewModel }) {
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
-  const Icon = TYPE_ICONS[project.type] ?? Film;
+  const icon = useFormatIcon(project.type);
   const days = project.deadline ? daysUntil(project.deadline) : null;
   const overdue = days !== null && days < 0;
   const pct = project.progress && project.progress.total ? Math.round((project.progress.done / project.progress.total) * 100) : null;
@@ -162,7 +138,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
               border: `1px solid ${phase}33`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Icon size={13} color={phase} strokeWidth={1.5} />
+              <span style={{ color: phase, display: 'flex' }}><FormatIcon icon={icon} size={13} /></span>
             </div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: phase, textTransform: 'uppercase' }}>
               {project.type}
