@@ -417,6 +417,7 @@ column shots.angle text
 column shots.created_at timestamp with time zone default now()
 column shots.created_by uuid default auth.uid()
 column shots.description text
+column shots.frame_media_id uuid
 column shots.id uuid default uuid_generate_v4() not null
 column shots.lens text
 column shots.movement text
@@ -671,8 +672,10 @@ constraint scripts.scripts_share_token_key UNIQUE (share_token)
 constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint shots.shots_camera_len CHECK (((char_length(COALESCE(shot_size, ''::text)) <= 12) AND (char_length(COALESCE(angle, ''::text)) <= 40) AND (char_length(COALESCE(movement, ''::text)) <= 40) AND (char_length(COALESCE(lens, ''::text)) <= 40)))
 constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint shots.shots_description_len CHECK ((char_length(description) <= 2000))
+constraint shots.shots_frame_fkey FOREIGN KEY (frame_media_id, project_id) REFERENCES media(id, project_id) ON DELETE SET NULL (frame_media_id)
 constraint shots.shots_number_len CHECK (((char_length(shot_number) >= 1) AND (char_length(shot_number) <= 12)))
 constraint shots.shots_pkey PRIMARY KEY (id)
 constraint shots.shots_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -854,6 +857,7 @@ index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (pr
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
 index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
+index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX breakdown_categories_id_project_key ON public.breakdown_categories USING btree (id, project_id)

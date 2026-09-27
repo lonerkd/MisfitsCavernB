@@ -6,13 +6,13 @@ import { Clapperboard, FileText, PenLine, Plus, RefreshCw, X } from 'lucide-reac
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
-import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow } from '@/lib/studio';
+import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow, type ShotNote } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, StatusPill, ErrorBar, cx } from '../ui';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import { MediaDetail } from '../media/MediaDetail';
 import { MediaPicker } from '../media/MediaPicker';
-import { ShotList } from '../ShotList';
+import { ShotDesigner } from '../shots/ShotDesigner';
 import s from '../studio.module.css';
 
 /**
@@ -29,6 +29,18 @@ export function ScenesTab() {
     document.getElementById(`scene-${followScene.sceneId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [followScene]);
   const [pickFor, setPickFor] = useState<SceneRow | null>(null);
+
+  // Which script line each shot came from ("Shot" margin notes). Re-read when shots come and go.
+  const { shots } = useStudio();
+  const [shotNotes, setShotNotes] = useState<Map<string, ShotNote>>(new Map());
+  const shotCount = shots.rows.length;
+  useEffect(() => {
+    let alive = true;
+    studio.listShotNotes(project.id)
+      .then((rows) => { if (alive) setShotNotes(new Map(rows.map((n) => [n.routed_id, n]))); })
+      .catch(() => { /* only a hint on the cards */ });
+    return () => { alive = false; };
+  }, [project.id, shotCount]);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const referenced = useMemo(() => {
@@ -66,7 +78,7 @@ export function ScenesTab() {
         id="scenes-title"
         eyebrow="Scenes"
         title="Scene References"
-        subtitle="Every scene in the screenplay, with its references, shot list and notes. Rewrite freely — they stay with their scene."
+        subtitle="Every scene in the screenplay, with its references, storyboard and notes. Rewrite freely — they stay with their scene."
         actions={
           <>
             {scripts.length > 1 && (
@@ -114,6 +126,7 @@ export function ScenesTab() {
               signed={signed}
               onOpen={setOpenId}
               onAdd={() => setPickFor(sc)}
+              shotNotes={shotNotes}
             />
           ))}
         </div>
@@ -137,7 +150,7 @@ export function ScenesTab() {
   );
 }
 
-function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void }) {
+function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void; shotNotes: Map<string, ShotNote> }) {
   const { scenes, links, postNotes, followScene, openInScript } = useStudio();
   const following = followScene?.sceneId === scene.id;
   const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
@@ -222,7 +235,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; re
           </button>
         </div>
 
-        <ShotList scene={scene} />
+        <ShotDesigner scene={scene} notes={shotNotes} />
 
         <label>
           <span className={s.srOnly}>Scene note</span>

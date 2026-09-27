@@ -1,8 +1,23 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Split screen
+## Latest Session — Shot designer
 
-No migrations.
+Migration `20260927060000_shot_designer.sql` — **apply to production before merging**.
+
+- Studio › Scenes: each scene's shots are a **storyboard** (`components/studio/shots`).
+  Each card is drawn by its framing (`FramingDiagram`, `lib/studio/framing.ts`:
+  a window onto a figure per size — EWS…ECU, OTS, POV, 2S, Insert; Dutch tilts
+  it, overhead looks down) or its storyboard frame from the library
+  (`shots.frame_media_id`, same-project composite FK, cleared if the image is
+  deleted). The camera is set on a visual picker: framing swatches, angle,
+  move, lens. Drag or arrow buttons reorder (`reorderShots`). Shots made from a
+  "Shot" margin note show the script line and open the scene in the script.
+- Camera fields are bounded in the DB. The shared Studio modal (and the camera
+  dialog) now sit above the Studio header and the taskbar (they were covered).
+
+## Earlier — Split screen
+
+PR #66 merged. No migrations.
 
 - **`/split`**: any two surfaces side by side — the script beside Scenes,
   Readiness beside the script, the breakdown beside the schedule… Each pane is
