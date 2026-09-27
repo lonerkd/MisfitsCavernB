@@ -80,11 +80,11 @@ column campaigns.created_by uuid
 column campaigns.end_date date
 column campaigns.id uuid default uuid_generate_v4() not null
 column campaigns.notes text default ''::text
-column campaigns.platform text default 'Instagram'::text not null
+column campaigns.platform text not null
 column campaigns.project_id uuid not null
 column campaigns.spend numeric default 0
 column campaigns.start_date date
-column campaigns.status text default 'Drafting'::text not null
+column campaigns.status text default 'drafting'::text not null
 column campaigns.target_demographic text
 column campaigns.target_reach text default ''::text
 column campaigns.title text not null
@@ -491,8 +491,12 @@ constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, 
 constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
 constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
 constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint campaigns.campaigns_money_check CHECK (((COALESCE(budget, (0)::numeric) >= (0)::numeric) AND (COALESCE(spend, (0)::numeric) >= (0)::numeric)))
 constraint campaigns.campaigns_pkey PRIMARY KEY (id)
+constraint campaigns.campaigns_platform_len CHECK (((char_length(btrim(platform)) >= 1) AND (char_length(btrim(platform)) <= 60)))
 constraint campaigns.campaigns_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint campaigns.campaigns_status_check CHECK ((status = ANY (ARRAY['drafting'::text, 'live'::text, 'wrapped'::text])))
+constraint campaigns.campaigns_title_len CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
 constraint channel_members.channel_members_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 constraint channel_members.channel_members_channel_id_user_id_key UNIQUE (channel_id, user_id)
 constraint channel_members.channel_members_pkey PRIMARY KEY (id)

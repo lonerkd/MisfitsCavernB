@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { tickerItems } from '@/lib/home/ticker';
 import { getPlatformStats } from '@/lib/supabase/stats';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
@@ -125,7 +126,7 @@ function PipelineConnector({ index }: { index: number }) {
 
 /* ─── Module Tile — screen-preview cards ─────────────────────────────────── */
 
-function ScriptOSPreview({ lines }: { lines?: string[] }) {
+function ScriptOSPreview({ lines, caption }: { lines?: string[]; caption: string }) {
   if (lines && lines.length > 0) {
     return (
       <div className="screenplay-preview" style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 260, overflow: 'hidden' }}>
@@ -153,38 +154,39 @@ function ScriptOSPreview({ lines }: { lines?: string[] }) {
       </div>
     );
   }
+  // No script to show (signed out, or nothing written yet): the shape of a
+  // screenplay page, not invented words.
   return (
-    <div className="screenplay-preview" style={{ padding: '20px 16px' }}>
-      <div className="screenplay-scene-hdr">INT. UNDERGROUND STUDIO — NIGHT</div>
-      <br />
-      <div style={{ color: 'var(--fg-dim)', fontSize: 11 }}>
-        The room hums with electricity. Monitors cast blue light across stacks of handwritten notes.
-      </div>
-      <br />
-      <div className="screenplay-char">DIRECTOR</div>
-      <div className="screenplay-dialog">Every frame is a decision. Every decision, a statement.</div>
-      <br />
-      <div className="screenplay-scene-hdr">EXT. CITY ROOFTOP — GOLDEN HOUR</div>
-      <br />
-      <div style={{ color: 'var(--fg-dim)', fontSize: 11 }}>
-        A city that never stops moving. She lights a cigarette and stares at the horizon.
-      </div>
-      <br />
-      <div className="screenplay-char">MARA</div>
-      <div className="screenplay-dialog">You can&apos;t make art in a vacuum. You need friction.</div>
+    <div style={{ padding: '22px 16px', display: 'flex', flexDirection: 'column', gap: 7 }} aria-hidden>
+      {[['52%', 0, 'var(--accent)'], ['92%', 0], ['78%', 0], [0], ['22%', '38%'], ['52%', '20%'], ['40%', '20%'], [0], ['46%', 0, 'var(--accent)'], ['88%', 0]].map(([w, ml, c], i) => (
+        w ? <div key={i} style={{ height: 5, width: w as string, marginLeft: ml as string, borderRadius: 3, background: (c as string) ?? 'rgba(255,255,255,0.08)', opacity: c ? 0.45 : 1 }} />
+          : <div key={i} style={{ height: 4 }} />
+      ))}
+      <PreviewCaption>{caption}</PreviewCaption>
     </div>
   );
 }
 
-function StudioPreview({ items: real }: { items?: { label: string; color: string }[] }) {
-  const items = (real && real.length > 0) ? real : [
-    { label: 'Opening_v3.mov', color: '#818cf8' },
-    { label: 'Score_Final.wav', color: '#10b981' },
-    { label: 'Act1_Draft.fdx',  color: '#e8431a' },
-    { label: 'Cast_Photos.zip', color: '#f59e0b' },
-    { label: 'Budget_R2.xlsx',  color: '#8b5cf6' },
-    { label: 'Storyboard.pdf',  color: '#06b6d4' },
-  ];
+function PreviewCaption({ children }: { children: React.ReactNode }) {
+  return <p style={{ margin: '10px 0 0', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{children}</p>;
+}
+
+function StudioPreview({ items, caption }: { items: { label: string; color: string }[]; caption: string }) {
+  if (!items.length) {
+    return (
+      <div style={{ padding: '16px 14px' }} aria-hidden>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {['#818cf8', '#10b981', '#e8431a', '#f59e0b'].map((c) => (
+            <div key={c} style={{ height: 34, borderRadius: 8, border: '1px dashed rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: c, opacity: 0.5 }} />
+              <div style={{ height: 4, flex: 1, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+          ))}
+        </div>
+        <PreviewCaption>{caption}</PreviewCaption>
+      </div>
+    );
+  }
   return (
     <div style={{ padding: '16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
       {items.map((item, i) => (
@@ -219,13 +221,17 @@ function StudioPreview({ items: real }: { items?: { label: string; color: string
   );
 }
 
-function LoungePreview({ messages: real }: { messages?: { from: string; text: string; mine: boolean }[] }) {
-  const messages = (real && real.length > 0) ? real : [
-    { from: 'Maya',   text: 'Scene 14 is landing perfectly ✓',  mine: false },
-    { from: 'You',    text: 'Color grade on act 2 is insane',    mine: true  },
-    { from: 'Jordan', text: 'Music cue syncs at 2:34 exactly',   mine: false },
-    { from: 'You',    text: 'Ship it.',                          mine: true  },
-  ];
+function LoungePreview({ messages, caption }: { messages: { from: string; text: string; mine: boolean }[]; caption: string }) {
+  if (!messages.length) {
+    return (
+      <div style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }} aria-hidden>
+        {[['58%', false], ['44%', true], ['66%', false]].map(([w, mine], i) => (
+          <div key={i} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', width: w as string, height: 24, borderRadius: mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px', border: `1px dashed ${mine ? 'rgba(232, 67, 26,0.25)' : 'rgba(255,255,255,0.08)'}` }} />
+        ))}
+        <PreviewCaption>{caption}</PreviewCaption>
+      </div>
+    );
+  }
   return (
     <div style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {messages.map((m, i) => (
@@ -252,7 +258,21 @@ function LoungePreview({ messages: real }: { messages?: { from: string; text: st
   );
 }
 
-function PortfolioPreview() {
+function PortfolioPreview({ works }: { works: Array<{ title: string; year: number | null; category: string | null; accent: string | null }> }) {
+  if (works.length) {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${works.length}, minmax(0, 1fr))`, gap: 10, padding: 14, minHeight: 140 }}>
+        {works.map((w, i) => (
+          <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', minHeight: 120, background: `linear-gradient(160deg, #0d0d0f 0%, ${w.accent || '#1a1008'} 160%)`, border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 18, letterSpacing: 0.5, lineHeight: 1.1, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', minHeight: 140 }}>
       <div style={{
@@ -287,7 +307,7 @@ function PortfolioPreview() {
         textTransform: 'uppercase',
         color: 'var(--fg-dim)',
       }}>
-        CAVERN · 2026
+        Published work shows here
       </div>
     </div>
   );
@@ -383,24 +403,12 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
   );
 }
 
-/* ─── Stats ticker ────────────────────────────────────────────────────────── */
-const TICKER_ITEMS = [
-  'Industry-Format Screenplay',
-  'Real-Time Collaboration',
-  'Cloud-Sync + Offline-First',
-  'Character Analytics',
-  'Asset Management',
-  'Crew Scheduling',
-  'Portfolio Publishing',
-  'Film-Grade Typography',
-  'Live Presence',
-  'One Ecosystem',
-];
-
-function StatsTicker() {
-  const repeated = [...TICKER_ITEMS, ...TICKER_ITEMS];
+/* ─── Live ticker: real public activity (lib/home/ticker) ─────────────────── */
+function StatsTicker({ items }: { items: string[] }) {
+  if (!items.length) return null;
+  const repeated = [...items, ...items];
   return (
-    <div className="marquee-wrap" style={{
+    <div className="marquee-wrap" aria-label="Happening now" role="marquee" style={{
       borderTop: '1px solid var(--border)',
       borderBottom: '1px solid var(--border)',
       padding: '14px 0',
@@ -440,20 +448,31 @@ export default function Home() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], latestScriptTitle: null });
+  const [ticker, setTicker] = useState<string[]>([]);
+  const [works, setWorks] = useState<Array<{ title: string; year: number | null; category: string | null; accent: string | null }>>([]);
 
   const { activeProject } = useProject();
 
   useEffect(() => {
     const palette = ['#6366f1', '#10b981', '#e8431a', '#f59e0b', '#8b5cf6', '#06b6d4'];
+    // Public: platform totals, who's hiring, what was just published.
+    (async () => {
+      const [platformStats, jobsRes, worksRes] = await Promise.all([
+        getPlatformStats(),
+        supabase.from('jobs').select('title, role').eq('status', 'open').order('created_at', { ascending: false }).limit(4),
+        supabase.from('portfolio_projects').select('title, year, category, role, accent_color').order('created_at', { ascending: false }).limit(3),
+      ]);
+      setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.media });
+      const published = worksRes.data ?? [];
+      setWorks(published.map((w) => ({ title: w.title, year: w.year, category: w.category, accent: w.accent_color })));
+      setTicker(tickerItems(platformStats, jobsRes.data ?? [], published));
+    })().catch((err) => console.error('Home stats load failed:', err));
+
     awaitOSUser().then(async (user) => {
       setLoggedIn(!!user);
       if (!user) return;
 
       try {
-
-        const platformStats = await getPlatformStats();
-        setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.media });
-
         const [scriptRes, assetRes, msgRes] = await Promise.all([
           supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
           supabase.from('media').select('title').order('created_at', { ascending: false }).limit(6),
@@ -682,7 +701,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════
           LIVE STATS — real platform numbers
       ══════════════════════════════════════════════ */}
-      {loggedIn && !stats && (
+      {!stats && (
         <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
             {[
@@ -731,7 +750,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════
           STATS TICKER
       ══════════════════════════════════════════════ */}
-      <StatsTicker />
+      <StatsTicker items={ticker} />
 
       {/* ══════════════════════════════════════════════
           MODULE GRID — asymmetric layout
@@ -758,9 +777,9 @@ export default function Home() {
                   {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
                     <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: c, opacity: 0.7 }} />
                   ))}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ? `${live.latestScriptTitle}.fdx` : 'untitled_script.fdx'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ?? 'ScriptOS'}</span>
                 </div>
-                <ScriptOSPreview lines={live.scriptLines} />
+                <ScriptOSPreview lines={live.scriptLines} caption={loggedIn ? 'Your latest script appears here' : 'Screenplay formatting as you type'} />
               </div>
             }
           />
@@ -772,7 +791,7 @@ export default function Home() {
               color="#6366f1"
               href="/studio"
               index={1}
-              preview={<StudioPreview items={live.assets} />}
+              preview={<StudioPreview items={live.assets} caption={loggedIn ? 'Your references and media appear here' : 'Every reference, clip and track in one library'} />}
             />
             <ModuleTile
               title="Lounge"
@@ -780,7 +799,7 @@ export default function Home() {
               color="#10b981"
               href="/lounge"
               index={2}
-              preview={<LoungePreview messages={live.messages} />}
+              preview={<LoungePreview messages={live.messages} caption={loggedIn ? 'Your crew channels appear here' : 'Channels and calls with your crew'} />}
             />
           </div>
         </div>
@@ -791,7 +810,7 @@ export default function Home() {
           color="#f59e0b"
           href="/portfolio"
           index={3}
-          preview={<PortfolioPreview />}
+          preview={<PortfolioPreview works={works} />}
           style={{ minHeight: 0 }}
         />
       </section>
