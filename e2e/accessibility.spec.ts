@@ -68,6 +68,13 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     ];
     for (const r of routes) await check(page, r);
 
+    // A new project keeps later tools locked (checked above); once it reaches
+    // delivery every tool is open, and the project page celebrates the phase.
+    await admin.from('projects').update({ status: 'completed' }).eq('id', p!.id);
+    for (const r of [`/projects/${p!.id}`, '/studio?tab=post', '/studio?tab=promos', '/studio?tab=production&view=schedule', '/studio?tab=production&view=crew']) {
+      await check(page, r, `delivery ${r}`);
+    }
+
     const mobile = await (await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: await ctx.storageState() })).newPage();
     for (const r of ['/', '/projects', '/studio?tab=scenes', '/editor']) await check(mobile, r, `mobile ${r}`);
 

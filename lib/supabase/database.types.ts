@@ -2424,6 +2424,7 @@ export type Database = {
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
+      project_progress: { Args: { p_project: string }; Returns: Json };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };
         Returns: undefined;

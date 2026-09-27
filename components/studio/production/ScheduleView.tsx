@@ -16,6 +16,7 @@ import { CallSheetsPanel } from './CallSheetsPanel';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
+import { readable } from '@/lib/color';
 
 const STATUS_ORDER = ['planned', 'shot', 'wrapped'] as const;
 const STATUS_COLOR: Record<string, string> = { planned: '#6b7280', shot: '#f59e0b', wrapped: '#10b981' };
@@ -169,7 +170,7 @@ export function ScheduleView({ crew }: { crew: Array<{ user_id: string; role: st
                   onClick={() => void cycleStatus(sc)}
                   title="Planned → Shot → Wrapped"
                   className={s.tag}
-                  style={{ justifyContent: 'center', cursor: 'pointer', color: STATUS_COLOR[status], borderColor: `${STATUS_COLOR[status]}55`, background: `${STATUS_COLOR[status]}1a` }}
+                  style={{ justifyContent: 'center', cursor: 'pointer', color: readable(STATUS_COLOR[status]), borderColor: `${STATUS_COLOR[status]}55`, background: `${STATUS_COLOR[status]}1a` }}
                 >
                   {status}
                 </button>

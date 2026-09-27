@@ -12,7 +12,7 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { useProject, type Phase, mapStatusToPhase } from '@/lib/os';
+import { useProject, type Phase, mapStatusToPhase, PHASE_STATUS } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useOSGate } from '@/lib/os';
 import { useEscapeKey } from '@/lib/useEscapeKey';
@@ -434,14 +434,7 @@ export default function ProjectsPage() {
     setProjectsList(prev => prev.map(p => p.id === projectId ? { ...p, phase: targetPhase } : p));
 
     try {
-      const statusMap: Record<Phase, any> = {
-        'development': 'concept',
-        'pre-production': 'pre-production',
-        'production': 'production',
-        'post-production': 'post-production',
-        'delivery': 'completed'
-      };
-      const dbStatus = statusMap[targetPhase];
+      const dbStatus = PHASE_STATUS[targetPhase];
 
       const { error } = await supabase.from('projects').update({ status: dbStatus }).eq('id', projectId);
       if (error) throw error;

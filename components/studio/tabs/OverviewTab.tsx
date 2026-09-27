@@ -5,7 +5,9 @@ import { Activity as ActivityIcon, DollarSign } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { supabase } from '@/lib/supabase/client';
 import { getProjectActivities, type Activity } from '@/lib/supabase/activity';
-import { StageIndicator } from '../ProjectCards';
+import { PhasePanel } from '@/components/progress/PhasePanel';
+import { useProgressContext } from '@/components/progress/LockedTool';
+import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
 import { SectionHeader } from '../ui';
 import s from '../studio.module.css';
@@ -13,8 +15,9 @@ import s from '../studio.module.css';
 type TabId = 'library' | 'scenes' | 'production' | 'share';
 
 /** The project at a glance — every number here is counted from live data. */
-export function OverviewTab({ onOpen }: { onOpen: (tab: TabId) => void }) {
-  const { project, media, scenes, links, scripts } = useStudio();
+export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => void; onNavigate: (place: Place) => boolean }) {
+  const { project, media, scenes, links, scripts, isOwner } = useStudio();
+  const progressState = useProgressContext();
   const [activity, setActivity] = useState<Activity[]>([]);
 
   useEffect(() => {
@@ -48,13 +51,15 @@ export function OverviewTab({ onOpen }: { onOpen: (tab: TabId) => void }) {
 
   return (
     <section aria-labelledby="overview-title" className={s.stack} style={{ gap: 28 }}>
-      <StageIndicator status={project.status} projectType={project.project_type} />
       <SectionHeader
         id="overview-title"
         eyebrow="Overview"
         title={project.title}
-        subtitle={project.description || 'No logline yet — add one on the project page; it leads your share link and pitch deck.'}
+        subtitle={project.description || 'No logline yet — the owner adds it on the project page; it leads your share link and pitch deck.'}
       />
+      {progressState && (
+        <PhasePanel projectId={project.id} state={progressState} isOwner={isOwner} accent={project.accent_color} onNavigate={onNavigate} />
+      )}
 
       <div className={s.stats}>
         {stats.map((st) => (

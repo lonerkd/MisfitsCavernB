@@ -11,6 +11,7 @@ import { List as Users } from 'lucide-react';
 import { useStudio } from './StudioContext';
 import { useScriptCharacters } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
+import { readable } from '@/lib/color';
 
 type CrewRow = { id: string; user_id: string; role: string; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
@@ -123,8 +124,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: assigning ? 12 : 24 }}>
                     <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
-                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: sel.color, background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
-                    <Link href={`/jobs?title=${encodeURIComponent(`Cast — ${sel.name}`)}&role=Actor`} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
+                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: readable(sel.color), background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
+                    <Link href={`/jobs?title=${encodeURIComponent(`Cast — ${sel.name}`)}&role=Actor`} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: readable('#8b5cf6'), background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
                   </div>
                 )}
 

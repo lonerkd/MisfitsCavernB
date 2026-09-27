@@ -20,6 +20,8 @@ export interface ProjectSettings {
 
   defaultScriptFormat?: ScriptFormat;
   modules: EcosystemModules;
+  /** Open every tool now instead of phase by phase (lib/os/progress). */
+  unlockAllTools?: boolean;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

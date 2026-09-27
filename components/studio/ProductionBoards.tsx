@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { readable } from '@/lib/color';
 
 export function Stripboard({ scenes }: { scenes: any[] }) {
   const [view, setView] = useState<'strips' | 'dood'>('strips');
@@ -13,7 +14,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
     if (isExt && isNight) return { bg: 'rgba(16,185,129,0.16)', bar: '#10b981', label: 'EXT · NIGHT' };
     if (isExt) return { bg: 'rgba(245,158,11,0.16)', bar: '#f59e0b', label: 'EXT · DAY' };
     if (isNight) return { bg: 'rgba(59,130,246,0.16)', bar: '#3b82f6', label: 'INT · NIGHT' };
-    return { bg: 'rgba(255,255,255,0.05)', bar: 'rgba(255,255,255,0.5)', label: 'INT · DAY' };
+    return { bg: 'rgba(255,255,255,0.05)', bar: '#8f8d78', label: 'INT · DAY' };
   };
   const eighths = (s: any) => { const m = String(s.est_duration || '').match(/(\d+)\/8/); return m ? Number(m[1]) : 1; };
 
@@ -44,7 +45,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
     }).sort((a, b) => b.total - a.total);
   })();
 
-  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#e8431a', SF: '#10b981', '·': 'rgba(255,255,255,0.12)' };
+  const codeColor: Record<string, string> = { S: '#10b981', W: '#e0ddae', H: '#f59e0b', F: '#e8431a', SF: '#10b981', '·': 'var(--fg-dim)' };
 
   if (scenes.length === 0) return null;
 
@@ -84,7 +85,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
                       <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: c.bg, borderLeft: `4px solid ${c.bar}`, borderRadius: 4, padding: '7px 10px', minHeight: 22 + Math.min(e, 8) * 3 }}>
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, width: 28, flexShrink: 0 }}>{s.scene_number}</span>
                         <span style={{ flex: 1, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title || 'Untitled'}</span>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: c.bar, letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: readable(c.bar), letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', width: 32, textAlign: 'right', flexShrink: 0 }}>{e}/8</span>
                       </div>
                     );
@@ -116,7 +117,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
                 <div style={{ width: 120, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 6 }}>{row.name}</div>
                 {row.cells.map((cell, i) => (
                   <div key={i} style={{ width: 30, textAlign: 'center' }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: cell === '·' ? codeColor['·'] : codeColor[cell] }}>{cell === 'SF' ? 'SF' : cell}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, color: cell === '·' ? codeColor['·'] : readable(codeColor[cell]) }}>{cell === 'SF' ? 'SF' : cell}</span>
                   </div>
                 ))}
                 <div style={{ width: 40, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>{row.total}</div>
@@ -125,7 +126,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               {[['S', 'Start'], ['W', 'Work'], ['H', 'Hold'], ['F', 'Finish']].map(([code, lbl]) => (
                 <span key={code} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>
-                  <span style={{ fontWeight: 700, color: codeColor[code] }}>{code}</span> {lbl}
+                  <span style={{ fontWeight: 700, color: readable(codeColor[code]) }}>{code}</span> {lbl}
                 </span>
               ))}
             </div>

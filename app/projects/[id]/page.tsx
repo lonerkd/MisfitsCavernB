@@ -27,6 +27,10 @@ import type { ScriptFormat } from '@/lib/scriptos/parser';
 import { awaitOSUser } from '@/lib/os';
 import { readable } from '@/lib/color';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { PhasePanel } from '@/components/progress/PhasePanel';
+import { announceProgressChange } from '@/lib/supabase/progress';
+import { LoglineEditor } from '@/components/progress/LoglineEditor';
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -325,6 +329,7 @@ export default function ProjectHubPage() {
   const [portfolioPieces, setPortfolioPieces] = useState<{ id: string; title: string }[]>([]);
   const [crewTeam, setCrewTeam] = useState<{ id: string; name: string; role: string }[]>([]);
   const onlineIds = useOnlinePresence(realProject ? 'me' : null);
+  const progressState = useProjectProgress(id);
   useEffect(() => {
     let active = true;
     (async () => {
@@ -382,7 +387,8 @@ export default function ProjectHubPage() {
   const onlineCount = team.filter(m => m.online).length;
 
   const typePhases = getPhasesForType(project.type);
-  const typePhaseIdx = phaseIndexForType(project.type, project.phase);
+  // The phase panel re-reads the project after a phase change; the header follows it.
+  const typePhaseIdx = progressState.progress?.currentIndex ?? phaseIndexForType(project.type, project.phase);
   const modules = getProjectModules(project.settings);
 
   const changeVisibility = async (v: 'private' | 'team' | 'link' | 'public') => {
@@ -441,7 +447,7 @@ export default function ProjectHubPage() {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>{project.title}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.color, opacity: 0.8 }}>{project.type}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.color }}>{project.type}</span>
           </div>
         </div>
 
@@ -456,7 +462,7 @@ export default function ProjectHubPage() {
                   padding: '5px 12px', borderRadius: 9999,
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5, textTransform: 'uppercase',
                   background: isActive ? `${project.color}18` : 'transparent',
-                  color: isActive ? project.color : isDone ? 'rgba(224, 221, 174,0.4)' : 'rgba(224, 221, 174,0.2)',
+                  color: isActive ? project.color : isDone ? 'var(--fg-muted)' : 'var(--fg-dim)',
                   border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
                   transition: 'all 0.3s', whiteSpace: 'nowrap',
                 }}>
@@ -533,7 +539,21 @@ export default function ProjectHubPage() {
         >
           <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 400, letterSpacing: 2, lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', color: 'var(--fg-dim)', marginTop: 10, maxWidth: 560 }}>{project.description}</p>
+          <LoglineEditor
+            projectId={id}
+            value={project.description}
+            isOwner={project.isOwner}
+            onSaved={(logline) => setRealProject(p => p ? { ...p, description: logline } : p)}
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          style={{ marginBottom: 24 }}
+        >
+          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.color} />
         </motion.div>
 
         {/*
@@ -731,6 +751,10 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
     awaitOSUser().then((user) => setUserId(user?.id ?? null));
     load();
   }, [load]);
+
+  // Tasks, budget, crew and festivals count toward the phase milestones.
+  const progressKey = `${tasks.map(t => (t.completed ? 1 : 0)).join('')}|${budget.length}|${crew.length}|${festivals.map(f => f.status).join(',')}`;
+  useEffect(() => { announceProgressChange(projectId); }, [projectId, progressKey]);
 
   const addTask = async (title: string) => {
     const { data, error } = await supabase.from('project_tasks')
