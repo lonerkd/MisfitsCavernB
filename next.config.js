@@ -23,6 +23,17 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Only this site may frame its pages (the split screen does; nobody else can
+  // — clickjacking). Public share pages and media permalinks stay embeddable.
+  async headers() {
+    return [{
+      source: '/((?!p/|s/|shared/|m/).*)',
+      headers: [
+        { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+        { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      ],
+    }];
+  },
   webpack: (config, { isServer }) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     return config;

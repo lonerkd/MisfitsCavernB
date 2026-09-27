@@ -34,6 +34,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
+import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -1004,6 +1005,31 @@ export default function EditorPage() {
     }
     return lastScene;
   }, [lines, scenesList, cursorLine]);
+
+  // ── Split screen: the other pane follows the caret's scene; the Studio can
+  // send the script to a scene (in a split, or by ?scene=<id> on the URL).
+  useEffect(() => {
+    const scriptId = currentScript?.id;
+    if (!scriptId) return;
+    const t = setTimeout(() => postToSplit({ type: 'scene', scriptId, sceneId: sceneIds[currentSceneIdx] ?? null }), 250);
+    return () => clearTimeout(t);
+  }, [currentScript?.id, currentSceneIdx, sceneIds]);
+  const jumpRef = useRef(jumpToScene);
+  jumpRef.current = jumpToScene;
+  useSplitMessages((msg) => {
+    if (msg.type !== 'open-scene' || msg.scriptId !== currentScript?.id) return;
+    const idx = sceneIds.indexOf(msg.sceneId);
+    if (idx >= 0) jumpRef.current(idx);
+  });
+  const sceneParam = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('scene') : null);
+  useEffect(() => {
+    const want = sceneParam.current;
+    if (!want || !currentScript?.id) return;
+    const idx = sceneIds.indexOf(want);
+    if (idx < 0) return;
+    sceneParam.current = null;
+    jumpRef.current(idx);
+  }, [currentScript?.id, sceneIds]);
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 

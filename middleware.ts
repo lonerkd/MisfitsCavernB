@@ -28,6 +28,7 @@ export async function middleware(request: NextRequest) {
     '/profile',
     '/settings',
     '/soundtrack',
+    '/split',
   ];
   const isAdminPath = path.startsWith('/admin');
   const isProtectedPath = protectedPaths.some((p) => path === p || path.startsWith(p + '/'));

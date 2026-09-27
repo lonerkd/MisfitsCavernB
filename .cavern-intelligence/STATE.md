@@ -1,8 +1,27 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Scene readiness
+## Latest Session — Split screen
 
-Migration `20260927050000_readiness.sql` — **apply to production before merging**.
+No migrations.
+
+- **`/split`**: any two surfaces side by side — the script beside Scenes,
+  Readiness beside the script, the breakdown beside the schedule… Each pane is
+  the real page in a same-origin frame (full features), without the suite's
+  chrome. Resizable (drag, or arrow keys on the divider; double-click / Enter
+  resets), side by side or stacked (stacked on phones), swap, per-pane surface
+  menu, open a pane full screen or close it. Layout lives in the URL and on
+  the device.
+- **Linked panes**: the script's caret scene lights up in Scenes and opens in
+  Readiness; "In script" on a scene card (and "Open in script" in Readiness)
+  moves the script to that scene. Outside a split, those go to
+  `/editor?script=…&scene=…`, which the editor now honours.
+- Open it with Ctrl+\ (⌘\), the taskbar's split button, or ⌘K → Split screen.
+- Security: only this site may frame its pages (`frame-ancestors 'self'`,
+  `X-Frame-Options`) — none existed before; share pages stay embeddable.
+
+## Earlier — Scene readiness
+
+Migration `20260927050000_readiness.sql` — applied to production; PR #65 merged.
 
 - **Studio › Production › Readiness**: every scene against what it needs to
   shoot — cast, breakdown (tagged + all ready), shots, a dated shoot day,

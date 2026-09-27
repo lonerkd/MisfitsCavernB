@@ -468,3 +468,6 @@
 .itemTitle { font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
 .itemStatus { font-family: var(--mono); letter-spacing: 0.5px; }
 .status_in_progress { color: #fbbf24; } .status_review { color: #a5b4fc; } .status_done { color: #10b981; }
+
+/* Linked split screen: the scene the script's caret is in. */
+.sceneFollow { box-shadow: 0 0 0 2px rgba(52, 199, 123, 0.5); transition: box-shadow 0.3s; }

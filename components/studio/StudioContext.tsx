@@ -5,7 +5,9 @@
 // 90-field untyped context.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
+import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import {
@@ -48,6 +50,10 @@ export interface StudioData {
   scenesByMedia: Map<string, string[]>;
   mediaByScene: Map<string, string[]>;
   mediaById: Map<string, Media>;
+  /** In a linked split screen: the scene the script's caret is in (changes as the writer moves). */
+  followScene: { sceneId: string; at: number } | null;
+  /** Take the script to a scene: the other pane in a split screen, else the editor. */
+  openInScript: (scene: Pick<SceneRow, 'id' | 'script_id'>) => void;
 }
 
 const Ctx = createContext<StudioData | null>(null);
@@ -122,6 +128,20 @@ export function StudioProvider({ project, userId, children }: { project: Project
   }, [links.rows]);
   const mediaById = useMemo(() => new Map(media.rows.map((m) => [m.id, m])), [media.rows]);
 
+  // Split screen: follow the script's caret; a scene from another script switches to it.
+  const [followScene, setFollowScene] = useState<StudioData['followScene']>(null);
+  useSplitMessages((msg) => {
+    if (msg.type !== 'scene' || !msg.sceneId) return;
+    if (msg.scriptId !== scriptId && scripts.some((sc) => sc.id === msg.scriptId)) setScriptId(msg.scriptId);
+    setFollowScene({ sceneId: msg.sceneId, at: Date.now() });
+  });
+  const router = useRouter();
+  const openInScript = useCallback((scene: Pick<SceneRow, 'id' | 'script_id'>) => {
+    if (!scene.script_id) return;
+    if (postToSplit({ type: 'open-scene', scriptId: scene.script_id, sceneId: scene.id })) return;
+    router.push(`/editor?script=${scene.script_id}&scene=${scene.id}`);
+  }, [router]);
+
   const value: StudioData = {
     project,
     userId,
@@ -140,6 +160,8 @@ export function StudioProvider({ project, userId, children }: { project: Project
     scenesByMedia,
     mediaByScene,
     mediaById,
+    followScene,
+    openInScript,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

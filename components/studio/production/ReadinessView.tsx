@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, ChevronDown, Minus, PenLine } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, FileText, Minus, PenLine } from 'lucide-react';
 import { useBreakdown } from '@/lib/breakdown';
 import { useCallSheets, useCastings } from '@/lib/studio';
 import { nextShootDay, readinessByDay, type CheckId, type ReadinessDay, type ReadinessInput, type SceneReadiness } from '@/lib/studio/readiness';
@@ -37,12 +37,20 @@ const fmtDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(
  * here is ticked by hand: it all follows the project's data, live.
  */
 export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => boolean }) {
-  const { project, scenes, shots, mediaByScene, scriptId } = useStudio();
+  const { project, scenes, shots, mediaByScene, scriptId, followScene, openInScript } = useStudio();
   const bd = useBreakdown(project.id);
   const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
   const [filter, setFilter] = useState<Filter>('all');
   const [open, setOpen] = useState<string | null>(null);
+
+  // Linked split screen: open the scene the script's caret is in.
+  useEffect(() => {
+    if (!followScene) return;
+    setFilter('all');
+    setOpen(followScene.sceneId);
+    requestAnimationFrame(() => document.getElementById(`rd-row-${followScene.sceneId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  }, [followScene]);
 
   const input: ReadinessInput = useMemo(() => {
     const elementsByScene: ReadinessInput['elementsByScene'] = new Map();
@@ -172,7 +180,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
               const sc = headingOf.get(x.sceneId);
               const expanded = open === x.sceneId;
               return (
-                <li key={x.sceneId} className={cx(r.row, r[`row_${x.state}`])}>
+                <li key={x.sceneId} id={`rd-row-${x.sceneId}`} className={cx(r.row, r[`row_${x.state}`], followScene?.sceneId === x.sceneId && r.rowFollow)}>
                   <button type="button" className={r.rowBtn} aria-expanded={expanded} aria-controls={`rd-${x.sceneId}`} onClick={() => setOpen(expanded ? null : x.sceneId)}>
                     <span className={r.num}>{sc?.scene_number}</span>
                     <span className={r.heading}>
@@ -199,6 +207,13 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
                           )}
                         </li>
                       ))}
+                      {sc && (
+                        <li className={r.checkActions}>
+                          <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript(sc)}>
+                            <FileText size={11} aria-hidden /> Open in script
+                          </button>
+                        </li>
+                      )}
                     </ul>
                   )}
                 </li>
