@@ -13,10 +13,11 @@ Migration `20260927040000_breakdown_memory.sql` — **apply to production before
 - `scenes.elements` dropped; `sync_script_scenes` no longer stores the
   parser's guesses (nothing read them since the breakdown tables).
 
-## Latest Session — Project formats as data
+## Earlier — Project formats as data
 
-Branch: `claude/state-assessment-testing-r0tf3y`. Migration
-`20260927030000_project_formats.sql` — **apply to production before merging**.
+Migration `20260927030000_project_formats.sql` — applied to production
+(fingerprint matched on all 12 categories, no project's `updated_at` moved);
+PR #63 merged.
 
 - `project_formats` (10 formats, admin-extendable) replaces four lists that
   disagreed: the new-project modal's six types, `lib/projectTypes.ts` phase
