@@ -6,12 +6,15 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Archive, Clapperboard, Film, Globe, LayoutGrid, Maximize2, Megaphone, Video } from 'lucide-react';
+import { Archive, Clapperboard, Film, Globe, LayoutGrid, Lock, Maximize2, Megaphone, Video } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useOSGate, useProject } from '@/lib/os';
 import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage } from '@/lib/context/PillContext';
 import { StudioProvider } from '@/components/studio/StudioContext';
+import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
+import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
 import { OverviewTab } from '@/components/studio/tabs/OverviewTab';
 import { LibraryTab } from '@/components/studio/tabs/LibraryTab';
 import { ScenesTab } from '@/components/studio/tabs/ScenesTab';
@@ -36,20 +39,28 @@ const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
 ];
 
-/** The open tab, mirrored in ?tab= so links and reloads land in the same place. */
-function useTab(valid: TabId[]): [TabId, (t: TabId) => void] {
+const VIEWS: ProductionView[] = ['story', 'schedule', 'crew'];
+
+/** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
+function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
   const [tab, setTabState] = useState<TabId>('overview');
+  const [view, setView] = useState<ProductionView | null>(null);
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get('tab') as TabId | null;
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('tab') as TabId | null;
+    const v = params.get('view') as ProductionView | null;
     if (t && valid.includes(t)) setTabState(t);
+    if (v && VIEWS.includes(v)) setView(v);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const setTab = useCallback((t: TabId) => {
+  const setTab = useCallback((t: TabId, v?: ProductionView) => {
     setTabState(t);
+    setView(v ?? null);
     const url = new URL(window.location.href);
     url.searchParams.set('tab', t);
+    if (v) url.searchParams.set('view', v); else url.searchParams.delete('view');
     window.history.replaceState(null, '', url);
   }, []);
-  return [valid.includes(tab) ? tab : 'overview', setTab];
+  return [valid.includes(tab) ? tab : 'overview', view, setTab];
 }
 
 export default function StudioPage() {
@@ -57,7 +68,28 @@ export default function StudioPage() {
   const { activeProject, projects, setActiveProject, loading } = useProject();
   const modules = getProjectModules(activeProject?.settings);
   const tabs = ALL_TABS.filter((t) => t.id !== 'promos' || modules.distribution);
-  const [tab, setTab] = useTab(tabs.map((t) => t.id));
+  const [tab, view, setTabRaw] = useTab(tabs.map((t) => t.id));
+  const progressState = useProjectProgress(activeProject?.id);
+  const { progress, reload: reloadProgress } = progressState;
+  // Tabs looked at before their phase, this visit ("Open it now").
+  const [peeked, setPeeked] = useState<Set<TabId>>(new Set());
+  useEffect(() => { setPeeked(new Set()); }, [activeProject?.id]);
+  const setTab = useCallback((t: TabId, v?: ProductionView) => {
+    setTabRaw(t, v);
+    void reloadProgress();
+  }, [setTabRaw, reloadProgress]);
+  const navigate = useCallback((place: Place) => {
+    if (place.kind !== 'studio' || !tabs.some((t) => t.id === place.tab)) return false;
+    setTab(place.tab, place.view);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return true;
+  }, [setTab, tabs]);
+  const lockedTool = (t: TabId) => {
+    const id = STUDIO_TAB_TOOL[t];
+    const state = id ? toolState(progress, id) : null;
+    return state && !state.unlocked ? state : null;
+  };
+  const tabLock = lockedTool(tab);
 
   usePillStage(
     activeProject
@@ -112,6 +144,12 @@ export default function StudioPage() {
                 onClick={() => setTab(t.id)}
               >
                 {t.icon} {t.label}
+                {lockedTool(t.id) && !peeked.has(t.id) && (
+                  <>
+                    <Lock size={9} aria-hidden style={{ opacity: 0.7 }} />
+                    <span className="sr-only">(opens in {lockedTool(t.id)!.phaseLabel})</span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -135,16 +173,29 @@ export default function StudioPage() {
           </div>
         ) : (
           <StudioProvider key={activeProject.id} project={activeProject} userId={user.id}>
-            <div role="tabpanel">
-              {tab === 'overview' && <OverviewTab onOpen={setTab} />}
-              {tab === 'library' && <LibraryTab />}
-              {tab === 'scenes' && <ScenesTab />}
-              {tab === 'production' && <ProductionTab />}
-              {tab === 'post' && <PostTab />}
-              {tab === 'promos' && <PromosTab />}
-              {tab === 'pitch' && <PitchTab />}
-              {tab === 'share' && <ShareTab />}
-            </div>
+            <ProgressContext.Provider value={progressState}>
+              <div role="tabpanel">
+                {tabLock && !peeked.has(tab) ? (
+                  <LockedTool
+                    tool={tabLock}
+                    accent={activeProject.accent_color}
+                    onOpen={() => setPeeked((prev) => new Set(prev).add(tab))}
+                    onShowPhase={() => setTab('overview')}
+                  />
+                ) : (
+                  <>
+                    {tab === 'overview' && <OverviewTab onOpen={setTab} onNavigate={navigate} />}
+                    {tab === 'library' && <LibraryTab />}
+                    {tab === 'scenes' && <ScenesTab />}
+                    {tab === 'production' && <ProductionTab view={view ?? 'story'} onView={(v) => setTabRaw('production', v)} />}
+                    {tab === 'post' && <PostTab />}
+                    {tab === 'promos' && <PromosTab />}
+                    {tab === 'pitch' && <PitchTab />}
+                    {tab === 'share' && <ShareTab />}
+                  </>
+                )}
+              </div>
+            </ProgressContext.Provider>
           </StudioProvider>
         )}
       </div>

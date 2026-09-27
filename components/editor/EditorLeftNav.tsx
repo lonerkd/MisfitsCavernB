@@ -4,6 +4,7 @@ import React from 'react';
 import { Plus, FileUp, Book } from 'lucide-react';
 import type { ScriptLine } from '@/types/screenplay';
 import type { StoredScript } from '@/lib/scriptos/storage';
+import { readable } from '@/lib/color';
 
 export interface EditorLeftNavProps {
   scripts: StoredScript[];
@@ -187,8 +188,8 @@ export function EditorLeftNav({
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                             <span style={{
-                              fontFamily: 'var(--mono)', fontSize: 9, color: color,
-                              flexShrink: 0, opacity: 0.9, fontWeight: 600
+                              fontFamily: 'var(--mono)', fontSize: 9, color: readable(color),
+                              flexShrink: 0, fontWeight: 600
                             }}>{typeLabel}</span>
                             <span style={{
                               fontFamily: 'var(--mono)', fontSize: 10.5,

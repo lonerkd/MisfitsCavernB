@@ -17,7 +17,7 @@ async function violations(page: Page, route: string) {
   await page.addScriptTag({ content: AXE });
   const result = await page.evaluate(async (tags) => {
     const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: tags }, resultTypes: ['violations'] });
-    return r.violations.map((v: any) => `${v.id} (${v.impact}): ${v.help} — ${v.nodes.slice(0, 3).map((n: any) => n.target.join(' ')).join(' | ')}`);
+    return r.violations.map((v: any) => `${v.id} (${v.impact}): ${v.help} — ${v.nodes.slice(0, 3).map((n: any) => `${n.target.join(' ')} ${n.html.slice(0, 140)} ${n.any?.[0]?.message ?? ''}`).join(' | ')}`);
   }, TAGS);
   return result as string[];
 }
@@ -67,6 +67,13 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
       '/portfolio', '/portfolio/manage', '/profile', '/settings', '/admin', '/admin/users', '/admin/analytics', '/admin/audit-logs',
     ];
     for (const r of routes) await check(page, r);
+
+    // A new project keeps later tools locked (checked above); once it reaches
+    // delivery every tool is open, and the project page celebrates the phase.
+    await admin.from('projects').update({ status: 'completed' }).eq('id', p!.id);
+    for (const r of [`/projects/${p!.id}`, '/studio?tab=post', '/studio?tab=promos', '/studio?tab=production&view=schedule', '/studio?tab=production&view=crew']) {
+      await check(page, r, `delivery ${r}`);
+    }
 
     const mobile = await (await browser.newContext({ viewport: { width: 390, height: 844 }, storageState: await ctx.storageState() })).newPage();
     for (const r of ['/', '/projects', '/studio?tab=scenes', '/editor']) await check(mobile, r, `mobile ${r}`);

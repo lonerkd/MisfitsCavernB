@@ -44,6 +44,8 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
+import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
+import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
 import { DiffModal } from '@/components/editor/DiffModal';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
@@ -109,7 +111,6 @@ export default function EditorPage() {
 
   const [lines, setLines] = useState<ScriptLine[]>([]);
   const [parsedScenes, setParsedScenes] = useState<ParsedScene[]>([]);
-  const [elements, setElements] = useState<Record<string, string[]>>({});
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -431,13 +432,11 @@ export default function EditorPage() {
       const result = parseScript(content);
       setLines(result.lines);
       setParsedScenes(result.scenes);
-      if (result.elements) setElements(result.elements);
       setCharStats(analyzeCharacters(result.lines, result.scenes));
       setLintIssues(validateScript(result.lines, content, result.scenes, result.characters));
     } else {
       setLines([]);
       setParsedScenes([]);
-      setElements({});
       setCharStats([]);
       setLintIssues([]);
     }
@@ -894,6 +893,21 @@ export default function EditorPage() {
   // device for personal ones) — see components/editor/useEditorScenes.
   const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
 
+  // Breakdown mode: tag what the shoot needs right in the script.
+  const sceneIds = useMemo(() => sceneIndex.rows.map((r) => r?.id ?? null), [sceneIndex.rows]);
+  const sceneCharacters = useMemo(() => parsedScenes.map((sc) => sc.characters ?? []), [parsedScenes]);
+  const bd = useEditorBreakdown({
+    projectId: currentScript?.project_id ?? null,
+    lines, sceneIds, characters: sceneCharacters,
+    onError: (msg) => toastRef.current(msg, 'error'),
+  });
+  const [openElementId, setOpenElementId] = useState<string | null>(null);
+  const openBreakdown = useCallback((elementId?: string | null) => {
+    setShowRightSidebar(true);
+    setRightPanel('breakdown');
+    if (elementId !== undefined) setOpenElementId(elementId);
+  }, []);
+
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
   const scenePositions = useMemo(() => {
@@ -1038,7 +1052,7 @@ export default function EditorPage() {
     return Array.from(locs.entries()).sort((a, b) => b[1] - a[1]);
   }, [scenesList]);
 
-  const editorCtx: EditorCtx = { activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const editorCtx: EditorCtx = { bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -1166,7 +1180,7 @@ export default function EditorPage() {
                   pageEst={pageEst} dialogueRatio={dialogueRatio}
                   typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
                   nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
-                  elements={elements} chars={chars} charStats={charStats}
+                  chars={chars} charStats={charStats}
                   handleLockRevision={handleLockRevision} revisions={revisions}
                   onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
                   setContent={setContent} toast={toast}
@@ -1177,6 +1191,19 @@ export default function EditorPage() {
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}
+                  breakdownPanel={
+                    <BreakdownPanel
+                      bd={bd}
+                      projectId={currentScript?.project_id ?? null}
+                      sceneIdx={currentSceneIdx}
+                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+                      speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
+                      crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
+                      openElementId={openElementId}
+                      setOpenElementId={setOpenElementId}
+                      onJumpToScene={jumpToScene}
+                    />
+                  }
                   referencesPanel={
                     <SceneReferencesPanel
                       projectId={currentScript?.project_id ?? null}

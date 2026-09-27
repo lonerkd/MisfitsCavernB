@@ -74,3 +74,12 @@ export function phaseIndexForType(projectType: string | null | undefined, phase:
   }
   return 0;
 }
+
+/** The status written to `projects.status` for each phase (read back by mapStatusToPhase). */
+export const PHASE_STATUS: Record<Phase, string> = {
+  development: 'concept',
+  'pre-production': 'pre-production',
+  production: 'production',
+  'post-production': 'post-production',
+  delivery: 'completed',
+};

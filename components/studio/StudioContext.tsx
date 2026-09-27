@@ -7,6 +7,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Project } from '@/lib/os';
 import { parseScript } from '@/lib/scriptos/parser';
+import { announceProgressChange } from '@/lib/supabase/progress';
 import {
   fetchScriptContent,
   studio,
@@ -97,6 +98,8 @@ export function StudioProvider({ project, userId, children }: { project: Project
       const text = await fetchScriptContent(scriptId);
       await studio.syncScriptScenes(scriptId, parseScript(text).scenes);
       await scenes.reload();
+      // Scenes count toward the phase milestones and open the Scenes tab.
+      announceProgressChange(projectId);
       setSyncState('synced');
       setSyncError(null);
     } catch (e) {
@@ -105,7 +108,7 @@ export function StudioProvider({ project, userId, children }: { project: Project
     }
     // scenes.reload is stable per scriptId
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptId]);
+  }, [scriptId, projectId]);
   useEffect(() => { void run(); }, [run]);
 
   const { scenesByMedia, mediaByScene } = useMemo(() => {
