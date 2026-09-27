@@ -16,16 +16,6 @@
 //   4. Everything else gets a fresh id; unmatched old scenes are removed
 //      (kept on the server with removed_at, never deleted).
 
-import type { Json } from '@/lib/supabase/database.types';
-
-export interface SceneElementsInput {
-  props?: string[];
-  wardrobe?: string[];
-  vehicles?: string[];
-  sfx?: string[];
-  vfx?: string[];
-}
-
 /** The parts of a parsed scene (lib/scriptos/parser) the index stores. */
 export interface ParsedSceneInput {
   heading: string;
@@ -33,7 +23,6 @@ export interface ParsedSceneInput {
   timeOfDay?: string;
   characters?: string[];
   eighths?: number;
-  elements?: SceneElementsInput;
 }
 
 /** A scene row as read from public.scenes for one script. */
@@ -46,7 +35,6 @@ export interface IndexedScene {
   time_of_day?: string | null;
   cast_list?: string | null;
   est_duration?: string | null;
-  elements?: Json;
 }
 
 /** One entry of the plan sent to sync_script_scenes, in script order. */
@@ -57,7 +45,6 @@ export interface ScenePlanRow {
   time_of_day: string;
   cast_list: string | null;
   est_duration: string;
-  elements: SceneElementsInput;
 }
 
 export interface ScenePlan {
@@ -91,7 +78,6 @@ export function toPlanRow(id: string, scene: ParsedSceneInput, index: number): S
     time_of_day: tod && tod !== 'UNKNOWN' ? tod : 'DAY',
     cast_list: cast || null,
     est_duration: `${Math.max(1, scene.eighths || 1)}/8 pg`,
-    elements: scene.elements ?? {},
   };
 }
 
@@ -198,14 +184,6 @@ export function alignSceneIds(existing: IndexedScene[], parsed: ParsedSceneInput
   return ids.map((id) => id ?? newId());
 }
 
-function sameElements(a: unknown, b: unknown): boolean {
-  const norm = (v: unknown) => {
-    const o = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
-    return JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
-  };
-  return norm(a) === norm(b);
-}
-
 export function planSceneSync(existing: IndexedScene[], parsed: ParsedSceneInput[], newId: () => string): ScenePlan {
   const active = existing
     .filter((s) => !s.removed_at)
@@ -226,8 +204,7 @@ export function planSceneSync(existing: IndexedScene[], parsed: ParsedSceneInput
         (cur.location ?? null) !== row.location ||
         (cur.time_of_day ?? null) !== row.time_of_day ||
         (cur.cast_list ?? null) !== row.cast_list ||
-        (cur.est_duration ?? null) !== row.est_duration ||
-        !sameElements(cur.elements, row.elements)
+        (cur.est_duration ?? null) !== row.est_duration
       );
     });
 

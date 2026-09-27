@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T06:03:31.166Z",
+  "last_synchronized": "2026-09-27T06:18:16.034Z",
   "stats": {
-    "totalFiles": 313,
-    "totalSize": 2543268,
+    "totalFiles": 315,
+    "totalSize": 2557497,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 128,
-      ".ts": 152,
+      ".ts": 153,
       ".js": 7,
-      ".sql": 12
+      ".sql": 13
     }
   },
   "modules": {
@@ -240,7 +240,8 @@
         "supabase/migrations/20260927000000_project_progress.sql",
         "supabase/migrations/20260927010000_breakdown.sql",
         "supabase/migrations/20260927020000_crafts.sql",
-        "supabase/migrations/20260927030000_project_formats.sql"
+        "supabase/migrations/20260927030000_project_formats.sql",
+        "supabase/migrations/20260927040000_breakdown_memory.sql"
       ]
     }
   },
@@ -702,8 +703,8 @@
     },
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
-      "size": 10592,
-      "last_modified": "2026-09-27T04:27:40.927Z"
+      "size": 10650,
+      "last_modified": "2026-09-27T06:15:52.622Z"
     },
     {
       "path": "components/editor/breakdown/TagBar.tsx",
@@ -712,8 +713,8 @@
     },
     {
       "path": "components/editor/breakdown/useEditorBreakdown.ts",
-      "size": 5359,
-      "last_modified": "2026-09-27T03:47:41.700Z"
+      "size": 5443,
+      "last_modified": "2026-09-27T06:15:52.622Z"
     },
     {
       "path": "components/editor/editorConstants.ts",
@@ -1017,23 +1018,23 @@
     },
     {
       "path": "lib/breakdown/api.ts",
-      "size": 7537,
-      "last_modified": "2026-09-27T04:27:56.697Z"
+      "size": 7972,
+      "last_modified": "2026-09-27T06:15:52.622Z"
     },
     {
       "path": "lib/breakdown/core.test.ts",
-      "size": 5254,
-      "last_modified": "2026-09-27T03:44:23.768Z"
+      "size": 6951,
+      "last_modified": "2026-09-27T06:15:52.622Z"
     },
     {
       "path": "lib/breakdown/core.ts",
-      "size": 7089,
-      "last_modified": "2026-09-27T03:50:14.179Z"
+      "size": 10044,
+      "last_modified": "2026-09-27T06:15:52.622Z"
     },
     {
       "path": "lib/breakdown/index.ts",
-      "size": 2718,
-      "last_modified": "2026-09-27T04:27:56.697Z"
+      "size": 3466,
+      "last_modified": "2026-09-27T06:15:52.622Z"
     },
     {
       "path": "lib/breakdown/marks.test.ts",
@@ -1042,8 +1043,8 @@
     },
     {
       "path": "lib/breakdown/marks.ts",
-      "size": 4611,
-      "last_modified": "2026-09-27T03:46:51.535Z"
+      "size": 4677,
+      "last_modified": "2026-09-27T06:15:52.623Z"
     },
     {
       "path": "lib/color.test.ts",
@@ -1382,8 +1383,8 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 10916,
-      "last_modified": "2026-09-26T19:35:11.444Z"
+      "size": 10904,
+      "last_modified": "2026-09-27T06:15:52.623Z"
     },
     {
       "path": "lib/studio/live.ts",
@@ -1402,13 +1403,13 @@
     },
     {
       "path": "lib/studio/scene-sync.test.ts",
-      "size": 7412,
-      "last_modified": "2026-09-26T07:32:31.653Z"
+      "size": 6925,
+      "last_modified": "2026-09-27T06:15:52.623Z"
     },
     {
       "path": "lib/studio/scene-sync.ts",
-      "size": 8393,
-      "last_modified": "2026-09-26T07:21:58.163Z"
+      "size": 7737,
+      "last_modified": "2026-09-27T06:15:52.623Z"
     },
     {
       "path": "lib/studio/shoot-days.test.ts",
@@ -1482,8 +1483,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 86019,
-      "last_modified": "2026-09-27T06:03:14.208Z"
+      "size": 86089,
+      "last_modified": "2026-09-27T06:17:27.612Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1682,8 +1683,13 @@
     },
     {
       "path": "supabase/migrations/20260927030000_project_formats.sql",
-      "size": 9561,
-      "last_modified": "2026-09-27T05:37:38.195Z"
+      "size": 9960,
+      "last_modified": "2026-09-27T06:15:52.612Z"
+    },
+    {
+      "path": "supabase/migrations/20260927040000_breakdown_memory.sql",
+      "size": 5820,
+      "last_modified": "2026-09-27T06:15:52.626Z"
     },
     {
       "path": "tailwind.config.js",
@@ -1709,6 +1715,11 @@
       "path": "tests/integration/auth-signup.test.ts",
       "size": 1761,
       "last_modified": "2026-09-26T06:59:44.799Z"
+    },
+    {
+      "path": "tests/integration/breakdown-memory.test.ts",
+      "size": 3074,
+      "last_modified": "2026-09-27T06:16:06.028Z"
     },
     {
       "path": "tests/integration/breakdown.test.ts",
@@ -1762,8 +1773,8 @@
     },
     {
       "path": "tests/integration/scene-index.test.ts",
-      "size": 9255,
-      "last_modified": "2026-09-26T08:11:03.337Z"
+      "size": 9233,
+      "last_modified": "2026-09-27T06:15:52.623Z"
     },
     {
       "path": "tests/integration/scripts-access.test.ts",

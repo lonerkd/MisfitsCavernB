@@ -1890,7 +1890,6 @@ export type Database = {
           cast_list: string | null;
           color: string | null;
           created_at: string | null;
-          elements: NonNullable<Json>;
           est_duration: string | null;
           heading: string | null;
           id: string;
@@ -1911,7 +1910,6 @@ export type Database = {
           cast_list?: string | null;
           color?: string | null;
           created_at?: string | null;
-          elements?: NonNullable<Json>;
           est_duration?: string | null;
           heading?: string | null;
           id?: string;
@@ -1932,7 +1930,6 @@ export type Database = {
           cast_list?: string | null;
           color?: string | null;
           created_at?: string | null;
-          elements?: NonNullable<Json>;
           est_duration?: string | null;
           heading?: string | null;
           id?: string;
@@ -2662,6 +2659,14 @@ export type Database = {
           active_users: number;
           avg_project_days: number;
           completed_projects: number;
+        }[];
+      };
+      breakdown_memory: {
+        Args: { p_exclude?: string };
+        Returns: {
+          category_key: string;
+          name: string;
+          projects: number;
         }[];
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };

@@ -1,5 +1,18 @@
 # Misfits Cavern — Project State
 
+## Latest Session — The breakdown remembers
+
+Migration `20260927040000_breakdown_memory.sql` — **apply to production before merging**.
+
+- `breakdown_memory()`: what you tagged in your other projects. The editor's
+  suggestions now include things you've tagged before when a scene names them
+  (in any case, plurals and possessives too) — "you've tagged it before" — and
+  a CAPITALISED word is filed where you filed it last time, not where the
+  parser's fixed word list guesses. Words inside an offered name aren't
+  offered again alone ("TRENCH COAT" → one suggestion).
+- `scenes.elements` dropped; `sync_script_scenes` no longer stores the
+  parser's guesses (nothing read them since the breakdown tables).
+
 ## Latest Session — Project formats as data
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Migration

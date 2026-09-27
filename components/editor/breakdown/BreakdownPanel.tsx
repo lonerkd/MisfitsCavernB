@@ -118,7 +118,7 @@ export function BreakdownPanel({ bd, projectId, sceneIdx, heading, speakingCast,
                       <div className={b.sName}>{s.name}</div>
                       <div className={b.sWhy}>
                         <span className={b.dot} style={catStyle(cat?.color ?? '#888888')} aria-hidden />
-                        {cat?.label} · {s.reason === 'mentioned' ? 'in the project, not tagged here' : 'capitalised in the action'}
+                        {cat?.label} · {s.reason === 'mentioned' ? 'in the project, not tagged here' : s.reason === 'remembered' ? 'you’ve tagged it before' : 'capitalised in the action'}
                       </div>
                     </div>
                     <div className={b.sActions}>

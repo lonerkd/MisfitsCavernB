@@ -44,7 +44,7 @@ describe('syncing the scene index', () => {
     const { error } = await cast.sam.client.rpc('sync_script_scenes', {
       p_script_id: scriptId,
       p_base_ids: before.map((s) => s.id),
-      p_scenes: before.map((s) => ({ id: s.id, heading: s.heading, location: s.location, time_of_day: s.time_of_day, cast_list: s.cast_list, est_duration: s.est_duration, elements: s.elements })),
+      p_scenes: before.map((s) => ({ id: s.id, heading: s.heading, location: s.location, time_of_day: s.time_of_day, cast_list: s.cast_list, est_duration: s.est_duration })),
     });
     expect(error).toBeNull();
     const after = await api.listScenes(scriptId);

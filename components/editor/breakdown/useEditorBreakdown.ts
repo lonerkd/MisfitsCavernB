@@ -6,7 +6,7 @@
 // scenes must be in the scene index to be tagged.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { breakdown, useBreakdown, nameKey, type Suggestion } from '@/lib/breakdown';
+import { breakdown, useBreakdown, useBreakdownMemory, nameKey, type Suggestion } from '@/lib/breakdown';
 import { buildBreakdownView, sceneRanges, type EditorLine, type Mark } from '@/lib/breakdown/marks';
 import { announceProgressChange } from '@/lib/supabase/progress';
 
@@ -31,6 +31,7 @@ export function useEditorBreakdown(opts: {
 }) {
   const { projectId, lines, sceneIds, characters, onError, onDone } = opts;
   const state = useBreakdown(projectId);
+  const memory = useBreakdownMemory(projectId);
 
   // A writing preference, per device.
   const [mode, setModeState] = useState(false);
@@ -45,9 +46,9 @@ export function useEditorBreakdown(opts: {
     if (!projectId) return { marks: new Map<number, Mark[]>(), suggestions: new Map<number, Suggestion[]>() };
     return buildBreakdownView({
       lines, ranges,
-      tags: state.tags.rows, elements: state.elements.rows, categories: state.categories.rows, dismissed: state.dismissed,
+      tags: state.tags.rows, elements: state.elements.rows, categories: state.categories.rows, dismissed: state.dismissed, memory,
     });
-  }, [projectId, lines, ranges, state.tags.rows, state.elements.rows, state.categories.rows, state.dismissed]);
+  }, [projectId, lines, ranges, state.tags.rows, state.elements.rows, state.categories.rows, state.dismissed, memory]);
 
   const sceneIdxAtLine = useCallback((line: number) => {
     for (let n = ranges.length - 1; n >= 0; n--) if (ranges[n].start <= line) return n;
