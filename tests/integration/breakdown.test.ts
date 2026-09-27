@@ -95,6 +95,49 @@ describe('tagging', () => {
   });
 });
 
+describe('budget from the breakdown', () => {
+  it('writes one line per costed category, updates in place, removes stale lines, leaves the rest alone', async () => {
+    const sam = createBreakdownApi(cast.sam.client);
+    await cast.sam.client.from('budget_items').insert({ project_id: projectId, category: 'Location fees', amount: 300 });
+    const cats = await sam.listCategories(projectId);
+    const props = cats.find((c) => c.key === 'props')!;
+    const wardrobe = cats.find((c) => c.key === 'wardrobe')!;
+    await sam.updateCategory(wardrobe.id, { unit_cost: 50 });
+    const crowbar = await sam.tag(scenes[0].id, 'Crowbar', props.id);
+    await sam.updateElement(crowbar, { cost: 40 });
+    await sam.tag(scenes[0].id, 'Wool coat', wardrobe.id);
+
+    const lines = async () => (await cast.sam.client.from('budget_items').select('category, amount').eq('project_id', projectId).order('category')).data;
+    const costs = () => Promise.all([sam.listCategories(projectId), sam.listElements(projectId)]).then(([c, e]) => costByCategory(c, e).map((x) => ({ label: x.category.label, amount: x.amount })));
+
+    expect(await sam.syncBudget(projectId, await costs())).toEqual({ added: 2, updated: 0, removed: 0 });
+    expect(await lines()).toEqual([
+      { category: 'Breakdown · Hand props', amount: 40 },
+      { category: 'Breakdown · Wardrobe', amount: 50 },
+      { category: 'Location fees', amount: 300 },
+    ]);
+
+    await sam.updateElement(crowbar, { cost: 55 });
+    await sam.updateCategory(wardrobe.id, { unit_cost: 0 });
+    expect(await sam.syncBudget(projectId, await costs())).toEqual({ added: 0, updated: 1, removed: 1 });
+    expect(await lines()).toEqual([
+      { category: 'Breakdown · Hand props', amount: 55 },
+      { category: 'Location fees', amount: 300 },
+    ]);
+  });
+
+  it('crew can update the budget from the breakdown; outsiders cannot', async () => {
+    expect(await createBreakdownApi(cast.jordan.client).syncBudget(projectId, [{ label: 'Hand props', amount: 55 }])).toEqual({ added: 0, updated: 0, removed: 0 });
+    // RLS hides the budget from Riley, so there is nothing to update — and inserts are refused.
+    await expect(createBreakdownApi(cast.riley.client).syncBudget(projectId, [{ label: 'Hand props', amount: 1 }])).rejects.toThrow();
+  });
+
+  it('the day length is a project setting only the owner changes', async () => {
+    const byCrew = await cast.jordan.client.from('projects').update({ settings: { dayLengthEighths: 60 } }).eq('id', projectId).select('id');
+    expect(byCrew.data ?? []).toEqual([]);
+  });
+});
+
 describe('outsiders', () => {
   it('see nothing and can tag, edit or dismiss nothing', async () => {
     const riley = createBreakdownApi(cast.riley.client);

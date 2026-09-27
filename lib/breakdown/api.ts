@@ -98,13 +98,50 @@ export function createBreakdownApi(db: Client) {
     if (error) fail(error, 'Could not restore the suggestion');
   }
 
+  /**
+   * Writes the breakdown's cost into the budget: one line per category with a
+   * cost ("Breakdown · Props"), updated in place, and removes breakdown lines
+   * whose category no longer costs anything. Other budget lines are left alone.
+   */
+  async function syncBudget(projectId: string, costs: Array<{ label: string; amount: number }>): Promise<{ added: number; updated: number; removed: number }> {
+    const { data: existing, error } = await db.from('budget_items').select('id, category, amount').eq('project_id', projectId).like('category', `${BUDGET_PREFIX}%`);
+    if (error) fail(error, 'Could not load the budget');
+    const want = new Map(costs.filter((c) => c.amount > 0).map((c) => [`${BUDGET_PREFIX}${c.label}`, Math.round(c.amount * 100) / 100]));
+    let added = 0, updated = 0, removed = 0;
+    for (const row of existing) {
+      const amount = want.get(row.category);
+      if (amount === undefined) {
+        const { error: e } = await db.from('budget_items').delete().eq('id', row.id);
+        if (e) fail(e, 'Could not update the budget');
+        removed++;
+      } else {
+        if (Number(row.amount) !== amount) {
+          const { error: e } = await db.from('budget_items').update({ amount }).eq('id', row.id);
+          if (e) fail(e, 'Could not update the budget');
+          updated++;
+        }
+        want.delete(row.category);
+      }
+    }
+    for (const [category, amount] of Array.from(want)) {
+      const { error: e } = await db.from('budget_items').insert({ project_id: projectId, category, amount });
+      if (e) fail(e, 'Could not update the budget');
+      added++;
+    }
+    return { added, updated, removed };
+  }
+
   return {
+    syncBudget,
     listCategories, addCategory, updateCategory, deleteCategory,
     listElements, updateElement, deleteElement,
     listTags, tag, untag,
     listDismissed, dismiss, undismiss,
   };
 }
+
+/** Budget lines the breakdown owns start with this. */
+export const BUDGET_PREFIX = 'Breakdown · ';
 
 export type BreakdownApi = ReturnType<typeof createBreakdownApi>;
 export type { ElementStatus };

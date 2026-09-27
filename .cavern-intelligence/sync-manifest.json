@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T04:07:45.685Z",
+  "last_synchronized": "2026-09-27T04:40:07.877Z",
   "stats": {
-    "totalFiles": 298,
-    "totalSize": 2465510,
+    "totalFiles": 301,
+    "totalSize": 2492155,
     "byExtension": {
-      ".json": 5,
+      ".json": 6,
       ".md": 7,
-      ".tsx": 123,
-      ".ts": 146,
+      ".tsx": 126,
+      ".ts": 145,
       ".js": 7,
       ".sql": 10
     }
@@ -22,8 +22,6 @@
         "lib/scriptos/analyze.ts",
         "lib/scriptos/bible.ts",
         "lib/scriptos/blocks.ts",
-        "lib/scriptos/breakdown.test.ts",
-        "lib/scriptos/breakdown.ts",
         "lib/scriptos/characters.ts",
         "lib/scriptos/export.ts",
         "lib/scriptos/fountain-export.ts",
@@ -56,7 +54,6 @@
         "lib/supabase/activity.ts",
         "lib/supabase/annotations.ts",
         "lib/supabase/audit.ts",
-        "lib/supabase/breakdown.ts",
         "lib/supabase/casting.ts",
         "lib/supabase/channels.ts",
         "lib/supabase/client.ts",
@@ -164,6 +161,8 @@
         "components/ShortcutsOverlay.tsx",
         "components/ThemeInitializer.tsx",
         "components/Toast.tsx",
+        "components/breakdown/CategoryChips.tsx",
+        "components/breakdown/ElementCard.tsx",
         "components/editor/DiffModal.tsx",
         "components/editor/EditorCenterViews.tsx",
         "components/editor/EditorErrorBoundary.tsx",
@@ -191,7 +190,6 @@
         "components/studio/CharacterBible.tsx",
         "components/studio/CrewBoards.tsx",
         "components/studio/PitchDeck.tsx",
-        "components/studio/ProductionBoards.tsx",
         "components/studio/ShotList.tsx",
         "components/studio/StudioContext.tsx",
         "components/studio/media/AddMedia.tsx",
@@ -203,10 +201,12 @@
         "components/studio/media/MediaViewer.tsx",
         "components/studio/media/useUploader.ts",
         "components/studio/post/CutPlayer.tsx",
+        "components/studio/production/BreakdownView.tsx",
         "components/studio/production/CallSheetsPanel.tsx",
         "components/studio/production/CrewView.tsx",
         "components/studio/production/ScheduleView.tsx",
         "components/studio/production/StoryView.tsx",
+        "components/studio/production/StripboardView.tsx",
         "components/studio/production/useScriptCharacters.ts",
         "components/studio/tabs/LibraryTab.tsx",
         "components/studio/tabs/OverviewTab.tsx",
@@ -448,8 +448,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 64083,
-      "last_modified": "2026-09-27T04:05:08.325Z"
+      "size": 62605,
+      "last_modified": "2026-09-27T04:37:15.536Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -518,8 +518,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 9717,
-      "last_modified": "2026-09-27T03:15:59.175Z"
+      "size": 9730,
+      "last_modified": "2026-09-27T04:29:40.710Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -622,6 +622,16 @@
       "last_modified": "2026-09-24T20:05:03.629Z"
     },
     {
+      "path": "components/breakdown/CategoryChips.tsx",
+      "size": 1395,
+      "last_modified": "2026-09-27T04:27:40.927Z"
+    },
+    {
+      "path": "components/breakdown/ElementCard.tsx",
+      "size": 7504,
+      "last_modified": "2026-09-27T04:27:40.927Z"
+    },
+    {
       "path": "components/editor/DiffModal.tsx",
       "size": 16046,
       "last_modified": "2026-09-26T20:13:33.084Z"
@@ -678,13 +688,13 @@
     },
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
-      "size": 16290,
-      "last_modified": "2026-09-27T03:49:21.867Z"
+      "size": 10592,
+      "last_modified": "2026-09-27T04:27:40.927Z"
     },
     {
       "path": "components/editor/breakdown/TagBar.tsx",
-      "size": 4674,
-      "last_modified": "2026-09-27T03:55:12.418Z"
+      "size": 3520,
+      "last_modified": "2026-09-27T04:27:40.927Z"
     },
     {
       "path": "components/editor/breakdown/useEditorBreakdown.ts",
@@ -757,11 +767,6 @@
       "last_modified": "2026-09-26T20:13:33.086Z"
     },
     {
-      "path": "components/studio/ProductionBoards.tsx",
-      "size": 8620,
-      "last_modified": "2026-09-27T04:01:28.609Z"
-    },
-    {
       "path": "components/studio/ShotList.tsx",
       "size": 4355,
       "last_modified": "2026-09-26T18:32:43.353Z"
@@ -817,6 +822,11 @@
       "last_modified": "2026-09-26T19:35:11.444Z"
     },
     {
+      "path": "components/studio/production/BreakdownView.tsx",
+      "size": 20509,
+      "last_modified": "2026-09-27T04:33:29.730Z"
+    },
+    {
       "path": "components/studio/production/CallSheetsPanel.tsx",
       "size": 12125,
       "last_modified": "2026-09-26T18:32:43.176Z"
@@ -828,13 +838,18 @@
     },
     {
       "path": "components/studio/production/ScheduleView.tsx",
-      "size": 10654,
-      "last_modified": "2026-09-27T03:25:40.349Z"
+      "size": 1633,
+      "last_modified": "2026-09-27T04:26:57.789Z"
     },
     {
       "path": "components/studio/production/StoryView.tsx",
       "size": 4013,
       "last_modified": "2026-09-26T07:41:11.868Z"
+    },
+    {
+      "path": "components/studio/production/StripboardView.tsx",
+      "size": 17579,
+      "last_modified": "2026-09-27T04:26:41.952Z"
     },
     {
       "path": "components/studio/production/useScriptCharacters.ts",
@@ -863,8 +878,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 3216,
-      "last_modified": "2026-09-27T03:15:59.175Z"
+      "size": 3513,
+      "last_modified": "2026-09-27T04:29:58.201Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -928,8 +943,8 @@
     },
     {
       "path": "e2e/accessibility.spec.ts",
-      "size": 5320,
-      "last_modified": "2026-09-27T04:01:28.608Z"
+      "size": 5361,
+      "last_modified": "2026-09-27T04:31:51.290Z"
     },
     {
       "path": "e2e/auth-journey.spec.ts",
@@ -943,8 +958,8 @@
     },
     {
       "path": "e2e/breakdown.spec.ts",
-      "size": 5931,
-      "last_modified": "2026-09-27T04:01:28.608Z"
+      "size": 8745,
+      "last_modified": "2026-09-27T04:32:09.593Z"
     },
     {
       "path": "e2e/helpers.ts",
@@ -983,8 +998,8 @@
     },
     {
       "path": "lib/breakdown/api.ts",
-      "size": 5746,
-      "last_modified": "2026-09-27T03:44:23.768Z"
+      "size": 7537,
+      "last_modified": "2026-09-27T04:27:56.697Z"
     },
     {
       "path": "lib/breakdown/core.test.ts",
@@ -998,8 +1013,8 @@
     },
     {
       "path": "lib/breakdown/index.ts",
-      "size": 2679,
-      "last_modified": "2026-09-27T03:50:22.792Z"
+      "size": 2718,
+      "last_modified": "2026-09-27T04:27:56.697Z"
     },
     {
       "path": "lib/breakdown/marks.test.ts",
@@ -1128,8 +1143,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 16616,
-      "last_modified": "2026-09-27T03:19:45.105Z"
+      "size": 16630,
+      "last_modified": "2026-09-27T04:29:40.710Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1185,16 +1200,6 @@
       "path": "lib/scriptos/blocks.ts",
       "size": 3761,
       "last_modified": "2026-09-24T20:05:03.638Z"
-    },
-    {
-      "path": "lib/scriptos/breakdown.test.ts",
-      "size": 3172,
-      "last_modified": "2026-09-26T08:54:21.097Z"
-    },
-    {
-      "path": "lib/scriptos/breakdown.ts",
-      "size": 3786,
-      "last_modified": "2026-09-26T08:54:21.097Z"
     },
     {
       "path": "lib/scriptos/characters.ts",
@@ -1377,6 +1382,16 @@
       "last_modified": "2026-09-26T18:32:43.012Z"
     },
     {
+      "path": "lib/studio/stripboard.test.ts",
+      "size": 2349,
+      "last_modified": "2026-09-27T04:24:40.684Z"
+    },
+    {
+      "path": "lib/studio/stripboard.ts",
+      "size": 3978,
+      "last_modified": "2026-09-27T04:24:31.788Z"
+    },
+    {
       "path": "lib/studio/timecode.test.ts",
       "size": 909,
       "last_modified": "2026-09-26T19:35:11.444Z"
@@ -1400,11 +1415,6 @@
       "path": "lib/supabase/audit.ts",
       "size": 5241,
       "last_modified": "2026-09-24T20:05:03.644Z"
-    },
-    {
-      "path": "lib/supabase/breakdown.ts",
-      "size": 1776,
-      "last_modified": "2026-09-26T07:40:11.456Z"
     },
     {
       "path": "lib/supabase/casting.ts",
@@ -1463,8 +1473,8 @@
     },
     {
       "path": "lib/supabase/progress.ts",
-      "size": 2716,
-      "last_modified": "2026-09-27T03:11:12.890Z"
+      "size": 3004,
+      "last_modified": "2026-09-27T04:25:10.986Z"
     },
     {
       "path": "lib/supabase/projects.ts",
@@ -1493,8 +1503,8 @@
     },
     {
       "path": "lib/types/settings.ts",
-      "size": 1083,
-      "last_modified": "2026-09-27T03:10:32.253Z"
+      "size": 1202,
+      "last_modified": "2026-09-27T04:25:10.986Z"
     },
     {
       "path": "lib/useEscapeKey.ts",
@@ -1627,6 +1637,11 @@
       "last_modified": "2026-09-24T20:05:03.659Z"
     },
     {
+      "path": "test-results/.last-run.json",
+      "size": 45,
+      "last_modified": "2026-09-27T04:39:42.775Z"
+    },
+    {
       "path": "tests/integration/activity-feed.test.ts",
       "size": 2893,
       "last_modified": "2026-09-26T07:57:34.336Z"
@@ -1643,8 +1658,8 @@
     },
     {
       "path": "tests/integration/breakdown.test.ts",
-      "size": 6834,
-      "last_modified": "2026-09-27T03:45:50.059Z"
+      "size": 9409,
+      "last_modified": "2026-09-27T04:31:29.331Z"
     },
     {
       "path": "tests/integration/media-library.test.ts",

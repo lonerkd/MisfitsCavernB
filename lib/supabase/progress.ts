@@ -34,13 +34,19 @@ export async function setProjectLogline(projectId: string, logline: string): Pro
   announceProgressChange(projectId);
 }
 
-/** Owner only (RLS): open every tool now, or go back to phase by phase. */
-export async function setUnlockAllTools(projectId: string, unlockAll: boolean): Promise<void> {
+/** Owner only (RLS): merges `patch` into the project's settings. */
+export async function patchProjectSettings(projectId: string, patch: Partial<ProjectSettings>): Promise<ProjectSettings> {
   const { data: row, error: readError } = await supabase.from('projects').select('settings').eq('id', projectId).single();
   if (readError) throw new Error(readError.message || 'Could not load project settings');
-  const settings = { ...((row?.settings as unknown as ProjectSettings) ?? {}), unlockAllTools: unlockAll };
+  const settings = { ...((row?.settings as unknown as ProjectSettings) ?? {}), ...patch } as ProjectSettings;
   const { data, error } = await supabase.from('projects').update({ settings: settings as unknown as Json }).eq('id', projectId).select('id');
   if (error) throw new Error(error.message || 'Could not save project settings');
   if (!data?.length) throw new Error('Only the project owner can change this');
   announceProgressChange(projectId);
+  return settings;
+}
+
+/** Owner only (RLS): open every tool now, or go back to phase by phase. */
+export async function setUnlockAllTools(projectId: string, unlockAll: boolean): Promise<void> {
+  await patchProjectSettings(projectId, { unlockAllTools: unlockAll });
 }
