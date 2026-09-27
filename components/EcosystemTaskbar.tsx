@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
@@ -670,6 +671,8 @@ export default function EcosystemTaskbar() {
   }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
 
   if (pathname === '/login' || pathname === '/auth') return null;
+  // The split screen has its own bar; each pane is a full page without chrome.
+  if (pathname === '/split') return null;
   // Public share surfaces (lookbooks, public portfolios, shared scripts) are
   // for people outside the app — no app chrome over them.
   if (/^\/(shared|p|s)\//.test(pathname)) return null;
@@ -772,6 +775,35 @@ export default function EcosystemTaskbar() {
                 >
                   Search <kbd style={{ fontSize: 7.5, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 4px' }}>⌘K</kbd>
                   <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <motion.button
+              onClick={() => router.push(splitHref(window.location.pathname + window.location.search))}
+              aria-label="Split screen (Control-Backslash)"
+              onHoverStart={() => setHoveredId('split')}
+              onHoverEnd={() => setHoveredId(null)}
+              whileHover={{ scale: 1.18, y: -6 }}
+              whileTap={{ scale: 0.93 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+              style={{
+                width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: hoveredId === 'split' ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+                color: hoveredId === 'split' ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s',
+              }}
+            >
+              <Columns2 size={18} strokeWidth={1.5} />
+            </motion.button>
+            <AnimatePresence>
+              {hoveredId === 'split' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
+                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
+                >
+                  Split screen <kbd style={{ fontSize: 7.5, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 4px' }}>Ctrl {'\\'}</kbd>
                 </motion.div>
               )}
             </AnimatePresence>

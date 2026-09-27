@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2 } from 'lucide-react';
+import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
@@ -90,6 +91,7 @@ export default function CommandPalette() {
       { id: 'nav-projects', label: 'Open Projects', icon: <FolderOpen size={15} />, run: go('/projects'), group: 'Navigate', keywords: 'films' },
       { id: 'nav-portfolio', label: 'Open Portfolio', icon: <Briefcase size={15} />, run: go('/portfolio'), group: 'Navigate', keywords: 'work showcase' },
       { id: 'nav-jobs', label: 'Browse Jobs', icon: <Briefcase size={15} />, run: go('/jobs'), group: 'Navigate', keywords: 'casting hire gigs' },
+      { id: 'act-split', label: 'Split screen', hint: 'This page and another, side by side (Ctrl \\)', icon: <Columns2 size={15} />, group: 'Navigate', keywords: 'side by side multitask two panes editor studio', run: () => { setOpen(false); router.push(splitHref(window.location.pathname + window.location.search)); } },
       { id: 'nav-profile', label: 'Edit Profile', icon: <User size={15} />, run: go('/profile'), group: 'Account' },
       { id: 'nav-settings', label: 'Open Settings', icon: <Settings size={15} />, run: go('/settings'), group: 'Account', keywords: 'preferences password email' },
       { id: 'act-shortcuts', label: 'Keyboard shortcuts', icon: <Keyboard size={15} />, group: 'Account', keywords: 'help keys hotkeys', run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new Event('mc-open-shortcuts')), 60); } },

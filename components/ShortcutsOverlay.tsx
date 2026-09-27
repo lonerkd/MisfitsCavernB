@@ -10,6 +10,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
     title: 'Global',
     items: [
       ['⌘ K  /  Ctrl K', 'Open the command palette'],
+      ['⌘ \\  /  Ctrl \\', 'Split screen: this page and another side by side'],
       ['?', 'Show this shortcuts panel'],
       ['Esc', 'Close any dialog or palette'],
     ],

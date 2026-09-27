@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T06:57:59.858Z",
+  "last_synchronized": "2026-09-27T08:16:27.630Z",
   "stats": {
-    "totalFiles": 320,
-    "totalSize": 2586105,
+    "totalFiles": 326,
+    "totalSize": 2625407,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 129,
-      ".ts": 156,
+      ".tsx": 131,
+      ".ts": 160,
       ".js": 7,
       ".sql": 14
     }
@@ -132,6 +132,7 @@
         "app/showcase/page.tsx",
         "app/soundtrack/loading.tsx",
         "app/soundtrack/page.tsx",
+        "app/split/page.tsx",
         "app/studio/error.tsx",
         "app/studio/loading.tsx",
         "app/studio/page.tsx"
@@ -188,6 +189,7 @@
         "components/progress/LoglineEditor.tsx",
         "components/progress/PhasePanel.tsx",
         "components/progress/UnlockReveal.tsx",
+        "components/split/PaneShell.tsx",
         "components/studio/CastingBoard.tsx",
         "components/studio/CharacterBible.tsx",
         "components/studio/CrewBoards.tsx",
@@ -365,8 +367,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 73041,
-      "last_modified": "2026-09-27T05:39:57.077Z"
+      "size": 74243,
+      "last_modified": "2026-09-27T08:02:25.526Z"
     },
     {
       "path": "app/error.tsx",
@@ -391,7 +393,7 @@
     {
       "path": "app/layout.tsx",
       "size": 2499,
-      "last_modified": "2026-09-26T20:13:33.077Z"
+      "last_modified": "2026-09-27T07:07:59.325Z"
     },
     {
       "path": "app/loading.tsx",
@@ -519,6 +521,11 @@
       "last_modified": "2026-09-26T20:13:33.081Z"
     },
     {
+      "path": "app/split/page.tsx",
+      "size": 11760,
+      "last_modified": "2026-09-27T08:02:25.526Z"
+    },
+    {
       "path": "app/studio/error.tsx",
       "size": 1555,
       "last_modified": "2026-09-26T20:13:33.082Z"
@@ -545,13 +552,13 @@
     },
     {
       "path": "components/ClientShell.tsx",
-      "size": 837,
-      "last_modified": "2026-09-24T20:05:03.628Z"
+      "size": 1115,
+      "last_modified": "2026-09-27T08:02:25.529Z"
     },
     {
       "path": "components/CommandPalette.tsx",
-      "size": 11505,
-      "last_modified": "2026-09-26T20:13:33.082Z"
+      "size": 11882,
+      "last_modified": "2026-09-27T08:02:25.529Z"
     },
     {
       "path": "components/Confirm.tsx",
@@ -565,8 +572,8 @@
     },
     {
       "path": "components/EcosystemTaskbar.tsx",
-      "size": 43063,
-      "last_modified": "2026-09-26T20:13:33.082Z"
+      "size": 45320,
+      "last_modified": "2026-09-27T08:02:25.529Z"
     },
     {
       "path": "components/EmptyState.tsx",
@@ -620,8 +627,8 @@
     },
     {
       "path": "components/ShortcutsOverlay.tsx",
-      "size": 4945,
-      "last_modified": "2026-09-26T20:13:33.084Z"
+      "size": 5027,
+      "last_modified": "2026-09-27T08:02:25.530Z"
     },
     {
       "path": "components/ThemeInitializer.tsx",
@@ -769,6 +776,11 @@
       "last_modified": "2026-09-27T03:13:15.778Z"
     },
     {
+      "path": "components/split/PaneShell.tsx",
+      "size": 1654,
+      "last_modified": "2026-09-27T08:02:25.530Z"
+    },
+    {
       "path": "components/studio/CastingBoard.tsx",
       "size": 13001,
       "last_modified": "2026-09-27T05:02:57.793Z"
@@ -795,8 +807,8 @@
     },
     {
       "path": "components/studio/StudioContext.tsx",
-      "size": 5020,
-      "last_modified": "2026-09-27T03:19:50.983Z"
+      "size": 6250,
+      "last_modified": "2026-09-27T08:02:25.530Z"
     },
     {
       "path": "components/studio/media/AddMedia.tsx",
@@ -860,8 +872,8 @@
     },
     {
       "path": "components/studio/production/ReadinessView.tsx",
-      "size": 14985,
-      "last_modified": "2026-09-27T06:49:22.426Z"
+      "size": 15829,
+      "last_modified": "2026-09-27T08:02:25.531Z"
     },
     {
       "path": "components/studio/production/ScheduleView.tsx",
@@ -915,8 +927,8 @@
     },
     {
       "path": "components/studio/tabs/ScenesTab.tsx",
-      "size": 10655,
-      "last_modified": "2026-09-26T19:35:11.444Z"
+      "size": 11372,
+      "last_modified": "2026-09-27T08:02:25.533Z"
     },
     {
       "path": "components/studio/tabs/ShareTab.tsx",
@@ -1012,6 +1024,11 @@
       "path": "e2e/route-smoke.spec.ts",
       "size": 5607,
       "last_modified": "2026-09-25T01:42:14.973Z"
+    },
+    {
+      "path": "e2e/split.spec.ts",
+      "size": 8034,
+      "last_modified": "2026-09-27T08:02:25.533Z"
     },
     {
       "path": "e2e/studio-journey.spec.ts",
@@ -1374,6 +1391,21 @@
       "last_modified": "2026-09-24T20:08:25.805Z"
     },
     {
+      "path": "lib/split/core.test.ts",
+      "size": 2888,
+      "last_modified": "2026-09-27T08:02:25.533Z"
+    },
+    {
+      "path": "lib/split/core.ts",
+      "size": 5179,
+      "last_modified": "2026-09-27T08:02:25.534Z"
+    },
+    {
+      "path": "lib/split/pane.ts",
+      "size": 2375,
+      "last_modified": "2026-09-27T08:02:25.534Z"
+    },
+    {
       "path": "lib/spotify/auth.ts",
       "size": 7668,
       "last_modified": "2026-09-26T19:08:11.137Z"
@@ -1595,8 +1627,8 @@
     },
     {
       "path": "middleware.ts",
-      "size": 2944,
-      "last_modified": "2026-09-26T08:38:18.088Z"
+      "size": 2958,
+      "last_modified": "2026-09-27T08:02:25.534Z"
     },
     {
       "path": "next-env.d.ts",
@@ -1605,8 +1637,8 @@
     },
     {
       "path": "next.config.js",
-      "size": 1069,
-      "last_modified": "2026-09-24T20:05:03.648Z"
+      "size": 1480,
+      "last_modified": "2026-09-27T08:02:25.794Z"
     },
     {
       "path": "package-lock.json",
@@ -1726,7 +1758,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-27T06:57:34.538Z"
+      "last_modified": "2026-09-27T08:10:06.318Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",

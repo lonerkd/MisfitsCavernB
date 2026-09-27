@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Clapperboard, PenLine, Plus, RefreshCw, X } from 'lucide-react';
+import { Clapperboard, FileText, PenLine, Plus, RefreshCw, X } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
@@ -21,7 +21,13 @@ import s from '../studio.module.css';
  * scene through rewrites.
  */
 export function ScenesTab() {
-  const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links } = useStudio();
+  const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links, followScene } = useStudio();
+
+  // Linked split screen: bring the script's current scene into view.
+  useEffect(() => {
+    if (!followScene) return;
+    document.getElementById(`scene-${followScene.sceneId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [followScene]);
   const [pickFor, setPickFor] = useState<SceneRow | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -132,7 +138,8 @@ export function ScenesTab() {
 }
 
 function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void }) {
-  const { scenes, links, postNotes } = useStudio();
+  const { scenes, links, postNotes, followScene, openInScript } = useStudio();
+  const following = followScene?.sceneId === scene.id;
   const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
   const { toast } = useToast();
   const [note, setNote] = useState(scene.note ?? '');
@@ -173,7 +180,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; re
 
   const meta = [scene.time_of_day, scene.cast_list, scene.est_duration].filter(Boolean).join(' · ');
   return (
-    <article className={s.scene} aria-label={`Scene ${scene.scene_number}: ${scene.heading ?? scene.title}`}>
+    <article id={`scene-${scene.id}`} className={cx(s.scene, following && s.sceneFollow)} aria-label={`Scene ${scene.scene_number}: ${scene.heading ?? scene.title}`} aria-current={following ? 'location' : undefined}>
       <div className={s.sceneBar} style={scene.color ? { background: scene.color } : undefined} />
       <div className={s.sceneNum}>{scene.scene_number}</div>
       <div className={s.sceneMain}>
@@ -183,6 +190,9 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd }: { scene: SceneRow; re
             {meta && <div className={s.sceneMeta}>{meta}</div>}
             {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: '#fbbf24' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
           </div>
+          <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript(scene)} aria-label={`Open scene ${scene.scene_number} in the script`}>
+            <FileText size={11} aria-hidden /> In script
+          </button>
           <div className={s.swatches} role="group" aria-label="Scene colour">
             {CARD_COLORS.map((c) => (
               <button
