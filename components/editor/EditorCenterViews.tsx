@@ -1,5 +1,7 @@
 'use client';
 
+import { TimingPanel } from './TimingPanel';
+import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { ScriptLine } from '@/types/screenplay';
@@ -238,8 +240,12 @@ export function OutlineView({
 export function StatsView({
   currentScriptTitle, wordCount, pageEst, scenesList, uniqueLocations, chars,
   charStats, dialogueRatio, sceneWordCounts, actStructure, sceneCharMap,
-  currentSceneIdx, lintIssues,
+  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene,
 }: {
+  timing: ScriptTiming;
+  characterTiming: CharacterTiming[];
+  onJumpToScene: (sceneIdx: number) => void;
+  onReadFromScene: (sceneIdx: number) => void;
   currentScriptTitle?: string;
   wordCount: number;
   pageEst: number;
@@ -264,7 +270,7 @@ export function StatsView({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
         {[
           { label: 'Words',   value: wordCount.toLocaleString(), color: '#818cf8', sub: `${pageEst} pages` },
-          { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
+          { label: 'Runtime', value: formatRuntime(timing.runtime), color: '#10b981', sub: timing.readScenes ? `${timing.readScenes} scenes timed` : 'a minute a page' },
           { label: 'Scenes',  value: `${scenesList.length}`, color: '#e8431a', sub: `${uniqueLocations.length} locations` },
           { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
           { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
@@ -279,6 +285,8 @@ export function StatsView({
           </div>
         ))}
       </div>
+
+      <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} />
 
       {scenesList.length > 0 && (() => {
         const totalWc = sceneWordCounts.reduce((a, b) => a + b, 0) || 1;

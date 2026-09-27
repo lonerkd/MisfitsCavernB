@@ -14,6 +14,7 @@ import { studio, useSceneIndexSync, useScriptScenes, type SceneRow } from '@/lib
 
 const notesKey = (scriptId: string) => `mc_scene_notes_${scriptId}`;
 const colorsKey = (scriptId: string) => `mc_scene_colors_${scriptId}`;
+const readsKey = (scriptId: string) => `mc_scene_reads_${scriptId}`;
 
 function readLocal(key: string): Record<string, string> {
   try { return JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch { return {}; }
@@ -52,9 +53,17 @@ export function useEditorScenes(
   const keyAt = useCallback((i: number) => normalizeHeading(parsed[i]?.heading), [parsed]);
 
   const notes = parsed.map((_, i) => (indexedId ? rows[i]?.note ?? '' : local.notes[keyAt(i)] ?? ''));
+
+  // Table-read time per scene: shared on project scripts, this device's otherwise.
+  const [localReads, setLocalReads] = useState<Record<string, string>>({});
+  useEffect(() => { setLocalReads(scriptId ? readLocal(readsKey(scriptId)) : {}); }, [scriptId]);
+  const reads = parsed.map((_, i) => {
+    const v = indexedId ? rows[i]?.read_seconds : Number(localReads[keyAt(i)]);
+    return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null;
+  });
   const colors = parsed.map((_, i) => (indexedId ? rows[i]?.color ?? null : local.colors[keyAt(i)] ?? null));
 
-  const update = useCallback(async (i: number, patch: Partial<Pick<SceneRow, 'note' | 'color'>>) => {
+  const update = useCallback(async (i: number, patch: Partial<Pick<SceneRow, 'note' | 'color' | 'read_seconds' | 'read_at'>>) => {
     const row = rows[i];
     if (!row) { onError('This scene is still being saved — try again in a moment.'); return; }
     scenes.upsertLocal({ ...row, ...patch });
@@ -81,6 +90,18 @@ export function useEditorScenes(
       return { ...prev, notes: next };
     });
   }, [indexedId, scriptId, rows, update, keyAt]);
+
+  /** Record how long scene i ran at a table read. */
+  const saveRead = useCallback((i: number, seconds: number) => {
+    const value = Math.round(Math.min(36000, Math.max(0.1, seconds)) * 10) / 10;
+    if (indexedId) { void update(i, { read_seconds: value, read_at: new Date().toISOString() }); return; }
+    if (!scriptId) return;
+    setLocalReads((prev) => {
+      const next = { ...prev, [keyAt(i)]: String(value) };
+      writeLocal(readsKey(scriptId), next);
+      return next;
+    });
+  }, [indexedId, scriptId, update, keyAt]);
 
   /** Toggle a colour tag: the same colour again clears it. */
   const tag = useCallback((i: number, color: string) => {
@@ -123,5 +144,5 @@ export function useEditorScenes(
       .catch(() => { migrated.current = null; });
   }, [indexedId, scenes.status, sync.state, parsed, rows, scenes]);
 
-  return { indexed: !!indexedId, rows, notes, colors, setNote, tag, sync, scenes };
+  return { indexed: !!indexedId, rows, notes, colors, reads, saveRead, setNote, tag, sync, scenes };
 }

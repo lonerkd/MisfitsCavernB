@@ -248,7 +248,7 @@ export function createStudioApi(db: Client) {
     throw new StudioError('The scene list kept changing on another device — try again in a moment.', '40001');
   }
 
-  async function updateScene(id: string, patch: Partial<Pick<SceneRow, 'note' | 'color' | 'shoot_day' | 'status'>>): Promise<SceneRow> {
+  async function updateScene(id: string, patch: Partial<Pick<SceneRow, 'note' | 'color' | 'shoot_day' | 'status' | 'read_seconds' | 'read_at'>>): Promise<SceneRow> {
     const { data, error } = await db.from('scenes').update(patch).eq('id', id).select('*').maybeSingle();
     if (error) fail(error, 'Could not save the scene');
     if (!data) throw new StudioError('That scene no longer exists, or you can’t edit it.');

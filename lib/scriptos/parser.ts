@@ -1,6 +1,7 @@
 
 
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/types/screenplay';
+import { eighthsOf } from './timing';
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
@@ -642,7 +643,8 @@ export class ScriptParser {
       const words = body.split(/\s+/).filter(Boolean).length;
       sc.wordCount = words;
 
-      sc.eighths = Math.max(1, Math.round((words / 190) * 8));
+      // Printed length (screenplay layout, 55 lines a page), not a word count.
+      sc.eighths = eighthsOf(lines.slice(sc.startIndex, sc.endIndex + 1));
       // Production elements come from ACTION text only (never dialogue or
       // character cues), and exclude the scene's own character names.
       const actionText = lines
