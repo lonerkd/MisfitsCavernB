@@ -3,7 +3,7 @@
 // signed-in persona, so the tests exercise this exact code.
 
 import type { Client } from '@/lib/studio/api';
-import type { BreakdownCategory, BreakdownElement, ElementStatus, SceneElementTag } from './core';
+import type { BreakdownCategory, BreakdownElement, ElementStatus, RememberedElement, SceneElementTag } from './core';
 import { categoryKey, nameKey } from './core';
 
 function fail(error: { message?: string } | null, fallback: string): never {
@@ -79,6 +79,13 @@ export function createBreakdownApi(db: Client) {
     if (error) fail(error, 'Could not remove the tag');
   }
 
+  /** What the caller has tagged in their other projects (breakdown_memory()). */
+  async function memory(excludeProjectId: string | null): Promise<RememberedElement[]> {
+    const { data, error } = await db.rpc('breakdown_memory', excludeProjectId ? { p_exclude: excludeProjectId } : {});
+    if (error) throw new Error(error.message || 'Could not load what you tagged before');
+    return data ?? [];
+  }
+
   async function listDismissed(projectId: string): Promise<Array<{ project_id: string; name_key: string }>> {
     const { data, error } = await db.from('breakdown_dismissals').select('project_id, name_key').eq('project_id', projectId);
     if (error) fail(error, 'Could not load dismissed suggestions');
@@ -136,7 +143,7 @@ export function createBreakdownApi(db: Client) {
     listCategories, addCategory, updateCategory, deleteCategory,
     listElements, updateElement, deleteElement,
     listTags, tag, untag,
-    listDismissed, dismiss, undismiss,
+    listDismissed, dismiss, undismiss, memory,
   };
 }
 

@@ -83,9 +83,49 @@ const HINT_TO_KEY: Record<string, string> = { props: 'props', wardrobe: 'wardrob
 export interface Suggestion {
   name: string;
   categoryId: string;
-  /** In the project already, mentioned here but not tagged — or spotted by the script's CAPS convention. */
-  reason: 'mentioned' | 'detected';
+  /**
+   * `mentioned`: in this project, named here but not tagged. `remembered`:
+   * tagged in another of your projects and named here. `detected`: new, and
+   * CAPITALISED in the action (the industry convention for flagging elements).
+   */
+  reason: 'mentioned' | 'remembered' | 'detected';
   elementId?: string;
+}
+
+/** Something tagged before, in another project (breakdown_memory()). */
+export type RememberedElement = { name: string; category_key: string; projects: number };
+
+/** Memory by first word, so a scene only checks names that could be in it. */
+export type BreakdownMemory = { byKey: Map<string, RememberedElement>; byFirstWord: Map<string, RememberedElement[]> };
+
+export function indexMemory(rows: RememberedElement[]): BreakdownMemory {
+  const byKey = new Map<string, RememberedElement>();
+  const byFirstWord = new Map<string, RememberedElement[]>();
+  for (const r of rows) {
+    const k = nameKey(r.name);
+    if (!k || byKey.has(k)) continue;
+    byKey.set(k, r);
+    const first = nameKey(r.name.trim().split(/\s+/)[0] ?? '');
+    if (!first) continue;
+    const list = byFirstWord.get(first);
+    if (list) list.push(r); else byFirstWord.set(first, [r]);
+  }
+  return { byKey, byFirstWord };
+}
+
+export const EMPTY_MEMORY: BreakdownMemory = { byKey: new Map(), byFirstWord: new Map() };
+
+/** Remembered names that could appear in `text` (their first word does, allowing a plural or possessive). */
+function memoryCandidates(text: string, memory: BreakdownMemory): RememberedElement[] {
+  if (!memory.byFirstWord.size) return [];
+  const out = new Set<RememberedElement>();
+  for (const word of text.match(/[\p{L}\p{N}'’]+/gu) ?? []) {
+    const k = nameKey(word);
+    for (const key of [k, k.replace(/(s|es)$/, '')]) {
+      for (const r of memory.byFirstWord.get(key) ?? []) out.add(r);
+    }
+  }
+  return Array.from(out);
 }
 
 /**
@@ -100,8 +140,12 @@ export function suggestForScene(input: {
   elements: BreakdownElement[];
   categories: BreakdownCategory[];
   dismissed: Set<string>;
+  /** What this team has tagged in other projects. */
+  memory?: BreakdownMemory;
 }): Suggestion[] {
   const { actionText, characters, taggedElementIds, elements, categories, dismissed } = input;
+  const memory = input.memory ?? EMPTY_MEMORY;
+  const categoryByKey = new Map(categories.map((c) => [c.key, c]));
   if (!categories.length || !actionText.trim()) return [];
   const out: Suggestion[] = [];
   const seen = new Set<string>();
@@ -115,15 +159,32 @@ export function suggestForScene(input: {
     out.push({ name: e.name, categoryId: e.category_id, reason: 'mentioned', elementId: e.id });
   }
 
+  // Named here, tagged in another project: filed where it was filed then.
+  const candidates = memoryCandidates(actionText, memory);
+  const characterKeys = new Set(characters.map(nameKey));
+  for (const m of findMentions(actionText, candidates.map((r) => r.name))) {
+    const k = nameKey(m.name);
+    const r = memory.byKey.get(k);
+    const category = r && categoryByKey.get(r.category_key);
+    if (!r || !category || seen.has(k) || dismissed.has(k) || characterKeys.has(k)) continue;
+    seen.add(k);
+    out.push({ name: r.name, categoryId: category.id, reason: 'remembered' });
+  }
+
+  // New and capitalised: filed where this team filed it before, else by the parser's hint.
   const fallback = categories.find((c) => c.key === 'props') ?? [...categories].sort((a, b) => a.position - b.position)[0];
+  // Words already inside something offered ("TRENCH COAT" → "Trench coat") aren't offered again alone.
+  const covered = new Set(out.flatMap((x) => x.name.split(/\s+/).map(nameKey)));
   const detected = extractElementsFromAction(actionText, characters);
   for (const [hint, names] of Object.entries(detected)) {
-    const category = categories.find((c) => c.key === HINT_TO_KEY[hint]) ?? fallback;
+    const hinted = categories.find((c) => c.key === HINT_TO_KEY[hint]) ?? fallback;
     for (const raw of names) {
       const k = nameKey(raw);
-      if (!k || seen.has(k) || dismissed.has(k) || byKey.has(k)) continue;
+      if (!k || seen.has(k) || dismissed.has(k) || byKey.has(k) || covered.has(k)) continue;
       seen.add(k);
-      out.push({ name: titleCase(raw), categoryId: category.id, reason: 'detected' });
+      const remembered = memory.byKey.get(k);
+      const category = (remembered && categoryByKey.get(remembered.category_key)) || hinted;
+      out.push({ name: remembered?.name ?? titleCase(raw), categoryId: category.id, reason: remembered ? 'remembered' : 'detected' });
     }
   }
   return out;

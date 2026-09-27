@@ -4,11 +4,11 @@
 // suggestions for a project, kept current by Realtime so a tag made in the
 // editor shows up in the Studio (and on a crewmate's screen) without a reload.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useLiveRows } from '@/lib/studio/live';
 import { createBreakdownApi } from './api';
-import type { BreakdownCategory, BreakdownElement, SceneElementTag } from './core';
+import { EMPTY_MEMORY, indexMemory, type BreakdownCategory, type BreakdownElement, type BreakdownMemory, type SceneElementTag } from './core';
 
 export * from './core';
 export type { ElementPatch, CategoryPatch } from './api';
@@ -49,6 +49,22 @@ export function useBreakdown(projectId: string | null) {
   const error = categories.error || elements.error || tags.error || dismissals.error;
 
   return { categories, elements, tags, dismissals, dismissed, elementById, categoryById, status, error };
+}
+
+/**
+ * What the signed-in user has tagged in their other projects, so suggestions
+ * here are filed the way they filed them there. Read once per project; it
+ * only informs suggestions, so a failure just means none from memory.
+ */
+export function useBreakdownMemory(projectId: string | null): BreakdownMemory {
+  const [memory, setMemory] = useState<BreakdownMemory>(EMPTY_MEMORY);
+  useEffect(() => {
+    if (!projectId) { setMemory(EMPTY_MEMORY); return; }
+    let alive = true;
+    breakdown.memory(projectId).then((rows) => { if (alive) setMemory(indexMemory(rows)); }).catch(() => {});
+    return () => { alive = false; };
+  }, [projectId]);
+  return memory;
 }
 
 export type BreakdownState = ReturnType<typeof useBreakdown>;

@@ -331,7 +331,6 @@ column scene_media.scene_id uuid not null
 column scenes.cast_list text
 column scenes.color text
 column scenes.created_at timestamp with time zone default now()
-column scenes.elements jsonb default '{}'::jsonb not null
 column scenes.est_duration text
 column scenes.heading text
 column scenes.id uuid default uuid_generate_v4() not null
@@ -732,6 +731,7 @@ function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
 function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
+function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5ed
 function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
@@ -745,7 +745,7 @@ function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf
 function public.project_progress(p_project uuid) body=0917dbfbbca7b0a0563d6bc00703f2a0
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
-function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=f17cf0815fab6fec6c97d226bebd2d01
+function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160ef64976bfa777db1932a6756003
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
@@ -768,6 +768,7 @@ grant function internal.seed_breakdown_categories(p_project uuid) postgres,servi
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
+grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role

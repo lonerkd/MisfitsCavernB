@@ -2,7 +2,7 @@
 // appears in its scene's action, in its category's colour, and each
 // suggestion underlined. Pure — the editor passes its parsed lines.
 
-import { findMentions, suggestForScene, type BreakdownCategory, type BreakdownElement, type SceneElementTag, type Suggestion } from './core';
+import { findMentions, suggestForScene, type BreakdownCategory, type BreakdownElement, type BreakdownMemory, type SceneElementTag, type Suggestion } from './core';
 
 export interface EditorLine {
   text: string;
@@ -64,8 +64,9 @@ export function buildBreakdownView(input: {
   elements: BreakdownElement[];
   categories: BreakdownCategory[];
   dismissed: Set<string>;
+  memory?: BreakdownMemory;
 }): BreakdownView {
-  const { lines, ranges, tags, elements, categories, dismissed } = input;
+  const { lines, ranges, tags, elements, categories, dismissed, memory } = input;
   const marks = new Map<number, Mark[]>();
   const suggestions = new Map<number, Suggestion[]>();
   const colorOf = new Map(categories.map((c) => [c.id, c.color]));
@@ -75,7 +76,7 @@ export function buildBreakdownView(input: {
     const taggedIds = new Set(range.sceneId ? tags.filter((t) => t.scene_id === range.sceneId).map((t) => t.element_id) : []);
     const tagged = Array.from(taggedIds).map((id) => byId.get(id)).filter(Boolean) as BreakdownElement[];
     const sceneSuggestions = range.sceneId
-      ? suggestForScene({ actionText: actionTextOf(lines, range), characters: range.characters, taggedElementIds: taggedIds, elements, categories, dismissed })
+      ? suggestForScene({ actionText: actionTextOf(lines, range), characters: range.characters, taggedElementIds: taggedIds, elements, categories, dismissed, memory })
       : [];
     suggestions.set(n, sceneSuggestions);
 

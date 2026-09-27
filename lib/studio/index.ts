@@ -141,7 +141,7 @@ export function useSceneIndexSync(scriptId: string | null, scenes: ParsedSceneIn
   const [state, setState] = useState<SyncState>('idle');
   const [error, setError] = useState<string | null>(null);
   const run = useRef(0);
-  const signature = useMemo(() => (scenes ? JSON.stringify(scenes.map((s) => [s.heading, s.location, s.timeOfDay, s.characters, s.eighths, s.elements])) : null), [scenes]);
+  const signature = useMemo(() => (scenes ? JSON.stringify(scenes.map((s) => [s.heading, s.location, s.timeOfDay, s.characters, s.eighths])) : null), [scenes]);
   const latest = useRef(scenes);
   latest.current = scenes;
 

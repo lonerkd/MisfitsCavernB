@@ -95,7 +95,7 @@ describe('planSceneSync', () => {
   const stored = (rows: Array<ParsedSceneInput & { id: string }>): IndexedScene[] =>
     rows.map((r, i) => {
       const row = toPlanRow(r.id, r, i);
-      return { ...row, ordinal: i, removed_at: null, elements: row.elements as never };
+      return { ...row, ordinal: i, removed_at: null };
     });
 
   it('reports no change when the stored index already matches the script', () => {
@@ -112,15 +112,9 @@ describe('planSceneSync', () => {
     expect(planSceneSync(stored(scenes), [{ heading: 'A. ONE', characters: ['SAM'] }], ids()).changed).toBe(true);
   });
 
-  it('element key order does not count as a change (jsonb does not keep it)', () => {
-    const current: IndexedScene[] = [{ ...toPlanRow('a', { heading: 'A. ONE' }, 0), ordinal: 0, removed_at: null, elements: { wardrobe: [], props: ['GUN'] } }];
-    const plan = planSceneSync(current, [{ heading: 'A. ONE', elements: { props: ['GUN'], wardrobe: [] } }], ids());
-    expect(plan.changed).toBe(false);
-  });
-
   it('builds rows exactly as the server stores them', () => {
     expect(toPlanRow('x', { heading: '', timeOfDay: 'UNKNOWN', characters: [], eighths: 0 }, 4)).toEqual({
-      id: 'x', heading: 'Scene 5', location: null, time_of_day: 'DAY', cast_list: null, est_duration: '1/8 pg', elements: {},
+      id: 'x', heading: 'Scene 5', location: null, time_of_day: 'DAY', cast_list: null, est_duration: '1/8 pg',
     });
   });
 
@@ -131,7 +125,7 @@ describe('planSceneSync', () => {
     expect(first.scenes.map((s) => s.heading)).toEqual(['INT. CAVE - NIGHT', 'EXT. ROAD - DAY']);
     expect(first.scenes[0].cast_list).toBe('SAM');
 
-    const index = first.scenes.map((s, i) => ({ ...s, ordinal: i, removed_at: null, elements: s.elements as never }));
+    const index = first.scenes.map((s, i) => ({ ...s, ordinal: i, removed_at: null }));
     const v2 = parseScript('EXT. CLIFF - DAWN\n\nWind.\n\nINT. CAVE - NIGHT\n\nSam lights a match.\n\nSAM\nHello?\n\nEXT. ROAD - DAY\n\nA truck passes.\n');
     const second = planSceneSync(index, v2.scenes, gen);
     expect(second.scenes.map((s) => s.id)).toEqual(['new3', first.scenes[0].id, first.scenes[1].id]);

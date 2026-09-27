@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  categoryKey, costByCategory, findMentions, groupForScene, nameKey, suggestForScene, titleCase,
+  categoryKey, costByCategory, findMentions, groupForScene, indexMemory, nameKey, suggestForScene, titleCase,
   type BreakdownCategory, type BreakdownElement, type SceneElementTag,
 } from './core';
 
@@ -44,6 +44,35 @@ describe('suggestForScene', () => {
     expect(byName).not.toHaveProperty('Maya');
     expect(s.every((x) => x.reason === 'detected')).toBe(true);
     expect(byName['Lantern']).toBe('c-props');
+  });
+
+  it('remembers how you filed things in other projects — by name, even when not in caps', () => {
+    const memory = indexMemory([
+      { name: 'Brass lantern', category_key: 'props', projects: 2 },
+      { name: 'Trench coat', category_key: 'wardrobe', projects: 1 },
+      { name: 'Maya', category_key: 'props', projects: 1 },
+      { name: 'Hovercraft', category_key: 'vehicles', projects: 1 },
+    ]);
+    const s = suggestForScene({ ...base, actionText: 'Maya lights two brass lanterns. A TRENCH COAT hangs by the door.', elements: [], memory });
+    expect(s).toEqual([
+      { name: 'Brass lantern', categoryId: 'c-props', reason: 'remembered' },
+      { name: 'Trench coat', categoryId: 'c-ward', reason: 'remembered' },
+    ]);
+  });
+
+  it('a capitalised word is filed where you filed it before, not where the word list guesses', () => {
+    const memory = indexMemory([{ name: 'Sparks', category_key: 'sound', projects: 3 }]);
+    const s = suggestForScene({ ...base, actionText: 'SPARKS fly.', elements: [], memory });
+    expect(s).toEqual([{ name: 'Sparks', categoryId: 'c-sound', reason: 'remembered' }]);
+  });
+
+  it('memory never overrides this project or what was dismissed', () => {
+    const memory = indexMemory([{ name: 'Revolver', category_key: 'wardrobe', projects: 5 }, { name: 'Lantern', category_key: 'props', projects: 1 }]);
+    const s = suggestForScene({
+      ...base, actionText: 'Maya checks the revolver and the lantern.', memory,
+      elements: [el('e1', 'Revolver', 'c-props')], dismissed: new Set([nameKey('Lantern')]),
+    });
+    expect(s).toEqual([{ name: 'Revolver', categoryId: 'c-props', reason: 'mentioned', elementId: 'e1' }]);
   });
 
   it('never re-offers what someone dismissed', () => {
