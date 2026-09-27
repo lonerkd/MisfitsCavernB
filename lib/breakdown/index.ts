@@ -12,6 +12,7 @@ import type { BreakdownCategory, BreakdownElement, SceneElementTag } from './cor
 
 export * from './core';
 export type { ElementPatch, CategoryPatch } from './api';
+export { BUDGET_PREFIX } from './api';
 export const breakdown = createBreakdownApi(supabase);
 
 type Dismissal = { project_id: string; name_key: string };

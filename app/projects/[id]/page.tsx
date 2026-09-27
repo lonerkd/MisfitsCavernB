@@ -14,8 +14,7 @@ import { useConfirm } from '@/components/Confirm';
 import { useToast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/database.types';
-import { parseScript } from '@/lib/scriptos/parser';
-import { estimateBudgetFromScript } from '@/lib/scriptos/breakdown';
+import { breakdown, costByCategory } from '@/lib/breakdown';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
@@ -710,7 +709,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const [crew, setCrew] = useState<CrewRow[]>([]);
   const [owner, setOwner] = useState<{ id: string; username: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<{ category: string; amount: number }[] | null>(null);
+  const [breakdownNote, setBreakdownNote] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
   const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
@@ -817,30 +816,23 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
     if (error) { setErr(error.message); setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: before } : x)); }
   };
 
-  const analyzeBudget = async () => {
+  // The budget's breakdown lines come from the breakdown itself: each
+  // element's cost, or its category's unit cost (Studio › Production › Breakdown).
+  const syncFromBreakdown = async () => {
     setAnalyzing(true); setErr(null);
     try {
-      const { data } = await supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false });
-      const withContent = (data || []).find((s: any) => s.content && s.content.trim().length > 0);
-      if (!withContent) { setErr('No script content yet — write one in ScriptOS first.'); setSuggestions([]); return; }
-      const sugg = estimateBudgetFromScript(parseScript(withContent.content ?? ''));
-      const existing = new Set(budget.map(b => b.category.toLowerCase()));
-      setSuggestions(sugg.filter(s => !existing.has(s.category.toLowerCase())));
+      const [cats, els] = await Promise.all([breakdown.listCategories(projectId), breakdown.listElements(projectId)]);
+      const costs = costByCategory(cats, els);
+      if (!els.length) { setBreakdownNote('Nothing tagged yet — break the script down in ScriptOS (tag mode) first.'); return; }
+      const r = await breakdown.syncBudget(projectId, costs.map((c) => ({ label: c.category.label, amount: c.amount })));
+      await load();
+      const unpriced = costs.reduce((n, c) => n + c.unpriced, 0);
+      setBreakdownNote(`${els.length} elements · $${Math.round(costs.reduce((n, c) => n + c.amount, 0)).toLocaleString()}${unpriced ? ` · ${unpriced} still unpriced` : ''}${r.added + r.updated + r.removed ? '' : ' · already up to date'}`);
     } catch (e: any) {
       setErr(e.message);
     } finally {
       setAnalyzing(false);
     }
-  };
-
-  const acceptSuggestion = async (s: { category: string; amount: number }) => {
-    await addBudget(s.category, s.amount);
-    setSuggestions(prev => prev ? prev.filter(x => x.category !== s.category) : prev);
-  };
-  const acceptAllSuggestions = async () => {
-    const list = suggestions || [];
-    for (const s of list) await addBudget(s.category, s.amount);
-    setSuggestions([]);
   };
 
   const addTimeline = async (title: string, start: string, end: string) => {
@@ -973,29 +965,13 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
-          <button onClick={analyzeBudget} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
-            {analyzing ? 'ANALYZING SCRIPT…' : '✦ SUGGEST FROM SCRIPT BREAKDOWN'}
+          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+            {analyzing ? 'READING THE BREAKDOWN…' : '✦ UPDATE FROM THE BREAKDOWN'}
           </button>
-          {suggestions && suggestions.length > 0 && (
-            <div style={{ marginTop: 8, padding: 8, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', letterSpacing: 1 }}>SUGGESTED — from tagged elements</span>
-                <button onClick={acceptAllSuggestions} style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#a5b4fc', background: 'none', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 4, padding: '2px 6px', cursor: 'pointer' }}>+ Add all</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {suggestions.map(s => (
-                  <Row key={s.category}>
-                    <span style={{ flex: 1, fontSize: 10.5 }}>{s.category}</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>${s.amount.toLocaleString()}</span>
-                    <button onClick={() => acceptSuggestion(s)} aria-label="add" style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 4, padding: '0 7px', cursor: 'pointer', fontSize: 12 }}>+</button>
-                  </Row>
-                ))}
-              </div>
-            </div>
-          )}
-          {suggestions && suggestions.length === 0 && !analyzing && (
-            <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>No new suggestions — all categories already added.</div>
-          )}
+          <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', lineHeight: 1.5 }}>
+            {breakdownNote ?? 'Writes one “Breakdown · …” line per category from element costs. '}
+            {' '}<Link href="/studio?tab=production&view=breakdown" style={{ color: '#a5b4fc', textDecoration: 'underline', textUnderlineOffset: 2 }}>Open the breakdown →</Link>
+          </div>
         </Panel>
 
         <Panel title="Timeline" accent={accent}>

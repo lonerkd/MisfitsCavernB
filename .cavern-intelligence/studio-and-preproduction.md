@@ -58,12 +58,24 @@ pitch boards and portfolios.
 
 ## 5. Production
 
-- **Schedule**: shoot day and status per scene; auto-schedule
-  (`packShootDays`: location clusters, day before night, ~5 pages/day);
-  Breakdown → Budget from the elements the sync extracts from action lines;
-  print; stripboard; call sheets (saved per shoot day: date, calls, wrap,
-  address, weather, notes, per-person call times — `call_sheets`,
-  `call_sheet_calls`).
+- **Breakdown** (`BreakdownView`, data in `lib/breakdown`): tagged in the
+  script (ScriptOS tag mode), priced and sourced here — by category or as
+  per-scene breakdown sheets; element card (status, cost, owner, notes);
+  **Categories & rates** edits the project's categories (name, colour, order,
+  unit cost — data, never code). **Push to budget** writes one
+  `Breakdown · <category>` budget line per costed category
+  (`breakdown.syncBudget`: updates in place, removes stale lines, leaves other
+  lines alone); the project page's budget panel does the same. Printable
+  breakdown sheets. No hardcoded rates remain.
+- **Schedule** (`StripboardView`, `lib/studio/stripboard.ts`): shoot days as
+  columns, scenes as strips in the industry colours (INT/EXT × DAY/NIGHT);
+  drag between days or Alt+←/→; each day shows pages against the project's
+  day length (`settings.dayLengthEighths`, owner-set), company moves (more
+  than one location), cast called; status dot planned → shot → wrapped;
+  auto-schedule (`packShootDays`) at the day length; Day out of days;
+  print. Call sheets (saved per shoot day: date, calls, wrap, address,
+  weather, notes, per-person call times — `call_sheets`, `call_sheet_calls`);
+  the board shows each day's call-sheet date.
 - **Shot list**: per scene in Scenes (`shots`); also created by "Shot" margin
   notes in ScriptOS (`add_script_annotation`).
 - **Story**: beat board; character bible with a look-board per character

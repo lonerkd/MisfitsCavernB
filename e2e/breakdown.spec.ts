@@ -12,6 +12,14 @@ const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the LANTERN and checks an old revolver.\n\nSAM\nWho’s there?\n\nEXT. RIDGE - DAWN\n\nThe lantern gutters out.\n';
 
+async function axeViolations(page: Page): Promise<string[]> {
+  await page.addScriptTag({ content: AXE });
+  return page.evaluate(async () => {
+    const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] }, resultTypes: ['violations'] });
+    return r.violations.map((v: any) => `${v.id}: ${v.nodes.slice(0, 3).map((n: any) => `${n.target.join(' ')} ${n.html.slice(0, 140)} ${n.any?.[0]?.message ?? ''}`).join(' | ')}`);
+  });
+}
+
 async function selectInScript(page: Page, text: string) {
   await page.getByLabel('Script', { exact: true }).evaluate((el, t) => {
     const ta = el as HTMLTextAreaElement;
@@ -48,7 +56,7 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     await admin.auth.admin.deleteUser(userId);
   });
 
-  test('suggest → accept → select and tag → element card', async ({ page }) => {
+  test('tag in the script → price it in the Studio → push to budget → schedule on the stripboard', async ({ page }) => {
     await page.goto('/auth');
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', PASSWORD);
@@ -88,12 +96,42 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     // The breakdown UI (panel, element card, highlights, tag bar) passes WCAG 2.2 AA.
     await selectInScript(page, 'checks');
     await expect(page.getByRole('dialog', { name: 'Tag “checks”' })).toBeVisible();
-    await page.addScriptTag({ content: AXE });
-    const violations = await page.evaluate(async () => {
-      const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] }, resultTypes: ['violations'] });
-      return r.violations.map((v: any) => `${v.id}: ${v.nodes.slice(0, 3).map((n: any) => `${n.target.join(' ')} ${n.html.slice(0, 140)} ${n.any?.[0]?.message ?? ''}`).join(' | ')}`);
-    });
+    const violations = await axeViolations(page);
     expect(violations, violations.join('\n')).toEqual([]);
     await page.screenshot({ path: 'test-results/breakdown-editor.png', fullPage: false });
+
+    // ── The Studio: the breakdown by category, rates, the budget ──
+    await page.goto('/studio?tab=production&view=breakdown');
+    const picker = page.getByLabel('Active project');
+    await picker.waitFor();
+    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await page.goto('/studio?tab=production&view=breakdown');
+    const props = page.getByRole('region', { name: 'Props' });
+    await expect(props.getByRole('button', { name: /old revolver/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Categories & rates' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Categories & rates' });
+    await dialog.getByLabel('Props unit cost').fill('20');
+    await dialog.getByLabel('Props unit cost').blur();
+    await expect.poll(async () => (await admin.from('breakdown_categories').select('unit_cost').eq('project_id', projectId).eq('key', 'props').single()).data?.unit_cost).toBe(20);
+    await dialog.getByRole('button', { name: 'Done' }).click();
+    await page.getByRole('button', { name: 'Push to budget' }).click();
+    // Lantern has no cost of its own → the unit cost; the revolver has $85.
+    await expect.poll(async () => (await admin.from('budget_items').select('category, amount').eq('project_id', projectId)).data).toEqual([{ category: 'Breakdown · Props', amount: 105 }]);
+    await page.screenshot({ path: 'test-results/breakdown-studio.png', fullPage: true });
+    expect(await axeViolations(page), 'breakdown view').toEqual([]);
+
+    // ── The stripboard: drag a strip to a new day, then Alt+← it back ──
+    await page.goto('/studio?tab=production&view=schedule');
+    // Scheduling opens in pre-production; a writer can look early.
+    await page.getByRole('button', { name: 'Open it now' }).click();
+    const strip = page.getByRole('listitem', { name: /^Scene 2,/ });
+    await strip.dragTo(page.getByRole('region', { name: 'A new shoot day' }));
+    await expect.poll(async () => (await admin.from('scenes').select('shoot_day').eq('script_id', scriptId).eq('scene_number', 2).is('removed_at', null).single()).data?.shoot_day).toBe(2);
+    await expect(page.getByRole('heading', { name: 'Day 2' })).toBeVisible();
+    await page.getByRole('listitem', { name: /^Scene 2,/ }).focus();
+    await page.keyboard.press('Alt+ArrowLeft');
+    await expect.poll(async () => (await admin.from('scenes').select('shoot_day').eq('script_id', scriptId).eq('scene_number', 2).is('removed_at', null).single()).data?.shoot_day).toBe(1);
+    await page.screenshot({ path: 'test-results/stripboard.png', fullPage: true });
+    expect(await axeViolations(page), 'stripboard').toEqual([]);
   });
 });

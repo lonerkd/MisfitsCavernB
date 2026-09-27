@@ -19,9 +19,28 @@ Branch: `claude/state-assessment-testing-r0tf3y` (PR #60). Migrations
   colour, suggestions underlined; select words → floating tag bar (Alt+1–9);
   Breakdown tab: scene tags, suggestions, quick tag, element card (status,
   cost, owner, notes, scenes).
-- Next: breakdown drives Studio schedule/budget/call sheets (remove
-  `BUDGET_RATE`/`CAST_RATE` paths and `scenes.elements`), category editor
-  with unit costs, drag-and-drop stripboard, printable breakdown sheets.
+- Both migrations are **applied to production** (fingerprint matches on all
+  12 categories); PR #60 merged.
+
+## Latest Session — The breakdown drives the Studio
+
+Branch: `claude/state-assessment-testing-r0tf3y`. No migrations.
+
+- **Studio › Production › Breakdown**: by category / by scene (breakdown
+  sheets), status filters, search, element card; **Categories & rates**
+  (names, colours, order, unit costs); **Push to budget**
+  (`Breakdown · <category>` lines); printable breakdown sheets.
+- **Stripboard** replaces the day-number inputs: drag strips between days
+  (or Alt+←/→), pages vs the owner-set day length, company-move warnings,
+  cast per day, call-sheet dates, status dots, Day out of days, auto-schedule
+  at the day length.
+- Removed: `lib/scriptos/breakdown.ts` + `lib/supabase/breakdown.ts`
+  (count × hardcoded rate, cast × $500, pages × $200), the old
+  `ProductionBoards` stripboard, the schedule's guessed-element chips. The
+  project page's budget now updates from the breakdown.
+- Next: `scenes.elements` (parser guesses still stored by the scene sync) can
+  be dropped; roles/departments taxonomy shared by Jobs, profiles and Crew;
+  project types/phases as data.
 
 ## Latest Session — Post-production
 
