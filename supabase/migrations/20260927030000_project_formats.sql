@@ -57,16 +57,22 @@ INSERT INTO public.project_formats (name, blurb, icon, script_format, phase_labe
   ('Other', 'Anything else: the standard five phases.', 'sparkles', 'screenplay', '{}', '{}', '{}', 9);
 
 -- ── Projects: the format a project is made in ──────────────────────────────
-UPDATE public.projects p SET project_type = coalesce(
-  (select f.name from public.project_formats f where lower(f.name) = lower(btrim(p.project_type))), 'Other');
+-- Only rows whose value changes, so no project's updated_at moves for nothing.
+UPDATE public.projects p SET project_type = m.name
+FROM (select p2.id, coalesce((select f.name from public.project_formats f
+                              where lower(f.name) = lower(btrim(p2.project_type))), 'Other') as name
+      from public.projects p2) m
+WHERE m.id = p.id AND p.project_type IS DISTINCT FROM m.name;
 ALTER TABLE public.projects ADD CONSTRAINT projects_project_type_fkey
   FOREIGN KEY (project_type) REFERENCES public.project_formats(name) ON UPDATE CASCADE;
 CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type);
 
 -- ── Portfolio: the format of a finished piece ──────────────────────────────
-UPDATE public.portfolio_projects pp SET category = coalesce(
-  (select f.name from public.project_formats f where lower(f.name) = lower(btrim(pp.category))), 'Other')
-  WHERE pp.category IS NOT NULL;
+UPDATE public.portfolio_projects pp SET category = m.name
+FROM (select p2.id, coalesce((select f.name from public.project_formats f
+                              where lower(f.name) = lower(btrim(p2.category))), 'Other') as name
+      from public.portfolio_projects p2 where p2.category is not null) m
+WHERE m.id = pp.id AND pp.category IS DISTINCT FROM m.name;
 ALTER TABLE public.portfolio_projects ADD CONSTRAINT portfolio_projects_category_fkey
   FOREIGN KEY (category) REFERENCES public.project_formats(name) ON UPDATE CASCADE ON DELETE SET NULL;
 CREATE INDEX portfolio_projects_category_idx ON public.portfolio_projects USING btree (category);
