@@ -60,7 +60,7 @@ export type Place =
   | { kind: 'path'; path: string };
 
 export type StudioTab = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
-export type ProductionView = 'story' | 'breakdown' | 'schedule' | 'crew';
+export type ProductionView = 'story' | 'breakdown' | 'readiness' | 'schedule' | 'crew';
 
 export function placeHref(place: Place, projectId: string): string {
   if (place.kind === 'hub') return `/projects/${projectId}${place.anchor ? `#${place.anchor}` : ''}`;

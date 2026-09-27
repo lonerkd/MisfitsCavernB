@@ -39,7 +39,7 @@ const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
 ];
 
-const VIEWS: ProductionView[] = ['story', 'breakdown', 'schedule', 'crew'];
+const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'schedule', 'crew'];
 
 /** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
 function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
@@ -187,7 +187,7 @@ export default function StudioPage() {
                     {tab === 'overview' && <OverviewTab onOpen={setTab} onNavigate={navigate} />}
                     {tab === 'library' && <LibraryTab />}
                     {tab === 'scenes' && <ScenesTab />}
-                    {tab === 'production' && <ProductionTab view={view ?? 'story'} onView={(v) => setTabRaw('production', v)} />}
+                    {tab === 'production' && <ProductionTab view={view ?? 'story'} onView={(v) => setTabRaw('production', v)} onNavigate={navigate} />}
                     {tab === 'post' && <PostTab />}
                     {tab === 'promos' && <PromosTab />}
                     {tab === 'pitch' && <PitchTab />}
