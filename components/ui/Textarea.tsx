@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -11,7 +11,9 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, maxLength, autoResize = true, onFocus, onBlur, onChange, className = '', ...props }, forwardedRef) => {
+  ({ label, error, maxLength, autoResize = true, onFocus, onBlur, onChange, className = '', id, ...props }, forwardedRef) => {
+    const autoId = useId();
+    const textareaId = id || `ta-${autoId}`;
     const [isFocused, setIsFocused] = useState(false);
     const [hasValue, setHasValue] = useState(Boolean(props.value || props.defaultValue));
     const [charCount, setCharCount] = useState(String(props.value || props.defaultValue || '').length);
@@ -55,9 +57,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     return (
       <div className={`relative mb-6 ${className}`}>
-        <motion.div
+        <motion.label
+          htmlFor={textareaId}
           className={`absolute left-4 top-4 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${
-            isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
+            isActive ? 'text-[#ff7a4d]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
           animate={{
@@ -69,10 +72,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           style={{ originX: 0, originY: 0 }}
         >
           {label}
-        </motion.div>
+        </motion.label>
 
         <textarea
           ref={ref}
+          id={textareaId}
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChange={handleChange}

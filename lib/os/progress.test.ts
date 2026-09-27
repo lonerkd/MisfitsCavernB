@@ -1,7 +1,23 @@
 import { describe, it, expect } from 'vitest';
+import type { FormatRules } from './phases';
 import { computeProgress, toolsOpenedAt, toolState, toSignals, placeHref, EMPTY_SIGNALS, type ProjectSignals } from './progress';
 
 const signals = (patch: Partial<ProjectSignals> = {}): ProjectSignals => ({ ...EMPTY_SIGNALS, status: 'concept', project_type: 'Short Film', ...patch });
+
+// Rules as public.project_formats holds them (seeded in 20260927030000).
+const PODCAST: FormatRules = {
+  phase_labels: {
+    development: { label: 'Planning', abbr: 'PLAN' }, production: { label: 'Recording', abbr: 'REC' },
+    'post-production': { label: 'Editing', abbr: 'EDIT' }, delivery: { label: 'Published', abbr: 'OUT' },
+  },
+  skip_phases: ['pre-production'],
+  skip_milestones: ['characters', 'casting', 'shots', 'schedule', 'wrap-first', 'wrap-all', 'festival'],
+};
+const MUSIC_VIDEO: FormatRules = {
+  phase_labels: { production: { label: 'Shoot', abbr: 'SHOOT' }, 'post-production': { label: 'Edit', abbr: 'EDIT' }, delivery: { label: 'Released', abbr: 'OUT' } },
+  skip_phases: ['pre-production'],
+  skip_milestones: [],
+};
 
 describe('computeProgress', () => {
   it('a new short film is in development with only development tools open', () => {
@@ -52,8 +68,8 @@ describe('computeProgress', () => {
     expect(p.current.milestones.find((m) => m.id === 'wrap-all')!.progress).toBeNull();
   });
 
-  it('follows the project type: skipped phases fold into the one before, irrelevant milestones drop', () => {
-    const podcast = computeProgress(signals({ project_type: 'Podcast' }));
+  it('follows the project’s format: skipped phases fold into the one before, irrelevant milestones drop', () => {
+    const podcast = computeProgress(signals({ project_type: 'Podcast', format: PODCAST }));
     expect(podcast.phases.map((ph) => ph.label)).toEqual(['Planning', 'Recording', 'Editing', 'Published']);
     const ids = podcast.phases.flatMap((ph) => ph.milestones.map((m) => m.id));
     expect(ids).not.toContain('shots');
@@ -62,7 +78,7 @@ describe('computeProgress', () => {
     expect(toolState(podcast, 'budget')?.unlocked).toBe(true);
     expect(podcast.phases[0].milestones.map((m) => m.id)).toContain('crew');
 
-    const mv = computeProgress(signals({ project_type: 'Music Video', status: 'production' }));
+    const mv = computeProgress(signals({ project_type: 'Music Video', format: MUSIC_VIDEO, status: 'production' }));
     expect(mv.current.label).toBe('Shoot');
   });
 
@@ -79,6 +95,22 @@ describe('toSignals', () => {
     const s = toSignals({ status: 'concept', scripts: '3', logline: true, media: null, extra: 1 })!;
     expect(s).toMatchObject({ status: 'concept', scripts: 3, logline: true, media: 0, visibility: null });
     expect('extra' in s).toBe(false);
+    expect(s.format).toBeNull();
+  });
+
+  it('reads the format’s rules and drops anything malformed', () => {
+    const s = toSignals({
+      format: {
+        phase_labels: { production: { label: 'Shoot', abbr: 'SHOOT' }, 'post-production': { label: 'Edit' }, nonsense: { label: 'x' }, delivery: 3 },
+        skip_phases: ['pre-production', 'development', 'delivery', 'bogus'],
+        skip_milestones: ['shots', 4],
+      },
+    })!;
+    expect(s.format).toEqual({
+      phase_labels: { production: { label: 'Shoot', abbr: 'SHOOT' }, 'post-production': { label: 'Edit', abbr: 'EDIT' } },
+      skip_phases: ['pre-production'],
+      skip_milestones: ['shots'],
+    });
   });
 });
 

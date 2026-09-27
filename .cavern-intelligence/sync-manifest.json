@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T05:17:26.687Z",
+  "last_synchronized": "2026-09-27T06:03:31.166Z",
   "stats": {
-    "totalFiles": 306,
-    "totalSize": 2517099,
+    "totalFiles": 313,
+    "totalSize": 2543268,
     "byExtension": {
-      ".json": 5,
+      ".json": 7,
       ".md": 7,
-      ".tsx": 127,
-      ".ts": 149,
+      ".tsx": 128,
+      ".ts": 152,
       ".js": 7,
-      ".sql": 11
+      ".sql": 12
     }
   },
   "modules": {
@@ -182,6 +182,7 @@
         "components/editor/editorCtx.ts",
         "components/editor/editorPageParts.tsx",
         "components/editor/useEditorScenes.ts",
+        "components/formats/FormatPicker.tsx",
         "components/progress/Bricks.tsx",
         "components/progress/LockedTool.tsx",
         "components/progress/LoglineEditor.tsx",
@@ -238,7 +239,8 @@
         "supabase/migrations/20260926050000_post_production.sql",
         "supabase/migrations/20260927000000_project_progress.sql",
         "supabase/migrations/20260927010000_breakdown.sql",
-        "supabase/migrations/20260927020000_crafts.sql"
+        "supabase/migrations/20260927020000_crafts.sql",
+        "supabase/migrations/20260927030000_project_formats.sql"
       ]
     }
   },
@@ -247,6 +249,11 @@
       "path": ".claude/settings.json",
       "size": 6403,
       "last_modified": "2026-09-24T20:05:03.615Z"
+    },
+    {
+      "path": ".claude/settings.local.json",
+      "size": 77,
+      "last_modified": "2026-09-27T05:33:25.888Z"
     },
     {
       "path": ".eslintrc.json",
@@ -355,8 +362,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 72951,
-      "last_modified": "2026-09-27T05:09:36.483Z"
+      "size": 73041,
+      "last_modified": "2026-09-27T05:39:57.077Z"
     },
     {
       "path": "app/error.tsx",
@@ -430,8 +437,8 @@
     },
     {
       "path": "app/portfolio/manage/page.tsx",
-      "size": 13505,
-      "last_modified": "2026-09-26T20:13:33.078Z"
+      "size": 13480,
+      "last_modified": "2026-09-27T05:40:09.152Z"
     },
     {
       "path": "app/portfolio/page.tsx",
@@ -450,8 +457,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 64282,
-      "last_modified": "2026-09-27T05:03:34.017Z"
+      "size": 64558,
+      "last_modified": "2026-09-27T05:39:50.511Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -470,8 +477,8 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 27131,
-      "last_modified": "2026-09-27T03:16:43.975Z"
+      "size": 25828,
+      "last_modified": "2026-09-27T05:54:31.764Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -655,8 +662,8 @@
     },
     {
       "path": "components/editor/EditorHeader.tsx",
-      "size": 16418,
-      "last_modified": "2026-09-26T20:13:33.084Z"
+      "size": 16357,
+      "last_modified": "2026-09-27T05:39:57.081Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -675,8 +682,8 @@
     },
     {
       "path": "components/editor/PreviewView.tsx",
-      "size": 6435,
-      "last_modified": "2026-09-24T20:05:03.631Z"
+      "size": 6374,
+      "last_modified": "2026-09-27T05:39:57.086Z"
     },
     {
       "path": "components/editor/SceneReferencesPanel.tsx",
@@ -685,13 +692,13 @@
     },
     {
       "path": "components/editor/WriteFooter.tsx",
-      "size": 6526,
-      "last_modified": "2026-09-26T20:13:33.085Z"
+      "size": 6465,
+      "last_modified": "2026-09-27T05:39:57.084Z"
     },
     {
       "path": "components/editor/WriteView.tsx",
-      "size": 19926,
-      "last_modified": "2026-09-27T05:10:51.214Z"
+      "size": 19865,
+      "last_modified": "2026-09-27T05:39:57.088Z"
     },
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
@@ -729,6 +736,11 @@
       "last_modified": "2026-09-26T08:01:21.987Z"
     },
     {
+      "path": "components/formats/FormatPicker.tsx",
+      "size": 4012,
+      "last_modified": "2026-09-27T05:38:14.188Z"
+    },
+    {
       "path": "components/progress/Bricks.tsx",
       "size": 3059,
       "last_modified": "2026-09-27T03:14:49.671Z"
@@ -745,8 +757,8 @@
     },
     {
       "path": "components/progress/PhasePanel.tsx",
-      "size": 11159,
-      "last_modified": "2026-09-27T03:14:25.408Z"
+      "size": 13045,
+      "last_modified": "2026-09-27T05:39:34.978Z"
     },
     {
       "path": "components/progress/UnlockReveal.tsx",
@@ -920,13 +932,13 @@
     },
     {
       "path": "components/ui/Input.tsx",
-      "size": 5004,
-      "last_modified": "2026-09-26T20:13:33.087Z"
+      "size": 4998,
+      "last_modified": "2026-09-27T05:54:31.763Z"
     },
     {
       "path": "components/ui/Textarea.tsx",
-      "size": 4615,
-      "last_modified": "2026-09-26T20:13:33.088Z"
+      "size": 4754,
+      "last_modified": "2026-09-27T05:54:31.763Z"
     },
     {
       "path": "docs/FINAL_AUDIT_2026-07_CORE_STATE.md",
@@ -950,8 +962,8 @@
     },
     {
       "path": "e2e/accessibility.spec.ts",
-      "size": 5745,
-      "last_modified": "2026-09-27T05:04:50.594Z"
+      "size": 6531,
+      "last_modified": "2026-09-27T06:03:02.568Z"
     },
     {
       "path": "e2e/auth-journey.spec.ts",
@@ -1079,6 +1091,21 @@
       "last_modified": "2026-09-27T05:17:02.053Z"
     },
     {
+      "path": "lib/formats-core.ts",
+      "size": 1981,
+      "last_modified": "2026-09-27T05:37:49.644Z"
+    },
+    {
+      "path": "lib/formats.test.ts",
+      "size": 1523,
+      "last_modified": "2026-09-27T05:40:31.959Z"
+    },
+    {
+      "path": "lib/formats.ts",
+      "size": 1464,
+      "last_modified": "2026-09-27T05:37:53.700Z"
+    },
+    {
       "path": "lib/hooks/usePresence.ts",
       "size": 742,
       "last_modified": "2026-09-24T20:05:03.637Z"
@@ -1135,8 +1162,8 @@
     },
     {
       "path": "lib/os/index.ts",
-      "size": 2079,
-      "last_modified": "2026-09-27T03:09:34.963Z"
+      "size": 2113,
+      "last_modified": "2026-09-27T05:38:49.681Z"
     },
     {
       "path": "lib/os/notify.ts",
@@ -1150,23 +1177,23 @@
     },
     {
       "path": "lib/os/phases.test.ts",
-      "size": 839,
-      "last_modified": "2026-09-26T07:53:00.717Z"
+      "size": 1279,
+      "last_modified": "2026-09-27T05:40:31.956Z"
     },
     {
       "path": "lib/os/phases.ts",
-      "size": 3020,
-      "last_modified": "2026-09-27T03:09:34.958Z"
+      "size": 3853,
+      "last_modified": "2026-09-27T05:37:07.868Z"
     },
     {
       "path": "lib/os/progress.test.ts",
-      "size": 4955,
-      "last_modified": "2026-09-27T03:19:45.105Z"
+      "size": 6459,
+      "last_modified": "2026-09-27T05:40:31.956Z"
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 16630,
-      "last_modified": "2026-09-27T04:29:40.710Z"
+      "size": 16598,
+      "last_modified": "2026-09-27T05:37:38.184Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1191,11 +1218,6 @@
     {
       "path": "lib/password-strength.ts",
       "size": 3098,
-      "last_modified": "2026-09-24T20:05:03.637Z"
-    },
-    {
-      "path": "lib/projectTypes.ts",
-      "size": 3793,
       "last_modified": "2026-09-24T20:05:03.637Z"
     },
     {
@@ -1460,8 +1482,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 84534,
-      "last_modified": "2026-09-27T05:14:37.681Z"
+      "size": 86019,
+      "last_modified": "2026-09-27T06:03:14.208Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1495,8 +1517,8 @@
     },
     {
       "path": "lib/supabase/progress.ts",
-      "size": 3004,
-      "last_modified": "2026-09-27T04:25:10.986Z"
+      "size": 3496,
+      "last_modified": "2026-09-27T05:39:34.979Z"
     },
     {
       "path": "lib/supabase/projects.ts",
@@ -1659,9 +1681,19 @@
       "last_modified": "2026-09-27T04:58:34.421Z"
     },
     {
+      "path": "supabase/migrations/20260927030000_project_formats.sql",
+      "size": 9561,
+      "last_modified": "2026-09-27T05:37:38.195Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
+    },
+    {
+      "path": "test-results/.last-run.json",
+      "size": 45,
+      "last_modified": "2026-09-27T06:03:02.540Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -1687,6 +1719,11 @@
       "path": "tests/integration/crafts.test.ts",
       "size": 4708,
       "last_modified": "2026-09-27T05:04:11.829Z"
+    },
+    {
+      "path": "tests/integration/formats.test.ts",
+      "size": 4944,
+      "last_modified": "2026-09-27T05:41:15.020Z"
     },
     {
       "path": "tests/integration/media-library.test.ts",

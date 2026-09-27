@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { awaitOSUser } from '@/lib/os';
+import { useFormats } from '@/lib/formats';
 
-const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
 
 interface MediaItem { id: string; title: string; media_type: string; url: string; }
 interface PortfolioProject {
@@ -40,6 +40,7 @@ export default function ManagePortfolioPage() {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
+  const { formats } = useFormats();
   const [newProject, setNewProject] = useState({ title: '', category: '', year: '', role: '', description: '' });
   const [mediaForm, setMediaForm] = useState<Record<string, { title: string; url: string; media_type: string }>>({});
 
@@ -155,9 +156,9 @@ export default function ManagePortfolioPage() {
           <div style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
             <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <select aria-label="Category" value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
-                <option value="">Category...</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <select aria-label="Format" value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
+                <option value="">Format…</option>
+                {formats.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
               </select>
               <Input type="number" label="Year" value={newProject.year} onChange={e => setNewProject({ ...newProject, year: e.target.value })} />
               <Input label="Your role" value={newProject.role} onChange={e => setNewProject({ ...newProject, role: e.target.value })} />

@@ -6,7 +6,8 @@ import { useConfirm } from '@/components/Confirm';
 import { useToast } from '@/components/Toast';
 import { toolsOpenedAt, type Place, type ProjectProgress, type ToolState } from '@/lib/os/progress';
 import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
-import { setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
+import { setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
+import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Brick, PlaceLink, accentVars } from './Bricks';
 import { UnlockReveal } from './UnlockReveal';
 import p from './progress.module.css';
@@ -34,13 +35,15 @@ function Ring({ done, total }: { done: number; total: number }) {
  * unlocked — the project built up phase by phase. Everything is read from
  * the project's data; only the owner moves it between phases.
  */
-export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, headingLevel = 2 }: {
+export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFormatChanged, headingLevel = 2 }: {
   projectId: string;
   state: ProjectProgressState;
   isOwner: boolean;
   accent?: string | null;
   /** Handle a place in-page (return true), e.g. the Studio switching tabs. */
   onNavigate?: (place: Place) => boolean;
+  /** After the owner changes the project's format. */
+  onFormatChanged?: (format: string) => void;
   headingLevel?: 2 | 3;
 }) {
   const confirm = useConfirm();
@@ -49,6 +52,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, head
   const [selected, setSelected] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [reveal, setReveal] = useState<{ label: string; tools: ToolState[] } | null>(null);
+  const [formatDraft, setFormatDraft] = useState<string | null>(null);
   const style = accentVars(accent);
 
   // Celebrate phases reached since this device last saw the project
@@ -106,6 +110,22 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, head
     }
   };
 
+  const saveFormat = async () => {
+    if (!formatDraft || formatDraft === signals.project_type) { setFormatDraft(null); return; }
+    setBusy(true);
+    try {
+      await setProjectFormat(projectId, formatDraft);
+      await reload();
+      onFormatChanged?.(formatDraft);
+      toast(`Now a ${formatDraft}. Phases and milestones follow the new format.`, 'success');
+      setFormatDraft(null);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not change the format', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const toggleUnlockAll = async () => {
     const next = !signals.unlock_all;
     try {
@@ -121,7 +141,15 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, head
       <div className={p.head}>
         <Ring done={progress.current.done} total={progress.current.total} />
         <div className={p.headText}>
-          <div className={p.eyebrow}>Phase {progress.currentIndex + 1} of {progress.phases.length}</div>
+          <div className={p.eyebrow}>
+            Phase {progress.currentIndex + 1} of {progress.phases.length}
+            {signals.project_type && <> · {signals.project_type}</>}
+            {isOwner && formatDraft == null && (
+              <button type="button" className={p.inlineBtn} onClick={() => setFormatDraft(signals.project_type ?? 'Feature')}>
+                Change format
+              </button>
+            )}
+          </div>
           <H id={`phase-title-${projectId}`} className={p.phaseName}>{progress.current.label}</H>
           <div className={p.summary}>
             {progress.ready && progress.next ? <span className={p.ready}>Everything here is done — ready for {progress.next.label}.</span>
@@ -130,6 +158,19 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, head
           </div>
         </div>
       </div>
+
+      {isOwner && formatDraft != null && (
+        <div className={p.formatBox}>
+          <FormatPicker value={formatDraft} onChange={setFormatDraft} label="Project format" disabled={busy} />
+          <p className={p.note}>Work already done stays; milestones that don’t apply to the new format are hidden, not deleted.</p>
+          <div className={p.advance}>
+            <button type="button" className={p.primary} disabled={busy || formatDraft === signals.project_type} onClick={saveFormat}>
+              Make it a {formatDraft}
+            </button>
+            <button type="button" className={p.ghost} disabled={busy} onClick={() => setFormatDraft(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
 
       <ol className={p.rail} aria-label="Phases">
         {progress.phases.map((ph, i) => (

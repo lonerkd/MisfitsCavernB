@@ -33,7 +33,7 @@ import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNO
 import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
-import { getDefaultScriptFormat } from '@/lib/projectTypes';
+import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -278,9 +278,10 @@ export default function EditorPage() {
     let id = data?.[0]?.id;
     if (!id) {
       const uid = (await awaitOSUser())?.id;
+      const format = findFormat(await loadFormats().catch(() => []), project.type);
       const ins = await supabase
         .from('scripts')
-        .insert({ project_id: project.id, title: project.title, content: '', format: project.settings?.defaultScriptFormat || getDefaultScriptFormat(project.type), status: 'draft', created_by: uid, last_edited_by: uid })
+        .insert({ project_id: project.id, title: project.title, content: '', format: defaultScriptFormat(format, project.settings?.defaultScriptFormat), status: 'draft', created_by: uid, last_edited_by: uid })
         .select('id,title')
         .single();
       id = ins.data?.id;

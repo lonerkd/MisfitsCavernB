@@ -1180,6 +1180,13 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: "portfolio_projects_category_fkey";
+            columns: ["category"];
+            isOneToOne: false;
+            referencedRelation: "project_formats";
+            referencedColumns: ["name"];
+          },
+          {
             foreignKeyName: "portfolio_projects_source_project_id_fkey";
             columns: ["source_project_id"];
             isOneToOne: false;
@@ -1627,6 +1634,42 @@ export type Database = {
           },
         ];
       };
+      project_formats: {
+        Row: {
+          blurb: string;
+          created_at: string;
+          icon: string;
+          name: string;
+          phase_labels: NonNullable<Json>;
+          position: number;
+          script_format: string;
+          skip_milestones: string[];
+          skip_phases: string[];
+        };
+        Insert: {
+          blurb?: string;
+          created_at?: string;
+          icon?: string;
+          name: string;
+          phase_labels?: NonNullable<Json>;
+          position?: number;
+          script_format?: string;
+          skip_milestones?: string[];
+          skip_phases?: string[];
+        };
+        Update: {
+          blurb?: string;
+          created_at?: string;
+          icon?: string;
+          name?: string;
+          phase_labels?: NonNullable<Json>;
+          position?: number;
+          script_format?: string;
+          skip_milestones?: string[];
+          skip_phases?: string[];
+        };
+        Relationships: [];
+      };
       project_tasks: {
         Row: {
           assigned_to: string | null;
@@ -1734,6 +1777,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "projects_project_type_fkey";
+            columns: ["project_type"];
+            isOneToOne: false;
+            referencedRelation: "project_formats";
+            referencedColumns: ["name"];
           },
         ];
       };

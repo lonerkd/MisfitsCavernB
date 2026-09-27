@@ -39,7 +39,7 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     const { data: p } = await admin.from('projects').insert({ title: 'Night Shift', creator_id: uid, visibility: 'link' }).select('id, share_token').single();
     await admin.from('scripts').insert({ title: 'Night Shift', content: 'INT. CORRIDOR - NIGHT\n\nMaya pushes a cart.\n\nMAYA\nRoom 12.\n', project_id: p!.id, created_by: uid, last_edited_by: uid });
     const { data: job } = await admin.from('jobs').insert({ title: 'Gaffer', role: 'Gaffer', created_by: uid, project_id: p!.id, status: 'open', description: 'Two nights' }).select('id').single();
-    const { data: pf } = await admin.from('portfolio_projects').insert({ user_id: uid, title: 'Night Shift', year: 2026, role: 'Director', category: 'Short' }).select('id, share_token').single();
+    const { data: pf } = await admin.from('portfolio_projects').insert({ user_id: uid, title: 'Night Shift', year: 2026, role: 'Director', category: 'Short Film' }).select('id, share_token').single();
     await admin.from('portfolio_media').insert({ project_id: pf!.id, url: 'https://youtu.be/dQw4w9WgXcQ', media_type: 'youtube', title: 'Trailer' });
 
     const found: string[] = [];
@@ -75,6 +75,18 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     await page.getByRole('button', { name: /^Filter by craft/ }).click();
     await page.getByRole('dialog', { name: 'Filter by craft' }).waitFor();
     for (const v of await violations(page, null)) found.push(`craft picker: ${v}`);
+
+    // The format picker: starting a project, and changing one's format.
+    await page.goto('/projects', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: /new project/i }).first().click();
+    await page.getByRole('radiogroup', { name: 'Format' }).waitFor();
+    await page.waitForTimeout(1000); // the modal fades in
+    for (const v of await violations(page, null)) found.push(`new project: ${v}`);
+    await page.goto(`/projects/${p!.id}`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Change format' }).click();
+    await page.getByRole('radiogroup', { name: 'Project format' }).waitFor();
+    await page.waitForTimeout(500);
+    for (const v of await violations(page, null)) found.push(`change format: ${v}`);
 
     // A new project keeps later tools locked (checked above); once it reaches
     // delivery every tool is open, and the project page celebrates the phase.
