@@ -518,7 +518,7 @@ export default function ProjectHubPage() {
                   onClick={copyShareLink}
                   title="Copy the share link — anyone with it can view this project"
                   style={{
-                    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.2, color: '#8b5cf6',
+                    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.2, color: readable('#8b5cf6', 4.5, '#161024'),
                     background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
                     borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
                   }}

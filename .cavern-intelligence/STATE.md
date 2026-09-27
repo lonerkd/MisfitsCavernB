@@ -1,5 +1,28 @@
 # Misfits Cavern — Project State
 
+## Latest Session — Phase engine + the breakdown, in the script
+
+Branch: `claude/state-assessment-testing-r0tf3y` (PR #60). Migrations
+`20260927000000_project_progress.sql` and `20260927010000_breakdown.sql` are
+**not yet in production** — apply both before merging.
+
+- **Phase engine** (`lib/os/progress.ts`, `project_progress()` RPC): milestones
+  read from project data, tools unlock by phase or early once their work
+  starts, owner moves phases, unlock reveal, logline editor, Studio tabs gated
+  with "Open it now".
+- **Breakdown as data** (replaces guessed `scenes.elements` + hardcoded rates):
+  per-project `breakdown_categories` (seeded defaults, editable), one
+  `breakdown_elements` row per thing (status, cost, owner, notes),
+  `scene_elements` tags, `breakdown_dismissals`; `tag_scene_element()` finds or
+  creates. Parser guesses are only *suggestions* (`lib/breakdown`).
+- **Editor tag mode** (Ctrl+Shift+B): tagged elements highlighted in category
+  colour, suggestions underlined; select words → floating tag bar (Alt+1–9);
+  Breakdown tab: scene tags, suggestions, quick tag, element card (status,
+  cost, owner, notes, scenes).
+- Next: breakdown drives Studio schedule/budget/call sheets (remove
+  `BUDGET_RATE`/`CAST_RATE` paths and `scenes.elements`), category editor
+  with unit costs, drag-and-drop stripboard, printable breakdown sheets.
+
 ## Latest Session — Post-production
 
 Branch: `claude/state-assessment-testing-r0tf3y`. Migration

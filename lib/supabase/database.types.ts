@@ -91,6 +91,154 @@ export type Database = {
           },
         ];
       };
+      breakdown_categories: {
+        Row: {
+          color: string;
+          created_at: string;
+          id: string;
+          key: string;
+          label: string;
+          position: number;
+          project_id: string;
+          unit_cost: number;
+        };
+        Insert: {
+          color: string;
+          created_at?: string;
+          id?: string;
+          key: string;
+          label: string;
+          position?: number;
+          project_id: string;
+          unit_cost?: number;
+        };
+        Update: {
+          color?: string;
+          created_at?: string;
+          id?: string;
+          key?: string;
+          label?: string;
+          position?: number;
+          project_id?: string;
+          unit_cost?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "breakdown_categories_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      breakdown_dismissals: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          name_key: string;
+          project_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          name_key: string;
+          project_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          name_key?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "breakdown_dismissals_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "breakdown_dismissals_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      breakdown_elements: {
+        Row: {
+          assigned_to: string | null;
+          category_id: string;
+          cost: number | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          project_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          assigned_to?: string | null;
+          category_id: string;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          project_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          assigned_to?: string | null;
+          category_id?: string;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          project_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "breakdown_elements_assigned_to_fkey";
+            columns: ["assigned_to"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "breakdown_elements_category_fkey";
+            columns: ["category_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "breakdown_categories";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "breakdown_elements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "breakdown_elements_project_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       budget_items: {
         Row: {
           actual_cost: number | null;
@@ -1540,6 +1688,52 @@ export type Database = {
           },
         ];
       };
+      scene_elements: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          element_id: string;
+          project_id: string;
+          scene_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id: string;
+          project_id: string;
+          scene_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string;
+          project_id?: string;
+          scene_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "scene_elements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scene_elements_element_fkey";
+            columns: ["element_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "breakdown_elements";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "scene_elements_scene_fkey";
+            columns: ["scene_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       scene_media: {
         Row: {
           created_at: string;
@@ -2432,6 +2626,10 @@ export type Database = {
       sync_script_scenes: {
         Args: { p_base_ids: string[]; p_scenes: Json; p_script_id: string };
         Returns: string[];
+      };
+      tag_scene_element: {
+        Args: { p_category: string; p_name: string; p_scene: string };
+        Returns: string;
       };
       toggle_message_reaction: {
         Args: { p_emoji: string; p_message: string };

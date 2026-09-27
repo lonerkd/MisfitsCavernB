@@ -85,7 +85,7 @@ export function Stripboard({ scenes }: { scenes: any[] }) {
                       <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: c.bg, borderLeft: `4px solid ${c.bar}`, borderRadius: 4, padding: '7px 10px', minHeight: 22 + Math.min(e, 8) * 3 }}>
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 700, width: 28, flexShrink: 0 }}>{s.scene_number}</span>
                         <span style={{ flex: 1, fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title || 'Untitled'}</span>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: readable(c.bar), letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: readable(c.bar, 4.5, '#1d2b4a'), letterSpacing: 1, flexShrink: 0 }}>{c.label}</span>
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', width: 32, textAlign: 'right', flexShrink: 0 }}>{e}/8</span>
                       </div>
                     );

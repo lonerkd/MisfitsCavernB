@@ -37,7 +37,8 @@ jobs:
   #   3. real persona tests (Sam / Jordan / Riley / anon) pass against it —
   #      real auth, real RLS, no mocks,
   #   4. the Studio journey works in a real browser against it: upload, link to
-  #      a scene, editor, publish, logged-out share link, live crew sync; and
+  #      a scene, editor, publish, logged-out share link, live crew sync; the
+  #      breakdown is tagged in the script (suggest, accept, select, element);
   #   5. every page passes WCAG 2.2 A/AA (axe-core), signed out, signed in, mobile.
   database:
     runs-on: ubuntu-latest
@@ -59,7 +60,7 @@ jobs:
           STATUS=$(npx supabase status -o json)
           export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
           export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
-          E2E_LOCAL_STACK=1 npx playwright test e2e/studio-journey.spec.ts e2e/accessibility.spec.ts
+          E2E_LOCAL_STACK=1 npx playwright test e2e/studio-journey.spec.ts e2e/breakdown.spec.ts e2e/accessibility.spec.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

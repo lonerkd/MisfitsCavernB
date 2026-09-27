@@ -19,6 +19,29 @@ column audit_logs.resource_id uuid
 column audit_logs.resource_type text not null
 column audit_logs.user_agent text
 column audit_logs.user_id uuid
+column breakdown_categories.color text not null
+column breakdown_categories.created_at timestamp with time zone default now() not null
+column breakdown_categories.id uuid default gen_random_uuid() not null
+column breakdown_categories.key text not null
+column breakdown_categories.label text not null
+column breakdown_categories.position integer default 0 not null
+column breakdown_categories.project_id uuid not null
+column breakdown_categories.unit_cost numeric(12,2) default 0 not null
+column breakdown_dismissals.created_at timestamp with time zone default now() not null
+column breakdown_dismissals.created_by uuid default auth.uid()
+column breakdown_dismissals.name_key text not null
+column breakdown_dismissals.project_id uuid not null
+column breakdown_elements.assigned_to uuid
+column breakdown_elements.category_id uuid not null
+column breakdown_elements.cost numeric(12,2)
+column breakdown_elements.created_at timestamp with time zone default now() not null
+column breakdown_elements.created_by uuid default auth.uid()
+column breakdown_elements.id uuid default gen_random_uuid() not null
+column breakdown_elements.name text not null
+column breakdown_elements.notes text
+column breakdown_elements.project_id uuid not null
+column breakdown_elements.status text default 'needed'::text not null
+column breakdown_elements.updated_at timestamp with time zone default now() not null
 column budget_items.actual_cost numeric(12,2)
 column budget_items.amount numeric(12,2) default 0 not null
 column budget_items.category text not null
@@ -278,6 +301,11 @@ column projects.status text default 'concept'::text
 column projects.title text not null
 column projects.updated_at timestamp with time zone default now()
 column projects.visibility text default 'team'::text not null
+column scene_elements.created_at timestamp with time zone default now() not null
+column scene_elements.created_by uuid default auth.uid()
+column scene_elements.element_id uuid not null
+column scene_elements.project_id uuid not null
+column scene_elements.scene_id uuid not null
 column scene_media.created_at timestamp with time zone default now() not null
 column scene_media.created_by uuid default auth.uid()
 column scene_media.media_id uuid not null
@@ -425,6 +453,28 @@ constraint activity_feed.activity_feed_pkey PRIMARY KEY (id)
 constraint activity_feed.activity_feed_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint audit_logs.audit_logs_pkey PRIMARY KEY (id)
 constraint audit_logs.audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint breakdown_categories.breakdown_categories_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
+constraint breakdown_categories.breakdown_categories_id_project_key UNIQUE (id, project_id)
+constraint breakdown_categories.breakdown_categories_key_check CHECK ((key ~ '^[a-z0-9_-]{1,40}$'::text))
+constraint breakdown_categories.breakdown_categories_label_len CHECK (((char_length(label) >= 1) AND (char_length(label) <= 60)))
+constraint breakdown_categories.breakdown_categories_pkey PRIMARY KEY (id)
+constraint breakdown_categories.breakdown_categories_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint breakdown_categories.breakdown_categories_project_key UNIQUE (project_id, key)
+constraint breakdown_categories.breakdown_categories_unit_cost_check CHECK ((unit_cost >= (0)::numeric))
+constraint breakdown_dismissals.breakdown_dismissals_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint breakdown_dismissals.breakdown_dismissals_name_key_check CHECK ((((char_length(name_key) >= 1) AND (char_length(name_key) <= 120)) AND (name_key = lower(name_key)) AND (name_key !~ '[[:space:][:punct:]]'::text)))
+constraint breakdown_dismissals.breakdown_dismissals_pkey PRIMARY KEY (project_id, name_key)
+constraint breakdown_dismissals.breakdown_dismissals_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint breakdown_elements.breakdown_elements_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
+constraint breakdown_elements.breakdown_elements_category_fkey FOREIGN KEY (category_id, project_id) REFERENCES breakdown_categories(id, project_id) ON DELETE CASCADE
+constraint breakdown_elements.breakdown_elements_cost_check CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))
+constraint breakdown_elements.breakdown_elements_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint breakdown_elements.breakdown_elements_id_project_key UNIQUE (id, project_id)
+constraint breakdown_elements.breakdown_elements_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 120)))
+constraint breakdown_elements.breakdown_elements_notes_len CHECK ((char_length(notes) <= 2000))
+constraint breakdown_elements.breakdown_elements_pkey PRIMARY KEY (id)
+constraint breakdown_elements.breakdown_elements_project_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint breakdown_elements.breakdown_elements_status_check CHECK ((status = ANY (ARRAY['needed'::text, 'sourcing'::text, 'ready'::text])))
 constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
@@ -563,6 +613,10 @@ constraint projects.projects_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES
 constraint projects.projects_pkey PRIMARY KEY (id)
 constraint projects.projects_share_token_key UNIQUE (share_token)
 constraint projects.projects_visibility_check CHECK ((visibility = ANY (ARRAY['private'::text, 'team'::text, 'link'::text, 'public'::text])))
+constraint scene_elements.scene_elements_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint scene_elements.scene_elements_element_fkey FOREIGN KEY (element_id, project_id) REFERENCES breakdown_elements(id, project_id) ON DELETE CASCADE
+constraint scene_elements.scene_elements_pkey PRIMARY KEY (scene_id, element_id)
+constraint scene_elements.scene_elements_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
 constraint scene_media.scene_media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scene_media.scene_media_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint scene_media.scene_media_note_check CHECK ((char_length(note) <= 1000))
@@ -641,6 +695,8 @@ function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.post_notes_guard() body=a1a579173f403f5a56689d072bb9a438
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
+function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
+function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
 function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
@@ -654,9 +710,11 @@ function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
+function public.project_progress(p_project uuid) body=cafc68546a167ca7d2ebe9f182d20259
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=f17cf0815fab6fec6c97d226bebd2d01
+function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160ef64976bfa777db1932a6756003
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
@@ -673,6 +731,8 @@ grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
+grant function internal.projects_seed_breakdown() postgres,service_role
+grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
@@ -686,13 +746,20 @@ grant function public.get_shared_lookbook(p_token text) anon,authenticated,postg
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
+grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
+grant function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) authenticated,postgres,service_role
 grant function public.toggle_message_reaction(p_message uuid, p_emoji text) authenticated,postgres,service_role
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
+index CREATE INDEX breakdown_categories_project_idx ON public.breakdown_categories USING btree (project_id, "position")
+index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismissals USING btree (created_by)
+index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
+index CREATE INDEX breakdown_elements_category_idx ON public.breakdown_elements USING btree (category_id)
+index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_elements USING btree (created_by)
 index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
@@ -769,6 +836,9 @@ index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, 
 index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
 index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
+index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
+index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
+index CREATE INDEX scene_elements_project_idx ON public.scene_elements USING btree (project_id)
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
@@ -776,6 +846,13 @@ index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btre
 index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
+index CREATE UNIQUE INDEX breakdown_categories_id_project_key ON public.breakdown_categories USING btree (id, project_id)
+index CREATE UNIQUE INDEX breakdown_categories_pkey ON public.breakdown_categories USING btree (id)
+index CREATE UNIQUE INDEX breakdown_categories_project_key ON public.breakdown_categories USING btree (project_id, key)
+index CREATE UNIQUE INDEX breakdown_dismissals_pkey ON public.breakdown_dismissals USING btree (project_id, name_key)
+index CREATE UNIQUE INDEX breakdown_elements_id_project_key ON public.breakdown_elements USING btree (id, project_id)
+index CREATE UNIQUE INDEX breakdown_elements_pkey ON public.breakdown_elements USING btree (id)
+index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdown_elements USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
 index CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE (character_name IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE (crew_user_id IS NOT NULL)
@@ -817,6 +894,7 @@ index CREATE UNIQUE INDEX project_crew_project_id_user_id_key ON public.project_
 index CREATE UNIQUE INDEX project_tasks_pkey ON public.project_tasks USING btree (id)
 index CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)
 index CREATE UNIQUE INDEX projects_share_token_key ON public.projects USING btree (share_token)
+index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
 index CREATE UNIQUE INDEX scenes_id_project_key ON public.scenes USING btree (id, project_id)
 index CREATE UNIQUE INDEX scenes_pkey ON public.scenes USING btree (id)
@@ -838,6 +916,12 @@ policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated
 policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
 policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.breakdown_categories "breakdown_categories delete" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
+policy public.breakdown_categories "breakdown_categories insert" PERMISSIVE INSERT to authenticated using - check internal.can_access_project(project_id)
+policy public.breakdown_categories "breakdown_categories update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.breakdown_categories "breakdown_categories view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.breakdown_dismissals "breakdown_dismissals access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.breakdown_elements "breakdown_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -905,6 +989,7 @@ policy public.projects "Authenticated users create projects" PERMISSIVE INSERT t
 policy public.projects "Creators delete projects" PERMISSIVE DELETE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
 policy public.projects "Creators update projects" PERMISSIVE UPDATE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
 policy public.projects "Project members can view" PERMISSIVE SELECT to authenticated using ((creator_id = ( SELECT auth.uid() AS uid)) OR ((visibility <> 'private'::text) AND internal.is_project_member(id))) check -
+policy public.scene_elements "scene_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.scene_media "scene_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.scene_media "scene_media update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -948,6 +1033,9 @@ policy storage.objects "sfx_library: delete own" PERMISSIVE DELETE to authentica
 policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
 policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))
 realtime public.activity_feed
+realtime public.breakdown_categories
+realtime public.breakdown_dismissals
+realtime public.breakdown_elements
 realtime public.budget_items
 realtime public.call_sheet_calls
 realtime public.call_sheets
@@ -962,6 +1050,7 @@ realtime public.post_notes
 realtime public.project_beats
 realtime public.project_crew
 realtime public.projects
+realtime public.scene_elements
 realtime public.scene_media
 realtime public.scenes
 realtime public.script_stash
@@ -969,6 +1058,9 @@ realtime public.shots
 realtime public.timeline_items
 rls activity_feed enabled=true forced=false
 rls audit_logs enabled=true forced=false
+rls breakdown_categories enabled=true forced=false
+rls breakdown_dismissals enabled=true forced=false
+rls breakdown_elements enabled=true forced=false
 rls budget_items enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false
 rls call_sheets enabled=true forced=false
@@ -995,6 +1087,7 @@ rls project_beats enabled=true forced=false
 rls project_crew enabled=true forced=false
 rls project_tasks enabled=true forced=false
 rls projects enabled=true forced=false
+rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false
 rls scenes enabled=true forced=false
 rls script_annotations enabled=true forced=false
@@ -1011,6 +1104,7 @@ rls studio_boards enabled=true forced=false
 rls timeline_items enabled=true forced=false
 schema internal
 schema public
+trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
@@ -1019,6 +1113,7 @@ trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items 
 trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()

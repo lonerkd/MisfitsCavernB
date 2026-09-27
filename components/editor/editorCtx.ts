@@ -1,6 +1,9 @@
 import type { Project } from '@/lib/os';
+import type { EditorBreakdown } from './breakdown/useEditorBreakdown';
 
 export interface EditorCtx {
+  bd: EditorBreakdown;
+  openBreakdown: (elementId?: string | null) => void;
   activeProject: any;
   activeView: any;
   annotationDraft: any;
