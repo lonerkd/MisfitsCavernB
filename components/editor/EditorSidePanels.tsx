@@ -143,7 +143,7 @@ export function EditorRightPanels({
                 ))}
               </div>
 
-              <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 22, flex: 1, overflowY: 'auto' }}>
+              <div style={{ padding: '18px 18px 110px', display: 'flex', flexDirection: 'column', gap: 22, flex: 1, minHeight: 0, overflowY: 'auto' }}>
                 {rightPanel === 'write' && (
                   <>
                     {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {

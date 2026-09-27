@@ -59,7 +59,7 @@ test.describe('Studio journey (local Supabase)', () => {
     jordan = await makeUser(admin, 'jordan');
     const project = await admin.from('projects').insert({ title: 'The Cave', creator_id: sam.id, description: 'A flame in the dark.' }).select('id').single();
     projectId = project.data!.id;
-    await admin.from('project_crew').insert({ project_id: projectId, user_id: jordan.id, role: 'Production Designer', status: 'confirmed' });
+    await admin.from('project_crew').insert({ project_id: projectId, user_id: jordan.id, craft: 'Production designer', status: 'confirmed' });
     const script = await admin.from('scripts').insert({ title: 'The Cave', content: SCRIPT, project_id: projectId, created_by: sam.id, last_edited_by: sam.id }).select('id').single();
     scriptId = script.data!.id;
   });

@@ -180,7 +180,7 @@ export default function JobDetailPage() {
 
       if (newStatus === 'accepted' && app && job?.project_id && user) {
         try {
-          await assignCrewMember(job.project_id, app.applicant_id, 'contributor', user.id);
+          await assignCrewMember(job.project_id, app.applicant_id, 'contributor', user.id, job.role);
         } catch (e: any) {
           toast(e.message || 'Accepted, but could not add them to the crew', 'error');
         }

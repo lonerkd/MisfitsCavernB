@@ -13,8 +13,8 @@ import { useProject } from '@/lib/os';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import type { Profile } from '@/lib/supabase/profiles';
 import { awaitOSUser } from '@/lib/os';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
 
-const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor'];
 
 type DisplayMember = {
   key: string;
@@ -202,20 +202,8 @@ export default function CrewPage() {
                 ))}
               </div>
             </div>
-            <div className="filter-row" style={{ marginBottom: 24 }}>
-              {ROLES.map(r => (
-                <button key={r} onClick={() => setRoleFilter(r)}
-                  style={{
-                    padding: '8px 14px',
-                    background: roleFilter === r ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                    color: roleFilter === r ? 'var(--bg)' : 'var(--fg)',
-                    border: roleFilter === r ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                    fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer',
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                  }}>
-                  {r}
-                </button>
-              ))}
+            <div style={{ marginBottom: 24, maxWidth: 360 }}>
+              <CraftPicker label="Filter by craft" value={roleFilter === 'All' ? null : roleFilter} onChange={(craft) => setRoleFilter(craft ?? 'All')} noneLabel="Any craft" />
             </div>
           </>
         )}

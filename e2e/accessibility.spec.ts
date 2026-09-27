@@ -11,9 +11,11 @@ const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
-async function violations(page: Page, route: string) {
-  await page.goto(route, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2000);
+async function violations(page: Page, route: string | null) {
+  if (route) {
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+  }
   await page.addScriptTag({ content: AXE });
   const result = await page.evaluate(async (tags) => {
     const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: tags }, resultTypes: ['violations'] });
@@ -67,6 +69,12 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
       '/portfolio', '/portfolio/manage', '/profile', '/settings', '/admin', '/admin/users', '/admin/analytics', '/admin/audit-logs',
     ];
     for (const r of routes) await check(page, r);
+
+    // The craft picker, open (Crew directory filter).
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: /^Filter by craft/ }).click();
+    await page.getByRole('dialog', { name: 'Filter by craft' }).waitFor();
+    for (const v of await violations(page, null)) found.push(`craft picker: ${v}`);
 
     // A new project keeps later tools locked (checked above); once it reaches
     // delivery every tool is open, and the project page celebrates the phase.

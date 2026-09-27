@@ -8,8 +8,8 @@ import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import Avatar from '@/components/Avatar';
 import { useConfirm } from '@/components/Confirm';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
 
-const ROLES = ['Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor', 'PA', 'Multi-hyphenate'];
 
 const fieldStyle: React.CSSProperties = {
   width: '100%',
@@ -324,11 +324,8 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>ROLE / SPECIALTY</label>
-            <select aria-label="Role" value={profile.role || ''} onChange={e => setProfile({ ...profile, role: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
-              <option value="">Select your primary role...</option>
-              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <label htmlFor="profile-craft" style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>CRAFT</label>
+            <CraftPicker id="profile-craft" label="Your craft" value={profile.role || null} onChange={(craft) => setProfile({ ...profile, role: craft })} placeholder="What do you do on a set?" noneLabel="No craft yet" />
           </div>
 
           <div>

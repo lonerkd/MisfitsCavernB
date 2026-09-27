@@ -2,13 +2,16 @@ import { supabase } from './client';
 import { logAuditAction } from './audit';
 import { notify } from './notifications';
 
-export type CrewRole = 'owner' | 'lead' | 'contributor' | 'viewer';
+/** Permission on the project (project_crew.role); what they do is `craft`. */
+export type CrewRole = 'lead' | 'contributor' | 'viewer';
 
 export interface CrewMember {
   id: string;
   project_id: string;
   user_id: string;
   role: CrewRole;
+  /** Their craft on this project (public.crafts). */
+  craft: string | null;
   joined_at: string;
   status: 'pending' | 'confirmed' | 'declined';
   username?: string;
@@ -20,6 +23,8 @@ export async function assignCrewMember(
   userId: string,
   role: CrewRole,
   currentUserId: string,
+  /** Their craft on the project — e.g. the craft of the job they were hired for. */
+  craft?: string | null,
 ) {
   try {
     const { data, error } = await supabase
@@ -29,6 +34,7 @@ export async function assignCrewMember(
           project_id: projectId,
           user_id: userId,
           role: role,
+          ...(craft !== undefined ? { craft } : {}),
         },
         { onConflict: 'project_id,user_id' },
       )
@@ -93,6 +99,7 @@ export async function getProjectCrew(projectId: string): Promise<CrewMember[]> {
         project_id,
         user_id,
         role,
+        craft,
         status,
         created_at,
         profiles:user_id(username, avatar_url)

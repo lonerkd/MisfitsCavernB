@@ -30,6 +30,8 @@ import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { PhasePanel } from '@/components/progress/PhasePanel';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { loadCrafts, suggestCraft } from '@/lib/crafts';
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -334,7 +336,7 @@ export default function ProjectHubPage() {
     (async () => {
       const [sc, cr, tk, bd, tl, scn, cn, pf, pr, cp] = await Promise.all([
         supabase.from('scripts').select('id').eq('project_id', id),
-        supabase.from('project_crew').select('id, user_id, role, profiles!project_crew_user_id_fkey(username)').eq('project_id', id),
+        supabase.from('project_crew').select('id, user_id, role, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', id),
         supabase.from('project_tasks').select('completed').eq('project_id', id),
         supabase.from('budget_items').select('amount').eq('project_id', id),
         supabase.from('timeline_items').select('id, title, end_date, status').eq('project_id', id),
@@ -366,7 +368,7 @@ export default function ProjectHubPage() {
       });
       setMilestones(tl.data || []);
       setPortfolioPieces(pf.data || []);
-      setCrewTeam((cr.data || []).map(c => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.role || 'Crew' })));
+      setCrewTeam((cr.data || []).map(c => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew') })));
     })();
     return () => { active = false; };
   }, [id]);
@@ -686,7 +688,7 @@ export default function ProjectHubPage() {
 interface TaskRow { id: string; title: string; completed: boolean; assigned_to: string | null; due_date: string | null }
 interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
 interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
-interface CrewRow { id: string; user_id: string; role: string; profiles?: { username: string } | null }
+interface CrewRow { id: string; user_id: string; role: string; craft: string | null; profiles?: { username: string } | null }
 interface PortfolioRow { id: string; title: string; share_token: string }
 interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
 
@@ -725,7 +727,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
         supabase.from('project_tasks').select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at'),
         supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
         supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
-        supabase.from('project_crew').select('id,user_id,role,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+        supabase.from('project_crew').select('id,user_id,role,craft,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
         supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
         supabase.from('projects').select('settings,festival_submissions,creator_id').eq('id', projectId).single(),
       ]);
@@ -800,7 +802,9 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
     if (!userId || postedBudgetIds.has(b.id)) return;
     setPostingBudgetId(b.id);
     try {
-      await createJob(projectId, userId, b.category, b.category, '', Number(b.amount) || undefined, b.id);
+      // The job's craft: the one this budget line is about (a job needs one from the crafts list).
+      const craft = suggestCraft(b.category, await loadCrafts());
+      await createJob(projectId, userId, b.category.replace(/^Breakdown · /, ''), craft, '', Number(b.amount) || undefined, b.id);
       setPostedBudgetIds(prev => new Set(prev).add(b.id));
       toast(`Posted "${b.category}" to the Jobs board`, 'success');
     } catch (e: any) {
@@ -850,11 +854,11 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
     if (error) { setErr(error.message); setTimeline(prev); }
   };
 
-  const addCrew = async (username: string, role: string) => {
-    const { data: prof, error: pErr } = await supabase.from('profiles').select('id,username').eq('username', username).single();
+  const addCrew = async (username: string, craft: string | null) => {
+    const { data: prof, error: pErr } = await supabase.from('profiles').select('id,username').eq('username', username.trim()).single();
     if (pErr || !prof) return setErr(`No user "${username}"`);
     const { error } = await supabase.from('project_crew')
-      .insert({ project_id: projectId, user_id: prof.id, role: role || 'team member' });
+      .insert({ project_id: projectId, user_id: prof.id, craft });
     if (error) return setErr(error.message);
     setErr(null);
     load();
@@ -991,11 +995,11 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {crew.map(c => (
             <Row key={c.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.role}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.craft || (c.role === 'lead' ? 'Lead' : 'Crew')}</span>
               {isOwner && <DelBtn onClick={() => delCrew(c.id)} />}
             </Row>
           ))}
-          {isOwner && <AddForm placeholder="Username" second="Role" fields={['text', 'text']} onSubmit={(v) => v[0] && addCrew(v[0], v[1])} accent={accent} />}
+          {isOwner && <AddCrewForm accent={accent} onAdd={addCrew} />}
         </Panel>
 
         <Panel title="Portfolio" accent={accent}>
@@ -1176,6 +1180,26 @@ function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: 
         />
       ))}
       <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
+    </div>
+  );
+}
+
+/** Add someone by username, with their craft on this project. */
+function AddCrewForm({ accent, onAdd }: { accent: string; onAdd: (username: string, craft: string | null) => Promise<void> }) {
+  const [username, setUsername] = useState('');
+  const [craft, setCraft] = useState<string | null>(null);
+  const submit = async () => {
+    if (!username.trim()) return;
+    await onAdd(username, craft);
+    setUsername('');
+    setCraft(null);
+  };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+      <label className="sr-only" htmlFor="add-crew-username">Username</label>
+      <input id="add-crew-username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void submit(); }} placeholder="Username" style={{ ...MINI_INPUT, padding: '6px 8px', fontSize: 10 }} />
+      <CraftPicker label="Their craft" value={craft} onChange={setCraft} placeholder="Their craft (optional)" noneLabel="No craft" />
+      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>ADD TO CREW</button>
     </div>
   );
 }
