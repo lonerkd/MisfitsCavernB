@@ -74,3 +74,13 @@ export async function contextAwareSearch(sceneText: string) {
   const query = await generateContextualSearchQuery(sceneText);
   return searchSpotify(query, 'playlist');
 }
+
+/** The signed-in listener's own playlists (public ones unless they granted playlist-read-private). */
+export async function myPlaylists(limit = 20): Promise<Array<{ id: string; name: string; owner: string | null }>> {
+  const token = await getValidToken();
+  if (!token) return [];
+  const res = await fetch(`https://api.spotify.com/v1/me/playlists?limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.items ?? []).filter(Boolean).map((p: any) => ({ id: String(p.id), name: String(p.name ?? 'Playlist'), owner: p.owner?.display_name ?? null }));
+}

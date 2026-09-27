@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Play, Pause, SkipBack, SkipForward, Disc, Volume2, LogOut, Link2Off, RefreshCw } from 'lucide-react';
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
+import { parseSpotifyRef, spotifyEmbedSrc, type SpotifyRef } from '@/lib/spotify/refs';
+import { myPlaylists } from '@/lib/spotify/search';
+import { useProject } from '@/lib/os';
+import { supabase } from '@/lib/supabase/client';
 
 const formatMs = (ms: number) => {
   const totalSeconds = Math.floor(ms / 1000);
@@ -14,12 +18,38 @@ const formatMs = (ms: number) => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-const PLAYLISTS = [
-  { id: '79HohMGeX0HuPvtaQDVwgN', name: 'Misfits Cavern', tag: 'Main' },
-  { id: '37i9dQZF1DXcBWIGoYBM5M', name: 'Hall of Fame', tag: 'Masterpieces' },
-  { id: '76529bfVFUIK9znlxPXw5W', name: 'Misfits Too', tag: 'Experimental' },
-  { id: '37i9dQZF1DXaImRpG7HXqI', name: 'Solitude', tag: 'Writing' },
-];
+interface Source { key: string; name: string; from: string; ref: SpotifyRef }
+
+/**
+ * What to listen to: the active project's Spotify references (its sound, as
+ * the team collected it) and the listener's own playlists — nothing preset.
+ */
+function useListeningSources(enabled: boolean) {
+  const { activeProject } = useProject();
+  const [sources, setSources] = useState<Source[] | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    let on = true;
+    (async () => {
+      const [refs, mine] = await Promise.all([
+        activeProject?.id
+          ? supabase.from('project_audio_references').select('id, title, uri').eq('project_id', activeProject.id).eq('reference_type', 'spotify').order('created_at', { ascending: false }).limit(20)
+          : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; uri: string }> }),
+        myPlaylists().catch(() => []),
+      ]);
+      if (!on) return;
+      const list: Source[] = [];
+      for (const r of refs.data ?? []) {
+        const ref = parseSpotifyRef(r.uri);
+        if (ref) list.push({ key: `p:${r.id}`, name: r.title || 'Project reference', from: activeProject?.title ?? 'This project', ref });
+      }
+      for (const p of mine) list.push({ key: `m:${p.id}`, name: p.name, from: 'Your playlists', ref: { kind: 'playlist', id: p.id } });
+      setSources(list);
+    })().catch(() => { if (on) setSources([]); });
+    return () => { on = false; };
+  }, [enabled, activeProject?.id, activeProject?.title]);
+  return sources;
+}
 
 export default function GlobalAudioWidget() {
   const {
@@ -29,7 +59,9 @@ export default function GlobalAudioWidget() {
   } = useSpotify();
 
   const [expanded, setExpanded] = useState(false);
-  const [activeId, setActiveId] = useState(PLAYLISTS[0].id);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const sources = useListeningSources(isAuthenticated && expanded && useIframeFallback);
+  const active = sources?.find((x) => x.key === activeKey) ?? sources?.[0] ?? null;
   const [hovered, setHovered] = useState(false);
 
   if (!isAuthenticated) {
@@ -131,51 +163,64 @@ export default function GlobalAudioWidget() {
 
   const renderFreeUI = () => (
     <div style={{ padding: '0 16px 16px' }}>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-        {PLAYLISTS.map(pl => {
-          const active = pl.id === activeId;
-          return (
-            <button
-              key={pl.id}
-              onClick={() => setActiveId(pl.id)}
-              style={{
-                padding: '6px 11px', borderRadius: 9999,
-                background: active ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${active ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                color: active ? '#10b981' : 'var(--fg-dim)',
-                fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-                textTransform: 'uppercase', cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              title={pl.tag}
-            >
-              {pl.name}
-            </button>
-          );
-        })}
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeId}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          style={{ borderRadius: 12, overflow: 'hidden' }}
-        >
-          <iframe
-            key={activeId}
-            src={`https://open.spotify.com/embed/playlist/${activeId}?utm_source=generator&theme=0`}
-            width="100%"
-            height="352"
-            style={{ border: 'none', borderRadius: 12, display: 'block' }}
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-            title="Spotify playlist player"
-          />
-        </motion.div>
-      </AnimatePresence>
+      {sources === null ? (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', padding: '12px 0' }}>Loading…</div>
+      ) : sources.length === 0 ? (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, lineHeight: 1.6, color: 'var(--fg-muted)', padding: '8px 0 12px' }}>
+          Nothing to play yet. Add Spotify links to the project’s sound (Soundtrack › Project, or the editor’s Audio panel), or make a playlist on Spotify — they show up here.
+        </div>
+      ) : (
+        <>
+          <div role="radiogroup" aria-label="What to play" style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap', maxHeight: 96, overflowY: 'auto' }}>
+            {sources.map((src) => {
+              const on = src.key === active?.key;
+              return (
+                <button
+                  key={src.key}
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setActiveKey(src.key)}
+                  style={{
+                    padding: '6px 11px', borderRadius: 9999,
+                    background: on ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${on ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                    color: on ? '#10b981' : 'var(--fg-dim)',
+                    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
+                    textTransform: 'uppercase', cursor: 'pointer',
+                    transition: 'all 0.2s', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}
+                  title={src.from}
+                >
+                  {src.name}
+                </button>
+              );
+            })}
+          </div>
+          {active && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.key}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                style={{ borderRadius: 12, overflow: 'hidden' }}
+              >
+                <iframe
+                  key={active.key}
+                  src={spotifyEmbedSrc(active.ref)}
+                  width="100%"
+                  height={active.ref.kind === 'track' || active.ref.kind === 'episode' ? 152 : 352}
+                  style={{ border: 'none', borderRadius: 12, display: 'block' }}
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                  loading="lazy"
+                  title={`Spotify player: ${active.name}`}
+                />
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </>
+      )}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
         <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 8, textTransform: 'uppercase' }}>
           <LogOut size={10} /> Disconnect

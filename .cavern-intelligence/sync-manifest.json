@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T19:15:16.267Z",
+  "last_synchronized": "2026-09-27T19:34:33.093Z",
   "stats": {
-    "totalFiles": 346,
-    "totalSize": 2738312,
+    "totalFiles": 355,
+    "totalSize": 2769094,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 135,
-      ".ts": 173,
+      ".ts": 181,
       ".js": 7,
-      ".sql": 17
+      ".sql": 18
     }
   },
   "modules": {
@@ -255,7 +255,8 @@
         "supabase/migrations/20260927050000_readiness.sql",
         "supabase/migrations/20260927060000_shot_designer.sql",
         "supabase/migrations/20260927070000_table_read.sql",
-        "supabase/migrations/20260927080000_cut_note_lines.sql"
+        "supabase/migrations/20260927080000_cut_note_lines.sql",
+        "supabase/migrations/20260927090000_campaigns.sql"
       ]
     }
   },
@@ -442,8 +443,8 @@
     },
     {
       "path": "app/page.tsx",
-      "size": 36091,
-      "last_modified": "2026-09-26T20:13:33.078Z"
+      "size": 38877,
+      "last_modified": "2026-09-27T19:31:47.115Z"
     },
     {
       "path": "app/portfolio/loading.tsx",
@@ -527,8 +528,8 @@
     },
     {
       "path": "app/soundtrack/page.tsx",
-      "size": 23340,
-      "last_modified": "2026-09-26T20:13:33.081Z"
+      "size": 23683,
+      "last_modified": "2026-09-27T19:31:47.115Z"
     },
     {
       "path": "app/split/page.tsx",
@@ -592,8 +593,8 @@
     },
     {
       "path": "components/GlobalAudioWidget.tsx",
-      "size": 13060,
-      "last_modified": "2026-09-26T20:13:33.083Z"
+      "size": 15742,
+      "last_modified": "2026-09-27T19:31:47.115Z"
     },
     {
       "path": "components/GrainOverlay.tsx",
@@ -957,8 +958,8 @@
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
-      "size": 5641,
-      "last_modified": "2026-09-26T07:51:35.115Z"
+      "size": 10610,
+      "last_modified": "2026-09-27T19:31:47.116Z"
     },
     {
       "path": "components/studio/tabs/ScenesTab.tsx",
@@ -1059,6 +1060,11 @@
       "path": "e2e/readiness.spec.ts",
       "size": 6046,
       "last_modified": "2026-09-27T06:52:38.469Z"
+    },
+    {
+      "path": "e2e/real-data.spec.ts",
+      "size": 5722,
+      "last_modified": "2026-09-27T19:33:49.003Z"
     },
     {
       "path": "e2e/route-smoke.spec.ts",
@@ -1184,6 +1190,16 @@
       "path": "lib/formats.ts",
       "size": 1464,
       "last_modified": "2026-09-27T05:37:53.700Z"
+    },
+    {
+      "path": "lib/home/ticker.test.ts",
+      "size": 902,
+      "last_modified": "2026-09-27T19:31:47.119Z"
+    },
+    {
+      "path": "lib/home/ticker.ts",
+      "size": 1812,
+      "last_modified": "2026-09-27T19:31:47.121Z"
     },
     {
       "path": "lib/hooks/usePresence.ts",
@@ -1467,13 +1483,33 @@
     },
     {
       "path": "lib/spotify/auth.ts",
-      "size": 7668,
-      "last_modified": "2026-09-26T19:08:11.137Z"
+      "size": 7690,
+      "last_modified": "2026-09-27T19:31:47.116Z"
+    },
+    {
+      "path": "lib/spotify/moods.test.ts",
+      "size": 1123,
+      "last_modified": "2026-09-27T19:31:47.121Z"
+    },
+    {
+      "path": "lib/spotify/moods.ts",
+      "size": 3821,
+      "last_modified": "2026-09-27T19:31:47.121Z"
+    },
+    {
+      "path": "lib/spotify/refs.test.ts",
+      "size": 1174,
+      "last_modified": "2026-09-27T19:31:47.121Z"
+    },
+    {
+      "path": "lib/spotify/refs.ts",
+      "size": 1249,
+      "last_modified": "2026-09-27T19:31:47.121Z"
     },
     {
       "path": "lib/spotify/search.ts",
-      "size": 2381,
-      "last_modified": "2026-09-26T19:09:06.453Z"
+      "size": 3021,
+      "last_modified": "2026-09-27T19:31:47.116Z"
     },
     {
       "path": "lib/storage/cache-versioning.ts",
@@ -1617,8 +1653,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 83687,
-      "last_modified": "2026-09-27T19:15:16.027Z"
+      "size": 83686,
+      "last_modified": "2026-09-27T19:31:47.116Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1846,6 +1882,11 @@
       "last_modified": "2026-09-27T19:12:03.136Z"
     },
     {
+      "path": "supabase/migrations/20260927090000_campaigns.sql",
+      "size": 1018,
+      "last_modified": "2026-09-27T19:31:47.121Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -1853,7 +1894,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-27T19:14:37.955Z"
+      "last_modified": "2026-09-27T19:33:59.327Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -1879,6 +1920,11 @@
       "path": "tests/integration/breakdown.test.ts",
       "size": 9409,
       "last_modified": "2026-09-27T04:31:29.331Z"
+    },
+    {
+      "path": "tests/integration/campaigns.test.ts",
+      "size": 2520,
+      "last_modified": "2026-09-27T19:32:02.480Z"
     },
     {
       "path": "tests/integration/crafts.test.ts",

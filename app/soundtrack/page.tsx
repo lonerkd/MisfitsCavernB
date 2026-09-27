@@ -6,31 +6,13 @@ import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plu
 import { useSpotify } from '@/lib/context/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, contextAwareSearch } from '@/lib/spotify/search';
+import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
 import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/Toast';
 import { awaitOSUser } from '@/lib/os';
-
-// Moods are live Spotify searches, not fixed playlist ids: editorial playlist
-// ids can't be verified (and aren't served to newer Spotify apps), and two
-// of the old ones were the same list.
-const MOODS = [
-  { category: 'Cinematic Moods', name: 'Tension', query: 'tense cinematic score', color: '#8b0000' },
-  { category: 'Cinematic Moods', name: 'Ethereal', query: 'ethereal ambient soundtrack', color: '#4169e1' },
-  { category: 'Cinematic Moods', name: 'Cyberpunk', query: 'cyberpunk soundtrack', color: '#ff00ff' },
-  { category: 'Cinematic Moods', name: 'Orchestral Sweep', query: 'epic orchestral film score', color: '#daa520' },
-  { category: 'Cinematic Moods', name: 'Dark Ambient', query: 'dark ambient', color: '#2f4f4f' },
-
-  { category: 'Eras & Genres', name: '80s Synthwave', query: '80s synthwave', color: '#ff1493' },
-  { category: 'Eras & Genres', name: 'Noir Jazz', query: 'film noir jazz', color: '#708090' },
-  { category: 'Eras & Genres', name: 'Western Acoustic', query: 'western acoustic soundtrack', color: '#cd853f' },
-
-  { category: 'Pacing & Action', name: 'Chase Sequences', query: 'action chase soundtrack', color: '#ff4500' },
-  { category: 'Pacing & Action', name: 'Slow Burn', query: 'slow burn cinematic', color: '#483d8b' },
-  { category: 'Pacing & Action', name: 'Suspense', query: 'suspense thriller score', color: '#000000' },
-];
 
 export default function SoundtrackPage() {
   const { isAuthenticated, playUri } = useSpotify();
@@ -46,6 +28,21 @@ export default function SoundtrackPage() {
   const [sfxAssets, setSfxAssets] = useState<any[]>([]);
   const [uploadingSfx, setUploadingSfx] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Moods come from the project's script (lib/spotify/moods), scene by scene.
+  const [moods, setMoods] = useState<{ status: 'idle' | 'loading' | 'ready'; title: string | null; groups: MoodGroup[] }>({ status: 'idle', title: null, groups: [] });
+  useEffect(() => {
+    if (activeTab !== 'moods' || !activeProject?.id) return;
+    let on = true;
+    setMoods((m) => ({ ...m, status: 'loading' }));
+    supabase.from('scripts').select('title, content').eq('project_id', activeProject.id).order('updated_at', { ascending: false }).limit(1)
+      .then(({ data }) => {
+        if (!on) return;
+        const script = data?.[0];
+        setMoods({ status: 'ready', title: script?.title ?? null, groups: script?.content ? scriptMoods(script.content) : [] });
+      });
+    return () => { on = false; };
+  }, [activeTab, activeProject?.id]);
 
   const [projectRefs, setProjectRefs] = useState<any[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
@@ -82,7 +79,7 @@ export default function SoundtrackPage() {
     }
   };
 
-  const searchMood = async (mood: typeof MOODS[number]) => {
+  const searchMood = async (mood: MoodGroup) => {
     setActiveTab('search');
     setSearchQuery(mood.query);
     setIsSearching(true);
@@ -205,12 +202,6 @@ export default function SoundtrackPage() {
     );
   }
 
-  const groupedMoods = MOODS.reduce((acc, mood) => {
-    if (!acc[mood.category]) acc[mood.category] = [];
-    acc[mood.category].push(mood);
-    return acc;
-  }, {} as Record<string, typeof MOODS>);
-
   return (
     <div className="mc-page p-12">
       <header className="mb-12 flex items-end justify-between">
@@ -243,34 +234,44 @@ export default function SoundtrackPage() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === 'moods' && (
-            <div className="space-y-12">
-              {Object.entries(groupedMoods).map(([category, moods]) => (
-                <div key={category}>
-                  <h2 className="mc-title text-xl text-[var(--fg-dim)] mb-6">{category}</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                    {moods.map(mood => (
-                      <div
-                        key={mood.name}
-                        className="p-6 rounded-2xl border border-white/5 bg-black/40 hover:bg-white/5 transition-all cursor-pointer group flex flex-col items-center justify-center text-center gap-4 hover:-translate-y-1 relative overflow-hidden"
-                        onClick={() => void searchMood(mood)}
-                        title={`Find “${mood.query}” playlists`}
+            <div className="space-y-6">
+              {!activeProject?.id ? (
+                <p className="mc-text text-[var(--fg-dim)]">Pick a project — its script’s moods appear here, scene by scene.</p>
+              ) : moods.status !== 'ready' ? (
+                <p className="mc-text text-[var(--fg-dim)]">Reading the script…</p>
+              ) : !moods.groups.length ? (
+                <p className="mc-text text-[var(--fg-dim)]">No scenes to read yet. Write a scene heading (INT. / EXT.) in ScriptOS and its mood shows up here — or search Spotify directly.</p>
+              ) : (
+                <>
+                  <p className="mc-text text-sm text-[var(--fg-dim)]">
+                    Read from <strong className="text-white/80">{moods.title ?? 'the script'}</strong>: each scene’s strongest mood from what happens in it. Pick one to find music for those scenes.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {moods.groups.map((g) => (
+                      <button
+                        key={g.mood}
+                        type="button"
+                        onClick={() => void searchMood(g)}
+                        title={`Find “${g.query}” playlists`}
+                        className="text-left p-5 rounded-2xl border border-white/5 bg-black/40 hover:bg-white/5 transition-all group relative overflow-hidden"
                       >
-                        <div
-                          className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
-                          style={{ background: `radial-gradient(circle at center, ${mood.color}, transparent)` }}
-                        />
-                        <div
-                          className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform relative z-10"
-                          style={{ boxShadow: `0 0 20px ${mood.color}40` }}
-                        >
-                          <Music size={24} className="group-hover:text-white text-white/40 transition-colors" />
+                        <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ background: `radial-gradient(circle at 15% 20%, ${g.color}, transparent 70%)` }} aria-hidden />
+                        <div className="relative z-10 flex items-center gap-3 mb-3">
+                          <span className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center" style={{ boxShadow: `0 0 18px ${g.color}55` }} aria-hidden><Music size={16} /></span>
+                          <span className="mc-title text-lg">{g.mood}</span>
+                          <span className="mc-text text-xs text-[var(--fg-dim)] ml-auto">{g.scenes.length} scene{g.scenes.length === 1 ? '' : 's'}</span>
                         </div>
-                        <span className="mc-title text-lg relative z-10">{mood.name}</span>
-                      </div>
+                        <ul className="relative z-10 space-y-1">
+                          {g.scenes.slice(0, 4).map((sc) => (
+                            <li key={sc.number} className="mc-text text-xs text-[var(--fg-dim)] truncate">{sc.number}. {sc.heading}</li>
+                          ))}
+                          {g.scenes.length > 4 && <li className="mc-text text-xs text-[var(--fg-dim)]">+{g.scenes.length - 4} more</li>}
+                        </ul>
+                      </button>
                     ))}
                   </div>
-                </div>
-              ))}
+                </>
+              )}
             </div>
           )}
 

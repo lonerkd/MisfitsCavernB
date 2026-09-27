@@ -1,8 +1,32 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Cut notes on script lines
+## Latest Session — Real data, not presets
 
-Migration `20260927080000_cut_note_lines.sql` — **apply to production before merging**.
+Migration `20260927090000_campaigns.sql` — **apply to production before merging**.
+
+- **Home**: the invented previews are gone (the fake crew chat, asset file
+  names and screenplay). Signed-in tiles show your latest script, media and
+  channel messages; with nothing to show — or signed out — they show the shape
+  of the thing and say what will appear. The Portfolio tile shows the latest
+  published works. The ticker is live public activity (`lib/home/ticker.ts`):
+  who's hiring, what was just published, platform totals — hidden when there
+  is nothing real. Platform stats load for visitors too.
+- **Promos**: no preset platform list. Name any platform; the form suggests
+  the ones your team has used (most used first). Campaigns move through
+  Drafting / Live / Wrapped, spend is editable, and "Where the budget goes"
+  compares spend to budget per platform. DB: status CHECK, platform/title
+  bounds, non-negative money, no default platform.
+- **Soundtrack › Moods** are read from the project's script
+  (`lib/spotify/moods.ts`): each scene's strongest mood from what happens in
+  it (else its time of day), grouped with their scenes; each opens a Spotify
+  search. Replaces a fixed list of 11 moods.
+- **Audio widget (free mode)**: plays the project's Spotify references and
+  your own playlists (`me/playlists`; new connections also grant
+  `playlist-read-private`) instead of four hardcoded playlist ids.
+
+## Earlier — Cut notes on script lines
+
+Migration `20260927080000_cut_note_lines.sql` — applied to production; PR #69 merged.
 
 - Studio › Post › Cut review: the **script beside the cut**. The scene on
   screen follows playback: scenes are laid along the cut by their length

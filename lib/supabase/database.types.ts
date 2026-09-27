@@ -439,7 +439,7 @@ export type Database = {
           end_date?: string | null;
           id?: string;
           notes?: string | null;
-          platform?: string;
+          platform: string;
           project_id: string;
           spend?: number | null;
           start_date?: string | null;
