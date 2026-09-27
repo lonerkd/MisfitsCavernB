@@ -2345,6 +2345,7 @@ export type Database = {
           created_at: string | null;
           created_by: string | null;
           description: string | null;
+          frame_media_id: string | null;
           id: string;
           lens: string | null;
           movement: string | null;
@@ -2360,6 +2361,7 @@ export type Database = {
           created_at?: string | null;
           created_by?: string | null;
           description?: string | null;
+          frame_media_id?: string | null;
           id?: string;
           lens?: string | null;
           movement?: string | null;
@@ -2375,6 +2377,7 @@ export type Database = {
           created_at?: string | null;
           created_by?: string | null;
           description?: string | null;
+          frame_media_id?: string | null;
           id?: string;
           lens?: string | null;
           movement?: string | null;
@@ -2392,6 +2395,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "shots_frame_fkey";
+            columns: ["frame_media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
           },
           {
             foreignKeyName: "shots_project_id_fkey";

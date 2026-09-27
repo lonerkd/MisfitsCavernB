@@ -48,7 +48,10 @@ export const STANDARD_POST: Array<{ kind: 'stage' | 'deliverable'; title: string
 
 /** Who a call is for: a crew member, or a character (the actor playing them). */
 export type CallTarget = { crew_user_id: string } | { character_name: string };
-export type ShotPatch = Partial<Pick<Shot, 'shot_size' | 'angle' | 'movement' | 'lens' | 'description' | 'status'>>;
+export type ShotPatch = Partial<Pick<Shot, 'shot_size' | 'angle' | 'movement' | 'lens' | 'description' | 'status' | 'frame_media_id' | 'order_index'>>;
+
+/** A "Shot" margin note in the script that created a shot (script_annotations routed to shots). */
+export type ShotNote = { id: string; script_id: string; line_index: number; text: string; routed_id: string };
 
 /** Next shot number in a scene: one past the highest numeric one. */
 export function nextShotNumber(shots: Pick<Shot, 'shot_number'>[]): string {
@@ -284,6 +287,24 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not delete the shot');
   }
 
+  /** Puts a scene's shots in this order (order_index 0…n), writing only the ones that move. */
+  async function reorderShots(ordered: Pick<Shot, 'id' | 'order_index'>[]): Promise<void> {
+    for (let i = 0; i < ordered.length; i++) {
+      if (ordered[i].order_index === i) continue;
+      const { error } = await db.from('shots').update({ order_index: i }).eq('id', ordered[i].id);
+      if (error) fail(error, 'Could not reorder the shots');
+    }
+  }
+
+  /** Which script line each shot came from, for shots made from "Shot" margin notes. */
+  async function listShotNotes(projectId: string): Promise<ShotNote[]> {
+    const { data, error } = await db.from('script_annotations')
+      .select('id, script_id, line_index, text, routed_id')
+      .eq('project_id', projectId).eq('routed_table', 'shots').not('routed_id', 'is', null);
+    if (error) fail(error, 'Could not load where the shots come from');
+    return data as ShotNote[];
+  }
+
   // ── Call sheets ──────────────────────────────────────────────────────────
 
   async function listCallSheets(projectId: string): Promise<CallSheet[]> {
@@ -457,7 +478,7 @@ export function createStudioApi(db: Client) {
   return {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
-    listShots, addShot, updateShot, deleteShot,
+    listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
