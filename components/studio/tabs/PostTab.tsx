@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Circle, Film, ListChecks, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, FileText, Film, ListChecks, Plus, Trash2, X } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
@@ -9,17 +9,18 @@ import { supabase } from '@/lib/supabase/client';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import {
   studio, usePostItems, useSignedUrls, classifyUrl,
-  POST_DEPARTMENTS, POST_STATUSES, STANDARD_POST,
+  POST_DEPARTMENTS, POST_DEPT_LABEL, POST_STATUSES, STANDARD_POST,
   type PostCut, type PostDepartment, type PostItem, type PostNote, type PostStatus,
 } from '@/lib/studio';
 import { formatTimecode, parseTimecode } from '@/lib/studio/timecode';
 import { useStudio } from '../StudioContext';
 import { CutPlayer, type CutPlayerHandle } from '../post/CutPlayer';
+import { CutScript, type LinePick } from '../post/CutScript';
 import { SectionHeader, ErrorBar, cx } from '../ui';
 import s from '../studio.module.css';
 
 type View = 'review' | 'pipeline';
-const DEPT_LABEL: Record<PostDepartment, string> = { edit: 'Edit', sound: 'Sound', music: 'Music', color: 'Colour', vfx: 'VFX', titles: 'Titles', general: 'General' };
+const DEPT_LABEL = POST_DEPT_LABEL;
 const STATUS_LABEL: Record<PostStatus, string> = { todo: 'To do', in_progress: 'In progress', review: 'In review', done: 'Done' };
 
 /** People on the project: the owner and the crew (for assigning post work). */
@@ -50,6 +51,14 @@ function useProjectPeople(projectId: string, ownerId: string | undefined) {
  */
 export function PostTab() {
   const [view, setView] = useState<View>('review');
+  // A link to a moment of a cut (?cut=&t=, e.g. from a note in the script's margin).
+  const [deepLink] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const q = new URLSearchParams(window.location.search);
+    const cut = q.get('cut');
+    const t = Number(q.get('t'));
+    return cut ? { cut, t: Number.isFinite(t) && t >= 0 ? t : null } : null;
+  });
   return (
     <section aria-labelledby="post-title">
       <SectionHeader id="post-title" eyebrow="Post-production" title="Post" subtitle="Review each cut with timecoded notes, then take every department and deliverable to done." />
@@ -57,22 +66,36 @@ export function PostTab() {
         <button type="button" role="tab" aria-selected={view === 'review'} className={cx(s.chip, view === 'review' && s.chipOn)} onClick={() => setView('review')}><Film size={12} /> Cut review</button>
         <button type="button" role="tab" aria-selected={view === 'pipeline'} className={cx(s.chip, view === 'pipeline' && s.chipOn)} onClick={() => setView('pipeline')}><ListChecks size={12} /> Pipeline & deliverables</button>
       </div>
-      {view === 'review' ? <ReviewView /> : <PipelineView />}
+      {view === 'review' ? <ReviewView deepLink={deepLink} /> : <PipelineView />}
     </section>
   );
 }
 
 // ── Cut review ───────────────────────────────────────────────────────────────
 
-function ReviewView() {
-  const { project, userId, isOwner, cuts, postNotes, media, mediaById, scenes } = useStudio();
+function ReviewView({ deepLink }: { deepLink: { cut: string; t: number | null } | null }) {
+  const { project, userId, isOwner, cuts, postNotes, media, mediaById, scenes, sceneLines } = useStudio();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const [cutId, setCutId] = useState<string | null>(null);
+  const [cutId, setCutId] = useState<string | null>(deepLink?.cut ?? null);
   const cut = cuts.rows.find((c) => c.id === cutId) ?? cuts.rows[0] ?? null;
   const player = useRef<CutPlayerHandle>(null);
   const [live, setLive] = useState(false);
   const onLive = useCallback((v: boolean) => setLive(v), []);
+  // Seek to the linked moment once the player can take it.
+  const pendingSeek = useRef(deepLink?.t ?? null);
+  useEffect(() => {
+    if (!live || pendingSeek.current == null || cut?.id !== deepLink?.cut) return;
+    const t = pendingSeek.current;
+    pendingSeek.current = null;
+    window.setTimeout(() => player.current?.seek(t), 300);
+  }, [live, cut?.id, deepLink?.cut]);
+
+  // What the next note is about: the line picked in the script, else the scene shown.
+  const [picked, setPicked] = useState<LinePick | null>(null);
+  const [shownScene, setShownScene] = useState<string | null>(null);
+  const onShown = useCallback((id: string | null) => setShownScene(id), []);
+  useEffect(() => { setPicked(null); }, [cut?.id]);
 
   const videos = useMemo(() => media.rows.filter((m) => m.kind === 'video'), [media.rows]);
   const cutMedia = cut?.media_id ? mediaById.get(cut.media_id) : undefined;
@@ -139,10 +162,14 @@ function ReviewView() {
           <EmptyState icon={<Film size={26} />} title="No cuts yet" subtitle="Add the first cut — a private YouTube/Vimeo/Drive link or a video from the library — and the team can leave timecoded notes on it." />
         ) : (
           <>
-            <div className={s.cutStage}>
-              <CutPlayer ref={player} cut={cut} media={cutMedia} fileUrl={cutMedia?.storage_path ? signed[cutMedia.storage_path] : null} onLive={onLive} />
+            <div className={s.cutWithScript}>
+              <div className={s.cutStage}>
+                <CutPlayer ref={player} cut={cut} media={cutMedia} fileUrl={cutMedia?.storage_path ? signed[cutMedia.storage_path] : null} onLive={onLive} />
+              </div>
+              <CutScript scenes={scenes.rows} sceneLines={sceneLines} notes={notes} player={player} live={live}
+                picked={picked} onPick={(p) => setPicked((cur) => (cur?.sceneId === p.sceneId && cur.offset === p.offset ? null : p))} onShown={onShown} />
             </div>
-            <NoteComposer cutId={cut.id} live={live} player={player} scenes={scenes.rows} />
+            <NoteComposer cutId={cut.id} live={live} player={player} scenes={scenes.rows} picked={picked} shownScene={shownScene} onAdded={() => setPicked(null)} onUnpick={() => setPicked(null)} />
             <NoteList notes={notes} player={player} />
           </>
         )}
@@ -151,16 +178,22 @@ function ReviewView() {
   );
 }
 
-function NoteComposer({ cutId, live, player, scenes }: {
-  cutId: string; live: boolean; player: React.RefObject<CutPlayerHandle | null>; scenes: Array<{ id: string; scene_number: number; heading: string | null; title: string }>;
+function NoteComposer({ cutId, live, player, scenes, picked, shownScene, onAdded, onUnpick }: {
+  cutId: string; live: boolean; player: React.RefObject<CutPlayerHandle | null>;
+  scenes: Array<{ id: string; scene_number: number; heading: string | null; title: string }>;
+  picked: LinePick | null; shownScene: string | null; onAdded: () => void; onUnpick: () => void;
 }) {
   const { project, postNotes } = useStudio();
   const { toast } = useToast();
   const [at, setAt] = useState('');
   const [dept, setDept] = useState<PostDepartment>('edit');
-  const [sceneId, setSceneId] = useState('');
+  const [loose, setLoose] = useState(false);
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
+  // Untying applies to the scene it was untied from.
+  useEffect(() => { setLoose(false); }, [shownScene, picked]);
+  const sceneId = picked?.sceneId ?? (loose ? null : shownScene);
+  const scene = scenes.find((sc) => sc.id === sceneId);
 
   const now = () => { const t = player.current?.time(); if (t != null) setAt(formatTimecode(t)); };
   const add = async () => {
@@ -171,8 +204,11 @@ function NoteComposer({ cutId, live, player, scenes }: {
     if (seconds == null) { toast(live ? 'Enter a timecode like 1:23' : 'Enter a timecode like 1:23 (this player can’t report its position)', 'error'); return; }
     setBusy(true);
     try {
-      postNotes.upsertLocal(await studio.addPostNote({ project_id: project.id, cut_id: cutId, at_seconds: seconds, department: dept, body: text, scene_id: sceneId || null }));
-      setBody(''); setAt('');
+      postNotes.upsertLocal(await studio.addPostNote({
+        project_id: project.id, cut_id: cutId, at_seconds: seconds, department: dept, body: text, scene_id: sceneId || null,
+        line_offset: picked ? picked.offset : null, line_text: picked ? picked.text.slice(0, 1000) : null,
+      }));
+      setBody(''); setAt(''); onAdded();
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not add the note', 'error'); }
     finally { setBusy(false); }
   };
@@ -188,10 +224,22 @@ function NoteComposer({ cutId, live, player, scenes }: {
         <select className={s.select} aria-label="Department" value={dept} onChange={(e) => setDept(e.target.value as PostDepartment)}>
           {POST_DEPARTMENTS.map((d) => <option key={d} value={d}>{DEPT_LABEL[d]}</option>)}
         </select>
-        <select className={s.select} aria-label="Scene" value={sceneId} onChange={(e) => setSceneId(e.target.value)}>
-          <option value="">No scene</option>
-          {scenes.map((sc) => <option key={sc.id} value={sc.id}>{sc.scene_number}. {sc.heading ?? sc.title}</option>)}
-        </select>
+        <div className={s.noteTie} aria-live="polite">
+          {picked && scene ? (
+            <>
+              <span className={s.hint}>On Sc {scene.scene_number} ·</span>
+              <q className={s.noteLine}>{picked.text}</q>
+              <button type="button" className={s.iconBtnPlain} onClick={onUnpick} aria-label="Unpin the line"><X size={12} /></button>
+            </>
+          ) : scene ? (
+            <>
+              <span className={s.hint}>About Sc {scene.scene_number} · {scene.heading ?? scene.title} — pick a line in the script to be exact</span>
+              <button type="button" className={s.iconBtnPlain} onClick={() => setLoose(true)} aria-label="Not about this scene"><X size={12} /></button>
+            </>
+          ) : (
+            <span className={s.hint}>Not tied to a scene</span>
+          )}
+        </div>
       </div>
       <div className={s.row} style={{ marginTop: 8, alignItems: 'stretch' }}>
         <label className={s.srOnly} htmlFor="note-body">Note</label>
@@ -208,7 +256,7 @@ function NoteComposer({ cutId, live, player, scenes }: {
 }
 
 function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObject<CutPlayerHandle | null> }) {
-  const { userId, isOwner, postNotes, scenes } = useStudio();
+  const { userId, isOwner, postNotes, scenes, openInScript } = useStudio();
   const { toast } = useToast();
   const confirm = useConfirm();
   const [show, setShow] = useState<'open' | 'all'>('open');
@@ -256,7 +304,14 @@ function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObjec
                   <div className={s.noteMeta}>
                     <span className={cx(s.tag, s[`dept_${n.department}`])}>{DEPT_LABEL[n.department as PostDepartment] ?? n.department}</span>
                     {sc && <span className={s.hint}>Sc {sc.scene_number} · {sc.heading ?? sc.title}</span>}
+                    {sc?.script_id && (
+                      <button type="button" className={s.noteScript} onClick={() => openInScript(sc, n.id)}
+                        aria-label={`Open ${n.line_text ? 'the line' : `scene ${sc.scene_number}`} in the script`}>
+                        <FileText size={10} aria-hidden /> In script
+                      </button>
+                    )}
                   </div>
+                  {n.line_text && <q className={s.noteLine}>{n.line_text}</q>}
                   <div className={s.noteBody}>{n.body}</div>
                 </div>
                 <button type="button" className={s.iconBtnPlain} onClick={() => void toggle(n)} aria-label={n.resolved_at ? 'Reopen note' : 'Resolve note'} title={n.resolved_at ? 'Reopen' : 'Resolve'}>

@@ -1,8 +1,26 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Table read & runtime
+## Latest Session — Cut notes on script lines
 
-Migration `20260927070000_table_read.sql` — **apply to production before merging**.
+Migration `20260927080000_cut_note_lines.sql` — **apply to production before merging**.
+
+- Studio › Post › Cut review: the **script beside the cut**. The scene on
+  screen follows playback: scenes are laid along the cut by their length
+  (table-read time, else page length) and pinned by the notes already made,
+  so the more you note, the better it tracks. A scene strip jumps anywhere.
+  Click a line to pin the next note to it; a note without a line is tied to
+  the scene shown. The scene dropdown is gone.
+- `post_notes.line_offset` / `line_text`: the line relative to its scene's
+  heading, and its text then, so edits elsewhere don't move it and edits
+  inside the scene re-find it (`lib/studio/cutlines.ts`).
+- The editor shows cut notes **in the script's margin** on their line (live),
+  resolvable there, each linking to its moment in the cut
+  (`/studio?tab=post&project=&cut=&t=` seeks when the player can). "In
+  script" on a note opens the editor (or the other split pane) on the line.
+
+## Earlier — Table read & runtime
+
+Migration `20260927070000_table_read.sql` — applied to production; PR #68 merged.
 
 - Page count and runtime are measured like the industry does
   (`lib/scriptos/timing.ts`): 55 printed lines a page, each element wrapped at

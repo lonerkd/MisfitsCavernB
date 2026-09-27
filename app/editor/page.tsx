@@ -56,6 +56,9 @@ import { WriteView } from '@/components/editor/WriteView';
 import { WriteFooter } from '@/components/editor/WriteFooter';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
+import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
+import { placeLineNotes } from '@/lib/studio/cutlines';
+import type { LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -1063,6 +1066,7 @@ export default function EditorPage() {
     if (msg.type !== 'open-scene' || msg.scriptId !== currentScript?.id) return;
     const idx = sceneIds.indexOf(msg.sceneId);
     if (idx >= 0) jumpRef.current(idx);
+    if (msg.noteId) setPendingNote(msg.noteId);
   });
   const sceneParam = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('scene') : null);
   useEffect(() => {
@@ -1073,6 +1077,41 @@ export default function EditorPage() {
     sceneParam.current = null;
     jumpRef.current(idx);
   }, [currentScript?.id, sceneIds]);
+
+  // Cut notes (Studio › Post) pinned to lines, shown in the margin.
+  const lineCutNotes = useLineCutNotes(currentScript?.project_id ?? null);
+  const cutNotesByLine = useMemo(
+    () => placeLineNotes(lineCutNotes.notes, parsedScenes.map((sc, i) => ({ id: sceneIndex.rows[i]?.id ?? null, start: sc.startIndex })), lines.map((l) => l.text)),
+    [lineCutNotes.notes, parsedScenes, sceneIndex.rows, lines],
+  );
+  const [cutNoteLine, setCutNoteLine] = useState<number | null>(null);
+  const { setResolved: setCutNoteResolved } = lineCutNotes;
+  const resolveCutNote = useCallback(async (note: LineCutNote, resolved: boolean) => {
+    if (!sessionUser?.id) return;
+    try { await setCutNoteResolved(note, sessionUser.id, resolved); }
+    catch (e) { toastRef.current(e instanceof Error ? e.message : 'Could not update the note', 'error'); }
+  }, [sessionUser?.id, setCutNoteResolved]);
+  // "In script" on a cut note (?note=, or from the Studio pane): go to its line and open it.
+  const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
+  useEffect(() => {
+    if (!pendingNote) return;
+    const hit = [...cutNotesByLine.entries()].find(([, placed]) => placed.some((p) => p.note.id === pendingNote));
+    if (!hit) return;
+    const line = hit[0];
+    setPendingNote(null);
+    setActiveView('write');
+    window.setTimeout(() => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+      const at = content.split('\n').slice(0, line).reduce((n, l) => n + l.length + 1, 0);
+      ta.focus();
+      ta.setSelectionRange(at, at);
+      setCursorLine(line);
+      const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
+      ta.scrollTop = Math.max(0, (line - 3) * lh);
+      setCutNoteLine(line);
+    }, 120);
+  }, [pendingNote, cutNotesByLine, content]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 
@@ -1122,7 +1161,8 @@ export default function EditorPage() {
     return Array.from(locs.entries()).sort((a, b) => b[1] - a[1]);
   }, [scenesList]);
 
-  const editorCtx: EditorCtx = { bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const cutNotes: EditorCtx['cutNotes'] = { byLine: cutNotesByLine, openLine: cutNoteLine, setOpenLine: setCutNoteLine, resolve: resolveCutNote, canResolve: !!sessionUser?.id };
+  const editorCtx: EditorCtx = { cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>

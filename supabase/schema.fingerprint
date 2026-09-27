@@ -237,6 +237,8 @@ column post_notes.created_by uuid default auth.uid()
 column post_notes.cut_id uuid not null
 column post_notes.department text default 'edit'::text not null
 column post_notes.id uuid default gen_random_uuid() not null
+column post_notes.line_offset integer
+column post_notes.line_text text
 column post_notes.project_id uuid not null
 column post_notes.resolved_at timestamp with time zone
 column post_notes.resolved_by uuid
@@ -586,6 +588,9 @@ constraint post_notes.post_notes_body_len CHECK (((char_length(body) >= 1) AND (
 constraint post_notes.post_notes_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint post_notes.post_notes_cut_fkey FOREIGN KEY (cut_id, project_id) REFERENCES post_cuts(id, project_id) ON DELETE CASCADE
 constraint post_notes.post_notes_department_check CHECK ((department = ANY (ARRAY['edit'::text, 'sound'::text, 'music'::text, 'color'::text, 'vfx'::text, 'titles'::text, 'general'::text])))
+constraint post_notes.post_notes_line_check CHECK (((line_offset IS NULL) = (line_text IS NULL)))
+constraint post_notes.post_notes_line_offset_check CHECK (((line_offset IS NULL) OR ((line_offset >= 0) AND (line_offset <= 100000))))
+constraint post_notes.post_notes_line_text_len CHECK (((line_text IS NULL) OR ((char_length(line_text) >= 1) AND (char_length(line_text) <= 1000))))
 constraint post_notes.post_notes_pkey PRIMARY KEY (id)
 constraint post_notes.post_notes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint post_notes.post_notes_resolved_check CHECK (((resolved_at IS NULL) = (resolved_by IS NULL)))
@@ -704,7 +709,7 @@ function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
-function internal.post_notes_guard() body=a1a579173f403f5a56689d072bb9a438
+function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3

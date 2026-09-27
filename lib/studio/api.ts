@@ -24,6 +24,8 @@ export type PostNote = Tables<'post_notes'>;
 export type PostItem = Tables<'post_items'>;
 export const POST_DEPARTMENTS = ['edit', 'sound', 'music', 'color', 'vfx', 'titles', 'general'] as const;
 export type PostDepartment = (typeof POST_DEPARTMENTS)[number];
+export const POST_DEPT_LABEL: Record<PostDepartment, string> = { edit: 'Edit', sound: 'Sound', music: 'Music', color: 'Colour', vfx: 'VFX', titles: 'Titles', general: 'General' };
+export const POST_DEPT_COLOR: Record<PostDepartment, string> = { edit: '#a5b4fc', sound: '#34d399', music: '#f472b6', color: '#fbbf24', vfx: '#60a5fa', titles: '#e5e7eb', general: '#9ca3af' };
 export const POST_STATUSES = ['todo', 'in_progress', 'review', 'done'] as const;
 export type PostStatus = (typeof POST_STATUSES)[number];
 
@@ -51,6 +53,7 @@ export type CallTarget = { crew_user_id: string } | { character_name: string };
 export type ShotPatch = Partial<Pick<Shot, 'shot_size' | 'angle' | 'movement' | 'lens' | 'description' | 'status' | 'frame_media_id' | 'order_index'>>;
 
 /** A "Shot" margin note in the script that created a shot (script_annotations routed to shots). */
+export type LineCutNote = PostNote & { cut_title: string };
 export type ShotNote = { id: string; script_id: string; line_index: number; text: string; routed_id: string };
 
 /** Next shot number in a scene: one past the highest numeric one. */
@@ -376,10 +379,20 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
-  async function addPostNote(note: Pick<PostNote, 'project_id' | 'cut_id' | 'at_seconds' | 'department' | 'body'> & { scene_id?: string | null }): Promise<PostNote> {
+  async function addPostNote(note: Pick<PostNote, 'project_id' | 'cut_id' | 'at_seconds' | 'department' | 'body'> & { scene_id?: string | null; line_offset?: number | null; line_text?: string | null }): Promise<PostNote> {
     const { data, error } = await db.from('post_notes').insert(note).select('*').single();
     if (error) fail(error, 'Could not add the note');
     return data;
+  }
+
+  /** A project's cut notes pinned to script lines, with their cut's name (the editor's margin). */
+  async function listLineCutNotes(projectId: string): Promise<LineCutNote[]> {
+    const { data, error } = await db.from('post_notes')
+      .select('*, cut:post_cuts!post_notes_cut_fkey(title)')
+      .eq('project_id', projectId).not('line_offset', 'is', null)
+      .order('at_seconds');
+    if (error) fail(error, 'Could not load cut notes');
+    return data.map(({ cut, ...n }) => ({ ...n, cut_title: cut?.title ?? 'Cut' }));
   }
 
   /** Resolve (as the caller) or reopen a note. */
@@ -480,7 +493,7 @@ export function createStudioApi(db: Client) {
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall,
-    listCuts, addCut, deleteCut, listPostNotes, addPostNote, setPostNoteResolved, deletePostNote,
+    listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
     listSceneMedia, linkMedia, unlinkMedia,
     listCharacterMedia, linkCharacterMedia, unlinkCharacterMedia,

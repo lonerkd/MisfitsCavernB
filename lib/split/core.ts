@@ -8,8 +8,8 @@ export type SplitMessage =
   | { type: 'navigated'; href: string; title: string }
   /** The script's caret is in this scene (null: before the first heading). */
   | { type: 'scene'; scriptId: string; sceneId: string | null }
-  /** Take the script to this scene. */
-  | { type: 'open-scene'; scriptId: string; sceneId: string };
+  /** Take the script to this scene (and to a cut note's line in it). */
+  | { type: 'open-scene'; scriptId: string; sceneId: string; noteId?: string };
 
 export function isSplitMessage(data: unknown): data is SplitMessage {
   if (!data || typeof data !== 'object' || !(data as Record<string, unknown>)[SPLIT_KEY]) return false;
@@ -18,7 +18,7 @@ export function isSplitMessage(data: unknown): data is SplitMessage {
   switch (d.type) {
     case 'navigated': return str(d.href) && typeof d.title === 'string';
     case 'scene': return str(d.scriptId) && (d.sceneId === null || str(d.sceneId));
-    case 'open-scene': return str(d.scriptId) && str(d.sceneId);
+    case 'open-scene': return str(d.scriptId) && str(d.sceneId) && (d.noteId === undefined || str(d.noteId));
     default: return false;
   }
 }
