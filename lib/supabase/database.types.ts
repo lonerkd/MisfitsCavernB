@@ -2303,6 +2303,94 @@ export type Database = {
           },
         ];
       };
+      set_log: {
+        Row: {
+          at: string;
+          body: string | null;
+          call_sheet_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          kind: string;
+          media_id: string | null;
+          project_id: string;
+          scene_id: string | null;
+          shot_id: string | null;
+          take: number | null;
+        };
+        Insert: {
+          at?: string;
+          body?: string | null;
+          call_sheet_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind: string;
+          media_id?: string | null;
+          project_id: string;
+          scene_id?: string | null;
+          shot_id?: string | null;
+          take?: number | null;
+        };
+        Update: {
+          at?: string;
+          body?: string | null;
+          call_sheet_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind?: string;
+          media_id?: string | null;
+          project_id?: string;
+          scene_id?: string | null;
+          shot_id?: string | null;
+          take?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "set_log_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "set_log_day_fkey";
+            columns: ["call_sheet_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "call_sheets";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "set_log_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "set_log_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "set_log_scene_fkey";
+            columns: ["scene_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "set_log_shot_fkey";
+            columns: ["shot_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "shots";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       sfx_assets: {
         Row: {
           audio_url: string;

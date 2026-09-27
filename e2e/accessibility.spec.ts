@@ -92,7 +92,7 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     // A new project keeps later tools locked (checked above); once it reaches
     // delivery every tool is open, and the project page celebrates the phase.
     await admin.from('projects').update({ status: 'completed' }).eq('id', p!.id);
-    for (const r of [`/projects/${p!.id}`, '/studio?tab=post', '/studio?tab=promos', '/studio?tab=production&view=breakdown', '/studio?tab=production&view=readiness', '/studio?tab=production&view=schedule', '/studio?tab=production&view=crew']) {
+    for (const r of [`/projects/${p!.id}`, '/studio?tab=post', '/studio?tab=promos', '/studio?tab=production&view=breakdown', '/studio?tab=production&view=readiness', '/studio?tab=production&view=onset', '/studio?tab=production&view=schedule', '/studio?tab=production&view=crew']) {
       await check(page, r, `delivery ${r}`);
     }
 

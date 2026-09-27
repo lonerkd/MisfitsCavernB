@@ -89,6 +89,25 @@ pitch boards and portfolios.
 - **Cast & crew**: crew, presence, recruiting, casting with each character's
   scene footprint.
 
+## 5b. On set
+
+- **Studio › Production › On set** (`production/OnSetView.tsx`, logic in
+  `lib/studio/onset.ts`): the shoot day for the people on it. It opens on
+  today's call sheet (else the next dated day, else the last) with the
+  location, planned call/wrap and **your own call time** (`call_sheet_calls`).
+- The day's clock is five one-tap stamps — crew call, rolling, lunch, back
+  in, wrap (`set_log`, latest stamp wins; tap a stamp to correct it). From
+  them: where the day is, time on set (lunch excluded), time to or past the
+  planned wrap.
+- The day's scenes (`scenes.shoot_day`) with their shots as big Got / Drop
+  toggles (`shots.status`); the first shot got starts the scene, "Wrap
+  scene" wraps it (`scenes.status`) — the same data the stripboard,
+  readiness and milestones read. Scenes, pages and shots meters.
+- Continuity per scene (all days): notes with shot, take and a photo taken
+  on the phone (uploaded to the library board "Continuity"). Day notes and a
+  day's log timeline. Everything is live for the whole crew.
+- Tool `onset` (production phase, opens early once there are call sheets).
+
 ## 6. Post
 
 - **Cut review** (`post_cuts`, `post_notes`): a cut is a link (YouTube, Vimeo,

@@ -1,8 +1,26 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Real data, not presets
+## Latest Session — On set
 
-Migration `20260927090000_campaigns.sql` — **apply to production before merging**.
+Migration `20260927100000_set_log.sql` — **apply to production before merging**.
+
+- **Studio › Production › On set** — the production phase finally has its
+  tool. It opens on today's call sheet (else the next day): location, planned
+  call and wrap, and your own call time. The crew stamp the day's clock with
+  one tap each (crew call, rolling, lunch, back in, wrap — tap to correct),
+  and see time on set and time to (or past) the planned wrap.
+- The day's scenes with their shots as big Got / Drop buttons; the first shot
+  got starts the scene; "Wrap scene" wraps it — the same status the
+  stripboard, readiness and milestones use. Meters for scenes, pages, shots.
+- Continuity per scene: notes with shot, take and a photo from the phone's
+  camera (saved to the library's "Continuity" board). Day notes and the day's
+  log. All live for everyone on the project.
+- `set_log` (one row per event), composite FKs to the project, only
+  time/words editable (author or owner), realtime. Also in split screen.
+
+## Earlier — Real data, not presets
+
+Migration `20260927090000_campaigns.sql` — applied to production; PR #70 merged.
 
 - **Home**: the invented previews are gone (the fake crew chat, asset file
   names and screenplay). Signed-in tiles show your latest script, media and

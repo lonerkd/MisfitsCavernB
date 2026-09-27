@@ -409,6 +409,18 @@ column scripts.title text not null
 column scripts.title_page jsonb default '{}'::jsonb
 column scripts.updated_at timestamp with time zone default now()
 column scripts.version integer default 1
+column set_log.at timestamp with time zone default now() not null
+column set_log.body text
+column set_log.call_sheet_id uuid
+column set_log.created_at timestamp with time zone default now() not null
+column set_log.created_by uuid default auth.uid()
+column set_log.id uuid default gen_random_uuid() not null
+column set_log.kind text not null
+column set_log.media_id uuid
+column set_log.project_id uuid not null
+column set_log.scene_id uuid
+column set_log.shot_id uuid
+column set_log.take smallint
 column sfx_assets.audio_url text not null
 column sfx_assets.created_at timestamp with time zone default now()
 column sfx_assets.duration integer
@@ -681,6 +693,21 @@ constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFE
 constraint scripts.scripts_pkey PRIMARY KEY (id)
 constraint scripts.scripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint scripts.scripts_share_token_key UNIQUE (share_token)
+constraint set_log.set_log_body_len CHECK (((body IS NULL) OR ((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 2000))))
+constraint set_log.set_log_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint set_log.set_log_day_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
+constraint set_log.set_log_kind_check CHECK ((kind = ANY (ARRAY['call'::text, 'rolling'::text, 'lunch'::text, 'back'::text, 'wrap'::text, 'note'::text, 'continuity'::text])))
+constraint set_log.set_log_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE SET NULL (media_id)
+constraint set_log.set_log_pkey PRIMARY KEY (id)
+constraint set_log.set_log_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint set_log.set_log_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE SET NULL (scene_id)
+constraint set_log.set_log_shape CHECK (
+CASE
+    WHEN (kind = 'continuity'::text) THEN (call_sheet_id IS NULL)
+    ELSE ((call_sheet_id IS NOT NULL) AND (shot_id IS NULL) AND (take IS NULL) AND (media_id IS NULL) AND ((kind <> 'note'::text) OR (body IS NOT NULL)))
+END)
+constraint set_log.set_log_shot_fkey FOREIGN KEY (shot_id, project_id) REFERENCES shots(id, project_id) ON DELETE SET NULL (shot_id)
+constraint set_log.set_log_take_check CHECK (((take IS NULL) OR ((take >= 1) AND (take <= 999))))
 constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -869,6 +896,12 @@ index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (pr
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
 index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
+index CREATE INDEX set_log_created_by_idx ON public.set_log USING btree (created_by)
+index CREATE INDEX set_log_day_idx ON public.set_log USING btree (call_sheet_id)
+index CREATE INDEX set_log_media_idx ON public.set_log USING btree (media_id)
+index CREATE INDEX set_log_project_idx ON public.set_log USING btree (project_id, at)
+index CREATE INDEX set_log_scene_idx ON public.set_log USING btree (scene_id)
+index CREATE INDEX set_log_shot_idx ON public.set_log USING btree (shot_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
@@ -934,7 +967,9 @@ index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING
 index CREATE UNIQUE INDEX script_stash_pkey ON public.script_stash USING btree (id)
 index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
 index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
+index CREATE UNIQUE INDEX set_log_pkey ON public.set_log USING btree (id)
 index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
+index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, project_id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
@@ -1043,6 +1078,10 @@ policy public.scripts "scripts delete" PERMISSIVE DELETE to authenticated using 
 policy public.scripts "scripts insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
 policy public.scripts "scripts update" PERMISSIVE UPDATE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id)))
 policy public.scripts "scripts view" PERMISSIVE SELECT to authenticated using ((shared = true) OR ((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check -
+policy public.set_log "set_log delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
+policy public.set_log "set_log insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.set_log "set_log update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check internal.can_access_project(project_id)
+policy public.set_log "set_log view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to public using (user_id = auth.uid()) check -
 policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
 policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
@@ -1083,6 +1122,7 @@ realtime public.scene_elements
 realtime public.scene_media
 realtime public.scenes
 realtime public.script_stash
+realtime public.set_log
 realtime public.shots
 realtime public.timeline_items
 rls activity_feed enabled=true forced=false
@@ -1127,6 +1167,7 @@ rls script_metadata enabled=true forced=false
 rls script_revisions enabled=true forced=false
 rls script_stash enabled=true forced=false
 rls scripts enabled=true forced=false
+rls set_log enabled=true forced=false
 rls sfx_assets enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
