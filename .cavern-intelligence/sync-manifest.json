@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T19:21:46.643Z",
+  "last_synchronized": "2026-09-28T20:10:28.702Z",
   "stats": {
-    "totalFiles": 430,
-    "totalSize": 3315652,
+    "totalFiles": 432,
+    "totalSize": 3393214,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 145,
-      ".ts": 233,
+      ".ts": 235,
       ".js": 7,
       ".sql": 31
     }
@@ -521,8 +521,8 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 34268,
-      "last_modified": "2026-09-28T07:56:27.431Z"
+      "size": 34364,
+      "last_modified": "2026-09-28T19:56:42.422Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -2036,8 +2036,8 @@
     },
     {
       "path": "package.json",
-      "size": 1912,
-      "last_modified": "2026-09-26T20:13:33.088Z"
+      "size": 1958,
+      "last_modified": "2026-09-28T19:56:42.422Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2058,6 +2058,16 @@
       "path": "scripts/copy-pdf-worker.js",
       "size": 511,
       "last_modified": "2026-09-24T20:05:03.659Z"
+    },
+    {
+      "path": "scripts/demo/build.ts",
+      "size": 23605,
+      "last_modified": "2026-09-28T20:00:30.129Z"
+    },
+    {
+      "path": "scripts/demo/content.ts",
+      "size": 53815,
+      "last_modified": "2026-09-28T19:56:42.429Z"
     },
     {
       "path": "scripts/sync-intel.js",
