@@ -17,6 +17,7 @@ import { useProject } from '@/lib/os';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { logActivity } from '@/lib/supabase/activity';
+import { notify } from '@/lib/supabase/notifications';
 import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
 import { useCrafts, type Craft } from '@/lib/crafts';
@@ -25,7 +26,7 @@ import { CraftPicker } from '@/components/crafts/CraftPicker';
 // Crafts (and their colours) come from public.crafts — see lib/crafts.
 const craftColor = (byName: Map<string, Craft>, role: string) => byName.get(role)?.color ?? '#737373';
 
-function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole, initialDescription }: {
+function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole, initialDescription, initialCharacter }: {
   onClose: () => void;
   onCreated: () => void;
   userId: string;
@@ -34,7 +35,10 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   initialTitle?: string;
   initialRole?: string;
   initialDescription?: string;
+  /** A casting call: accepting an applicant casts them in this role of the project. */
+  initialCharacter?: string;
 }) {
+  const character = projectId && initialCharacter ? initialCharacter : null;
   const [form, setForm] = useState({ title: initialTitle || '', description: initialDescription || '', role: initialRole || '', rate: '' });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
@@ -48,6 +52,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       role: form.role,
       rate: form.rate ? parseFloat(form.rate) : null,
       project_id: projectId,
+      character_name: character,
       created_by: userId,
       status: 'open',
     }).select('id').single();
@@ -112,6 +117,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: projectId ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)' }}>
             {projectId ? <>Posting for <strong style={{ color: 'var(--fg)' }}>{projectTitle}</strong></> : 'No active project selected — this posting won’t be linked to a project'}
+            {character && <> · casting call for <strong style={{ color: 'var(--fg)' }}>{character}</strong> — accepting someone casts them in the role</>}
           </span>
         </div>
 
@@ -180,9 +186,18 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   );
 }
 
-function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => void; index: number }) {
+function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: string, note: string) => Promise<boolean>; applied?: string; index: number }) {
   const { byName } = useCrafts();
   const [hovered, setHovered] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [note, setNote] = useState('');
+  const [sending, setSending] = useState(false);
+  const send = async () => {
+    setSending(true);
+    const ok = await onApply(job.id, note);
+    setSending(false);
+    if (ok) { setComposing(false); setNote(''); }
+  };
   const color = craftColor(byName, job.role);
   const daysAgo = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 86400000);
 
@@ -228,8 +243,13 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           </div>
 
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 2, marginBottom: 8, lineHeight: 1.2 }}>
-            {job.title}
+            <Link href={`/jobs/${job.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{job.title}</Link>
           </div>
+          {job.character_name && (
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 8 }}>
+              Casting call · the role of {job.character_name}
+            </div>
+          )}
 
           {job.description && (
             <div style={{
@@ -255,8 +275,17 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
           </div>
         </div>
 
+        {applied ? (
+          <div role="status" style={{
+            flexShrink: 0, padding: '10px 16px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.12)',
+            fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)',
+          }}>
+            Applied · {applied}
+          </div>
+        ) : (
         <motion.button
-          onClick={() => onApply(job.id)}
+          onClick={() => setComposing((v) => !v)}
+          aria-expanded={composing}
           animate={{ scale: hovered ? 1 : 0.97 }}
           transition={{ duration: 0.2 }}
           style={{
@@ -271,7 +300,21 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
         >
           Apply <ChevronRight size={10} />
         </motion.button>
+        )}
       </div>
+      {composing && !applied && (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Textarea label={`A note to ${job.profiles?.username ?? 'the poster'} (optional)`} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="Your experience, your reel, when you're free." rows={3} maxLength={2000} />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button type="button" onClick={() => void send()} disabled={sending} style={{
+              padding: '9px 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', background: '#8b5cf6', color: '#fff',
+              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
+            }}>{sending ? 'Sending…' : 'Send application'}</button>
+            <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' }}>Cancel</button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -374,15 +417,19 @@ export default function JobsPage() {
   const prefillTitle = searchParams.get('title') || '';
   const prefillRole = searchParams.get('role') || '';
   const prefillDescription = searchParams.get('description') || '';
+  const prefillCharacter = searchParams.get('character') || '';
+  // job id → my application's status
+  const [applied, setApplied] = useState<Record<string, string>>({});
+  const [myApps, setMyApps] = useState<{ status: string; applied_at: string | null; jobs: { id: string; title: string; role: string; status: string | null; projects: { title: string } | null } | null }[]>([]);
   useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
 
   useEffect(() => {
     awaitOSUser().then((user) => {
       setUser(user);
-      if (user) loadMyJobs(user.id);
+      if (user) { loadMyJobs(user.id); void loadMyApplications(user.id); }
     });
     loadJobs();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on mount
 
   const loadJobs = async () => {
     setLoading(true);
@@ -419,18 +466,28 @@ export default function JobsPage() {
     setMyJobs(withCounts as unknown as Job[]);
   };
 
-  const handleApply = async (jobId: string) => {
-    if (!user) { window.location.href = '/auth'; return; }
-    const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id });
-    if (error) {
-      if (error.code === '23505') {
-        toast('You already applied to this job.', 'info');
-      } else {
-        toast('Failed to submit application.', 'error');
-      }
-    } else {
-      toast('Application submitted.', 'success');
+  const loadMyApplications = async (userId: string) => {
+    const { data } = await supabase.from('job_applications')
+      .select('status, applied_at, jobs(id, title, role, status, projects(title))')
+      .eq('applicant_id', userId).order('applied_at', { ascending: false });
+    const rows = (data ?? []) as unknown as typeof myApps;
+    setMyApps(rows);
+    setApplied(Object.fromEntries(rows.filter((r) => r.jobs).map((r) => [r.jobs!.id, r.status])));
+  };
+
+  /** Applies with an optional note and tells the poster. */
+  const handleApply = async (jobId: string, note: string): Promise<boolean> => {
+    if (!user) { window.location.href = '/auth'; return false; }
+    const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id, cover_note: note.trim() || null });
+    if (error && error.code !== '23505') { toast('Failed to submit application.', 'error'); return false; }
+    if (error) toast('You already applied to this job.', 'info');
+    else {
+      toast('Application sent.', 'success');
+      const job = jobs.find((j) => j.id === jobId);
+      if (job) void notify(job.created_by, { type: 'application', title: `New application · ${job.title}`, body: note.trim() ? note.trim().slice(0, 300) : 'Someone applied to your posting.', link: `/jobs/${job.id}` }, user.id);
     }
+    void loadMyApplications(user.id);
+    return true;
   };
 
   const handleCloseJob = async (jobId: string) => {
@@ -698,7 +755,7 @@ export default function JobsPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {filtered.map((job, i) => (
-                    <JobCard key={job.id} job={job} onApply={handleApply} index={i} />
+                    <JobCard key={job.id} job={job} onApply={handleApply} applied={applied[job.id]} index={i} />
                   ))}
                 </div>
               )}
@@ -738,6 +795,30 @@ export default function JobsPage() {
                   ))}
                 </div>
               )}
+              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400, margin: '32px 0 12px' }}>
+                Applied to · {myApps.length}
+              </h2>
+              {myApps.length === 0 ? (
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>
+                  Nothing yet. <button type="button" onClick={() => setTab('open')} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--fg)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Browse open roles</button>
+                </p>
+              ) : (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {myApps.filter((a) => a.jobs).map((a) => (
+                    <li key={a.jobs!.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(10,10,10,0.8)' }}>
+                      <Link href={`/jobs/${a.jobs!.id}`} style={{ flex: 1, minWidth: 0, color: 'var(--fg)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 11 }}>
+                        {a.jobs!.title}
+                        <span style={{ color: 'var(--fg-muted)' }}> · {a.jobs!.role}{a.jobs!.projects?.title ? ` · ${a.jobs!.projects.title}` : ''}{a.jobs!.status === 'closed' ? ' · closed' : ''}</span>
+                      </Link>
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 99,
+                        color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? '#fca5a5' : 'var(--fg-muted)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                      }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </>
           )}
         </div>
@@ -754,6 +835,7 @@ export default function JobsPage() {
             initialTitle={prefillTitle}
             initialRole={prefillRole}
             initialDescription={prefillDescription}
+            initialCharacter={prefillCharacter}
           />
         )}
       </AnimatePresence>

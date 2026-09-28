@@ -167,6 +167,7 @@ column job_applications.id uuid default uuid_generate_v4() not null
 column job_applications.job_id uuid not null
 column job_applications.status text default 'pending'::text
 column jobs.budget_item_id uuid
+column jobs.character_name text
 column jobs.created_at timestamp with time zone default now()
 column jobs.created_by uuid not null
 column jobs.description text
@@ -611,6 +612,7 @@ constraint job_applications.job_applications_job_id_fkey FOREIGN KEY (job_id) RE
 constraint job_applications.job_applications_pkey PRIMARY KEY (id)
 constraint job_applications.job_applications_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text])))
 constraint jobs.jobs_budget_item_id_fkey FOREIGN KEY (budget_item_id) REFERENCES budget_items(id) ON DELETE SET NULL
+constraint jobs.jobs_character_name_check CHECK (((character_name IS NULL) OR ((project_id IS NOT NULL) AND ((char_length(btrim(character_name)) >= 1) AND (char_length(btrim(character_name)) <= 200)))))
 constraint jobs.jobs_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint jobs.jobs_pkey PRIMARY KEY (id)
 constraint jobs.jobs_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -809,6 +811,7 @@ constraint writing_days.writing_days_user_id_fkey FOREIGN KEY (user_id) REFERENC
 constraint writing_days.writing_days_words_check CHECK (((words >= 0) AND (words <= 100000)))
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
+function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=23684b4bcfd808ab21df2a91536571fa
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
@@ -856,6 +859,7 @@ function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
+function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=1dab5a7c14578a22e95dbcbbd3255d64
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6c
 function public.set_my_ui_prefs(p_patch jsonb) body=387984f6950b260f06881fbad22478d4
@@ -866,6 +870,7 @@ function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
+grant function internal.applied_to(p_job uuid) authenticated,postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
 grant function internal.call_sheet_recipients(p_project uuid) postgres
@@ -913,6 +918,7 @@ grant function public.log_writing(p_day date, p_words integer, p_sprint boolean)
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
+grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.send_call_sheet_reminders() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
@@ -1138,7 +1144,8 @@ policy public.job_applications "Job owners can update application status" PERMIS
 policy public.job_applications "Job owners can view applications" PERMISSIVE SELECT to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check -
 policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
 policy public.job_applications "Users can view their own applications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = applicant_id) check -
-policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.jobs "Applicants view jobs they applied to" PERMISSIVE SELECT to authenticated using internal.applied_to(id) check -
+policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
 policy public.jobs "Jobs publicly readable" PERMISSIVE SELECT to public using ((status = 'open'::text) OR (created_by = ( SELECT auth.uid() AS uid))) check -
 policy public.media "media delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -

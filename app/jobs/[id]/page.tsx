@@ -8,8 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Textarea } from '@/components/ui/Textarea';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
-import { assignCrewMember } from '@/lib/supabase/crew-management';
-import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
+import { respondToApplication, type JobWithRelations as Job } from '@/lib/supabase/jobs';
 import Avatar from '@/components/Avatar';
 import { awaitOSUser } from '@/lib/os';
 
@@ -71,6 +70,7 @@ export default function JobDetailPage() {
   const [applying, setApplying] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applyError, setApplyError] = useState('');
+  const [closeWhenFilled, setCloseWhenFilled] = useState(true);
 
   const isCreator = user && job && user.id === job.created_by;
 
@@ -165,37 +165,22 @@ export default function JobDetailPage() {
     }
   };
 
+  // One step in the database: status, crew, casting, closing, telling them.
   const handleApplicationStatus = async (appId: string, newStatus: 'accepted' | 'rejected') => {
-    const { error } = await supabase
-      .from('job_applications')
-      .update({ status: newStatus })
-      .eq('id', appId);
-    if (error) { toast(error.message || 'Could not update application', 'error'); return; }
-    {
-      setApplications(prev =>
-        prev.map(a => a.id === appId ? { ...a, status: newStatus } : a)
+    try {
+      const close = newStatus === 'accepted' && closeWhenFilled && job?.status === 'open';
+      const r = await respondToApplication(appId, newStatus, close);
+      setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
+      if (r.closed) setJob(j => (j ? { ...j, status: 'closed' } : j));
+      toast(
+        newStatus === 'rejected' ? 'Application declined — they’ve been told'
+          : r.cast_as ? `Cast as ${r.cast_as}${r.joined_crew ? ' and added to the crew' : ''}${r.closed ? ' · posting closed' : ''}`
+          : job?.project_id ? `${r.joined_crew ? 'Added to the crew' : 'Accepted — already on the crew'}${r.closed ? ' · posting closed' : ''}`
+          : `Accepted${r.closed ? ' · posting closed' : ''}`,
+        'success',
       );
-
-      const app = applications.find(a => a.id === appId);
-
-      if (newStatus === 'accepted' && app && job?.project_id && user) {
-        try {
-          await assignCrewMember(job.project_id, app.applicant_id, 'contributor', user.id, job.role);
-        } catch (e: any) {
-          toast(e.message || 'Accepted, but could not add them to the crew', 'error');
-        }
-      }
-
-      toast(newStatus === 'accepted' ? 'Applicant accepted and added to crew' : 'Application declined', 'success');
-
-      if (app && job) {
-        notify(app.applicant_id, {
-          type: 'application',
-          title: newStatus === 'accepted' ? `You're in! · ${job.title}` : `Update · ${job.title}`,
-          body: newStatus === 'accepted' ? 'Your application was accepted.' : 'Your application was not selected this time.',
-          link: `/jobs/${job.id}`,
-        }, user?.id);
-      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not update the application', 'error');
     }
   };
 
@@ -278,6 +263,11 @@ export default function JobDetailPage() {
           }}>
             {job.title}
           </h1>
+          {job.character_name && (
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-muted)', margin: '-8px 0 18px' }}>
+              Casting call · the role of <strong style={{ color: 'var(--fg)' }}>{job.character_name}</strong>{job.projects?.title ? ` in ${job.projects.title}` : ''}
+            </p>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             {job.rate && (
@@ -329,7 +319,18 @@ export default function JobDetailPage() {
               }}>
                 {applications.length}
               </span>
+              {job.status === 'open' && (
+                <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={closeWhenFilled} onChange={(e) => setCloseWhenFilled(e.target.checked)} />
+                  Close the posting when I accept someone
+                </label>
+              )}
             </div>
+            {job.project_id && (
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', margin: '-12px 0 20px', lineHeight: 1.6 }}>
+                Accepting adds them to {job.projects?.title ?? 'the project'}’s crew as {job.role}{job.character_name ? ` and casts them as ${job.character_name}` : ''}. Either way, they’re told.
+              </p>
+            )}
 
             {appsLoading ? (
               <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</div>

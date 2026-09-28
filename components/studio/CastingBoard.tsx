@@ -15,6 +15,18 @@ import { readable } from '@/lib/color';
 
 type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
+/**
+ * A casting call on Jobs, written from the script: accepting someone there
+ * casts them as the character and adds them to the crew.
+ */
+function castingCallHref(projectTitle: string, character: string, fp: { sceneNums: number[]; days: number[] }) {
+  const where = fp.sceneNums.length
+    ? `${fp.sceneNums.length} scene${fp.sceneNums.length === 1 ? '' : 's'} over ${fp.days.length} shoot day${fp.days.length === 1 ? '' : 's'}`
+    : 'scenes to be scheduled';
+  const description = `Casting ${character} in ${projectTitle} — ${where}. Tell us about your experience and send a reel or self-tape.`;
+  return `/jobs?${new URLSearchParams({ title: `Casting: ${character}`, role: 'Actor', character, description }).toString()}`;
+}
+
 /** Who plays whom: characters from the selected script, cast from the crew. */
 export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const { project, userId, scriptId, scenes, mediaById } = useStudio();
@@ -125,7 +137,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 10, marginBottom: assigning ? 12 : 24 }}>
                     <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
                     <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: readable(sel.color), background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
-                    <Link href={`/jobs?title=${encodeURIComponent(`Cast — ${sel.name}`)}&role=Actor`} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: readable('#8b5cf6'), background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post to Jobs →</Link>
+                    <Link href={castingCallHref(project.title, sel.name, fp)} style={{ fontFamily: 'var(--mono)', fontSize: 10, color: readable('#8b5cf6'), background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 6, padding: '6px 12px', textDecoration: 'none' }}>Post a casting call →</Link>
                   </div>
                 )}
 

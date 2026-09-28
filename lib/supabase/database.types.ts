@@ -933,6 +933,7 @@ export type Database = {
       jobs: {
         Row: {
           budget_item_id: string | null;
+          character_name: string | null;
           created_at: string | null;
           created_by: string;
           description: string | null;
@@ -947,6 +948,7 @@ export type Database = {
         };
         Insert: {
           budget_item_id?: string | null;
+          character_name?: string | null;
           created_at?: string | null;
           created_by: string;
           description?: string | null;
@@ -961,6 +963,7 @@ export type Database = {
         };
         Update: {
           budget_item_id?: string | null;
+          character_name?: string | null;
           created_at?: string | null;
           created_by?: string;
           description?: string | null;
@@ -3039,6 +3042,10 @@ export type Database = {
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      respond_to_application: {
+        Args: { p_application: string; p_close?: boolean; p_status: string };
+        Returns: Json;
+      };
       send_call_sheet_reminders: {
         Args: Record<PropertyKey, never>;
         Returns: number;

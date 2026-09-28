@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T08:21:52.636Z",
+  "last_synchronized": "2026-09-28T08:35:06.994Z",
   "stats": {
-    "totalFiles": 409,
-    "totalSize": 3153620,
+    "totalFiles": 412,
+    "totalSize": 3178355,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 142,
-      ".ts": 219,
+      ".ts": 221,
       ".js": 7,
-      ".sql": 27
+      ".sql": 28
     }
   },
   "modules": {
@@ -272,7 +272,8 @@
         "supabase/migrations/20260928030000_brief_detect.sql",
         "supabase/migrations/20260928040000_phases_v2.sql",
         "supabase/migrations/20260928050000_onboarding.sql",
-        "supabase/migrations/20260928060000_call_sheets_issue.sql"
+        "supabase/migrations/20260928060000_call_sheets_issue.sql",
+        "supabase/migrations/20260928070000_hiring_loop.sql"
       ]
     }
   },
@@ -409,8 +410,8 @@
     },
     {
       "path": "app/jobs/[id]/page.tsx",
-      "size": 24641,
-      "last_modified": "2026-09-27T05:02:41.788Z"
+      "size": 25657,
+      "last_modified": "2026-09-28T08:29:01.083Z"
     },
     {
       "path": "app/jobs/loading.tsx",
@@ -419,8 +420,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 34265,
-      "last_modified": "2026-09-28T07:43:44.335Z"
+      "size": 40643,
+      "last_modified": "2026-09-28T08:31:17.967Z"
     },
     {
       "path": "app/layout.tsx",
@@ -854,8 +855,8 @@
     },
     {
       "path": "components/studio/CastingBoard.tsx",
-      "size": 13001,
-      "last_modified": "2026-09-27T05:02:57.793Z"
+      "size": 13717,
+      "last_modified": "2026-09-28T08:30:00.110Z"
     },
     {
       "path": "components/studio/CharacterBible.tsx",
@@ -1116,6 +1117,11 @@
       "path": "e2e/helpers.ts",
       "size": 176,
       "last_modified": "2026-09-24T20:05:03.636Z"
+    },
+    {
+      "path": "e2e/hiring.spec.ts",
+      "size": 5267,
+      "last_modified": "2026-09-28T08:31:52.994Z"
     },
     {
       "path": "e2e/home-page-crash.spec.ts",
@@ -1839,13 +1845,13 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 95671,
-      "last_modified": "2026-09-28T08:12:40.406Z"
+      "size": 95938,
+      "last_modified": "2026-09-28T08:30:51.922Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
-      "size": 2853,
-      "last_modified": "2026-09-26T08:38:18.088Z"
+      "size": 3445,
+      "last_modified": "2026-09-28T08:27:09.558Z"
     },
     {
       "path": "lib/supabase/messages.ts",
@@ -2133,6 +2139,11 @@
       "last_modified": "2026-09-28T08:11:36.158Z"
     },
     {
+      "path": "supabase/migrations/20260928070000_hiring_loop.sql",
+      "size": 5080,
+      "last_modified": "2026-09-28T08:29:43.215Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2140,7 +2151,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T08:21:33.582Z"
+      "last_modified": "2026-09-28T08:33:14.334Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2206,6 +2217,11 @@
       "path": "tests/integration/formats.test.ts",
       "size": 4944,
       "last_modified": "2026-09-27T05:41:15.020Z"
+    },
+    {
+      "path": "tests/integration/hiring.test.ts",
+      "size": 5419,
+      "last_modified": "2026-09-28T08:29:52.368Z"
     },
     {
       "path": "tests/integration/media-library.test.ts",

@@ -60,7 +60,7 @@ jobs:
           STATUS=$(npx supabase status -o json)
           export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
           export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
-          E2E_LOCAL_STACK=1 npx playwright test e2e/studio-journey.spec.ts e2e/breakdown.spec.ts e2e/accessibility.spec.ts e2e/community.spec.ts e2e/table-read.spec.ts e2e/brief.spec.ts e2e/phases.spec.ts e2e/onboarding.spec.ts e2e/call-sheets.spec.ts
+          E2E_LOCAL_STACK=1 npx playwright test e2e/studio-journey.spec.ts e2e/breakdown.spec.ts e2e/accessibility.spec.ts e2e/community.spec.ts e2e/table-read.spec.ts e2e/brief.spec.ts e2e/phases.spec.ts e2e/onboarding.spec.ts e2e/call-sheets.spec.ts e2e/hiring.spec.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
