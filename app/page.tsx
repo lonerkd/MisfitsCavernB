@@ -460,7 +460,7 @@ export default function Home() {
       const [platformStats, jobsRes, worksRes] = await Promise.all([
         getPlatformStats(),
         supabase.from('jobs').select('title, role').eq('status', 'open').order('created_at', { ascending: false }).limit(4),
-        supabase.from('portfolio_projects').select('title, year, category, role, accent_color').order('created_at', { ascending: false }).limit(3),
+        supabase.rpc('get_recent_work', { p_limit: 3 }),
       ]);
       setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.media });
       const published = worksRes.data ?? [];

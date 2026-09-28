@@ -424,7 +424,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     if (!query.trim()) { setResults([]); return; }
     let live = true; setSearching(true);
     const t = setTimeout(async () => {
-      const { data } = await supabase.from('profiles').select('id, username').ilike('username', `%${query.trim()}%`).limit(8);
+      const { data } = await supabase.from('profiles').select('id, username').ilike('username', `%${query.trim()}%`).eq('is_sample', false).limit(8);
       if (live) { setResults((data as any[] || []).filter(u => !members.some(m => m.user_id === u.id))); setSearching(false); }
     }, 220);
     return () => { live = false; clearTimeout(t); };

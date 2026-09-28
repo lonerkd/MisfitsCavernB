@@ -16,7 +16,9 @@
 // call sheets through issue_call_sheet/ack_call_sheet, and every script's
 // scene index exactly as the Studio's sync would compute it from the text.
 // Sample people are accounts on @demo.misfitscavern.invalid with no password:
-// they can't sign in.
+// they can't sign in. They and the demo projects are marked is_sample, which
+// keeps them out of public surfaces (platform numbers, the Jobs board, the
+// crew directory, recent work) for everyone outside the demo.
 
 import { createHash } from 'node:crypto';
 import { parseScript } from '../../lib/scriptos/parser';
@@ -97,7 +99,7 @@ for (const p of PERSONAS) {
   emit(`  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
   values ('00000000-0000-0000-0000-000000000000', '${id}', 'authenticated', 'authenticated', ${q(`${p.username}@${DOMAIN}`)}, '', now(), '{"provider":"email","providers":["email"]}', ${j({ username: p.username })}, now() - interval '90 days', now())
   on conflict (id) do nothing;
-  update public.profiles set role = ${q(p.craft)}, bio = ${q(p.bio)}, location = ${q(p.location)}, status = 'OPEN' where id = '${id}';`);
+  update public.profiles set role = ${q(p.craft)}, bio = ${q(p.bio)}, location = ${q(p.location)}, status = 'OPEN', is_sample = true where id = '${id}';`);
 }
 
 // ── Clear the last run ───────────────────────────────────────────────────────
@@ -136,9 +138,9 @@ function buildProject(p: DemoProject) {
   const festivalSql = p.festivals?.length
     ? `jsonb_build_array(${p.festivals.map((f, i) => `jsonb_build_object('id', ${q(P(`festival:${i}`))}, 'name', ${q(f.name)}, 'status', ${q(f.status)}, 'notes', ${q(f.notes ?? '')}, 'deadline', ${day(f.deadlineOffset)}::text)`).join(', ')})`
     : `'[]'::jsonb`;
-  emit(`  insert into public.projects (id, title, description, creator_id, status, accent_color, budget, start_date, end_date, project_type, settings, festival_submissions, visibility, archived_at, created_at)
+  emit(`  insert into public.projects (id, title, description, creator_id, status, accent_color, budget, start_date, end_date, project_type, settings, festival_submissions, visibility, archived_at, created_at, is_sample)
   values (pid, ${q(p.title)}, ${q(p.logline ?? null)}, ${who(owner)}, ${q(p.status)}, ${q(p.accent ?? null)}, ${n(p.budget)}, ${p.startOffset != null ? day(p.startOffset) : 'null'}, ${p.endOffset != null ? day(p.endOffset) : 'null'},
-          ${q(p.format)}, ${j(settings)}, ${festivalSql}, ${q(p.visibility)}, ${p.archived ? ago(60 * 24 * 20) : 'null'}, ${ago(60 * 24 * (p.startOffset != null && p.startOffset < 0 ? 30 - p.startOffset : 21))});`);
+          ${q(p.format)}, ${j(settings)}, ${festivalSql}, ${q(p.visibility)}, ${p.archived ? ago(60 * 24 * 20) : 'null'}, ${ago(60 * 24 * (p.startOffset != null && p.startOffset < 0 ? 30 - p.startOffset : 21))}, true);`);
 
   for (const [question, value] of Object.entries(p.brief ?? {})) {
     emit(`  insert into public.project_brief (project_id, question, value) values (pid, ${q(question)}, ${j(value)});`);

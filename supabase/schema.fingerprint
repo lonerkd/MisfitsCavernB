@@ -308,6 +308,7 @@ column profiles.discord_id text
 column profiles.discord_username text
 column profiles.id uuid not null
 column profiles.is_admin boolean default false
+column profiles.is_sample boolean default false not null
 column profiles.location text
 column profiles.notification_prefs jsonb default '{}'::jsonb not null
 column profiles.role text
@@ -405,6 +406,7 @@ column projects.description text
 column projects.end_date date
 column projects.festival_submissions jsonb default '[]'::jsonb
 column projects.id uuid default uuid_generate_v4() not null
+column projects.is_sample boolean default false not null
 column projects.project_type text default 'Feature'::text not null
 column projects.settings jsonb default '{"modules": {"lounge": true, "studio": true, "scriptos": true, "portfolio": true, "distribution": true}, "contentType": "screenplay", "exportProfile": {"format": "fdx", "includeTitlePage": true}, "editorMechanics": {"spellcheck": "en-US", "autoComplete": true, "strictFormatting": true}}'::jsonb
 column projects.share_token text default encode(gen_random_bytes(16), 'hex'::text) not null
@@ -959,10 +961,11 @@ function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b755
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
 function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469d6e
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
+function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
-function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
+function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
 function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb17726137b5
 function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
@@ -983,10 +986,11 @@ function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_person_credits(p_user uuid) body=7d3e49db8bebfc0c98df319661ce088c
-function public.get_platform_stats() body=0c11d9c4ec9bf19a41d490e1cf59f244
+function public.get_platform_stats() body=afcaa072be00297c262db0d0e53bca47
 function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a253
-function public.get_public_showcase(p_limit integer) body=3e278df9ab4b4f4ba37151a90ad1ae43
+function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
+function public.get_recent_work(p_limit integer) body=d2c23183a53dc8b9a97c74a9782fe80d
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
@@ -1031,6 +1035,7 @@ grant function internal.in_project_audience(pid uuid, aud text) authenticated,po
 grant function internal.is_project_creator(pid uuid) authenticated,postgres,service_role
 grant function internal.is_project_member(pid uuid) authenticated,postgres,service_role
 grant function internal.is_shared_media_object(object_name text) anon,authenticated,postgres,service_role
+grant function internal.job_listed(p_creator uuid, p_project uuid) anon,authenticated,postgres
 grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.post_notes_guard() postgres,service_role
@@ -1059,6 +1064,7 @@ grant function public.get_platform_stats() anon,authenticated,postgres,service_r
 grant function public.get_press_kit(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_public_showcase(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_published_media(p_media_id uuid) anon,authenticated,postgres,service_role
+grant function public.get_recent_work(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
@@ -1172,6 +1178,7 @@ index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (proj
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
 index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
+index CREATE INDEX profiles_sample_idx ON public.profiles USING btree (id) WHERE is_sample
 index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
 index CREATE INDEX project_documents_location_idx ON public.project_documents USING btree (location_id)
@@ -1179,6 +1186,7 @@ index CREATE INDEX project_documents_person_idx ON public.project_documents USIN
 index CREATE INDEX project_documents_project_idx ON public.project_documents USING btree (project_id)
 index CREATE INDEX project_locations_project_idx ON public.project_locations USING btree (project_id)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
+index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
 index CREATE INDEX scene_elements_project_idx ON public.scene_elements USING btree (project_id)
@@ -1328,7 +1336,7 @@ policy public.job_applications "Users can view their own applications" PERMISSIV
 policy public.jobs "Applicants view jobs they applied to" PERMISSIVE SELECT to authenticated using internal.applied_to(id) check -
 policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
-policy public.jobs "Jobs publicly readable" PERMISSIVE SELECT to public using ((status = 'open'::text) OR (created_by = ( SELECT auth.uid() AS uid))) check -
+policy public.jobs "Jobs publicly readable" PERMISSIVE SELECT to public using ((created_by = ( SELECT auth.uid() AS uid)) OR ((status = 'open'::text) AND internal.job_listed(created_by, project_id))) check -
 policy public.lounge_reads "lounge_reads own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.media "media delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))

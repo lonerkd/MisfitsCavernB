@@ -1709,6 +1709,7 @@ export type Database = {
           discord_username: string | null;
           id: string;
           is_admin: boolean | null;
+          is_sample: boolean;
           location: string | null;
           notification_prefs: NonNullable<Json>;
           role: string | null;
@@ -1728,6 +1729,7 @@ export type Database = {
           discord_username?: string | null;
           id: string;
           is_admin?: boolean | null;
+          is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
           role?: string | null;
@@ -1747,6 +1749,7 @@ export type Database = {
           discord_username?: string | null;
           id?: string;
           is_admin?: boolean | null;
+          is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
           role?: string | null;
@@ -2243,6 +2246,7 @@ export type Database = {
           end_date: string | null;
           festival_submissions: Json | null;
           id: string;
+          is_sample: boolean;
           project_type: string;
           settings: Json | null;
           share_token: string;
@@ -2262,6 +2266,7 @@ export type Database = {
           end_date?: string | null;
           festival_submissions?: Json | null;
           id?: string;
+          is_sample?: boolean;
           project_type?: string;
           settings?: Json | null;
           share_token?: string;
@@ -2281,6 +2286,7 @@ export type Database = {
           end_date?: string | null;
           festival_submissions?: Json | null;
           id?: string;
+          is_sample?: boolean;
           project_type?: string;
           settings?: Json | null;
           share_token?: string;
@@ -3419,6 +3425,16 @@ export type Database = {
           kind: string;
           mime_type: string;
           storage_path: string;
+        }[];
+      };
+      get_recent_work: {
+        Args: { p_limit?: number };
+        Returns: {
+          accent_color: string;
+          category: string;
+          role: string;
+          title: string;
+          year: number;
         }[];
       };
       get_shared_lookbook: { Args: { p_token: string }; Returns: Json };

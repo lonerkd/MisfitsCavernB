@@ -74,7 +74,7 @@ export default function CrewPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('is_sample', false).order('created_at', { ascending: false });
 
       if (searchTerm) {
         const clean = searchTerm.replace(/[(),.:\\]/g, ' ').trim();
