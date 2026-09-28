@@ -1,8 +1,26 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Money: spend, vendors, timesheets
+## Latest Session — Paperwork: permits, insurance, releases, contracts
 
-Migration `20260928090000_money.sql` — **apply to production before merging**.
+Migration `20260928100000_documents.sql` — **apply to production before merging** (adds the private `project-papers` bucket and its storage policies).
+
+- **Studio › Production › Paperwork** (the Crew tool): every document the
+  production keeps — permits, insurance, releases, contracts, other — each
+  with its state in its own words (permit Applied for / Granted, release
+  Sent / Signed, insurance Quoted / Active), who or what it's about (a crew
+  member, a location, a vendor, another party), an expiry ("Active ·
+  expires in 9d", "Expired 3d ago"), and a private file (PDF or image, 20 MB).
+- **Still needed**, read from the production: insurance once there's a crew
+  or a location, a permit for each location that needs one, a release for
+  everyone cast, a deal memo for the rest of the crew — one click adds it
+  (`lib/studio/documents.ts`, unit-tested).
+- **A permit on file moves its location along**: pending → the location's
+  permit reads Applied, done → Granted, so Readiness unblocks the scene.
+- Crew see only "Your paperwork": the documents naming them and their files.
+
+## Earlier — Money: spend, vendors, timesheets
+
+Migration `20260928090000_money.sql` — applied to production; PR #81 merged.
 
 - **Studio › Production › Money** (the Budget tool): planned / committed /
   paid / left in total and per budget line ("$600 over" in red); spend

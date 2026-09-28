@@ -25,6 +25,8 @@ export type Expense = Tables<'expenses'>;
 export type Timesheet = Tables<'timesheets'>;
 export type BudgetItem = Tables<'budget_items'>;
 export type ExpenseInput = Pick<Expense, 'description' | 'amount'> & Partial<Pick<Expense, 'budget_item_id' | 'vendor_id' | 'status' | 'po_number' | 'spent_on' | 'receipt_media_id'>>;
+export type ProjectDocument = Tables<'project_documents'>;
+export type DocumentFields = Partial<Pick<ProjectDocument, 'kind' | 'title' | 'status' | 'person_id' | 'vendor_id' | 'location_id' | 'party' | 'expires_on' | 'notes'>>;
 export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes'>>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
 export type PostCut = Tables<'post_cuts'>;
@@ -73,6 +75,8 @@ export function nextShotNumber(shots: Pick<Shot, 'shot_number'>[]): string {
 }
 
 export const MEDIA_BUCKET = 'project-media';
+/** Paperwork files: private to those who shape the project (and the person a document is about). */
+export const PAPERS_BUCKET = 'project-papers';
 
 export interface MediaMeta {
   width?: number | null;
@@ -478,6 +482,59 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not remove the timesheet');
   }
 
+  // ── Paperwork ────────────────────────────────────────────────────────────
+
+  /** All of it for those who shape the project; your own for anyone else (RLS). */
+  async function listDocuments(projectId: string): Promise<ProjectDocument[]> {
+    const { data, error } = await db.from('project_documents').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load paperwork');
+    return data;
+  }
+
+  async function addDocument(projectId: string, fields: DocumentFields & Pick<ProjectDocument, 'kind' | 'title'>): Promise<ProjectDocument> {
+    const { data, error } = await db.from('project_documents').insert({ project_id: projectId, ...fields }).select('*').single();
+    if (error) fail(error, 'Could not add the document');
+    return data;
+  }
+
+  async function updateDocument(id: string, patch: DocumentFields): Promise<ProjectDocument> {
+    const { data, error } = await db.from('project_documents').update(patch).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not update the document');
+    return data;
+  }
+
+  async function deleteDocument(doc: Pick<ProjectDocument, 'id' | 'storage_path'>): Promise<void> {
+    const { error } = await db.from('project_documents').delete().eq('id', doc.id);
+    if (error) fail(error, 'Could not remove the document');
+    if (doc.storage_path) await db.storage.from(PAPERS_BUCKET).remove([doc.storage_path]);
+  }
+
+  /** Attaches (or replaces) the document's file: a PDF or a photo of it. */
+  async function attachDocumentFile(doc: Pick<ProjectDocument, 'id' | 'project_id' | 'storage_path'>, file: Blob & { name: string }): Promise<ProjectDocument> {
+    const ok = file.type === 'application/pdf' || file.type.startsWith('image/');
+    if (!ok) throw new StudioError(`${file.name}: attach a PDF or an image.`);
+    if (file.size > 20 * 1024 * 1024) throw new StudioError(`${file.name}: files up to 20 MB.`);
+    const path = `${doc.project_id}/${doc.id}/${crypto.randomUUID().slice(0, 8)}-${safeFileName(file.name)}`;
+    const up = await db.storage.from(PAPERS_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) throw new StudioError(`Upload failed: ${up.error.message}`);
+    const { data, error } = await db.from('project_documents')
+      .update({ storage_path: path, file_name: file.name.slice(0, 200), mime_type: file.type, size_bytes: file.size })
+      .eq('id', doc.id).select('*').single();
+    if (error) {
+      await db.storage.from(PAPERS_BUCKET).remove([path]);
+      fail(error, 'Could not save the file');
+    }
+    if (doc.storage_path) await db.storage.from(PAPERS_BUCKET).remove([doc.storage_path]);
+    return data;
+  }
+
+  /** A short-lived link to open a document's file. */
+  async function documentUrl(path: string): Promise<string> {
+    const { data, error } = await db.storage.from(PAPERS_BUCKET).createSignedUrl(path, 300);
+    if (error || !data) throw new StudioError('Could not open the file');
+    return data.signedUrl;
+  }
+
   // ── Post-production ──────────────────────────────────────────────────────
 
   async function listCuts(projectId: string): Promise<PostCut[]> {
@@ -643,7 +700,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

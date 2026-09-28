@@ -1,5 +1,6 @@
 bucket assets public=true limit=- mime=-
 bucket project-media public=false limit=52428800 mime={image/*,video/*,audio/*,application/pdf}
+bucket project-papers public=false limit=20971520 mime={application/pdf,image/*}
 bucket sfx-library public=true limit=- mime=-
 bucket sfx_library public=true limit=20971520 mime={audio/*}
 bucket studio-assets public=true limit=- mime=-
@@ -341,6 +342,24 @@ column project_crew.project_id uuid not null
 column project_crew.role text default 'contributor'::text not null
 column project_crew.status text default 'confirmed'::text
 column project_crew.user_id uuid not null
+column project_documents.created_at timestamp with time zone default now() not null
+column project_documents.created_by uuid default auth.uid()
+column project_documents.expires_on date
+column project_documents.file_name text
+column project_documents.id uuid default gen_random_uuid() not null
+column project_documents.kind text not null
+column project_documents.location_id uuid
+column project_documents.mime_type text
+column project_documents.notes text
+column project_documents.party text
+column project_documents.person_id uuid
+column project_documents.project_id uuid not null
+column project_documents.size_bytes bigint
+column project_documents.status text default 'needed'::text not null
+column project_documents.storage_path text
+column project_documents.title text not null
+column project_documents.updated_at timestamp with time zone default now() not null
+column project_documents.vendor_id uuid
 column project_formats.blurb text default ''::text not null
 column project_formats.created_at timestamp with time zone default now() not null
 column project_formats.icon text default 'film'::text not null
@@ -769,6 +788,18 @@ constraint project_crew.project_crew_project_id_user_id_key UNIQUE (project_id, 
 constraint project_crew.project_crew_role_check CHECK ((role = ANY (ARRAY['lead'::text, 'contributor'::text, 'viewer'::text])))
 constraint project_crew.project_crew_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'declined'::text])))
 constraint project_crew.project_crew_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint project_documents.project_documents_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint project_documents.project_documents_file_shape CHECK (((storage_path IS NULL) = (file_name IS NULL)))
+constraint project_documents.project_documents_kind_check CHECK ((kind = ANY (ARRAY['permit'::text, 'insurance'::text, 'release'::text, 'contract'::text, 'other'::text])))
+constraint project_documents.project_documents_location_fkey FOREIGN KEY (location_id, project_id) REFERENCES project_locations(id, project_id) ON DELETE SET NULL (location_id)
+constraint project_documents.project_documents_path_check CHECK (((storage_path IS NULL) OR (storage_path ~~ ((((project_id)::text || '/'::text) || (id)::text) || '/%'::text))))
+constraint project_documents.project_documents_person_fkey FOREIGN KEY (person_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint project_documents.project_documents_pkey PRIMARY KEY (id)
+constraint project_documents.project_documents_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_documents.project_documents_status_check CHECK ((status = ANY (ARRAY['needed'::text, 'pending'::text, 'done'::text])))
+constraint project_documents.project_documents_text_len CHECK (((char_length(party) <= 200) AND (char_length(notes) <= 2000) AND (char_length(file_name) <= 200)))
+constraint project_documents.project_documents_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
+constraint project_documents.project_documents_vendor_fkey FOREIGN KEY (vendor_id, project_id) REFERENCES vendors(id, project_id) ON DELETE SET NULL (vendor_id)
 constraint project_formats.project_formats_blurb_len CHECK ((char_length(blurb) <= 140))
 constraint project_formats.project_formats_icon_check CHECK ((icon ~ '^[a-z-]{1,30}$'::text))
 constraint project_formats.project_formats_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 40)))
@@ -778,6 +809,7 @@ constraint project_formats.project_formats_script_format_check CHECK ((script_fo
 constraint project_formats.project_formats_skip_phases_check CHECK ((skip_phases <@ ARRAY['pre-production'::text, 'production'::text, 'post-production'::text]))
 constraint project_locations.project_locations_cost_check CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))
 constraint project_locations.project_locations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint project_locations.project_locations_id_project_key UNIQUE (id, project_id)
 constraint project_locations.project_locations_name_check CHECK (((name = upper(btrim(name))) AND ((char_length(name) >= 1) AND (char_length(name) <= 200))))
 constraint project_locations.project_locations_name_key UNIQUE (project_id, name)
 constraint project_locations.project_locations_permit_check CHECK ((permit = ANY (ARRAY['unknown'::text, 'not_needed'::text, 'needed'::text, 'applied'::text, 'granted'::text])))
@@ -901,6 +933,7 @@ function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
+function internal.can_read_paper(object_name text) body=8529ddfa5adc4aa553d5367ca6622a49
 function internal.can_shape_project(pid uuid) body=ba331449795455856618ec3944851cf7
 function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae281362452785
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
@@ -915,6 +948,8 @@ function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a0578
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
+function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb17726137b5
+function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
@@ -965,6 +1000,7 @@ grant function internal.caller_is_admin() authenticated,postgres,service_role
 grant function internal.can_access_project(pid uuid) authenticated,postgres,service_role
 grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
 grant function internal.can_notify(target uuid) authenticated,postgres,service_role
+grant function internal.can_read_paper(object_name text) authenticated,postgres
 grant function internal.can_shape_project(pid uuid) authenticated,postgres
 grant function internal.can_view_channel(cid uuid) authenticated,postgres,service_role
 grant function internal.channels_default_audience() postgres
@@ -979,6 +1015,8 @@ grant function internal.path_project_id(object_name text) anon,authenticated,pos
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
+grant function internal.project_documents_sync_permit() postgres
+grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
@@ -1107,6 +1145,9 @@ index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
+index CREATE INDEX project_documents_location_idx ON public.project_documents USING btree (location_id)
+index CREATE INDEX project_documents_person_idx ON public.project_documents USING btree (person_id)
+index CREATE INDEX project_documents_project_idx ON public.project_documents USING btree (project_id)
 index CREATE INDEX project_locations_project_idx ON public.project_locations USING btree (project_id)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
@@ -1180,7 +1221,9 @@ index CREATE UNIQUE INDEX project_beats_pkey ON public.project_beats USING btree
 index CREATE UNIQUE INDEX project_brief_pkey ON public.project_brief USING btree (project_id, question)
 index CREATE UNIQUE INDEX project_crew_pkey ON public.project_crew USING btree (id)
 index CREATE UNIQUE INDEX project_crew_project_id_user_id_key ON public.project_crew USING btree (project_id, user_id)
+index CREATE UNIQUE INDEX project_documents_pkey ON public.project_documents USING btree (id)
 index CREATE UNIQUE INDEX project_formats_pkey ON public.project_formats USING btree (name)
+index CREATE UNIQUE INDEX project_locations_id_project_key ON public.project_locations USING btree (id, project_id)
 index CREATE UNIQUE INDEX project_locations_name_key ON public.project_locations USING btree (project_id, name)
 index CREATE UNIQUE INDEX project_locations_pkey ON public.project_locations USING btree (id)
 index CREATE UNIQUE INDEX project_tasks_pkey ON public.project_tasks USING btree (id)
@@ -1296,6 +1339,8 @@ policy public.project_crew "Project creators can manage crew" PERMISSIVE INSERT 
 policy public.project_crew "Project creators can remove crew" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR (user_id = ( SELECT auth.uid() AS uid))) check -
 policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check -
 policy public.project_crew "project_crew view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
+policy public.project_documents "project_documents keep" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
+policy public.project_documents "project_documents read" PERMISSIVE SELECT to authenticated using (internal.can_shape_project(project_id) OR (person_id = ( SELECT auth.uid() AS uid))) check -
 policy public.project_formats "project formats admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.project_formats "project formats view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.project_locations "project_locations access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1352,6 +1397,9 @@ policy storage.objects "project-media: members read" PERMISSIVE SELECT to authen
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
 policy storage.objects "project-media: shared read" PERMISSIVE SELECT to anon,authenticated using ((bucket_id = 'project-media'::text) AND internal.is_shared_media_object(name)) check -
 policy storage.objects "project-media: uploader or owner deletes" PERMISSIVE DELETE to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)) AND ((owner_id = (( SELECT auth.uid() AS uid))::text) OR internal.is_project_creator(internal.path_project_id(name)))) check -
+policy storage.objects "project-papers: delete" PERMISSIVE DELETE to authenticated using ((bucket_id = 'project-papers'::text) AND internal.can_shape_project(internal.path_project_id(name))) check -
+policy storage.objects "project-papers: read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-papers'::text) AND internal.can_read_paper(name)) check -
+policy storage.objects "project-papers: upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-papers'::text) AND internal.can_shape_project(internal.path_project_id(name)))
 policy storage.objects "sfx_library: delete own" PERMISSIVE DELETE to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
 policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
 policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))
@@ -1375,6 +1423,7 @@ realtime public.post_items
 realtime public.post_notes
 realtime public.project_beats
 realtime public.project_crew
+realtime public.project_documents
 realtime public.project_locations
 realtime public.projects
 realtime public.scene_elements
@@ -1420,6 +1469,7 @@ rls project_audio_references enabled=true forced=false
 rls project_beats enabled=true forced=false
 rls project_brief enabled=true forced=false
 rls project_crew enabled=true forced=false
+rls project_documents enabled=true forced=false
 rls project_formats enabled=true forced=false
 rls project_locations enabled=true forced=false
 rls project_tasks enabled=true forced=false
@@ -1457,6 +1507,8 @@ trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR E
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER project_brief_guard BEFORE INSERT OR UPDATE ON public.project_brief FOR EACH ROW EXECUTE FUNCTION internal.project_brief_guard()
+trigger CREATE TRIGGER project_documents_sync_permit AFTER INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.project_documents_sync_permit()
+trigger CREATE TRIGGER project_documents_touch BEFORE INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.project_documents_touch()
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
