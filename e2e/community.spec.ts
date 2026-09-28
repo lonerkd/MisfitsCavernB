@@ -64,7 +64,7 @@ test.describe('Community Lounge (local Supabase)', () => {
     await expect(who.getByRole('radio')).toHaveCount(2);
     await who.getByRole('radio', { name: /^Admins/ }).click();
     await boss.page.getByRole('button', { name: 'CREATE' }).click();
-    await expect(boss.page.getByRole('button', { name: `screenwriting-${TAG}` })).toBeVisible({ timeout: 10_000 });
+    await expect(boss.page.getByRole('button', { name: `screenwriting-${TAG}`, exact: true })).toBeVisible({ timeout: 10_000 });
     await expect.poll(async () => (await admin.from('channels').select('project_id, created_by, audience').eq('name', `screenwriting-${TAG}`).maybeSingle()).data)
       .toMatchObject({ project_id: null, created_by: users.boss.id, audience: 'admins' });
     await boss.ctx.close();
