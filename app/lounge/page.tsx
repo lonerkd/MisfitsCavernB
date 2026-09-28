@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2 } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2, Pin, PinOff, Pencil, Search } from 'lucide-react';
 import { audienceLabel, audienceOptions, defaultPostPolicy, groupChannels, type ChannelAudience } from '@/lib/lounge/audience';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,8 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
-import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid, deleteMessage } from '@/lib/supabase/messages';
+import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid, deleteMessage, editMessage, pinMessage, markLoungeRead, getLoungeUnread, type LoungeHit, type LoungeUnread } from '@/lib/supabase/messages';
+import { LoungeSearch, PinnedPanel } from '@/components/lounge/LoungePanels';
 import { getMyAccount } from '@/lib/supabase/profiles';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/os';
@@ -34,6 +35,8 @@ interface Message {
   mine?: boolean;
   reactions?: Record<string, string[]>;
   avatar_url?: string | null;
+  edited?: boolean;
+  pinned?: boolean;
 }
 
 const REACTION_CHOICES = ['👍', '❤️', '🔥', '🎬', '😂', '🎉', '👀', '🙏'];
@@ -115,26 +118,54 @@ function GuideSections({ messages, canEdit, onDelete }: { messages: Message[]; c
   );
 }
 
-function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount = 0 }: { msg: Message, currentUserId?: string, onReact: (id: string, emoji: string) => void, onOpenThread?: (m: Message) => void, replyCount?: number }) {
+function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount = 0, canPin = false, onPin, onEdit, highlight = false }: {
+  msg: Message, currentUserId?: string, onReact: (id: string, emoji: string) => void, onOpenThread?: (m: Message) => void, replyCount?: number,
+  /** Whoever runs the channel (or either side of a DM) pins. */
+  canPin?: boolean, onPin?: (m: Message) => void,
+  /** Saves new wording for your own message; resolves false when it didn't save. */
+  onEdit?: (m: Message, text: string) => Promise<boolean>,
+  /** Just jumped to (from search or the pinned list). */
+  highlight?: boolean,
+}) {
   const isMe = msg.mine || (msg.sender_id && msg.sender_id === currentUserId);
   const [hovered, setHovered] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(msg.text);
+  const saveEdit = async () => {
+    const text = draft.trim();
+    if (!text || !onEdit) return;
+    if (text === msg.text) { setEditing(false); return; }
+    if (await onEdit(msg, text)) setEditing(false);
+  };
+  const actionStyle: React.CSSProperties = { opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.9)', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
   const reactions = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
 
   return (
     <motion.div
+      id={`msg-${msg.id}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setPickerOpen(false); }}
+      onFocus={() => setHovered(true)}
       style={{
         marginBottom: 20,
         display: 'flex',
         flexDirection: 'column',
         alignItems: isMe ? 'flex-end' : 'flex-start',
+        borderRadius: 12,
+        outline: highlight ? '1px solid rgba(16,185,129,0.6)' : 'none',
+        outlineOffset: 6,
+        transition: 'outline-color 0.4s',
       }}
     >
+      {msg.pinned && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, color: '#f59e0b', marginBottom: 4 }}>
+          <Pin size={9} aria-hidden /> PINNED
+        </span>
+      )}
       {!isMe && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
           <Avatar src={msg.avatar_url} name={msg.user} size={20} />
@@ -153,9 +184,27 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
           border: `1px solid ${isMe ? 'rgba(232, 67, 26,0.2)' : 'rgba(255,255,255,0.06)'}`,
           borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
         }}>
-          <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(224, 221, 174,0.85)', margin: 0 }}>
-            {msg.text}
-          </p>
+          {editing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 260 }}>
+              <textarea value={draft} autoFocus rows={Math.min(6, draft.split('\n').length + 1)} aria-label="Edit message" maxLength={4000}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void saveEdit(); }
+                  if (e.key === 'Escape') { e.preventDefault(); setDraft(msg.text); setEditing(false); }
+                }}
+                style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: 'var(--fg)', fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.55, padding: '6px 8px', resize: 'vertical' }} />
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', fontFamily: 'var(--mono)', fontSize: 9 }}>
+                <span style={{ color: 'var(--fg-dim)', marginRight: 'auto', alignSelf: 'center' }}>Enter saves · Esc cancels</span>
+                <button type="button" onClick={() => { setDraft(msg.text); setEditing(false); }} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, color: 'var(--fg-muted)', padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit' }}>Cancel</button>
+                <button type="button" onClick={() => void saveEdit()} disabled={!draft.trim()} style={{ background: 'var(--accent)', border: 'none', borderRadius: 5, color: 'var(--bg)', padding: '3px 10px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 600 }}>Save</button>
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(224, 221, 174,0.85)', margin: 0, whiteSpace: 'pre-wrap' }}>
+              {msg.text}
+              {msg.edited && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', marginLeft: 6 }}>(edited)</span>}
+            </p>
+          )}
         </div>
 
         <div style={{ position: 'relative' }}>
@@ -178,6 +227,16 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
           <button onClick={() => onOpenThread(msg)} aria-label="Reply in thread"
             style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(20,20,20,0.9)', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <MessageSquare size={12} />
+          </button>
+        )}
+        {isMe && onEdit && !editing && (
+          <button type="button" onClick={() => { setDraft(msg.text); setEditing(true); }} aria-label="Edit message" title="Edit" style={actionStyle}>
+            <Pencil size={11} />
+          </button>
+        )}
+        {canPin && onPin && (
+          <button type="button" onClick={() => onPin(msg)} aria-label={msg.pinned ? 'Unpin message' : 'Pin message'} title={msg.pinned ? 'Unpin' : 'Pin'} style={actionStyle}>
+            {msg.pinned ? <PinOff size={11} /> : <Pin size={11} />}
           </button>
         )}
       </div>
@@ -580,11 +639,20 @@ export default function LoungePage() {
   const typingChannelRef = useRef<any>(null);
   const typingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const lastBroadcast = useRef(0);
+  // Unread per channel and per person; search and pinned panels; the message to jump to.
+  const [unread, setUnread] = useState<LoungeUnread>({ channels: {}, people: {} });
+  const [showSearch, setShowSearch] = useState(false);
+  const [showPinned, setShowPinned] = useState(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const pendingChannel = useRef<string | null>(null);
 
   const reloadChannels = useCallback(async () => {
     const list = await listChannels(activeProject?.id);
     setChannels(list);
     setActiveChannel(prev => {
+      const pending = pendingChannel.current && list.find(c => c.id === pendingChannel.current);
+      if (pending) { pendingChannel.current = null; return pending; }
       if (prev && list.some(c => c.id === prev.id)) return prev;
       return list.find(c => c.type === 'text') || list[0] || null;
     });
@@ -638,6 +706,11 @@ export default function LoungePage() {
   }, [activeProject?.id, activeProject?.creator_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
+  // What's open doesn't count as unread: it's being read.
+  const unreadOf = (channelId: string) => (!dmTarget && activeChannel?.id === channelId ? 0 : unread.channels[channelId] ?? 0);
+  const unreadFrom = (personId: string) => (dmTarget?.id === personId ? 0 : unread.people[personId] ?? 0);
+  const unreadTotal = Object.keys(unread.channels).filter((id) => channels.some((c) => c.id === id)).reduce((n, id) => n + unreadOf(id), 0)
+    + Object.keys(unread.people).reduce((n, id) => n + unreadFrom(id), 0);
   usePillStage(
     {
       module: 'lounge',
@@ -646,9 +719,10 @@ export default function LoungePage() {
       fields: [
         { label: 'Online', value: `${onlineCrew}/${crewList.length}`, color: onlineCrew > 0 ? '#10b981' : undefined },
         { label: 'Msgs', value: `${messages.length}` },
+        ...(unreadTotal > 0 ? [{ label: 'Unread', value: `${unreadTotal}`, color: '#10b981' }] : []),
       ],
     },
-    [activeChannel?.name, onlineCrew, crewList.length, messages.length],
+    [activeChannel?.name, onlineCrew, crewList.length, messages.length, unreadTotal],
   );
 
   useEffect(() => {
@@ -694,6 +768,8 @@ export default function LoungePage() {
           sender_id: m.sender_id,
           reactions: m.reactions || {},
           avatar_url: m.profiles?.avatar_url,
+          edited: !!m.edited_at,
+          pinned: !!m.pinned,
         }));
         setMessages(formatted);
         if (!dmTarget) {
@@ -728,8 +804,48 @@ export default function LoungePage() {
   }, [activeChannel, dmTarget, currentUserId]);
 
   useEffect(() => {
+    // Jumping to a message (search, pinned) scrolls to it; otherwise follow the newest.
+    if (focusId) {
+      const el = document.getElementById(`msg-${focusId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightId(focusId);
+      setFocusId(null);
+      const t = setTimeout(() => setHighlightId(null), 2600);
+      return () => clearTimeout(t);
+    }
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, focusId]);
+
+  // Unread counts: loaded once signed in, and again whenever a message arrives
+  // anywhere this person can read (Realtime applies the same policy).
+  useEffect(() => {
+    if (!currentUserId) return;
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const reload = () => { getLoungeUnread().then((u) => { if (alive) setUnread(u); }); };
+    reload();
+    const ch = supabase.channel(`lounge-unread:${currentUserId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => { clearTimeout(timer); timer = setTimeout(reload, 700); })
+      .subscribe();
+    return () => { alive = false; clearTimeout(timer); supabase.removeChannel(ch); };
+  }, [currentUserId]);
+
+  // Reading what's open: the channel or conversation is marked read when it
+  // opens and as messages arrive in it.
+  useEffect(() => {
+    if (!currentUserId) return;
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    const partner = dmTarget?.id ?? null;
+    const channelId = !partner && activeChannel && activeChannel.type !== 'voice' ? activeChannel.id : null;
+    if (!partner && !channelId) return;
+    const t = setTimeout(() => {
+      void markLoungeRead(partner ? { partner } : { channel: channelId! }).then(() => setUnread((u) => partner
+        ? { ...u, people: { ...u.people, [partner]: 0 } }
+        : { ...u, channels: { ...u.channels, [channelId!]: 0 } }));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [currentUserId, activeChannel, dmTarget, messages.length]);
 
   useEffect(() => {
     if (!activeChannel) return;
@@ -790,6 +906,48 @@ export default function LoungePage() {
       return { ...m, reactions: r };
     }));
     try { await toggleReaction(messageId, emoji, currentUser.id); } catch (e) { console.error(e); }
+  };
+
+  const handleEdit = async (m: Message, text: string) => {
+    try {
+      await editMessage(m.id, text);
+      setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, text, edited: true } : x)));
+      return true;
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not edit it', 'error'); return false; }
+  };
+
+  const handlePin = async (m: Message) => {
+    try {
+      await pinMessage(m.id, !m.pinned);
+      setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, pinned: !m.pinned } : x)));
+      toast(m.pinned ? 'Unpinned' : 'Pinned — find it under Pinned', 'success');
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not pin it', 'error'); }
+  };
+
+  const unpinById = async (id: string) => {
+    try {
+      await pinMessage(id, false);
+      setMessages((prev) => prev.map((x) => (x.id === id ? { ...x, pinned: false } : x)));
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not unpin it', 'error'); }
+  };
+
+  // Opens where a search result lives — its channel (switching project if it's
+  // another production's), or the direct conversation — and scrolls to it.
+  const jumpTo = (hit: LoungeHit) => {
+    setShowSearch(false);
+    setFocusId(hit.parent_message_id ?? hit.id);
+    if (hit.channel_uuid) {
+      const here = channels.find((c) => c.id === hit.channel_uuid);
+      if (here) { setDmTarget(null); setActiveChannel(here); return; }
+      const project = hit.project_id ? projects.find((p) => p.id === hit.project_id) : null;
+      if (project) { pendingChannel.current = hit.channel_uuid; setDmTarget(null); setActiveProject(project); return; }
+      toast('That channel isn’t in your list any more', 'info');
+      return;
+    }
+    const partner = hit.sender_id === currentUser?.id ? hit.receiver_id : hit.sender_id;
+    if (!partner) return;
+    const known = crewList.find((c) => c.id === partner);
+    setDmTarget({ id: partner, name: known?.name ?? hit.sender ?? 'someone' });
   };
 
   const handleThreadSend = async () => {
@@ -936,11 +1094,14 @@ export default function LoungePage() {
                        const AUD_ICON: Record<string, typeof Hash> = { public: Globe, admins: Shield, owners: Crown, above: ArrowUp, below: ArrowDown, guests: UserCheck };
                        const Icon = ch.type === 'guide' ? BookOpen : ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : AUD_ICON[ch.audience] ?? Hash;
                        const who = ch.audience === 'users' || ch.audience === 'team' ? undefined : audienceLabel(ch.audience);
+                       const n = unreadOf(ch.id);
                        return (
                          <button key={ch.id} title={[who, ch.is_private ? 'Invite-only' : null, ch.topic].filter(Boolean).join(' · ') || undefined} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
-                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
-                           <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} style={{ flexShrink: 0 }} />
-                           <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.name}</span>
+                           aria-label={n > 0 ? `${ch.name}, ${n >= 100 ? '99+' : n} unread` : undefined}
+                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: 'none', color: isActive || n > 0 ? '#fff' : '#888', fontWeight: n > 0 ? 700 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
+                           <Icon size={12} color={isActive ? 'var(--accent)' : n > 0 ? '#10b981' : '#666'} style={{ flexShrink: 0 }} />
+                           <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{ch.name}</span>
+                           {n > 0 && <span aria-hidden style={{ marginLeft: 'auto', minWidth: 16, padding: '0 5px', borderRadius: 99, background: '#10b981', color: '#04110b', fontSize: 9, fontWeight: 700, lineHeight: '15px', textAlign: 'center' }}>{n >= 100 ? '99+' : n}</span>}
                          </button>
                        );
                      })}
@@ -1012,6 +1173,16 @@ export default function LoungePage() {
                 ) : (
                   <><Users size={13} color="#666" /> {crewList.length}</>
                 )}
+                <button type="button" onClick={() => { setShowPinned(false); setShowSearch(true); }} aria-label="Search messages" title="Search"
+                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
+                  <Search size={12} /> SEARCH
+                </button>
+                {!dmTarget && activeChannel && activeChannel.type !== 'voice' && (
+                  <button type="button" onClick={() => { setShowSearch(false); setShowPinned(true); }} aria-label={`Pinned messages in #${activeChannel.name}`} title="Pinned"
+                    style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
+                    <Pin size={12} /> PINNED{messages.some((m) => m.pinned) ? ` · ${messages.filter((m) => m.pinned).length}` : ''}
+                  </button>
+                )}
                 {!dmTarget && activeChannel && canManageActive && (
                   <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
                     <SettingsIcon size={12} /> MANAGE
@@ -1053,7 +1224,10 @@ export default function LoungePage() {
                     ) : null;
                   })()}
                 </div>
-              ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0} />)}
+              ) : messages.map(msg => (
+                <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0}
+                  canPin={dmTarget ? true : canManageActive} onPin={handlePin} onEdit={dmTarget || canPost ? handleEdit : undefined} highlight={highlightId === msg.id} />
+              ))}
               <div ref={bottomRef} />
             </div>
           </div>
@@ -1195,7 +1369,9 @@ export default function LoungePage() {
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.3, color: isOnline ? 'var(--fg)' : 'var(--fg-muted)', fontWeight: 600 }}>
                     {member.name}
                   </div>
-                  {isOnline && (
+                  {unreadFrom(member.id) > 0 ? (
+                    <div aria-label={`${unreadFrom(member.id)} unread from ${member.name}`} style={{ minWidth: 16, padding: '0 5px', borderRadius: 99, background: '#10b981', color: '#04110b', fontSize: 9, fontWeight: 700, lineHeight: '15px', textAlign: 'center', fontFamily: 'var(--mono)' }}>{unreadFrom(member.id)}</div>
+                  ) : isOnline && (
                     <div style={{ fontSize: 7, color: '#00cc66', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
@@ -1241,6 +1417,18 @@ export default function LoungePage() {
               <button onClick={handleThreadSend} aria-label="Send message" style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(255,255,255,0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSearch && (
+          <LoungeSearch channel={!dmTarget && activeChannel && activeChannel.type !== 'voice' ? { id: activeChannel.id, name: activeChannel.name } : null}
+            meId={currentUser?.id} onClose={() => setShowSearch(false)} onJump={jumpTo} />
+        )}
+        {showPinned && !dmTarget && activeChannel && (
+          <PinnedPanel channel={{ id: activeChannel.id, name: activeChannel.name }} refreshKey={messages}
+            canUnpin={canManageActive} onUnpin={(id) => void unpinById(id)} onClose={() => setShowPinned(false)}
+            onJump={(id) => { setShowPinned(false); setFocusId(id); }} />
         )}
       </AnimatePresence>
 

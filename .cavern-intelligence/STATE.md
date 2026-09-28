@@ -1,8 +1,25 @@
 # Misfits Cavern — Project State
 
-## Latest Session — A demo world to play in
+## Latest Session — The Lounge: unread, pinned, edited, searchable
 
-`scripts/demo/` seeds an account with the whole pipeline (`npm run demo:sql -- <email> [tz] > demo.sql`, then run it as the database owner; `--portable` leaves the email out and reads `set demo.owner = '…'`). Seeded into kingsavyt@gmail.com in production (its own projects untouched):
+Migration `20260929000000_lounge.sql` — **apply to production before merging**.
+
+- **Unread**: channels with news are bold with a count, and so are crew with
+  unread direct messages; the pill shows the total. Opening a channel (or a
+  conversation) marks it read, and it stays read as messages arrive while
+  it's open. Counts refresh live (`lounge_reads`, `lounge_unread()`).
+- **Pinned**: whoever runs a channel pins a message (either person can in a
+  DM); pinned messages carry a PINNED mark and are listed under **Pinned**
+  in the channel header, one click away.
+- **Edited**: you can reword your own message (Enter saves, Esc cancels); it
+  reads "(edited)". Nothing else about a message can be changed.
+- **Search**: across everything you can read or within the channel; word
+  starts match ("warm lay"); a result opens its channel — in another
+  production if need be — or the conversation, and scrolls to the message.
+
+## Earlier — A demo world to play in
+
+`scripts/demo/` seeds an account with the whole pipeline (`npm run demo:sql -- <email> [tz] > demo.sql`, then run it as the database owner; `--portable` leaves the email out and reads `set demo.owner = '…'`). Seeded into kingsavyt@gmail.com in production (its own projects untouched); PR #83 merged:
 
 - **Salt Lines** (short, an idea: logline, two answers, two references) ·
   **The Quiet Hours** (feature, development done: draft, characters, beats,

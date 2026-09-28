@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T20:10:28.702Z",
+  "last_synchronized": "2026-09-28T20:34:06.926Z",
   "stats": {
-    "totalFiles": 432,
-    "totalSize": 3393214,
+    "totalFiles": 436,
+    "totalSize": 3447339,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 145,
-      ".ts": 235,
+      ".tsx": 146,
+      ".ts": 237,
       ".js": 7,
-      ".sql": 31
+      ".sql": 32
     }
   },
   "modules": {
@@ -194,6 +194,7 @@
         "components/editor/useEditorScenes.ts",
         "components/editor/useLineCutNotes.ts",
         "components/formats/FormatPicker.tsx",
+        "components/lounge/LoungePanels.tsx",
         "components/progress/Bricks.tsx",
         "components/progress/LockedTool.tsx",
         "components/progress/LoglineEditor.tsx",
@@ -279,7 +280,8 @@
         "supabase/migrations/20260928070000_hiring_loop.sql",
         "supabase/migrations/20260928080000_locations.sql",
         "supabase/migrations/20260928090000_money.sql",
-        "supabase/migrations/20260928100000_documents.sql"
+        "supabase/migrations/20260928100000_documents.sql",
+        "supabase/migrations/20260929000000_lounge.sql"
       ]
     }
   },
@@ -451,8 +453,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 79718,
-      "last_modified": "2026-09-28T07:44:07.015Z"
+      "size": 92310,
+      "last_modified": "2026-09-28T20:31:29.610Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -825,6 +827,11 @@
       "last_modified": "2026-09-27T05:38:14.188Z"
     },
     {
+      "path": "components/lounge/LoungePanels.tsx",
+      "size": 10508,
+      "last_modified": "2026-09-28T20:30:20.366Z"
+    },
+    {
       "path": "components/progress/Bricks.tsx",
       "size": 3132,
       "last_modified": "2026-09-28T06:50:07.658Z"
@@ -1163,6 +1170,11 @@
       "path": "e2e/login-smoke.spec.ts",
       "size": 932,
       "last_modified": "2026-09-24T20:05:03.636Z"
+    },
+    {
+      "path": "e2e/lounge.spec.ts",
+      "size": 6550,
+      "last_modified": "2026-09-28T20:32:17.177Z"
     },
     {
       "path": "e2e/money.spec.ts",
@@ -1911,8 +1923,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 106704,
-      "last_modified": "2026-09-28T19:17:34.144Z"
+      "size": 110779,
+      "last_modified": "2026-09-28T20:28:23.286Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1921,8 +1933,8 @@
     },
     {
       "path": "lib/supabase/messages.ts",
-      "size": 4194,
-      "last_modified": "2026-09-28T02:28:08.407Z"
+      "size": 7038,
+      "last_modified": "2026-09-28T20:28:49.462Z"
     },
     {
       "path": "lib/supabase/notifications.ts",
@@ -2235,6 +2247,11 @@
       "last_modified": "2026-09-28T09:43:21.088Z"
     },
     {
+      "path": "supabase/migrations/20260929000000_lounge.sql",
+      "size": 10850,
+      "last_modified": "2026-09-28T20:27:50.587Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2242,7 +2259,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T19:21:30.500Z"
+      "last_modified": "2026-09-28T20:33:49.114Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2323,6 +2340,11 @@
       "path": "tests/integration/locations.test.ts",
       "size": 2162,
       "last_modified": "2026-09-28T08:40:24.986Z"
+    },
+    {
+      "path": "tests/integration/lounge.test.ts",
+      "size": 6706,
+      "last_modified": "2026-09-28T20:28:18.982Z"
     },
     {
       "path": "tests/integration/media-library.test.ts",

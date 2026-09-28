@@ -193,6 +193,11 @@ column jobs.role text not null
 column jobs.status text default 'open'::text
 column jobs.title text not null
 column jobs.updated_at timestamp with time zone default now()
+column lounge_reads.channel_id uuid
+column lounge_reads.id uuid default gen_random_uuid() not null
+column lounge_reads.last_read_at timestamp with time zone default now() not null
+column lounge_reads.partner_id uuid
+column lounge_reads.user_id uuid not null
 column media.board text
 column media.created_at timestamp with time zone default now() not null
 column media.created_by uuid default auth.uid()
@@ -214,9 +219,12 @@ column messages.channel_id text
 column messages.channel_uuid uuid
 column messages.content text not null
 column messages.created_at timestamp with time zone default now()
+column messages.edited_at timestamp with time zone
 column messages.id uuid default uuid_generate_v4() not null
 column messages.parent_message_id uuid
 column messages.pinned boolean default false
+column messages.pinned_at timestamp with time zone
+column messages.pinned_by uuid
 column messages.reactions jsonb default '{}'::jsonb
 column messages.receiver_id uuid
 column messages.sender_id uuid not null
@@ -694,6 +702,11 @@ constraint jobs.jobs_project_id_fkey FOREIGN KEY (project_id) REFERENCES project
 constraint jobs.jobs_rate_type_check CHECK ((rate_type = ANY (ARRAY['hourly'::text, 'fixed'::text])))
 constraint jobs.jobs_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE
 constraint jobs.jobs_status_check CHECK ((status = ANY (ARRAY['open'::text, 'in-progress'::text, 'closed'::text])))
+constraint lounge_reads.lounge_reads_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
+constraint lounge_reads.lounge_reads_one_target CHECK (((channel_id IS NULL) <> (partner_id IS NULL)))
+constraint lounge_reads.lounge_reads_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint lounge_reads.lounge_reads_pkey PRIMARY KEY (id)
+constraint lounge_reads.lounge_reads_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint media.media_board_check CHECK ((char_length(board) <= 60))
 constraint media.media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint media.media_external_url_check CHECK (((external_url IS NULL) OR ((external_url ~* '^https?://'::text) AND (char_length(external_url) <= 2000))))
@@ -708,7 +721,10 @@ constraint media.media_storage_path_check CHECK (((storage_path IS NULL) OR ((st
 constraint media.media_storage_path_key UNIQUE (storage_path)
 constraint media.media_title_check CHECK ((char_length(title) <= 200))
 constraint messages.messages_channel_uuid_fkey FOREIGN KEY (channel_uuid) REFERENCES channels(id) ON DELETE CASCADE
+constraint messages.messages_content_len CHECK (((char_length(btrim(content)) >= 1) AND (char_length(btrim(content)) <= 4000)))
 constraint messages.messages_parent_message_id_fkey FOREIGN KEY (parent_message_id) REFERENCES messages(id) ON DELETE CASCADE
+constraint messages.messages_pin_shape CHECK ((pinned = (pinned_at IS NOT NULL)))
+constraint messages.messages_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint messages.messages_pkey PRIMARY KEY (id)
 constraint messages.messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -962,6 +978,7 @@ function public.admin_platform_analytics(p_since timestamp with time zone) body=
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
+function public.edit_message(p_message uuid, p_content text) body=4b7f1df44a8b0a61b7b960fa0d34f8e6
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
@@ -976,11 +993,15 @@ function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
 function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
+function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
+function public.mark_lounge_read(p_channel uuid, p_partner uuid) body=57f11db548b93389ff29027e6e7dba3d
+function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=1dab5a7c14578a22e95dbcbbd3255d64
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
+function public.search_lounge(p_query text, p_channel uuid, p_limit integer) body=eb06476586cc9c7ecf2d318c02705a9a
 function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6c
 function public.set_my_ui_prefs(p_patch jsonb) body=387984f6950b260f06881fbad22478d4
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
@@ -1029,6 +1050,7 @@ grant function public.admin_platform_analytics(p_since timestamp with time zone)
 grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
+grant function public.edit_message(p_message uuid, p_content text) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
 grant function public.get_my_ui_prefs() authenticated,postgres,service_role
 grant function public.get_my_writing_prefs() authenticated,postgres,service_role
@@ -1043,11 +1065,15 @@ grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
 grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
+grant function public.lounge_unread() authenticated,postgres,service_role
+grant function public.mark_lounge_read(p_channel uuid, p_partner uuid) authenticated,postgres,service_role
+grant function public.pin_message(p_message uuid, p_pinned boolean) authenticated,postgres,service_role
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
+grant function public.search_lounge(p_query text, p_channel uuid, p_limit integer) authenticated,postgres,service_role
 grant function public.send_call_sheet_reminders() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
@@ -1126,8 +1152,11 @@ index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btr
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
 index CREATE INDEX media_created_by_idx ON public.media USING btree (created_by)
 index CREATE INDEX media_project_created_idx ON public.media USING btree (project_id, created_at DESC)
+index CREATE INDEX messages_channel_created_idx ON public.messages USING btree (channel_uuid, created_at)
 index CREATE INDEX messages_channel_uuid_idx ON public.messages USING btree (channel_uuid)
+index CREATE INDEX messages_content_search_idx ON public.messages USING gin (to_tsvector('simple'::regconfig, content))
 index CREATE INDEX messages_parent_idx ON public.messages USING btree (parent_message_id)
+index CREATE INDEX messages_pinned_idx ON public.messages USING btree (channel_uuid) WHERE pinned
 index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
 index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
 index CREATE INDEX portfolio_projects_category_idx ON public.portfolio_projects USING btree (category)
@@ -1201,6 +1230,9 @@ index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfol
 index CREATE UNIQUE INDEX job_applications_job_id_applicant_id_key ON public.job_applications USING btree (job_id, applicant_id)
 index CREATE UNIQUE INDEX job_applications_pkey ON public.job_applications USING btree (id)
 index CREATE UNIQUE INDEX jobs_pkey ON public.jobs USING btree (id)
+index CREATE UNIQUE INDEX lounge_reads_channel_key ON public.lounge_reads USING btree (user_id, channel_id) WHERE (channel_id IS NOT NULL)
+index CREATE UNIQUE INDEX lounge_reads_partner_key ON public.lounge_reads USING btree (user_id, partner_id) WHERE (partner_id IS NOT NULL)
+index CREATE UNIQUE INDEX lounge_reads_pkey ON public.lounge_reads USING btree (id)
 index CREATE UNIQUE INDEX media_id_project_key ON public.media USING btree (id, project_id)
 index CREATE UNIQUE INDEX media_pkey ON public.media USING btree (id)
 index CREATE UNIQUE INDEX media_storage_path_key ON public.media USING btree (storage_path)
@@ -1297,6 +1329,7 @@ policy public.jobs "Applicants view jobs they applied to" PERMISSIVE SELECT to a
 policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
 policy public.jobs "Jobs publicly readable" PERMISSIVE SELECT to public using ((status = 'open'::text) OR (created_by = ( SELECT auth.uid() AS uid))) check -
+policy public.lounge_reads "lounge_reads own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.media "media delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.media "media update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1455,6 +1488,7 @@ rls discord_integrations enabled=true forced=false
 rls expenses enabled=true forced=false
 rls job_applications enabled=true forced=false
 rls jobs enabled=true forced=false
+rls lounge_reads enabled=true forced=false
 rls media enabled=true forced=false
 rls messages enabled=true forced=false
 rls notifications enabled=true forced=false
