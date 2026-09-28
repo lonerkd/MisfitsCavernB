@@ -1882,6 +1882,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      project_locations: {
+        Row: {
+          address: string | null;
+          contact: string | null;
+          cost: number | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          permit: string;
+          project_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          address?: string | null;
+          contact?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          permit?: string;
+          project_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string | null;
+          contact?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          permit?: string;
+          project_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_locations_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_locations_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       project_tasks: {
         Row: {
           assigned_to: string | null;

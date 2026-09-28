@@ -68,6 +68,7 @@ test.describe('Scene readiness (local Supabase)', () => {
     await expect(todo.getByText('Break down 2 scenes')).toBeVisible();
     await expect(todo.getByText('Plan shots for 2 scenes')).toBeVisible();
     await expect(todo.getByText('Date day 1')).toBeVisible();
+    await expect(todo.getByText(/^Lock down /)).toBeVisible();
     await expect(page.getByRole('region', { name: 'Next shoot day' })).toContainText('2 blocked');
 
     // A scene's checks, with the fix for each.
@@ -93,6 +94,10 @@ test.describe('Scene readiness (local Supabase)', () => {
     await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: '2030-01-15' });
     await expect(todo.getByText('1 element still needed or sourcing')).toBeVisible({ timeout: 20_000 });
 
+    // Every location confirmed (Production › Locations).
+    const places = Array.from(new Set((await admin.from('scenes').select('location').eq('project_id', projectId).is('removed_at', null)).data!.map((r) => String(r.location).toUpperCase())));
+    await admin.from('project_locations').insert(places.map((name) => ({ project_id: projectId, name, status: 'confirmed', permit: 'not_needed' })));
+    await expect(todo.getByText(/^Lock down /)).toHaveCount(0, { timeout: 20_000 });
     await admin.from('breakdown_elements').update({ status: 'ready' }).eq('id', lantern.id);
     await expect(todo.getByText('Nothing blocking — every scene left to shoot is ready.')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('region', { name: 'Next shoot day' })).toContainText('all ready');

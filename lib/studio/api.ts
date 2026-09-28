@@ -19,6 +19,8 @@ export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
+export type ProjectLocation = Tables<'project_locations'>;
+export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes'>>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
 export type PostCut = Tables<'post_cuts'>;
 export type PostNote = Tables<'post_notes'>;
@@ -377,6 +379,28 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  // ── Locations ────────────────────────────────────────────────────────────
+
+  async function listLocations(projectId: string): Promise<ProjectLocation[]> {
+    const { data, error } = await db.from('project_locations').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load locations');
+    return data;
+  }
+
+  /** Creates the location's record on first save (keyed by its name); later saves change only the given fields. */
+  async function saveLocation(projectId: string, name: string, patch: LocationPatch): Promise<ProjectLocation> {
+    const { data, error } = await db.from('project_locations')
+      .upsert({ project_id: projectId, name: name.trim().toUpperCase(), ...patch }, { onConflict: 'project_id,name' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save the location');
+    return data;
+  }
+
+  async function deleteLocation(id: string): Promise<void> {
+    const { error } = await db.from('project_locations').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove the location');
+  }
+
   // ── Post-production ──────────────────────────────────────────────────────
 
   async function listCuts(projectId: string): Promise<PostCut[]> {
@@ -542,7 +566,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

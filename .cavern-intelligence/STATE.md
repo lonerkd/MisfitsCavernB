@@ -1,8 +1,26 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The hiring loop
+## Latest Session — Locations as records
 
-Migration `20260928070000_hiring_loop.sql` — **apply to production before merging**.
+Migration `20260928080000_locations.sql` — **apply to production before merging**.
+
+- **Studio › Production › Locations**: every location the script names
+  (INT. HARBOR - NIGHT → HARBOR), busiest first, with its scenes, shoot days,
+  exterior/night — and a record the production fills in: status (scouting →
+  on hold → confirmed), permit (not checked / not needed / needed / applied
+  / granted), address (with a map link), contact, cost, notes. Locations the
+  script doesn't name yet can be added. "2 of 5 locked down".
+- `project_locations` is keyed by the heading's name (upper case), so scenes
+  link through the script with nothing to maintain; RLS as call sheets.
+- **Readiness** gains a Location check: a scene is blocked until its location
+  is confirmed with any permit it needs granted ("HARBOR permit pending");
+  "What unblocks the most" says "Lock down CAVE, RIDGE".
+- **Call sheets** offer the day's location address: "CAVE is at 1 Cave Rd.
+  Use this address".
+
+## Earlier — The hiring loop
+
+Migration `20260928070000_hiring_loop.sql` — see PR #79.
 
 - **Casting calls**: the Casting board's open role → "Post a casting call"
   opens Jobs with the post written from the script (scenes, shoot days) and

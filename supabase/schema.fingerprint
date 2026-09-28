@@ -337,6 +337,18 @@ column project_formats.position integer default 0 not null
 column project_formats.script_format text default 'screenplay'::text not null
 column project_formats.skip_milestones text[] default '{}'::text[] not null
 column project_formats.skip_phases text[] default '{}'::text[] not null
+column project_locations.address text
+column project_locations.contact text
+column project_locations.cost numeric(12,2)
+column project_locations.created_at timestamp with time zone default now() not null
+column project_locations.created_by uuid default auth.uid()
+column project_locations.id uuid default gen_random_uuid() not null
+column project_locations.name text not null
+column project_locations.notes text
+column project_locations.permit text default 'unknown'::text not null
+column project_locations.project_id uuid not null
+column project_locations.status text default 'scouting'::text not null
+column project_locations.updated_at timestamp with time zone default now() not null
 column project_tasks.assigned_to uuid
 column project_tasks.completed boolean default false
 column project_tasks.created_at timestamp with time zone default now()
@@ -720,6 +732,15 @@ constraint project_formats.project_formats_phase_labels_check CHECK (((jsonb_typ
 constraint project_formats.project_formats_pkey PRIMARY KEY (name)
 constraint project_formats.project_formats_script_format_check CHECK ((script_format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
 constraint project_formats.project_formats_skip_phases_check CHECK ((skip_phases <@ ARRAY['pre-production'::text, 'production'::text, 'post-production'::text]))
+constraint project_locations.project_locations_cost_check CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))
+constraint project_locations.project_locations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint project_locations.project_locations_name_check CHECK (((name = upper(btrim(name))) AND ((char_length(name) >= 1) AND (char_length(name) <= 200))))
+constraint project_locations.project_locations_name_key UNIQUE (project_id, name)
+constraint project_locations.project_locations_permit_check CHECK ((permit = ANY (ARRAY['unknown'::text, 'not_needed'::text, 'needed'::text, 'applied'::text, 'granted'::text])))
+constraint project_locations.project_locations_pkey PRIMARY KEY (id)
+constraint project_locations.project_locations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_locations.project_locations_status_check CHECK ((status = ANY (ARRAY['scouting'::text, 'option'::text, 'confirmed'::text])))
+constraint project_locations.project_locations_text_len CHECK (((char_length(address) <= 500) AND (char_length(contact) <= 300) AND (char_length(notes) <= 5000)))
 constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
 constraint project_tasks.project_tasks_pkey PRIMARY KEY (id)
 constraint project_tasks.project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -833,6 +854,7 @@ function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a0578
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
+function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
@@ -892,6 +914,7 @@ grant function internal.path_project_id(object_name text) anon,authenticated,pos
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
+grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
@@ -1014,6 +1037,7 @@ index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
+index CREATE INDEX project_locations_project_idx ON public.project_locations USING btree (project_id)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
@@ -1083,6 +1107,8 @@ index CREATE UNIQUE INDEX project_brief_pkey ON public.project_brief USING btree
 index CREATE UNIQUE INDEX project_crew_pkey ON public.project_crew USING btree (id)
 index CREATE UNIQUE INDEX project_crew_project_id_user_id_key ON public.project_crew USING btree (project_id, user_id)
 index CREATE UNIQUE INDEX project_formats_pkey ON public.project_formats USING btree (name)
+index CREATE UNIQUE INDEX project_locations_name_key ON public.project_locations USING btree (project_id, name)
+index CREATE UNIQUE INDEX project_locations_pkey ON public.project_locations USING btree (id)
 index CREATE UNIQUE INDEX project_tasks_pkey ON public.project_tasks USING btree (id)
 index CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)
 index CREATE UNIQUE INDEX projects_share_token_key ON public.projects USING btree (share_token)
@@ -1192,6 +1218,7 @@ policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE 
 policy public.project_crew "project_crew view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
 policy public.project_formats "project formats admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.project_formats "project formats view" PERMISSIVE SELECT to anon,authenticated using true check -
+policy public.project_locations "project_locations access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.project_tasks "project_tasks access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.projects "Authenticated users create projects" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (creator_id = ( SELECT auth.uid() AS uid)))
 policy public.projects "Creators delete projects" PERMISSIVE DELETE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
@@ -1262,6 +1289,7 @@ realtime public.post_items
 realtime public.post_notes
 realtime public.project_beats
 realtime public.project_crew
+realtime public.project_locations
 realtime public.projects
 realtime public.scene_elements
 realtime public.scene_media
@@ -1305,6 +1333,7 @@ rls project_beats enabled=true forced=false
 rls project_brief enabled=true forced=false
 rls project_crew enabled=true forced=false
 rls project_formats enabled=true forced=false
+rls project_locations enabled=true forced=false
 rls project_tasks enabled=true forced=false
 rls projects enabled=true forced=false
 rls scene_elements enabled=true forced=false
@@ -1336,6 +1365,7 @@ trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR E
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER project_brief_guard BEFORE INSERT OR UPDATE ON public.project_brief FOR EACH ROW EXECUTE FUNCTION internal.project_brief_guard()
+trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
