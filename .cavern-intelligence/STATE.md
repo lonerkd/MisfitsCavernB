@@ -1,8 +1,28 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Paperwork: permits, insurance, releases, contracts
+## Latest Session — A demo world to play in
 
-Migration `20260928100000_documents.sql` — **apply to production before merging** (adds the private `project-papers` bucket and its storage policies).
+`scripts/demo/` seeds an account with the whole pipeline (`npm run demo:sql -- <email> [tz] > demo.sql`, then run it as the database owner; `--portable` leaves the email out and reads `set demo.owner = '…'`). Seeded into kingsavyt@gmail.com in production (its own projects untouched):
+
+- **Salt Lines** (short, an idea: logline, two answers, two references) ·
+  **The Quiet Hours** (feature, development done: draft, characters, beats,
+  mood board) · **Night Shift at the Lantern** (short, pre-production: crew,
+  casting, shots, breakdown, locations, money, call sheets — night one issued
+  — paperwork, an open casting call with an applicant) · **Paper Moons**
+  (music video shooting *now*: yesterday wrapped with a set log, today
+  rolling, timesheets) · **Ashfall** (post: cuts, open notes, the pipeline
+  half done) · **Harbor Lights** (delivered: link-shared, festivals,
+  campaigns, portfolio) · **Late Checkout** (podcast) · **Wolf Moon**
+  (archived) · **Undertow** (someone else's film where the account is cast:
+  tomorrow's call sheet, a release to sign, an application pending).
+- Sample people are password-less accounts on `demo.misfitscavern.invalid`.
+  Re-running replaces the demo projects with fresh ones (dates relative to
+  the run; "today" is today in the account's time zone).
+- Fix: the projects board no longer counts down to a delivered project's end date.
+
+## Earlier — Paperwork: permits, insurance, releases, contracts
+
+Migration `20260928100000_documents.sql` — applied to production; PR #82 merged.
 
 - **Studio › Production › Paperwork** (the Crew tool): every document the
   production keeps — permits, insurance, releases, contracts, other — each
