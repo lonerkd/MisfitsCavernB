@@ -345,6 +345,45 @@ export type Database = {
           },
         ];
       };
+      call_sheet_acks: {
+        Row: {
+          acked_at: string;
+          call_sheet_id: string;
+          project_id: string;
+          user_id: string;
+          version: number;
+        };
+        Insert: {
+          acked_at?: string;
+          call_sheet_id: string;
+          project_id: string;
+          user_id: string;
+          version: number;
+        };
+        Update: {
+          acked_at?: string;
+          call_sheet_id?: string;
+          project_id?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "call_sheet_acks_sheet_fkey";
+            columns: ["call_sheet_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "call_sheets";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "call_sheet_acks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       call_sheet_calls: {
         Row: {
           call_sheet_id: string;
@@ -402,14 +441,19 @@ export type Database = {
           estimated_wrap: string | null;
           general_call: string | null;
           id: string;
+          issued: Json | null;
+          issued_at: string | null;
+          issued_by: string | null;
           location_address: string | null;
           notes: string | null;
           project_id: string;
+          reminded_at: string | null;
           shoot_date: string | null;
           shoot_day: number;
           shooting_call: string | null;
           updated_at: string | null;
           updated_by: string | null;
+          version: number;
           weather: string | null;
         };
         Insert: {
@@ -417,14 +461,19 @@ export type Database = {
           estimated_wrap?: string | null;
           general_call?: string | null;
           id?: string;
+          issued?: Json | null;
+          issued_at?: string | null;
+          issued_by?: string | null;
           location_address?: string | null;
           notes?: string | null;
           project_id: string;
+          reminded_at?: string | null;
           shoot_date?: string | null;
           shoot_day: number;
           shooting_call?: string | null;
           updated_at?: string | null;
           updated_by?: string | null;
+          version?: number;
           weather?: string | null;
         };
         Update: {
@@ -432,17 +481,29 @@ export type Database = {
           estimated_wrap?: string | null;
           general_call?: string | null;
           id?: string;
+          issued?: Json | null;
+          issued_at?: string | null;
+          issued_by?: string | null;
           location_address?: string | null;
           notes?: string | null;
           project_id?: string;
+          reminded_at?: string | null;
           shoot_date?: string | null;
           shoot_day?: number;
           shooting_call?: string | null;
           updated_at?: string | null;
           updated_by?: string | null;
+          version?: number;
           weather?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "call_sheets_issued_by_fkey";
+            columns: ["issued_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "call_sheets_project_id_fkey";
             columns: ["project_id"];
@@ -2795,6 +2856,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      ack_call_sheet: { Args: { p_sheet: string }; Returns: number };
       add_script_annotation: {
         Args: {
           p_line: number;
@@ -2928,6 +2990,35 @@ export type Database = {
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
+      issue_call_sheet: {
+        Args: { p_note?: string; p_sheet: string };
+        Returns: {
+          created_at: string | null;
+          estimated_wrap: string | null;
+          general_call: string | null;
+          id: string;
+          issued: Json | null;
+          issued_at: string | null;
+          issued_by: string | null;
+          location_address: string | null;
+          notes: string | null;
+          project_id: string;
+          reminded_at: string | null;
+          shoot_date: string | null;
+          shoot_day: number;
+          shooting_call: string | null;
+          updated_at: string | null;
+          updated_by: string | null;
+          version: number;
+          weather: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "call_sheets";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       log_writing: {
         Args: { p_day: string; p_sprint?: boolean; p_words: number };
         Returns: {
@@ -2948,6 +3039,10 @@ export type Database = {
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      send_call_sheet_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       set_my_ui_prefs: { Args: { p_patch: Json }; Returns: Json };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };

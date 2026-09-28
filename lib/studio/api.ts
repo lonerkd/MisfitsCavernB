@@ -18,6 +18,7 @@ export type CharacterMedia = Tables<'character_media'>;
 export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
+export type CallSheetAck = Tables<'call_sheet_acks'>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
 export type PostCut = Tables<'post_cuts'>;
 export type PostNote = Tables<'post_notes'>;
@@ -356,6 +357,26 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /** Owner and leads: sends the sheet to the production as the next version. */
+  async function issueCallSheet(sheetId: string, note?: string): Promise<CallSheet> {
+    const { data, error } = await db.rpc('issue_call_sheet', { p_sheet: sheetId, p_note: note?.trim() || undefined });
+    if (error) fail(error, 'Could not issue the call sheet');
+    return data as CallSheet;
+  }
+
+  /** "Got it": confirms the version the caller has seen. Returns that version. */
+  async function ackCallSheet(sheetId: string): Promise<number> {
+    const { data, error } = await db.rpc('ack_call_sheet', { p_sheet: sheetId });
+    if (error) fail(error, 'Could not confirm the call sheet');
+    return data as number;
+  }
+
+  async function listCallSheetAcks(projectId: string): Promise<CallSheetAck[]> {
+    const { data, error } = await db.from('call_sheet_acks').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load confirmations');
+    return data;
+  }
+
   // ── Post-production ──────────────────────────────────────────────────────
 
   async function listCuts(projectId: string): Promise<PostCut[]> {
@@ -521,7 +542,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

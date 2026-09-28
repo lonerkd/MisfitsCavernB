@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { FileText, Printer } from 'lucide-react';
+import Link from 'next/link';
+import { Check, ExternalLink, FileText, Printer, Send } from 'lucide-react';
 import { useToast } from '@/components/Toast';
+import { useCanShape } from '@/lib/brief';
 import {
-  studio, useCallSheets, useCallSheetCalls,
-  type CallSheet, type CallSheetCall, type CallSheetPatch, type CallTarget, type SceneRow,
+  issueState, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls,
+  type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -33,6 +35,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const { project } = useStudio();
   const sheets = useCallSheets(project.id);
   const calls = useCallSheetCalls(project.id);
+  const acks = useCallSheetAcks(project.id);
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
   const sheetFor = (day: number) => sheets.rows.find((x) => x.shoot_day === day);
@@ -73,6 +76,8 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
           const d = dayFacts(scenes, day);
           const sheet = sheetFor(day);
           const open = openDay === day;
+          const dayCalls = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
+          const state = issueState(sheet, dayCalls);
           return (
             <div key={day} className={cx(s.callDay, open && s.callDayOpen)}>
               <button type="button" className={s.callDayHead} onClick={() => setOpenDay(open ? null : day)} aria-expanded={open}>
@@ -80,12 +85,15 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                 <span className={s.hint}>
                   {sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' : ''}
                   {sheet?.general_call ? `call ${hhmm(sheet.general_call)} · ` : ''}{d.dayScenes.length} sc{d.pages ? ` · ${d.pages} pg` : ''}
+                  {' · '}{state.status === 'draft' ? 'draft' : state.status === 'issued' ? `issued v${state.version}` : `changed since v${state.version}`}
                 </span>
               </button>
               {open && (
                 <DayEditor
-                  day={day} sheet={sheet} facts={d} crew={crew}
-                  calls={calls.rows.filter((c) => c.call_sheet_id === sheet?.id)}
+                  day={day} sheet={sheet} facts={d} crew={crew} state={state}
+                  acks={acks.rows.filter((a) => a.call_sheet_id === sheet?.id)}
+                  onIssued={(row) => sheets.upsertLocal(row)}
+                  calls={dayCalls}
                   onSheet={(row) => sheets.upsertLocal(row)}
                   onCall={(row, removedId) => { if (row) calls.upsertLocal(row); else if (removedId) calls.removeLocal(removedId); }}
                   onPrint={() => print(day)}
@@ -99,8 +107,91 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   );
 }
 
-function DayEditor({ day, sheet, facts, crew, calls, onSheet, onCall, onPrint }: {
+/**
+ * Issuing: a draft goes out as v1, later changes as revisions (v2…). Everyone
+ * on the production is told their own call (and on a revision what changed),
+ * and confirms from the crew view; this shows who has.
+ */
+function IssueBar({ sheet, state, crew, acks, onIssued }: {
+  sheet: CallSheet | undefined; state: IssueState; crew: CrewMember[]; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
+}) {
+  const { project, isOwner } = useStudio();
+  const canIssue = useCanShape(project.id, isOwner);
+  const { toast } = useToast();
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const issue = async () => {
+    if (!sheet) return;
+    setBusy(true);
+    try {
+      const row = await studio.issueCallSheet(sheet.id, note);
+      onIssued(row);
+      setNote('');
+      toast(row.version > 1 ? `Revision v${row.version} sent to the crew` : 'Call sheet sent to the crew', 'success');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not issue the call sheet', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const version = state.status === 'draft' ? 0 : state.version;
+  const ackOf = (userId: string) => acks.find((a) => a.user_id === userId);
+  const confirmed = crew.filter((m) => ackOf(m.user_id)?.version === version);
+  const needsIssue = state.status !== 'issued';
+  const dated = !!sheet?.shoot_date;
+
+  return (
+    <div className={s.stack} style={{ gap: 8, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+      <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <span className={s.hint} role="status">
+          {state.status === 'draft' && 'Draft — the crew haven’t been sent this yet.'}
+          {state.status === 'issued' && `Issued v${state.version}${sheet?.issued_at ? ` · ${new Date(sheet.issued_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}.`}
+          {state.status === 'changed' && `Changed since v${state.version}: ${state.changes.join(', ') || 'details'}. Issue a revision to tell the crew.`}
+        </span>
+        {state.status !== 'draft' && sheet && (
+          <Link href={`/call/${sheet.id}`} className={cx(s.btnGhost, s.small)}><ExternalLink size={11} /> Crew view</Link>
+        )}
+      </div>
+      {canIssue && needsIssue && (
+        <div className={s.row} style={{ gap: 8, flexWrap: 'wrap' }}>
+          <input className={s.input} style={{ flex: '1 1 220px' }} placeholder="Note to the crew (optional)" aria-label="Note to the crew"
+            value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+          <button type="button" className={s.btnPrimary} onClick={() => void issue()} disabled={busy || !dated || !sheet}
+            title={dated ? undefined : 'Set the date first'}>
+            <Send size={11} /> {busy ? 'Sending…' : state.status === 'draft' ? 'Issue to the crew' : `Issue revision (v${version + 1})`}
+          </button>
+          {!dated && <span className={s.hint}>Set the date first.</span>}
+        </div>
+      )}
+      {version > 0 && crew.length > 0 && (
+        <div className={s.hint}>
+          Confirmed v{version}: {confirmed.length} of {crew.length}
+          {' — '}
+          {crew.map((m, i) => {
+            const a = ackOf(m.user_id);
+            const current = a?.version === version;
+            return (
+              <span key={m.user_id}>
+                {i > 0 && ', '}
+                <span style={{ color: current ? 'var(--fg)' : undefined }}>
+                  {current && <Check size={10} aria-hidden style={{ verticalAlign: -1, marginRight: 2 }} />}
+                  {m.username || 'Crew'}{a && !current ? ` (saw v${a.version})` : ''}
+                </span>
+                {current && <span className="sr-only"> (confirmed)</span>}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DayEditor({ day, sheet, facts, crew, calls, state, acks, onIssued, onSheet, onCall, onPrint }: {
   day: number; sheet: CallSheet | undefined; facts: ReturnType<typeof dayFacts>; crew: CrewMember[]; calls: CallSheetCall[];
+  state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
   onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void;
 }) {
   const { project } = useStudio();
@@ -164,6 +255,7 @@ function DayEditor({ day, sheet, facts, crew, calls, onSheet, onCall, onPrint }:
       <div className={s.row} style={{ justifyContent: 'flex-end' }}>
         <button type="button" className={cx(s.btn, s.small)} onClick={onPrint}><Printer size={11} /> Print / PDF</button>
       </div>
+      <IssueBar sheet={sheet} state={state} crew={crew} acks={acks} onIssued={onIssued} />
       <div className={s.callFields}>
         {textField('shoot_date', 'Date', 'date')}
         {textField('general_call', 'General call', 'time')}

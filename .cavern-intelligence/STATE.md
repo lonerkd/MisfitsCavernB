@@ -1,8 +1,29 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Onboarding, the projects board, empty states that lead somewhere
+## Latest Session — Call sheets reach the crew
 
-Migration `20260928050000_onboarding.sql` — **apply to production before merging**.
+Migration `20260928060000_call_sheets_issue.sql` — **apply to production before merging** (it enables `pg_cron`).
+
+- **Issue, then revise**: a call sheet is a live draft until the owner or a
+  lead issues it (Studio › Schedule › a day › "Issue to the crew", with an
+  optional note). Later edits show "Changed since v1: location, 1 call" and
+  go out as "Issue revision (v2)". `issue_call_sheet()` stamps the version
+  and a snapshot of what went out (`call_sheets.issued`).
+- **Everyone gets their own call**: a notification per person — "Your call
+  07:00 as MAYA. At 40 Pier St." — and on a revision what changed for them
+  ("Changed: location, your call 06:30 → 07:00."). Cast get the call of the
+  role they're cast in (`character_castings`).
+- **The crew view** `/call/[id]` (where the notification lands): their call
+  first, "Got it" to confirm the version (`ack_call_sheet`,
+  `call_sheet_acks`), the day's facts with a map link, scenes, everyone's
+  calls; prints clean. Studio shows "Confirmed v2: 3 of 5" live.
+- **Reminders**: pg_cron runs `send_call_sheet_reminders()` hourly; each
+  issued sheet reminds everyone once from the day before its date (UTC).
+- Snapshot logic mirrored client-side in `lib/studio/call-sheet.ts`.
+
+## Earlier — Onboarding, the projects board, empty states that lead somewhere
+
+Migration `20260928050000_onboarding.sql` — applied to production; PR #77 merged.
 
 - **`/welcome`** (a new account lands here after sign-up, email or OAuth):
   what you do (craft → `profiles.role`), what you came for (make something /
