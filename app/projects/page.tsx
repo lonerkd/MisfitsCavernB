@@ -110,7 +110,8 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
   const icon = useFormatIcon(project.type);
-  const days = project.deadline ? daysUntil(project.deadline) : null;
+  // A delivered project has no deadline left to count down to.
+  const days = project.deadline && project.phase !== 'delivery' ? daysUntil(project.deadline) : null;
   const overdue = days !== null && days < 0;
   const r = project.readiness;
   const pct = r && r.total ? Math.round((r.done / r.total) * 100) : null;

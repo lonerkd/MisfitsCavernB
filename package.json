@@ -16,6 +16,7 @@
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,mailpit,supavisor,postgres-meta",
     "db:reset": "supabase db reset --local",
     "db:drift": "node scripts/db-drift.mjs",
+    "demo:sql": "jiti scripts/demo/build.ts",
     "db:types": "supabase gen types typescript --local --schema public | prettier --parser typescript > lib/supabase/database.types.ts",
     "db:types:check": "npm run db:types && git diff --exit-code -- lib/supabase/database.types.ts"
   },
