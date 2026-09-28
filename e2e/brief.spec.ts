@@ -62,13 +62,17 @@ test.describe('Project brief (local Supabase)', () => {
     await length.press('Enter');
     await expect.poll(async () => (await admin.from('project_brief').select('value').eq('project_id', projectId).eq('question', 'target_runtime').maybeSingle()).data?.value).toBe(1);
 
-    // Pre-production: night exteriors.
+    // ScriptOS read the night exteriors out of the screenplay — counted in
+    // before anyone ticks the box, and one click adds them to the brief.
+    const moves = brief.getByRole('list', { name: 'Next moves' });
+    await expect(moves.getByText(/^From the script: night exteriors \(scene 1\)/)).toBeVisible({ timeout: 10_000 });
+    await expect(moves.getByText(/^Roles this project needs: .*Gaffer/)).toBeVisible();
     await brief.getByRole('tab', { name: /^Pre-Production/ }).click();
-    await brief.getByRole('group', { name: 'Anything special on set?' }).getByRole('button', { name: 'Night exteriors' }).click();
+    await expect(brief.getByRole('group', { name: 'Anything special on set?' }).getByRole('button', { name: /Night exteriors/ })).toHaveAttribute('title', /In the script: scene 1/);
+    await moves.getByRole('button', { name: 'Add Night exteriors to the brief' }).click();
     await expect.poll(async () => (await admin.from('project_brief').select('value').eq('project_id', projectId).eq('question', 'needs').maybeSingle()).data?.value).toEqual(['night']);
 
     // What it needs: the roles, from the choices.
-    const moves = brief.getByRole('list', { name: 'Next moves' });
     await expect(moves.getByText(/^Roles this project needs: .*Gaffer/)).toBeVisible({ timeout: 10_000 });
     await expect(moves.getByText(/Because of .*Horror/)).toBeVisible();
 

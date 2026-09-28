@@ -72,3 +72,7 @@
 }
 .unit { font-size: 11px; color: var(--fg-muted); }
 .readonly { font-size: 11px; color: var(--fg-muted); margin: 0 0 12px; }
+
+/* An option the screenplay shows, not yet in the brief. */
+.fromScript { border-style: dashed; border-color: color-mix(in srgb, #7cc4ff 55%, transparent); color: var(--fg); }
+.scriptMark { color: #7cc4ff; font-size: 10.5px; }
