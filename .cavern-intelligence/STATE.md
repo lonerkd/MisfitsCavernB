@@ -1,8 +1,23 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The Lounge: unread, pinned, edited, searchable
+## Latest Session — The landing page counts only real work
 
-Migration `20260929000000_lounge.sql` — **apply to production before merging**.
+Migration `20260929010000_sample_data.sql` — **apply to production before merging**.
+
+- The landing page already ran on real data (platform totals, open jobs,
+  published work — no invented testimonials, stats or pricing). But the demo
+  world's sample people and projects are real rows, so they counted too and
+  their casting calls reached everyone's Jobs board. Now `profiles.is_sample`
+  and `projects.is_sample` mark them (the demo seed sets both), and public
+  surfaces leave them out: platform totals (`get_platform_stats`), recent
+  work (`get_recent_work`), the showcase, the crew directory and people
+  search. Sample jobs are listed only for the people inside that production
+  (`internal.job_listed` in the jobs policy); nobody flags or unflags
+  themselves (`profiles_guard`).
+
+## Earlier — The Lounge: unread, pinned, edited, searchable
+
+Migration `20260929000000_lounge.sql` — applied to production; PR #84 merged.
 
 - **Unread**: channels with news are bold with a count, and so are crew with
   unread direct messages; the pill shows the total. Opening a channel (or a

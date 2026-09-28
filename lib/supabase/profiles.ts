@@ -31,6 +31,7 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
     .from('profiles')
     .select(PUBLIC_PROFILE_COLUMNS)
     .ilike('username', `%${query}%`)
+    .eq('is_sample', false)
     .limit(10);
 
   if (error) {
