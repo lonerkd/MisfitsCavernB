@@ -1930,6 +1930,105 @@ export type Database = {
           },
         ];
       };
+      project_documents: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          expires_on: string | null;
+          file_name: string | null;
+          id: string;
+          kind: string;
+          location_id: string | null;
+          mime_type: string | null;
+          notes: string | null;
+          party: string | null;
+          person_id: string | null;
+          project_id: string;
+          size_bytes: number | null;
+          status: string;
+          storage_path: string | null;
+          title: string;
+          updated_at: string;
+          vendor_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          expires_on?: string | null;
+          file_name?: string | null;
+          id?: string;
+          kind: string;
+          location_id?: string | null;
+          mime_type?: string | null;
+          notes?: string | null;
+          party?: string | null;
+          person_id?: string | null;
+          project_id: string;
+          size_bytes?: number | null;
+          status?: string;
+          storage_path?: string | null;
+          title: string;
+          updated_at?: string;
+          vendor_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          expires_on?: string | null;
+          file_name?: string | null;
+          id?: string;
+          kind?: string;
+          location_id?: string | null;
+          mime_type?: string | null;
+          notes?: string | null;
+          party?: string | null;
+          person_id?: string | null;
+          project_id?: string;
+          size_bytes?: number | null;
+          status?: string;
+          storage_path?: string | null;
+          title?: string;
+          updated_at?: string;
+          vendor_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_documents_location_fkey";
+            columns: ["location_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "project_locations";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "project_documents_person_fkey";
+            columns: ["person_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_documents_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_documents_vendor_fkey";
+            columns: ["vendor_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "vendors";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       project_formats: {
         Row: {
           blurb: string;

@@ -66,7 +66,7 @@ export type Place =
   | { kind: 'path'; path: string };
 
 export type StudioTab = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
-export type ProductionView = 'story' | 'breakdown' | 'readiness' | 'locations' | 'money' | 'schedule' | 'onset' | 'crew';
+export type ProductionView = 'story' | 'breakdown' | 'readiness' | 'locations' | 'money' | 'paperwork' | 'schedule' | 'onset' | 'crew';
 
 export function placeHref(place: Place, projectId: string): string {
   if (place.kind === 'hub') return `/projects/${projectId}${place.anchor ? `#${place.anchor}` : ''}`;
@@ -208,7 +208,7 @@ export const STUDIO_TAB_TOOL: Partial<Record<StudioTab, ToolId>> = {
   scenes: 'scenes', post: 'post', promos: 'promos',
 };
 export const PRODUCTION_VIEW_TOOL: Partial<Record<ProductionView, ToolId>> = {
-  breakdown: 'breakdown', readiness: 'breakdown', locations: 'breakdown', money: 'budget', schedule: 'schedule', onset: 'onset', crew: 'crew',
+  breakdown: 'breakdown', readiness: 'breakdown', locations: 'breakdown', money: 'budget', paperwork: 'crew', schedule: 'schedule', onset: 'onset', crew: 'crew',
 };
 
 // ── The computed view ────────────────────────────────────────────

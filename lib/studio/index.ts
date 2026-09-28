@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type ProjectDocument, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -14,6 +14,7 @@ export * from './media-kind';
 export * from './call-sheet';
 export * from './locations';
 export * from './money';
+export * from './documents';
 export { useLiveRows } from './live';
 export type { LiveRows, LiveStatus } from './live';
 
@@ -80,6 +81,13 @@ export function useCallSheets(projectId: string | null) {
     filter: `project_id=eq.${projectId}`,
     load: () => studio.listCallSheets(projectId!),
     keyOf: (x) => String(x.id),
+  });
+}
+
+export function useDocuments(projectId: string | null) {
+  return useLiveRows<ProjectDocument>({
+    scope: projectId, table: 'project_documents', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listDocuments(projectId!), keyOf: (x) => String(x.id),
   });
 }
 

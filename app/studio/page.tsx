@@ -40,7 +40,7 @@ const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
 ];
 
-const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations', 'money', 'schedule', 'onset', 'crew'];
+const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations', 'money', 'paperwork', 'schedule', 'onset', 'crew'];
 
 /** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
 function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
