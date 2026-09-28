@@ -1,8 +1,34 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Phases v2: the suite grows with the production
+## Latest Session — Onboarding, the projects board, empty states that lead somewhere
 
-Migration `20260928040000_phases_v2.sql` — **apply to production before merging**.
+Migration `20260928050000_onboarding.sql` — **apply to production before merging**.
+
+- **`/welcome`** (a new account lands here after sign-up, email or OAuth):
+  what you do (craft → `profiles.role`), what you came for (make something /
+  find work → Jobs / meet filmmakers → Lounge / show my work → portfolio), and
+  — to make something — title, format, logline and the format's first three
+  development brief questions. The project opens where its first step is
+  (`lib/onboarding.ts`, via the phase engine): with a logline, the script;
+  without, the project page at the logline. The New Project modal does the
+  same and links to the guided start.
+- **The projects board**: search (title, logline, format, people), sort
+  (recently active, newest, title, end date, furthest along), and each card
+  shows its phase progress and next step ("Development · 1 of 5 done · Next:
+  Start the script") from `projects_progress(ids)` — one call for every card.
+  Owners **archive** a project (`projects.archived_at`): off the board and the
+  Studio picker until restored from the Archived view. Board logic in
+  `lib/os/board.ts` (unit-tested).
+- **Empty states name the next step and link to it**: Studio crew (Recruit /
+  Post a role), scenes with no headings (Write a scene), share (Open the
+  Library), the crew directory (Recruit in Studio / Post a role / Clear
+  filters), Jobs (filtered to nothing → Show every role), portfolio (Add your
+  first piece), the Lounge (Open #start-here; who can post). Studio tabs can
+  jump to each other in place (`useStudio().goTo`).
+
+## Earlier — Phases v2: the suite grows with the production
+
+Migration `20260928040000_phases_v2.sql` — applied to production; PR #76 merged.
 
 - **The suite suggests the phase** the project's data says it has reached
   (`suggestPhase` in `lib/os/progress.ts`): the first shoot day has come,

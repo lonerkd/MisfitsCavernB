@@ -1866,6 +1866,7 @@ export type Database = {
       projects: {
         Row: {
           accent_color: string | null;
+          archived_at: string | null;
           budget: number | null;
           created_at: string | null;
           creator_id: string;
@@ -1884,6 +1885,7 @@ export type Database = {
         };
         Insert: {
           accent_color?: string | null;
+          archived_at?: string | null;
           budget?: number | null;
           created_at?: string | null;
           creator_id: string;
@@ -1902,6 +1904,7 @@ export type Database = {
         };
         Update: {
           accent_color?: string | null;
+          archived_at?: string | null;
           budget?: number | null;
           created_at?: string | null;
           creator_id?: string;
@@ -2944,6 +2947,7 @@ export type Database = {
       };
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
+      projects_progress: { Args: { p_projects: string[] }; Returns: Json };
       set_my_ui_prefs: { Args: { p_patch: Json }; Returns: Json };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };

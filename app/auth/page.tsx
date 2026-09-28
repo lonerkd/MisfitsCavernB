@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,8 +52,10 @@ export default function AuthPage() {
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
   // destination page's gate cannot bounce them back here. This also forwards
   // someone who is already signed in and lands on /auth.
+  // A new account with nowhere particular to go starts at /welcome.
+  const isNewAccount = useRef(false);
   useEffect(() => {
-    if (status === 'authed') router.replace(redirectTo);
+    if (status === 'authed') router.replace(isNewAccount.current && redirectTo === '/projects' ? '/welcome' : redirectTo);
   }, [status, redirectTo, router]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +96,7 @@ export default function AuthPage() {
         await withTimeout(signIn(form.email, form.password), 30000, 'Sign-in timed out.');
         toast('Welcome back.', 'success');
       } else {
+        isNewAccount.current = true;
         const created = await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
         // Email-confirmation deployments return a user but no session: stay put
         // and tell them what to do rather than bouncing into a gated page.
@@ -106,6 +109,7 @@ export default function AuthPage() {
       // No navigation here: the status effect above moves us once the OS store
       // reports 'authed' (osSignIn/osSignUp already awaited hydration).
     } catch (err: any) {
+      isNewAccount.current = false;
       const code = err.code || '';
       const msg = err.message || '';
 

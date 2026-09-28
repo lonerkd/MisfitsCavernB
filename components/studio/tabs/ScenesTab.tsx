@@ -115,6 +115,7 @@ export function ScenesTab() {
           icon={<Clapperboard size={28} />}
           title="This script has no scene headings yet"
           subtitle="Scenes start with INT. or EXT. — add one in ScriptOS and it shows up here."
+          action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Write a scene</Link> : undefined}
         />
       ) : (
         <div className={s.sceneList}>

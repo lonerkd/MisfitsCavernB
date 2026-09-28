@@ -10,6 +10,7 @@ import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
 import { announceProgressChange } from '@/lib/supabase/progress';
+import type { ProductionView, StudioTab } from '@/lib/os/progress';
 import {
   fetchScriptContent,
   studio,
@@ -56,6 +57,8 @@ export interface StudioData {
   openInScript: (scene: Pick<SceneRow, 'id' | 'script_id'>, noteId?: string) => void;
   /** The open script's lines per scene id (index 0 is the heading), from its saved text. */
   sceneLines: Map<string, ScriptLineLite[]>;
+  /** Open another Studio tab or view in place (an empty state's next step). */
+  goTo: (tab: StudioTab, view?: ProductionView) => void;
 }
 
 export interface ScriptLineLite { type: string; text: string }
@@ -70,7 +73,9 @@ export function useStudio(): StudioData {
 
 const scriptPrefKey = (projectId: string) => `mc_studio_script_${projectId}`;
 
-export function StudioProvider({ project, userId, children }: { project: Project; userId: string; children: React.ReactNode }) {
+const noNav = () => {};
+
+export function StudioProvider({ project, userId, onNavigate = noNav, children }: { project: Project; userId: string; onNavigate?: (tab: StudioTab, view?: ProductionView) => void; children: React.ReactNode }) {
   const projectId = project.id;
   const media = useProjectMedia(projectId);
   const links = useSceneMedia(projectId);
@@ -184,6 +189,7 @@ export function StudioProvider({ project, userId, children }: { project: Project
     followScene,
     openInScript,
     sceneLines,
+    goTo: onNavigate,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

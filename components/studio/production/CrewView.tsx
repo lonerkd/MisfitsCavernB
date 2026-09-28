@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserPlus, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Briefcase, UserPlus, Users } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { CrewMemberCard, RecruitModal } from '../CrewBoards';
@@ -40,7 +41,13 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
             ))}
           </div>
         ) : (
-          <EmptyState icon={<Users size={26} />} title="No crew yet" subtitle={isOwner ? 'Recruit people from the community, or post roles to Jobs.' : 'The project owner recruits crew.'} />
+          <EmptyState icon={<Users size={26} />} title="No crew yet" subtitle={isOwner ? 'Recruit people from the community, or post roles to Jobs.' : 'The project owner recruits crew.'}
+            action={isOwner ? (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className={s.btnPrimary} onClick={() => setRecruiting(true)}><UserPlus size={12} /> Recruit</button>
+                <Link href="/jobs" className={s.btn}><Briefcase size={12} /> Post a role</Link>
+              </div>
+            ) : undefined} />
         )}
       </div>
       <CastingBoard crew={crew} />

@@ -53,6 +53,13 @@ async function ensureProfile(session: Session) {
   }
 }
 
+/** A brand-new account: its first sign-in is its creation. */
+function isFirstSignIn(session: Session): boolean {
+  const created = Date.parse(session.user.created_at ?? '');
+  const signedIn = Date.parse(session.user.last_sign_in_at ?? '');
+  return Number.isFinite(created) && Number.isFinite(signedIn) && Math.abs(signedIn - created) < 60_000;
+}
+
 export default function AuthCallback() {
   const router = useRouter();
 
@@ -66,7 +73,7 @@ export default function AuthCallback() {
         if (session) {
           try { await ensureProfile(session); } catch (e) { console.error('Failed to ensure profile:', e); }
         }
-        router.push(path);
+        router.push(session && isFirstSignIn(session) ? '/welcome' : path);
       })();
     };
 

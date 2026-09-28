@@ -334,6 +334,7 @@ column project_tasks.id uuid default uuid_generate_v4() not null
 column project_tasks.project_id uuid not null
 column project_tasks.title text not null
 column projects.accent_color text
+column projects.archived_at timestamp with time zone
 column projects.budget numeric(12,2)
 column projects.created_at timestamp with time zone default now()
 column projects.creator_id uuid not null
@@ -831,6 +832,7 @@ function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
+function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.set_my_ui_prefs(p_patch jsonb) body=387984f6950b260f06881fbad22478d4
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
@@ -879,6 +881,7 @@ grant function public.has_discord_webhook(cid uuid) authenticated,postgres,servi
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
+grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role

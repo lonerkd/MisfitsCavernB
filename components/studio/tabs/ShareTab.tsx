@@ -25,7 +25,7 @@ const ICON: Record<ProjectVisibility, React.ReactNode> = {
  * under the scenes they belong to. Notes are never shared.
  */
 export function ShareTab() {
-  const { project, isOwner, media, scenesByMedia } = useStudio();
+  const { project, isOwner, media, scenesByMedia, goTo } = useStudio();
   const { toast } = useToast();
   const [changing, setChanging] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -135,7 +135,8 @@ export function ShareTab() {
           )}
         </div>
         {media.rows.length === 0 ? (
-          <EmptyState icon={<Globe size={24} />} title="Nothing to share yet" subtitle="Add references in the Library, link them to scenes, then choose what goes in the lookbook here." />
+          <EmptyState icon={<Globe size={24} />} title="Nothing to share yet" subtitle="Add references in the Library, link them to scenes, then choose what goes in the lookbook here."
+            action={<button type="button" className={s.btnPrimary} onClick={() => goTo('library')}>Open the Library</button>} />
         ) : (
           <div className={s.stack} style={{ gap: 6 }}>
             {!isOwner && <p className={s.hint}>Only the project owner chooses what goes in the lookbook.</p>}

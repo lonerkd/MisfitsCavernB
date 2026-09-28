@@ -18,6 +18,28 @@ export async function fetchProjectSignals(projectId: string): Promise<ProjectSig
   return toSignals(data);
 }
 
+/** Signals for many projects in one call; ones the caller can't see are absent. */
+export async function fetchProjectsSignals(projectIds: string[]): Promise<Record<string, ProjectSignals>> {
+  if (!projectIds.length) return {};
+  const { data, error } = await supabase.rpc('projects_progress', { p_projects: projectIds.slice(0, 200) });
+  if (error) throw new Error(error.message || 'Could not load project progress');
+  const out: Record<string, ProjectSignals> = {};
+  for (const [id, raw] of Object.entries((data ?? {}) as Record<string, unknown>)) {
+    const s = toSignals(raw);
+    if (s) out[id] = s;
+  }
+  return out;
+}
+
+/** Owner only (RLS): shelve the project, or bring it back. */
+export async function setProjectArchived(projectId: string, archived: boolean): Promise<void> {
+  const { data, error } = await supabase.from('projects')
+    .update({ archived_at: archived ? new Date().toISOString() : null }).eq('id', projectId).select('id');
+  if (error) throw new Error(error.message || 'Could not archive the project');
+  if (!data?.length) throw new Error('Only the project owner can archive it');
+  announceProgressChange(projectId);
+}
+
 /** Owner only (RLS): moves the project to a phase. */
 export async function setProjectPhase(projectId: string, phase: Phase): Promise<void> {
   const { data, error } = await supabase.from('projects').update({ status: PHASE_STATUS[phase] }).eq('id', projectId).select('id');
