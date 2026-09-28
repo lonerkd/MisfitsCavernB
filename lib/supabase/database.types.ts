@@ -1406,6 +1406,7 @@ export type Database = {
           avatar_url: string | null;
           bio: string | null;
           created_at: string | null;
+          daily_word_goal: number;
           discord_avatar: string | null;
           discord_id: string | null;
           discord_username: string | null;
@@ -1414,6 +1415,7 @@ export type Database = {
           location: string | null;
           notification_prefs: NonNullable<Json>;
           role: string | null;
+          sprint_minutes: number;
           status: string | null;
           updated_at: string | null;
           username: string;
@@ -1422,6 +1424,7 @@ export type Database = {
           avatar_url?: string | null;
           bio?: string | null;
           created_at?: string | null;
+          daily_word_goal?: number;
           discord_avatar?: string | null;
           discord_id?: string | null;
           discord_username?: string | null;
@@ -1430,6 +1433,7 @@ export type Database = {
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
           role?: string | null;
+          sprint_minutes?: number;
           status?: string | null;
           updated_at?: string | null;
           username: string;
@@ -1438,6 +1442,7 @@ export type Database = {
           avatar_url?: string | null;
           bio?: string | null;
           created_at?: string | null;
+          daily_word_goal?: number;
           discord_avatar?: string | null;
           discord_id?: string | null;
           discord_username?: string | null;
@@ -1446,6 +1451,7 @@ export type Database = {
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
           role?: string | null;
+          sprint_minutes?: number;
           status?: string | null;
           updated_at?: string | null;
           username?: string;
@@ -2303,6 +2309,94 @@ export type Database = {
           },
         ];
       };
+      set_log: {
+        Row: {
+          at: string;
+          body: string | null;
+          call_sheet_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          kind: string;
+          media_id: string | null;
+          project_id: string;
+          scene_id: string | null;
+          shot_id: string | null;
+          take: number | null;
+        };
+        Insert: {
+          at?: string;
+          body?: string | null;
+          call_sheet_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind: string;
+          media_id?: string | null;
+          project_id: string;
+          scene_id?: string | null;
+          shot_id?: string | null;
+          take?: number | null;
+        };
+        Update: {
+          at?: string;
+          body?: string | null;
+          call_sheet_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind?: string;
+          media_id?: string | null;
+          project_id?: string;
+          scene_id?: string | null;
+          shot_id?: string | null;
+          take?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "set_log_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "set_log_day_fkey";
+            columns: ["call_sheet_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "call_sheets";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "set_log_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "set_log_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "set_log_scene_fkey";
+            columns: ["scene_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "set_log_shot_fkey";
+            columns: ["shot_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "shots";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       sfx_assets: {
         Row: {
           audio_url: string;
@@ -2522,6 +2616,41 @@ export type Database = {
           },
         ];
       };
+      writing_days: {
+        Row: {
+          day: string;
+          goal: number;
+          sprints: number;
+          updated_at: string;
+          user_id: string;
+          words: number;
+        };
+        Insert: {
+          day: string;
+          goal: number;
+          sprints?: number;
+          updated_at?: string;
+          user_id: string;
+          words?: number;
+        };
+        Update: {
+          day?: string;
+          goal?: number;
+          sprints?: number;
+          updated_at?: string;
+          user_id?: string;
+          words?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "writing_days_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -2593,6 +2722,13 @@ export type Database = {
           notification_prefs: Json;
         }[];
       };
+      get_my_writing_prefs: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          daily_word_goal: number;
+          sprint_minutes: number;
+        }[];
+      };
       get_platform_stats: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2636,6 +2772,23 @@ export type Database = {
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
+      log_writing: {
+        Args: { p_day: string; p_sprint?: boolean; p_words: number };
+        Returns: {
+          day: string;
+          goal: number;
+          sprints: number;
+          updated_at: string;
+          user_id: string;
+          words: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "writing_days";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       project_progress: { Args: { p_project: string }; Returns: Json };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };

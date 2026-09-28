@@ -71,6 +71,7 @@ export const SURFACES: Surface[] = [
   { id: 'script', label: 'Script', group: 'Write', href: '/editor' },
   { id: 'scenes', label: 'Scenes', group: 'Studio', href: '/studio?tab=scenes' },
   { id: 'readiness', label: 'Readiness', group: 'Studio', href: '/studio?tab=production&view=readiness' },
+  { id: 'onset', label: 'On set', group: 'Studio', href: '/studio?tab=production&view=onset' },
   { id: 'breakdown', label: 'Breakdown', group: 'Studio', href: '/studio?tab=production&view=breakdown' },
   { id: 'schedule', label: 'Schedule', group: 'Studio', href: '/studio?tab=production&view=schedule' },
   { id: 'story', label: 'Story board', group: 'Studio', href: '/studio?tab=production&view=story' },

@@ -22,6 +22,8 @@ export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_cal
 export type PostCut = Tables<'post_cuts'>;
 export type PostNote = Tables<'post_notes'>;
 export type PostItem = Tables<'post_items'>;
+export type SetLogRow = Tables<'set_log'>;
+export type SetLogEntry = Pick<SetLogRow, 'project_id' | 'kind'> & Partial<Pick<SetLogRow, 'at' | 'call_sheet_id' | 'scene_id' | 'shot_id' | 'take' | 'body' | 'media_id'>>;
 export const POST_DEPARTMENTS = ['edit', 'sound', 'music', 'color', 'vfx', 'titles', 'general'] as const;
 export type PostDepartment = (typeof POST_DEPARTMENTS)[number];
 export const POST_DEPT_LABEL: Record<PostDepartment, string> = { edit: 'Edit', sound: 'Sound', music: 'Music', color: 'Colour', vfx: 'VFX', titles: 'Titles', general: 'General' };
@@ -409,6 +411,33 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not delete the note');
   }
 
+  // ── On set ──────────────────────────────────────────────────────────────
+
+  async function listSetLog(projectId: string): Promise<SetLogRow[]> {
+    const { data, error } = await db.from('set_log').select('*').eq('project_id', projectId).order('at');
+    if (error) fail(error, 'Could not load the set log');
+    return data;
+  }
+
+  async function addSetLog(entry: SetLogEntry): Promise<SetLogRow> {
+    const { data, error } = await db.from('set_log').insert(entry).select('*').single();
+    if (error) fail(error, 'Could not log that');
+    return data;
+  }
+
+  /** Correct a stamp's time or an entry's words (author or owner). */
+  async function updateSetLog(id: string, patch: Partial<Pick<SetLogRow, 'at' | 'body' | 'take'>>): Promise<SetLogRow> {
+    const { data, error } = await db.from('set_log').update(patch).eq('id', id).select('*').maybeSingle();
+    if (error) fail(error, 'Could not save the change');
+    if (!data) throw new StudioError('Only whoever logged it (or the project owner) can change it.');
+    return data;
+  }
+
+  async function deleteSetLog(id: string): Promise<void> {
+    const { error } = await db.from('set_log').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove it');
+  }
+
   async function listPostItems(projectId: string): Promise<PostItem[]> {
     const { data, error } = await db.from('post_items').select('*').eq('project_id', projectId);
     if (error) fail(error, 'Could not load the post pipeline');
@@ -493,6 +522,7 @@ export function createStudioApi(db: Client) {
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall,
+    listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
     listSceneMedia, linkMedia, unlinkMedia,

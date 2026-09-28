@@ -60,7 +60,7 @@ export type Place =
   | { kind: 'path'; path: string };
 
 export type StudioTab = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
-export type ProductionView = 'story' | 'breakdown' | 'readiness' | 'schedule' | 'crew';
+export type ProductionView = 'story' | 'breakdown' | 'readiness' | 'schedule' | 'onset' | 'crew';
 
 export function placeHref(place: Place, projectId: string): string {
   if (place.kind === 'hub') return `/projects/${projectId}${place.anchor ? `#${place.anchor}` : ''}`;
@@ -146,7 +146,7 @@ export const MILESTONES: MilestoneDef[] = [
 
 export type ToolId =
   | 'script' | 'library' | 'story' | 'pitch' | 'soundtrack'
-  | 'scenes' | 'schedule' | 'crew' | 'budget' | 'share' | 'jobs'
+  | 'scenes' | 'schedule' | 'crew' | 'budget' | 'share' | 'jobs' | 'onset'
   | 'post' | 'promos' | 'festivals' | 'portfolio';
 
 export interface ToolDef {
@@ -177,6 +177,9 @@ export const TOOLS: ToolDef[] = [
     place: { kind: 'hub', anchor: 'production' }, early: (s) => s.budget_lines > 0 },
   { id: 'jobs', label: 'Jobs board', blurb: 'Find crew for open roles.', phase: 'pre-production', place: { kind: 'path', path: '/jobs' } },
 
+  { id: 'onset', label: 'On set', blurb: 'The shoot day: the clock, shots got, scenes wrapped, continuity.', phase: 'production',
+    place: { kind: 'studio', tab: 'production', view: 'onset' }, early: (s) => s.call_sheets > 0 },
+
   { id: 'post', label: 'Cut review & delivery', blurb: 'Cuts, timecoded notes, the post pipeline.', phase: 'post-production',
     place: { kind: 'studio', tab: 'post' }, early: (s) => s.cuts > 0 || s.stages > 0 || s.deliverables > 0 },
 
@@ -193,7 +196,7 @@ export const STUDIO_TAB_TOOL: Partial<Record<StudioTab, ToolId>> = {
   scenes: 'scenes', post: 'post', promos: 'promos',
 };
 export const PRODUCTION_VIEW_TOOL: Partial<Record<ProductionView, ToolId>> = {
-  schedule: 'schedule', crew: 'crew',
+  schedule: 'schedule', onset: 'onset', crew: 'crew',
 };
 
 // ── The computed view ────────────────────────────────────────────

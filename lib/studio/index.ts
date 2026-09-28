@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type PostCut, type PostNote, type PostItem } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -87,6 +87,20 @@ export function useCallSheetCalls(projectId: string | null) {
     filter: `project_id=eq.${projectId}`,
     load: () => studio.listCalls(projectId!),
     keyOf: (x) => String(x.id),
+  });
+}
+
+// ── On set ─────────────────────────────────────────────────────────────────
+
+/** The project's set log (clock stamps, day notes, continuity), live, oldest first. */
+export function useSetLog(projectId: string | null) {
+  return useLiveRows<SetLogRow>({
+    scope: projectId,
+    table: 'set_log',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listSetLog(projectId!),
+    keyOf: (x) => String(x.id),
+    sort: (a, b) => a.at.localeCompare(b.at),
   });
 }
 

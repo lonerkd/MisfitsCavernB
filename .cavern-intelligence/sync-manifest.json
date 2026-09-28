@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T19:34:33.093Z",
+  "last_synchronized": "2026-09-28T01:09:23.559Z",
   "stats": {
-    "totalFiles": 355,
-    "totalSize": 2769094,
+    "totalFiles": 368,
+    "totalSize": 2854360,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 135,
-      ".ts": 181,
+      ".tsx": 137,
+      ".ts": 190,
       ".js": 7,
-      ".sql": 18
+      ".sql": 20
     }
   },
   "modules": {
@@ -180,6 +180,7 @@
         "components/editor/TimingPanel.tsx",
         "components/editor/WriteFooter.tsx",
         "components/editor/WriteView.tsx",
+        "components/editor/WritingLoop.tsx",
         "components/editor/breakdown/BreakdownPanel.tsx",
         "components/editor/breakdown/TagBar.tsx",
         "components/editor/breakdown/useEditorBreakdown.ts",
@@ -213,6 +214,7 @@
         "components/studio/production/BreakdownView.tsx",
         "components/studio/production/CallSheetsPanel.tsx",
         "components/studio/production/CrewView.tsx",
+        "components/studio/production/OnSetView.tsx",
         "components/studio/production/ReadinessView.tsx",
         "components/studio/production/ScheduleView.tsx",
         "components/studio/production/StoryView.tsx",
@@ -256,7 +258,9 @@
         "supabase/migrations/20260927060000_shot_designer.sql",
         "supabase/migrations/20260927070000_table_read.sql",
         "supabase/migrations/20260927080000_cut_note_lines.sql",
-        "supabase/migrations/20260927090000_campaigns.sql"
+        "supabase/migrations/20260927090000_campaigns.sql",
+        "supabase/migrations/20260927100000_set_log.sql",
+        "supabase/migrations/20260927110000_writing_loop.sql"
       ]
     }
   },
@@ -378,8 +382,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 79306,
-      "last_modified": "2026-09-27T19:12:03.128Z"
+      "size": 79092,
+      "last_modified": "2026-09-28T01:05:42.809Z"
     },
     {
       "path": "app/error.tsx",
@@ -548,8 +552,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 10447,
-      "last_modified": "2026-09-27T19:12:03.128Z"
+      "size": 10456,
+      "last_modified": "2026-09-27T20:02:27.314Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -703,8 +707,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 32905,
-      "last_modified": "2026-09-27T05:09:36.483Z"
+      "size": 31141,
+      "last_modified": "2026-09-28T01:05:42.809Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -730,6 +734,11 @@
       "path": "components/editor/WriteView.tsx",
       "size": 20254,
       "last_modified": "2026-09-27T19:12:03.128Z"
+    },
+    {
+      "path": "components/editor/WritingLoop.tsx",
+      "size": 9854,
+      "last_modified": "2026-09-28T01:05:42.817Z"
     },
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
@@ -778,8 +787,8 @@
     },
     {
       "path": "components/progress/Bricks.tsx",
-      "size": 3059,
-      "last_modified": "2026-09-27T03:14:49.671Z"
+      "size": 3080,
+      "last_modified": "2026-09-27T20:03:03.793Z"
     },
     {
       "path": "components/progress/LockedTool.tsx",
@@ -897,6 +906,11 @@
       "last_modified": "2026-09-27T05:02:41.790Z"
     },
     {
+      "path": "components/studio/production/OnSetView.tsx",
+      "size": 22750,
+      "last_modified": "2026-09-27T20:01:49.784Z"
+    },
+    {
       "path": "components/studio/production/ReadinessView.tsx",
       "size": 15829,
       "last_modified": "2026-09-27T08:02:25.531Z"
@@ -953,8 +967,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 3951,
-      "last_modified": "2026-09-27T06:48:29.305Z"
+      "size": 4303,
+      "last_modified": "2026-09-27T20:06:49.538Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1018,8 +1032,8 @@
     },
     {
       "path": "e2e/accessibility.spec.ts",
-      "size": 6619,
-      "last_modified": "2026-09-27T06:50:58.988Z"
+      "size": 6656,
+      "last_modified": "2026-09-27T20:06:57.523Z"
     },
     {
       "path": "e2e/auth-journey.spec.ts",
@@ -1057,6 +1071,11 @@
       "last_modified": "2026-09-24T20:05:03.636Z"
     },
     {
+      "path": "e2e/on-set.spec.ts",
+      "size": 6512,
+      "last_modified": "2026-09-27T20:06:25.638Z"
+    },
+    {
       "path": "e2e/readiness.spec.ts",
       "size": 6046,
       "last_modified": "2026-09-27T06:52:38.469Z"
@@ -1090,6 +1109,11 @@
       "path": "e2e/table-read.spec.ts",
       "size": 5011,
       "last_modified": "2026-09-27T18:50:02.893Z"
+    },
+    {
+      "path": "e2e/writing-loop.spec.ts",
+      "size": 5084,
+      "last_modified": "2026-09-28T01:06:37.204Z"
     },
     {
       "path": "hooks/useColorExtractor.ts",
@@ -1288,8 +1312,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 16612,
-      "last_modified": "2026-09-27T06:48:29.304Z"
+      "size": 16879,
+      "last_modified": "2026-09-27T20:02:27.314Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1473,8 +1497,8 @@
     },
     {
       "path": "lib/split/core.ts",
-      "size": 5274,
-      "last_modified": "2026-09-27T19:12:03.129Z"
+      "size": 5370,
+      "last_modified": "2026-09-27T20:02:27.317Z"
     },
     {
       "path": "lib/split/pane.ts",
@@ -1518,8 +1542,8 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 25385,
-      "last_modified": "2026-09-27T19:12:03.129Z"
+      "size": 27015,
+      "last_modified": "2026-09-27T19:59:48.970Z"
     },
     {
       "path": "lib/studio/cutlines.test.ts",
@@ -1543,8 +1567,8 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 11681,
-      "last_modified": "2026-09-27T06:48:29.304Z"
+      "size": 12307,
+      "last_modified": "2026-09-27T19:59:48.971Z"
     },
     {
       "path": "lib/studio/live.ts",
@@ -1560,6 +1584,16 @@
       "path": "lib/studio/media-kind.ts",
       "size": 5085,
       "last_modified": "2026-09-26T19:17:14.206Z"
+    },
+    {
+      "path": "lib/studio/onset.test.ts",
+      "size": 3508,
+      "last_modified": "2026-09-27T19:59:23.612Z"
+    },
+    {
+      "path": "lib/studio/onset.ts",
+      "size": 5442,
+      "last_modified": "2026-09-27T19:59:23.608Z"
     },
     {
       "path": "lib/studio/readiness.test.ts",
@@ -1653,8 +1687,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 83686,
-      "last_modified": "2026-09-27T19:31:47.116Z"
+      "size": 88116,
+      "last_modified": "2026-09-28T01:05:58.313Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1740,6 +1774,21 @@
       "path": "lib/webrtc/voice.ts",
       "size": 8556,
       "last_modified": "2026-09-24T20:05:03.648Z"
+    },
+    {
+      "path": "lib/writing/core.test.ts",
+      "size": 2126,
+      "last_modified": "2026-09-28T01:05:42.817Z"
+    },
+    {
+      "path": "lib/writing/core.ts",
+      "size": 3751,
+      "last_modified": "2026-09-28T01:05:42.821Z"
+    },
+    {
+      "path": "lib/writing/index.ts",
+      "size": 5354,
+      "last_modified": "2026-09-28T01:05:51.825Z"
     },
     {
       "path": "middleware.ts",
@@ -1887,6 +1936,16 @@
       "last_modified": "2026-09-27T19:31:47.121Z"
     },
     {
+      "path": "supabase/migrations/20260927100000_set_log.sql",
+      "size": 3993,
+      "last_modified": "2026-09-28T01:00:33.314Z"
+    },
+    {
+      "path": "supabase/migrations/20260927110000_writing_loop.sql",
+      "size": 3727,
+      "last_modified": "2026-09-28T01:05:51.809Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -1894,7 +1953,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-27T19:33:59.327Z"
+      "last_modified": "2026-09-28T01:08:21.159Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -1987,6 +2046,11 @@
       "last_modified": "2026-09-27T05:03:52.394Z"
     },
     {
+      "path": "tests/integration/set-log.test.ts",
+      "size": 4570,
+      "last_modified": "2026-09-27T20:03:42.077Z"
+    },
+    {
       "path": "tests/integration/share-lookbook.test.ts",
       "size": 7877,
       "last_modified": "2026-09-26T07:55:52.072Z"
@@ -2015,6 +2079,11 @@
       "path": "tests/integration/table-read.test.ts",
       "size": 2277,
       "last_modified": "2026-09-27T18:48:04.191Z"
+    },
+    {
+      "path": "tests/integration/writing-loop.test.ts",
+      "size": 3105,
+      "last_modified": "2026-09-28T01:06:37.205Z"
     },
     {
       "path": "tsconfig.json",

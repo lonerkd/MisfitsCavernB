@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import {
   Archive, BookOpen, Briefcase, Calendar, Clapperboard, DollarSign, Film, Globe,
-  Lock, Maximize2, Megaphone, Music, PenTool, Trophy, UserSquare, Users, type LucideIcon,
+  Lock, Maximize2, Megaphone, Music, PenTool, Timer, Trophy, UserSquare, Users, type LucideIcon,
 } from 'lucide-react';
 import { readable, textOn } from '@/lib/color';
 import { placeHref, type Place, type ToolId, type ToolState } from '@/lib/os/progress';
@@ -13,7 +13,7 @@ import p from './progress.module.css';
 export const TOOL_ICON: Record<ToolId, LucideIcon> = {
   script: PenTool, library: Archive, story: BookOpen, pitch: Maximize2, soundtrack: Music,
   scenes: Clapperboard, schedule: Calendar, crew: Users, budget: DollarSign, share: Globe, jobs: Briefcase,
-  post: Film, promos: Megaphone, festivals: Trophy, portfolio: UserSquare,
+  onset: Timer, post: Film, promos: Megaphone, festivals: Trophy, portfolio: UserSquare,
 };
 
 /** The project accent as CSS variables, legible on the dark panels. */
