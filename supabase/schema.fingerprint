@@ -763,7 +763,9 @@ function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5
 function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
+function public.get_person_credits(p_user uuid) body=7d3e49db8bebfc0c98df319661ce088c
 function public.get_platform_stats() body=0c11d9c4ec9bf19a41d490e1cf59f244
+function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a253
 function public.get_public_showcase(p_limit integer) body=3e278df9ab4b4f4ba37151a90ad1ae43
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
@@ -802,7 +804,9 @@ grant function public.can_manage_channel(cid uuid) authenticated,postgres,servic
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
 grant function public.get_my_writing_prefs() authenticated,postgres,service_role
+grant function public.get_person_credits(p_user uuid) anon,authenticated,postgres,service_role
 grant function public.get_platform_stats() anon,authenticated,postgres,service_role
+grant function public.get_press_kit(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_public_showcase(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_published_media(p_media_id uuid) anon,authenticated,postgres,service_role
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role

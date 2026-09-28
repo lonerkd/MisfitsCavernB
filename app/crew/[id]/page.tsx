@@ -7,7 +7,8 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
-import { getCastingsForUser, type CastingWithProject } from '@/lib/supabase/casting';
+import { addCreditToPortfolio, getPersonCredits, groupByProject, type ProjectCredits } from '@/lib/credits';
+import { useToast } from '@/components/Toast';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import type { Profile } from '@/lib/supabase/profiles';
 import { videoEmbed } from '@/lib/studio/media-kind';
@@ -39,7 +40,9 @@ export default function CrewMemberPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
-  const [castings, setCastings] = useState<CastingWithProject[]>([]);
+  const [credits, setCredits] = useState<ProjectCredits[]>([]);
+  const [adding, setAdding] = useState<string | null>(null);
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -78,7 +81,7 @@ export default function CrewMemberPage() {
 
         setProjects((projectData as PortfolioProject[]) || []);
 
-        getCastingsForUser(id).then(setCastings).catch(() => setCastings([]));
+        getPersonCredits(id).then((rows) => setCredits(groupByProject(rows))).catch(() => setCredits([]));
       } catch (err) {
 
         console.error('Failed to load crew member:', err);
@@ -254,26 +257,45 @@ export default function CrewMemberPage() {
           </div>
         )}
 
-        {/* ── Casting Section ───────────────────────────────────────────────────── */}
-        {castings.length > 0 && (
-          <div style={{ marginBottom: 48 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, marginBottom: 16, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
-              Playing
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {castings.map(c => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, color: '#10b981' }}>{c.character_name}</span>
-                  {c.project_title && (
-                    <>
-                      <span style={{fontSize: 11, color: 'var(--fg-dim)' }}>in</span>
-                      <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'rgba(224, 221, 174,0.8)' }}>{c.project_title}</span>
-                    </>
-                  )}
-                </div>
+        {/* ── Credits: from the work itself (crew, cast, films made) ─────────────── */}
+        {credits.length > 0 && (
+          <section aria-labelledby="credits-title" style={{ marginBottom: 48, padding: 0 }}>
+            <h2 id="credits-title" style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, margin: '0 0 16px', textTransform: 'uppercase', color: 'var(--fg-dim)', fontWeight: 400 }}>
+              Credits · {credits.length}
+            </h2>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {credits.map((c) => (
+                <li key={c.project_id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${c.accent_color || '#e8431a'}` }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg)' }}>
+                      {c.title}{c.year ? <span style={{ color: 'var(--fg-dim)', fontSize: 13 }}> ({c.year})</span> : null}
+                    </div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', marginTop: 3 }}>
+                      {c.labels.join(' · ')}{c.project_type ? ` — ${c.project_type}` : ''}
+                    </div>
+                  </div>
+                  {viewerId === profile.id && (c.portfolio_project_id ? (
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#5fd99a' }}>In your portfolio</span>
+                  ) : (
+                    <button type="button" disabled={adding === c.project_id}
+                      aria-label={`Add ${c.title} to your portfolio`}
+                      onClick={async () => {
+                        setAdding(c.project_id);
+                        try {
+                          const pf = await addCreditToPortfolio(profile.id, c);
+                          setCredits((prev) => prev.map((x) => (x.project_id === c.project_id ? { ...x, portfolio_project_id: pf.id } : x)));
+                          toast(`“${c.title}” is in your portfolio — add clips and stills there`, 'success');
+                        } catch (e) { toast(e instanceof Error ? e.message : 'Could not add it', 'error'); }
+                        finally { setAdding(null); }
+                      }}
+                      style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', padding: '8px 12px', minHeight: 32, borderRadius: 8, border: '1px solid rgba(232, 67, 26,0.4)', background: 'rgba(232, 67, 26,0.1)', color: 'var(--fg)', cursor: 'pointer' }}>
+                      {adding === c.project_id ? 'Adding…' : 'Add to portfolio'}
+                    </button>
+                  ))}
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         )}
 
         {/* ── Portfolio Section ─────────────────────────────────────────────────── */}
