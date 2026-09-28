@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { BookOpen, Calendar, Clapperboard, ClipboardCheck, Lock, Tags, Users } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
+import { ToolIntro } from '@/components/progress/ToolIntro';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
@@ -56,6 +57,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
           </button>
         ))}
       </div>
+      {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
       {!lock && view === 'story' && <StoryView />}
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}

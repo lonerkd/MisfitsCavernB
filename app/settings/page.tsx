@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -9,6 +9,7 @@ import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
+import { useUiPrefs } from '@/lib/os/uiPrefs';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -102,6 +103,7 @@ export default function SettingsPage() {
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
   const [leakCheck, setLeakCheck] = useState(true);
+  const { prefs: uiPrefs, save: saveUiPrefs } = useUiPrefs();
 
   const [customBg, setCustomBg] = useState('#040710');
   const [customAccent, setCustomAccent] = useState('#e8431a');
@@ -276,6 +278,12 @@ export default function SettingsPage() {
           } />
           <Row label="Public profile" hint="Edit your name, role, bio and availability." control={
             <Link href="/profile" style={{ ...ghostBtn, textDecoration: 'none', display: 'inline-block' }}>EDIT PROFILE</Link>
+          } />
+        </Section>
+
+        <Section icon={<LayoutGrid size={15} />} title="Workspace">
+          <Row label="Show every tool" hint="Open every tool in every project at once, instead of each arriving with its phase. You can also open everything in a single project from its phase panel." control={
+            <Toggle on={uiPrefs.show_all_tools} onChange={(v) => { void saveUiPrefs({ show_all_tools: v }).catch((e: any) => flash(e?.message || 'Could not save that setting', false)); }} />
           } />
         </Section>
 

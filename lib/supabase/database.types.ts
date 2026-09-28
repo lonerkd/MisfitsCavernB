@@ -1504,6 +1504,7 @@ export type Database = {
           role: string | null;
           sprint_minutes: number;
           status: string | null;
+          ui_prefs: NonNullable<Json>;
           updated_at: string | null;
           username: string;
         };
@@ -1522,6 +1523,7 @@ export type Database = {
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
+          ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username: string;
         };
@@ -1540,6 +1542,7 @@ export type Database = {
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
+          ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username?: string;
         };
@@ -2855,6 +2858,7 @@ export type Database = {
           notification_prefs: Json;
         }[];
       };
+      get_my_ui_prefs: { Args: Record<PropertyKey, never>; Returns: Json };
       get_my_writing_prefs: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2940,6 +2944,7 @@ export type Database = {
       };
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
+      set_my_ui_prefs: { Args: { p_patch: Json }; Returns: Json };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };
         Returns: undefined;

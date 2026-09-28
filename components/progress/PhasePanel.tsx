@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
+import { useUiPrefs } from '@/lib/os/uiPrefs';
+import { localDay } from '@/lib/writing/core';
 import { useConfirm } from '@/components/Confirm';
 import { useToast } from '@/components/Toast';
-import { toolsOpenedAt, type Place, type ProjectProgress, type ToolState } from '@/lib/os/progress';
+import { suggestPhase, toolsOpenedAt, type Place, type ProjectProgress, type ToolState } from '@/lib/os/progress';
 import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
 import { setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
 import { FormatPicker } from '@/components/formats/FormatPicker';
@@ -54,6 +56,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   const [reveal, setReveal] = useState<{ label: string; tools: ToolState[] } | null>(null);
   const [formatDraft, setFormatDraft] = useState<string | null>(null);
   const style = accentVars(accent);
+  const { prefs: uiPrefs, save: saveUiPrefs } = useUiPrefs();
 
   // Celebrate phases reached since this device last saw the project
   // (the first visit only records where it is).
@@ -76,6 +79,13 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
     return error ? <div className={p.panel} style={style}><p className={p.error} role="alert">{error}</p></div> : null;
   }
 
+  const suggested = suggestPhase(signals, progress, localDay());
+  const suggestion = suggested && !uiPrefs.dismissed.includes(`${projectId}:${progress.phases[suggested.index].id}`) ? suggested : null;
+  const notYet = async (index: number) => {
+    const key = `${projectId}:${progress.phases[index].id}`;
+    try { await saveUiPrefs({ dismissed: [...uiPrefs.dismissed.filter((d) => d !== key), key].slice(-200) }); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not save that', 'error'); }
+  };
   const shown = progress.phases[selected ?? progress.currentIndex];
   const isCurrent = shown.index === progress.currentIndex;
   const H = `h${headingLevel}` as 'h2' | 'h3';
@@ -169,6 +179,24 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
             </button>
             <button type="button" className={p.ghost} disabled={busy} onClick={() => setFormatDraft(null)}>Cancel</button>
           </div>
+        </div>
+      )}
+
+      {suggestion && (
+        <div className={p.suggest} role="status">
+          <Sparkles size={14} aria-hidden className={p.suggestIcon} />
+          <div className={p.suggestText}>
+            <strong>Looks like {suggestion.label}</strong> — {suggestion.reasons.join('; ')}.
+            {!isOwner && <span className={p.note}> The project owner moves it.</span>}
+          </div>
+          {isOwner && (
+            <div className={p.suggestActions}>
+              <button type="button" className={p.primary} disabled={busy} onClick={() => moveTo(suggestion.index)}>
+                Move to {suggestion.label} <ArrowRight size={13} aria-hidden />
+              </button>
+              <button type="button" className={p.ghost} disabled={busy} onClick={() => void notYet(suggestion.index)}>Not yet</button>
+            </div>
+          )}
         </div>
       )}
 

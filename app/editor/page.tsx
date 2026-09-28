@@ -37,6 +37,8 @@ import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { formatRuntime, timeCharacters, timeScript } from '@/lib/scriptos/timing';
 import { useBriefAnswer } from '@/lib/brief';
+import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -935,6 +937,7 @@ export default function EditorPage() {
   saveReadRef.current = sceneIndex.saveRead;
   const timing = useMemo(() => timeScript(lines, sceneIndex.reads), [lines, sceneIndex.reads]);
   const targetRuntime = useBriefAnswer(currentScript?.project_id, 'target_runtime');
+  const editorProgress = useProjectProgress(currentScript?.project_id ?? null);
   const characterTiming = useMemo(() => timeCharacters(lines), [lines]);
 
   // Breakdown mode: tag what the shoot needs right in the script.
@@ -1157,7 +1160,11 @@ export default function EditorPage() {
   }, [scenesList]);
 
   const cutNotes: EditorCtx['cutNotes'] = { byLine: cutNotesByLine, openLine: cutNoteLine, setOpenLine: setCutNoteLine, resolve: resolveCutNote, canResolve: !!sessionUser?.id };
-  const editorCtx: EditorCtx = { cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  // Tools that arrive with the project's phase (a personal script has them all).
+  const scriptProjectId = currentScript?.project_id ?? null;
+  const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
+  const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
+  const editorCtx: EditorCtx = { tools, cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -1280,6 +1287,7 @@ export default function EditorPage() {
                 try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
               }}>
                 <EditorRightPanels
+                  showBreakdown={tools.breakdown}
                   rightPanel={rightPanel} setRightPanel={setRightPanel}
                   activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
                   getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}

@@ -13,6 +13,8 @@ const CHARACTER_COLOR = '#ffaa00';
 export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'history' | 'audio';
 
 export interface EditorRightPanelsProps {
+  /** Hide the Breakdown tab until the project reaches it (see lib/os/progress). */
+  showBreakdown?: boolean;
   rightPanel: RightPanelTab;
   setRightPanel: (p: RightPanelTab) => void;
   activeView: string;
@@ -98,7 +100,7 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, breakdownPanel,
+  referencesPanel, breakdownPanel, showBreakdown = true,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -123,7 +125,7 @@ export function EditorRightPanels({
   return (
     <>
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                {TABS.map(([key, Icon, label]) => (
+                {TABS.filter(([key]) => key !== 'breakdown' || showBreakdown || rightPanel === 'breakdown').map(([key, Icon, label]) => (
                   <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} style={{
                     flex: 1, minWidth: 0, padding: '8px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',

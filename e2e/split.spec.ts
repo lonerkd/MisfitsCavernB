@@ -36,7 +36,7 @@ test.describe('Split screen (local Supabase)', () => {
     email = `sp.${Date.now()}@journey.test`;
     const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sp${Date.now().toString(36)}` } });
     userId = data.user!.id;
-    projectId = (await admin.from('projects').insert({ title: 'Two Panes', creator_id: userId }).select('id').single()).data!.id;
+    projectId = (await admin.from('projects').insert({ title: 'Two Panes', creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Two Panes', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
 

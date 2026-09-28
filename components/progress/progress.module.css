@@ -186,3 +186,32 @@
   display: flex; flex-direction: column; gap: 10px; margin: 14px 0 4px; padding: 14px; border-radius: 12px;
   border: 1px solid rgba(224, 221, 174, 0.1); background: rgba(224, 221, 174, 0.02);
 }
+
+/* ── The phase the project's data says it has reached ─────── */
+.suggest {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: relative;
+  margin: 16px 0 0; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--pa-line); background: var(--pa-dim);
+}
+.suggestIcon { color: var(--pa); flex-shrink: 0; }
+.suggestText { flex: 1; min-width: 220px; font-size: 13px; line-height: 1.5; color: var(--fg); }
+.suggestActions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── A tool's one-line intro, the first time it's opened ─── */
+.intro {
+  --pa: #e8431a;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; margin: 0 0 16px; border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--pa) 40%, transparent);
+  background: color-mix(in srgb, var(--pa) 9%, transparent);
+}
+.introIcon { color: var(--pa); flex-shrink: 0; }
+.introText { flex: 1; min-width: 200px; margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--fg); }
+.introWhy { color: var(--fg-muted); }
+.introClose {
+  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  background: none; border: 1px solid rgba(224, 221, 174, 0.18); border-radius: 99px;
+  color: var(--fg-muted); font-family: var(--mono); font-size: 9.5px; letter-spacing: 1px; padding: 4px 9px; cursor: pointer;
+}
+.introClose:hover { color: var(--fg); }
+.introClose:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }
