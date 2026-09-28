@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T08:21:52.636Z",
+  "last_synchronized": "2026-09-28T08:42:42.158Z",
   "stats": {
-    "totalFiles": 409,
-    "totalSize": 3153620,
+    "totalFiles": 418,
+    "totalSize": 3212290,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 142,
-      ".ts": 219,
+      ".tsx": 143,
+      ".ts": 225,
       ".js": 7,
-      ".sql": 27
+      ".sql": 29
     }
   },
   "modules": {
@@ -219,6 +219,7 @@
         "components/studio/production/BreakdownView.tsx",
         "components/studio/production/CallSheetsPanel.tsx",
         "components/studio/production/CrewView.tsx",
+        "components/studio/production/LocationsView.tsx",
         "components/studio/production/OnSetView.tsx",
         "components/studio/production/ReadinessView.tsx",
         "components/studio/production/ScheduleView.tsx",
@@ -272,7 +273,9 @@
         "supabase/migrations/20260928030000_brief_detect.sql",
         "supabase/migrations/20260928040000_phases_v2.sql",
         "supabase/migrations/20260928050000_onboarding.sql",
-        "supabase/migrations/20260928060000_call_sheets_issue.sql"
+        "supabase/migrations/20260928060000_call_sheets_issue.sql",
+        "supabase/migrations/20260928070000_hiring_loop.sql",
+        "supabase/migrations/20260928080000_locations.sql"
       ]
     }
   },
@@ -409,8 +412,8 @@
     },
     {
       "path": "app/jobs/[id]/page.tsx",
-      "size": 24641,
-      "last_modified": "2026-09-27T05:02:41.788Z"
+      "size": 25657,
+      "last_modified": "2026-09-28T08:29:01.083Z"
     },
     {
       "path": "app/jobs/loading.tsx",
@@ -419,8 +422,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 34265,
-      "last_modified": "2026-09-28T07:43:44.335Z"
+      "size": 40643,
+      "last_modified": "2026-09-28T08:31:17.967Z"
     },
     {
       "path": "app/layout.tsx",
@@ -569,8 +572,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 10792,
-      "last_modified": "2026-09-28T07:42:57.855Z"
+      "size": 10805,
+      "last_modified": "2026-09-28T08:38:03.185Z"
     },
     {
       "path": "app/welcome/page.tsx",
@@ -854,8 +857,8 @@
     },
     {
       "path": "components/studio/CastingBoard.tsx",
-      "size": 13001,
-      "last_modified": "2026-09-27T05:02:57.793Z"
+      "size": 13717,
+      "last_modified": "2026-09-28T08:30:00.110Z"
     },
     {
       "path": "components/studio/CharacterBible.tsx",
@@ -934,13 +937,18 @@
     },
     {
       "path": "components/studio/production/CallSheetsPanel.tsx",
-      "size": 16954,
-      "last_modified": "2026-09-28T08:15:41.450Z"
+      "size": 17899,
+      "last_modified": "2026-09-28T08:39:26.419Z"
     },
     {
       "path": "components/studio/production/CrewView.tsx",
       "size": 2940,
       "last_modified": "2026-09-28T07:43:01.907Z"
+    },
+    {
+      "path": "components/studio/production/LocationsView.tsx",
+      "size": 9779,
+      "last_modified": "2026-09-28T08:38:39.630Z"
     },
     {
       "path": "components/studio/production/OnSetView.tsx",
@@ -949,8 +957,8 @@
     },
     {
       "path": "components/studio/production/ReadinessView.tsx",
-      "size": 15829,
-      "last_modified": "2026-09-27T08:02:25.531Z"
+      "size": 16563,
+      "last_modified": "2026-09-28T08:38:03.185Z"
     },
     {
       "path": "components/studio/production/ScheduleView.tsx",
@@ -1004,8 +1012,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 4511,
-      "last_modified": "2026-09-28T06:50:07.659Z"
+      "size": 4710,
+      "last_modified": "2026-09-28T08:38:49.609Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1118,9 +1126,19 @@
       "last_modified": "2026-09-24T20:05:03.636Z"
     },
     {
+      "path": "e2e/hiring.spec.ts",
+      "size": 5267,
+      "last_modified": "2026-09-28T08:31:52.994Z"
+    },
+    {
       "path": "e2e/home-page-crash.spec.ts",
       "size": 1320,
       "last_modified": "2026-09-24T20:05:03.636Z"
+    },
+    {
+      "path": "e2e/locations.spec.ts",
+      "size": 5067,
+      "last_modified": "2026-09-28T08:40:49.710Z"
     },
     {
       "path": "e2e/login-smoke.spec.ts",
@@ -1144,8 +1162,8 @@
     },
     {
       "path": "e2e/readiness.spec.ts",
-      "size": 6349,
-      "last_modified": "2026-09-28T03:48:48.123Z"
+      "size": 6898,
+      "last_modified": "2026-09-28T08:40:10.077Z"
     },
     {
       "path": "e2e/real-data.spec.ts",
@@ -1449,8 +1467,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 21021,
-      "last_modified": "2026-09-28T06:50:07.659Z"
+      "size": 21059,
+      "last_modified": "2026-09-28T08:38:03.185Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1684,8 +1702,8 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 28093,
-      "last_modified": "2026-09-28T08:14:23.102Z"
+      "size": 29515,
+      "last_modified": "2026-09-28T08:37:11.744Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -1719,13 +1737,23 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 12664,
-      "last_modified": "2026-09-28T08:15:00.682Z"
+      "size": 13006,
+      "last_modified": "2026-09-28T08:37:11.744Z"
     },
     {
       "path": "lib/studio/live.ts",
       "size": 5648,
       "last_modified": "2026-09-26T07:31:32.668Z"
+    },
+    {
+      "path": "lib/studio/locations.test.ts",
+      "size": 3246,
+      "last_modified": "2026-09-28T08:39:46.906Z"
+    },
+    {
+      "path": "lib/studio/locations.ts",
+      "size": 3892,
+      "last_modified": "2026-09-28T08:37:01.566Z"
     },
     {
       "path": "lib/studio/media-kind.test.ts",
@@ -1754,8 +1782,8 @@
     },
     {
       "path": "lib/studio/readiness.ts",
-      "size": 5181,
-      "last_modified": "2026-09-27T06:43:04.006Z"
+      "size": 5928,
+      "last_modified": "2026-09-28T08:37:45.534Z"
     },
     {
       "path": "lib/studio/scene-sync.test.ts",
@@ -1839,13 +1867,13 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 95671,
-      "last_modified": "2026-09-28T08:12:40.406Z"
+      "size": 97666,
+      "last_modified": "2026-09-28T08:36:45.886Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
-      "size": 2853,
-      "last_modified": "2026-09-26T08:38:18.088Z"
+      "size": 3445,
+      "last_modified": "2026-09-28T08:27:09.558Z"
     },
     {
       "path": "lib/supabase/messages.ts",
@@ -2133,6 +2161,16 @@
       "last_modified": "2026-09-28T08:11:36.158Z"
     },
     {
+      "path": "supabase/migrations/20260928070000_hiring_loop.sql",
+      "size": 5080,
+      "last_modified": "2026-09-28T08:29:43.215Z"
+    },
+    {
+      "path": "supabase/migrations/20260928080000_locations.sql",
+      "size": 3072,
+      "last_modified": "2026-09-28T08:36:40.310Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2140,7 +2178,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T08:21:33.582Z"
+      "last_modified": "2026-09-28T08:42:25.482Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2206,6 +2244,16 @@
       "path": "tests/integration/formats.test.ts",
       "size": 4944,
       "last_modified": "2026-09-27T05:41:15.020Z"
+    },
+    {
+      "path": "tests/integration/hiring.test.ts",
+      "size": 5419,
+      "last_modified": "2026-09-28T08:29:52.368Z"
+    },
+    {
+      "path": "tests/integration/locations.test.ts",
+      "size": 2162,
+      "last_modified": "2026-09-28T08:40:24.986Z"
     },
     {
       "path": "tests/integration/media-library.test.ts",

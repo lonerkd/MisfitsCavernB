@@ -6,7 +6,7 @@ import { Check, ExternalLink, FileText, Printer, Send } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { useCanShape } from '@/lib/brief';
 import {
-  issueState, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls,
+  issueState, locationKey, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls, useProjectLocations,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
@@ -36,6 +36,8 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const sheets = useCallSheets(project.id);
   const calls = useCallSheetCalls(project.id);
   const acks = useCallSheetAcks(project.id);
+  const locations = useProjectLocations(project.id);
+  const addressOf = useMemo(() => new Map(locations.rows.filter((l) => l.address).map((l) => [locationKey(l.name), l.address as string])), [locations.rows]);
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
   const sheetFor = (day: number) => sheets.rows.find((x) => x.shoot_day === day);
@@ -91,6 +93,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
               {open && (
                 <DayEditor
                   day={day} sheet={sheet} facts={d} crew={crew} state={state}
+                  addresses={d.locations.map((name) => ({ name, address: addressOf.get(locationKey(name)) })).filter((x): x is { name: string; address: string } => !!x.address)}
                   acks={acks.rows.filter((a) => a.call_sheet_id === sheet?.id)}
                   onIssued={(row) => sheets.upsertLocal(row)}
                   calls={dayCalls}
@@ -189,8 +192,10 @@ function IssueBar({ sheet, state, crew, acks, onIssued }: {
   );
 }
 
-function DayEditor({ day, sheet, facts, crew, calls, state, acks, onIssued, onSheet, onCall, onPrint }: {
+function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, onIssued, onSheet, onCall, onPrint }: {
   day: number; sheet: CallSheet | undefined; facts: ReturnType<typeof dayFacts>; crew: CrewMember[]; calls: CallSheetCall[];
+  /** The day's locations that have an address on record (Production › Locations). */
+  addresses: { name: string; address: string }[];
   state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
   onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void;
 }) {
@@ -264,6 +269,12 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, onIssued, onSh
         {textField('location_address', 'Location address')}
         {textField('weather', 'Weather')}
       </div>
+      {addresses.filter((a) => a.address !== sheet?.location_address).map((a) => (
+        <p key={a.name} className={s.hint} style={{ margin: 0 }}>
+          {a.name} is at {a.address}.{' '}
+          <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => void saveSheet({ location_address: a.address })}>Use this address</button>
+        </p>
+      ))}
       {textField('notes', 'Notes (parking, safety, catering…)', 'text', true)}
 
       <div className={s.callCols}>

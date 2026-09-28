@@ -1,8 +1,45 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Call sheets reach the crew
+## Latest Session — Locations as records
 
-Migration `20260928060000_call_sheets_issue.sql` — **apply to production before merging** (it enables `pg_cron`).
+Migration `20260928080000_locations.sql` — **apply to production before merging**.
+
+- **Studio › Production › Locations**: every location the script names
+  (INT. HARBOR - NIGHT → HARBOR), busiest first, with its scenes, shoot days,
+  exterior/night — and a record the production fills in: status (scouting →
+  on hold → confirmed), permit (not checked / not needed / needed / applied
+  / granted), address (with a map link), contact, cost, notes. Locations the
+  script doesn't name yet can be added. "2 of 5 locked down".
+- `project_locations` is keyed by the heading's name (upper case), so scenes
+  link through the script with nothing to maintain; RLS as call sheets.
+- **Readiness** gains a Location check: a scene is blocked until its location
+  is confirmed with any permit it needs granted ("HARBOR permit pending");
+  "What unblocks the most" says "Lock down CAVE, RIDGE".
+- **Call sheets** offer the day's location address: "CAVE is at 1 Cave Rd.
+  Use this address".
+
+## Earlier — The hiring loop
+
+Migration `20260928070000_hiring_loop.sql` — see PR #79.
+
+- **Casting calls**: the Casting board's open role → "Post a casting call"
+  opens Jobs with the post written from the script (scenes, shoot days) and
+  `jobs.character_name` set. Cards and the job page say "Casting call · the
+  role of Maya".
+- **Apply from the card**: Apply opens a note to the poster inline; the card
+  then reads "Applied · pending/accepted". My Jobs lists what you applied to
+  with its status (applicants can still read a posting after it closes).
+- **Accept in one step** (`respond_to_application`): status, the crew (craft =
+  the job's role; someone already on the crew keeps their role — the old
+  client upsert demoted leads), the casting for a casting call, "Close the
+  posting when I accept someone", and the applicant told ("You're cast as
+  Maya in Tidewater.", linking to the project).
+- **Fix**: anyone could link a posting to any project; now only people who
+  can shape the project (owner, leads, contributors) can.
+
+## Earlier — Call sheets reach the crew
+
+Migration `20260928060000_call_sheets_issue.sql` — applied to production (pg_cron enabled, job scheduled); PR #78 merged.
 
 - **Issue, then revise**: a call sheet is a live draft until the owner or a
   lead issues it (Studio › Schedule › a day › "Issue to the crew", with an

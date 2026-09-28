@@ -4,8 +4,9 @@
 // future report compute it the same way.
 
 import { castOf } from './stripboard';
+import { locationKey, locationReadiness } from './locations';
 
-export type CheckId = 'cast' | 'elements' | 'shots' | 'date' | 'refs';
+export type CheckId = 'cast' | 'location' | 'elements' | 'shots' | 'date' | 'refs';
 export type CheckState = 'done' | 'todo' | 'none';
 
 export interface ReadinessCheck {
@@ -36,6 +37,8 @@ export interface ReadinessScene {
   status: string | null;
   cast_list: string | null;
   shoot_day: number | null;
+  /** From the heading (INT. HARBOR - NIGHT → HARBOR). */
+  location?: string | null;
 }
 
 export interface ReadinessInput {
@@ -47,10 +50,19 @@ export interface ReadinessInput {
   refsByScene: Map<string, number>;
   /** Shoot day → date from its call sheet. */
   dateOfDay: Map<number, string>;
+  /** Location records by name (upper case); absent → the check doesn't apply. */
+  locations?: Map<string, { status: string; permit: string }>;
 }
 
 const list = (names: string[], max = 3) =>
   names.length <= max ? names.join(', ') : `${names.slice(0, max).join(', ')} +${names.length - max}`;
+
+function locationCheck(scene: ReadinessScene, input: ReadinessInput): ReadinessCheck {
+  const name = locationKey(scene.location);
+  if (!name || !input.locations) return { id: 'location', label: 'Location', state: 'none', detail: '' };
+  const r = locationReadiness(name, input.locations.get(name));
+  return { id: 'location', label: 'Location', state: r.ready ? 'done' : 'todo', detail: r.detail };
+}
 
 export function sceneReadiness(scene: ReadinessScene, input: ReadinessInput): SceneReadiness {
   const characters = castOf(scene);
@@ -66,6 +78,7 @@ export function sceneReadiness(scene: ReadinessScene, input: ReadinessInput): Sc
     characters.length === 0
       ? { id: 'cast', label: 'Cast', state: 'none', detail: '' }
       : { id: 'cast', label: 'Cast', state: uncast.length ? 'todo' : 'done', detail: uncast.length ? `Cast ${list(uncast)}` : '' },
+    locationCheck(scene, input),
     elements.length === 0
       ? { id: 'elements', label: 'Breakdown', state: 'todo', detail: 'Not broken down' }
       : {

@@ -12,6 +12,8 @@ export interface DBJob {
   created_at: string;
   updated_at: string;
   budget_item_id?: string | null;
+  /** A casting call: the character in the project this posting casts. */
+  character_name?: string | null;
 }
 
 export interface JobWithRelations extends DBJob {
@@ -105,14 +107,15 @@ export async function getJobApplications(jobId: string) {
   return data;
 }
 
-export async function respondToApplication(applicationId: string, status: 'accepted' | 'rejected') {
-  const { data, error } = await supabase
-    .from('job_applications')
-    .update({ status })
-    .eq('id', applicationId)
-    .select()
-    .single();
+export interface ApplicationResponse { status: 'accepted' | 'rejected'; joined_crew: boolean; cast_as: string | null; closed: boolean }
 
-  if (error) throw error;
-  return data;
+/**
+ * The poster accepts or turns down an application, in one step: an accepted
+ * applicant joins the project's crew (and is cast, for a casting call), the
+ * posting can close, and the applicant is told.
+ */
+export async function respondToApplication(applicationId: string, status: 'accepted' | 'rejected', closePosting = false): Promise<ApplicationResponse> {
+  const { data, error } = await supabase.rpc('respond_to_application', { p_application: applicationId, p_status: status, p_close: closePosting });
+  if (error) throw new Error(error.message || 'Could not update the application');
+  return data as unknown as ApplicationResponse;
 }

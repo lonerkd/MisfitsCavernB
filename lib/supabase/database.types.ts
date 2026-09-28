@@ -933,6 +933,7 @@ export type Database = {
       jobs: {
         Row: {
           budget_item_id: string | null;
+          character_name: string | null;
           created_at: string | null;
           created_by: string;
           description: string | null;
@@ -947,6 +948,7 @@ export type Database = {
         };
         Insert: {
           budget_item_id?: string | null;
+          character_name?: string | null;
           created_at?: string | null;
           created_by: string;
           description?: string | null;
@@ -961,6 +963,7 @@ export type Database = {
         };
         Update: {
           budget_item_id?: string | null;
+          character_name?: string | null;
           created_at?: string | null;
           created_by?: string;
           description?: string | null;
@@ -1878,6 +1881,66 @@ export type Database = {
           skip_phases?: string[];
         };
         Relationships: [];
+      };
+      project_locations: {
+        Row: {
+          address: string | null;
+          contact: string | null;
+          cost: number | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          permit: string;
+          project_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          address?: string | null;
+          contact?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          permit?: string;
+          project_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string | null;
+          contact?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          permit?: string;
+          project_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_locations_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_locations_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       project_tasks: {
         Row: {
@@ -3039,6 +3102,10 @@ export type Database = {
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      respond_to_application: {
+        Args: { p_application: string; p_close?: boolean; p_status: string };
+        Returns: Json;
+      };
       send_call_sheet_reminders: {
         Args: Record<PropertyKey, never>;
         Returns: number;
