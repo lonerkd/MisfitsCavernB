@@ -701,11 +701,7 @@ constraint set_log.set_log_media_fkey FOREIGN KEY (media_id, project_id) REFEREN
 constraint set_log.set_log_pkey PRIMARY KEY (id)
 constraint set_log.set_log_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint set_log.set_log_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE SET NULL (scene_id)
-constraint set_log.set_log_shape CHECK (
-CASE
-    WHEN (kind = 'continuity'::text) THEN (call_sheet_id IS NULL)
-    ELSE ((call_sheet_id IS NOT NULL) AND (shot_id IS NULL) AND (take IS NULL) AND (media_id IS NULL) AND ((kind <> 'note'::text) OR (body IS NOT NULL)))
-END)
+constraint set_log.set_log_shape CHECK ((((kind = 'continuity'::text) AND (call_sheet_id IS NULL)) OR ((kind <> 'continuity'::text) AND (call_sheet_id IS NOT NULL) AND (shot_id IS NULL) AND (take IS NULL) AND (media_id IS NULL) AND ((kind <> 'note'::text) OR (body IS NOT NULL)))))
 constraint set_log.set_log_shot_fkey FOREIGN KEY (shot_id, project_id) REFERENCES shots(id, project_id) ON DELETE SET NULL (shot_id)
 constraint set_log.set_log_take_check CHECK (((take IS NULL) OR ((take >= 1) AND (take <= 999))))
 constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)

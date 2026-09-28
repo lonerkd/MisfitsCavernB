@@ -30,11 +30,9 @@ CREATE TABLE public.set_log (
   CONSTRAINT set_log_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES public.media(id, project_id) ON DELETE SET NULL (media_id),
   -- The day's clock and notes are the day's; continuity is the scene's.
   CONSTRAINT set_log_shape CHECK (
-    CASE WHEN kind = 'continuity'
-      THEN call_sheet_id IS NULL
-      ELSE call_sheet_id IS NOT NULL AND shot_id IS NULL AND take IS NULL AND media_id IS NULL
-        AND (kind <> 'note' OR body IS NOT NULL)
-    END
+    (kind = 'continuity' AND call_sheet_id IS NULL)
+    OR (kind <> 'continuity' AND call_sheet_id IS NOT NULL AND shot_id IS NULL AND take IS NULL AND media_id IS NULL
+        AND (kind <> 'note' OR body IS NOT NULL))
   )
 );
 CREATE INDEX set_log_project_idx ON public.set_log USING btree (project_id, at);
