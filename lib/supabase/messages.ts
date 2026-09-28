@@ -68,6 +68,13 @@ export function subscribeToChannelUuid(channelUuid: string, callback: (payload: 
     .subscribe();
 }
 
+/** Removes a message: your own, or any in a channel you run. */
+export async function deleteMessage(messageId: string) {
+  const { error, count } = await supabase.from('messages').delete({ count: 'exact' }).eq('id', messageId);
+  if (error) throw error;
+  if (!count) throw new Error('You can’t remove that message');
+}
+
 export async function getThreadReplies(parentMessageId: string) {
   const { data, error } = await supabase
     .from('messages')
