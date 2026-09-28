@@ -58,9 +58,8 @@ function Question({ q, value, disabled, onAnswer, found = [] }: { q: BriefQuesti
           return (
             <button key={o.id} type="button" className={`${b.chip} ${ev ? b.fromScript : ''}`} disabled={disabled} title={seen ?? o.hint}
               {...(q.kind === 'one' ? { role: 'radio', 'aria-checked': on } : { 'aria-pressed': on })}
-              aria-description={seen}
               onClick={() => pick(o.id)}>
-              {o.label}{ev && <span className={b.scriptMark} aria-hidden> · script</span>}
+              {o.label}{ev && <span className={b.scriptMark} aria-hidden> · script</span>}{seen && <span className="sr-only"> ({seen})</span>}
             </button>
           );
         })}

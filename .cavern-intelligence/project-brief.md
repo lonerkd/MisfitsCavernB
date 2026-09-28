@@ -32,6 +32,17 @@ Think Dynamic Link between Premiere and After Effects, for a whole production.
 keys), `channels` (preset keys), `pages_per_day` (pace). An integration test
 checks every implied craft exists.
 
+## Read from the screenplay (`lib/brief/script.ts`)
+
+An option may carry `detect`: `words` (whole words in action lines, with
+s/es/ed/d/ing endings), `night_exteriors` (EXT…NIGHT headings) or
+`ages_under` (a character intro like "TOMMY (8)"). `scanScript` returns
+evidence per option with scene numbers. Until the question is answered the
+evidence counts as chosen (roles, breakdown, reasons like "stunts or fights
+in the script (scene 2)"); after, it's suggested (`script:<question>` move
+with one-click Add; chips marked "· script"). Tune the words in the
+catalogue — no code change.
+
 ## Analysis (`lib/brief/core.ts`, pure + unit-tested)
 
 - `visibleQuestions` / `isAsked` — format and earlier answers decide what's asked.

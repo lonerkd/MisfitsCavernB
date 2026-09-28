@@ -1,8 +1,21 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The project brief: the suite adapts to the project
+## Latest Session — ScriptOS reads the brief out of the screenplay
 
-Migration `20260928020000_project_brief.sql` — **apply to production before merging**.
+Migration `20260928030000_brief_detect.sql` — **apply to production before merging** (data only: `needs` options gain `detect`).
+
+- The special-needs question is answered by the script before anyone ticks
+  it: fights, weapons, vehicles, animals, children (a character intro with
+  an age under 13), water/weather, crowds, night exteriors, blood and
+  prosthetics, VFX — each with the scenes it's in.
+- Until the question is answered, what the script shows drives roles and
+  the breakdown ("Roles this project needs: Gaffer — because of night
+  exteriors in the script (scene 1)"); after, it's a suggestion with a
+  one-click Add, and the chips say "· script".
+
+## Earlier — The project brief: the suite adapts to the project
+
+Migration `20260928020000_project_brief.sql` — applied to production; PR #74 merged.
 
 - **The brief** (project page, under the phase panel): what the project is,
   answered as choices phase by phase — genre, tone, target length, when it's
