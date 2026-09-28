@@ -8,13 +8,13 @@ import { accentVars } from '@/components/progress/Bricks';
 import { PHASES, type Phase } from '@/lib/os/phases';
 import {
   briefProgress, briefSummary, rolePost, rolePostHref, visibleQuestions,
-  type BriefQuestion, type BriefValue, type Move, type ProjectBrief,
+  sceneList, type BriefQuestion, type BriefValue, type Evidence, type Move, type ProjectBrief,
 } from '@/lib/brief';
 import b from './brief.module.css';
 
 const ICON = { warn: AlertTriangle, gap: CircleDashed, tip: Lightbulb, ask: HelpCircle } as const;
 
-function Question({ q, value, disabled, onAnswer }: { q: BriefQuestion; value: BriefValue | undefined; disabled: boolean; onAnswer: (v: BriefValue | null) => void }) {
+function Question({ q, value, disabled, onAnswer, found = [] }: { q: BriefQuestion; value: BriefValue | undefined; disabled: boolean; onAnswer: (v: BriefValue | null) => void; found?: Evidence[] }) {
   const id = `brief-${q.key}`;
   const [draft, setDraft] = useState(typeof value === 'number' ? String(value) : '');
   useEffect(() => { setDraft(typeof value === 'number' ? String(value) : ''); }, [value]);
@@ -53,11 +53,14 @@ function Question({ q, value, disabled, onAnswer }: { q: BriefQuestion; value: B
       <div className={b.chips} role={q.kind === 'one' ? 'radiogroup' : 'group'} aria-label={q.label}>
         {q.options.map((o) => {
           const on = selected.includes(o.id);
+          const ev = !on ? found.find((e) => e.option === o.id) : undefined;
+          const seen = ev ? `In the script: ${sceneList(ev.scenes)} — ${ev.hits.slice(0, 3).join(', ')}` : undefined;
           return (
-            <button key={o.id} type="button" className={b.chip} disabled={disabled} title={o.hint}
+            <button key={o.id} type="button" className={`${b.chip} ${ev ? b.fromScript : ''}`} disabled={disabled} title={seen ?? o.hint}
               {...(q.kind === 'one' ? { role: 'radio', 'aria-checked': on } : { 'aria-pressed': on })}
+              aria-description={seen}
               onClick={() => pick(o.id)}>
-              {o.label}
+              {o.label}{ev && <span className={b.scriptMark} aria-hidden> · script</span>}
             </button>
           );
         })}
@@ -66,7 +69,7 @@ function Question({ q, value, disabled, onAnswer }: { q: BriefQuestion; value: B
   );
 }
 
-function MoveItem({ m, brief, projectTitle, format, onAsk }: { m: Move; brief: ProjectBrief; projectTitle: string; format: string | null; onAsk: (key: string) => void }) {
+function MoveItem({ m, brief, projectTitle, format, onAsk, onAdd, canEdit }: { m: Move; brief: ProjectBrief; projectTitle: string; format: string | null; onAsk: (key: string) => void; onAdd: (question: string, option: string) => void; canEdit: boolean }) {
   const Icon = ICON[m.kind];
   return (
     <li className={`${b.move} ${b[m.kind]}`}>
@@ -78,6 +81,11 @@ function MoveItem({ m, brief, projectTitle, format, onAsk }: { m: Move; brief: P
           {m.kind === 'ask' && m.question && (
             <button type="button" className={b.link} onClick={() => onAsk(m.question!)}>Answer <ArrowRight size={11} aria-hidden /></button>
           )}
+          {canEdit && m.suggest?.map((sg) => (
+            <button key={sg.option} type="button" className={b.link} onClick={() => onAdd(sg.question, sg.option)} aria-label={`Add ${sg.label} to the brief`}>
+              Add: {sg.label}
+            </button>
+          ))}
           {m.crafts?.map((craft) => (
             <Link key={craft} className={b.link} aria-label={`Post a job for a ${craft}`}
               href={rolePostHref(rolePost(craft, { projectTitle, questions: brief.questions, answers: brief.answers, format, context: brief.context, script: brief.script }))}>
@@ -121,6 +129,13 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
   const answer = async (key: string, v: BriefValue | null) => {
     try { await brief.answer(key, v); } catch (e) { toast(e instanceof Error ? e.message : 'Could not save that', 'error'); }
   };
+  const addOption = (question: string, option: string) => {
+    const q = brief.questions.find((x) => x.key === question);
+    if (!q) return;
+    const current = brief.answers[question];
+    const ids = Array.isArray(current) ? current : typeof current === 'string' ? [current] : [];
+    void answer(question, q.kind === 'one' ? option : [...ids.filter((x) => x !== option), option]);
+  };
   const goTo = (key: string) => {
     const q = visible.find((x) => x.key === key);
     if (!q) return;
@@ -149,7 +164,7 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
           ) : (
             <>
               <ul className={b.moves} aria-label="Next moves">
-                {shown.map((m) => <MoveItem key={m.id} m={m} brief={brief} projectTitle={projectTitle} format={format} onAsk={goTo} />)}
+                {shown.map((m) => <MoveItem key={m.id} m={m} brief={brief} projectTitle={projectTitle} format={format} onAsk={goTo} onAdd={addOption} canEdit={canEdit} />)}
               </ul>
               {moves.length > 5 && (
                 <button type="button" className={b.more} onClick={() => setShowAll((v) => !v)}>
@@ -178,7 +193,7 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
           <div className={b.questions} role="tabpanel" id="brief-tabpanel" aria-labelledby={`brief-tab-${current}`}>
             {inTab.map((q) => (
               <div key={q.key} id={`brief-q-${q.key}`}>
-                <Question q={q} value={brief.answers[q.key]} disabled={!canEdit} onAnswer={(v) => void answer(q.key, v)} />
+                <Question q={q} value={brief.answers[q.key]} disabled={!canEdit} onAnswer={(v) => void answer(q.key, v)} found={(brief.script?.evidence ?? []).filter((e) => e.question === q.key)} />
               </div>
             ))}
           </div>

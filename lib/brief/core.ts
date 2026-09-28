@@ -12,6 +12,9 @@
 // carry their own implications as data.
 
 import { PHASES, type Phase } from '@/lib/os/phases';
+import { sceneList, type Detect, type Evidence } from './script';
+
+export type { Evidence } from './script';
 
 export interface Implies {
   crafts?: string[];
@@ -20,7 +23,7 @@ export interface Implies {
   pages_per_day?: number;
 }
 
-export interface BriefOption { id: string; label: string; hint?: string; implies?: Implies }
+export interface BriefOption { id: string; label: string; hint?: string; implies?: Implies; detect?: Detect }
 
 export interface BriefQuestion {
   key: string;
@@ -63,7 +66,12 @@ export const EMPTY_CONTEXT: ProjectContext = {
 };
 
 /** The project's main script, measured (lib/scriptos/timing). */
-export interface ScriptFacts { pages: number; runtimeSeconds: number }
+export interface ScriptFacts {
+  pages: number;
+  runtimeSeconds: number;
+  /** What the script shows of the brief's options (lib/brief/script). */
+  evidence?: Evidence[];
+}
 
 const phaseIndex = (p: Phase) => PHASES.findIndex((x) => x.id === p);
 
@@ -100,7 +108,7 @@ export interface Implications {
 }
 
 /** What the answered questions imply, with the choices behind each. */
-export function implications(questions: BriefQuestion[], answers: Answers, format: string | null): Implications {
+export function implications(questions: BriefQuestion[], answers: Answers, format: string | null, evidence: Evidence[] = []): Implications {
   const crafts = new Set<string>();
   const breakdown = new Set<string>();
   const channels = new Set<string>();
@@ -108,12 +116,16 @@ export function implications(questions: BriefQuestion[], answers: Answers, forma
   const note = (k: string, why: string) => { const w = (because[k] ??= []); if (!w.includes(why)) w.push(why); };
   let pace: number | null = null;
   for (const q of visibleQuestions(questions, answers, format)) {
-    const ids = chosen(answers[q.key]);
+    // Until the question is answered, what the script shows counts as chosen.
+    const fromScript = answers[q.key] == null ? evidence.filter((e) => e.question === q.key) : [];
+    const ids = [...chosen(answers[q.key]), ...fromScript.map((e) => e.option)];
     for (const o of q.options.filter((o) => ids.includes(o.id))) {
       const im = o.implies ?? {};
-      for (const c of im.crafts ?? []) { crafts.add(c); note(`craft:${c}`, o.label); }
-      for (const b of im.breakdown ?? []) { breakdown.add(b); note(`breakdown:${b}`, o.label); }
-      for (const ch of im.channels ?? []) { channels.add(ch); note(`channel:${ch}`, o.label); }
+      const ev = fromScript.find((e) => e.option === o.id);
+      const why = ev ? `${o.label.toLowerCase()} in the script (${sceneList(ev.scenes)})` : o.label;
+      for (const c of im.crafts ?? []) { crafts.add(c); note(`craft:${c}`, why); }
+      for (const b of im.breakdown ?? []) { breakdown.add(b); note(`breakdown:${b}`, why); }
+      for (const ch of im.channels ?? []) { channels.add(ch); note(`channel:${ch}`, why); }
       if (typeof im.pages_per_day === 'number' && im.pages_per_day > 0) pace = im.pages_per_day;
     }
   }
@@ -159,6 +171,8 @@ export interface Move {
   crafts?: string[];
   /** For channel tips: the presets to open. */
   channels?: string[];
+  /** For script findings: options to add to the brief. */
+  suggest?: Array<{ question: string; option: string; label: string }>;
   weight: number;
 }
 
@@ -186,7 +200,8 @@ export function nextMoves({ questions, answers, format, phase, context: c, scrip
   const now = phaseIndex(phase);
   const at = (p: Phase) => phaseIndex(p);
   const moves: Move[] = [];
-  const im = implications(questions, answers, format);
+  const evidence = script?.evidence ?? [];
+  const im = implications(questions, answers, format, evidence);
   const num = (k: string) => (typeof answers[k] === 'number' ? (answers[k] as number) : null);
   const goals = chosen(answers.goal);
 
@@ -314,6 +329,23 @@ export function nextMoves({ questions, answers, format, phase, context: c, scrip
     });
   }
 
+  // What the screenplay shows that the brief doesn't say yet.
+  const byKey = new Map(questions.map((q) => [q.key, q]));
+  for (const q of visibleQuestions(questions, answers, format)) {
+    const found = evidence.filter((e) => e.question === q.key && !chosen(answers[q.key]).includes(e.option));
+    if (!found.length) continue;
+    const open = answers[q.key] == null;
+    moves.push({
+      id: `script:${q.key}`, kind: 'tip', question: q.key,
+      suggest: found.map((e) => ({ question: q.key, option: e.option, label: e.label })),
+      title: `${open ? 'From the script' : 'The script also has'}: ${list(found.map((e) => `${e.label.toLowerCase()} (${sceneList(e.scenes)})`))}`,
+      detail: open
+        ? `Counted in for “${byKey.get(q.key)?.label ?? q.key}” until you answer it — add them to keep them, or answer without them.`
+        : 'Add them to the brief if they’ll be on set.',
+      weight: open ? (now <= at('pre-production') ? 64 : 50) : 30,
+    });
+  }
+
   // Delivery: a vertical cut, and music cleared for where it's going.
   const platforms = chosen(answers.platforms);
   const aspect = chosen(answers.aspect)[0];
@@ -364,7 +396,7 @@ export function suggestChannels(presets: ChannelPreset[], opts: { phase: Phase; 
  * is: the format and brief, why the role is needed, and the script's size.
  */
 export function rolePost(craft: string, o: { projectTitle: string; questions: BriefQuestion[]; answers: Answers; format: string | null; context: ProjectContext; script: ScriptFacts | null }) {
-  const im = implications(o.questions, o.answers, o.format);
+  const im = implications(o.questions, o.answers, o.format, o.script?.evidence ?? []);
   const summary = briefSummary(o.questions, o.answers, o.format, ['genre', 'tone', 'target_runtime']);
   const lines = [
     `${o.format ?? 'Project'}${summary ? ` — ${summary}` : ''}: “${o.projectTitle}”.`,

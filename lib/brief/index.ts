@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
 import { parseScript, type ScriptFormat } from '@/lib/scriptos/parser';
 import { timeScript } from '@/lib/scriptos/timing';
+import { scanScript } from './script';
 import type { Json } from '@/lib/supabase/database.types';
 import {
   EMPTY_CONTEXT, implications, nextMoves, type Answers, type BriefQuestion, type BriefValue,
@@ -13,6 +14,7 @@ import {
 import type { Phase } from '@/lib/os/phases';
 
 export * from './core';
+export { scanScript, sceneList } from './script';
 
 /** Announced after any answer changes, so every open view re-reads. */
 export const BRIEF_EVENT = 'mc:brief-changed';
@@ -77,7 +79,8 @@ export async function loadScriptFacts(projectId: string, format: string | null):
   const { data: reads } = await supabase.from('scenes').select('read_seconds').eq('script_id', script.id).is('removed_at', null).order('ordinal');
   const parsed = parseScript(script.content, (fmt?.script_format as ScriptFormat) || 'screenplay');
   const timing = timeScript(parsed.lines, (reads ?? []).map((r) => (r.read_seconds == null ? null : Number(r.read_seconds))));
-  return { pages: timing.pages, runtimeSeconds: timing.runtime };
+  const questions = await loadQuestions().catch(() => []);
+  return { pages: timing.pages, runtimeSeconds: timing.runtime, evidence: scanScript(parsed.lines, questions) };
 }
 
 export interface ProjectBrief {
@@ -142,7 +145,7 @@ export function useProjectBrief(projectId: string | null | undefined, format: st
     try { await saveAnswer(projectId, question, value); } catch (e) { setAnswers(before); throw e; }
   }, [projectId, answers]);
 
-  const implied = useMemo(() => implications(questions, answers, format), [questions, answers, format]);
+  const implied = useMemo(() => implications(questions, answers, format, script?.evidence ?? []), [questions, answers, format, script]);
   const moves = useMemo(
     () => (phase ? nextMoves({ questions, answers, format, phase, context, script }) : []),
     [questions, answers, format, phase, context, script],
