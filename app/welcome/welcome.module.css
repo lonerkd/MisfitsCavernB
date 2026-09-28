@@ -1,4 +1,4 @@
-/* /welcome — three short steps after sign-up. */
+/* /welcome — four short steps after sign-up. */
 
 .page {
   --pa: #e8431a;
@@ -56,3 +56,15 @@
 @media (prefers-reduced-motion: reduce) {
   .path { transition: none; }
 }
+
+/* Where the project is now. */
+.stage { border: 0; margin: 0; padding: 0; min-width: 0; }
+.stageLabel { font-size: 13px; color: var(--fg); font-weight: 600; padding: 0; margin-bottom: 8px; }
+.stageChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.stageChip {
+  font-size: 12px; padding: 5px 11px; border-radius: 99px; cursor: pointer;
+  border: 1px solid rgba(224, 221, 174, 0.14); background: transparent; color: var(--fg-muted);
+}
+.stageChip:hover:not(:disabled) { color: var(--fg); border-color: rgba(224, 221, 174, 0.3); }
+.stageChip[aria-checked='true'] { color: var(--fg); border-color: var(--pa); background: var(--pa-dim); }
+.stageChip:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }

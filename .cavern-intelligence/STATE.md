@@ -1,8 +1,42 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The landing page counts only real work
+## Latest Session — Guides, as deep as each person needs
 
-Migration `20260929010000_sample_data.sql` — **apply to production before merging**.
+Migration `20260929020000_guides.sql` — **apply to production before merging**.
+
+- **Every project has a guide** (project page, under the brief): the
+  workflow that fits it — *Your first short*, *Short film*, *Feature film*,
+  *Series*, *Music video*, *Documentary*, *Podcast*, *Commercial*, or *On the
+  crew* for someone else's project — picked from the format and experience,
+  and switchable. Steps come from one library (`lib/guides/steps.ts`); most
+  tick themselves from the project's data (the phase milestones, the
+  breakdown, locked revisions), the rest are ticked by hand.
+- **How deep it goes is the person's call**: four answers — how much
+  they've made, hours a week, who's making it with them, how much
+  explanation — asked on /welcome (a new step), the first time a guide
+  appears, and in Settings › Workspace. *Walk me through it* adds why, how
+  and what to watch for, plus the basics (how a shoot day runs, coverage,
+  the order of post); *Steps and tips* gives one tip per step; *Just the
+  checklist* one line. The default follows experience.
+- **Paced to their time**: effort scales with team (alone ×1.3, crew ×0.8)
+  and experience (first ×1.3, seasoned ×0.8); "This week" fills their hours;
+  the header says what's left ("about 146 hours — about 4 months at 8h a
+  week"). A solo filmmaker gets no crew or table-read steps; only a real crew
+  locks a shooting script.
+- **Structure-aware**: the outline step speaks the brief's story structure
+  (Save the Cat beats, the story circle, TV acts, a documentary arc…).
+- **Role-aware on the crew**: an actor gets "Know your scenes" and "Learn
+  your lines"; a DP "Walk the shot list"; everyone "Check your call sheet"
+  and "Sign your paperwork" (department from their craft on the project).
+- /welcome also asks where a new project is (an idea … getting it out
+  there) and starts it in that phase.
+- Storage: `profiles.ui_prefs.guide` (validated by `set_my_ui_prefs`) and
+  `guide_progress` (per person and project: workflow, ticked steps, hidden —
+  own rows only, on projects they can open).
+
+## Earlier — The landing page counts only real work
+
+Migration `20260929010000_sample_data.sql` — applied to production; PR #85 merged.
 
 - The landing page already ran on real data (platform totals, open jobs,
   published work — no invented testimonials, stats or pricing). But the demo

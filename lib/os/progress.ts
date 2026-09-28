@@ -61,7 +61,7 @@ export const EMPTY_SIGNALS: ProjectSignals = {
 
 /** Where a milestone or tool is worked on. `hub` is the project page. */
 export type Place =
-  | { kind: 'hub'; anchor?: 'logline' | 'production' }
+  | { kind: 'hub'; anchor?: 'logline' | 'production' | 'brief' | 'guide' }
   | { kind: 'studio'; tab: StudioTab; view?: ProductionView }
   | { kind: 'path'; path: string };
 
