@@ -1,0 +1,19 @@
+{
+  "language": "typescript",
+  "framework": "nextjs",
+  "packageManager": "npm",
+  "testFramework": "vitest",
+  "linter": "eslint",
+  "monorepo": false,
+  "git": true,
+  "workspaces": {
+    "js": ".",
+    "python": "."
+  },
+  "existingHarness": {
+    "claudeMd": true,
+    "featureList": false,
+    "progress": false,
+    "harnesskit": false
+  }
+}

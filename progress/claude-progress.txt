@@ -1,0 +1,7 @@
+# Claude Progress
+
+## Session 1 — HarnessKit Initialized (2026-09-28)
+- HarnessKit setup: merge mode (preserved AGENTS.md / .cavern-intelligence/ knowledge hub)
+- Preset: advanced
+- Baseline established: 276 tests passing, tsc clean, eslint clean
+- No new features implemented yet under HarnessKit tracking

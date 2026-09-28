@@ -13,6 +13,24 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-bootstrap.sh\"",
             "timeout": 15,
             "statusMessage": "Loading Cavern context"
+          },
+          {
+            "type": "command",
+            "command": "C:/Users/kings/.claude/plugins/synced/1fbaaa22-c006-4cbd-828d-fcf6b19851a3_526a85f3-93ae-4451-b5c8-1bab1afa720c/6495fa18-111a-44e3-9d44-0588e843f2a3/hooks/session-start.sh",
+            "timeout": 15,
+            "statusMessage": "HarnessKit: loading session state"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/kings/.claude/plugins/synced/1fbaaa22-c006-4cbd-828d-fcf6b19851a3_526a85f3-93ae-4451-b5c8-1bab1afa720c/6495fa18-111a-44e3-9d44-0588e843f2a3/hooks/session-end.sh",
+            "timeout": 15,
+            "statusMessage": "HarnessKit: recording session"
           }
         ]
       }
