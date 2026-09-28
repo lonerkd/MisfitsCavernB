@@ -26,6 +26,7 @@ duplicated across them.
 | `design-tokens.md` | UI work — colors, typography, component classes, aesthetic |
 | `playbook.md` | The detailed 7-step change cycle |
 | `scriptos-engine.md` | ScriptOS editor — Fountain parser, realtime sync, offline storage |
+| **`project-brief.md`** | The shared project model — the brief, project context, what each tool adapts to |
 | `lounge-and-audio.md` | Lounge chat + channels + WebRTC voice |
 | `studio-and-preproduction.md` | The Studio — boards, breakdown, casting, scheduling |
 | `sync-protocol.md` | Multi-agent / multi-tool cooperation & keeping this hub in sync |

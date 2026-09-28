@@ -1,8 +1,35 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The Lounge: who each channel is for, guides, the community
+## Latest Session — The project brief: the suite adapts to the project
 
-Migration `20260928010000_community.sql` — **apply to production before merging**.
+Migration `20260928020000_project_brief.sql` — **apply to production before merging**.
+
+- **The brief** (project page, under the phase panel): what the project is,
+  answered as choices phase by phase — genre, tone, target length, when it's
+  set, goals, audience, structure; budget level, planned days, camera style,
+  shooting on, locations, special needs; dailies; music, sound mix, frame,
+  finishing; festivals, platforms, accessibility. Questions follow the
+  format and earlier answers (festivals only if the goal includes them).
+  Questions and options are data (`brief_questions`); each option says what
+  it implies for the rest of the suite.
+- **What moves it forward**: ranked, phase-aware — the script vs the target
+  length, a festival short over 40 minutes, shooting days vs the budget's
+  pace, roles the brief needs that nobody on the crew does (each with a
+  "Post" link that opens Jobs with the post written from the project), empty
+  breakdown categories the brief calls for, night exteriors without a gaffer,
+  scenes without references, uncast characters, channels to open, a
+  vertical cut for social, licensed music vs release.
+- **Tools adapt**: Studio › Crew shows the roles/casting/night moves; the
+  Breakdown shows categories to tag; the editor's Stats measure runtime
+  against the brief's target; the Lounge offers the owner the channels the
+  phase calls for (script-notes → above the line, legal → owners,
+  production → below the line, dailies once the shoot starts, updates →
+  public at delivery…, from `channel_presets`).
+- Docs: `.cavern-intelligence/project-brief.md`.
+
+## Earlier — The Lounge: who each channel is for, guides, the community
+
+Migration `20260928010000_community.sql` — applied to production; PR #73 merged.
 
 - **Who it’s for** (`channels.audience`, enforced by `internal.can_view_channel`).
   Project channels: *Whole team*, *Owners* (creator + leads), *Above the line*

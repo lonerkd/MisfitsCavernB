@@ -25,7 +25,7 @@ import { CraftPicker } from '@/components/crafts/CraftPicker';
 // Crafts (and their colours) come from public.crafts — see lib/crafts.
 const craftColor = (byName: Map<string, Craft>, role: string) => byName.get(role)?.color ?? '#737373';
 
-function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole }: {
+function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole, initialDescription }: {
   onClose: () => void;
   onCreated: () => void;
   userId: string;
@@ -33,8 +33,9 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   projectTitle: string | null;
   initialTitle?: string;
   initialRole?: string;
+  initialDescription?: string;
 }) {
-  const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || '', rate: '' });
+  const [form, setForm] = useState({ title: initialTitle || '', description: initialDescription || '', role: initialRole || '', rate: '' });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -372,6 +373,7 @@ export default function JobsPage() {
 
   const prefillTitle = searchParams.get('title') || '';
   const prefillRole = searchParams.get('role') || '';
+  const prefillDescription = searchParams.get('description') || '';
   useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
 
   useEffect(() => {
@@ -735,6 +737,7 @@ export default function JobsPage() {
             projectTitle={activeProject?.title ?? null}
             initialTitle={prefillTitle}
             initialRole={prefillRole}
+            initialDescription={prefillDescription}
           />
         )}
       </AnimatePresence>

@@ -240,9 +240,11 @@ export function OutlineView({
 export function StatsView({
   currentScriptTitle, wordCount, pageEst, scenesList, uniqueLocations, chars,
   charStats, dialogueRatio, sceneWordCounts, actStructure, sceneCharMap,
-  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene,
+  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene, targetMinutes, briefHref,
 }: {
   timing: ScriptTiming;
+  targetMinutes?: number | null;
+  briefHref?: string;
   characterTiming: CharacterTiming[];
   onJumpToScene: (sceneIdx: number) => void;
   onReadFromScene: (sceneIdx: number) => void;
@@ -286,7 +288,7 @@ export function StatsView({
         ))}
       </div>
 
-      <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} />
+      <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} targetMinutes={targetMinutes} briefHref={briefHref} />
 
       {scenesList.length > 0 && (() => {
         const totalWc = sceneWordCounts.reduce((a, b) => a + b, 0) || 1;

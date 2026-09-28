@@ -28,6 +28,8 @@ import { awaitOSUser } from '@/lib/os';
 import { readable } from '@/lib/color';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { useProjectBrief, useCanShape } from '@/lib/brief';
+import { BriefPanel } from '@/components/brief/BriefPanel';
 import { PhasePanel } from '@/components/progress/PhasePanel';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
@@ -332,6 +334,9 @@ export default function ProjectHubPage() {
   const [crewTeam, setCrewTeam] = useState<{ id: string; name: string; role: string }[]>([]);
   const onlineIds = useOnlinePresence(realProject ? 'me' : null);
   const progressState = useProjectProgress(id);
+  const briefFormat = progressState.signals?.project_type ?? null;
+  const brief = useProjectBrief(realProject ? id : null, briefFormat, progressState.progress?.current.id ?? null);
+  const canShape = useCanShape(realProject ? id : null, !!realProject?.isOwner);
   const { formats } = useFormats();
   useEffect(() => {
     let active = true;
@@ -560,6 +565,13 @@ export default function ProjectHubPage() {
           <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.color}
             onFormatChanged={(type) => { setRealProject(p => p ? { ...p, type } : p); refreshProject(id); }} />
         </motion.div>
+
+        {isRealProject && progressState.progress && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
+            <BriefPanel brief={brief} projectTitle={project.title} format={briefFormat} phase={progressState.progress.current.id}
+              canEdit={canShape} accent={project.color} />
+          </motion.div>
+        )}
 
         {/*
           Grid layout — control room:

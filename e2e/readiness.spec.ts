@@ -14,6 +14,8 @@ const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the lantern.\n\nSAM\nWho’s there?\n\nEXT. RIDGE - DAWN\n\nWind over the ridge.\n';
 
 async function axeViolations(page: Page): Promise<string[]> {
+  // Measure the settled page: colours mid-fade (the status pill animating in) aren't what anyone reads.
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), undefined, { timeout: 5_000 }).catch(() => {});
   await page.addScriptTag({ content: AXE });
   return page.evaluate(async () => {
     const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] }, resultTypes: ['violations'] });

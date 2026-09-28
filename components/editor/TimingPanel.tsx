@@ -12,8 +12,11 @@ const th: React.CSSProperties = { ...cell, fontSize: 9, letterSpacing: 1.5, text
  * Runtime from the script's printed length (lib/scriptos/timing), per scene,
  * calibrated by what the table read measured; and who speaks how much.
  */
-export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRead }: {
+export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRead, targetMinutes, briefHref }: {
   timing: ScriptTiming;
+  /** The length the project's brief aims for, if it says. */
+  targetMinutes?: number | null;
+  briefHref?: string;
   characters: CharacterTiming[];
   currentSceneIdx: number;
   onJump: (sceneIdx: number) => void;
@@ -32,6 +35,22 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
           ? <> · {timing.readScenes} scene{timing.readScenes === 1 ? '' : 's'} timed at a table read, reading {Math.abs(drift)}% {drift >= 0 ? 'longer' : 'shorter'} than a minute a page — the rest are scaled to match.</>
           : <> at about a minute a page. Run a table read to time scenes for real.</>}
       </p>
+      {targetMinutes ? (() => {
+        const ratio = timing.runtime / (targetMinutes * 60);
+        const off = Math.round(Math.abs(ratio - 1) * 100);
+        const color = ratio > 1.15 || ratio < 0.85 ? '#f5a524' : '#34c77b';
+        return (
+          <p style={{ margin: '-6px 0 14px', fontSize: 12, color: 'var(--fg-muted)' }}>
+            <span style={{ color }}>●</span> The brief aims for <strong style={{ color: 'var(--fg)' }}>{targetMinutes} min</strong>
+            {off < 3 ? ' — right on it.' : ` — ${off}% ${ratio > 1 ? 'over' : 'under'}.`}
+            {briefHref && <> <a href={briefHref} style={{ color: 'var(--fg-muted)' }}>Change it</a></>}
+          </p>
+        );
+      })() : briefHref ? (
+        <p style={{ margin: '-6px 0 14px', fontSize: 12, color: 'var(--fg-muted)' }}>
+          <a href={briefHref} style={{ color: 'var(--fg-muted)' }}>Set a target length in the project brief</a> to measure the script against it.
+        </p>
+      ) : null}
 
       {timing.scenes.length > 0 && (
         <div role="img" aria-label={`Scene lengths: ${timing.scenes.length} scenes, longest ${formatRuntime(max)}`}

@@ -27,6 +27,8 @@ const esc = (x: unknown) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * script; this is where the team sources, prices and prints it, and where
  * the categories and their unit costs are set.
  */
+import { BriefHints } from '@/components/brief/BriefHints';
+
 export function BreakdownView({ crew }: { crew: Array<{ user_id: string; username: string }> }) {
   const { project, scenes, scriptId, isOwner } = useStudio();
   const { refreshProject } = useProject();
@@ -111,6 +113,8 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
         <button type="button" className={cx(s.btn, s.small)} onClick={pushToBudget} disabled={pushing || !elements.length} title="Write the breakdown’s cost per category into the project budget"><DollarSign size={11} aria-hidden /> {pushing ? 'Updating…' : 'Push to budget'}</button>
         <button type="button" className={cx(s.btn, s.small)} onClick={printSheets} disabled={!scenes.rows.length}><Printer size={11} aria-hidden /> Breakdown sheets</button>
       </div>
+
+      <BriefHints projectId={project.id} projectTitle={project.title} accent={project.accent_color} ids={['breakdown']} style={{ marginBottom: 16 }} />
 
       {elements.length === 0 ? (
         <EmptyState
