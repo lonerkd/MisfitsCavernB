@@ -527,6 +527,7 @@ export type Database = {
       };
       channels: {
         Row: {
+          audience: string;
           created_at: string | null;
           created_by: string | null;
           id: string;
@@ -539,6 +540,7 @@ export type Database = {
           type: string;
         };
         Insert: {
+          audience?: string;
           created_at?: string | null;
           created_by?: string | null;
           id?: string;
@@ -551,6 +553,7 @@ export type Database = {
           type?: string;
         };
         Update: {
+          audience?: string;
           created_at?: string | null;
           created_by?: string | null;
           id?: string;
@@ -679,6 +682,7 @@ export type Database = {
       };
       crafts: {
         Row: {
+          above_the_line: boolean;
           color: string;
           created_at: string;
           department: string;
@@ -686,6 +690,7 @@ export type Database = {
           position: number;
         };
         Insert: {
+          above_the_line?: boolean;
           color: string;
           created_at?: string;
           department: string;
@@ -693,6 +698,7 @@ export type Database = {
           position?: number;
         };
         Update: {
+          above_the_line?: boolean;
           color?: string;
           created_at?: string;
           department?: string;

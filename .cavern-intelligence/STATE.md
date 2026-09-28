@@ -1,8 +1,34 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Credits & the press kit
+## Latest Session — The Lounge: who each channel is for, guides, the community
 
-Migration `20260928000000_credits.sql` — **apply to production before merging** (two functions, no tables).
+Migration `20260928010000_community.sql` — **apply to production before merging**.
+
+- **Who it’s for** (`channels.audience`, enforced by `internal.can_view_channel`).
+  Project channels: *Whole team*, *Owners* (creator + leads), *Above the line*
+  / *Below the line* (by the member's craft — `crafts.above_the_line`: Director,
+  Producer, Writer, Story editor, Actor, Voice actor; owners see both),
+  *Guests* (members added as viewers, plus owners) and *Public* (anyone signed
+  in can read — a production's updates; listed under "Other productions").
+  Community channels: *Everyone* or *Admins*. Chosen when creating a channel
+  and changeable in Manage. "Private" stays an invite-only overlay.
+- **Guides** — a channel type for FAQ, the start-here tour and tutorials. It
+  reads as a document (each post a section, first line its heading); only
+  whoever runs it writes (and can remove a section); no chat box for readers.
+- **The community**: admins create and run site-wide channels (nobody could
+  before). Starters: start-here, faq, tutorials (guides — empty until an
+  admin writes them), announcements, general, craft-talk, crew-call,
+  feedback, showcase, the-lounge (voice), admins. Existing ones kept.
+- **Fixes**: a private community channel was visible to everyone signed in —
+  now members (and admins) only. Messages can be removed by their author or
+  whoever runs the channel (there was no delete policy).
+- **Lounge refetch loop (live bug)**: the page reloaded messages and profiles
+  in a tight loop for every signed-in user (an effect set the user object it
+  depended on), eventually freezing the tab and hammering the DB. Fixed.
+
+## Earlier — Credits & the press kit
+
+Migration `20260928000000_credits.sql` — applied to production; PR #72 merged.
 
 - Credits come from the work itself, never typed twice: projects someone
   created, the crew they were confirmed on (their craft) and the parts they
