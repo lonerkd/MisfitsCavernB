@@ -1091,6 +1091,52 @@ export type Database = {
           },
         ];
       };
+      lounge_reads: {
+        Row: {
+          channel_id: string | null;
+          id: string;
+          last_read_at: string;
+          partner_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          channel_id?: string | null;
+          id?: string;
+          last_read_at?: string;
+          partner_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          channel_id?: string | null;
+          id?: string;
+          last_read_at?: string;
+          partner_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lounge_reads_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lounge_reads_partner_id_fkey";
+            columns: ["partner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lounge_reads_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       media: {
         Row: {
           board: string | null;
@@ -1172,9 +1218,12 @@ export type Database = {
           channel_uuid: string | null;
           content: string;
           created_at: string | null;
+          edited_at: string | null;
           id: string;
           parent_message_id: string | null;
           pinned: boolean | null;
+          pinned_at: string | null;
+          pinned_by: string | null;
           reactions: Json | null;
           receiver_id: string | null;
           sender_id: string;
@@ -1184,9 +1233,12 @@ export type Database = {
           channel_uuid?: string | null;
           content: string;
           created_at?: string | null;
+          edited_at?: string | null;
           id?: string;
           parent_message_id?: string | null;
           pinned?: boolean | null;
+          pinned_at?: string | null;
+          pinned_by?: string | null;
           reactions?: Json | null;
           receiver_id?: string | null;
           sender_id: string;
@@ -1196,9 +1248,12 @@ export type Database = {
           channel_uuid?: string | null;
           content?: string;
           created_at?: string | null;
+          edited_at?: string | null;
           id?: string;
           parent_message_id?: string | null;
           pinned?: boolean | null;
+          pinned_at?: string | null;
+          pinned_by?: string | null;
           reactions?: Json | null;
           receiver_id?: string | null;
           sender_id?: string;
@@ -1216,6 +1271,13 @@ export type Database = {
             columns: ["parent_message_id"];
             isOneToOne: false;
             referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_pinned_by_fkey";
+            columns: ["pinned_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {
@@ -3273,6 +3335,30 @@ export type Database = {
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
       can_post_channel: { Args: { cid: string }; Returns: boolean };
+      edit_message: {
+        Args: { p_content: string; p_message: string };
+        Returns: {
+          channel_id: string | null;
+          channel_uuid: string | null;
+          content: string;
+          created_at: string | null;
+          edited_at: string | null;
+          id: string;
+          parent_message_id: string | null;
+          pinned: boolean | null;
+          pinned_at: string | null;
+          pinned_by: string | null;
+          reactions: Json | null;
+          receiver_id: string | null;
+          sender_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       get_my_account: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -3394,12 +3480,64 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      lounge_unread: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          channel_id: string;
+          last_at: string;
+          partner_id: string;
+          unread: number;
+        }[];
+      };
+      mark_lounge_read: {
+        Args: { p_channel?: string; p_partner?: string };
+        Returns: undefined;
+      };
+      pin_message: {
+        Args: { p_message: string; p_pinned: boolean };
+        Returns: {
+          channel_id: string | null;
+          channel_uuid: string | null;
+          content: string;
+          created_at: string | null;
+          edited_at: string | null;
+          id: string;
+          parent_message_id: string | null;
+          pinned: boolean | null;
+          pinned_at: string | null;
+          pinned_by: string | null;
+          reactions: Json | null;
+          receiver_id: string | null;
+          sender_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
       respond_to_application: {
         Args: { p_application: string; p_close?: boolean; p_status: string };
         Returns: Json;
+      };
+      search_lounge: {
+        Args: { p_channel?: string; p_limit?: number; p_query: string };
+        Returns: {
+          channel_name: string;
+          channel_uuid: string;
+          content: string;
+          created_at: string;
+          id: string;
+          parent_message_id: string;
+          project_id: string;
+          receiver_id: string;
+          sender: string;
+          sender_id: string;
+        }[];
       };
       send_call_sheet_reminders: {
         Args: Record<PropertyKey, never>;
