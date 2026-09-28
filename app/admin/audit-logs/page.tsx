@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Filter, Download, Search, Clock, User, Zap } from 'lucide-react';
 import { ProtectedPage } from '@/lib/os';
 import { Input } from '@/components/ui/Input';
+import { readable } from '@/lib/color';
 import { getAuditLogs, getActivitySummary, getMostActiveUsers, type AuditLog, type AuditAction } from '@/lib/supabase/audit';
 
 const ACTIONS: AuditAction[] = [
@@ -103,13 +104,13 @@ export default function AuditLogsPage() {
     a.click();
   };
 
-  const getActionColor = (action: AuditAction) => {
-    if (action.includes('created') || action.includes('invited')) return '#10b981';
-    if (action.includes('deleted') || action.includes('removed')) return '#ef4444';
-    if (action.includes('changed') || action.includes('updated')) return '#f59e0b';
-    if (action.includes('login') || action.includes('logout')) return '#6366f1';
-    return '#0099ff';
-  };
+  const getActionColor = (action: AuditAction) => readable(
+    action.includes('created') || action.includes('invited') ? '#10b981'
+      : action.includes('deleted') || action.includes('removed') ? '#ef4444'
+      : action.includes('changed') || action.includes('updated') ? '#f59e0b'
+      : action.includes('login') || action.includes('logout') ? '#6366f1'
+      : '#0099ff',
+  );
 
   const totalPages = Math.ceil(totalLogs / pageSize);
 
@@ -134,7 +135,7 @@ export default function AuditLogsPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Link href="/admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
+            <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
               <ArrowLeft size={20} />
             </Link>
             <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
@@ -231,14 +232,14 @@ export default function AuditLogsPage() {
                 key={stat.label}
                 style={{
                   padding: 16,
-                  background: 'rgba(215, 52, 11,0.05)',
-                  border: '1px solid rgba(215, 52, 11,0.2)',
+                  background: 'rgba(232, 67, 26,0.05)',
+                  border: '1px solid rgba(232, 67, 26,0.2)',
                   borderRadius: 8,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <stat.icon size={14} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, opacity: 0.6 }}>{stat.label}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{stat.label}</span>
                 </div>
                 <div style={{ fontSize: '1.5rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)' }}>
                   {stat.value}
@@ -261,6 +262,7 @@ export default function AuditLogsPage() {
               />
             </div>
             <select
+              aria-label="Filter by action"
               value={actionFilter}
               onChange={e => {
                 setActionFilter(e.target.value as AuditAction | '');
@@ -351,7 +353,7 @@ export default function AuditLogsPage() {
                         {log.resource_type}
                         {log.resource_id && ` (${log.resource_id})`}
                       </td>
-                      <td style={{ padding: 12, opacity: 0.6, fontSize: 9 }}>
+                      <td style={{ padding: 12, fontSize: 9, color: 'var(--fg-dim)' }}>
                         {Object.keys(log.details).length > 0
                           ? JSON.stringify(log.details).substring(0, 50) + '...'
                           : '-'}
@@ -370,8 +372,8 @@ export default function AuditLogsPage() {
                 disabled={page === 0}
                 style={{
                   padding: '8px 12px',
-                  background: page === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(215, 52, 11,0.1)',
-                  border: '1px solid rgba(215, 52, 11,0.2)',
+                  background: page === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(232, 67, 26,0.1)',
+                  border: '1px solid rgba(232, 67, 26,0.2)',
                   color: page === 0 ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
@@ -382,7 +384,7 @@ export default function AuditLogsPage() {
                 ← PREV
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, opacity: 0.6 }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
                   Page {page + 1} of {totalPages} ({totalLogs} total)
                 </span>
               </div>
@@ -391,8 +393,8 @@ export default function AuditLogsPage() {
                 disabled={page >= totalPages - 1}
                 style={{
                   padding: '8px 12px',
-                  background: page >= totalPages - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(215, 52, 11,0.1)',
-                  border: '1px solid rgba(215, 52, 11,0.2)',
+                  background: page >= totalPages - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(232, 67, 26,0.1)',
+                  border: '1px solid rgba(232, 67, 26,0.2)',
                   color: page >= totalPages - 1 ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
@@ -407,7 +409,7 @@ export default function AuditLogsPage() {
 
           {activeUsers.length > 0 && (
             <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
-              <h3
+              <h2
                 style={{
                   fontFamily: 'var(--display)',
                   fontSize: '1rem',
@@ -417,7 +419,7 @@ export default function AuditLogsPage() {
                 }}
               >
                 MOST ACTIVE USERS (7 DAYS)
-              </h3>
+              </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
                 {activeUsers.map(user => (
                   <div key={user.userId} style={{ padding: 12, background: 'rgba(0,153,255,0.05)', borderRadius: 4 }}>
@@ -427,7 +429,7 @@ export default function AuditLogsPage() {
                     <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>
                       {user.actionCount}
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 8, opacity: 0.5 }}>actions</div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>actions</div>
                   </div>
                 ))}
               </div>

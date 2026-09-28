@@ -1,11 +1,15 @@
 import { supabase } from './client';
 import { awaitOSUser } from '@/lib/os';
+import type { ChannelAudience } from '@/lib/lounge/audience';
 
 export interface Channel {
   id: string;
   project_id: string | null;
   name: string;
-  type: 'text' | 'voice';
+  /** 'guide': read-only articles (FAQ, start here, tutorials). */
+  type: 'text' | 'voice' | 'guide';
+  /** Who can see it (lib/lounge/audience). */
+  audience: ChannelAudience;
   topic: string | null;
   position: number;
   is_private: boolean;
@@ -28,13 +32,16 @@ export async function listChannels(projectId?: string | null): Promise<Channel[]
   const { data } = await q;
   const all = (data as Channel[]) || [];
 
-  return all.filter(c => c.project_id === null || (projectId && c.project_id === projectId));
+  // Community, this project's, and other productions' public channels.
+  return all.filter(c => c.project_id === null || (projectId && c.project_id === projectId) || c.audience === 'public');
 }
 
+/** A project channel, or (project_id null, admins only) a community channel. */
 export async function createChannel(input: {
-  project_id: string;
+  project_id: string | null;
   name: string;
-  type?: 'text' | 'voice';
+  type?: 'text' | 'voice' | 'guide';
+  audience?: ChannelAudience;
   is_private?: boolean;
   post_policy?: 'viewers' | 'members' | 'managers';
   topic?: string;
@@ -46,6 +53,7 @@ export async function createChannel(input: {
     project_id: input.project_id,
     name,
     type: input.type || 'text',
+    audience: input.audience || (input.project_id ? 'team' : 'users'),
     is_private: input.is_private || false,
     post_policy: input.post_policy || 'viewers',
     topic: input.topic || null,
@@ -53,10 +61,8 @@ export async function createChannel(input: {
   });
   if (error) return { channel: null, error: error.message };
 
-  const { data, error: fetchError } = await supabase
-    .from('channels')
-    .select('*')
-    .eq('project_id', input.project_id)
+  const scoped = supabase.from('channels').select('*');
+  const { data, error: fetchError } = await (input.project_id ? scoped.eq('project_id', input.project_id) : scoped.is('project_id', null))
     .eq('name', name)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -69,7 +75,7 @@ export async function createChannel(input: {
   return { channel: data as Channel, error: null };
 }
 
-export async function updateChannel(id: string, patch: Partial<Pick<Channel, 'name' | 'topic' | 'is_private' | 'post_policy' | 'position'>>) {
+export async function updateChannel(id: string, patch: Partial<Pick<Channel, 'name' | 'topic' | 'is_private' | 'post_policy' | 'position' | 'audience'>>) {
   const { error } = await supabase.from('channels').update(patch).eq('id', id);
   return error?.message || null;
 }

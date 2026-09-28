@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { awaitOSUser } from '@/lib/os';
+import { useFormats } from '@/lib/formats';
 
-const CATEGORIES = ['Short Film', 'Music Video', 'Documentary', 'Commercial', 'Feature', 'Web Series', 'Other'];
 
 interface MediaItem { id: string; title: string; media_type: string; url: string; }
 interface PortfolioProject {
@@ -40,6 +40,7 @@ export default function ManagePortfolioPage() {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
+  const { formats } = useFormats();
   const [newProject, setNewProject] = useState({ title: '', category: '', year: '', role: '', description: '' });
   const [mediaForm, setMediaForm] = useState<Record<string, { title: string; url: string; media_type: string }>>({});
 
@@ -125,7 +126,7 @@ export default function ManagePortfolioPage() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5, marginBottom: 16 }}>Sign in to manage your portfolio.</p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16, color: 'var(--fg-dim)' }}>Sign in to manage your portfolio.</p>
           <Link href="/auth" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11 }}>Sign in →</Link>
         </div>
       </div>
@@ -155,9 +156,9 @@ export default function ManagePortfolioPage() {
           <div style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
             <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <select value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
-                <option value="">Category...</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <select aria-label="Format" value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
+                <option value="">Format…</option>
+                {formats.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
               </select>
               <Input type="number" label="Year" value={newProject.year} onChange={e => setNewProject({ ...newProject, year: e.target.value })} />
               <Input label="Your role" value={newProject.role} onChange={e => setNewProject({ ...newProject, role: e.target.value })} />
@@ -187,42 +188,42 @@ export default function ManagePortfolioPage() {
             const form = mediaForm[project.id] || { title: '', url: '', media_type: 'youtube' };
             return (
               <div key={project.id} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', transition: 'border-color 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(215, 52, 11,0.15)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(232, 67, 26,0.15)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 'bold' }}>{project.title}</div>
-                    <div style={{ fontSize: 9, opacity: 0.4, fontFamily: 'var(--mono)', marginTop: 4 }}>
+                    <div style={{ fontSize: 9, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>
                       {[project.category, project.year, project.role].filter(Boolean).join(' · ')}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => copyShareLink(project.share_token)} title="Copy share link"
+                    <button onClick={() => copyShareLink(project.share_token)} title="Copy share link" aria-label="Copy share link"
                       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
                       <Copy size={12} />
                     </button>
-                    <button onClick={() => removeProject(project.id)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4, padding: 6 }}>
+                    <button onClick={() => removeProject(project.id)} aria-label={`Delete ${project.title}`} title="Delete" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4, padding: 6 }}>
                       <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 9, fontFamily: 'var(--mono)', opacity: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                   <LinkIcon size={10} /> /p/{project.share_token}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
                   {project.portfolio_media.map(media => (
                     <div key={media.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <span style={{ fontSize: 9, opacity: 0.4, fontFamily: 'var(--mono)', textTransform: 'uppercase' }}>{media.media_type}</span>
+                      <span style={{ fontSize: 9, fontFamily: 'var(--mono)', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{media.media_type}</span>
                       <span style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.title || media.url}</span>
-                      <button onClick={() => removeMedia(project.id, media.id)} style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}><Trash2 size={12} /></button>
+                      <button onClick={() => removeMedia(project.id, media.id)} aria-label={`Remove ${media.title || 'media'}`} title="Remove" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}><Trash2 size={12} /></button>
                     </div>
                   ))}
                 </div>
 
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <select value={form.media_type} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, media_type: e.target.value } }))}
+                  <select aria-label="Media type" value={form.media_type} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, media_type: e.target.value } }))}
                     style={{ ...fieldStyle, width: 100, cursor: 'pointer' }}>
                     <option value="youtube">YouTube</option>
                     <option value="gdrive">G Drive</option>
@@ -230,7 +231,7 @@ export default function ManagePortfolioPage() {
                   </select>
                   <input type="text" placeholder="Title (optional)" value={form.title} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, title: e.target.value } }))} style={{ ...fieldStyle, flex: 1 }} />
                   <input type="url" placeholder="Media URL" value={form.url} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, url: e.target.value } }))} style={{ ...fieldStyle, flex: 2 }} />
-                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(215, 52, 11,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
+                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
                 </div>
               </div>
             );

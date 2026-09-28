@@ -12,7 +12,9 @@ function walk(dir, fileList = []) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
     const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
+    // Skip dangling symlinks (e.g. skills not installed in this checkout).
+    const stat = fs.statSync(filePath, { throwIfNoEntry: false });
+    if (!stat) continue;
     if (stat.isDirectory()) {
       if (!EXCLUDE_DIRS.has(file)) {
         walk(filePath, fileList);

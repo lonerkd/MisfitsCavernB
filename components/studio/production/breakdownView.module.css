@@ -1,0 +1,66 @@
+/* The Studio breakdown: the production's elements by category or by scene,
+   the element card beside them, and the category editor. */
+
+.top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.totals { display: flex; gap: 8px; flex-wrap: wrap; }
+.total { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); min-width: 92px; }
+.totalValue { font-family: var(--mono); font-size: 16px; color: var(--fg); }
+.totalLabel { font-family: var(--mono); font-size: 8.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); margin-top: 2px; }
+.spacer { flex: 1; }
+.filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.search { width: 200px; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+.layoutOpen { grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 1000px) { .layoutOpen { grid-template-columns: minmax(0, 1fr); } }
+.drawer { position: sticky; top: 16px; }
+
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.cat {
+  --c: #888;
+  border-radius: 14px; border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 8%, var(--panel)), var(--panel));
+  padding: 12px; display: flex; flex-direction: column; gap: 6px;
+}
+.catHead { display: flex; align-items: center; gap: 8px; }
+.catName { font-family: var(--mono); font-size: 11px; color: var(--c); letter-spacing: 0.5px; margin: 0; font-weight: 600; flex: 1; }
+.catMeta { font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.row {
+  width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+  padding: 6px 6px; border-radius: 7px; border: 1px solid transparent; background: transparent; cursor: pointer; text-align: left;
+  font: inherit; color: var(--fg);
+}
+.row:hover { background: rgba(224, 221, 174, 0.04); }
+.row:focus-visible { outline: 2px solid var(--studio); outline-offset: 1px; }
+.rowOn { border-color: color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 9%, transparent); }
+.rowName { font-family: var(--mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowSub { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowCost { font-family: var(--mono); font-size: 10px; color: var(--fg-muted); white-space: nowrap; }
+.status { width: 8px; height: 8px; border-radius: 50%; }
+.status_needed { border: 1.5px solid #f87171; }
+.status_sourcing { background: #fbbf24; }
+.status_ready { background: #34d399; }
+
+.sheets { display: flex; flex-direction: column; gap: 12px; }
+.sheet { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: var(--panel); }
+.sheetHead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sheetNum { font-family: var(--display); font-size: 1.5rem; letter-spacing: 1px; color: var(--fg); line-height: 1; }
+.sheetHeading { font-family: var(--mono); font-size: 11px; color: var(--fg); text-transform: uppercase; }
+.sheetMeta { font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
+.boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.box { --c: #888; border-radius: 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); padding: 8px 10px; }
+.boxLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--c); margin-bottom: 4px; }
+.boxItems { display: flex; flex-wrap: wrap; gap: 4px; }
+.boxItem { font-family: var(--mono); font-size: 10.5px; color: var(--fg); background: rgba(224, 221, 174, 0.05); border: 1px solid transparent; border-radius: 5px; padding: 2px 7px; cursor: pointer; }
+.boxItem:hover { border-color: var(--c); }
+.boxItem:focus-visible { outline: 2px solid var(--c); outline-offset: 1px; }
+.empty { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); }
+
+/* ── Category editor ─────────────────────────────────── */
+.edRows { display: flex; flex-direction: column; gap: 6px; }
+.edRow { display: grid; grid-template-columns: 34px minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; }
+.colorInput { width: 34px; height: 30px; border: 1px solid var(--border-2); border-radius: 8px; background: transparent; padding: 2px; cursor: pointer; }
+.edActions { display: flex; gap: 2px; }
+.edCount { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); }

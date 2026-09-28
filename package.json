@@ -11,11 +11,15 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "postinstall": "node scripts/copy-pdf-worker.js",
-    "sync-intel": "node scripts/sync-intel.js"
+    "sync-intel": "node scripts/sync-intel.js",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,mailpit,supavisor,postgres-meta",
+    "db:reset": "supabase db reset --local",
+    "db:drift": "node scripts/db-drift.mjs",
+    "db:types": "supabase gen types typescript --local --schema public | prettier --parser typescript > lib/supabase/database.types.ts",
+    "db:types:check": "npm run db:types && git diff --exit-code -- lib/supabase/database.types.ts"
   },
   "dependencies": {
-    "@react-three/drei": "^9.122.0",
-    "@react-three/fiber": "^8.18.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.105.0",
     "@tsparticles/engine": "^3.9.1",
@@ -32,7 +36,6 @@
     "pdfjs-dist": "^4.10.38",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "^0.182.0",
     "zod": "^4.6.5",
     "zustand": "^5.0.14"
   },
@@ -42,10 +45,13 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
+    "axe-core": "^4.11.3",
     "eslint": "^8",
     "eslint-config-next": "^15.5.20",
     "pg": "^8.20.0",
     "postcss": "^8.5.10",
+    "prettier": "3.9.9",
+    "supabase": "2.118.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"

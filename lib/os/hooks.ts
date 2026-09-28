@@ -56,7 +56,9 @@ export function useOSGate(): { isLoading: boolean; user: { id: string } | null }
   useEffect(() => {
     if (session.status === 'anon' && !redirected.current) {
       redirected.current = true;
-      router.replace('/auth');
+      // Match middleware: come back here after signing in.
+      const back = window.location.pathname + window.location.search;
+      router.replace(`/auth?redirect=${encodeURIComponent(back)}`);
     }
   }, [session.status, router]);
 

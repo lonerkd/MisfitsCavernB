@@ -1,31 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ArrowUpRight, Clock, Film, Tv, Video, Music } from 'lucide-react';
+import { Plus, ArrowUpRight, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { withTimeout } from '@/lib/supabase/withTimeout';
-import { getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
+import { getProjectCardFacts, getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { useProject, type Phase, mapStatusToPhase } from '@/lib/os';
+import { useProject, type Phase, mapStatusToPhase, PHASE_STATUS, PHASES } from '@/lib/os';
+import { FormatIcon, FormatPicker, useFormatIcon } from '@/components/formats/FormatPicker';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useOSGate } from '@/lib/os';
 import { useEscapeKey } from '@/lib/useEscapeKey';
 import { logActivity } from '@/lib/supabase/activity';
-import { awaitOSUser } from '@/lib/os';
-
-const PROJECT_TYPES = ['Feature', 'Short Film', 'Limited Series', 'Music Video', 'Documentary', 'Commercial'];
+import { readable } from '@/lib/color';
+import { awaitOSUser, osUserId } from '@/lib/os';
 
 function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (title: string, type: string, logline: string) => Promise<void> }) {
   useEscapeKey(onClose, open);
   const [title, setTitle] = useState('');
-  const [type, setType] = useState(PROJECT_TYPES[0]);
+  const [type, setType] = useState('Feature');
   const [logline, setLogline] = useState('');
   const [busy, setBusy] = useState(false);
   const submit = async () => { if (!title.trim()) return; setBusy(true); try { await onCreate(title.trim(), type, logline.trim()); setTitle(''); setLogline(''); } finally { setBusy(false); } };
@@ -35,8 +34,8 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
-            style={{ width: 460, maxWidth: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 28 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
+            style={{ width: 560, maxWidth: '100%', maxHeight: '92dvh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 28 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Input
@@ -47,14 +46,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
                 onKeyDown={e => e.key === 'Enter' && submit()}
                 placeholder="e.g. Femme Fatale"
               />
-              <div>
-                <label style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: '#888', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Format</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {PROJECT_TYPES.map(t => (
-                    <button key={t} onClick={() => setType(t)} style={{ fontFamily: 'var(--mono)', fontSize: 9.5, padding: '6px 11px', borderRadius: 99, cursor: 'pointer', background: type === t ? 'rgba(215, 52, 11,0.16)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)' }}>{t}</button>
-                  ))}
-                </div>
-              </div>
+              <FormatPicker value={type} onChange={setType} />
               <Textarea
                 label="Logline (optional)"
                 value={logline}
@@ -78,35 +70,22 @@ interface ProjectCardViewModel {
   title: string;
   type: string;
   phase: Phase;
-  progress: number;
-  deadline: string;
+  /** Tasks completed / total; null when the project has no tasks. */
+  progress: { done: number; total: number } | null;
+  /** The project's end date, if one is set — never invented. */
+  deadline: string | null;
+  /** Usernames of the owner and crew. */
   team: string[];
   description: string;
   color: string;
 }
 
-const PHASES: { id: Phase; label: string; abbr: string }[] = [
-  { id: 'development',     label: 'Development',     abbr: 'DEV'  },
-  { id: 'pre-production',  label: 'Pre-Production',  abbr: 'PRE'  },
-  { id: 'production',      label: 'Production',      abbr: 'PROD' },
-  { id: 'post-production', label: 'Post-Production', abbr: 'POST' },
-  { id: 'delivery',        label: 'Delivery',        abbr: 'DEL'  },
-];
-
 const PHASE_COLORS: Record<Phase, string> = {
-  'development':     '#6366f1',
-  'pre-production':  '#8b5cf6',
-  'production':      '#d7340b',
+  'development':     '#818cf8',
+  'pre-production':  '#a78bfa',
+  'production':      '#e8431a',
   'post-production': '#f59e0b',
   'delivery':        '#10b981',
-};
-
-const TYPE_ICONS: Record<string, React.ElementType> = {
-  'Feature':         Film,
-  'Limited Series':  Tv,
-  'Short Film':      Film,
-  'Music Video':     Music,
-  'Documentary':     Video,
 };
 
 function daysUntil(dateStr: string): number {
@@ -116,9 +95,10 @@ function daysUntil(dateStr: string): number {
 function ProjectCard({ project }: { project: ProjectCardViewModel }) {
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
-  const Icon = TYPE_ICONS[project.type] ?? Film;
-  const days = daysUntil(project.deadline);
-  const overdue = days < 0;
+  const icon = useFormatIcon(project.type);
+  const days = project.deadline ? daysUntil(project.deadline) : null;
+  const overdue = days !== null && days < 0;
+  const pct = project.progress && project.progress.total ? Math.round((project.progress.done / project.progress.total) * 100) : null;
 
   return (
     <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }}>
@@ -158,7 +138,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
               border: `1px solid ${phase}33`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Icon size={13} color={phase} strokeWidth={1.5} />
+              <span style={{ color: phase, display: 'flex' }}><FormatIcon icon={icon} size={13} /></span>
             </div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: phase, textTransform: 'uppercase' }}>
               {project.type}
@@ -187,7 +167,7 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           fontFamily: 'var(--mono)',
           fontSize: 9.5,
           lineHeight: 1.6,
-          color: 'rgba(224, 221, 174,0.4)',
+          color: 'var(--fg-dim)',
           marginBottom: 16,
           display: '-webkit-box',
           WebkitLineClamp: 2,
@@ -197,20 +177,22 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           {project.description}
         </div>
 
-        <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
+        {pct !== null && (
+        <div title={`${project.progress!.done} of ${project.progress!.total} tasks done`} style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
           <motion.div
             initial={{ width: 0 }}
-            whileInView={{ width: `${project.progress}%` }}
+            whileInView={{ width: `${pct}%` }}
             viewport={{ once: true }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             style={{ height: '100%', background: `linear-gradient(90deg, ${phase}88, ${phase})`, borderRadius: 1 }}
           />
         </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: -4 }}>
-            {project.team.slice(0, 3).map((initials, i) => (
-              <div key={i} style={{
+            {project.team.slice(0, 3).map((name, i) => (
+              <div key={name} title={name} style={{
                 width: 20, height: 20, borderRadius: '50%',
                 background: `${phase}22`,
                 border: `1.5px solid rgba(8,8,8,0.9)`,
@@ -220,19 +202,21 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
                 zIndex: project.team.length - i,
                 position: 'relative',
               }}>
-                {initials.slice(0, 2)}
+                {name.slice(0, 2).toUpperCase()}
               </div>
             ))}
           </div>
 
-          <div style={{
+          {days !== null && (
+          <div title={`Ends ${new Date(project.deadline!).toLocaleDateString()}`} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             fontFamily: 'var(--mono)', fontSize: 8.5,
-            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'rgba(224, 221, 174,0.3)',
+            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'var(--fg-dim)',
           }}>
             <Clock size={9} />
             {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
           </div>
+          )}
         </div>
       </motion.div>
     </Link>
@@ -260,7 +244,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
         </div>
         <div style={{
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-          color: 'rgba(224, 221, 174,0.2)',
+          color: 'var(--fg-dim)',
           paddingLeft: 4,
         }}>
           {phase.label}
@@ -268,7 +252,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
         <div style={{
           marginLeft: 'auto',
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
-          color: 'rgba(224, 221, 174,0.25)',
+          color: 'var(--fg-dim)',
           background: 'rgba(255,255,255,0.04)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 6,
@@ -316,7 +300,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
             border: '1px dashed rgba(255,255,255,0.05)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
-            color: 'rgba(224, 221, 174,0.12)',
+            color: 'var(--fg-dim)',
             textTransform: 'uppercase',
           }}>
             No projects
@@ -341,9 +325,9 @@ export default function ProjectsPage() {
     {
       module: 'home',
       title: 'Projects',
-      accent: '#d7340b',
+      accent: '#e8431a',
       fields: [
-        { label: 'Total', value: `${projectsList.length}`, color: '#d7340b' },
+        { label: 'Total', value: `${projectsList.length}`, color: '#e8431a' },
       ],
       actions: user ? [
         { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
@@ -354,20 +338,22 @@ export default function ProjectsPage() {
 
   useEffect(() => {
 
-    withTimeout(awaitOSUser(), 12000, 'auth timed out').then((user) => {
+    awaitOSUser().then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
-      getUserProjects(user.id).then(data => {
-        const fetched: ProjectCardViewModel[] = (data || []).map(p => ({
+      getUserProjects(user.id).then(async data => {
+        const rows = data || [];
+        const facts = await getProjectCardFacts(rows).catch(() => ({} as Awaited<ReturnType<typeof getProjectCardFacts>>));
+        const fetched: ProjectCardViewModel[] = rows.map(p => ({
           id: p.id,
           title: p.title,
           type: p.project_type || 'Project',
           phase: mapStatusToPhase(p.status ?? undefined),
-          progress: 0,
-          deadline: p.end_date || new Date(Date.now() + 30 * 86400000).toISOString(),
-          team: ['CR'],
+          progress: facts[p.id]?.tasksTotal ? { done: facts[p.id].tasksDone, total: facts[p.id].tasksTotal } : null,
+          deadline: p.end_date || null,
+          team: facts[p.id]?.team ?? [],
           description: p.description || 'No description.',
-          color: p.accent_color || '#d7340b',
+          color: readable(p.accent_color || '#e8431a'),
         }));
         setProjectsList(fetched);
         setLoaded(true);
@@ -386,26 +372,31 @@ export default function ProjectsPage() {
     return map;
   }, [projectsList]);
 
+  // The page's own `user` is read once on mount; fall back to the live session
+  // so a user who signed in after mount is never told to sign in.
+  const currentUserId = () => user?.id ?? osUserId();
+
   const handleNewProject = () => {
-    if (!user) { toast('Sign in to create projects', 'error'); return; }
+    if (!currentUserId()) { toast('Sign in to create projects', 'error'); return; }
     setShowNew(true);
   };
 
   const createFromModal = async (title: string, type: string, logline: string) => {
-    if (!user) return;
+    const uid = currentUserId();
+    if (!uid) { toast('Sign in to create projects', 'error'); return; }
     try {
-      const p = await createDBProject(user.id, title, logline, type);
+      const p = await createDBProject(uid, title, logline, type);
       const newP: ProjectCardViewModel = {
         id: p.id, title: p.title, type, phase: 'development',
-        progress: 0, deadline: new Date(Date.now() + 90 * 86400000).toISOString(),
-        team: ['CR'], description: p.description || '', color: p.accent_color || '#6366f1',
+        progress: null, deadline: p.end_date || null,
+        team: user?.username ? [user.username] : [], description: p.description || '', color: readable(p.accent_color || '#6366f1'),
       };
       setProjectsList(prev => [newP, ...prev]);
       setActiveProject(p as any);
       setShowNew(false);
       toast('Project created — opening studio', 'success');
 
-      await logActivity(`started project "${title}"`, 'project', p.id);
+      void logActivity(`started project "${title}"`, 'project', p.id);
 
       router.push('/studio');
     } catch {
@@ -419,21 +410,14 @@ export default function ProjectsPage() {
     setProjectsList(prev => prev.map(p => p.id === projectId ? { ...p, phase: targetPhase } : p));
 
     try {
-      const statusMap: Record<Phase, any> = {
-        'development': 'concept',
-        'pre-production': 'pre-production',
-        'production': 'production',
-        'post-production': 'post-production',
-        'delivery': 'completed'
-      };
-      const dbStatus = statusMap[targetPhase];
+      const dbStatus = PHASE_STATUS[targetPhase];
 
       const { error } = await supabase.from('projects').update({ status: dbStatus }).eq('id', projectId);
       if (error) throw error;
       toast(`Project moved to ${targetPhase}`, 'success');
 
       if (targetProj) {
-        await logActivity(`moved project "${targetProj.title}" to ${targetPhase}`, 'project', projectId);
+        void logActivity(`moved project "${targetProj.title}" to ${targetPhase}`, 'project', projectId);
       }
     } catch (err: any) {
       console.error('Failed to move project:', err);
@@ -446,7 +430,8 @@ export default function ProjectsPage() {
   const inFlight = projectsList.filter(p => p.phase !== 'delivery').length;
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', overflow: 'hidden' }}>
+      <h1 className="sr-only">Projects</h1>
       <GrainOverlay />
       <NewProjectModal open={showNew} onClose={() => setShowNew(false)} onCreate={createFromModal} />
 
@@ -462,7 +447,7 @@ export default function ProjectsPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{
             fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6,
-            color: 'var(--fg)', textDecoration: 'none', opacity: 0.7,
+            color: 'var(--fg-dim)', textDecoration: 'none',
             transition: 'opacity 0.2s',
           }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
@@ -473,7 +458,7 @@ export default function ProjectsPage() {
 
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
             Production Board
           </div>
         </div>
@@ -488,7 +473,7 @@ export default function ProjectsPage() {
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, lineHeight: 1 }}>
                   {value}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1.5, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                   {label}
                 </div>
               </div>
@@ -510,7 +495,7 @@ export default function ProjectsPage() {
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)';
-              (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(215, 52, 11,0.35)';
+              (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(232, 67, 26,0.35)';
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.transform = '';
@@ -541,14 +526,14 @@ export default function ProjectsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px' }}>
                 <div style={{
                   width: 5, height: 5, borderRadius: '50%',
-                  background: count > 0 ? color : 'rgba(255,255,255,0.1)',
+                  background: count > 0 ? color : 'var(--fg-dim)',
                   boxShadow: count > 0 ? `0 0 6px ${color}` : 'none',
                   transition: 'background 0.3s, box-shadow 0.3s',
                 }} />
                 <span style={{
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
                   textTransform: 'uppercase',
-                  color: count > 0 ? color : 'rgba(255,255,255,0.2)',
+                  color: count > 0 ? color : 'var(--fg-dim)',
                   transition: 'color 0.3s',
                 }}>
                   {phase.abbr}
@@ -556,7 +541,7 @@ export default function ProjectsPage() {
                 {count > 0 && (
                   <span style={{
                     fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 0.5,
-                    color: 'rgba(255,255,255,0.25)',
+                    color: 'var(--fg-dim)',
                   }}>
                     {count}
                   </span>
@@ -635,6 +620,6 @@ export default function ProjectsPage() {
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
       `}</style>
-    </main>
+    </div>
   );
 }

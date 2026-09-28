@@ -1,6 +1,19 @@
 import type { Project } from '@/lib/os';
+import type { LineCutNote } from '@/lib/studio';
+import type { PlacedNote } from '@/lib/studio/cutlines';
+import type { EditorBreakdown } from './breakdown/useEditorBreakdown';
 
 export interface EditorCtx {
+  /** Cut notes pinned to lines (Studio › Post), by line index. */
+  cutNotes: {
+    byLine: Map<number, PlacedNote<LineCutNote>[]>;
+    openLine: number | null;
+    setOpenLine: (line: number | null) => void;
+    resolve: (note: LineCutNote, resolved: boolean) => void;
+    canResolve: boolean;
+  };
+  bd: EditorBreakdown;
+  openBreakdown: (elementId?: string | null) => void;
   activeProject: any;
   activeView: any;
   annotationDraft: any;

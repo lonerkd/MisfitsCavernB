@@ -40,3 +40,24 @@ Filmmakers often work in locations without reliable internet access (e.g., sound
   - **IndexedDB (`idb-keyval`)**: For storing the raw content and version histories.
   - **`localStorage`**: Stores active editing configurations, typewriter mode flags, and focus settings.
 - **Reconciliation:** When the client detects network restoration (monitored via `lib/hooks/useNetworkStatus.ts`), the caching module triggers a background sync, publishing any offline revisions back to the database as new incremental versions inside `script_versions`.
+
+## Writing loop
+
+- `lib/writing` + `components/editor/WritingLoop.tsx`, in the editor's right
+  panel. Words are counted as they're **typed** (`typedWords`: the growth of
+  one edit, 0 for deletions and for any single edit over 25 words — a paste or
+  a load isn't writing), queued, and sent to `log_writing(day, words, sprint)`
+  a few seconds after typing pauses, every 20s, and (best effort, `keepalive`)
+  when the page is hidden or left.
+- `writing_days` (one row per writer per local day: words, sprints, the goal
+  that day) is readable by its owner only and written only by
+  `log_writing()` (bounded; within a day of the server's date), so a streak
+  can't be set by hand. The goal and sprint length are `profiles`
+  columns, read back through `get_my_writing_prefs()` (profile columns are
+  granted one by one).
+- `summarize()` gives today against the goal, the streak (through today, or
+  yesterday while today is in progress; each day judged by its own goal),
+  best streak, records and a 4-week grid; `badges()` derives what's earned.
+  Sprints have a length the writer sets (5–120 min), count their own words
+  and log themselves when they end.
+

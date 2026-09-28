@@ -15,7 +15,7 @@ export default function ThemeInitializer() {
 
       if (theme === 'custom') {
         const bg = localStorage.getItem('mc_theme_custom_bg') || '#040710';
-        const accent = localStorage.getItem('mc_theme_custom_accent') || '#d7340b';
+        const accent = localStorage.getItem('mc_theme_custom_accent') || '#e8431a';
 
         document.documentElement.style.setProperty('--bg', bg);
         document.documentElement.style.setProperty('--bg-2', bg);

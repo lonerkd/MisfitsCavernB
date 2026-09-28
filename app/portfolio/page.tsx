@@ -3,7 +3,6 @@
 import React, { useState, useCallback } from 'react';
 import { Play, X, ExternalLink, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -15,9 +14,7 @@ import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
 import { awaitOSUser } from '@/lib/os';
-
-const IMG = (id: string) => `https://lh3.googleusercontent.com/d/${id}=w800`;
-const IMG_FB = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+import { videoEmbed } from '@/lib/studio/media-kind';
 
 interface Video {
   id: string;
@@ -25,14 +22,15 @@ interface Video {
   category: string;
   role: string;
   description: string;
-  driveId: string;
   year: string;
-  featured?: boolean;
-  laurels?: string[];
-  stills?: string[];
-
-  frozenAt?: string;
+  /** The piece's first media link (YouTube, Vimeo, Google Drive, an image, or any page). */
+  url: string | null;
+  thumb: string | null;
+  embedSrc: string | null;
+  sourceProjectId: string | null;
 }
+
+const isImageUrl = (url: string | null) => !!url && /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(url);
 
 function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video) => void; span?: 'wide' | 'tall' }) {
   const [hover, setHover] = useState(false);
@@ -57,17 +55,17 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
       onMouseLeave={() => setHover(false)}
       onClick={() => onClick(video)}
     >
-      <Image
-        src={IMG(video.driveId)}
-        alt={video.title}
-        fill
-        loading="lazy"
-        style={{ objectFit: 'cover', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
-        onError={e => {
-          const t = e.target as HTMLImageElement;
-          if (!t.dataset.fb) { t.dataset.fb = '1'; t.src = IMG_FB(video.driveId); }
-        }}
-      />
+      {video.thumb ? (
+        // eslint-disable-next-line @next/next/no-img-element -- thumbnails come from YouTube, Drive or the owner's own links
+        <img
+          src={video.thumb}
+          alt={video.title}
+          loading="lazy"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
+        />
+      ) : (
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 30% 30%, rgba(245,158,11,0.18), transparent 60%), #0e0e0e' }} />
+      )}
 
       <div style={{
         position: 'absolute',
@@ -109,12 +107,12 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: hover ? 'rgba(215, 52, 11,0.12)' : 'rgba(0,0,0,0.3)',
+          background: hover ? 'rgba(232, 67, 26,0.12)' : 'rgba(0,0,0,0.3)',
           backdropFilter: 'blur(6px)',
           transition: 'border-color 0.4s, background 0.4s',
         }}
       >
-        <Play size={16} fill={hover ? '#d7340b' : '#fff'} color={hover ? '#d7340b' : '#fff'} style={{ marginLeft: 2 }} />
+        <Play size={16} fill={hover ? '#e8431a' : '#fff'} color={hover ? '#e8431a' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
 
       <motion.div
@@ -128,7 +126,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           width: '100%',
         }}
       >
-        <h3 style={{
+        <h2 style={{
           fontFamily: 'var(--display)',
           fontSize: 'clamp(1rem, 2vw, 1.5rem)',
           letterSpacing: 2,
@@ -136,15 +134,10 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           marginBottom: 4,
         }}>
           {video.title}
-        </h3>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
-          {video.role} · {video.year}
+        </h2>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+          {[video.role, video.year].filter(Boolean).join(' · ')}
         </div>
-        {video.frozenAt && (
-          <div title="This showcase entry is a frozen snapshot — it does not reflect the live project" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginTop: 3 }}>
-            ❄ frozen {new Date(video.frozenAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </div>
-        )}
         {hover && (
           <motion.p
             initial={{ opacity: 0, y: 8 }}
@@ -153,7 +146,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
             style={{
               fontFamily: 'var(--serif)',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.45)',
+              color: 'var(--fg-dim)',
               marginTop: 6,
               fontStyle: 'italic',
               maxWidth: 380,
@@ -185,12 +178,12 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
         onClick={onClose}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
-          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
+          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
             <X size={18} /> Close Bible
           </button>
 
           <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
-            <SectionLabel text={`Project Bible — ${project.year}`} />
+            <SectionLabel text={project.year ? `Project Bible — ${project.year}` : 'Project Bible'} />
             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: 8, lineHeight: 1, marginBottom: 20 }}>{project.title}</h1>
             <div style={{ display: 'flex', gap: 24, marginBottom: 60 }}>
                <div>
@@ -201,53 +194,45 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
                  <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Category</div>
                  <div style={{ fontSize: 14, color: '#fff' }}>{project.category}</div>
                </div>
-               {project.laurels && project.laurels.length > 0 && (
-                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 16 }}>
-                   {project.laurels.map((laurel, i) => (
-                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.8 }}>
-                       <div style={{ fontSize: 24, fontFamily: 'var(--serif)', color: 'var(--accent)' }}>❦</div>
-                       <div style={{ fontSize: 8, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center', maxWidth: 120 }}>{laurel}</div>
-                     </div>
-                   ))}
-                 </div>
-               )}
             </div>
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
             <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
-              <iframe
-                src={`https://drive.google.com/file/d/${project.driveId}/preview`}
-                width="100%" height="100%"
-                allow="autoplay;encrypted-media" allowFullScreen
-                style={{ border: 'none', display: 'block' }}
-              />
+              {project.embedSrc ? (
+                <iframe
+                  src={project.embedSrc}
+                  title={project.title}
+                  width="100%" height="100%"
+                  allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen
+                  style={{ border: 'none', display: 'block' }}
+                />
+              ) : isImageUrl(project.url) ? (
+                // eslint-disable-next-line @next/next/no-img-element -- the owner's own image link
+                <img src={project.url!} alt={project.title} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+              ) : project.url ? (
+                <a href={project.url} target="_blank" rel="noopener noreferrer" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none' }}>
+                  <ExternalLink size={14} /> OPEN MEDIA
+                </a>
+              ) : (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11 }}>No media added yet</div>
+              )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
-                <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Executive Summary</h3>
-                <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>
-                  {project.description || "In the heart of the Cavern, this project represents a shift in visual storytelling. A blend of atmospheric tension and technical precision."}
-                </p>
-              </div>
-              <Link href={`/editor?p=${project.id}`} style={{ padding: 20, background: 'var(--accent)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', textAlign: 'center', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
-                Read ScriptOS Draft
-              </Link>
+              {project.description && (
+                <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                  <h2 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Summary</h2>
+                  <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>{project.description}</p>
+                </div>
+              )}
+              {project.sourceProjectId && (
+                <Link href={`/projects/${project.sourceProjectId}`} style={{ padding: 20, background: 'var(--accent)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', textAlign: 'center', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
+                  Open the project
+                </Link>
+              )}
             </div>
           </div>
 
-          {project.stills && project.stills.length > 0 && (
-            <div style={{ marginBottom: 80 }}>
-              <SectionLabel text="Cinematic Stills" />
-              <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 20, scrollSnapType: 'x mandatory' }}>
-                {project.stills.map((still, i) => (
-                  <div key={i} style={{ minWidth: '60%', aspectRatio: '21/9', background: '#111', borderRadius: 8, overflow: 'hidden', scrollSnapAlign: 'start', flexShrink: 0 }}>
-                    <Image src={still} alt="" fill style={{ objectFit: 'cover' }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
         </div>
       </motion.div>
@@ -269,6 +254,7 @@ export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [videosList, setVideosList] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const [view, setView] = useState<'showcase' | 'distribution'>(searchParams.get('tab') === 'distribution' ? 'distribution' : 'showcase');
@@ -293,8 +279,8 @@ export default function PortfolioPage() {
         });
         setFestivals(fests);
         setCampaigns((campRes.data || []).map((c: any) => ({ id: c.id, title: c.title, platform: c.platform, budget: c.budget, projectTitle: titleById.get(c.project_id) || 'Untitled' })));
-      } catch (err) {
-        console.error('Failed to load distribution:', err);
+      } catch (err: any) {
+        setLoadError(err?.message || 'Could not load festivals and campaigns');
       }
     })();
   }, []);
@@ -308,29 +294,35 @@ export default function PortfolioPage() {
         const data = await getPortfolioProjects(user.id);
         const fetchedVideos: Video[] = (data || []).map((p: any) => {
           const media = p.portfolio_media?.[0];
+          const url: string | null = media?.url || null;
+          const embed = videoEmbed(url);
           return {
             id: p.id,
             title: p.title,
-            category: p.category || 'Video',
-            role: p.role || 'Creator',
+            category: p.category || '',
+            role: p.role || '',
             description: p.description || '',
-            driveId: media?.url?.split('id=')?.[1] || media?.url || '',
             year: p.year?.toString() || '',
-            featured: true,
-            frozenAt: p.created_at,
+            url,
+            thumb: media?.thumbnail_url || embed?.thumbnail || (isImageUrl(url) ? url : null),
+            embedSrc: embed?.src ?? null,
+            sourceProjectId: p.source_project_id ?? null,
           };
         });
         setVideosList(fetchedVideos);
-      } catch (err) {
-        console.error('Failed to load portfolio:', err);
+      } catch (err: any) {
+        setLoadError(err?.message || 'Could not load your portfolio');
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const featured = videosList.filter(v => v.featured);
-  const rest = videosList.filter(v => !v.featured);
+  // The first two pieces lead in a wider row; the rest follow in threes.
+  const lead = videosList.slice(0, 2);
+  const rest = videosList.slice(2);
+  // What this person actually does, from their own pieces.
+  const crafts = Array.from(new Set(videosList.flatMap(v => [v.role, v.category]).filter(Boolean).map(t => t.toUpperCase())));
 
   usePillStage(
     {
@@ -339,15 +331,14 @@ export default function PortfolioPage() {
       accent: '#f59e0b',
       fields: [
         { label: 'Works', value: `${videosList.length}`, color: '#f59e0b' },
-        { label: 'Featured', value: `${featured.length}` },
       ],
     },
-    [videosList.length, featured.length],
+    [videosList.length],
   );
 
   return (
     <ProtectedPage requiredPermission="manage_portfolio">
-      <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       <nav style={{
@@ -362,7 +353,7 @@ export default function PortfolioPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
@@ -370,14 +361,14 @@ export default function PortfolioPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {videosList.length} Projects
         </span>
       </nav>
 
       <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(215, 52, 11,0.08), transparent 55%), #060606' }} />
+           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(232, 67, 26,0.08), transparent 55%), #060606' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
@@ -463,10 +454,10 @@ export default function PortfolioPage() {
         {videosList.length === 0 ? (
           <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 10 }}>
-              {loading ? 'LOADING…' : 'NO PUBLISHED WORK YET'}
+              {loading ? 'LOADING…' : loadError ? `⚠ ${loadError}` : 'NO PUBLISHED WORK YET'}
             </div>
             {!loading && (
-              <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)', opacity: 0.6 }}>
+              <div style={{ fontFamily: 'var(--serif)', fontSize: 14, color: 'var(--fg-dim)'}}>
                 Published portfolio projects will appear here.
               </div>
             )}
@@ -475,7 +466,7 @@ export default function PortfolioPage() {
           <>
             <AnimatedSection>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
-                {featured.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
+                {lead.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
               </div>
             </AnimatedSection>
 
@@ -490,6 +481,7 @@ export default function PortfolioPage() {
         )}
       </section>
 
+      {crafts.length > 0 && (
       <div style={{
         padding: '28px 0',
         overflow: 'hidden',
@@ -498,25 +490,24 @@ export default function PortfolioPage() {
         marginBottom: 0,
       }}>
         <div style={{ display: 'flex', gap: 44, animation: 'marquee 28s linear infinite', whiteSpace: 'nowrap' }}>
-          {['CINEMATOGRAPHY', 'DIRECTING', 'MUSIC VIDEOS', 'COLOR GRADING', 'CREATIVE DIRECTION', 'EDITING', 'STORYTELLING', 'LIGHTING', 'WRITING', 'SOUND DESIGN', 'LIVE MULTI-CAM',
-            'CINEMATOGRAPHY', 'DIRECTING', 'MUSIC VIDEOS', 'COLOR GRADING'].map((text, i) => (
+          {[...crafts, ...crafts, ...crafts].map((text, i) => (
             <span key={i} style={{
               fontFamily: 'var(--display)',
               fontSize: '1rem',
               letterSpacing: 6,
               flexShrink: 0,
-              color: i % 2 === 0 ? 'var(--accent)' : 'var(--fg)',
-              opacity: i % 2 === 0 ? 1 : 0.1,
+              color: i % 2 === 0 ? 'var(--accent)' : 'var(--fg-dim)',
             }}>
               {text}
             </span>
           ))}
         </div>
       </div>
+      )}
       </>)}
 
       <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
-      </main>
+      </div>
     </ProtectedPage>
   );
 }

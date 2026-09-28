@@ -31,14 +31,14 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
         position: 'relative',
         transition: 'box-shadow 0.3s',
       }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(215, 52, 11,0.08)'}`)}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 12px 36px rgba(0,0,0,0.6), 0 0 24px ${beat.color || 'rgba(232, 67, 26,0.08)'}`)}
       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
     >
       <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
         {onPush && (
-          <button
+          <button aria-label="Push to ScriptOS"
             onClick={() => onPush(beat)}
-            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}
             title="Push to ScriptOS"
             onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
             onMouseLeave={e => e.currentTarget.style.color = '#444'}
@@ -47,9 +47,9 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
           </button>
         )}
         {onDelete && (
-          <button
+          <button aria-label="Delete Beat"
             onClick={() => onDelete(beat.id)}
-            style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}
             title="Delete Beat"
             onMouseEnter={e => e.currentTarget.style.color = '#ff4444'}
             onMouseLeave={e => e.currentTarget.style.color = '#444'}
@@ -101,7 +101,7 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
         borderRadius: 12,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
       onClick={zoneHandlers.onClick}
     >
@@ -181,11 +181,11 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                     placeholder="Search by username..."
                     style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: '12px 40px 12px 16px', borderRadius: 8, fontSize: 13 }}
                   />
-                  <Search size={16} style={{ position: 'absolute', right: 14, top: 14, color: '#666' }} />
+                  <Search size={16} style={{ position: 'absolute', right: 14, top: 14, color: 'var(--fg-dim)' }} />
                 </div>
 
                 <div style={{ minHeight: 200, maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {loading ? <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>Searching...</div> :
+                  {loading ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>Searching...</div> :
                    results.map(u => (
                     <div
                       key={u.id}
@@ -200,7 +200,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                       <div style={{ fontSize: 14 }}>{u.username}</div>
                     </div>
                   ))}
-                  {results.length === 0 && !loading && query && <div style={{ textAlign: 'center', padding: 40, color: '#444' }}>No results found.</div>}
+                  {results.length === 0 && !loading && query && <div style={{ textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>No results found.</div>}
                 </div>
               </div>
             ) : (
@@ -216,7 +216,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                  </div>
 
                  <div>
-                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: '#666', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
                    <select
                      value={role}
                      onChange={e => setRole(e.target.value)}

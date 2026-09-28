@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
@@ -15,9 +16,9 @@ import dynamic from 'next/dynamic';
 const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
 
 const APPS = [
-  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#d7340b' },
-  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#d7340b', module: 'scriptos' as const },
-  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: '#6366f1', module: 'studio' as const },
+  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#e8431a' },
+  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#e8431a', module: 'scriptos' as const },
+  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: '#818cf8', module: 'studio' as const },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: '#10b981', module: 'lounge' as const },
   { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b', module: 'portfolio' as const },
 ];
@@ -52,7 +53,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
     >
       <div style={{
         fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5,
-        textTransform: 'uppercase', color: 'rgba(224, 221, 174,0.3)',
+        textTransform: 'uppercase', color: 'var(--fg-dim)',
         padding: '4px 8px 8px',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         marginBottom: 6,
@@ -60,24 +61,24 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
       }}>
         Projects
         <Link href="/projects" prefetch={false} onClick={onClose} style={{
-          color: 'rgba(215, 52, 11,0.7)', textDecoration: 'none', fontSize: 7,
+          color: 'rgba(232, 67, 26,0.7)', textDecoration: 'none', fontSize: 7,
           letterSpacing: 1.5,
           transition: 'color 0.2s',
         }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#d7340b')}
-          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(215, 52, 11,0.7)')}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#e8431a')}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(232, 67, 26,0.7)')}
         >
           All →
         </Link>
       </div>
 
       {projects.length === 0 && (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'rgba(224, 221, 174,0.3)', padding: '10px 8px', letterSpacing: 1 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', padding: '10px 8px', letterSpacing: 1 }}>
           No projects yet.
         </div>
       )}
       {projects.map((proj, i) => {
-        const color = proj.accent_color || '#d7340b';
+        const color = proj.accent_color || '#e8431a';
         const isActive = activeProject?.id === proj.id;
         return (
           <motion.div
@@ -99,7 +100,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
               <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: 1, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {proj.title}
               </div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5, color: 'rgba(224, 221, 174,0.3)', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                 {proj.status || 'project'}
               </div>
             </div>
@@ -107,7 +108,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
             <button
               onClick={(e) => { e.stopPropagation(); setActiveProject(proj); onClose(); router.push(`/projects/${proj.id}`); }}
               aria-label="open hub"
-              style={{ background: 'none', border: 'none', color: 'rgba(224, 221, 174,0.3)', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}
+              style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}
             >›</button>
           </motion.div>
         );
@@ -118,7 +119,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
 
 // ── Transient activity (Dynamic-Island live event) ────────────────────────
 function TransientView({ label, tone }: { label: string; tone: 'default' | 'success' | 'accent' }) {
-  const color = tone === 'success' ? '#10b981' : tone === 'accent' ? '#d7340b' : 'rgba(224, 221, 174,0.8)';
+  const color = tone === 'success' ? '#10b981' : tone === 'accent' ? '#e8431a' : 'rgba(224, 221, 174,0.8)';
   return (
     <motion.div
       layout
@@ -170,15 +171,15 @@ function ContextCapsule({
             style={{
               display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 14,
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 0.8,
-              color: 'rgba(224, 221, 174,0.35)', whiteSpace: 'nowrap', pointerEvents: 'none',
+              color: 'var(--fg-dim)', whiteSpace: 'nowrap', pointerEvents: 'none',
             }}
           >
             {zoneChain.map((z, i) => {
               const isLast = i === zoneChain.length - 1;
               return (
                 <React.Fragment key={`${z.depth}-${z.title}`}>
-                  <span style={{ color: isLast ? accent : 'rgba(224, 221, 174,0.35)' }}>{z.title}</span>
-                  {!isLast && <span style={{ color: 'rgba(224, 221, 174,0.18)' }}>›</span>}
+                  <span style={{ color: isLast ? accent : 'var(--fg-dim)' }}>{z.title}</span>
+                  {!isLast && <span style={{ color: 'var(--fg-dim)' }}>›</span>}
                 </React.Fragment>
               );
             })}
@@ -254,7 +255,7 @@ function ContextCapsule({
                 >
                   <span style={{
                     fontFamily: 'var(--mono)', fontSize: 6.5, letterSpacing: 1.5,
-                    textTransform: 'uppercase', color: 'rgba(224, 221, 174,0.35)',
+                    textTransform: 'uppercase', color: 'var(--fg-dim)',
                   }}>
                     {f.label}
                   </span>
@@ -293,7 +294,7 @@ function ContextCapsule({
                   </span>
                   <span style={{
                     fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1,
-                    textTransform: 'uppercase', color: t.active ? 'var(--fg)' : 'rgba(224, 221, 174,0.5)',
+                    textTransform: 'uppercase', color: t.active ? 'var(--fg)' : 'var(--fg-dim)',
                   }}>
                     {t.label}
                   </span>
@@ -575,7 +576,7 @@ export default function EcosystemTaskbar() {
   const router = useRouter();
   const { activeProject } = useProject();
   const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
-  const activeColor = activeProject?.accent_color || '#d7340b';
+  const activeColor = activeProject?.accent_color || '#e8431a';
 
   const modules = getProjectModules(activeProject?.settings);
   const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
@@ -670,16 +671,22 @@ export default function EcosystemTaskbar() {
   }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
 
   if (pathname === '/login' || pathname === '/auth') return null;
+  // The split screen has its own bar; each pane is a full page without chrome.
+  if (pathname === '/split') return null;
+  // Public share surfaces (lookbooks, public portfolios, shared scripts) are
+  // for people outside the app — no app chrome over them.
+  if (/^\/(shared|p|s)\//.test(pathname)) return null;
 
   const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
-  const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#d7340b';
+  const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#e8431a';
 
   const showContext = !!activeDescriptor || !!transient;
   const contextOpen = contextExpanded || zoneActive || kbActive;
   const focusedId = kbFocusIndex >= 0 ? hotkeyItems[kbFocusIndex]?.id ?? null : null;
 
   return (
-    <div
+    <nav
+      aria-label="Suite"
       data-taskbar
       style={{
         position: 'fixed',
@@ -768,6 +775,35 @@ export default function EcosystemTaskbar() {
                 >
                   Search <kbd style={{ fontSize: 7.5, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 4px' }}>⌘K</kbd>
                   <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <motion.button
+              onClick={() => router.push(splitHref(window.location.pathname + window.location.search))}
+              aria-label="Split screen (Control-Backslash)"
+              onHoverStart={() => setHoveredId('split')}
+              onHoverEnd={() => setHoveredId(null)}
+              whileHover={{ scale: 1.18, y: -6 }}
+              whileTap={{ scale: 0.93 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+              style={{
+                width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: hoveredId === 'split' ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+                color: hoveredId === 'split' ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s',
+              }}
+            >
+              <Columns2 size={18} strokeWidth={1.5} />
+            </motion.button>
+            <AnimatePresence>
+              {hoveredId === 'split' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
+                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
+                >
+                  Split screen <kbd style={{ fontSize: 7.5, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 3, padding: '1px 4px' }}>Ctrl {'\\'}</kbd>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -906,8 +942,8 @@ export default function EcosystemTaskbar() {
                   transition={{ type: 'spring', stiffness: 500, damping: 26 }}
                   style={{
                     width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isActive ? 'rgba(215, 52, 11,0.10)' : isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
-                    color: isActive ? '#d7340b' : isHovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)',
+                    background: isActive ? 'rgba(232, 67, 26,0.10)' : isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
+                    color: isActive ? '#e8431a' : isHovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)',
                     transition: 'background 0.25s, color 0.25s',
                   }}
                 >
@@ -979,6 +1015,6 @@ export default function EcosystemTaskbar() {
           )}
         </AnimatePresence>
       </motion.div>
-    </div>
+    </nav>
   );
 }

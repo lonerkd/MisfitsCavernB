@@ -1,69 +1,7 @@
 import { supabase } from './client';
+import type { TablesInsert, TablesUpdate } from './database.types';
 
-export async function getStudioBoards(userId: string) {
-  const { data, error } = await supabase.from('studio_boards').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function getProjectBoards(projectId: string) {
-  const { data, error } = await supabase.from('studio_boards').select('*').eq('project_id', projectId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
-
-export async function createStudioBoard(board: any) {
-  const { data, error } = await supabase.from('studio_boards').insert(board).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export async function getStudioAssets(boardId: string) {
-  const { data, error } = await supabase.from('studio_assets').select('*').eq('board_id', boardId);
-  if (error) throw error;
-  return data;
-}
-
-export async function addStudioAsset(asset: any) {
-  const { data, error } = await supabase.from('studio_assets').insert(asset).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export async function uploadStudioFile(path: string, file: File) {
-  const { data, error } = await supabase.storage
-    .from('studio-assets')
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
-  
-  if (error) throw error;
-  
-  const { data: { publicUrl } } = supabase.storage
-    .from('studio-assets')
-    .getPublicUrl(data.path);
-    
-  return publicUrl;
-}
-
-export async function updateStudioAsset(assetId: string, updates: any) {
-  const { data, error } = await supabase.from('studio_assets').update(updates).eq('id', assetId).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export async function deleteStudioAsset(assetId: string) {
-  const { error } = await supabase.from('studio_assets').delete().eq('id', assetId);
-  if (error) throw error;
-  return true;
-}
-
-export async function getAllStudioAssets(userId: string) {
-  const { data, error } = await supabase.from('studio_assets').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
+// Story beats. (The media library, scenes and links live in lib/studio.)
 
 export async function getProjectBeats(projectId: string) {
   const { data, error } = await supabase.from('project_beats').select('*').eq('project_id', projectId).order('order_index', { ascending: true });
@@ -71,13 +9,13 @@ export async function getProjectBeats(projectId: string) {
   return data;
 }
 
-export async function createProjectBeat(beat: any) {
+export async function createProjectBeat(beat: TablesInsert<'project_beats'>) {
   const { data, error } = await supabase.from('project_beats').insert(beat).select().single();
   if (error) throw error;
   return data;
 }
 
-export async function updateProjectBeat(beatId: string, updates: any) {
+export async function updateProjectBeat(beatId: string, updates: TablesUpdate<'project_beats'>) {
   const { data, error } = await supabase.from('project_beats').update(updates).eq('id', beatId).select().single();
   if (error) throw error;
   return data;
@@ -88,4 +26,3 @@ export async function deleteProjectBeat(beatId: string) {
   if (error) throw error;
   return true;
 }
-

@@ -20,14 +20,15 @@
 
   /* Foreground — Vanilla */
   --fg:       #e0ddae;
-  --fg-muted: rgba(224, 221, 174, 0.55);
-  --fg-dim:   rgba(224, 221, 174, 0.30);
+  --fg-muted: rgba(224, 221, 174, 0.72);
+  --fg-dim:   rgba(224, 221, 174, 0.58);
+  --fg-subtle: var(--fg-dim);
   --fg-ghost: rgba(224, 221, 174, 0.12);
 
   /* Accent — Sinopia */
-  --accent:       #d7340b;
-  --accent-dim:   rgba(215, 52, 11, 0.18);
-  --accent-glow:  rgba(215, 52, 11, 0.10);
+  --accent:       #e8431a;
+  --accent-dim:   rgba(232, 67, 26, 0.18);
+  --accent-glow:  rgba(232, 67, 26, 0.10);
 
   /* Secondary accent — Caribbean */
   --secondary:     #336467;
@@ -36,11 +37,11 @@
   /* Borders */
   --border:       rgba(224, 221, 174, 0.07);
   --border-2:     rgba(224, 221, 174, 0.12);
-  --border-accent: rgba(215, 52, 11, 0.32);
+  --border-accent: rgba(232, 67, 26, 0.32);
 
   /* Module accent colors (used sparingly as glows) */
-  --script-color:    #d7340b;
-  --studio-color:    #6366f1;
+  --script-color:    #e8431a;
+  --studio-color:    #4f46e5;
   --lounge-color:    #10b981;
   --portfolio-color: #f59e0b;
   --jobs-color:      #8b5cf6;
@@ -160,7 +161,7 @@ body.reduce-motion *::after {
 }
 
 ::selection {
-  background: rgba(215, 52, 11, 0.30);
+  background: rgba(232, 67, 26, 0.30);
   color: var(--fg);
 }
 
@@ -320,7 +321,7 @@ p {
 
 .btn-primary:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 32px rgba(215, 52, 11, 0.35);
+  box-shadow: 0 8px 32px rgba(232, 67, 26, 0.35);
 }
 
 .btn-ghost {
@@ -430,8 +431,8 @@ p {
 }
 
 .input-field:focus {
-  border-color: rgba(215, 52, 11, 0.5);
-  box-shadow: 0 0 0 3px rgba(215, 52, 11, 0.06);
+  border-color: rgba(232, 67, 26, 0.5);
+  box-shadow: 0 0 0 3px rgba(232, 67, 26, 0.06);
 }
 
 .input-field::placeholder { color: var(--fg-ghost); }
@@ -676,8 +677,8 @@ body.theme-cyberpunk {
   --bg-3: #18022a;
   --bg-4: #200238;
   --fg: #ff007f;
-  --fg-muted: rgba(255, 0, 127, 0.65);
-  --fg-dim: rgba(255, 0, 127, 0.35);
+  --fg-muted: rgba(255, 0, 127, 0.72);
+  --fg-dim: rgba(255, 0, 127, 0.58);
   --fg-ghost: rgba(255, 0, 127, 0.15);
   --accent: #00ffff;
   --accent-dim: rgba(0, 255, 255, 0.2);
@@ -697,8 +698,8 @@ body.theme-forest {
   --bg-3: #151d18;
   --bg-4: #1c2720;
   --fg: #f4ebd0;
-  --fg-muted: rgba(244, 235, 208, 0.65);
-  --fg-dim: rgba(244, 235, 208, 0.35);
+  --fg-muted: rgba(244, 235, 208, 0.72);
+  --fg-dim: rgba(244, 235, 208, 0.58);
   --fg-ghost: rgba(244, 235, 208, 0.15);
   --accent: #4d8076;
   --accent-dim: rgba(77, 128, 118, 0.2);
@@ -718,8 +719,8 @@ body.theme-obsidian {
   --bg-3: #121212;
   --bg-4: #181818;
   --fg: #f5f5f7;
-  --fg-muted: rgba(245, 245, 247, 0.65);
-  --fg-dim: rgba(245, 245, 247, 0.35);
+  --fg-muted: rgba(245, 245, 247, 0.72);
+  --fg-dim: rgba(245, 245, 247, 0.58);
   --fg-ghost: rgba(245, 245, 247, 0.15);
   --accent: #ffffff;
   --accent-dim: rgba(255, 255, 255, 0.2);
@@ -739,8 +740,8 @@ body.theme-vampire {
   --bg-3: #1a0505;
   --bg-4: #230808;
   --fg: #f5eedc;
-  --fg-muted: rgba(245, 238, 220, 0.65);
-  --fg-dim: rgba(245, 238, 220, 0.35);
+  --fg-muted: rgba(245, 238, 220, 0.72);
+  --fg-dim: rgba(245, 238, 220, 0.58);
   --fg-ghost: rgba(245, 238, 220, 0.15);
   --accent: #a30000;
   --accent-dim: rgba(163, 0, 0, 0.2);
@@ -753,3 +754,21 @@ body.theme-vampire {
   --script-color: #a30000;
   --studio-color: #6e00b3;
 }
+
+/* ── Accessibility ─────────────────────────────────────────────────────── */
+.skip-link {
+  position: fixed; top: 8px; left: 8px; z-index: 100000;
+  padding: 10px 14px; border-radius: 8px;
+  background: var(--accent); color: var(--bg);
+  font-family: var(--mono); font-size: 12px; letter-spacing: 1px; text-decoration: none;
+  transform: translateY(-200%); transition: transform 0.15s;
+}
+.skip-link:focus { transform: translateY(0); outline: 2px solid var(--fg); outline-offset: 2px; }
+.main-content-container:focus { outline: none; }
+/* A visible focus ring for keyboard users everywhere (WCAG 2.4.7 / 2.4.11). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Visually hidden but read by screen readers. */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

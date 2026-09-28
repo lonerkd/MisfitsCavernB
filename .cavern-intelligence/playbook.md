@@ -79,8 +79,9 @@ Then update `.cavern-intelligence/STATE.md` with:
 - Every new table needs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
 - Use `internal` schema helpers to prevent RLS recursion
 - Wrap `auth.uid()` in scalar subqueries for InitPlan performance
-- Mirror every live migration into `supabase-schema.sql`
-- Test with all three personas
+- Follow the migration workflow in `database-and-security.md` §3
+  (migration file → `db:reset` → `db:drift -- --update` → `db:types`)
+- Prove it with a persona test in `tests/integration/` (`npm run test:integration`)
 
 ### ScriptOS Changes
 - Reference `scriptos-engine.md` for parser architecture

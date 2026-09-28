@@ -29,6 +29,47 @@ jobs:
       - run: npm run test
       - run: npm run build
 
+  # The database is part of the build. Each run starts a fresh local Supabase
+  # stack (Postgres + Auth + PostgREST + Realtime + Storage) from
+  # supabase/migrations, then proves:
+  #   1. the migrations build exactly the committed schema (no drift),
+  #   2. the committed TypeScript types match that schema,
+  #   3. real persona tests (Sam / Jordan / Riley / anon) pass against it —
+  #      real auth, real RLS, no mocks,
+  #   4. the Studio journey works in a real browser against it: upload, link to
+  #      a scene, editor, publish, logged-out share link, live crew sync; the
+  #      breakdown is tagged in the script (suggest, accept, select, element);
+  #   5. every page passes WCAG 2.2 A/AA (axe-core), signed out, signed in, mobile.
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 22+: supabase-js's realtime client needs Node's built-in WebSocket.
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:start
+      - run: npm run db:drift
+      - run: npm run db:types:check
+      - run: npm run test:integration
+      - run: npx playwright install --with-deps chromium
+      - name: Studio journey + accessibility (real browser, local stack)
+        run: |
+          STATUS=$(npx supabase status -o json)
+          export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
+          E2E_LOCAL_STACK=1 npx playwright test e2e/studio-journey.spec.ts e2e/breakdown.spec.ts e2e/accessibility.spec.ts e2e/community.spec.ts e2e/table-read.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: studio-journey-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   e2e-smoke:
     runs-on: ubuntu-latest
     needs: checks
@@ -51,7 +92,7 @@ jobs:
       # and serves this checkout on localhost, so these specs test the PR's
       # own code — not the deployed production site.
       # Unauthenticated smoke specs only; authed journeys need a seeded test user.
-      - run: npx playwright test e2e/home-page-crash.spec.ts e2e/auth-validation.spec.ts
+      - run: npx playwright test e2e/home-page-crash.spec.ts e2e/auth-validation.spec.ts e2e/route-smoke.spec.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

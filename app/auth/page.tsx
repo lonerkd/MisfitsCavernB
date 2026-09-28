@@ -33,6 +33,8 @@ export default function AuthPage() {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
 
   // ── Where to land after auth ─────────────────────────────────────
   // middleware.ts sends gated visitors here as /auth?redirect=<path>. Honour it
@@ -47,10 +49,9 @@ export default function AuthPage() {
   }, []);
 
   // Navigate when the session is actually established in the OS store — not on a
-  // timer. osSignIn/osSignUp await osHydrateSession(), so by the time status is
-  // 'authed' the store already knows the user and the destination page's gate
-  // cannot bounce them back here. This also forwards someone who is already
-  // signed in and lands on /auth.
+  // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
+  // destination page's gate cannot bounce them back here. This also forwards
+  // someone who is already signed in and lands on /auth.
   useEffect(() => {
     if (status === 'authed') router.replace(redirectTo);
   }, [status, redirectTo, router]);
@@ -118,7 +119,7 @@ export default function AuthPage() {
         setError('Password must be at least 8 characters with uppercase, lowercase, and numbers.');
       } else if (code === 'otp_expired') {
         setError('Confirmation code has expired. Please try again.');
-      } else if (msg.includes('Invalid API key') || msg.includes('fetch failed')) {
+      } else if (msg.includes('Invalid API key') || /fetch failed|failed to fetch|networkerror|load failed/i.test(msg)) {
         setError('Unable to connect. Please try again later.');
       } else if (msg.includes('timed out')) {
         setError('This is taking too long — check your connection and try again.');
@@ -138,14 +139,14 @@ export default function AuthPage() {
   };
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
       <GrainOverlay />
 
       <div style={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 40%, rgba(215, 52, 11,0.05) 0%, transparent 60%)',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(232, 67, 26,0.05) 0%, transparent 60%)',
       }} />
 
       <motion.div
@@ -181,15 +182,16 @@ export default function AuthPage() {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           style={{ textAlign: 'center', marginBottom: 48 }}
         >
-          <div style={{
+          <h1 style={{
             fontFamily: 'var(--display)',
             fontSize: 'clamp(2.2rem, 8vw, 3.4rem)',
+            fontWeight: 400,
             letterSpacing: 6,
             lineHeight: 1,
-            marginBottom: 10,
+            margin: '0 0 10px',
           }}>
             MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
-          </div>
+          </h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', fontStyle: 'italic', color: 'var(--fg-muted)', margin: 0 }}>
             {mode === 'signin' ? 'Welcome back, misfit.' : 'Join the cavern.'}
           </p>
@@ -237,7 +239,10 @@ export default function AuthPage() {
             ))}
           </div>
 
-          <form onSubmit={handleSubmit}>
+          {/* method="post" + a submit button disabled until hydration: before the
+              JS loads, a native submit would otherwise GET /auth?email=…&password=…,
+              putting the password in the URL and browser history. */}
+          <form method="post" onSubmit={handleSubmit}>
             <Input
               name="email"
               label="Email"
@@ -258,6 +263,7 @@ export default function AuthPage() {
                   <Input
                     name="username"
                     label="Username"
+                    autoComplete="username"
                     type="text"
                     value={form.username}
                     onChange={handleChange}
@@ -269,6 +275,7 @@ export default function AuthPage() {
             <Input
               name="password"
               label="Password"
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               type="password"
               value={form.password}
               onChange={handleChange}
@@ -282,8 +289,8 @@ export default function AuthPage() {
                   exit={{ opacity: 0, y: -8 }}
                   style={{
                     padding: '10px 14px',
-                    background: 'rgba(215, 52, 11,0.08)',
-                    border: '1px solid rgba(215, 52, 11,0.2)',
+                    background: 'rgba(232, 67, 26,0.08)',
+                    border: '1px solid rgba(232, 67, 26,0.2)',
                     borderRadius: 'var(--radius-sm)',
                     fontFamily: 'var(--mono)',
                     fontSize: 11,
@@ -301,6 +308,7 @@ export default function AuthPage() {
               type="submit"
               fullWidth
               isLoading={loading}
+              disabled={!hydrated}
               variant="solid"
             >
               {mode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -359,6 +367,6 @@ export default function AuthPage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-    </main>
+    </div>
   );
 }

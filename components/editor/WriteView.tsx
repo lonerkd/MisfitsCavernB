@@ -29,7 +29,6 @@ import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNO
 import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
-import { getDefaultScriptFormat } from '@/lib/projectTypes';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -47,8 +46,80 @@ import {
   transformLineForType, LinePreview,
 } from '@/components/editor/editorPageParts';
 import type { EditorCtx } from './editorCtx';
+import { segments, type Mark } from '@/lib/breakdown/marks';
+import type { CaretContext } from './breakdown/useEditorBreakdown';
+import { TagBar } from './breakdown/TagBar';
+import { readable } from '@/lib/color';
+import { CutNoteMarkers } from './CutNoteMarkers';
+
+const EDITOR_CHAR_WIDTH = 9.6; // Courier Prime at 16px
+
+function markStyle(m: Mark): React.CSSProperties {
+  const c = readable(m.color);
+  return m.kind === 'tag'
+    ? { background: `${m.color}33`, boxShadow: `inset 0 -2px 0 ${c}`, borderRadius: 2 }
+    : { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: c, textDecorationThickness: 2, textUnderlineOffset: 4 };
+}
 
 export function WriteView({ ctx }: { ctx: EditorCtx }) {
+  const { bd, openBreakdown } = ctx;
+  const [tagAt, setTagAt] = useState<{ ctx: CaretContext; top: number; left: number } | null>(null);
+  const showMarks = bd.enabled && bd.mode;
+  useEffect(() => { if (!showMarks) setTagAt(null); }, [showMarks]);
+
+  /** Where the caret or selection is, for the tag bar (breakdown mode only). */
+  const updateTagBar = (ta: HTMLTextAreaElement) => {
+    if (!showMarks) return;
+    const c = bd.caretContext(ta.value, ta.selectionStart, ta.selectionEnd);
+    const lineEl = ctx.highlightRef.current?.children[c.line] as HTMLElement | undefined;
+    if ((!c.selection && !c.mark) || c.sceneIdx < 0 || !lineEl) { setTagAt(null); return; }
+    const col = ta.selectionStart - (ta.value.lastIndexOf('\n', ta.selectionStart - 1) + 1);
+    setTagAt({
+      ctx: c,
+      top: lineEl.offsetTop - (ctx.highlightRef.current?.scrollTop ?? 0) + lineEl.offsetHeight + 6,
+      // Under the selection, kept inside the page (the bar is up to 520px wide).
+      left: Math.max(16, Math.min(lineEl.offsetLeft + col * EDITOR_CHAR_WIDTH - 24, (ctx.highlightRef.current?.clientWidth ?? 900) - 536)),
+    });
+  };
+
+  const tagSelection = (categoryId: string) => {
+    if (!tagAt?.ctx.selection) return;
+    void bd.tagText(tagAt.ctx.sceneIdx, tagAt.ctx.selection, categoryId);
+    setTagAt(null);
+  };
+  const acceptMark = (m: Mark, categoryId: string) => {
+    if (!tagAt) return;
+    void bd.tagText(tagAt.ctx.sceneIdx, m.name, categoryId);
+    setTagAt(null);
+  };
+  const dropMark = (m: Mark) => {
+    if (!tagAt) return;
+    if (m.kind === 'tag' && m.elementId) void bd.untag(tagAt.ctx.sceneIdx, m.elementId);
+    else void bd.dismiss(m.name);
+    setTagAt(null);
+  };
+
+  /** Breakdown shortcuts; true when handled. */
+  const breakdownKeys = (e: React.KeyboardEvent<HTMLTextAreaElement>): boolean => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyB') {
+      e.preventDefault();
+      if (!bd.enabled) { openBreakdown(); return true; }
+      bd.setMode(!bd.mode);
+      return true;
+    }
+    if (!showMarks || !tagAt) return false;
+    const cats = bd.state.categories.rows;
+    if (e.key === 'Escape') { e.preventDefault(); setTagAt(null); return true; }
+    if (e.altKey && /^Digit[1-9]$/.test(e.code) && tagAt.ctx.selection) {
+      const cat = cats[Number(e.code.slice(5)) - 1];
+      if (cat) { e.preventDefault(); tagSelection(cat.id); return true; }
+    }
+    const m = tagAt.ctx.mark;
+    if (e.altKey && e.key === 'Enter' && m?.kind === 'suggestion') { e.preventDefault(); acceptMark(m, m.categoryId); return true; }
+    if (e.altKey && e.key === 'Backspace' && m) { e.preventDefault(); dropMark(m); return true; }
+    return false;
+  };
+
   const { annotationDraft, annotations, broadcastCursor, content, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, highlightRef, lines, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, setAnnotationDraft, setCursorLine, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, typewriterMode } = ctx;
   return (
 
@@ -74,10 +145,14 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     <div key={i} style={{
                       position: 'relative',
                       color, fontWeight: bold ? 700 : 400,
-                      background: isReadingLine ? 'rgba(215, 52, 11,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
+                      background: isReadingLine ? 'rgba(232, 67, 26,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
                       boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : isCurrentLine ? 'inset 2px 0 0 rgba(255,255,255,0.25)' : undefined,
                     }}>
-                      {lineText.length ? lineText : ' '}
+                      {!lineText.length ? ' ' : showMarks && bd.view.marks.has(i)
+                        ? segments(lineText, bd.view.marks.get(i)).map((seg, si) => seg.mark
+                          ? <span key={si} style={markStyle(seg.mark)}>{seg.text}</span>
+                          : <React.Fragment key={si}>{seg.text}</React.Fragment>)
+                        : lineText}
                       {lineAnnotations.map((a: any, ai: number) => {
                         const meta = ANNOTATION_META[a.type as keyof typeof ANNOTATION_META];
                         return (
@@ -98,7 +173,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                           title="Add margin note"
                           style={{
                             position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
-                            border: '1px dashed rgba(255,255,255,0.35)', color: 'rgba(255,255,255,0.5)',
+                            border: '1px dashed rgba(255,255,255,0.35)', color: 'var(--fg-dim)',
                             fontSize: 9, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
                           }}
                         >+</span>
@@ -121,8 +196,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase',
                                   padding: '3px 7px', borderRadius: 99, cursor: 'pointer',
                                   background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(255,255,255,0.04)',
-                                  border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.1)'}`,
-                                  color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'rgba(255,255,255,0.5)',
+                                  border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)'}`,
+                                  color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)',
                                 }}
                               >{ANNOTATION_META[t].label}</button>
                             ))}
@@ -148,14 +223,19 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
               <textarea
                 ref={textareaRef}
                 value={content}
-                onChange={handleEditorChange}
-                onKeyDown={handleEditorKeyDown}
+                onChange={e => { setTagAt(null); handleEditorChange(e); }}
+                onKeyDown={e => { if (!breakdownKeys(e)) handleEditorKeyDown(e); }}
                 onSelect={e => {
                   const ta = e.target as HTMLTextAreaElement;
                   broadcastCursor(ta.selectionStart);
                   setCursorLine(ta.value.substring(0, ta.selectionStart).split('\n').length - 1);
+                  updateTagBar(ta);
                 }}
-                onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; }}
+                onScroll={e => { if (highlightRef.current) highlightRef.current.scrollTop = e.currentTarget.scrollTop; setTagAt(null); }}
+                onMouseUp={e => updateTagBar(e.currentTarget)}
+                onKeyUp={e => { if (e.shiftKey || e.key.startsWith('Arrow')) updateTagBar(e.currentTarget); }}
+                aria-label="Script"
+                aria-describedby={showMarks ? 'tag-mode-help' : undefined}
                 placeholder={PLACEHOLDER}
                 spellCheck={false}
                 style={{
@@ -166,6 +246,39 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   resize: 'none', outline: 'none',
                 }}
               />
+              <CutNoteMarkers
+                byLine={ctx.cutNotes.byLine} highlightRef={highlightRef} textareaRef={textareaRef} content={content}
+                openLine={ctx.cutNotes.openLine} setOpenLine={ctx.cutNotes.setOpenLine}
+                onResolve={ctx.cutNotes.resolve} canResolve={ctx.cutNotes.canResolve}
+              />
+
+              {showMarks && tagAt && (
+                <TagBar
+                  top={tagAt.top} left={tagAt.left}
+                  selection={tagAt.ctx.selection} mark={tagAt.ctx.mark}
+                  categories={bd.state.categories.rows}
+                  onTag={(_, c) => tagSelection(c.id)}
+                  onAccept={acceptMark}
+                  onDismiss={dropMark}
+                  onUntag={dropMark}
+                  onOpen={(m) => { setTagAt(null); openBreakdown(m.elementId ?? null); }}
+                  onClose={() => setTagAt(null)}
+                />
+              )}
+
+              {showMarks && !focusMode && (
+                <div id="tag-mode-help" style={{
+                  position: 'absolute', top: 16, left: 16, zIndex: 5,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(232,67,26,0.35)',
+                  borderRadius: 20, padding: '6px 12px', backdropFilter: 'blur(12px)',
+                  fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 0.5, color: 'var(--fg-muted)',
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} aria-hidden />
+                  Tag mode — select words to tag them · underlined words are suggestions
+                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9.5, textDecoration: 'underline' }}>Exit</button>
+                </div>
+              )}
 
               {!focusMode && (
                 <div style={{
@@ -174,7 +287,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 20, padding: '6px 10px', backdropFilter: 'blur(12px)',
                 }}>
-                  <button
+                  <button type="button" aria-label={tableReadPlaying ? 'Pause table read' : 'Resume table read'}
                     onClick={() => (tableReadPlaying ? pauseTableRead() : (tableReadLineIdx != null ? resumeTableRead() : startTableRead(0)))}
                     title={tableReadPlaying ? 'Pause table read' : 'Play table read'}
                     style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -182,15 +295,15 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     {tableReadPlaying ? <Pause size={15} /> : <Play size={15} />}
                   </button>
                   {tableReadLineIdx != null && (
-                    <button
+                    <button aria-label="Stop table read"
                       onClick={stopTableRead}
                       title="Stop table read"
-                      style={{ background: 'transparent', border: 'none', color: 'rgba(224, 221, 174,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174,0.4)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                     Table Read
                   </span>
                 </div>
@@ -208,7 +321,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 0.5,
                   }}>
                     <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
-                    <span style={{ color: 'rgba(224, 221, 174,0.4)' }}>{status.hint}</span>
+                    <span style={{ color: 'var(--fg-dim)' }}>{status.hint}</span>
                   </div>
                 );
               })()}

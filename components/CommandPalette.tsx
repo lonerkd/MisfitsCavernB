@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2 } from 'lucide-react';
+import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
@@ -69,7 +70,7 @@ export default function CommandPalette() {
         const [scriptsRes, assetsRes] = await Promise.all([
           supabase.from('scripts').select('id, title, project_id').eq('created_by', user.id).limit(20),
 
-          supabase.from('project_assets').select('id, title, project_id').eq('created_by', user.id).limit(20)
+          supabase.from('media').select('id, title, project_id').eq('created_by', user.id).order('created_at', { ascending: false }).limit(20)
         ]);
 
         if (scriptsRes.data) setScripts(scriptsRes.data);
@@ -90,6 +91,7 @@ export default function CommandPalette() {
       { id: 'nav-projects', label: 'Open Projects', icon: <FolderOpen size={15} />, run: go('/projects'), group: 'Navigate', keywords: 'films' },
       { id: 'nav-portfolio', label: 'Open Portfolio', icon: <Briefcase size={15} />, run: go('/portfolio'), group: 'Navigate', keywords: 'work showcase' },
       { id: 'nav-jobs', label: 'Browse Jobs', icon: <Briefcase size={15} />, run: go('/jobs'), group: 'Navigate', keywords: 'casting hire gigs' },
+      { id: 'act-split', label: 'Split screen', hint: 'This page and another, side by side (Ctrl \\)', icon: <Columns2 size={15} />, group: 'Navigate', keywords: 'side by side multitask two panes editor studio', run: () => { setOpen(false); router.push(splitHref(window.location.pathname + window.location.search)); } },
       { id: 'nav-profile', label: 'Edit Profile', icon: <User size={15} />, run: go('/profile'), group: 'Account' },
       { id: 'nav-settings', label: 'Open Settings', icon: <Settings size={15} />, run: go('/settings'), group: 'Account', keywords: 'preferences password email' },
       { id: 'act-shortcuts', label: 'Keyboard shortcuts', icon: <Keyboard size={15} />, group: 'Account', keywords: 'help keys hotkeys', run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new Event('mc-open-shortcuts')), 60); } },
@@ -126,14 +128,14 @@ export default function CommandPalette() {
       const projMatch = projects.find(p => p.id === a.project_id);
       return {
         id: `asset-${a.id}`,
-        label: a.title || 'Untitled Asset',
-        hint: projMatch ? `Asset in ${projMatch.title}` : 'Asset',
+        label: a.title || 'Untitled',
+        hint: projMatch ? `Library · ${projMatch.title}` : 'Library',
         icon: <LayoutGrid size={15} />,
-        group: 'Studio Assets',
-        keywords: 'asset image video file',
+        group: 'Studio Library',
+        keywords: 'asset reference image video file library media',
         run: () => {
           if (projMatch) setActiveProject(projMatch);
-          router.push('/studio');
+          router.push('/studio?tab=library');
           setOpen(false);
         },
       };
@@ -197,15 +199,15 @@ export default function CommandPalette() {
                 placeholder="Search actions, projects, pages…"
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--mono)' }}
               />
-              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
+              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
             </div>
 
             <div ref={listRef} style={{ maxHeight: '52vh', overflowY: 'auto', padding: 8 }}>
               {filtered.length === 0 ? (
-                <div style={{ padding: '28px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>
+                <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>
               ) : groups.map(g => (
                 <div key={g.group} style={{ marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(224, 221, 174, 0.3)', padding: '6px 10px 4px' }}>{g.group}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
                   {g.items.map(c => {
                     flatIdx++;
                     const idx = flatIdx;
@@ -218,13 +220,13 @@ export default function CommandPalette() {
                         onClick={() => c.run()}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8,
-                          background: active ? 'rgba(215, 52, 11,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+                          background: active ? 'rgba(232, 67, 26,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
                           color: active ? 'var(--fg)' : 'rgba(255,255,255,0.75)', transition: 'background 0.12s',
                         }}
                       >
-                        <span style={{ color: active ? 'var(--accent)' : 'rgba(255,255,255,0.4)', display: 'flex' }}>{c.icon}</span>
+                        <span style={{ color: active ? 'var(--accent)' : 'var(--fg-dim)', display: 'flex' }}>{c.icon}</span>
                         <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
-                        {c.hint && <span style={{ fontSize: 10, color: 'rgba(224, 221, 174, 0.3)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
+                        {c.hint && <span style={{ fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
                         {active && <CornerDownLeft size={13} color="rgba(255,255,255,0.4)" />}
                       </button>
                     );

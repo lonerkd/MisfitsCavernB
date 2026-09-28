@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2 } from 'lucide-react';
+import { audienceLabel, audienceOptions, defaultPostPolicy, groupChannels, type ChannelAudience } from '@/lib/lounge/audience';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
-import { getChannelMessages, getDMThread, sendMessage, subscribeToChannel, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid } from '@/lib/supabase/messages';
+import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid, deleteMessage } from '@/lib/supabase/messages';
+import { getMyAccount } from '@/lib/supabase/profiles';
 import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
@@ -41,21 +43,21 @@ function ProductionFeed({ projectId }: { projectId: string }) {
     let on = true;
     (async () => {
       const [sc, bd, tl, cr, ca, sn] = await Promise.all([
-        supabase.from('scenes').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('scenes').select('title,created_at').eq('project_id', projectId).is('removed_at', null).order('created_at', { ascending: false }).limit(4),
         supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
         supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('project_crew').select('role,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('concept_assets').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('script_notes').select('note,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('project_crew').select('role,craft,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+        supabase.from('script_annotations').select('type,text,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
       ]);
       if (!on) return;
       const merged = [
         ...(sc.data || []).map((x: any) => ({ label: `Scene — ${x.title}`, t: x.created_at, color: '#f59e0b' })),
         ...(bd.data || []).map((x: any) => ({ label: `Budget — ${x.category}`, t: x.created_at, color: '#10b981' })),
-        ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#6366f1' })),
+        ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: '#818cf8' })),
         ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
-        ...(ca.data || []).map((x: any) => ({ label: `Concept — ${x.title || 'image'}`, t: x.created_at, color: '#a855f7' })),
-        ...(sn.data || []).map((x: any) => ({ label: `Script Note — "${x.note}"`, t: x.created_at, color: '#ef4444' })),
+        ...(ca.data || []).map((x: any) => ({ label: `Reference — ${x.title || 'untitled'}`, t: x.created_at, color: '#a855f7' })),
+        ...(sn.data || []).map((x: any) => ({ label: `Script ${x.type} — "${x.text}"`, t: x.created_at, color: '#ef4444' })),
       ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
       setItems(merged);
     })();
@@ -80,6 +82,34 @@ function ProductionFeed({ projectId }: { projectId: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * A guide channel reads as a document: each post is a section, its first line
+ * the heading. Whoever runs the guide can remove a section.
+ */
+function GuideSections({ messages, canEdit, onDelete }: { messages: Message[]; canEdit: boolean; onDelete: (m: Message) => void }) {
+  return (
+    <article style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {messages.map((m) => {
+        const [head, ...rest] = m.text.split('\n');
+        const body = rest.join('\n').trim();
+        return (
+          <section key={m.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 15, color: '#fff', fontWeight: 600, lineHeight: 1.4 }}>{head}</h3>
+              {canEdit && (
+                <button type="button" onClick={() => onDelete(m)} aria-label={`Remove section: ${head.slice(0, 60)}`}
+                  style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'inline-flex', flexShrink: 0 }}><Trash2 size={12} /></button>
+              )}
+            </div>
+            {body && <p style={{ margin: '8px 0 0', fontSize: 13.5, lineHeight: 1.65, color: 'var(--fg)', whiteSpace: 'pre-wrap', fontFamily: 'var(--serif)' }}>{body}</p>}
+            <div style={{ marginTop: 10, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{m.user} · {m.timestamp.toLocaleDateString()}</div>
+          </section>
+        );
+      })}
+    </article>
   );
 }
 
@@ -117,8 +147,8 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, flexDirection: isMe ? 'row-reverse' : 'row', maxWidth: '80%' }}>
         <div style={{
           padding: '12px 16px',
-          background: isMe ? 'rgba(215, 52, 11,0.12)' : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${isMe ? 'rgba(215, 52, 11,0.2)' : 'rgba(255,255,255,0.06)'}`,
+          background: isMe ? 'rgba(232, 67, 26,0.12)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isMe ? 'rgba(232, 67, 26,0.2)' : 'rgba(255,255,255,0.06)'}`,
           borderRadius: isMe ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
         }}>
           <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(224, 221, 174,0.85)', margin: 0 }}>
@@ -162,7 +192,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
             const reacted = !!currentUserId && users.includes(currentUserId);
             return (
               <button key={emoji} onClick={() => onReact(msg.id, emoji)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(215, 52, 11,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(215, 52, 11,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(232, 67, 26,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(232, 67, 26,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
                 <span>{emoji}</span><span>{users.length}</span>
               </button>
             );
@@ -210,11 +240,11 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(215, 52, 11,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
         </button>
         {joined && (
-          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={{ padding: 12, borderRadius: '50%', border: `1px solid ${muted ? 'rgba(215, 52, 11,0.5)' : 'rgba(255,255,255,0.15)'}`, cursor: 'pointer', background: muted ? 'rgba(215, 52, 11,0.15)' : 'rgba(255,255,255,0.05)', color: muted ? '#ff7a4d' : '#fff', display: 'flex' }}>
+          <button onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'} style={{ padding: 12, borderRadius: '50%', border: `1px solid ${muted ? 'rgba(232, 67, 26,0.5)' : 'rgba(255,255,255,0.15)'}`, cursor: 'pointer', background: muted ? 'rgba(232, 67, 26,0.15)' : 'rgba(255,255,255,0.05)', color: muted ? '#ff7a4d' : '#fff', display: 'flex' }}>
             {muted ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
         )}
@@ -226,14 +256,18 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
   );
 }
 
-function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: string; onClose: () => void; onCreate: (v: { name: string; type: 'text' | 'voice'; is_private: boolean; post_policy: 'viewers' | 'members' | 'managers' }) => Promise<void> }) {
+function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
+  projectTitle: string; scope: 'project' | 'community'; onClose: () => void;
+  onCreate: (v: { name: string; type: 'text' | 'voice' | 'guide'; audience: ChannelAudience; is_private: boolean; post_policy: 'viewers' | 'members' | 'managers' }) => Promise<void>;
+}) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<'text' | 'voice'>('text');
+  const [type, setType] = useState<'text' | 'voice' | 'guide'>('text');
+  const [audience, setAudience] = useState<ChannelAudience>(scope === 'community' ? 'users' : 'team');
   const [isPrivate, setIsPrivate] = useState(false);
   const [postPolicy, setPostPolicy] = useState<'viewers' | 'members' | 'managers'>('viewers');
   const [busy, setBusy] = useState(false);
   useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
-  const submit = async () => { if (!name.trim() || busy) return; setBusy(true); try { await onCreate({ name, type, is_private: isPrivate, post_policy: postPolicy }); } finally { setBusy(false); } };
+  const submit = async () => { if (!name.trim() || busy) return; setBusy(true); try { await onCreate({ name, type, audience, is_private: isPrivate, post_policy: type === 'guide' ? 'managers' : postPolicy }); } finally { setBusy(false); } };
   const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
@@ -246,9 +280,9 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
         <div style={{ marginBottom: 16 }}>
           <label style={label}>Type</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            {(['text', 'voice'] as const).map(t => (
-              <button key={t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(215, 52, 11,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(215, 52, 11,0.4)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
-                {t === 'text' ? <Hash size={13} /> : <Volume2 size={13} />} {t}
+            {(['text', 'voice', 'guide'] as const).map(t => (
+              <button key={t} aria-pressed={type === t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(232, 67, 26,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${type === t ? 'rgba(232, 67, 26,0.4)' : 'rgba(255,255,255,0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
+                {t === 'text' ? <Hash size={13} /> : t === 'voice' ? <Volume2 size={13} /> : <BookOpen size={13} />} {t}
               </button>
             ))}
           </div>
@@ -263,9 +297,25 @@ function NewChannelModal({ projectTitle, onClose, onCreate }: { projectTitle: st
           placeholder="e.g. writers-room"
         />
 
+        {type === 'guide' && <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '-6px 0 14px', lineHeight: 1.5 }}>A guide is read-only: FAQ, a start-here tour, tutorials. Only whoever runs it can post.</p>}
+
+        <div style={{ marginBottom: 16 }} role="radiogroup" aria-label="Who it’s for">
+          <span style={label}>Who it’s for</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {audienceOptions(scope).map((o) => (
+              <button key={o.id} role="radio" aria-checked={audience === o.id} title={o.hint}
+                onClick={() => { setAudience(o.id); setPostPolicy(defaultPostPolicy(o.id)); }}
+                style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: audience === o.id ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: `1px solid ${audience === o.id ? 'rgba(232, 67, 26,0.45)' : 'rgba(255,255,255,0.08)'}`, color: audience === o.id ? '#fff' : 'var(--fg-muted)' }}>
+                <span style={{ display: 'block', fontSize: 12 }}>{o.label}</span>
+                <span style={{ display: 'block', fontSize: 10, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.35 }}>{o.hint}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>Only invited members can see it</div></div>
-          <button role="switch" aria-checked={isPrivate} onClick={() => setIsPrivate(v => !v)} style={{ width: 42, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer', background: isPrivate ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative', flexShrink: 0 }}>
+          <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>Invite-only, within who it’s for</div></div>
+          <button role="switch" aria-checked={isPrivate} aria-label="Private channel" onClick={() => setIsPrivate(v => !v)} style={{ width: 42, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer', background: isPrivate ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative', flexShrink: 0 }}>
             <span style={{ position: 'absolute', top: 3, left: isPrivate ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
           </button>
         </div>
@@ -332,7 +382,19 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     await supabase.from('channel_members').update({ [field]: !m[field] } as { can_post?: boolean; can_manage?: boolean }).eq('id', m.id);
     setBusy(false); await refresh();
   };
-  const savePolicy = async (p: 'viewers' | 'members' | 'managers') => { setPostPolicy(p); await updateChannel(channel.id, { post_policy: p }); onChanged(); };
+  const savePolicy = async (p: 'viewers' | 'members' | 'managers') => {
+    const was = postPolicy; setPostPolicy(p); setErr(null);
+    const e = await updateChannel(channel.id, { post_policy: p });
+    if (e) { setPostPolicy(was); setErr(e); return; }
+    onChanged();
+  };
+  const [audience, setAudience] = useState<ChannelAudience>(channel.audience);
+  const saveAudience = async (a: ChannelAudience) => {
+    const was = audience; setAudience(a); setErr(null);
+    const e = await updateChannel(channel.id, { audience: a });
+    if (e) { setAudience(was); setErr(e); return; }
+    onChanged();
+  };
   const saveDiscordWebhook = async () => {
     const url = discordInput.trim();
     if (!url) return;
@@ -389,7 +451,19 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
               {channel.is_private ? <Lock size={15} /> : <Hash size={15} />}{channel.name}
             </h2>
           </div>
-          <button onClick={onClose} aria-label="Close manage channel" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666' }}><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close manage channel" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-dim)' }}><X size={18} /></button>
+        </div>
+
+        <div style={{ marginBottom: 18 }} role="radiogroup" aria-label="Who it’s for">
+          <span style={label}>Who it’s for</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {audienceOptions(channel.project_id ? 'project' : 'community').map((o) => (
+              <button key={o.id} role="radio" aria-checked={audience === o.id} title={o.hint} onClick={() => void saveAudience(o.id)}
+                style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 7, cursor: 'pointer', background: audience === o.id ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: `1px solid ${audience === o.id ? 'rgba(232, 67, 26,0.45)' : 'rgba(255,255,255,0.08)'}`, color: audience === o.id ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {channel.type === 'text' && (
@@ -428,7 +502,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
             <Input label="Add member" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username…" />
             {(searching || results.length > 0) && (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {searching && <div style={{ fontSize: 10, color: '#555', padding: 6, fontFamily: 'var(--mono)' }}>Searching…</div>}
+                {searching && <div style={{ fontSize: 10, color: 'var(--fg-dim)', padding: 6, fontFamily: 'var(--mono)' }}>Searching…</div>}
                 {results.map(u => (
                   <button key={u.id} disabled={busy} onClick={() => doAdd(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 7, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: '#fff', textAlign: 'left' }}>
                     <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{u.username.charAt(0).toUpperCase()}</div>
@@ -443,19 +517,19 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 
         <label style={label}>{channel.is_private ? `Members (${members.length})` : 'Roster'}</label>
         {loading ? (
-          <div style={{ fontSize: 10, color: '#555', padding: 12, fontFamily: 'var(--mono)' }}>Loading…</div>
+          <div style={{ fontSize: 10, color: 'var(--fg-dim)', padding: 12, fontFamily: 'var(--mono)' }}>Loading…</div>
         ) : members.length === 0 ? (
-          <div style={{ fontSize: 11, color: '#555', padding: 12 }}>{channel.is_private ? 'No explicit members yet — add someone above.' : 'Public channel — everyone with project access can see it.'}</div>
+          <div style={{ fontSize: 11, color: 'var(--fg-dim)', padding: 12 }}>{channel.is_private ? 'No explicit members yet — add someone above.' : 'Public channel — everyone with project access can see it.'}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {members.map(m => (
               <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{(m.profiles?.username || '?').charAt(0).toUpperCase()}</div>
-                <span style={{ fontSize: 13, color: '#fff' }}>{m.profiles?.username || 'unknown'}{m.user_id === meId && <span style={{ color: '#555', fontSize: 10 }}> (you)</span>}</span>
+                <span style={{ fontSize: 13, color: '#fff' }}>{m.profiles?.username || 'unknown'}{m.user_id === meId && <span style={{ color: 'var(--fg-dim)', fontSize: 10 }}> (you)</span>}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
                   <button onClick={() => toggle(m, 'can_post')} disabled={busy} title="Can post" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, padding: '4px 7px', borderRadius: 5, cursor: 'pointer', background: m.can_post ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_post ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_post ? '#34d399' : '#666' }}>POST</button>
                   <button onClick={() => toggle(m, 'can_manage')} disabled={busy} title="Can manage" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, padding: '4px 7px', borderRadius: 5, cursor: 'pointer', background: m.can_manage ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_manage ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_manage ? '#fbbf24' : '#666' }}>MANAGE</button>
-                  <button onClick={() => doRemove(m)} disabled={busy} title="Remove" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#666', display: 'flex' }}><X size={13} /></button>
+                  <button aria-label="Remove" onClick={() => doRemove(m)} disabled={busy} title="Remove" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-dim)', display: 'flex' }}><X size={13} /></button>
                 </div>
               </div>
             ))}
@@ -476,12 +550,16 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 export default function LoungePage() {
   const { isLoading } = useOSGate();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [canPost, setCanPost] = useState(true);
   const [canManageActive, setCanManageActive] = useState(false);
-  const [showNewChannel, setShowNewChannel] = useState(false);
+  // Where a new channel goes: the active project, or (admins) the community.
+  const [showNewChannel, setShowNewChannel] = useState<false | 'project' | 'community'>(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => { getMyAccount().then((a) => setIsAdmin(!!a?.is_admin)).catch(() => setIsAdmin(false)); }, []);
   const [showManage, setShowManage] = useState(false);
   const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
@@ -512,6 +590,30 @@ export default function LoungePage() {
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
 
+  // The people on the active project: its owner and crew (not the whole platform).
+  useEffect(() => {
+    let alive = true;
+    const project = activeProject;
+    if (!project?.id) { setCrewList([]); return; }
+    (async () => {
+      const [{ data: crew }, { data: owner }] = await Promise.all([
+        supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
+        project.creator_id
+          ? supabase.from('profiles').select('id, username, avatar_url').eq('id', project.creator_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      if (!alive) return;
+      const team = [
+        ...(owner ? [{ id: owner.id, name: owner.username || 'Owner', role: 'Owner', avatar: owner.avatar_url }] : []),
+        ...(crew || [])
+          .filter((c) => c.user_id !== owner?.id)
+          .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
+      ];
+      setCrewList(team);
+    })();
+    return () => { alive = false; };
+  }, [activeProject?.id, activeProject?.creator_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
   usePillStage(
     {
@@ -527,7 +629,7 @@ export default function LoungePage() {
   );
 
   useEffect(() => {
-    if (!activeChannel || activeChannel.type !== 'text') { setCanPost(false); setCanManageActive(false); return; }
+    if (!activeChannel || activeChannel.type === 'voice') { setCanPost(false); setCanManageActive(false); return; }
     let active = true;
     Promise.all([canPostChannel(activeChannel.id), canManageChannel(activeChannel.id)]).then(([p, m]) => {
       if (active) { setCanPost(p); setCanManageActive(m); }
@@ -535,6 +637,8 @@ export default function LoungePage() {
     return () => { active = false; };
   }, [activeChannel]);
 
+  // Who's signed in, once. (awaitOSUser returns a fresh object each call, so
+  // this can't live in an effect that depends on currentUser — it would loop.)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -544,23 +648,17 @@ export default function LoungePage() {
         const { data: mine } = await supabase.from('profiles').select('username, avatar_url, role, status').eq('id', user.id).single();
         if (mounted) setMyProfile(mine);
       }
-
-      const { data } = await supabase.from('profiles').select('*').limit(20);
-      if (data && mounted) {
-        setCrewList(data.map(p => ({
-          id: p.id,
-          name: p.username || 'User',
-          role: p.role || 'Crew',
-          avatar: p.avatar_url,
-          online: p.status === 'OPEN'
-        })));
-      }
     })();
+    return () => { mounted = false; };
+  }, []);
 
+  const currentUserId: string | undefined = currentUser?.id;
+  useEffect(() => {
+    let mounted = true;
     const loadMessages = async () => {
       try {
-        const data = dmTarget && currentUser
-          ? await getDMThread(currentUser.id, dmTarget.id)
+        const data = dmTarget && currentUserId
+          ? await getDMThread(currentUserId, dmTarget.id)
           : activeChannel
           ? await getChannelMessagesByUuid(activeChannel.id)
           : [];
@@ -583,17 +681,17 @@ export default function LoungePage() {
         console.error(e);
       }
     };
-    if (dmTarget && !currentUser) return () => { mounted = false; };
+    if (dmTarget && !currentUserId) return () => { mounted = false; };
     loadMessages();
 
     let channel: any;
-    if (dmTarget && currentUser) {
-      const pairKey = [currentUser.id, dmTarget.id].sort().join(':');
+    if (dmTarget && currentUserId) {
+      const pairKey = [currentUserId, dmTarget.id].sort().join(':');
       channel = supabase.channel(`dm:${pairKey}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
           const m = payload.new;
-          if ((m.sender_id === currentUser.id && m.receiver_id === dmTarget.id) ||
-              (m.sender_id === dmTarget.id && m.receiver_id === currentUser.id)) loadMessages();
+          if ((m.sender_id === currentUserId && m.receiver_id === dmTarget.id) ||
+              (m.sender_id === dmTarget.id && m.receiver_id === currentUserId)) loadMessages();
         })
         .subscribe();
     } else if (activeChannel) {
@@ -604,7 +702,7 @@ export default function LoungePage() {
       mounted = false;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [activeChannel, dmTarget, currentUser]);
+  }, [activeChannel, dmTarget, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -641,12 +739,21 @@ export default function LoungePage() {
   }, [threadParent]);
 
   if (isLoading) return null;
+  const isGuide = !dmTarget && activeChannel?.type === 'guide';
 
   const broadcastTyping = () => {
     const now = Date.now();
     if (now - lastBroadcast.current < 1200) return;
     lastBroadcast.current = now;
     typingChannelRef.current?.ch?.send({ type: 'broadcast', event: 'typing', payload: { username: typingChannelRef.current.uname } });
+  };
+
+  const handleDeleteGuideSection = async (m: Message) => {
+    if (!(await confirm({ title: 'Remove this section?', message: `“${m.text.split('\n')[0].slice(0, 80)}” will be removed from the guide.`, confirmLabel: 'Remove', danger: true }))) return;
+    try {
+      await deleteMessage(m.id);
+      setMessages((prev) => prev.filter((x) => x.id !== m.id));
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not remove it', 'error'); }
   };
 
   const handleReact = async (messageId: string, emoji: string) => {
@@ -689,7 +796,7 @@ export default function LoungePage() {
     try {
       const from = myProfile?.username || 'Someone';
       if (dmTarget) {
-        await sendMessage(currentUser.id, text, undefined, dmTarget.id);
+        await sendDirectMessage(currentUser.id, dmTarget.id, text);
         notify(dmTarget.id, {
           type: 'reply',
           title: `Direct message from ${from}`,
@@ -720,7 +827,8 @@ export default function LoungePage() {
   };
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
+      <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
 
       <nav style={{
@@ -738,7 +846,7 @@ export default function LoungePage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg)', opacity: 0.7, transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
@@ -751,6 +859,7 @@ export default function LoungePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeProject?.accent_color || 'var(--accent)' }} />
             <select
+              aria-label="Active project"
               value={activeProject?.id || ''}
               onChange={(e) => {
                 const p = projects.find(p => p.id === e.target.value);
@@ -771,7 +880,7 @@ export default function LoungePage() {
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-muted)' }}>
-              {onlineIds.size} online · {crewList.length} crew
+              {onlineCrew} of {crewList.length} online
             </span>
           </div>
         </div>
@@ -789,23 +898,24 @@ export default function LoungePage() {
         }}>
           <div style={{ padding: '16px 12px', overflowY: 'auto', flex: 1 }}>
              {(() => {
-               const projectChannels = channels.filter(c => c.project_id && c.project_id === activeProject?.id);
-               const communityChannels = channels.filter(c => !c.project_id);
+               const groups = groupChannels(channels, activeProject?.id ?? null);
                const isOwner = !!(activeProject && currentUser && (activeProject as any).creator_id === currentUser.id);
-               const renderGroup = (label: string, list: Channel[], showAdd: boolean) => (
+               const renderGroup = (label: string, list: Channel[], showAdd: boolean, scope: 'project' | 'community') => (
                  <div style={{ marginBottom: 18 }}>
                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', marginBottom: 8 }}>
                      <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-                     {showAdd && <button aria-label="New channel" title="New channel" onClick={() => setShowNewChannel(true)} style={{ background: 'none', border: 'none', color: 'var(--fg-subtle)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}>+</button>}
+                     {showAdd && <button aria-label={scope === 'community' ? 'New community channel' : 'New channel'} title="New channel" onClick={() => setShowNewChannel(scope)} style={{ background: 'none', border: 'none', color: 'var(--fg-subtle)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}>+</button>}
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                      {list.length === 0 && showAdd && <div style={{ fontSize: 9.5, color: 'var(--fg-dim)', fontFamily: 'var(--mono)', padding: '2px 6px' }}>No channels yet</div>}
                      {list.map(ch => {
                        const isActive = activeChannel?.id === ch.id && !dmTarget;
-                       const Icon = ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : Hash;
+                       const AUD_ICON: Record<string, typeof Hash> = { public: Globe, admins: Shield, owners: Crown, above: ArrowUp, below: ArrowDown, guests: UserCheck };
+                       const Icon = ch.type === 'guide' ? BookOpen : ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : AUD_ICON[ch.audience] ?? Hash;
+                       const who = ch.audience === 'users' || ch.audience === 'team' ? undefined : audienceLabel(ch.audience);
                        return (
-                         <button key={ch.id} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
-                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(215, 52, 11,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
+                         <button key={ch.id} title={[who, ch.is_private ? 'Invite-only' : null, ch.topic].filter(Boolean).join(' · ') || undefined} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
+                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
                            <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} style={{ flexShrink: 0 }} />
                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.name}</span>
                          </button>
@@ -816,8 +926,10 @@ export default function LoungePage() {
                );
                return (
                  <>
-                   {activeProject && renderGroup(activeProject.title, projectChannels, isOwner)}
-                   {renderGroup('Community', communityChannels, false)}
+                   {groups.guides.length > 0 && renderGroup('Guides', groups.guides, false, 'community')}
+                   {activeProject && renderGroup(activeProject.title, groups.project, isOwner, 'project')}
+                   {renderGroup('Community', groups.community, isAdmin, 'community')}
+                   {groups.open.length > 0 && renderGroup('Other productions', groups.open, false, 'project')}
                  </>
                );
              })()}
@@ -847,11 +959,12 @@ export default function LoungePage() {
                ) : activeChannel ? (
                  <>
                    {activeChannel.is_private && <Lock size={12} color="#888" />}
-                   <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{activeChannel.type === 'voice' ? '🔊 ' : '#'}{activeChannel.name}</span>
-                   {activeChannel.post_policy === 'managers' && <span style={{ fontSize: 7.5, color: '#f59e0b', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 99 }}>ANNOUNCE</span>}
+                   <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{activeChannel.type === 'voice' ? '🔊 ' : activeChannel.type === 'guide' ? '' : '#'}{activeChannel.name}</span>
+                   {activeChannel.type === 'guide' && <span style={{ fontSize: 7.5, color: '#7cc4ff', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(0,153,255,0.12)', padding: '2px 6px', borderRadius: 99 }}>GUIDE</span>}
+                   {activeChannel.post_policy === 'managers' && activeChannel.type !== 'guide' && <span style={{ fontSize: 7.5, color: '#f59e0b', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 99 }}>ANNOUNCE</span>}
                  </>
                ) : (
-                 <span style={{ fontSize: 14, fontWeight: 700, color: '#666' }}>No channels</span>
+                 <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-dim)' }}>No channels</span>
                )}
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
                <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{activeChannel?.topic || `${messages.length} message${messages.length === 1 ? '' : 's'}`}</span>
@@ -876,8 +989,16 @@ export default function LoungePage() {
           <>
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
-              {messages.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#444', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
+              {isGuide ? (
+                messages.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
+                    {canPost ? `WRITE THE FIRST SECTION OF ${activeChannel!.name.toUpperCase()} BELOW` : `${activeChannel!.name.toUpperCase()} IS BEING WRITTEN — CHECK BACK SOON`}
+                  </div>
+                ) : (
+                  <GuideSections messages={messages} canEdit={canPost} onDelete={handleDeleteGuideSection} />
+                )
+              ) : messages.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
                   {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : activeChannel ? `NO MESSAGES IN #${activeChannel.name.toUpperCase()} YET` : 'SELECT OR CREATE A CHANNEL'}
                 </div>
               ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0} />)}
@@ -885,7 +1006,7 @@ export default function LoungePage() {
             </div>
           </div>
 
-          <div style={{
+          {(!isGuide || canPost) && <div style={{
             padding: '16px 28px',
             borderTop: '1px solid rgba(255,255,255,0.04)',
             background: '#090909',
@@ -923,7 +1044,7 @@ export default function LoungePage() {
                 disabled={!dmTarget && !canPost}
                 onChange={e => { setInput(e.target.value); if (e.target.value.trim()) broadcastTyping(); }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder={dmTarget ? `Message @${dmTarget.name}...` : !canPost ? `You don't have permission to post in #${activeChannel?.name || ''}` : `Message #${activeChannel?.name || ''}...`}
+                placeholder={dmTarget ? `Message @${dmTarget.name}...` : isGuide ? `Add a section to ${activeChannel?.name || 'the guide'} — the first line is its heading` : !canPost ? `You don't have permission to post in #${activeChannel?.name || ''}` : `Message #${activeChannel?.name || ''}...`}
                 rows={1}
                 style={{
                   flex: 1,
@@ -939,7 +1060,7 @@ export default function LoungePage() {
                   transition: 'border-color 0.3s',
                   lineHeight: 1.5,
                 }}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.35)')}
+                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.35)')}
                 onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
               />
 
@@ -960,10 +1081,10 @@ export default function LoungePage() {
                   alignSelf: 'flex-end',
                 }}
               >
-                <Send size={12} /> Send
+                <Send size={12} /> {isGuide ? 'Add' : 'Send'}
               </motion.button>
             </div>
-          </div>
+          </div>}
           </>
           )}
         </div>
@@ -1051,7 +1172,7 @@ export default function LoungePage() {
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.85)' }}>{threadParent.text}</div>
               </div>
               {threadReplies.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#444', marginTop: 40, fontFamily: 'var(--mono)', fontSize: 9.5 }}>No replies yet — start the thread.</div>
+                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 40, fontFamily: 'var(--mono)', fontSize: 9.5 }}>No replies yet — start the thread.</div>
               ) : threadReplies.map(r => (
                 <div key={r.id} style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
@@ -1072,12 +1193,13 @@ export default function LoungePage() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showNewChannel && activeProject && (
+        {showNewChannel && (showNewChannel === 'community' || activeProject) && (
           <NewChannelModal
-            projectTitle={activeProject.title}
+            projectTitle={showNewChannel === 'community' ? 'Community · everyone on Misfits Cavern' : activeProject!.title}
+            scope={showNewChannel}
             onClose={() => setShowNewChannel(false)}
             onCreate={async (vals) => {
-              const { channel, error } = await createChannel({ project_id: activeProject.id, ...vals });
+              const { channel, error } = await createChannel({ project_id: showNewChannel === 'community' ? null : activeProject!.id, ...vals });
               if (error) { toast(error, 'error'); return; }
               toast(`Created #${channel?.name}`, 'success');
               setShowNewChannel(false);
@@ -1105,6 +1227,6 @@ export default function LoungePage() {
       <style>{`
         textarea::placeholder { color: rgba(224, 221, 174,0.18); }
       `}</style>
-    </main>
+    </div>
   );
 }

@@ -8,8 +8,8 @@ export type ProjectVisibility = 'private' | 'team' | 'link' | 'public';
 export const PROJECT_VISIBILITY: { id: ProjectVisibility; label: string; hint: string }[] = [
   { id: 'private', label: 'Private', hint: 'Only you can see this project.' },
   { id: 'team', label: 'Team', hint: 'Confirmed crew can see and work on it.' },
-  { id: 'link', label: 'Anyone with the link', hint: 'Anybody holding the share URL can view it.' },
-  { id: 'public', label: 'Public', hint: 'Anyone can find and view it.' },
+  { id: 'link', label: 'Anyone with the link', hint: 'Anybody holding the share URL can view the lookbook.' },
+  { id: 'public', label: 'Public', hint: 'Like a link share, and its published media is featured in the Showcase.' },
 ];
 
 export interface DBProject {
@@ -37,16 +37,14 @@ export async function shareUrlFor(token: string | null | undefined): Promise<str
 }
 
 export async function updateProjectVisibility(projectId: string, visibility: ProjectVisibility): Promise<string> {
-  // is_public stays in sync for the legacy boolean readers (showcase etc.).
-  // `visibility` is cast pending the migration + generated-type regen.
   const { data, error } = await supabase
     .from('projects')
-    .update({ visibility, is_public: visibility === 'public' } as any)
+    .update({ visibility })
     .eq('id', projectId)
     .select('share_token')
     .single();
   if (error) throw error;
-  const token = ((data as any)?.share_token as string) || '';
+  const token = data?.share_token || '';
   if (visibility === 'link' || visibility === 'public') {
     const user = await awaitOSUser();
     if (user?.id) await logAuditAction(user.id, 'project_updated', 'project', projectId, { visibility });
@@ -89,6 +87,34 @@ export async function getUserProjects(_userId?: string) {
 
   if (error) throw error;
   return data;
+}
+
+/** Real per-project facts for the project cards: who's on it and how far the tasks are. */
+export async function getProjectCardFacts(projects: { id: string; creator_id: string }[]) {
+  const ids = projects.map((p) => p.id);
+  const facts: Record<string, { team: string[]; tasksDone: number; tasksTotal: number }> = {};
+  for (const id of ids) facts[id] = { team: [], tasksDone: 0, tasksTotal: 0 };
+  if (!ids.length) return facts;
+  const creatorIds = Array.from(new Set(projects.map((p) => p.creator_id)));
+  const [crew, owners, tasks] = await Promise.all([
+    supabase.from('project_crew').select('project_id, profiles!project_crew_user_id_fkey(username)').in('project_id', ids),
+    supabase.from('profiles').select('id, username').in('id', creatorIds),
+    supabase.from('project_tasks').select('project_id, completed').in('project_id', ids),
+  ]);
+  const ownerName = new Map((owners.data ?? []).map((o) => [o.id, o.username]));
+  for (const p of projects) {
+    const owner = ownerName.get(p.creator_id);
+    if (owner) facts[p.id].team.push(owner);
+  }
+  for (const c of crew.data ?? []) {
+    const name = c.profiles?.username;
+    if (name && !facts[c.project_id].team.includes(name)) facts[c.project_id].team.push(name);
+  }
+  for (const t of tasks.data ?? []) {
+    facts[t.project_id].tasksTotal++;
+    if (t.completed) facts[t.project_id].tasksDone++;
+  }
+  return facts;
 }
 
 export async function updateProject(projectId: string, updates: Partial<DBProject>) {

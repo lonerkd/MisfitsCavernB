@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
 import { Input } from '@/components/ui/Input';
 import Avatar from '@/components/Avatar';
@@ -12,8 +13,8 @@ import { useProject } from '@/lib/os';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import type { Profile } from '@/lib/supabase/profiles';
 import { awaitOSUser } from '@/lib/os';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
 
-const ROLES = ['All', 'Director', 'DP / Cinematographer', 'Editor', 'Writer', 'Sound Designer', 'Colorist', 'Producer', 'Actor'];
 
 type DisplayMember = {
   key: string;
@@ -71,7 +72,7 @@ export default function CrewPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).order('created_at', { ascending: false });
 
       if (searchTerm) {
         const clean = searchTerm.replace(/[(),.:\\]/g, ' ').trim();
@@ -170,7 +171,7 @@ export default function CrewPage() {
                   padding: '7px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
-                  color: mode === t.id ? 'var(--bg)' : 'rgba(255,255,255,0.55)',
+                  color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',
                   transition: 'background 0.2s, color 0.2s',
                 }}
               >
@@ -195,26 +196,14 @@ export default function CrewPage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
                   <button key={a} onClick={() => setAvailFilter(a)}
-                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(215, 52, 11,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'rgba(255,255,255,0.5)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="filter-row" style={{ marginBottom: 24 }}>
-              {ROLES.map(r => (
-                <button key={r} onClick={() => setRoleFilter(r)}
-                  style={{
-                    padding: '8px 14px',
-                    background: roleFilter === r ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
-                    color: roleFilter === r ? 'var(--bg)' : 'var(--fg)',
-                    border: roleFilter === r ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                    fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer',
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                  }}>
-                  {r}
-                </button>
-              ))}
+            <div style={{ marginBottom: 24, maxWidth: 360 }}>
+              <CraftPicker label="Filter by craft" value={roleFilter === 'All' ? null : roleFilter} onChange={(craft) => setRoleFilter(craft ?? 'All')} noneLabel="Any craft" />
             </div>
           </>
         )}
@@ -269,9 +258,9 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
         borderRadius: 14,
       }}
         onMouseEnter={e => {
-          e.currentTarget.style.borderColor = 'rgba(215, 52, 11,0.3)';
+          e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.3)';
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(215, 52, 11,0.06)';
+          e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(232, 67, 26,0.06)';
         }}
         onMouseLeave={e => {
           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
@@ -304,16 +293,16 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
         </div>
 
         {member.bio && (
-          <p style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.6, marginBottom: 12 }}>{member.bio}</p>
+          <p style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 12, color: 'var(--fg-dim)' }}>{member.bio}</p>
         )}
 
         {(member.location || member.discord) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             {member.location && (
-              <div style={{ fontSize: 9, opacity: 0.4 }}>{member.location}</div>
+              <div style={{ fontSize: 9, color: 'var(--fg-dim)' }}>{member.location}</div>
             )}
             {member.discord && (
-              <div style={{ fontSize: 9, opacity: 0.5, fontFamily: 'var(--mono)' }}>
+              <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                 Discord: {member.discord}
               </div>
             )}

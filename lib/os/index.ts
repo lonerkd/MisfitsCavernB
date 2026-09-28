@@ -5,7 +5,7 @@
 
 export * from './types';
 export { useOSStore, osState } from './store';
-export { bootOS, resetOS, refreshActiveProject, osHydrateSession, ACTIVE_PROJECT_KEY, SCRIPT_POINTER_PREFIX } from './boot';
+export { bootOS, resetOS, refreshActiveProject, osHydrateSession, osAdoptSession, ACTIVE_PROJECT_KEY, SCRIPT_POINTER_PREFIX } from './boot';
 export { fetchProjectDetails } from './queries';
 export { syncActiveProject, syncProjectList, teardownSync, hydrateActiveProject } from './sync';
 export { osUserId, osUser, requireUserId, awaitOSUser } from './identity';
@@ -27,6 +27,8 @@ export {
 } from './permissions';
 export type { ProjectRole } from './permissions';
 export { ACCESS_MATRIX, canAccessPage, canPerformAction, getAccessSummary } from './access-matrix';
-export { mapStatusToPhase, getPhasesForType, phaseIndexForType } from './phases';
-export type { Phase } from './phases';
+export { mapStatusToPhase, phasesFor, phaseIndexIn, toFormatRules, PHASES, PHASE_STATUS } from './phases';
+export { computeProgress, toolsOpenedAt, toolState, toSignals, placeHref, EMPTY_SIGNALS, MILESTONES, TOOLS, STUDIO_TAB_TOOL, PRODUCTION_VIEW_TOOL } from './progress';
+export type { ProjectSignals, ProjectProgress, PhaseState, MilestoneState, ToolState, ToolId, Place, StudioTab, ProductionView } from './progress';
+export type { Phase, PhaseDef, FormatRules } from './phases';
 export { osNotify, registerOSNotifier } from './notify';

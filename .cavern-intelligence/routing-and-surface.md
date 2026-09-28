@@ -37,6 +37,7 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/projects/[id]/pitch` | protected | Pitch board | portfolio publish flow |
 | `/editor` | protected | **ScriptOS** | `lib/scriptos/*`, `components/editor/*` — see `scriptos-engine.md` |
 | `/studio` | protected | The Studio | `lib/supabase/studio.ts`, `breakdown.ts`, `casting.ts`, `components/canvas/*` — see `studio-and-preproduction.md` |
+| `/split` | protected | Split screen | `app/split`, `lib/split/*`, `components/split/PaneShell` — two surfaces in same-origin frames; panes hide the suite chrome (`useInPane`) and talk via the split page (`postToSplit` / `useSplitMessages`): the script's caret scene ↔ Studio. Ctrl+\\, taskbar, ⌘K. |
 | `/soundtrack` | protected | Soundtrack | `lib/spotify/*`, `GlobalAudioWidget`, SFX/Audio Bible |
 | `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md` |
 | `/jobs`, `/jobs/[id]` | protected | Jobs board | `lib/supabase/jobs.ts` |
@@ -105,3 +106,10 @@ typed module in `lib/supabase/*.ts` (e.g. `projects.ts`, `channels.ts`,
 `scripts.ts`, `portfolio.ts`). Add new queries there, typed against
 `lib/supabase/database.types.ts` (generated — regenerate with the Supabase MCP
 `generate_typescript_types` after schema changes). See `conventions.md`.
+
+## Framing
+
+`next.config.js` sends `Content-Security-Policy: frame-ancestors 'self'` and
+`X-Frame-Options: SAMEORIGIN` on every page except the public share pages
+(`/p`, `/s`, `/shared`) and media permalinks (`/m`): only the split screen may
+frame the app; nobody else can (clickjacking).

@@ -11,17 +11,10 @@ export interface DBMessage {
   created_at: string;
 }
 
-export async function sendMessage(senderId: string, content: string, channelId?: string, receiverId?: string, parentMessageId?: string) {
+export async function sendDirectMessage(senderId: string, receiverId: string, content: string) {
   const { data, error } = await supabase
     .from('messages')
-    .insert({
-      sender_id: senderId,
-      receiver_id: receiverId,
-      channel_id: channelId,
-      content,
-      reactions: {},
-      parent_message_id: parentMessageId ?? null,
-    })
+    .insert({ sender_id: senderId, receiver_id: receiverId, content, reactions: {} })
     .select()
     .single();
 
@@ -75,17 +68,11 @@ export function subscribeToChannelUuid(channelUuid: string, callback: (payload: 
     .subscribe();
 }
 
-export async function getChannelMessages(channelId: string, limit = 100) {
-  const { data, error } = await supabase
-    .from('messages')
-    .select('*, profiles!messages_sender_id_fkey(username, avatar_url)')
-    .eq('channel_id', channelId)
-    .is('parent_message_id', null)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
+/** Removes a message: your own, or any in a channel you run. */
+export async function deleteMessage(messageId: string) {
+  const { error, count } = await supabase.from('messages').delete({ count: 'exact' }).eq('id', messageId);
   if (error) throw error;
-  return data.reverse();
+  if (!count) throw new Error('You can’t remove that message');
 }
 
 export async function getThreadReplies(parentMessageId: string) {
@@ -121,51 +108,8 @@ export async function getDMThread(userId1: string, userId2: string) {
   return data;
 }
 
-export async function addReaction(messageId: string, emoji: string, userId: string) {
-  const { data: message, error: fetchError } = await supabase
-    .from('messages')
-    .select('reactions')
-    .eq('id', messageId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const reactions = (message.reactions || {}) as Record<string, string[]>;
-  if (!reactions[emoji]) {
-    reactions[emoji] = [];
-  }
-
-  if (!reactions[emoji].includes(userId)) {
-    reactions[emoji].push(userId);
-  }
-
-  const { data, error } = await supabase
-    .from('messages')
-    .update({ reactions })
-    .eq('id', messageId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
 export async function toggleReaction(messageId: string, emoji: string, _userId?: string) {
   const { data, error } = await supabase.rpc('toggle_message_reaction', { p_message: messageId, p_emoji: emoji });
   if (error) throw error;
   return (data || {}) as Record<string, string[]>;
-}
-
-export function subscribeToChannel(channelId: string, callback: (payload: any) => void) {
-  return supabase
-    .channel(`channel:${channelId}`)
-    .on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
-      callback
-    )
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
-      callback
-    )
-    .subscribe();
 }

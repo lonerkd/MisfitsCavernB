@@ -33,12 +33,14 @@ test.describe('Route Smoke — pages render without crashing (no user-flow cover
     await expect(passwordInput).toBeVisible();
   });
 
-  test('settings page loads without crash', async ({ page }) => {
+  test('settings page is gated for anonymous visitors without crashing', async ({ page }) => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
     await expect(page.getByText(/something broke/i)).not.toBeVisible();
-    await expect(page.getByText(/settings|preferences|profile/i).first()).toBeVisible();
+    // /settings is behind auth: an anonymous visit lands on the sign-in form.
+    await expect(page).toHaveURL(/\/auth\?redirect=%2Fsettings/);
+    await expect(page.locator('input[name="email"]')).toBeVisible();
   });
 
   test('studio page loads without crash', async ({ page }) => {

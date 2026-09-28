@@ -13,14 +13,6 @@ export default function CustomCursor() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let pref: string | null = null;
-    try { pref = localStorage.getItem('mc_reduce_motion'); } catch {}
-    const reduce = pref === 'on' || (pref == null && osReduced);
-    document.body.classList.toggle('reduce-motion', reduce);
-  }, []);
-
-  useEffect(() => {
     const updateTheme = () => {
       try {
         const theme = localStorage.getItem('mc_theme') || 'default';
@@ -178,7 +170,7 @@ export default function CustomCursor() {
 
   return (
     <>
-      <div
+      <div aria-hidden
         ref={dotRef}
         style={{
           position: 'fixed',
@@ -196,7 +188,7 @@ export default function CustomCursor() {
           willChange: 'transform, width, height',
         }}
       />
-      <div
+      <div aria-hidden
         ref={ringRef}
         style={{
           position: 'fixed',
@@ -221,7 +213,7 @@ export default function CustomCursor() {
         }}
       >
         {label && (
-          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? accent : 'rgba(224, 221, 174,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
+          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? 'rgba(224, 221, 174,0.95)' : 'rgba(224, 221, 174,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
         )}
       </div>
     </>

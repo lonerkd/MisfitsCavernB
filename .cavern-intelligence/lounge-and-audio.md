@@ -23,12 +23,27 @@ The Lounge features decentralized peer-to-peer voice rooms, providing crew commu
 ---
 
 ## 3. Lounge Permissions Matrix
-To support sensitive production announcements, channel visibility is secured based on project scopes and private rosters.
+A channel's **audience** (`channels.audience`) says who can see it; `post_policy`
+says who can post among them; `is_private` narrows it to an invite roster.
+Server: `internal.can_view_channel` → `internal.in_project_audience`,
+`can_post_channel`, `can_manage_channel`. Client labels/grouping:
+`lib/lounge/audience.ts`.
 
-| Channel Type | Visibility Rule | Posting Rule |
+| Scope | Audience | Who sees it |
 | :--- | :--- | :--- |
-| **Global / Community** | All authenticated users. | Determined by `post_policy` config. |
-| **Public Project Channel** | Any confirmed crew member in `project_crew` or the project creator. | Restrictable to Project Managers via `post_policy = 'managers'`. |
-| **Private Project Channel** | Explicitly restricted to profiles listed inside the `channel_members` roster. | Only roster members with `can_post = true`. |
+| Community (no project) | `users` | Everyone signed in |
+| Community | `admins` | Admins (`profiles.is_admin`) |
+| Project | `team` | The creator and all crew (project not private) |
+| Project | `owners` | The creator and `lead` crew |
+| Project | `above` / `below` | Owners + crew whose craft is (not) `crafts.above_the_line` |
+| Project | `guests` | Owners + crew with role `viewer` |
+| Project | `public` | Anyone signed in (read; default post policy: managers) |
 
-Permissions are evaluated dynamically on both the server (via `can_view_channel` / `can_post_channel` security helper functions) and client (via `lib/permissions/usePermissions.ts`).
+- **Private** (any scope): roster members, plus the project creator (project)
+  or admins (community).
+- **Guides** (`type = 'guide'`): read-only articles; only `can_manage_channel`
+  may post. Rendered as sections (first line = heading).
+- **Who runs a channel**: project creator; for community channels its creator
+  or any admin; roster members with `can_manage`.
+- **Creating**: project channels — creator or crew; community — admins only.
+- **Messages** can be deleted by their sender or whoever runs the channel.

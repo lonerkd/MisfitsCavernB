@@ -61,8 +61,8 @@ moving rules between `allow` / `ask` / `deny`.
 
 > Migrations and Vercel deploys are in **`allow`** — an agent can apply schema
 > changes and ship to production without a prompt. The safety net is the
-> branch→PR→persona-test workflow, not a permission wall. Keep migrations named
-> and mirrored into `supabase-schema.sql` (see `database-and-security.md`).
+> branch→PR→persona-test workflow, not a permission wall. Migrations live in
+> `supabase/migrations/` (see `database-and-security.md` §3).
 
 ---
 

@@ -20,6 +20,10 @@ export interface ProjectSettings {
 
   defaultScriptFormat?: ScriptFormat;
   modules: EcosystemModules;
+  /** Open every tool now instead of phase by phase (lib/os/progress). */
+  unlockAllTools?: boolean;
+  /** How many pages the crew shoots in a day, in eighths (stripboard, auto-schedule). */
+  dayLengthEighths?: number;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

@@ -2,13 +2,15 @@ import { supabase } from './client';
 
 export type AnnotationType = 'shot' | 'beat' | 'note' | 'revision' | 'reference' | 'todo';
 
-export const ANNOTATION_META: Record<AnnotationType, { label: string; color: string; routesTo: string }> = {
-  shot: { label: 'Shot', color: '#0099ff', routesTo: 'Shot List' },
-  beat: { label: 'Beat', color: '#6366f1', routesTo: 'Beat Board' },
-  note: { label: 'Note', color: '#eab308', routesTo: 'Notes' },
-  revision: { label: 'Revision', color: '#d7340b', routesTo: 'Revisions' },
-  reference: { label: 'Reference', color: '#a855f7', routesTo: 'Concept References' },
-  todo: { label: 'To-do', color: '#10b981', routesTo: 'Call Sheet / Props' },
+// routesTo says where the note ends up. Shot, beat and to-do create that
+// item (add_script_annotation); the others stay on the script.
+export const ANNOTATION_META: Record<AnnotationType, { label: string; color: string; routesTo: string; href?: string }> = {
+  shot: { label: 'Shot', color: '#0099ff', routesTo: 'the scene’s shot list (Studio › Scenes)', href: '/studio?tab=scenes' },
+  beat: { label: 'Beat', color: '#6366f1', routesTo: 'the beat board (Studio › Production)', href: '/studio?tab=production' },
+  note: { label: 'Note', color: '#eab308', routesTo: 'this line of the script' },
+  revision: { label: 'Revision', color: '#e8431a', routesTo: 'this line of the script' },
+  reference: { label: 'Reference', color: '#a855f7', routesTo: 'this line (add media in the Refs tab)' },
+  todo: { label: 'To-do', color: '#10b981', routesTo: 'the project’s tasks', href: '/projects' },
 };
 export const ANNOTATION_TYPES: AnnotationType[] = ['shot', 'beat', 'note', 'revision', 'reference', 'todo'];
 
@@ -21,6 +23,8 @@ export interface ScriptAnnotation {
   text: string;
   created_by: string | null;
   created_at: string;
+  routed_table: 'shots' | 'project_beats' | 'project_tasks' | null;
+  routed_id: string | null;
 }
 
 export async function listAnnotations(scriptId: string): Promise<ScriptAnnotation[]> {
@@ -29,15 +33,23 @@ export async function listAnnotations(scriptId: string): Promise<ScriptAnnotatio
   return (data as ScriptAnnotation[]) || [];
 }
 
-export async function addAnnotation(input: { scriptId: string; projectId: string; lineIndex: number; type: AnnotationType; text: string; createdBy: string }): Promise<ScriptAnnotation> {
-  const { data, error } = await supabase.from('script_annotations').insert({
-    script_id: input.scriptId,
-    project_id: input.projectId,
-    line_index: input.lineIndex,
-    type: input.type,
-    text: input.text,
-    created_by: input.createdBy,
-  }).select().single();
+/**
+ * Adds a margin note. Shot/beat/to-do notes also create the shot (on the
+ * scene the line is in — identified by its position and heading in the
+ * saved script), the beat or the task, atomically.
+ */
+export async function addAnnotation(input: {
+  scriptId: string; lineIndex: number; type: AnnotationType; text: string;
+  scene?: { ordinal: number; heading: string } | null;
+}): Promise<ScriptAnnotation> {
+  const { data, error } = await supabase.rpc('add_script_annotation', {
+    p_script: input.scriptId,
+    p_line: input.lineIndex,
+    p_type: input.type,
+    p_text: input.text,
+    p_scene_ordinal: input.scene?.ordinal,
+    p_scene_heading: input.scene?.heading,
+  });
   if (error) throw error;
   return data as ScriptAnnotation;
 }

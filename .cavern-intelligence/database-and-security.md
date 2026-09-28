@@ -4,17 +4,33 @@
 Misfits Cavern is powered by a relational PostgreSQL database hosted on Supabase. Row-Level Security (RLS) is enabled on every single table to enforce strict user boundaries.
 
 ### Core Tables & Relationships
-- **`profiles`**: Linked directly to Supabase Auth (`auth.users`). Auto-created on user signup via a trigger on `auth.users`. Holds username, bio, location, notification preferences, and admin roles.
+- **`profiles`**: Linked directly to Supabase Auth (`auth.users`). Auto-created on user signup via a trigger on `auth.users`. Holds username, bio, location, notification preferences, and admin roles. **Column-restricted:** anon/authenticated may only select the public columns (`PUBLIC_PROFILE_COLUMNS` in `lib/supabase/profile-columns.ts`); `select('*')` fails. The owner reads `is_admin`, `notification_prefs`, `discord_id` through `get_my_account()`; admins list users through `admin_list_users()`; admin rights change only through `set_user_admin()` (trigger `profiles_guard`).
 - **`projects`**: Created by profile owners (`creator_id`). Represents the workspace bounding box for all scripts, boards, and crew mappings.
-- **`project_crew`**: Junction table mapping `profiles` to `projects` with specific roles and status ('pending', 'confirmed', 'declined').
-- **`scripts`**: Stores the Fountain screenplay content, linked to a project (optional) and creator. Features a `share_token` for public viewing.
+- **`project_crew`**: Junction table mapping `profiles` to `projects`: `role` is the permission level only (`lead` | `contributor` | `viewer`, CHECK-constrained; the owner is `projects.creator_id`), `craft` is what they do on the project (→ `crafts`), plus status ('pending', 'confirmed', 'declined'). Hiring from a job sets `craft` to the job's craft.
+- **`crafts`**: The suite's one list of film crafts (name PK, department, colour, position). Readable by everyone (anon too), written only by admins (`internal.caller_is_admin()`). `profiles.role`, `jobs.role` and `project_crew.craft` reference it by name with `ON UPDATE CASCADE`, so a rename follows through; a craft still used by a job can't be deleted. Client: `lib/crafts.ts` + `components/crafts/CraftPicker`.
+- **`project_formats`**: What a project is (Feature, Short Film, Series, Music Video, Documentary, Commercial, Podcast, Other…): a blurb, an icon key, the script format new scripts start in, `phase_labels` (jsonb, only the five phase ids), `skip_phases` (never development/delivery) and `skip_milestones` (milestone ids from `lib/os/progress.ts`). Readable by everyone, written only by admins. `projects.project_type` and `portfolio_projects.category` reference it with `ON UPDATE CASCADE`; a format in use by a project can't be deleted. `project_progress()` returns the project's rules as `format`, so the phase engine names no format in code. Client: `lib/formats.ts` + `components/formats/FormatPicker`.
+- **Breakdown** (`breakdown_categories`, `breakdown_elements`, `scene_elements`, `breakdown_dismissals`): per-project categories (seeded, editable, `unit_cost`), one element per thing (unique on `lower(btrim(name))`), scene tags (composite FKs pin both ends to the project), dismissed suggestions; all `internal.can_access_project`. `tag_scene_element()` finds or creates. `breakdown_memory(p_exclude)` (invoker rights) returns what the caller tagged in their other projects — each name once, with the category key it was filed under in the most projects; the editor files suggestions by it. The parser's guesses are never stored (`scenes.elements` was dropped in `20260927040000`).
+- **`scripts`**: Stores the Fountain screenplay content, linked to a project (optional) and creator. A project script belongs to the project: access follows `can_access_project` (not who created or last saved it). A personal script (`project_id` null) belongs to its `created_by`. `shared = true` makes it readable by anyone.
 - **`script_metadata`**: Houses `title_page` JSONB and `character_bible` JSONB, preventing co-writers from overriding offline states.
 - **`script_characters`**: Represents distinct characters in the story, mapping script character sheets to casting look-boards.
-- **`channels` & `channel_members`**: Drives the Lounge communications, dividing project channels (Discord-style text/voice rooms) and community channels.
-- **`messages`**: Multi-use chat logs (supporting threads via `parent_message_id` and reactions via a secured JSONB column).
-- **`studio_boards` & `studio_assets`**: Backs the collaborative canvas board and visual pinboards.
-- **`scenes` & `shots`**: The backbone of pre-production scheduling, elements tracking, and call-sheet generation.
-- **`call_sheets` & `call_sheet_calls`**: Daily call times and specific crew shifts, linked to project crew schedules.
+- **`channels` & `channel_members`**: The Lounge. Project channels and community (no project) channels, typed text / voice / guide. `audience` decides who sees one (community: `users`/`admins`; project: `team`/`owners`/`above`/`below`/`guests`/`public`, via `internal.in_project_audience` and `crafts.above_the_line`); `is_private` narrows to the roster. Admins create and run community channels. See `lounge-and-audio.md` §3.
+- **`messages`**: Direct messages (`receiver_id`) or channel messages (`channel_uuid`, posting gated by `can_post_channel`); threads via `parent_message_id`; reactions only through `toggle_message_reaction`; deleted by the sender or whoever runs the channel. The legacy text `channel_id` is unused.
+- **`notifications`**: `created_by` is recorded (defaults to the caller, can't be spoofed); you may notify only people you share a project, job, DM or channel with (`internal.can_notify`); `link` must be a site-relative path.
+- **`audit_logs`**: Written in your own name only; read by admins (`internal.caller_is_admin()`).
+- **`media`**: The project library — every reference photo, clip, track, PDF and link. Files live in the private `project-media` bucket at `<project_id>/<media_id>/<file>`; links use `external_url` (exactly one of the two). `shared` = included in the share link (owner-only, enforced by the `media_guard` trigger). Source and author are immutable.
+- **`scenes`**: One row per scene heading of a script (`script_id`), kept in step with the text by `sync_script_scenes` (see `lib/studio/scene-sync.ts`). Ids survive rewrites; removed scenes are soft-deleted (`removed_at`) so their links come back if the heading does. Script-derived fields (heading, location, time of day, cast, length) are written only by the sync; people set `note`, `color`, `shoot_day`, `status`, and `read_seconds`/`read_at` (the last table-read time, 0 < s ≤ 10 h; the editor's runtime uses it). `est_duration` is the scene's length in eighths of a printed page ("3/8 pg", measured by `lib/scriptos/timing.ts`).
+- **`scene_media` / `character_media`**: Links from scenes / `script_characters` to `media`. Composite foreign keys pin both ends to the same project.
+- **Storage buckets**: `project-media` (private, project library). `sfx_library` (public read; audio ≤ 20 MB, uploads only into `<your user id>/…`). `assets`, `studio-assets`, `sfx-library` are legacy and take no uploads.
+- **`shots`**: Shot list per scene (Studio › Scenes storyboard). The scene must belong to the shot's project (composite FK). Also created by "Shot" margin notes (`script_annotations.routed_id`). `frame_media_id` is the storyboard frame: a `media` row of the same project (composite FK, `ON DELETE SET NULL (frame_media_id)`). Camera fields (`shot_size`, `angle`, `movement`, `lens`) are length-bounded; their vocabulary is film grammar in `lib/studio/framing.ts`.
+- **`script_annotations`**: Margin notes on script lines. Add them through `add_script_annotation()`: shot/beat/to-do notes create the shot, beat or task in the same transaction and record it in `routed_table`/`routed_id`.
+- **`script_stash`**: The editor stash (snippets beside a script); access follows `can_access_script`.
+- **`activity_feed`**: Project activity. Entries carry `metadata.project_id`; readable by the author and by people with access to that project only.
+- **Credits** (no table — derived): `get_person_credits(p_user)` (SECURITY DEFINER) lists a person's credits from the work itself: projects they created (their profile craft), confirmed `project_crew` rows (craft) and `character_castings` (the part). A project shows to outsiders only when `visibility = 'public'`; teammates (`internal.can_access_project`) also see the team's others. `get_press_kit(p_token)` returns the share page's cast & crew (department order via `crafts.position`) and laurels (festival submissions with status `accepted`), for link/public projects only.
+- **`writing_days`**: The writing loop — one row per writer per local day (words typed, sprints, the goal that day). Owner-only SELECT; no write policies: only `log_writing(p_day, p_words, p_sprint)` (SECURITY DEFINER, words 0–5000 per call, day within ±1 of the server's) adds to it. `profiles.daily_word_goal` (50–20000) / `sprint_minutes` (5–120), returned to their owner by `get_my_writing_prefs()`.
+- **`set_log`**: On set (Studio › Production › On set). One row per event: the day's clock stamps (`call`/`rolling`/`lunch`/`back`/`wrap`) and `note`s belong to a call sheet (deleted with it); `continuity` belongs to a scene (optionally a shot, take 1–999, a `media` photo) and has no day, so it survives a day being deleted. Composite FKs pin every reference to the project (`shots_id_project_key` added for it). Team reads/inserts (as themselves); only `at`/`body`/`take` are updatable (column grant), by the author or the owner; same for delete. Realtime.
+- **`campaigns`**: Promo campaigns (Studio › Promos), `internal.can_access_project`. `platform` is whatever the team names it (1–60 chars, no preset list — the picker suggests platforms used before); `status` is `drafting`/`live`/`wrapped`; `budget`/`spend` ≥ 0.
+- **`post_cuts`, `post_notes`, `post_items`**: Post-production — cuts (link or library video, one source), timecoded notes pinned to their cut's project and optionally a scene (`ON DELETE SET NULL (scene_id)`), and optionally a line of that scene (`line_offset` from the heading + `line_text`, both or neither; the author's, like the text — `internal.post_notes_guard`), pipeline stages and deliverables. Team access via `can_access_project`; notes resolved in your own name, text editable by its author only (`internal.post_notes_guard`, which lets foreign-key actions through via `pg_trigger_depth()`).
+- **`call_sheets` & `call_sheet_calls`**: One sheet per project shoot day (date, calls, wrap, address, weather, notes); one call per person per sheet — a crew member or a character, never both. Calls carry `project_id` pinned to their sheet's.
 - **`budget_items` & `timeline_items`**: Manages the production costs and milestone timelines.
 - **`portfolio_projects` & `portfolio_media`**: Holds the public showcases for filmmaker directories.
 - **`spotify_connections`**: Stores persistent encrypted/OAuth access and refresh tokens per user for the Soundtrack widget.
@@ -33,7 +49,12 @@ can easily trigger an infinite recursion loop (Postgres Error `42P17: infinite r
 We use `SECURITY DEFINER` helper functions defined inside the `internal` schema (which bypasses RLS on execution for the targeted tables, but executes under strict system constraints):
 1. **`internal.is_project_creator(pid uuid)`**: Returns true if `auth.uid()` matches the project's creator.
 2. **`internal.is_project_member(pid uuid)`**: Returns true if `auth.uid()` matches a confirmed member in `project_crew` for that project.
-3. **`internal.can_access_script(sid uuid)`**: Checks if the user is the script owner, collaborator, or part of the parent project.
+3. **`internal.can_access_script(sid uuid)`**: Personal script → its author; project script → `can_access_project` of its project.
+4. **`internal.can_access_project(pid uuid)`**: Owner, or crew *unless the project is private* — the same rule as the `projects` row policy. Use it for every project-scoped table. (`is_project_member` also answers false for private projects since `20260926030000`, so older `is_project_creator OR is_project_member` policies are equivalent.)
+
+**NULL gotcha in PL/pgSQL checks:** `if not (a or b) then raise` does *not* raise when the expression is NULL (e.g. a null `receiver_id`). Write permission checks as `if (…) is not true then raise`.
+
+**Gotcha:** policies store function OIDs, so they can call `internal.*` without schema USAGE. PL/pgSQL resolves names at run time, so an invoker-rights plpgsql function or trigger that calls `internal.*` fails with `permission denied for schema internal`. Make such triggers `SECURITY DEFINER` (as `internal.media_guard`), or express the check through RLS (as `sync_script_scenes` does with a `projects` lookup).
 
 These helper functions are placed in the `internal` schema to prevent them from being automatically exposed as REST API RPC endpoints via PostgREST (which would let unauthorized users probe existence of projects and scripts).
 
@@ -53,10 +74,33 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 - **Scripts:** `CREATE POLICY "Shared scripts publicly viewable" ON scripts FOR SELECT TO anon USING (shared = TRUE);`
 - **Portfolios:** Scoped via `share_token` or `is_public = true`.
 - Private data (budgets, crew rosters, chats) must have **no** select policy granted to `anon`.
+- **Project share links** (`/shared/<share_token>`) resolve only through `SECURITY DEFINER` RPCs that check the exact token and `visibility in ('link','public')`: `get_shared_project` (overview fields) and `get_shared_lookbook` (published media + the scene headings they're linked to — never notes or unpublished items).
+- **Published files** are readable by anon only while `media.shared` and the project is link/public (storage policy `project-media: shared read`). `/m/<media_id>` is the stable permalink: it checks `get_published_media` and redirects to a fresh short-lived signed URL, uncached, so unpublishing takes effect at once.
+- **Showcase** (`get_public_showcase`) lists published media of `public` projects only. **Platform totals** come from `get_platform_stats` (counts only) — counting through RLS shows each person their own numbers.
 
 ---
 
-## 3. Database Syncing and Migration Rules
-1. **The Live DB is Source of Truth:** Live changes are applied directly as named migrations on Supabase.
-2. **Schema Mirroring:** Every live schema modification must be mirrored verbatim into the repository's `supabase-schema.sql` file. This allows local development environments to be bootstrapped from scratch.
-3. **No Destructive Operations:** Never drop columns, alter tables, truncate data, or modify existing `SECURITY DEFINER` function parameters on production databases without explicit user consent and testing the rollback paths.
+## 3. Database Changes — the migration workflow (authoritative)
+
+`supabase/migrations/` is the **single source of truth** for the schema. It
+starts from `20260926000000_baseline.sql` (production reconstructed from the
+live catalog) and every change is a new, never-edited file after it. Production
+is changed *only* by applying those files — never by ad-hoc SQL.
+
+1. **Write it:** `npx supabase migration new <name>` → edit the new file.
+2. **Build it locally:** `npm run db:start` (once) → `npm run db:reset`
+   (rebuilds from all migrations).
+3. **Snapshot it:** `npm run db:drift -- --update` rewrites
+   `supabase/schema.fingerprint`; the diff shows reviewers exactly which
+   columns / policies / functions / grants changed.
+4. **Type it:** `npm run db:types` regenerates `lib/supabase/database.types.ts`.
+   Never cast around a missing column — regenerate.
+5. **Prove it:** add or extend a test in `tests/integration/` that exercises the
+   change as Sam / Jordan / Riley / anon through the real API, and show it
+   failing before the migration where it fixes a bug. `npm run test:integration`.
+6. **PR:** CI's `database` job rebuilds from scratch and fails on schema drift,
+   stale types, or any persona test.
+7. **After merge:** apply the same migration file to production, then run the
+   *Production schema drift* workflow — it must be green.
+
+**No Destructive Operations:** Never drop columns, alter tables, truncate data, or modify existing `SECURITY DEFINER` function parameters on production databases without explicit user consent and testing the rollback paths.

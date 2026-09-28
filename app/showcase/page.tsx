@@ -6,22 +6,29 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import GrainOverlay from '@/components/GrainOverlay';
 import AnimatedSection from '@/components/AnimatedSection';
+import PhotoGallery from '@/components/PhotoGallery';
 import { supabase } from '@/lib/supabase/client';
+import { videoEmbed } from '@/lib/studio/media-kind';
 
-const OrbitGallery = dynamic(() => import('@/components/3D/OrbitGallery'), { ssr: false });
 const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
 
 export default function ShowcasePage() {
 
-  const [photos, setPhotos] = useState<{ id: string; imageUrl: string; title: string }[]>([]);
+  // Published media from projects their owners made Public (get_public_showcase).
+  const [photos, setPhotos] = useState<{ id: string; imageUrl: string; title: string; href?: string; caption?: string }[]>([]);
   useEffect(() => {
-    supabase.from('concept_assets').select('id, title, image_url').not('image_url', 'is', null).limit(12).then(({ data }) => {
-      setPhotos((data || []).filter((a: any) => a.image_url).map((a: any) => ({ id: a.id, imageUrl: a.image_url, title: a.title || 'Concept' })));
+    supabase.rpc('get_public_showcase', { p_limit: 24 }).then(({ data }) => {
+      setPhotos((data || []).flatMap((m) => {
+        const imageUrl = m.kind === 'image'
+          ? (m.storage_path ? `/m/${m.media_id}` : m.external_url)
+          : videoEmbed(m.external_url)?.thumbnail ?? null;
+        return imageUrl ? [{ id: m.media_id, imageUrl, title: m.title || m.project_title, caption: m.project_title, href: `/shared/${m.share_token}` }] : [];
+      }));
     });
   }, []);
 
   return (
-    <main style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
       <nav
@@ -82,9 +89,7 @@ export default function ShowcasePage() {
               fontFamily: 'var(--serif)',
               fontSize: 'clamp(1rem, 2vw, 1.3rem)',
               fontStyle: 'italic',
-              opacity: 0.5,
-              animation: 'slideUp 1s ease-out 0.2s both'
-            }}
+              animation: 'slideUp 1s ease-out 0.2s both', color: 'var(--fg-dim)' }}
           >
             Where technology meets artistry
           </p>
@@ -97,11 +102,11 @@ export default function ShowcasePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
               <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
-                3D Orbit Gallery
+                Concept Gallery
               </span>
             </div>
 
-            <OrbitGallery photos={photos} />
+            <PhotoGallery photos={photos} />
 
             <p
               style={{
@@ -109,11 +114,9 @@ export default function ShowcasePage() {
                 fontSize: '1rem',
                 textAlign: 'center',
                 marginTop: 30,
-                opacity: 0.5,
-                fontStyle: 'italic'
-              }}
+                fontStyle: 'italic', color: 'var(--fg-dim)' }}
             >
-              Interactive 3D photo gallery with auto-rotation. Hover over frames to highlight them.
+              Concept art from productions in the Cavern.
             </p>
           </div>
         </AnimatedSection>
@@ -146,7 +149,7 @@ export default function ShowcasePage() {
                 fontFamily: 'var(--serif)',
                 fontSize: '1.1rem',
                 lineHeight: 2,
-                color: 'rgba(255, 255, 255, 0.5)'
+                color: 'var(--fg-dim)'
               }}
             >
               <p style={{ marginBottom: 20 }}>
@@ -155,7 +158,6 @@ export default function ShowcasePage() {
               </p>
 
               <p style={{ marginBottom: 20 }}>
-                The 3D orbit gallery uses React Three Fiber and WebGL to create smooth, performant animations.
                 Particle effects are powered by tsParticles for optimal performance.
               </p>
 
@@ -166,6 +168,6 @@ export default function ShowcasePage() {
           </div>
         </AnimatedSection>
       </section>
-    </main>
+    </div>
   );
 }

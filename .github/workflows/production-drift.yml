@@ -1,0 +1,32 @@
+name: Production schema drift
+
+# Compares the live production database against supabase/schema.fingerprint
+# (the schema the migrations in main produce). Fails if anyone changed
+# production outside a migration, or if a merged migration was never applied.
+#
+# Needs the repo secret PRODUCTION_DB_URL: a Postgres connection string for
+# production, ideally a read-only role (the check only reads the catalog).
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    env:
+      DRIFT_TARGET_DB_URL: ${{ secrets.PRODUCTION_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Compare production with the committed schema
+        run: |
+          if [ -z "$DRIFT_TARGET_DB_URL" ]; then
+            echo "::warning::PRODUCTION_DB_URL secret is not set — production drift check skipped."
+            exit 0
+          fi
+          npm run db:drift -- --target

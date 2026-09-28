@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
@@ -12,6 +11,7 @@ import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { parseScript } from '@/lib/scriptos/parser';
 import { logActivity } from '@/lib/supabase/activity';
 import { awaitOSUser } from '@/lib/os';
+import { textOn } from '@/lib/color';
 import {
   createPortfolioProject,
   getPortfolioBlocks,
@@ -63,6 +63,7 @@ export default function PitchBoardPage() {
 
   const [tab, setTab] = useState<LibTab>('concept');
   const [concepts, setConcepts] = useState<{ id: string; title: string | null; image_url: string }[]>([]);
+  const [unpublishedUploads, setUnpublishedUploads] = useState(0);
   const [scenes, setScenes] = useState<{ id: string; scene_number: number | null; title: string | null; location: string | null; time_of_day: string | null }[]>([]);
   const [budget, setBudget] = useState<{ category: string; amount: number }[]>([]);
   const [crew, setCrew] = useState<{ user_id: string; username?: string; role: string; avatar_url?: string }[]>([]);
@@ -136,14 +137,20 @@ export default function PitchBoardPage() {
         }
 
         const [c, s, b, cr, scr] = await Promise.all([
-          supabase.from('concept_assets').select('id, title, image_url').eq('project_id', projectId).order('created_at'),
-          supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).order('scene_number'),
+          supabase.from('media').select('id, title, storage_path, external_url, shared').eq('project_id', projectId).eq('kind', 'image').order('created_at'),
+          supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).is('removed_at', null).order('scene_number'),
           supabase.from('budget_items').select('category, amount').eq('project_id', projectId).order('created_at'),
           getProjectCrew(projectId),
           supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false }).limit(1),
         ]);
         if (!alive) return;
-        setConcepts((c.data as any) || []);
+        // A public pitch board needs URLs that keep working: linked images as-is,
+        // uploads through the /m/<id> permalink — which serves only published ones.
+        setConcepts((c.data || []).flatMap((m) => {
+          const url = m.storage_path ? (m.shared ? `${window.location.origin}/m/${m.id}` : null) : m.external_url;
+          return url ? [{ id: m.id, title: m.title || null, image_url: url }] : [];
+        }));
+        setUnpublishedUploads((c.data || []).filter((m) => m.storage_path && !m.shared).length);
         setScenes((s.data as any) || []);
         setBudget(((b.data as any) || []).map((x: any) => ({ category: x.category, amount: Number(x.amount || 0) })));
         setCrew((cr || []).map((m: any) => ({ user_id: m.user_id, username: m.username, role: m.role, avatar_url: m.avatar_url })));
@@ -249,6 +256,7 @@ export default function PitchBoardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+      <h1 className="sr-only">Pitch board</h1>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50, height: 60,
         background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
@@ -284,7 +292,7 @@ export default function PitchBoardPage() {
                 display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 7, cursor: 'pointer',
                 fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, whiteSpace: 'nowrap',
                 background: tab === t.id ? accent : 'rgba(255,255,255,0.04)',
-                color: tab === t.id ? '#fff' : 'var(--fg-muted)',
+                color: tab === t.id ? textOn(accent) : 'var(--fg-muted)',
                 border: `1px solid ${tab === t.id ? accent : 'rgba(255,255,255,0.06)'}`,
               }}>
                 {t.icon}{t.label}
@@ -293,10 +301,11 @@ export default function PitchBoardPage() {
           </div>
 
           {tab === 'concept' && (
-            <LibList empty={concepts.length === 0 ? 'No concept art in Studio yet' : undefined}>
+            <LibList empty={concepts.length === 0 ? (unpublishedUploads ? `${unpublishedUploads} upload${unpublishedUploads === 1 ? '' : 's'} in the Studio library — include them in the share link (Studio → Share) to use them here` : 'No images in the Studio library yet') : undefined}>
               {concepts.map(c => (
                 <Chip key={c.id} accent={accent} onAdd={() => addBlock(addConcept(c))} onDragStart={() => onLibDragStart(addConcept(c))} onDragEnd={onLibDragEnd}>
-                  {c.image_url && <Image src={c.image_url} alt="" width={26} height={26} style={{ borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
+                  {c.image_url && <img src={c.image_url} alt="" width={26} height={26} referrerPolicy="no-referrer" style={{ borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
                   <span style={chipLabel}>{c.title || 'Untitled concept'}</span>
                 </Chip>
               ))}
@@ -381,7 +390,7 @@ export default function PitchBoardPage() {
           )}
         </aside>
 
-        <main
+        <div
           onDragOver={e => { if (libDragRef.current) { e.preventDefault(); setCanvasHot(true); } }}
           onDragLeave={() => setCanvasHot(false)}
           onDrop={e => { e.preventDefault(); onCanvasDrop(); }}
@@ -418,7 +427,7 @@ export default function PitchBoardPage() {
               ))}
             </div>
           )}
-        </main>
+        </div>
       </div>
     </div>
   );
@@ -496,7 +505,8 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
     case 'media':
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {block.image_url && <Image src={block.image_url} alt="" width={56} height={40} style={{ borderRadius: 6, objectFit: 'cover' }} />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
+          {block.image_url && <img src={block.image_url} alt="" width={56} height={40} referrerPolicy="no-referrer" style={{ borderRadius: 6, objectFit: 'cover' }} />}
           <div style={{ minWidth: 0 }}>
             {block.title && <div style={previewTitle}>{block.title}</div>}
             {block.meta?.url && <div style={{ ...previewBody, wordBreak: 'break-all' }}>{block.meta.url}</div>}
@@ -516,7 +526,8 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
     case 'crew':
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {block.image_url && <Image src={block.image_url} alt="" width={32} height={32} style={{ borderRadius: '50%', objectFit: 'cover' }} />}
+          {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
+          {block.image_url && <img src={block.image_url} alt="" width={32} height={32} referrerPolicy="no-referrer" style={{ borderRadius: '50%', objectFit: 'cover' }} />}
           <div>
             <div style={previewTitle}>{block.title}</div>
             {block.body && <div style={previewBody}>{block.body}</div>}
@@ -558,7 +569,7 @@ function Centered({ children }: { children: React.ReactNode }) {
   return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>{children}</div>;
 }
 function LibList({ children, empty }: { children?: React.ReactNode; empty?: string }) {
-  if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-dim)', opacity: 0.6, padding: '8px 0' }}>{empty}</div>;
+  if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-dim)', padding: '8px 0' }}>{empty}</div>;
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>;
 }
 function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: React.ReactNode; accent: string; onAdd: () => void; onDragStart: () => void; onDragEnd: () => void }) {
@@ -587,14 +598,14 @@ const chipLabel: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9.
 const previewTitle: React.CSSProperties = { fontFamily: 'var(--sans, var(--serif))', fontSize: 12.5, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 const previewBody: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', marginTop: 3 };
 const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 6 };
-const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', padding: 3, opacity: 0.6 };
+const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', padding: 3, opacity: 0.8, minWidth: 24, minHeight: 24, justifyContent: 'center' };
 
 function btnStyle(accent: string, filled: boolean): React.CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
     fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 1,
     background: filled ? accent : 'rgba(255,255,255,0.05)',
-    color: filled ? '#fff' : 'var(--fg)',
+    color: filled ? textOn(accent) : 'var(--fg)',
     border: `1px solid ${filled ? accent : 'rgba(255,255,255,0.1)'}`,
   };
 }

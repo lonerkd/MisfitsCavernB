@@ -16,10 +16,20 @@ export interface Profile {
 
 export type PublicProfile = Pick<Profile, 'username' | 'role' | 'avatar_url'>;
 
+export { PUBLIC_PROFILE_COLUMNS } from './profile-columns';
+import { PUBLIC_PROFILE_COLUMNS } from './profile-columns';
+
+/** The signed-in user's private account fields. */
+export async function getMyAccount(): Promise<{ is_admin: boolean; notification_prefs: unknown; discord_id: string | null } | null> {
+  const { data, error } = await supabase.rpc('get_my_account');
+  if (error || !data?.[0]) return null;
+  return data[0];
+}
+
 export async function searchProfiles(query: string): Promise<Profile[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .ilike('username', `%${query}%`)
     .limit(10);
 
@@ -34,7 +44,7 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
 export async function getProfile(id: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .eq('id', id)
     .single();
 
@@ -66,7 +76,7 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
       link: '/projects',
       read: false,
     });
-    await logActivity(`invited a crew member as ${role}`, 'project', projectId);
+    void logActivity(`invited a crew member as ${role}`, 'project', projectId);
   } catch {  }
   return data;
 }

@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb } from 'lucide-react';
+import type { LiveRows } from '@/lib/studio/live';
+import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
+import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images } from 'lucide-react';
 import type { ScriptLine } from '@/types/screenplay';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
 
 const CHARACTER_COLOR = '#ffaa00';
 
-export type RightPanelTab = 'write' | 'insights' | 'history' | 'audio';
+export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'history' | 'audio';
 
 export interface EditorRightPanelsProps {
   rightPanel: RightPanelTab;
@@ -21,19 +23,15 @@ export interface EditorRightPanelsProps {
   sceneWordCounts: number[];
   sceneCharMap: string[][];
   insertElement: (type: string) => void;
-  sprintActive: boolean;
-  setSprintActive: (v: boolean) => void;
-  sprintTime: number;
+  /** Today's words, streak, sprint and badges (components/editor/WritingLoop). */
+  writingPanel: React.ReactNode;
   wordCount: number;
-  dailyGoal: number;
-  goalProgress: number;
   pageEst: number;
   dialogueRatio: number;
   typewriterMode: boolean;
   setTypewriterMode: (v: boolean) => void;
   nightModePreview: boolean;
   setNightModePreview: (v: boolean) => void;
-  elements: Record<string, string[]>;
   chars: string[];
   charStats: CharacterStats[];
   handleLockRevision: () => void;
@@ -46,12 +44,14 @@ export interface EditorRightPanelsProps {
   showWatermark: boolean;
   setShowWatermark: (v: boolean) => void;
   lintIssues: { type: string; message: string; rule?: string; line?: number }[];
-  stashItems: { id: string; text: string; date: number }[];
-  setStashItems: React.Dispatch<React.SetStateAction<{ id: string; text: string; date: number }[]>>;
+  stash: LiveRows<StashItem>;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   currentScript: { title?: string, id?: string } | null;
   projectAudioRefs?: any[];
   playAudioRef?: (ref: any) => void;
+  /** The current scene's references panel (rendered by the page, which owns the scene index). */
+  referencesPanel?: React.ReactNode;
+  breakdownPanel?: React.ReactNode;
 }
 
 function SectionHeader({
@@ -93,11 +93,12 @@ function SectionHeader({
 export function EditorRightPanels({
   rightPanel, setRightPanel, activeView, currentSceneIdx, scenesList,
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
-  sprintActive, setSprintActive, sprintTime, wordCount, dailyGoal, goalProgress,
+  writingPanel, wordCount,
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
-  setNightModePreview, elements, chars, charStats, handleLockRevision, revisions, onViewRevision,
+  setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  setShowWatermark, lintIssues, stashItems, setStashItems, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
+  setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
+  referencesPanel, breakdownPanel,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -112,6 +113,8 @@ export function EditorRightPanels({
 
   const TABS: [RightPanelTab, React.ComponentType<{ size?: number | string }>, string][] = [
     ['write', Wand2, 'Write'],
+    ['breakdown', Tags, 'Breakdown'],
+    ['refs', Images, 'Refs'],
     ['insights', Lightbulb, 'Insights'],
     ['history', History, 'History'],
     ['audio', Music, 'Audio'],
@@ -121,8 +124,8 @@ export function EditorRightPanels({
     <>
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                 {TABS.map(([key, Icon, label]) => (
-                  <button key={key} onClick={() => setRightPanel(key)} style={{
-                    flex: 1, padding: '8px 0', background: 'transparent', border: 'none',
+                  <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} style={{
+                    flex: 1, minWidth: 0, padding: '8px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',
                     color: rightPanel === key ? 'var(--fg)' : 'var(--fg-dim)',
                     cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
@@ -132,12 +135,12 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.3 }}>{label}</span>
+                    <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
                   </button>
                 ))}
               </div>
 
-              <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 22, flex: 1, overflowY: 'auto' }}>
+              <div style={{ padding: '18px 18px 110px', display: 'flex', flexDirection: 'column', gap: 22, flex: 1, minHeight: 0, overflowY: 'auto' }}>
                 {rightPanel === 'write' && (
                   <>
                     {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {
@@ -191,17 +194,7 @@ export function EditorRightPanels({
                         ))}
                       </div>
                     </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
-                        <button onClick={() => setSprintActive(!sprintActive)} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#d7340b' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}><span>Daily Goal</span><span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{wordCount} / {dailyGoal}</span></div>
-                      <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#0099ff', transition: 'width 0.5s' }} /></div>
-                    </div>
+                    {writingPanel}
                     <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
@@ -216,31 +209,17 @@ export function EditorRightPanels({
                         </label>
                       </div>
                     </div>
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Tags size={14} /> Elements</div>
-                      {Object.keys(elements).length === 0 ? (
-                        <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic' }}>No elements detected yet.</div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          {Object.entries(elements).map(([category, items]) => (
-                            <div key={category}>
-                              <div style={{ fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{category}</div>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                {items.map(item => (<span key={item} style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 7px', borderRadius: 4, color: '#fff' }}>{item}</span>))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </>
                 )}
+
+                {rightPanel === 'breakdown' && breakdownPanel}
+
+                {rightPanel === 'refs' && referencesPanel}
 
                 {rightPanel === 'insights' && (
                   <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <SectionHeader icon={ClipboardList} label="Breakdown" open={breakdownOpen} onToggle={() => setBreakdownOpen(o => !o)} />
+                      <SectionHeader icon={ClipboardList} label="Script stats" open={breakdownOpen} onToggle={() => setBreakdownOpen(o => !o)} />
                       {breakdownOpen && (
                         <>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, padding: '0 4px' }}>
@@ -251,41 +230,6 @@ export function EditorRightPanels({
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                            <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontStyle: 'italic' }}>Production elements per scene.</div>
-                            <button className="link-btn" style={{ fontSize: 11 }} onClick={() => {
-                              const entries = Object.entries(elements).filter(([, items]) => (items as string[]).length > 0);
-                              if (entries.length === 0) { toast('No tagged elements to export yet', 'info'); return; }
-                              const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string));
-                              const w = window.open('', '_blank', 'width=820,height=1080');
-                              if (!w) return;
-                              w.document.write(`<!doctype html><html><head><title>${esc(currentScript?.title || 'Script')} — Breakdown</title>
-                                <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:20px;letter-spacing:2px}
-                                h2{font-size:11px;letter-spacing:2px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:20px 0 8px;text-transform:uppercase}
-                                .chip{display:inline-block;font-size:12px;padding:3px 9px;background:#f3f3f5;border:1px solid #ddd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
-                                <h1>${esc(currentScript?.title || 'SCRIPT')} — BREAKDOWN</h1>
-                                ${entries.map(([cat, items]) => `<h2>${esc(cat)} (${(items as string[]).length})</h2>${(items as string[]).map(i => `<span class="chip">${esc(i)}</span>`).join('')}`).join('')}
-                                <script>window.onload=()=>window.print()</script></body></html>`);
-                              w.document.close();
-                            }}>⎙ Export</button>
-                          </div>
-                          {Object.keys(elements).length === 0 ? (
-                            <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic', padding: '4px' }}>No production elements detected yet. Tag elements in your script to populate the breakdown.</div>
-                          ) : (
-                            Object.entries(elements).map(([category, items]) => (
-                              <div key={category} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                                  {category}
-                                  <span style={{ fontFamily: 'var(--mono)', color: 'var(--fg-muted)' }}>{items.length}</span>
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                  {items.map(item => (
-                                    <span key={item} style={{ fontSize: 11, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(215,52,11,0.28)', padding: '4px 10px', borderRadius: 4, color: '#fff' }}>{item}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))
-                          )}
                         </>
                       )}
                     </div>
@@ -420,34 +364,35 @@ export function EditorRightPanels({
                       <SectionHeader
                         icon={Bookmark}
                         label="The Stash"
-                        count={stashItems.length || null}
+                        count={stash.rows.length || null}
                         open={stashOpen}
                         onToggle={() => setStashOpen(o => !o)}
                         right={(
                           <button onClick={(e) => {
                             e.stopPropagation();
                             const sel = textareaRef.current?.value.substring(textareaRef.current.selectionStart, textareaRef.current.selectionEnd);
-                            if (sel) {
-                              setStashItems(prev => [{ id: Math.random().toString(), text: sel, date: Date.now() }, ...prev]);
-                              toast('Added to stash', 'success');
-                            } else {
-                              toast('Select text to stash', 'error');
-                            }
+                            if (!sel?.trim()) { toast('Select text to stash', 'error'); return; }
+                            if (!currentScript?.id) { toast('Open a script first', 'error'); return; }
+                            addToStash(currentScript.id, sel)
+                              .then((row) => { stash.upsertLocal(row); toast('Added to stash', 'success'); })
+                              .catch((err: Error) => toast(err.message || 'Could not stash that', 'error'));
                           }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
                         )}
                       />
                       {stashOpen && (
                         <>
                           <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4, padding: '0 4px' }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
-                          {stashItems.length === 0 ? (
+                          {stash.status === 'error' ? (
+                            <div style={{ fontSize: 12, color: '#ef4444', textAlign: 'center', padding: 12 }}>{stash.error || 'Could not load the stash'}</div>
+                          ) : stash.rows.length === 0 ? (
                             <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click &quot;+ Add Selected&quot; to save it here.</div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {stashItems.map(item => (
+                              {stash.rows.map(item => (
                                 <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
                                   <div style={{ fontSize: 12, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(item.date).toLocaleDateString()}</span>
+                                    <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(item.created_at).toLocaleDateString()}</span>
                                     <div style={{ display: 'flex', gap: 8 }}>
                                       <button onClick={() => {
                                         if (textareaRef.current) {
@@ -458,7 +403,7 @@ export function EditorRightPanels({
                                           toast('Inserted from stash', 'success');
                                         }
                                       }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
-                                      <button onClick={() => setStashItems(prev => prev.filter(i => i.id !== item.id))} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
+                                      <button onClick={() => { stash.removeLocal(item.id); removeFromStash(item.id).catch((err: Error) => { stash.upsertLocal(item); toast(err.message || 'Could not delete', 'error'); }); }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
                                     </div>
                                   </div>
                                 </div>
@@ -481,11 +426,11 @@ export function EditorRightPanels({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {projectAudioRefs.map((ref: any) => (
                           <div key={ref.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <button
+                            <button aria-label="Play"
                               onClick={() => playAudioRef?.(ref)}
                               disabled={!playAudioRef}
                               title="Play"
-                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
+                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
                             >
                               <Play size={13} />
                             </button>

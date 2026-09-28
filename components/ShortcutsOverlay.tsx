@@ -10,6 +10,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
     title: 'Global',
     items: [
       ['⌘ K  /  Ctrl K', 'Open the command palette'],
+      ['⌘ \\  /  Ctrl \\', 'Split screen: this page and another side by side'],
       ['?', 'Show this shortcuts panel'],
       ['Esc', 'Close any dialog or palette'],
     ],
@@ -76,13 +77,13 @@ export default function ShortcutsOverlay() {
                 <Keyboard size={17} />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 2, margin: 0, color: 'var(--fg)' }}>KEYBOARD SHORTCUTS</h2>
               </div>
-              <button onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={18} /></button>
+              <button aria-label="Close" onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
 
             <div style={{ display: 'grid', gap: 20 }}>
               {GROUPS.map(g => (
                 <div key={g.title}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2.5, textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>{g.title}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
                   <div style={{ display: 'grid', gap: 4 }}>
                     {g.items.map(([keys, desc]) => (
                       <div key={desc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '6px 0' }}>
@@ -95,7 +96,7 @@ export default function ShortcutsOverlay() {
               ))}
             </div>
 
-            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'rgba(224, 221, 174, 0.3)' }}>
+            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
               Press <kbd style={{ fontSize: 9, border: '1px solid rgba(255,255,255,0.15)', borderRadius: 3, padding: '1px 5px' }}>?</kbd> anytime to reopen
             </div>
           </motion.div>

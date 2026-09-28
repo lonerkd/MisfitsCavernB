@@ -5,22 +5,13 @@ export interface PlatformStats {
   projects: number;
   scripts: number;
   jobs: number;
-  concepts: number;
+  media: number;
 }
 
+/** Real platform-wide totals (a counts-only RPC; counting through RLS would show each person their own). */
 export async function getPlatformStats(): Promise<PlatformStats> {
-  const [users, projects, scripts, jobs, concepts] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    supabase.from('projects').select('id', { count: 'exact', head: true }),
-    supabase.from('scripts').select('id', { count: 'exact', head: true }),
-    supabase.from('jobs').select('id', { count: 'exact', head: true }),
-    supabase.from('concept_assets').select('id', { count: 'exact', head: true }),
-  ]);
-  return {
-    users: users.count || 0,
-    projects: projects.count || 0,
-    scripts: scripts.count || 0,
-    jobs: jobs.count || 0,
-    concepts: concepts.count || 0,
-  };
+  const { data, error } = await supabase.rpc('get_platform_stats');
+  const row = data?.[0];
+  if (error || !row) return { users: 0, projects: 0, scripts: 0, jobs: 0, media: 0 };
+  return { users: Number(row.creators), projects: Number(row.projects), scripts: Number(row.scripts), jobs: Number(row.jobs), media: Number(row.media) };
 }

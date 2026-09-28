@@ -1,5 +1,495 @@
 # Misfits Cavern — Project State
 
+## Latest Session — The Lounge: who each channel is for, guides, the community
+
+Migration `20260928010000_community.sql` — **apply to production before merging**.
+
+- **Who it’s for** (`channels.audience`, enforced by `internal.can_view_channel`).
+  Project channels: *Whole team*, *Owners* (creator + leads), *Above the line*
+  / *Below the line* (by the member's craft — `crafts.above_the_line`: Director,
+  Producer, Writer, Story editor, Actor, Voice actor; owners see both),
+  *Guests* (members added as viewers, plus owners) and *Public* (anyone signed
+  in can read — a production's updates; listed under "Other productions").
+  Community channels: *Everyone* or *Admins*. Chosen when creating a channel
+  and changeable in Manage. "Private" stays an invite-only overlay.
+- **Guides** — a channel type for FAQ, the start-here tour and tutorials. It
+  reads as a document (each post a section, first line its heading); only
+  whoever runs it writes (and can remove a section); no chat box for readers.
+- **The community**: admins create and run site-wide channels (nobody could
+  before). Starters: start-here, faq, tutorials (guides — empty until an
+  admin writes them), announcements, general, craft-talk, crew-call,
+  feedback, showcase, the-lounge (voice), admins. Existing ones kept.
+- **Fixes**: a private community channel was visible to everyone signed in —
+  now members (and admins) only. Messages can be removed by their author or
+  whoever runs the channel (there was no delete policy).
+- **Lounge refetch loop (live bug)**: the page reloaded messages and profiles
+  in a tight loop for every signed-in user (an effect set the user object it
+  depended on), eventually freezing the tab and hammering the DB. Fixed.
+
+## Earlier — Credits & the press kit
+
+Migration `20260928000000_credits.sql` — applied to production; PR #72 merged.
+
+- Credits come from the work itself, never typed twice: projects someone
+  created, the crew they were confirmed on (their craft) and the parts they
+  were cast in.
+- **Crew profiles** list them ("Salt (2026) — Gaffer · Plays MAYA"); on your
+  own profile, **Add to portfolio** makes a portfolio entry linked back to the
+  project (title, format, year, your credits).
+- **Share page = press kit**: festival laurels ("Official selection" for
+  accepted submissions) under the logline, and Cast & crew by department.
+- Privacy: outsiders see a project in someone's credits only when it's
+  public; teammates see their team's. The press kit only exists for
+  link/public projects.
+
+## Earlier — The writing loop
+
+Migration `20260927110000_writing_loop.sql` — applied to production; PR #71 merged.
+
+- The editor's daily goal and sprint were cosmetic (a goal of 1,000 fixed in
+  code measured against the script's *total* size; the sprint couldn't be
+  restarted without a reload; nothing was saved). Now:
+- **Today**: words actually typed today (a paste or a loaded file doesn't
+  count) against your own goal (click to change; saved to your profile).
+- **Streak**: consecutive days you met your goal (each day judged by the goal
+  you had that day), best streak, and the last four weeks as a grid.
+- **Sprint**: your length (5–120 min), start / pause / reset, words this
+  sprint (also in the header), logged when it ends.
+- **Earned**: first goal, 7- and 30-day streaks, a 2,000-word day, 10
+  sprints, 20,000 words — all derived from your real days.
+- Saved a few seconds after typing pauses, every 20s, and when you leave.
+
+## Earlier — On set
+
+Migration `20260927100000_set_log.sql` — applied to production; PR #71 merged.
+
+- **Studio › Production › On set** — the production phase finally has its
+  tool. It opens on today's call sheet (else the next day): location, planned
+  call and wrap, and your own call time. The crew stamp the day's clock with
+  one tap each (crew call, rolling, lunch, back in, wrap — tap to correct),
+  and see time on set and time to (or past) the planned wrap.
+- The day's scenes with their shots as big Got / Drop buttons; the first shot
+  got starts the scene; "Wrap scene" wraps it — the same status the
+  stripboard, readiness and milestones use. Meters for scenes, pages, shots.
+- Continuity per scene: notes with shot, take and a photo from the phone's
+  camera (saved to the library's "Continuity" board). Day notes and the day's
+  log. All live for everyone on the project.
+- `set_log` (one row per event), composite FKs to the project, only
+  time/words editable (author or owner), realtime. Also in split screen.
+
+## Earlier — Real data, not presets
+
+Migration `20260927090000_campaigns.sql` — applied to production; PR #70 merged.
+
+- **Home**: the invented previews are gone (the fake crew chat, asset file
+  names and screenplay). Signed-in tiles show your latest script, media and
+  channel messages; with nothing to show — or signed out — they show the shape
+  of the thing and say what will appear. The Portfolio tile shows the latest
+  published works. The ticker is live public activity (`lib/home/ticker.ts`):
+  who's hiring, what was just published, platform totals — hidden when there
+  is nothing real. Platform stats load for visitors too.
+- **Promos**: no preset platform list. Name any platform; the form suggests
+  the ones your team has used (most used first). Campaigns move through
+  Drafting / Live / Wrapped, spend is editable, and "Where the budget goes"
+  compares spend to budget per platform. DB: status CHECK, platform/title
+  bounds, non-negative money, no default platform.
+- **Soundtrack › Moods** are read from the project's script
+  (`lib/spotify/moods.ts`): each scene's strongest mood from what happens in
+  it (else its time of day), grouped with their scenes; each opens a Spotify
+  search. Replaces a fixed list of 11 moods.
+- **Audio widget (free mode)**: plays the project's Spotify references and
+  your own playlists (`me/playlists`; new connections also grant
+  `playlist-read-private`) instead of four hardcoded playlist ids.
+
+## Earlier — Cut notes on script lines
+
+Migration `20260927080000_cut_note_lines.sql` — applied to production; PR #69 merged.
+
+- Studio › Post › Cut review: the **script beside the cut**. The scene on
+  screen follows playback: scenes are laid along the cut by their length
+  (table-read time, else page length) and pinned by the notes already made,
+  so the more you note, the better it tracks. A scene strip jumps anywhere.
+  Click a line to pin the next note to it; a note without a line is tied to
+  the scene shown. The scene dropdown is gone.
+- `post_notes.line_offset` / `line_text`: the line relative to its scene's
+  heading, and its text then, so edits elsewhere don't move it and edits
+  inside the scene re-find it (`lib/studio/cutlines.ts`).
+- The editor shows cut notes **in the script's margin** on their line (live),
+  resolvable there, each linking to its moment in the cut
+  (`/studio?tab=post&project=&cut=&t=` seeks when the player can). "In
+  script" on a note opens the editor (or the other split pane) on the line.
+
+## Earlier — Table read & runtime
+
+Migration `20260927070000_table_read.sql` — applied to production; PR #68 merged.
+
+- Page count and runtime are measured like the industry does
+  (`lib/scriptos/timing.ts`): 55 printed lines a page, each element wrapped at
+  its own width (dialogue narrow, action wide), notes/sections don't print,
+  about a minute a page. Replaces the word-count guesses (words ÷ 185 pages,
+  × 0.8 minutes, words ÷ 190 eighths) in the editor and the scene sync.
+- The table read now **times each scene** it reads in full (from its heading,
+  pauses excluded) and saves it (`scenes.read_seconds`/`read_at`; personal
+  scripts keep it on the device). Read scenes count at their read time; the
+  rest are scaled by how the read ones compared to estimate (clamped).
+- Editor › Stats › **Runtime**: total, pacing strip (read scenes green), per
+  scene length in eighths / estimate / read / runtime, jump to a scene or
+  table-read from it; **Who speaks**: speeches, words, scenes, talk time.
+
+## Earlier — Shot designer
+
+Migration `20260927060000_shot_designer.sql` — applied to production; PR #67 merged.
+
+- Studio › Scenes: each scene's shots are a **storyboard** (`components/studio/shots`).
+  Each card is drawn by its framing (`FramingDiagram`, `lib/studio/framing.ts`:
+  a window onto a figure per size — EWS…ECU, OTS, POV, 2S, Insert; Dutch tilts
+  it, overhead looks down) or its storyboard frame from the library
+  (`shots.frame_media_id`, same-project composite FK, cleared if the image is
+  deleted). The camera is set on a visual picker: framing swatches, angle,
+  move, lens. Drag or arrow buttons reorder (`reorderShots`). Shots made from a
+  "Shot" margin note show the script line and open the scene in the script.
+- Camera fields are bounded in the DB. The shared Studio modal (and the camera
+  dialog) now sit above the Studio header and the taskbar (they were covered).
+
+## Earlier — Split screen
+
+PR #66 merged. No migrations.
+
+- **`/split`**: any two surfaces side by side — the script beside Scenes,
+  Readiness beside the script, the breakdown beside the schedule… Each pane is
+  the real page in a same-origin frame (full features), without the suite's
+  chrome. Resizable (drag, or arrow keys on the divider; double-click / Enter
+  resets), side by side or stacked (stacked on phones), swap, per-pane surface
+  menu, open a pane full screen or close it. Layout lives in the URL and on
+  the device.
+- **Linked panes**: the script's caret scene lights up in Scenes and opens in
+  Readiness; "In script" on a scene card (and "Open in script" in Readiness)
+  moves the script to that scene. Outside a split, those go to
+  `/editor?script=…&scene=…`, which the editor now honours.
+- Open it with Ctrl+\ (⌘\), the taskbar's split button, or ⌘K → Split screen.
+- Security: only this site may frame its pages (`frame-ancestors 'self'`,
+  `X-Frame-Options`) — none existed before; share pages stay embeddable.
+
+## Earlier — Scene readiness
+
+Migration `20260927050000_readiness.sql` — applied to production; PR #65 merged.
+
+- **Studio › Production › Readiness**: every scene against what it needs to
+  shoot — cast, breakdown (tagged + all ready), shots, a dated shoot day,
+  references (optional) — computed from the data (`lib/studio/readiness.ts`),
+  grouped by shoot day, next day to prepare, "what unblocks the most", each
+  blocker linked to its fix. Live: `character_castings` joins Realtime.
+- `studio_boards` / `studio_assets` dropped (owner approved; the two rows were
+  external links on a board with no project — recorded in PR #65's body).
+- Next (user-approved list): split screen (editor ↔ Studio, any pair, linked),
+  shot designer, table read + runtime, cut notes on script lines, rest of the
+  hardcoded sweep, ecosystem design from the dream users.
+
+## Earlier — The breakdown remembers
+
+Migration `20260927040000_breakdown_memory.sql` — applied to production; PR #64 merged.
+
+- `breakdown_memory()`: what you tagged in your other projects. The editor's
+  suggestions now include things you've tagged before when a scene names them
+  (in any case, plurals and possessives too) — "you've tagged it before" — and
+  a CAPITALISED word is filed where you filed it last time, not where the
+  parser's fixed word list guesses. Words inside an offered name aren't
+  offered again alone ("TRENCH COAT" → one suggestion).
+- `scenes.elements` dropped; `sync_script_scenes` no longer stores the
+  parser's guesses (nothing read them since the breakdown tables).
+
+## Earlier — Project formats as data
+
+Migration `20260927030000_project_formats.sql` — applied to production
+(fingerprint matched on all 12 categories, no project's `updated_at` moved);
+PR #63 merged.
+
+- `project_formats` (10 formats, admin-extendable) replaces four lists that
+  disagreed: the new-project modal's six types, `lib/projectTypes.ts` phase
+  templates (deleted), the phase label overrides in `lib/os/phases.ts`, the
+  engine's hardcoded Podcast/Documentary/Commercial milestone skips — and the
+  portfolio's categories. `projects.project_type` / `portfolio_projects.category`
+  reference it (renames cascade).
+- `project_progress()` returns the format's rules (`format`); `computeProgress`
+  reads them, so a new format (e.g. a stage show with "Rehearsals" and
+  "Opening night") works without a code change.
+- `FormatPicker`: format cards with the selected format's journey (its phases
+  and starting script format). Used when starting a project and — new — from
+  the phase panel, where the owner can change a project's format.
+- Also: shared `Textarea` label is a real `<label>`; floating labels use the
+  readable accent; new-project modal passes axe (now checked in CI).
+
+## Earlier — One crafts list
+
+Migration `20260927020000_crafts.sql` — applied to production; PR #62 merged.
+
+- `crafts` (49 crafts in 12 departments, admin-extendable) replaces the three
+  disagreeing hardcoded lists (Jobs, profile editor, Crew directory).
+  `profiles.role` / `jobs.role` reference it (renames cascade); legacy
+  `creator`/`admin` profile values cleared; free-text mapped (Cinematographer →
+  Director of photography, Sound Designer → Sound designer…).
+- `project_crew.craft` added; `role` is now only the permission level
+  (`lead`/`contributor`/`viewer`). Hiring from a job keeps the job's craft
+  (it used to become "contributor"). Budget lines posted as jobs pick the
+  closest craft (`suggestCraft`).
+- `CraftPicker`: searchable, department-grouped popover (no 49-option select).
+  Jobs filter lists only crafts that have postings.
+- Editor fixed-height shell (the page scrolled when the breakdown panel grew,
+  pushing the script under the header); tag bar laid out in columns.
+
+## Latest Session — Phase engine + the breakdown, in the script
+
+Branch: `claude/state-assessment-testing-r0tf3y` (PR #60). Migrations
+`20260927000000_project_progress.sql` and `20260927010000_breakdown.sql` are
+**not yet in production** — apply both before merging.
+
+- **Phase engine** (`lib/os/progress.ts`, `project_progress()` RPC): milestones
+  read from project data, tools unlock by phase or early once their work
+  starts, owner moves phases, unlock reveal, logline editor, Studio tabs gated
+  with "Open it now".
+- **Breakdown as data** (replaces guessed `scenes.elements` + hardcoded rates):
+  per-project `breakdown_categories` (seeded defaults, editable), one
+  `breakdown_elements` row per thing (status, cost, owner, notes),
+  `scene_elements` tags, `breakdown_dismissals`; `tag_scene_element()` finds or
+  creates. Parser guesses are only *suggestions* (`lib/breakdown`).
+- **Editor tag mode** (Ctrl+Shift+B): tagged elements highlighted in category
+  colour, suggestions underlined; select words → floating tag bar (Alt+1–9);
+  Breakdown tab: scene tags, suggestions, quick tag, element card (status,
+  cost, owner, notes, scenes).
+- Both migrations are **applied to production** (fingerprint matches on all
+  12 categories); PR #60 merged.
+
+## Latest Session — The breakdown drives the Studio
+
+Branch: `claude/state-assessment-testing-r0tf3y`. No migrations.
+
+- **Studio › Production › Breakdown**: by category / by scene (breakdown
+  sheets), status filters, search, element card; **Categories & rates**
+  (names, colours, order, unit costs); **Push to budget**
+  (`Breakdown · <category>` lines); printable breakdown sheets.
+- **Stripboard** replaces the day-number inputs: drag strips between days
+  (or Alt+←/→), pages vs the owner-set day length, company-move warnings,
+  cast per day, call-sheet dates, status dots, Day out of days, auto-schedule
+  at the day length.
+- Removed: `lib/scriptos/breakdown.ts` + `lib/supabase/breakdown.ts`
+  (count × hardcoded rate, cast × $500, pages × $200), the old
+  `ProductionBoards` stripboard, the schedule's guessed-element chips. The
+  project page's budget now updates from the breakdown.
+- Next: `scenes.elements` (parser guesses still stored by the scene sync) can
+  be dropped; roles/departments taxonomy shared by Jobs, profiles and Crew;
+  project types/phases as data.
+
+## Latest Session — Post-production
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Migration
+`20260926050000_post_production.sql` (not yet in production). Audit parts 1
+and 2 are merged and applied; production matches `main` on every fingerprint
+category.
+
+- **Studio › Post**: cut review (link or library video; timecoded notes with
+  department + scene, resolve/reopen, click-to-seek; "Now" from YouTube,
+  Vimeo and library players) and the post pipeline + deliverables (status,
+  due, owner; standard set on one click). Scene cards show open post notes.
+- Also in part 2 (merged): Spotify sign-in hardening (OAuth state, crypto
+  PKCE, tokens tied to the app user), live mood searches, admin analytics
+  platform-wide, portfolio media/players for YouTube/Vimeo/Drive, custom
+  avatars load.
+
+Accessibility: every page passes WCAG 2.2 A/AA (axe-core) signed out, signed in,
+admin and mobile — from ~800 violations to 0 — and CI now enforces it
+(`e2e/accessibility.spec.ts`; rules in `design-tokens.md`).
+
+Queued (user):
+the phase-unlocked "Lego" ecosystem — design from the suite's dream users
+(writers, directors, producers, crew, editors, composers, the community)
+before building.
+
+## Latest Session — Audit, part 2: production records that were never saved
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 106 integration
+tests, 171 unit tests, tsc/lint/build, Studio journey + screenshots of the
+new flows against the local stack. Migration `20260926040000` is **not yet
+applied to production** (part 1, `20260926030000`, is applied and production
+matches `main` on every fingerprint category).
+
+- **Margin notes route to real work** (`add_script_annotation`, one
+  transaction): Shot → numbered shot on that scene, Beat → beat board,
+  To-do → project task. Labels say where each goes.
+- **Shot list** per scene in Studio › Scenes (size, description, status),
+  live; shots are pinned to their scene's project.
+- **Editor stash persists** (`script_stash`, access follows the script,
+  live); `scripts.stash_items` dropped.
+- **Call sheets are saved**: date, calls, wrap, address, weather, notes,
+  per-person call times; printout uses them (and names crew correctly).
+- **Tasks** get assignee (notified) + due date.
+- **Reduce motion** applies app-wide (framer-motion too).
+- Profile "open script" opens that script.
+
+Next: Spotify rebuild (server-side tokens; live mood search instead of
+unverifiable editorial playlist ids, one of which was duplicated);
+post-production module; integrations; design/motion pass.
+`studio_boards`/`studio_assets` (2 orphan rows) still to drop.
+
+## Latest Session — Suite audit: privacy, open doors, fake UI
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 94 integration
+tests (personas), 169 unit tests, tsc/lint/build, Studio journey in a real
+browser against the local stack. Migration `20260926030000` is **not yet
+applied to production** — apply it right after the code deploys (the old
+code selects `profiles.*`, which the migration forbids).
+
+Fixed (security):
+- `is_admin` self-grant (migration `20260926020000`, applied; admins reset).
+- "Private" wasn't private for crew on older tables; crew lists were empty
+  for non-owners (they only saw their own row).
+- Notifications forgeable (any user → any user, any link).
+- Project soundtrack notes, `script_notes` and private profile fields
+  (admin flag, notification prefs, Discord id) readable by everyone.
+- Project script access outlived crew membership (via `last_edited_by`);
+  anyone could add scripts to any project; shared scripts' characters
+  writable by everyone; audit log forgeable; any user could upload anything
+  to four public buckets; outsiders could react to any channel message.
+
+Fixed (truth): project cards (fabricated deadline/team/progress), project
+hub (phase-derived "% complete", empty team, decorative previews), Lounge
+"crew" (first 20 site profiles), Lounge chat not live, production feed read
+a table nothing writes; hub/settings saves that ignored errors now roll back;
+crew no longer see owner-only controls; one budget estimator.
+
+Next (audit list): reduce-motion everywhere; annotations "routes to" wired
+to real destinations (shot list, beats, tasks); call sheets persisted;
+editor stash persisted; profile "open script" link; soundtrack duplicate
+playlists; task assignee/due date; post-production module; integrations;
+design/motion pass. `studio_boards`/`studio_assets` still to drop.
+
+## Latest Session — The Studio, rebuilt: one library, scenes that follow the script, share links
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: 68 integration
+tests (personas, storage, realtime), 167 unit tests, tsc/lint/build, and the
+Studio journey in a real browser against a local stack (also in CI).
+
+- **One project library** (`media`, private `project-media` bucket) replaces
+  three disconnected systems (`concept_assets`, `project_assets`,
+  owner-only `studio_assets`). Upload files or add links (YouTube/Vimeo embed),
+  Openverse search, boards, filters, detail view. Shared with crew, live.
+- **Scenes follow the screenplay** (`scenes.script_id`, `sync_script_scenes`):
+  ids stay stable through rewrites, so references, notes, colours, shoot days
+  survive edits. Scene notes/colours moved from device-only localStorage into
+  the DB (one-time migration of existing device notes).
+- **References everywhere**: Studio → Scenes, and the editor's new **Refs** tab
+  (current scene's media, add/upload on the spot, note, colour).
+- **Share & pitch**: visibility (Private/Team/Link/Public), copy link,
+  per-item publish (owner only), server-rendered lookbook with link previews,
+  `/m/<id>` permalinks, Showcase lists Public projects' published media.
+- **Studio rebuilt** on a typed provider + CSS module (the 90-field `any`
+  context is gone); Production (story, schedule, cast & crew), Promos, Pitch
+  ported to the new data.
+- **Realtime publication** now includes the tables the app live-syncs
+  (projects, crew, budget, timeline, beats, campaigns, notifications,
+  activity, scenes, media, links) — before, those subscriptions never fired.
+
+Bugs found and fixed on the way: activity feed readable by every signed-in user
+(beat titles, scene headings — now scoped per project, backfilled);
+`scenes.time_of_day` rejected CONTINUOUS/LATER headings (whole-script imports
+failed); editor opened the server copy of a project script over unsynced local
+edits; "platform stats" were per-user RLS counts; `in-production` projects
+showed as Development; `next/image` on arbitrary hosts crashed public portfolio
+pages with YouTube or external images; "Public" promised discovery that didn't
+exist (now true via the Showcase).
+
+Removed: "Push beat to ScriptOS" (created a separate script per beat; a safe
+append needs server-side merge with unsynced editor edits — follow-up).
+
+Open: crew can still read child tables of *private* projects on older tables
+(they use `is_project_member`, not `can_access_project`); `studio_boards`/
+`studio_assets` (2 orphan rows) to drop; post-production workflow; Spotify /
+Pinterest / YouTube integrations; design & motion pass.
+
+## Latest Session — Foundation: migrations as truth, drift gate, real-DB persona tests
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: CI `database` job
+sequence from a clean stack (drift ✓, types ✓, **18 integration tests** ✓),
+tsc/lint/133 unit tests/build ✓.
+
+- **`supabase/migrations/` is now the schema source of truth.**
+  `20260926000000_baseline.sql` reconstructs production object-by-object from
+  the live catalog; proven identical to production across 14 object categories
+  (1,049 objects: columns, constraints, indexes, RLS, 129 policies, 16 function
+  bodies, grants, triggers, views, buckets, realtime). Root `supabase-*.sql`
+  files (drifted) are deleted; docs rewritten (`database-and-security.md` §3).
+- **Drift gate:** `supabase/fingerprint.sql` + `scripts/db-drift.mjs` +
+  committed `supabase/schema.fingerprint`. `npm run db:drift` fails CI if the
+  migrations don't build exactly the snapshot; `--target` checks a deployed DB
+  (`.github/workflows/production-drift.yml`, needs `PRODUCTION_DB_URL` secret).
+- **Generated types are gated:** `npm run db:types` (pinned CLI + prettier,
+  deterministic); CI fails if `database.types.ts` is stale. Regeneration removed
+  three `as any` casts and caught one real null-into-NOT-NULL write.
+- **Real-DB integration tests** (`tests/integration/`, `npm run test:integration`):
+  Sam/Jordan/Riley/anon as real accounts through PostgREST + RLS. Covers project
+  visibility + share links, script content + metadata access, signup → profile.
+  Verified they fail when the old link-leak policy is reintroduced.
+- **Production bug found + fixed (migration `20260926000100`):**
+  `internal.can_access_script` called non-existent `public.is_project_*`, so
+  every title-page / character-bible / revision read or write failed for all
+  users. Test fails before, passes after. **Must be applied to production.**
+
+Found, not yet fixed (next): realtime publication only covers chat/presence/
+collab — the app's project & notification live-sync subscriptions can never
+fire; `scripts.stash_items` exists but the editor stash is memory-only; scene
+notes/colours are device-only localStorage; 112 direct DB calls in UI files.
+
+## Latest Session — Sign-in persistence + no-silent-data-loss saves
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Verified: **133 tests pass**
+(8 new), tsc/lint/build green, 20/20 CI smoke specs; real-browser journey on
+the build: sign in → all 11 apps stay signed in → create project → Studio →
+write in editor → reload → text and project present (confirmed in the DB).
+
+Production (pre-fix) reproduction: sign-in left no session cookie and every
+app bounced to /auth. Fixes:
+- **Boot adopts the local session instantly** (`bootOS` → `getSession()` then
+  `osAdoptSession`); `getUser()` validates in the background and signs out only
+  on an explicit 401/403. Sign-in/up no longer block on profile + projects +
+  sync (`osAdoptSession`) — previously any slowness stranded the user on /auth.
+- **Auth form can't leak credentials**: `method="post"` + submit disabled until
+  hydrated (pre-hydration native submit put the password in the URL).
+- **Service worker v2**: no homepage fallback for failed navigations (it
+  rewrote the URL to "/"), never caches redirects, purges v1 caches.
+- `useOSGate` keeps `?redirect=`; nav hides Sign In/Out while identity loads.
+- **Editor data loss fixed** (`lib/scriptos/storage.ts`): load prefers unsynced
+  local edits over the stale server copy; failed saves retry on a timer (not
+  only on `online`); sync no longer clobbers text typed mid-upload. Status bar
+  shows "On device — syncing" instead of always "Saved"; one-time toast.
+  Pinned by `storage.test.ts` (2 of 4 fail on the old code).
+- Project creation uses the live session; activity logging is fire-and-forget
+  (it blocked navigation to Studio when slow).
+
+## Latest Session — Live assessment + fixes for the blocking bugs
+
+Branch: `claude/state-assessment-testing-r0tf3y`. Report:
+`docs/STATE_ASSESSMENT_2026-09.md`. Verified: **123 tests pass** (5 new),
+tsc/lint/build green, 20/20 CI smoke specs pass locally.
+
+- **Identity race fixed at the source** (`lib/os/boot.ts`): `getUser()` is
+  bounded (8 s, then local session) and a profile-read failure retries, then
+  falls back to a minimal identity. A valid session can no longer resolve to
+  `anon`, which was what made signed-in users look signed out and the editor
+  drop writes. `lib/os/boot.test.ts` pins it (3 of 5 fail on the old code).
+- Editor toasts if it cannot open a script instead of failing silently;
+  `/projects` no longer gives up on identity after 12 s.
+- `/showcase` crash fixed: 3D gallery (R3F v8, incompatible with Next 15's
+  React 19) replaced with a 2D grid; `three`/fiber/drei removed.
+- **Visibility migration corrected and APPLIED to prod** (`project_visibility_and_share_links`):
+  private = owner only; no anon row access; share links resolve via
+  `get_shared_project(token)`. Persona SQL (owner/crew/outsider/anon) verified.
+- Spotify `.maybeSingle()` (no more 406 per page); browser network errors map
+  to "Unable to connect"; `route-smoke` added to CI (stale `/settings` test fixed).
+
+Still open: security advisors (incl. the intentional anon-executable
+`get_shared_project`), public storage buckets, generated types not regenerated
+for `visibility`/`share_token` (code casts), `sync-intel` broken by a missing
+`.claude/skills/supabase` path.
+
 ## Latest Session — Project visibility model, global activity, parser consolidation
 
 Branch: `chore/visibility-activity-consolidate`. Verified: **118 tests pass**;

@@ -65,14 +65,30 @@ export async function syncPendingScripts() {
         }]);
 
         if (!error) {
-          script.syncPending = false;
-          await set(k, script);
+          // Only clear the flag if the writer hasn't saved newer text while this
+          // upload was in flight — otherwise we'd overwrite it with this snapshot.
+          const latest = await get<StoredScript>(k);
+          if (latest && latest.updatedAt === script.updatedAt) {
+            await set(k, { ...latest, syncPending: false });
+          }
         } else {
           console.error(`[Offline Sync] Failed to sync ${script.id}:`, error);
         }
       }
     }
   }
+}
+
+// Retry unsynced edits shortly after a failed save. The 'online' event alone
+// misses the common case: a request that failed while the browser still
+// considered itself online (a blip, a dropped connection), which never fires it.
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+export function scheduleScriptSync(delayMs = 15000) {
+  if (typeof window === 'undefined' || retryTimer) return;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    syncPendingScripts().catch(console.error);
+  }, delayMs);
 }
 
 if (typeof window !== 'undefined') {
@@ -130,13 +146,20 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
     syncPending: false
   }));
 
-  for (const s of scripts) {
+  for (let i = 0; i < scripts.length; i++) {
+    const s = scripts[i];
     const local = await get<StoredScript>(`script_${s.id}`);
 
-    if (!local || !local.syncPending) {
+    if (local?.syncPending) {
+      // Unsynced local edits are newer than the server copy: show them, never
+      // the stale server text (which the next autosave would then write back
+      // over the writer's work).
+      scripts[i] = local;
+    } else {
       await set(`script_${s.id}`, s);
     }
   }
+  if (scripts.some((s) => s.syncPending)) scheduleScriptSync(0);
 
   const allKeys = await keys();
   for (const k of allKeys) {
@@ -230,10 +253,14 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
     }
 
     if (!error) {
-      unifiedData.syncPending = false;
-      await set(`script_${scriptId}`, unifiedData);
+      const latest = await get<StoredScript>(`script_${scriptId}`);
+      if (!latest || latest.updatedAt === unifiedData.updatedAt) {
+        unifiedData.syncPending = false;
+        await set(`script_${scriptId}`, unifiedData);
+      }
     } else {
       console.warn('[Offline Sync] Supabase save failed, will sync later.', error);
+      scheduleScriptSync();
     }
   }
 

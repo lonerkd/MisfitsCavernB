@@ -1,5 +1,7 @@
 'use client';
 
+import { TimingPanel } from './TimingPanel';
+import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { ScriptLine } from '@/types/screenplay';
@@ -18,15 +20,16 @@ export function BoardView({
 }: {
   scenesList: ScriptLine[];
   lines: ScriptLine[];
-  sceneColors: Record<string, string>;
-  sceneNotes: Record<string, string>;
+  /** Per scene, by index in scenesList. */
+  sceneColors: Array<string | null>;
+  sceneNotes: string[];
   sceneWordCounts: number[];
   dragSceneIdx: number | null;
   setDragSceneIdx: (i: number | null) => void;
   dropSceneIdx: number | null;
   setDropSceneIdx: (i: number | null) => void;
   jumpToScene: (sceneIndex: number) => void;
-  setSceneNote: (sceneText: string, note: string) => void;
+  setSceneNote: (sceneIndex: number, note: string) => void;
   reorderScenes: (from: number, to: number) => void;
 }) {
   if (scenesList.length === 0) {
@@ -41,13 +44,13 @@ export function BoardView({
       {scenesList.map((scene, i) => (
         <SceneBoardCard
           key={i} scene={scene} index={i} lines={lines}
-          cardColor={sceneColors[scene.text.trim().toUpperCase()] || CARD_COLORS[i % CARD_COLORS.length]}
+          cardColor={sceneColors[i] || CARD_COLORS[i % CARD_COLORS.length]}
           wordCount={sceneWordCounts[i] || 0}
-          note={sceneNotes[scene.text.trim().toUpperCase()] || ''}
+          note={sceneNotes[i] || ''}
           isDragging={dragSceneIdx === i}
           isDropTarget={dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i}
           onJump={() => jumpToScene(i)}
-          onSetNote={note => setSceneNote(scene.text, note)}
+          onSetNote={note => setSceneNote(i, note)}
           onDragStart={(e) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
           onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
           onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
@@ -173,10 +176,10 @@ export function OutlineView({
   filteredScenes: ScriptLine[];
   scenesList: ScriptLine[];
   lines: ScriptLine[];
-  sceneColors: Record<string, string>;
-  sceneNotes: Record<string, string>;
+  sceneColors: Array<string | null>;
+  sceneNotes: string[];
   jumpToScene: (sceneIndex: number) => void;
-  tagScene: (sceneText: string, color: string) => void;
+  tagScene: (sceneIndex: number, color: string) => void;
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
@@ -187,7 +190,7 @@ export function OutlineView({
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
       </div>
       {filteredScenes.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#666', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
+        <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
       ) : (
         filteredScenes.map((scene, i) => {
           const globalIdx = scenesList.indexOf(scene);
@@ -199,7 +202,7 @@ export function OutlineView({
           const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
           return (
             <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              {(() => { const tag = sceneColors[scene.text.trim().toUpperCase()]; return (
+              {(() => { const tag = sceneColors[globalIdx]; return (
                 <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
               ); })()}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -207,18 +210,18 @@ export function OutlineView({
                   <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {CARD_COLORS.map(color => {
-                      const active = sceneColors[scene.text.trim().toUpperCase()] === color;
+                      const active = sceneColors[globalIdx] === color;
                       return (
                       <button
                         key={color}
                         title={active ? 'Remove tag' : 'Tag scene'}
-                        onClick={() => tagScene(scene.text, color)}
+                        onClick={() => tagScene(globalIdx, color)}
                         style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
                       />
                     ); })}
                   </div>
                 </div>
-                {sceneNotes[scene.text.trim().toUpperCase()] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[scene.text.trim().toUpperCase()]}”</div>}
+                {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}
                 {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
@@ -237,8 +240,12 @@ export function OutlineView({
 export function StatsView({
   currentScriptTitle, wordCount, pageEst, scenesList, uniqueLocations, chars,
   charStats, dialogueRatio, sceneWordCounts, actStructure, sceneCharMap,
-  currentSceneIdx, lintIssues,
+  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene,
 }: {
+  timing: ScriptTiming;
+  characterTiming: CharacterTiming[];
+  onJumpToScene: (sceneIdx: number) => void;
+  onReadFromScene: (sceneIdx: number) => void;
   currentScriptTitle?: string;
   wordCount: number;
   pageEst: number;
@@ -262,9 +269,9 @@ export function StatsView({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
         {[
-          { label: 'Words',   value: wordCount.toLocaleString(), color: '#6366f1', sub: `${pageEst} pages` },
-          { label: 'Runtime', value: `${Math.ceil(pageEst * 0.8)}m`, color: '#10b981', sub: `~${Math.round(pageEst * 0.8 * 60)}s total` },
-          { label: 'Scenes',  value: `${scenesList.length}`, color: '#d7340b', sub: `${uniqueLocations.length} locations` },
+          { label: 'Words',   value: wordCount.toLocaleString(), color: '#818cf8', sub: `${pageEst} pages` },
+          { label: 'Runtime', value: formatRuntime(timing.runtime), color: '#10b981', sub: timing.readScenes ? `${timing.readScenes} scenes timed` : 'a minute a page' },
+          { label: 'Scenes',  value: `${scenesList.length}`, color: '#e8431a', sub: `${uniqueLocations.length} locations` },
           { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
           { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
         ].map(s => (
@@ -274,10 +281,12 @@ export function StatsView({
           >
             <div style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: 6 }}>{s.value}</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 3 }}>{s.label}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', opacity: 0.6 }}>{s.sub}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)'}}>{s.sub}</div>
           </div>
         ))}
       </div>
+
+      <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} />
 
       {scenesList.length > 0 && (() => {
         const totalWc = sceneWordCounts.reduce((a, b) => a + b, 0) || 1;
@@ -288,7 +297,7 @@ export function StatsView({
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               {[
-                { label: 'INT/Day', color: '#6366f1' }, { label: 'INT/Night', color: '#4338ca' },
+                { label: 'INT/Day', color: '#818cf8' }, { label: 'INT/Night', color: '#9194f6' },
                 { label: 'EXT/Day', color: '#d97706' }, { label: 'EXT/Night', color: '#92400e' },
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -347,7 +356,7 @@ export function StatsView({
                 return (
                   <div key={scene.id} style={{ flex: `0 0 ${w}%`, minWidth: 4, display: 'flex', justifyContent: 'center' }}>
                     {w > 3 && (
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', opacity: 0.5 }}>{i + 1}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)'}}>{i + 1}</span>
                     )}
                   </div>
                 );
@@ -398,7 +407,7 @@ export function StatsView({
                 {scenesList.map((_, si) => (
                   <div key={si} style={{ flex: 1, minWidth: 8 }}>
                     {(si + 1) % Math.max(1, Math.floor(scenesList.length / 8)) === 0 && (
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', opacity: 0.4, textAlign: 'center' }}>{si + 1}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', textAlign: 'center' }}>{si + 1}</div>
                     )}
                   </div>
                 ))}
@@ -412,11 +421,11 @@ export function StatsView({
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
         <div style={{ display: 'flex', gap: 1, borderRadius: 6, overflow: 'hidden', height: 20 }}>
           <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
-          <div style={{ flex: 1, background: '#d7340b' }} />
+          <div style={{ flex: 1, background: '#e8431a' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#6366f1' }}>{dialogueRatio}% Dialogue</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#d7340b' }}>{100 - dialogueRatio}% Action</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#818cf8' }}>{dialogueRatio}% Dialogue</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#e8431a' }}>{100 - dialogueRatio}% Action</span>
         </div>
       </div>
 
@@ -476,7 +485,7 @@ export function StatsView({
           {[
             { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: '#ef4444' },
             { count: lintIssues.filter(i => i.type === 'warning').length, label: 'Warnings', color: '#eab308' },
-            { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: '#6366f1' },
+            { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: '#818cf8' },
           ].map(({ count, label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? '#10b981' : color, lineHeight: 1 }}>{count}</span>

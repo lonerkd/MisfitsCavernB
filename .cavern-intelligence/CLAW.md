@@ -54,9 +54,9 @@ One interconnected suite, not bolted-together tools:
 
 - Vercel deploys from GitHub: lonerkd/MisfitsCavernB, production branch: main.
 
-- supabase-schema.sql in the repo is the schema REFERENCE; the live DB is
+- supabase/migrations/ is the schema source of truth (see
 
-  source of truth and is changed via named migrations only.
+  database-and-security.md §3). Production changes only by applying those files.
 
 
 
@@ -92,9 +92,9 @@ One interconnected suite, not bolted-together tools:
 
 4. GIT DISCIPLINE. Never commit to main directly. Branch → commit with clear
 
-   messages → push → PR → merge when CI (Vercel) is green. Mirror every live
+   messages → push → PR → merge when CI is green. Schema changes are
 
-   DB migration into supabase-schema.sql in the same PR.
+   migration files + snapshot + types + a persona test in the same PR.
 
 5. SECURITY FLOOR. New tables get RLS from birth, modeled on the existing
 
