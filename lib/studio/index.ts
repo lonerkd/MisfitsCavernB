@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -13,6 +13,7 @@ export * from './api';
 export * from './media-kind';
 export * from './call-sheet';
 export * from './locations';
+export * from './money';
 export { useLiveRows } from './live';
 export type { LiveRows, LiveStatus } from './live';
 
@@ -79,6 +80,22 @@ export function useCallSheets(projectId: string | null) {
     filter: `project_id=eq.${projectId}`,
     load: () => studio.listCallSheets(projectId!),
     keyOf: (x) => String(x.id),
+  });
+}
+
+export function useExpenses(projectId: string | null) {
+  return useLiveRows<Expense>({
+    scope: projectId, table: 'expenses', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listExpenses(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at),
+  });
+}
+
+export function useTimesheets(projectId: string | null) {
+  return useLiveRows<Timesheet>({
+    scope: projectId, table: 'timesheets', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listTimesheets(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => b.work_date.localeCompare(a.work_date),
   });
 }
 

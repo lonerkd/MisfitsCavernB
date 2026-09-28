@@ -969,6 +969,11 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {budget.length === 0 && <Empty>No budget items</Empty>}
+          {budget.length > 0 && (
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', margin: '0 0 8px' }}>
+              Actuals follow what’s paid in <Link href="/studio?tab=production&view=money" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Studio › Money</Link> — spend, vendors and timesheets.
+            </p>
+          )}
           {budget.map(b => (
             <BudgetRowItem
               key={b.id} item={b} posted={postedBudgetIds.has(b.id)} posting={postingBudgetId === b.id}

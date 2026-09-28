@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T08:42:42.158Z",
+  "last_synchronized": "2026-09-28T09:19:07.087Z",
   "stats": {
-    "totalFiles": 418,
-    "totalSize": 3212290,
+    "totalFiles": 424,
+    "totalSize": 3268924,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 143,
-      ".ts": 225,
+      ".tsx": 144,
+      ".ts": 229,
       ".js": 7,
-      ".sql": 29
+      ".sql": 30
     }
   },
   "modules": {
@@ -220,6 +220,7 @@
         "components/studio/production/CallSheetsPanel.tsx",
         "components/studio/production/CrewView.tsx",
         "components/studio/production/LocationsView.tsx",
+        "components/studio/production/MoneyView.tsx",
         "components/studio/production/OnSetView.tsx",
         "components/studio/production/ReadinessView.tsx",
         "components/studio/production/ScheduleView.tsx",
@@ -275,7 +276,8 @@
         "supabase/migrations/20260928050000_onboarding.sql",
         "supabase/migrations/20260928060000_call_sheets_issue.sql",
         "supabase/migrations/20260928070000_hiring_loop.sql",
-        "supabase/migrations/20260928080000_locations.sql"
+        "supabase/migrations/20260928080000_locations.sql",
+        "supabase/migrations/20260928090000_money.sql"
       ]
     }
   },
@@ -497,8 +499,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 65404,
-      "last_modified": "2026-09-28T03:35:04.179Z"
+      "size": 65794,
+      "last_modified": "2026-09-28T09:16:47.211Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -572,8 +574,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 10805,
-      "last_modified": "2026-09-28T08:38:03.185Z"
+      "size": 10814,
+      "last_modified": "2026-09-28T09:16:11.971Z"
     },
     {
       "path": "app/welcome/page.tsx",
@@ -951,6 +953,11 @@
       "last_modified": "2026-09-28T08:38:39.630Z"
     },
     {
+      "path": "components/studio/production/MoneyView.tsx",
+      "size": 17972,
+      "last_modified": "2026-09-28T09:16:04.909Z"
+    },
+    {
       "path": "components/studio/production/OnSetView.tsx",
       "size": 22750,
       "last_modified": "2026-09-27T20:01:49.784Z"
@@ -1012,8 +1019,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 4710,
-      "last_modified": "2026-09-28T08:38:49.609Z"
+      "size": 4984,
+      "last_modified": "2026-09-28T09:16:11.971Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1144,6 +1151,11 @@
       "path": "e2e/login-smoke.spec.ts",
       "size": 932,
       "last_modified": "2026-09-24T20:05:03.636Z"
+    },
+    {
+      "path": "e2e/money.spec.ts",
+      "size": 5464,
+      "last_modified": "2026-09-28T09:17:11.249Z"
     },
     {
       "path": "e2e/on-set.spec.ts",
@@ -1467,8 +1479,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 21059,
-      "last_modified": "2026-09-28T08:38:03.185Z"
+      "size": 21086,
+      "last_modified": "2026-09-28T09:16:11.971Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1702,8 +1714,8 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 29515,
-      "last_modified": "2026-09-28T08:37:11.744Z"
+      "size": 33897,
+      "last_modified": "2026-09-28T09:14:47.350Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -1737,8 +1749,8 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 13006,
-      "last_modified": "2026-09-28T08:37:11.744Z"
+      "size": 13737,
+      "last_modified": "2026-09-28T09:14:47.351Z"
     },
     {
       "path": "lib/studio/live.ts",
@@ -1764,6 +1776,16 @@
       "path": "lib/studio/media-kind.ts",
       "size": 5085,
       "last_modified": "2026-09-26T19:17:14.206Z"
+    },
+    {
+      "path": "lib/studio/money.test.ts",
+      "size": 1830,
+      "last_modified": "2026-09-28T09:14:22.661Z"
+    },
+    {
+      "path": "lib/studio/money.ts",
+      "size": 3163,
+      "last_modified": "2026-09-28T09:14:16.217Z"
     },
     {
       "path": "lib/studio/onset.test.ts",
@@ -1867,8 +1889,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 97666,
-      "last_modified": "2026-09-28T08:36:45.886Z"
+      "size": 103508,
+      "last_modified": "2026-09-28T09:13:06.801Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2171,6 +2193,11 @@
       "last_modified": "2026-09-28T08:36:40.310Z"
     },
     {
+      "path": "supabase/migrations/20260928090000_money.sql",
+      "size": 10738,
+      "last_modified": "2026-09-28T09:13:55.052Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2178,7 +2205,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T08:42:25.482Z"
+      "last_modified": "2026-09-28T09:18:50.005Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2259,6 +2286,11 @@
       "path": "tests/integration/media-library.test.ts",
       "size": 9086,
       "last_modified": "2026-09-26T07:25:04.250Z"
+    },
+    {
+      "path": "tests/integration/money.test.ts",
+      "size": 5812,
+      "last_modified": "2026-09-28T09:13:29.473Z"
     },
     {
       "path": "tests/integration/onboarding.test.ts",
