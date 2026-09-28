@@ -1,6 +1,23 @@
 # Misfits Cavern — Project State
 
-## Latest Session — On set
+## Latest Session — The writing loop
+
+Migration `20260927110000_writing_loop.sql` — **apply to production before merging**.
+
+- The editor's daily goal and sprint were cosmetic (a goal of 1,000 fixed in
+  code measured against the script's *total* size; the sprint couldn't be
+  restarted without a reload; nothing was saved). Now:
+- **Today**: words actually typed today (a paste or a loaded file doesn't
+  count) against your own goal (click to change; saved to your profile).
+- **Streak**: consecutive days you met your goal (each day judged by the goal
+  you had that day), best streak, and the last four weeks as a grid.
+- **Sprint**: your length (5–120 min), start / pause / reset, words this
+  sprint (also in the header), logged when it ends.
+- **Earned**: first goal, 7- and 30-day streaks, a 2,000-word day, 10
+  sprints, 20,000 words — all derived from your real days.
+- Saved a few seconds after typing pauses, every 20s, and when you leave.
+
+## Earlier — On set
 
 Migration `20260927100000_set_log.sql` — **apply to production before merging**.
 

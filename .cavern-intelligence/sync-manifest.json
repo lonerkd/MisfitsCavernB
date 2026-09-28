@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-27T20:06:50.060Z",
+  "last_synchronized": "2026-09-28T01:09:23.559Z",
   "stats": {
-    "totalFiles": 361,
-    "totalSize": 2821617,
+    "totalFiles": 368,
+    "totalSize": 2854360,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 136,
-      ".ts": 185,
+      ".tsx": 137,
+      ".ts": 190,
       ".js": 7,
-      ".sql": 19
+      ".sql": 20
     }
   },
   "modules": {
@@ -180,6 +180,7 @@
         "components/editor/TimingPanel.tsx",
         "components/editor/WriteFooter.tsx",
         "components/editor/WriteView.tsx",
+        "components/editor/WritingLoop.tsx",
         "components/editor/breakdown/BreakdownPanel.tsx",
         "components/editor/breakdown/TagBar.tsx",
         "components/editor/breakdown/useEditorBreakdown.ts",
@@ -258,7 +259,8 @@
         "supabase/migrations/20260927070000_table_read.sql",
         "supabase/migrations/20260927080000_cut_note_lines.sql",
         "supabase/migrations/20260927090000_campaigns.sql",
-        "supabase/migrations/20260927100000_set_log.sql"
+        "supabase/migrations/20260927100000_set_log.sql",
+        "supabase/migrations/20260927110000_writing_loop.sql"
       ]
     }
   },
@@ -380,8 +382,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 79306,
-      "last_modified": "2026-09-27T19:12:03.128Z"
+      "size": 79092,
+      "last_modified": "2026-09-28T01:05:42.809Z"
     },
     {
       "path": "app/error.tsx",
@@ -705,8 +707,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 32905,
-      "last_modified": "2026-09-27T05:09:36.483Z"
+      "size": 31141,
+      "last_modified": "2026-09-28T01:05:42.809Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -732,6 +734,11 @@
       "path": "components/editor/WriteView.tsx",
       "size": 20254,
       "last_modified": "2026-09-27T19:12:03.128Z"
+    },
+    {
+      "path": "components/editor/WritingLoop.tsx",
+      "size": 9854,
+      "last_modified": "2026-09-28T01:05:42.817Z"
     },
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
@@ -1025,8 +1032,8 @@
     },
     {
       "path": "e2e/accessibility.spec.ts",
-      "size": 6619,
-      "last_modified": "2026-09-27T06:50:58.988Z"
+      "size": 6656,
+      "last_modified": "2026-09-27T20:06:57.523Z"
     },
     {
       "path": "e2e/auth-journey.spec.ts",
@@ -1102,6 +1109,11 @@
       "path": "e2e/table-read.spec.ts",
       "size": 5011,
       "last_modified": "2026-09-27T18:50:02.893Z"
+    },
+    {
+      "path": "e2e/writing-loop.spec.ts",
+      "size": 5084,
+      "last_modified": "2026-09-28T01:06:37.204Z"
     },
     {
       "path": "hooks/useColorExtractor.ts",
@@ -1675,8 +1687,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 86433,
-      "last_modified": "2026-09-27T19:58:41.764Z"
+      "size": 88116,
+      "last_modified": "2026-09-28T01:05:58.313Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1762,6 +1774,21 @@
       "path": "lib/webrtc/voice.ts",
       "size": 8556,
       "last_modified": "2026-09-24T20:05:03.648Z"
+    },
+    {
+      "path": "lib/writing/core.test.ts",
+      "size": 2126,
+      "last_modified": "2026-09-28T01:05:42.817Z"
+    },
+    {
+      "path": "lib/writing/core.ts",
+      "size": 3751,
+      "last_modified": "2026-09-28T01:05:42.821Z"
+    },
+    {
+      "path": "lib/writing/index.ts",
+      "size": 5354,
+      "last_modified": "2026-09-28T01:05:51.825Z"
     },
     {
       "path": "middleware.ts",
@@ -1911,7 +1938,12 @@
     {
       "path": "supabase/migrations/20260927100000_set_log.sql",
       "size": 3993,
-      "last_modified": "2026-09-27T19:56:53.880Z"
+      "last_modified": "2026-09-28T01:00:33.314Z"
+    },
+    {
+      "path": "supabase/migrations/20260927110000_writing_loop.sql",
+      "size": 3727,
+      "last_modified": "2026-09-28T01:05:51.809Z"
     },
     {
       "path": "tailwind.config.js",
@@ -1921,7 +1953,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-27T20:06:25.592Z"
+      "last_modified": "2026-09-28T01:08:21.159Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2047,6 +2079,11 @@
       "path": "tests/integration/table-read.test.ts",
       "size": 2277,
       "last_modified": "2026-09-27T18:48:04.191Z"
+    },
+    {
+      "path": "tests/integration/writing-loop.test.ts",
+      "size": 3105,
+      "last_modified": "2026-09-28T01:06:37.205Z"
     },
     {
       "path": "tsconfig.json",

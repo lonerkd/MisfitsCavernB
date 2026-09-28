@@ -23,12 +23,9 @@ export interface EditorRightPanelsProps {
   sceneWordCounts: number[];
   sceneCharMap: string[][];
   insertElement: (type: string) => void;
-  sprintActive: boolean;
-  setSprintActive: (v: boolean) => void;
-  sprintTime: number;
+  /** Today's words, streak, sprint and badges (components/editor/WritingLoop). */
+  writingPanel: React.ReactNode;
   wordCount: number;
-  dailyGoal: number;
-  goalProgress: number;
   pageEst: number;
   dialogueRatio: number;
   typewriterMode: boolean;
@@ -96,7 +93,7 @@ function SectionHeader({
 export function EditorRightPanels({
   rightPanel, setRightPanel, activeView, currentSceneIdx, scenesList,
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
-  sprintActive, setSprintActive, sprintTime, wordCount, dailyGoal, goalProgress,
+  writingPanel, wordCount,
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
@@ -197,17 +194,7 @@ export function EditorRightPanels({
                         ))}
                       </div>
                     </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Target size={14} /> Sprint</div>
-                        <button type="button" aria-label={sprintActive ? 'Pause sprint' : 'Start sprint'} onClick={() => setSprintActive(!sprintActive)} style={{ background: 'transparent', border: 'none', color: sprintActive ? '#e8431a' : '#0099ff', cursor: 'pointer' }}>{sprintActive ? <Pause size={14} /> : <Play size={14} />}</button>
-                      </div>
-                      <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprintActive ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }}>{Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}</div>
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}><span>Daily Goal</span><span style={{ color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{wordCount} / {dailyGoal}</span></div>
-                      <div style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}><div style={{ height: '100%', width: `${goalProgress}%`, background: goalProgress >= 100 ? '#00cc66' : '#0099ff', transition: 'width 0.5s' }} /></div>
-                    </div>
+                    {writingPanel}
                     <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>

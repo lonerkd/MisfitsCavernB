@@ -246,6 +246,7 @@ column post_notes.scene_id uuid
 column profiles.avatar_url text
 column profiles.bio text
 column profiles.created_at timestamp with time zone default now()
+column profiles.daily_word_goal integer default 500 not null
 column profiles.discord_avatar text
 column profiles.discord_id text
 column profiles.discord_username text
@@ -254,6 +255,7 @@ column profiles.is_admin boolean default false
 column profiles.location text
 column profiles.notification_prefs jsonb default '{}'::jsonb not null
 column profiles.role text
+column profiles.sprint_minutes integer default 15 not null
 column profiles.status text default 'OPEN'::text
 column profiles.updated_at timestamp with time zone default now()
 column profiles.username text not null
@@ -460,6 +462,12 @@ column timeline_items.status text default 'pending'::text
 column timeline_items.title text default ''::text not null
 column timeline_items.type text default 'milestone'::text
 column timeline_items.updated_at timestamp with time zone default now()
+column writing_days.day date not null
+column writing_days.goal integer not null
+column writing_days.sprints integer default 0 not null
+column writing_days.updated_at timestamp with time zone default now() not null
+column writing_days.user_id uuid not null
+column writing_days.words integer default 0 not null
 constraint activity_feed.activity_feed_pkey PRIMARY KEY (id)
 constraint activity_feed.activity_feed_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint audit_logs.audit_logs_pkey PRIMARY KEY (id)
@@ -611,9 +619,11 @@ constraint post_notes.post_notes_pkey PRIMARY KEY (id)
 constraint post_notes.post_notes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint post_notes.post_notes_resolved_check CHECK (((resolved_at IS NULL) = (resolved_by IS NULL)))
 constraint post_notes.post_notes_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE SET NULL (scene_id)
+constraint profiles.profiles_daily_word_goal_check CHECK (((daily_word_goal >= 50) AND (daily_word_goal <= 20000)))
 constraint profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint profiles.profiles_pkey PRIMARY KEY (id)
 constraint profiles.profiles_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
+constraint profiles.profiles_sprint_minutes_check CHECK (((sprint_minutes >= 5) AND (sprint_minutes <= 120)))
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
 constraint profiles.profiles_username_key UNIQUE (username)
 constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id)
@@ -724,6 +734,11 @@ constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
 constraint timeline_items.timeline_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint timeline_items.timeline_items_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'in-progress'::text, 'completed'::text, 'cancelled'::text])))
 constraint timeline_items.timeline_items_type_check CHECK ((type = ANY (ARRAY['milestone'::text, 'task'::text, 'event'::text, 'deadline'::text])))
+constraint writing_days.writing_days_goal_check CHECK (((goal >= 50) AND (goal <= 20000)))
+constraint writing_days.writing_days_pkey PRIMARY KEY (user_id, day)
+constraint writing_days.writing_days_sprints_check CHECK (((sprints >= 0) AND (sprints <= 500)))
+constraint writing_days.writing_days_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint writing_days.writing_days_words_check CHECK (((words >= 0) AND (words <= 100000)))
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
@@ -747,6 +762,7 @@ function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd71
 function public.can_manage_channel(cid uuid) body=18abb9fe44202482ff597114692be5ed
 function public.can_post_channel(cid uuid) body=ce917dca551e541d00fd10b26a8fcf72
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
+function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_platform_stats() body=0c11d9c4ec9bf19a41d490e1cf59f244
 function public.get_public_showcase(p_limit integer) body=3e278df9ab4b4f4ba37151a90ad1ae43
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
@@ -754,6 +770,7 @@ function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
+function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.project_progress(p_project uuid) body=0917dbfbbca7b0a0563d6bc00703f2a0
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
@@ -784,6 +801,7 @@ grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,se
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
+grant function public.get_my_writing_prefs() authenticated,postgres,service_role
 grant function public.get_platform_stats() anon,authenticated,postgres,service_role
 grant function public.get_public_showcase(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_published_media(p_media_id uuid) anon,authenticated,postgres,service_role
@@ -791,6 +809,7 @@ grant function public.get_shared_lookbook(p_token text) anon,authenticated,postg
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
+grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
@@ -969,6 +988,7 @@ index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, 
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
+index CREATE UNIQUE INDEX writing_days_pkey ON public.writing_days USING btree (user_id, day)
 policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
 policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
@@ -1088,6 +1108,7 @@ policy public.spotify_connections "Users can insert own spotify connection" PERM
 policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
 policy public.spotify_connections "Users can view own spotify connection" PERMISSIVE SELECT to public using (auth.uid() = user_id) check -
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.writing_days "writing_days own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
 policy storage.objects "project-media: shared read" PERMISSIVE SELECT to anon,authenticated using ((bucket_id = 'project-media'::text) AND internal.is_shared_media_object(name)) check -
@@ -1168,6 +1189,7 @@ rls sfx_assets enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
 rls timeline_items enabled=true forced=false
+rls writing_days enabled=true forced=false
 schema internal
 schema public
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()

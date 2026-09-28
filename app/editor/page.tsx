@@ -58,6 +58,8 @@ import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
+import { typedWords, useWritingLoop } from '@/lib/writing';
+import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
 import type { LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
@@ -169,9 +171,6 @@ export default function EditorPage() {
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
 
-  const [dailyGoal, setDailyGoal] = useState(1000);
-  const [sprintActive, setSprintActive] = useState(false);
-  const [sprintTime, setSprintTime] = useState(15 * 60);
   const [revisionMode, setRevisionMode] = useState(false);
 
   const [cursorPos, setCursorPos] = useState({ top: 0, left: 0 });
@@ -542,16 +541,9 @@ export default function EditorPage() {
     return () => clearTimeout(timer);
   }, [content, currentScript]);
 
-  useEffect(() => {
-    let interval: any = null;
-    if (sprintActive && sprintTime > 0) {
-      interval = setInterval(() => setSprintTime(t => t - 1), 1000);
-    } else if (sprintTime === 0 && sprintActive) {
-      setSprintActive(false);
-      toast('Sprint completed!', 'success');
-    }
-    return () => clearInterval(interval);
-  }, [sprintActive, sprintTime, toast]);
+  // The writing loop: words typed today, the streak, sprints (lib/writing).
+  const writing = useWritingLoop(sessionUser?.id ?? null);
+  const sprint = useSprint(writing, toast);
 
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
@@ -895,6 +887,8 @@ export default function EditorPage() {
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
+    const typed = typedWords(content, val);
+    if (typed) { writing.add(typed); sprint.onType(typed); }
     noteHistoryEdit(content);
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
@@ -1009,7 +1003,6 @@ export default function EditorPage() {
   const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(timing.pages));
-  const goalProgress = Math.min(100, Math.round((wordCount / dailyGoal) * 100));
   const dialogueLines = lines.filter(l => l.type === 'dialogue').length;
   const actionLines = lines.filter(l => l.type === 'action').length;
   const dialogueRatio = actionLines + dialogueLines > 0 ? Math.round((dialogueLines / (actionLines + dialogueLines)) * 100) : 0;
@@ -1288,8 +1281,8 @@ export default function EditorPage() {
                   getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
                   sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
                   insertElement={insertElement}
-                  sprintActive={sprintActive} setSprintActive={setSprintActive} sprintTime={sprintTime}
-                  wordCount={wordCount} dailyGoal={dailyGoal} goalProgress={goalProgress}
+                  writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
+                  wordCount={wordCount}
                   pageEst={pageEst} dialogueRatio={dialogueRatio}
                   typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
                   nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
@@ -1512,9 +1505,9 @@ export default function EditorPage() {
           }}>
             {revisionMode ? 'REVISION' : 'DRAFT'}
           </span>
-          {sprintActive && (
+          {(sprint.active || sprint.running) && (
             <span style={{ color: '#818cf8', letterSpacing: 2 }}>
-              ◉ {Math.floor(sprintTime / 60).toString().padStart(2, '0')}:{(sprintTime % 60).toString().padStart(2, '0')}
+              ◉ {Math.floor(sprint.left / 60).toString().padStart(2, '0')}:{(sprint.left % 60).toString().padStart(2, '0')} · {sprint.words}w
             </span>
           )}
         </div>
