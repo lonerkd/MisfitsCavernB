@@ -42,6 +42,12 @@ describe('sample work stays in the demo', () => {
     expect(await sees(nova.client, novaJob)).toBe(true);
   });
 
+  it('the crew directory can leave sample people out', async () => {
+    const { data, error } = await cast.riley.client.from('profiles').select('id').eq('is_sample', false).in('id', [nova.id, cast.jordan.id]);
+    expect(error).toBeNull();
+    expect((data ?? []).map((p) => p.id)).toEqual([cast.jordan.id]);
+  });
+
   it('recent work leaves sample work out', async () => {
     const titles = ((await cast.riley.client.rpc('get_recent_work', { p_limit: 24 })).data ?? []).map((w) => w.title);
     expect(titles.some((t) => t.startsWith('Sample short'))).toBe(false);

@@ -10,6 +10,8 @@
 
 ALTER TABLE public.profiles ADD COLUMN is_sample boolean DEFAULT false NOT NULL;
 ALTER TABLE public.projects ADD COLUMN is_sample boolean DEFAULT false NOT NULL;
+-- profiles is readable column by column (private fields stay private); this one isn't private.
+GRANT SELECT (is_sample) ON public.profiles TO anon, authenticated;
 
 -- What the demo seed already made.
 UPDATE public.profiles p SET is_sample = true
