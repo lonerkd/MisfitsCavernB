@@ -4,6 +4,8 @@ import type { PlacedNote } from '@/lib/studio/cutlines';
 import type { EditorBreakdown } from './breakdown/useEditorBreakdown';
 
 export interface EditorCtx {
+  /** Tools this project has reached (a personal script has them all): revisions, breakdown. */
+  tools: { revisions: boolean; breakdown: boolean };
   /** Cut notes pinned to lines (Studio › Post), by line index. */
   cutNotes: {
     byLine: Map<number, PlacedNote<LineCutNote>[]>;

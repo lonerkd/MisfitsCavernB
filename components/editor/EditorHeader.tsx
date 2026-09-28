@@ -48,7 +48,7 @@ import {
 import type { EditorCtx } from './editorCtx';
 
 export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
-  const { activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
+  const { tools, activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
   return (
         <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
@@ -132,9 +132,9 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 />
               </div>
 
-              <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+              {tools.revisions && <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -178,7 +178,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },
               { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
-              { icon: Lock,       title: 'Lock Revision', onClick: handleLockRevision },
+              ...(tools.revisions ? [{ icon: Lock, title: 'Lock Revision', onClick: handleLockRevision }] : []),
             ].map(({ icon: Icon, title, onClick }) => (
               <button aria-label={title}
                 key={title}

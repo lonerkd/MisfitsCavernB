@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { computeProgress, type ProjectProgress, type ProjectSignals } from '@/lib/os/progress';
 import { fetchProjectSignals, PROGRESS_EVENT } from '@/lib/supabase/progress';
+import { useUiPrefs } from '@/lib/os/uiPrefs';
 
 export interface ProjectProgressState {
   signals: ProjectSignals | null;
@@ -54,6 +55,11 @@ export function useProjectProgress(projectId: string | null | undefined): Projec
     };
   }, [projectId, reload]);
 
-  const progress = useMemo(() => (signals ? computeProgress(signals) : null), [signals]);
+  // "Show every tool" (the account's choice) opens everything, like the project's own switch.
+  const { prefs } = useUiPrefs();
+  const progress = useMemo(
+    () => (signals ? computeProgress(signals, { unlockAll: signals.unlock_all || prefs.show_all_tools }) : null),
+    [signals, prefs.show_all_tools],
+  );
   return { signals, progress, loading, error, reload };
 }

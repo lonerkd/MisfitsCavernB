@@ -29,6 +29,12 @@ export interface ProjectSignals {
   castings: number;
   shots: number;
   call_sheets: number;
+  /** The first and last dated shoot day (YYYY-MM-DD), if any. */
+  shoot_start: string | null;
+  shoot_end: string | null;
+  breakdown_elements: number;
+  /** Locked script revisions. */
+  revisions: number;
   tasks: number;
   tasks_done: number;
   budget_lines: number;
@@ -48,7 +54,7 @@ export interface ProjectSignals {
 export const EMPTY_SIGNALS: ProjectSignals = {
   status: null, project_type: null, format: null, visibility: null, unlock_all: false, logline: false,
   scripts: 0, characters: 0, scenes: 0, scenes_wrapped: 0, beats: 0, media: 0, media_shared: 0,
-  crew: 0, castings: 0, shots: 0, call_sheets: 0, tasks: 0, tasks_done: 0, budget_lines: 0, milestones: 0,
+  crew: 0, castings: 0, shots: 0, call_sheets: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, milestones: 0,
   cuts: 0, post_notes: 0, post_notes_open: 0, stages: 0, stages_done: 0, deliverables: 0, deliverables_done: 0,
   campaigns: 0, festivals_submitted: 0, portfolio: 0,
 };
@@ -146,7 +152,7 @@ export const MILESTONES: MilestoneDef[] = [
 
 export type ToolId =
   | 'script' | 'library' | 'story' | 'pitch' | 'soundtrack'
-  | 'scenes' | 'schedule' | 'crew' | 'budget' | 'share' | 'jobs' | 'onset'
+  | 'scenes' | 'breakdown' | 'revisions' | 'schedule' | 'crew' | 'budget' | 'share' | 'jobs' | 'onset'
   | 'post' | 'promos' | 'festivals' | 'portfolio';
 
 export interface ToolDef {
@@ -157,6 +163,8 @@ export interface ToolDef {
   place: Place;
   /** Opens before its phase once this is true — the work has started. */
   early?: (s: ProjectSignals) => boolean;
+  /** Its early opening isn't a deliberate step into the next phase (scenes come from writing). */
+  notEvidence?: boolean;
 }
 
 export const TOOLS: ToolDef[] = [
@@ -168,7 +176,11 @@ export const TOOLS: ToolDef[] = [
   { id: 'share', label: 'Share page', blurb: 'A lookbook for crew and backers.', phase: 'development', place: { kind: 'studio', tab: 'share' } },
 
   { id: 'scenes', label: 'Scenes & shot lists', blurb: 'Every scene, its references and shots.', phase: 'pre-production',
-    place: { kind: 'studio', tab: 'scenes' }, early: (s) => s.scenes > 0 },
+    place: { kind: 'studio', tab: 'scenes' }, early: (s) => s.scenes > 0, notEvidence: true },
+  { id: 'breakdown', label: 'Breakdown & readiness', blurb: 'Tag what each scene needs; see what blocks it.', phase: 'pre-production',
+    place: { kind: 'studio', tab: 'production', view: 'breakdown' }, early: (s) => s.breakdown_elements > 0 },
+  { id: 'revisions', label: 'Revisions', blurb: 'Lock a draft; changes after it are coloured pages.', phase: 'pre-production',
+    place: { kind: 'path', path: '/editor' }, early: (s) => s.revisions > 0 },
   { id: 'schedule', label: 'Schedule & call sheets', blurb: 'Shoot days, call times, the day’s sheet.', phase: 'pre-production',
     place: { kind: 'studio', tab: 'production', view: 'schedule' }, early: (s) => s.call_sheets > 0 },
   { id: 'crew', label: 'Cast & crew', blurb: 'Roles, casting, who’s on the day.', phase: 'pre-production',
@@ -178,7 +190,7 @@ export const TOOLS: ToolDef[] = [
   { id: 'jobs', label: 'Jobs board', blurb: 'Find crew for open roles.', phase: 'pre-production', place: { kind: 'path', path: '/jobs' } },
 
   { id: 'onset', label: 'On set', blurb: 'The shoot day: the clock, shots got, scenes wrapped, continuity.', phase: 'production',
-    place: { kind: 'studio', tab: 'production', view: 'onset' }, early: (s) => s.call_sheets > 0 },
+    place: { kind: 'studio', tab: 'production', view: 'onset' }, early: (s) => s.call_sheets > 0, notEvidence: true },
 
   { id: 'post', label: 'Cut review & delivery', blurb: 'Cuts, timecoded notes, the post pipeline.', phase: 'post-production',
     place: { kind: 'studio', tab: 'post' }, early: (s) => s.cuts > 0 || s.stages > 0 || s.deliverables > 0 },
@@ -196,7 +208,7 @@ export const STUDIO_TAB_TOOL: Partial<Record<StudioTab, ToolId>> = {
   scenes: 'scenes', post: 'post', promos: 'promos',
 };
 export const PRODUCTION_VIEW_TOOL: Partial<Record<ProductionView, ToolId>> = {
-  schedule: 'schedule', onset: 'onset', crew: 'crew',
+  breakdown: 'breakdown', readiness: 'breakdown', schedule: 'schedule', onset: 'onset', crew: 'crew',
 };
 
 // ── The computed view ────────────────────────────────────────────
@@ -321,4 +333,62 @@ export function toSignals(raw: unknown): ProjectSignals | null {
     else out[key] = typeof v === 'string' ? v : null;
   }
   return out as unknown as ProjectSignals;
+}
+
+// ── Suggesting the next phase ────────────────────────────────────
+
+export interface PhaseSuggestion {
+  /** Index into `progress.phases` of the phase it suggests. */
+  index: number;
+  label: string;
+  /** Why, in the project's own terms. */
+  reasons: string[];
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The phase the project's own data says it has reached, if that's past the
+ * one it's set to: the shoot has started (a dated day has arrived), every
+ * scene is wrapped, the post pipeline is done — or the next phase's work has
+ * already begun (its tools opened early), or this phase's milestones are
+ * all done. `today` is the viewer's local date (YYYY-MM-DD).
+ */
+export function suggestPhase(s: ProjectSignals, progress: ProjectProgress, today: string): PhaseSuggestion | null {
+  const at = (p: Phase) => progress.phases.findIndex((x) => x.id === p);
+  const cur = progress.currentIndex;
+  const candidates: Array<{ phase: Phase; reasons: string[] }> = [];
+
+  // Hard signals: things that only happen in a later phase.
+  if (s.deliverables > 0 && s.deliverables_done >= s.deliverables) candidates.push({ phase: 'delivery', reasons: ['every deliverable is done'] });
+  else if (s.stages > 0 && s.stages_done >= s.stages) candidates.push({ phase: 'delivery', reasons: ['the post pipeline is finished'] });
+  if (s.scenes > 0 && s.scenes_wrapped >= s.scenes) candidates.push({ phase: 'post-production', reasons: [`all ${plural(s.scenes, 'scene')} are wrapped`] });
+  else if (s.cuts > 0) candidates.push({ phase: 'post-production', reasons: [`there’s ${plural(s.cuts, 'cut')} to review`] });
+  if (s.shoot_start && s.shoot_start <= today) {
+    candidates.push({ phase: 'production', reasons: [s.shoot_start === today ? 'your first shoot day is today' : 'your first shoot day has passed'] });
+  } else if (s.scenes_wrapped > 0) {
+    candidates.push({ phase: 'production', reasons: [`${plural(s.scenes_wrapped, 'scene')} already wrapped`] });
+  }
+
+  // The next phase's work has started, or this phase is done.
+  const next = progress.phases[cur + 1];
+  if (next) {
+    const deliberate = new Set(TOOLS.filter((t) => !t.notEvidence).map((t) => t.id));
+    const started = progress.tools.filter((t) => t.early && t.phaseIndex === cur + 1 && deliberate.has(t.id)).map((t) => t.label.toLowerCase());
+    const reasons = [
+      ...(progress.ready ? [`every ${progress.current.label} milestone is done`] : []),
+      ...(started.length ? [`you’ve started on ${started.slice(0, 3).join(', ')}`] : []),
+    ];
+    if (reasons.length) candidates.push({ phase: next.id, reasons });
+  }
+
+  // The furthest phase the evidence reaches, past the current one.
+  let best: PhaseSuggestion | null = null;
+  for (const c of candidates) {
+    const i = at(c.phase);
+    if (i <= cur) continue;
+    if (!best || i > best.index) best = { index: i, label: progress.phases[i].label, reasons: [...c.reasons] };
+    else if (i === best.index) best.reasons.push(...c.reasons.filter((r) => !best!.reasons.includes(r)));
+  }
+  return best;
 }

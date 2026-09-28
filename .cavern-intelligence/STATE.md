@@ -1,8 +1,32 @@
 # Misfits Cavern — Project State
 
-## Latest Session — ScriptOS reads the brief out of the screenplay
+## Latest Session — Phases v2: the suite grows with the production
 
-Migration `20260928030000_brief_detect.sql` — **apply to production before merging** (data only: `needs` options gain `detect`).
+Migration `20260928040000_phases_v2.sql` — **apply to production before merging**.
+
+- **The suite suggests the phase** the project's data says it has reached
+  (`suggestPhase` in `lib/os/progress.ts`): the first shoot day has come,
+  every scene is wrapped, the post pipeline or deliverables are done, the
+  next phase's work has deliberately started (not scenes from writing or a
+  dated call sheet), or this phase's milestones are all done. On the phase
+  panel: "Looks like Production — your first shoot day has passed" with
+  Move / Not yet (remembered per project and phase).
+- **Tools arrive inside the editor and Studio**: new tools *Breakdown &
+  readiness* and *Revisions* (pre-production; early once elements are tagged
+  or a draft is locked). A development project's editor has no revision
+  toggle, Lock Revision or Breakdown tab; Studio's Breakdown and Readiness
+  views show the "opens in …" card. Personal scripts keep everything.
+- **Show every tool** (Settings › Workspace): the account's choice to open
+  everything in every project; per-project "Open all" stays.
+- **One-line intros**: the first time you open a tool that arrived after the
+  start — "New here: Schedule & call sheets. … It arrived with
+  Pre-Production." — dismissed once, for good.
+- `project_progress()` adds `shoot_start`, `shoot_end`, `breakdown_elements`,
+  `revisions`; `profiles.ui_prefs` holds the choices (private, via RPCs).
+
+## Earlier — ScriptOS reads the brief out of the screenplay
+
+Migration `20260928030000_brief_detect.sql` — applied to production; PR #75 merged.
 
 - The special-needs question is answered by the script before anyone ticks
   it: fights, weapons, vehicles, animals, children (a character intro with

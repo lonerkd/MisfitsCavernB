@@ -280,6 +280,7 @@ column profiles.notification_prefs jsonb default '{}'::jsonb not null
 column profiles.role text
 column profiles.sprint_minutes integer default 15 not null
 column profiles.status text default 'OPEN'::text
+column profiles.ui_prefs jsonb default '{}'::jsonb not null
 column profiles.updated_at timestamp with time zone default now()
 column profiles.username text not null
 column project_audio_references.added_by uuid
@@ -670,6 +671,7 @@ constraint profiles.profiles_pkey PRIMARY KEY (id)
 constraint profiles.profiles_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
 constraint profiles.profiles_sprint_minutes_check CHECK (((sprint_minutes >= 5) AND (sprint_minutes <= 120)))
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
+constraint profiles.profiles_ui_prefs_check CHECK (((jsonb_typeof(ui_prefs) = 'object'::text) AND (pg_column_size(ui_prefs) < 16384)))
 constraint profiles.profiles_username_key UNIQUE (username)
 constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id)
 constraint project_audio_references.project_audio_references_pkey PRIMARY KEY (id)
@@ -815,6 +817,7 @@ function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd71
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
+function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_person_credits(p_user uuid) body=7d3e49db8bebfc0c98df319661ce088c
 function public.get_platform_stats() body=0c11d9c4ec9bf19a41d490e1cf59f244
@@ -827,8 +830,9 @@ function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
-function public.project_progress(p_project uuid) body=0917dbfbbca7b0a0563d6bc00703f2a0
+function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
+function public.set_my_ui_prefs(p_patch jsonb) body=387984f6950b260f06881fbad22478d4
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
@@ -861,6 +865,7 @@ grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,se
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
+grant function public.get_my_ui_prefs() authenticated,postgres,service_role
 grant function public.get_my_writing_prefs() authenticated,postgres,service_role
 grant function public.get_person_credits(p_user uuid) anon,authenticated,postgres,service_role
 grant function public.get_platform_stats() anon,authenticated,postgres,service_role
@@ -875,6 +880,7 @@ grant function public.log_writing(p_day date, p_words integer, p_sprint boolean)
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
+grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
 grant function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) authenticated,postgres,service_role

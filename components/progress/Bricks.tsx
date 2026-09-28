@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  Archive, BookOpen, Briefcase, Calendar, Clapperboard, DollarSign, Film, Globe,
-  Lock, Maximize2, Megaphone, Music, PenTool, Timer, Trophy, UserSquare, Users, type LucideIcon,
+  Archive, BookOpen, Briefcase, Calendar, Clapperboard, DollarSign, Film, Globe, History,
+  Lock, Maximize2, Megaphone, Music, PenTool, Tags, Timer, Trophy, UserSquare, Users, type LucideIcon,
 } from 'lucide-react';
 import { readable, textOn } from '@/lib/color';
 import { placeHref, type Place, type ToolId, type ToolState } from '@/lib/os/progress';
@@ -12,7 +12,7 @@ import p from './progress.module.css';
 
 export const TOOL_ICON: Record<ToolId, LucideIcon> = {
   script: PenTool, library: Archive, story: BookOpen, pitch: Maximize2, soundtrack: Music,
-  scenes: Clapperboard, schedule: Calendar, crew: Users, budget: DollarSign, share: Globe, jobs: Briefcase,
+  scenes: Clapperboard, breakdown: Tags, revisions: History, schedule: Calendar, crew: Users, budget: DollarSign, share: Globe, jobs: Briefcase,
   onset: Timer, post: Film, promos: Megaphone, festivals: Trophy, portfolio: UserSquare,
 };
 

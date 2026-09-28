@@ -46,7 +46,7 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     email = `bd.${Date.now()}@journey.test`;
     const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `bd${Date.now().toString(36)}` } });
     userId = data.user!.id;
-    projectId = (await admin.from('projects').insert({ title: 'The Cave', creator_id: userId }).select('id').single()).data!.id;
+    projectId = (await admin.from('projects').insert({ title: 'The Cave', creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'The Cave', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
 
@@ -123,8 +123,6 @@ test.describe('Breakdown in the script (local Supabase)', () => {
 
     // ── The stripboard: drag a strip to a new day, then Alt+← it back ──
     await page.goto('/studio?tab=production&view=schedule');
-    // Scheduling opens in pre-production; a writer can look early.
-    await page.getByRole('button', { name: 'Open it now' }).click();
     const strip = page.getByRole('listitem', { name: /^Scene 2,/ });
     await strip.dragTo(page.getByRole('region', { name: 'A new shoot day' }));
     await expect.poll(async () => (await admin.from('scenes').select('shoot_day').eq('script_id', scriptId).eq('scene_number', 2).is('removed_at', null).single()).data?.shoot_day).toBe(2);

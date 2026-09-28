@@ -15,6 +15,7 @@ import { StudioProvider } from '@/components/studio/StudioContext';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
+import { ToolIntro } from '@/components/progress/ToolIntro';
 import { OverviewTab } from '@/components/studio/tabs/OverviewTab';
 import { LibraryTab } from '@/components/studio/tabs/LibraryTab';
 import { ScenesTab } from '@/components/studio/tabs/ScenesTab';
@@ -196,6 +197,7 @@ export default function StudioPage() {
                   />
                 ) : (
                   <>
+                    {STUDIO_TAB_TOOL[tab] && <ToolIntro tool={toolState(progress, STUDIO_TAB_TOOL[tab]!)} accent={activeProject.accent_color} />}
                     {tab === 'overview' && <OverviewTab onOpen={setTab} onNavigate={navigate} />}
                     {tab === 'library' && <LibraryTab />}
                     {tab === 'scenes' && <ScenesTab />}

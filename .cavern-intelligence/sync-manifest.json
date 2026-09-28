@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T06:17:31.542Z",
+  "last_synchronized": "2026-09-28T07:03:10.388Z",
   "stats": {
-    "totalFiles": 390,
-    "totalSize": 3019976,
+    "totalFiles": 396,
+    "totalSize": 3053647,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 139,
-      ".ts": 206,
+      ".tsx": 140,
+      ".ts": 210,
       ".js": 7,
-      ".sql": 24
+      ".sql": 25
     }
   },
   "modules": {
@@ -196,6 +196,7 @@
         "components/progress/LockedTool.tsx",
         "components/progress/LoglineEditor.tsx",
         "components/progress/PhasePanel.tsx",
+        "components/progress/ToolIntro.tsx",
         "components/progress/UnlockReveal.tsx",
         "components/split/PaneShell.tsx",
         "components/studio/CastingBoard.tsx",
@@ -266,7 +267,8 @@
         "supabase/migrations/20260928000000_credits.sql",
         "supabase/migrations/20260928010000_community.sql",
         "supabase/migrations/20260928020000_project_brief.sql",
-        "supabase/migrations/20260928030000_brief_detect.sql"
+        "supabase/migrations/20260928030000_brief_detect.sql",
+        "supabase/migrations/20260928040000_phases_v2.sql"
       ]
     }
   },
@@ -278,8 +280,8 @@
     },
     {
       "path": ".claude/settings.local.json",
-      "size": 188,
-      "last_modified": "2026-09-27T06:25:10.497Z"
+      "size": 368,
+      "last_modified": "2026-09-28T07:03:10.159Z"
     },
     {
       "path": ".eslintrc.json",
@@ -388,8 +390,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 79422,
-      "last_modified": "2026-09-28T03:36:36.618Z"
+      "size": 80055,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "app/error.tsx",
@@ -518,8 +520,8 @@
     },
     {
       "path": "app/settings/page.tsx",
-      "size": 20023,
-      "last_modified": "2026-09-26T20:13:33.081Z"
+      "size": 20648,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "app/shared/[token]/page.tsx",
@@ -558,8 +560,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 10456,
-      "last_modified": "2026-09-27T20:02:27.314Z"
+      "size": 10663,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -708,8 +710,8 @@
     },
     {
       "path": "components/editor/EditorHeader.tsx",
-      "size": 16357,
-      "last_modified": "2026-09-27T05:39:57.081Z"
+      "size": 16409,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -723,8 +725,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 31141,
-      "last_modified": "2026-09-28T01:05:42.809Z"
+      "size": 31360,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -778,8 +780,8 @@
     },
     {
       "path": "components/editor/editorCtx.ts",
-      "size": 1814,
-      "last_modified": "2026-09-27T19:12:03.128Z"
+      "size": 1963,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "components/editor/editorPageParts.tsx",
@@ -803,8 +805,8 @@
     },
     {
       "path": "components/progress/Bricks.tsx",
-      "size": 3080,
-      "last_modified": "2026-09-27T20:03:03.793Z"
+      "size": 3132,
+      "last_modified": "2026-09-28T06:50:07.658Z"
     },
     {
       "path": "components/progress/LockedTool.tsx",
@@ -818,8 +820,13 @@
     },
     {
       "path": "components/progress/PhasePanel.tsx",
-      "size": 13045,
-      "last_modified": "2026-09-27T05:39:34.978Z"
+      "size": 14608,
+      "last_modified": "2026-09-28T06:50:07.659Z"
+    },
+    {
+      "path": "components/progress/ToolIntro.tsx",
+      "size": 1689,
+      "last_modified": "2026-09-28T06:50:07.668Z"
     },
     {
       "path": "components/progress/UnlockReveal.tsx",
@@ -983,8 +990,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 4303,
-      "last_modified": "2026-09-27T20:06:49.538Z"
+      "size": 4511,
+      "last_modified": "2026-09-28T06:50:07.659Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1063,8 +1070,8 @@
     },
     {
       "path": "e2e/breakdown.spec.ts",
-      "size": 8823,
-      "last_modified": "2026-09-27T05:08:59.647Z"
+      "size": 8712,
+      "last_modified": "2026-09-28T07:01:32.551Z"
     },
     {
       "path": "e2e/brief.spec.ts",
@@ -1107,6 +1114,11 @@
       "last_modified": "2026-09-27T20:06:25.638Z"
     },
     {
+      "path": "e2e/phases.spec.ts",
+      "size": 5645,
+      "last_modified": "2026-09-28T06:50:38.123Z"
+    },
+    {
       "path": "e2e/readiness.spec.ts",
       "size": 6349,
       "last_modified": "2026-09-28T03:48:48.123Z"
@@ -1128,8 +1140,8 @@
     },
     {
       "path": "e2e/split.spec.ts",
-      "size": 8034,
-      "last_modified": "2026-09-27T08:02:25.533Z"
+      "size": 8060,
+      "last_modified": "2026-09-28T07:00:22.222Z"
     },
     {
       "path": "e2e/studio-journey.spec.ts",
@@ -1303,8 +1315,8 @@
     },
     {
       "path": "lib/hooks/useProjectProgress.ts",
-      "size": 2250,
-      "last_modified": "2026-09-27T03:11:22.502Z"
+      "size": 2520,
+      "last_modified": "2026-09-28T06:50:07.659Z"
     },
     {
       "path": "lib/lounge/audience.test.ts",
@@ -1377,6 +1389,11 @@
       "last_modified": "2026-09-24T20:05:03.637Z"
     },
     {
+      "path": "lib/os/phaseSuggest.test.ts",
+      "size": 3955,
+      "last_modified": "2026-09-28T06:50:07.668Z"
+    },
+    {
       "path": "lib/os/phases.test.ts",
       "size": 1279,
       "last_modified": "2026-09-27T05:40:31.956Z"
@@ -1393,8 +1410,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 16879,
-      "last_modified": "2026-09-27T20:02:27.314Z"
+      "size": 21021,
+      "last_modified": "2026-09-28T06:50:07.659Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -1415,6 +1432,11 @@
       "path": "lib/os/types.ts",
       "size": 2270,
       "last_modified": "2026-09-26T07:53:00.712Z"
+    },
+    {
+      "path": "lib/os/uiPrefs.ts",
+      "size": 2931,
+      "last_modified": "2026-09-28T06:50:07.668Z"
     },
     {
       "path": "lib/password-strength.ts",
@@ -1768,8 +1790,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 92305,
-      "last_modified": "2026-09-28T03:32:29.945Z"
+      "size": 92567,
+      "last_modified": "2026-09-28T06:50:07.659Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2047,6 +2069,11 @@
       "last_modified": "2026-09-28T05:55:33.083Z"
     },
     {
+      "path": "supabase/migrations/20260928040000_phases_v2.sql",
+      "size": 7111,
+      "last_modified": "2026-09-28T06:50:07.668Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2054,7 +2081,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T06:03:32.303Z"
+      "last_modified": "2026-09-28T07:01:52.327Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2120,6 +2147,11 @@
       "path": "tests/integration/media-library.test.ts",
       "size": 9086,
       "last_modified": "2026-09-26T07:25:04.250Z"
+    },
+    {
+      "path": "tests/integration/phases.test.ts",
+      "size": 3863,
+      "last_modified": "2026-09-28T06:50:07.668Z"
     },
     {
       "path": "tests/integration/post-production.test.ts",
