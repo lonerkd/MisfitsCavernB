@@ -14,6 +14,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { publicClient } from '@/lib/supabase/public';
 import { createStudioApi, type Lookbook, type LookbookMedia } from '@/lib/studio/api';
 import { videoEmbed } from '@/lib/studio/media-kind';
+import { pressKitSections, type KitCredit } from '@/lib/credits/core';
 import s from './shared.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -27,16 +28,20 @@ interface SharedProject {
   creator_username: string | null;
 }
 
-async function load(token: string): Promise<{ project: SharedProject; lookbook: Lookbook } | null> {
+interface PressKit { credits: KitCredit[]; laurels: Array<{ name: string }> }
+
+async function load(token: string): Promise<{ project: SharedProject; lookbook: Lookbook; kit: PressKit } | null> {
   const db = publicClient();
   if (!db || !token) return null;
-  const [{ data }, lookbook] = await Promise.all([
+  const [{ data }, lookbook, kit] = await Promise.all([
     db.rpc('get_shared_project', { p_token: token }),
     createStudioApi(db).getLookbook(token).catch(() => null),
+    db.rpc('get_press_kit', { p_token: token }),
   ]);
   const project = data?.[0];
   if (!project) return null;
-  return { project, lookbook: lookbook ?? { media: [], scenes: [] } };
+  const k = (kit.data ?? null) as PressKit | null;
+  return { project, lookbook: lookbook ?? { media: [], scenes: [] }, kit: { credits: k?.credits ?? [], laurels: k?.laurels ?? [] } };
 }
 
 /** Where a published item is served from: our permalink for files, the link otherwise. */
@@ -121,7 +126,8 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
     );
   }
 
-  const { project, lookbook } = data;
+  const { project, lookbook, kit } = data;
+  const credits = pressKitSections(kit.credits);
   const accent = project.accent_color || '#e8431a';
   const byId = new Map(lookbook.media.map((m) => [m.id, m]));
   const inScenes = new Set(lookbook.scenes.flatMap((sc) => sc.media_ids));
@@ -136,6 +142,11 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
         <h1 className={s.title}>{project.title}</h1>
         {project.creator_username && <div className={s.byline}>by {project.creator_username}</div>}
         {project.description && <p className={s.logline}>{project.description}</p>}
+        {kit.laurels.length > 0 && (
+          <ul className={s.laurels} aria-label="Festival selections">
+            {kit.laurels.map((l) => <li key={l.name} className={s.laurel}><span className={s.laurelTag}>Official selection</span>{l.name}</li>)}
+          </ul>
+        )}
       </header>
 
       {lookbook.scenes.length > 0 && (
@@ -156,6 +167,27 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
           {lookbook.scenes.length > 0 && <h2 className={s.sectionTitle}>More references</h2>}
           <div className={s.grid}>
             {more.map((m) => <MediaItem key={m.id} m={m} />)}
+          </div>
+        </section>
+      )}
+
+      {credits.length > 0 && (
+        <section className={s.section} aria-labelledby="credits-title">
+          <h2 id="credits-title" className={s.sectionTitle}>Cast &amp; crew</h2>
+          <div className={s.credits}>
+            {credits.map((sec) => (
+              <div key={sec.heading} className={s.creditGroup}>
+                <h3 className={s.creditHeading}>{sec.heading}</h3>
+                <dl className={s.creditList}>
+                  {sec.people.map((p) => (
+                    <div key={`${p.user_id}-${p.role}`} className={s.creditRow}>
+                      <dt>{p.role}</dt>
+                      <dd>{p.username}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
           </div>
         </section>
       )}

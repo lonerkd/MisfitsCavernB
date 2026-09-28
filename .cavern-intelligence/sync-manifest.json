@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T01:09:23.559Z",
+  "last_synchronized": "2026-09-28T01:32:36.385Z",
   "stats": {
-    "totalFiles": 368,
-    "totalSize": 2854360,
+    "totalFiles": 374,
+    "totalSize": 2877404,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 137,
-      ".ts": 190,
+      ".ts": 195,
       ".js": 7,
-      ".sql": 20
+      ".sql": 21
     }
   },
   "modules": {
@@ -260,7 +260,8 @@
         "supabase/migrations/20260927080000_cut_note_lines.sql",
         "supabase/migrations/20260927090000_campaigns.sql",
         "supabase/migrations/20260927100000_set_log.sql",
-        "supabase/migrations/20260927110000_writing_loop.sql"
+        "supabase/migrations/20260927110000_writing_loop.sql",
+        "supabase/migrations/20260928000000_credits.sql"
       ]
     }
   },
@@ -357,8 +358,8 @@
     },
     {
       "path": "app/crew/[id]/page.tsx",
-      "size": 18055,
-      "last_modified": "2026-09-26T20:13:33.075Z"
+      "size": 19929,
+      "last_modified": "2026-09-28T01:29:27.052Z"
     },
     {
       "path": "app/crew/loading.tsx",
@@ -517,8 +518,8 @@
     },
     {
       "path": "app/shared/[token]/page.tsx",
-      "size": 7359,
-      "last_modified": "2026-09-26T20:13:33.081Z"
+      "size": 8822,
+      "last_modified": "2026-09-28T01:30:10.701Z"
     },
     {
       "path": "app/showcase/page.tsx",
@@ -1051,6 +1052,11 @@
       "last_modified": "2026-09-27T05:08:59.647Z"
     },
     {
+      "path": "e2e/credits.spec.ts",
+      "size": 4784,
+      "last_modified": "2026-09-28T01:31:02.142Z"
+    },
+    {
       "path": "e2e/cut-notes.spec.ts",
       "size": 6370,
       "last_modified": "2026-09-27T19:14:37.992Z"
@@ -1199,6 +1205,21 @@
       "path": "lib/crafts.ts",
       "size": 1372,
       "last_modified": "2026-09-27T05:17:02.053Z"
+    },
+    {
+      "path": "lib/credits/core.test.ts",
+      "size": 2184,
+      "last_modified": "2026-09-28T01:28:52.763Z"
+    },
+    {
+      "path": "lib/credits/core.ts",
+      "size": 2818,
+      "last_modified": "2026-09-28T01:28:52.761Z"
+    },
+    {
+      "path": "lib/credits/index.ts",
+      "size": 1031,
+      "last_modified": "2026-09-28T01:28:52.765Z"
     },
     {
       "path": "lib/formats-core.ts",
@@ -1687,8 +1708,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 88116,
-      "last_modified": "2026-09-28T01:05:58.313Z"
+      "size": 88583,
+      "last_modified": "2026-09-28T01:28:31.182Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1946,6 +1967,11 @@
       "last_modified": "2026-09-28T01:05:51.809Z"
     },
     {
+      "path": "supabase/migrations/20260928000000_credits.sql",
+      "size": 4452,
+      "last_modified": "2026-09-28T01:28:21.010Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -1953,7 +1979,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T01:08:21.159Z"
+      "last_modified": "2026-09-28T01:32:03.335Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -1989,6 +2015,11 @@
       "path": "tests/integration/crafts.test.ts",
       "size": 4708,
       "last_modified": "2026-09-27T05:04:11.829Z"
+    },
+    {
+      "path": "tests/integration/credits.test.ts",
+      "size": 3971,
+      "last_modified": "2026-09-28T01:30:35.118Z"
     },
     {
       "path": "tests/integration/cut-note-lines.test.ts",

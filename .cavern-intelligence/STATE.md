@@ -1,8 +1,24 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The writing loop
+## Latest Session — Credits & the press kit
 
-Migration `20260927110000_writing_loop.sql` — **apply to production before merging**.
+Migration `20260928000000_credits.sql` — **apply to production before merging** (two functions, no tables).
+
+- Credits come from the work itself, never typed twice: projects someone
+  created, the crew they were confirmed on (their craft) and the parts they
+  were cast in.
+- **Crew profiles** list them ("Salt (2026) — Gaffer · Plays MAYA"); on your
+  own profile, **Add to portfolio** makes a portfolio entry linked back to the
+  project (title, format, year, your credits).
+- **Share page = press kit**: festival laurels ("Official selection" for
+  accepted submissions) under the logline, and Cast & crew by department.
+- Privacy: outsiders see a project in someone's credits only when it's
+  public; teammates see their team's. The press kit only exists for
+  link/public projects.
+
+## Earlier — The writing loop
+
+Migration `20260927110000_writing_loop.sql` — applied to production; PR #71 merged.
 
 - The editor's daily goal and sprint were cosmetic (a goal of 1,000 fixed in
   code measured against the script's *total* size; the sprint couldn't be
@@ -19,7 +35,7 @@ Migration `20260927110000_writing_loop.sql` — **apply to production before mer
 
 ## Earlier — On set
 
-Migration `20260927100000_set_log.sql` — **apply to production before merging**.
+Migration `20260927100000_set_log.sql` — applied to production; PR #71 merged.
 
 - **Studio › Production › On set** — the production phase finally has its
   tool. It opens on today's call sheet (else the next day): location, planned

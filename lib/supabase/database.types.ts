@@ -2729,6 +2729,21 @@ export type Database = {
           sprint_minutes: number;
         }[];
       };
+      get_person_credits: {
+        Args: { p_user: string };
+        Returns: {
+          accent_color: string;
+          character_name: string;
+          credit: string;
+          department: string;
+          kind: string;
+          portfolio_project_id: string;
+          project_id: string;
+          project_type: string;
+          title: string;
+          year: number;
+        }[];
+      };
       get_platform_stats: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2739,6 +2754,7 @@ export type Database = {
           scripts: number;
         }[];
       };
+      get_press_kit: { Args: { p_token: string }; Returns: Json };
       get_public_showcase: {
         Args: { p_limit?: number };
         Returns: {
