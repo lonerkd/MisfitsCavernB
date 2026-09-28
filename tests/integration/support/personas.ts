@@ -80,7 +80,7 @@ export async function createCast(): Promise<Cast> {
 }
 
 /** Delete test users; their profiles and owned rows go with them via FK cascades. */
-export async function destroyCast(cast: Partial<Cast>) {
+export async function destroyCast(cast: Partial<Cast> | Record<string, Persona>) {
   const admin = adminClient();
   const ids = Object.values(cast).filter(Boolean).map((p) => (p as Persona).id);
   // scripts.created_by has no cascade; clear authored scripts first.

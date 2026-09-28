@@ -64,6 +64,11 @@ column budget_items.id uuid default uuid_generate_v4() not null
 column budget_items.job_id uuid
 column budget_items.project_id uuid not null
 column budget_items.updated_at timestamp with time zone default now()
+column call_sheet_acks.acked_at timestamp with time zone default now() not null
+column call_sheet_acks.call_sheet_id uuid not null
+column call_sheet_acks.project_id uuid not null
+column call_sheet_acks.user_id uuid not null
+column call_sheet_acks.version integer not null
 column call_sheet_calls.call_sheet_id uuid not null
 column call_sheet_calls.call_time time without time zone
 column call_sheet_calls.character_name text
@@ -77,14 +82,19 @@ column call_sheets.created_at timestamp with time zone default now()
 column call_sheets.estimated_wrap time without time zone
 column call_sheets.general_call time without time zone
 column call_sheets.id uuid default uuid_generate_v4() not null
+column call_sheets.issued jsonb
+column call_sheets.issued_at timestamp with time zone
+column call_sheets.issued_by uuid
 column call_sheets.location_address text
 column call_sheets.notes text
 column call_sheets.project_id uuid not null
+column call_sheets.reminded_at timestamp with time zone
 column call_sheets.shoot_date date
 column call_sheets.shoot_day integer not null
 column call_sheets.shooting_call time without time zone
 column call_sheets.updated_at timestamp with time zone default now()
 column call_sheets.updated_by uuid default auth.uid()
+column call_sheets.version integer default 0 not null
 column call_sheets.weather text
 column campaigns.budget numeric default 0
 column campaigns.created_at timestamp with time zone default now()
@@ -537,6 +547,10 @@ constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) RE
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
 constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint call_sheet_acks.call_sheet_acks_pkey PRIMARY KEY (call_sheet_id, user_id)
+constraint call_sheet_acks.call_sheet_acks_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
+constraint call_sheet_acks.call_sheet_acks_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint call_sheet_acks.call_sheet_acks_version_check CHECK ((version >= 1))
 constraint call_sheet_calls.call_sheet_calls_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint call_sheet_calls.call_sheet_calls_pkey PRIMARY KEY (id)
 constraint call_sheet_calls.call_sheet_calls_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
@@ -544,6 +558,8 @@ constraint call_sheet_calls.call_sheet_calls_text_len CHECK (((char_length(chara
 constraint call_sheet_calls.call_sheet_calls_who CHECK (((crew_user_id IS NULL) <> (character_name IS NULL)))
 constraint call_sheets.call_sheets_day_positive CHECK ((shoot_day >= 1))
 constraint call_sheets.call_sheets_id_project_key UNIQUE (id, project_id)
+constraint call_sheets.call_sheets_issue_shape CHECK (((version >= 0) AND ((version = 0) = (issued_at IS NULL)) AND ((version = 0) = (issued IS NULL))))
+constraint call_sheets.call_sheets_issued_by_fkey FOREIGN KEY (issued_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
@@ -793,6 +809,11 @@ constraint writing_days.writing_days_user_id_fkey FOREIGN KEY (user_id) REFERENC
 constraint writing_days.writing_days_words_check CHECK (((words >= 0) AND (words <= 100000)))
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
+function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=23684b4bcfd808ab21df2a91536571fa
+function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
+function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
+function internal.call_sheet_snapshot(p_sheet uuid) body=33e74d687d15ef5b7fcfcc0600f450fd
+function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b946187
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
@@ -811,6 +832,7 @@ function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
+function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
 function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
@@ -829,11 +851,13 @@ function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
+function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
+function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6c
 function public.set_my_ui_prefs(p_patch jsonb) body=387984f6950b260f06881fbad22478d4
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
@@ -842,6 +866,11 @@ function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
+grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
+grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
+grant function internal.call_sheet_recipients(p_project uuid) postgres
+grant function internal.call_sheet_snapshot(p_sheet uuid) postgres
+grant function internal.call_sheets_issue_guard() postgres
 grant function internal.caller_is_admin() authenticated,postgres,service_role
 grant function internal.can_access_project(pid uuid) authenticated,postgres,service_role
 grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
@@ -860,6 +889,7 @@ grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
+grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
@@ -878,11 +908,13 @@ grant function public.get_shared_lookbook(p_token text) anon,authenticated,postg
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
+grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
+grant function public.send_call_sheet_reminders() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
@@ -896,6 +928,7 @@ index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismi
 index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
 index CREATE INDEX breakdown_elements_category_idx ON public.breakdown_elements USING btree (category_id)
 index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_elements USING btree (created_by)
+index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
 index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
@@ -1002,6 +1035,7 @@ index CREATE UNIQUE INDEX breakdown_elements_pkey ON public.breakdown_elements U
 index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdown_elements USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX brief_questions_pkey ON public.brief_questions USING btree (key)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
+index CREATE UNIQUE INDEX call_sheet_acks_pkey ON public.call_sheet_acks USING btree (call_sheet_id, user_id)
 index CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE (character_name IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE (crew_user_id IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_pkey ON public.call_sheet_calls USING btree (id)
@@ -1078,6 +1112,7 @@ policy public.breakdown_elements "breakdown_elements access" PERMISSIVE ALL to a
 policy public.brief_questions "brief_questions admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.brief_questions "brief_questions read" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1206,6 +1241,7 @@ realtime public.breakdown_categories
 realtime public.breakdown_dismissals
 realtime public.breakdown_elements
 realtime public.budget_items
+realtime public.call_sheet_acks
 realtime public.call_sheet_calls
 realtime public.call_sheets
 realtime public.campaigns
@@ -1234,6 +1270,7 @@ rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
 rls brief_questions enabled=true forced=false
 rls budget_items enabled=true forced=false
+rls call_sheet_acks enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false
 rls call_sheets enabled=true forced=false
 rls campaigns enabled=true forced=false
@@ -1282,6 +1319,7 @@ schema internal
 schema public
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()

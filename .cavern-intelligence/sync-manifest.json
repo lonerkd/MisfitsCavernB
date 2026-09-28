@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T07:55:53.716Z",
+  "last_synchronized": "2026-09-28T08:21:52.636Z",
   "stats": {
-    "totalFiles": 403,
-    "totalSize": 3097198,
+    "totalFiles": 409,
+    "totalSize": 3153620,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 141,
-      ".ts": 215,
+      ".tsx": 142,
+      ".ts": 219,
       ".js": 7,
-      ".sql": 26
+      ".sql": 27
     }
   },
   "modules": {
@@ -98,6 +98,7 @@
         "app/auth/error.tsx",
         "app/auth/page.tsx",
         "app/auth/spotify-callback/page.tsx",
+        "app/call/[id]/page.tsx",
         "app/crew/[id]/page.tsx",
         "app/crew/loading.tsx",
         "app/crew/page.tsx",
@@ -270,7 +271,8 @@
         "supabase/migrations/20260928020000_project_brief.sql",
         "supabase/migrations/20260928030000_brief_detect.sql",
         "supabase/migrations/20260928040000_phases_v2.sql",
-        "supabase/migrations/20260928050000_onboarding.sql"
+        "supabase/migrations/20260928050000_onboarding.sql",
+        "supabase/migrations/20260928060000_call_sheets_issue.sql"
       ]
     }
   },
@@ -364,6 +366,11 @@
       "path": "app/auth/spotify-callback/page.tsx",
       "size": 2601,
       "last_modified": "2026-09-26T20:13:33.075Z"
+    },
+    {
+      "path": "app/call/[id]/page.tsx",
+      "size": 11246,
+      "last_modified": "2026-09-28T08:16:32.106Z"
     },
     {
       "path": "app/crew/[id]/page.tsx",
@@ -507,8 +514,8 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 34303,
-      "last_modified": "2026-09-28T07:45:21.287Z"
+      "size": 34268,
+      "last_modified": "2026-09-28T07:56:27.431Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -927,8 +934,8 @@
     },
     {
       "path": "components/studio/production/CallSheetsPanel.tsx",
-      "size": 12125,
-      "last_modified": "2026-09-26T18:32:43.176Z"
+      "size": 16954,
+      "last_modified": "2026-09-28T08:15:41.450Z"
     },
     {
       "path": "components/studio/production/CrewView.tsx",
@@ -1084,6 +1091,11 @@
       "path": "e2e/brief.spec.ts",
       "size": 6293,
       "last_modified": "2026-09-28T05:57:26.676Z"
+    },
+    {
+      "path": "e2e/call-sheets.spec.ts",
+      "size": 7582,
+      "last_modified": "2026-09-28T08:17:47.482Z"
     },
     {
       "path": "e2e/community.spec.ts",
@@ -1672,8 +1684,18 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 27015,
-      "last_modified": "2026-09-27T19:59:48.970Z"
+      "size": 28093,
+      "last_modified": "2026-09-28T08:14:23.102Z"
+    },
+    {
+      "path": "lib/studio/call-sheet.test.ts",
+      "size": 2428,
+      "last_modified": "2026-09-28T08:14:08.378Z"
+    },
+    {
+      "path": "lib/studio/call-sheet.ts",
+      "size": 4726,
+      "last_modified": "2026-09-28T08:13:59.722Z"
     },
     {
       "path": "lib/studio/cutlines.test.ts",
@@ -1697,8 +1719,8 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 12307,
-      "last_modified": "2026-09-27T19:59:48.971Z"
+      "size": 12664,
+      "last_modified": "2026-09-28T08:15:00.682Z"
     },
     {
       "path": "lib/studio/live.ts",
@@ -1817,8 +1839,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 92759,
-      "last_modified": "2026-09-28T07:41:49.355Z"
+      "size": 95671,
+      "last_modified": "2026-09-28T08:12:40.406Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1922,8 +1944,8 @@
     },
     {
       "path": "middleware.ts",
-      "size": 2974,
-      "last_modified": "2026-09-28T07:38:24.891Z"
+      "size": 2987,
+      "last_modified": "2026-09-28T08:16:48.094Z"
     },
     {
       "path": "next-env.d.ts",
@@ -2106,6 +2128,11 @@
       "last_modified": "2026-09-28T07:35:50.423Z"
     },
     {
+      "path": "supabase/migrations/20260928060000_call_sheets_issue.sql",
+      "size": 14179,
+      "last_modified": "2026-09-28T08:11:36.158Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2113,7 +2140,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T07:54:48.511Z"
+      "last_modified": "2026-09-28T08:21:33.582Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2144,6 +2171,11 @@
       "path": "tests/integration/brief.test.ts",
       "size": 6061,
       "last_modified": "2026-09-28T03:37:49.737Z"
+    },
+    {
+      "path": "tests/integration/call-sheets.test.ts",
+      "size": 7081,
+      "last_modified": "2026-09-28T08:13:13.866Z"
     },
     {
       "path": "tests/integration/campaigns.test.ts",
@@ -2252,8 +2284,8 @@
     },
     {
       "path": "tests/integration/support/personas.ts",
-      "size": 3223,
-      "last_modified": "2026-09-26T07:04:00.975Z"
+      "size": 3249,
+      "last_modified": "2026-09-28T08:14:59.730Z"
     },
     {
       "path": "tests/integration/support/project.ts",

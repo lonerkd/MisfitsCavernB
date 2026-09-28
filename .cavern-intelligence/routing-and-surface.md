@@ -39,6 +39,7 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/studio` | protected | The Studio | `lib/supabase/studio.ts`, `breakdown.ts`, `casting.ts`, `components/canvas/*` — see `studio-and-preproduction.md` |
 | `/split` | protected | Split screen | `app/split`, `lib/split/*`, `components/split/PaneShell` — two surfaces in same-origin frames; panes hide the suite chrome (`useInPane`) and talk via the split page (`postToSplit` / `useSplitMessages`): the script's caret scene ↔ Studio. Ctrl+\\, taskbar, ⌘K. |
 | `/welcome` | protected | Onboarding | `app/welcome`, `lib/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
+| `/call/[id]` | protected | Crew call sheet | `app/call/[id]` — where call sheet notifications land: the viewer's own call, "Got it" (confirms the issued version), the day, scenes, everyone's calls; RLS-scoped to the production. |
 | `/soundtrack` | protected | Soundtrack | `lib/spotify/*`, `GlobalAudioWidget`, SFX/Audio Bible |
 | `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md` |
 | `/jobs`, `/jobs/[id]` | protected | Jobs board | `lib/supabase/jobs.ts` |
