@@ -42,6 +42,18 @@ column breakdown_elements.notes text
 column breakdown_elements.project_id uuid not null
 column breakdown_elements.status text default 'needed'::text not null
 column breakdown_elements.updated_at timestamp with time zone default now() not null
+column brief_questions.ask_when jsonb default '{}'::jsonb not null
+column brief_questions.created_at timestamp with time zone default now() not null
+column brief_questions.hint text default ''::text not null
+column brief_questions.key text not null
+column brief_questions.kind text not null
+column brief_questions.label text not null
+column brief_questions.max_value numeric
+column brief_questions.min_value numeric
+column brief_questions.options jsonb default '[]'::jsonb not null
+column brief_questions.phase text not null
+column brief_questions.position integer default 0 not null
+column brief_questions.unit text
 column budget_items.actual_cost numeric(12,2)
 column budget_items.amount numeric(12,2) default 0 not null
 column budget_items.category text not null
@@ -95,6 +107,15 @@ column channel_members.channel_id uuid not null
 column channel_members.created_at timestamp with time zone default now()
 column channel_members.id uuid default gen_random_uuid() not null
 column channel_members.user_id uuid not null
+column channel_presets.audience text default 'team'::text not null
+column channel_presets.key text not null
+column channel_presets.name text not null
+column channel_presets.phase text default 'development'::text not null
+column channel_presets.position integer default 0 not null
+column channel_presets.post_policy text default 'viewers'::text not null
+column channel_presets.topic text default ''::text not null
+column channel_presets.type text default 'text'::text not null
+column channel_presets.why text default ''::text not null
 column channels.audience text default 'team'::text not null
 column channels.created_at timestamp with time zone default now()
 column channels.created_by uuid
@@ -282,6 +303,11 @@ column project_beats.scene_number text
 column project_beats.script_id uuid
 column project_beats.title text
 column project_beats.updated_at timestamp with time zone default now()
+column project_brief.answered_by uuid default auth.uid()
+column project_brief.project_id uuid not null
+column project_brief.question text not null
+column project_brief.updated_at timestamp with time zone default now() not null
+column project_brief.value jsonb not null
 column project_crew.craft text
 column project_crew.created_at timestamp with time zone default now()
 column project_crew.id uuid default uuid_generate_v4() not null
@@ -496,6 +522,15 @@ constraint breakdown_elements.breakdown_elements_notes_len CHECK ((char_length(n
 constraint breakdown_elements.breakdown_elements_pkey PRIMARY KEY (id)
 constraint breakdown_elements.breakdown_elements_project_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint breakdown_elements.breakdown_elements_status_check CHECK ((status = ANY (ARRAY['needed'::text, 'sourcing'::text, 'ready'::text])))
+constraint brief_questions.brief_questions_ask_when_check CHECK ((jsonb_typeof(ask_when) = 'object'::text))
+constraint brief_questions.brief_questions_hint_check CHECK ((char_length(hint) <= 300))
+constraint brief_questions.brief_questions_key_check CHECK ((key ~ '^[a-z][a-z0-9_]{1,40}$'::text))
+constraint brief_questions.brief_questions_kind_check CHECK ((kind = ANY (ARRAY['one'::text, 'many'::text, 'number'::text])))
+constraint brief_questions.brief_questions_label_check CHECK (((char_length(label) >= 1) AND (char_length(label) <= 120)))
+constraint brief_questions.brief_questions_options_check CHECK ((jsonb_typeof(options) = 'array'::text))
+constraint brief_questions.brief_questions_phase_check CHECK ((phase = ANY (ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text])))
+constraint brief_questions.brief_questions_pkey PRIMARY KEY (key)
+constraint brief_questions.brief_questions_shape_check CHECK ((((kind = 'number'::text) AND (min_value IS NOT NULL) AND (max_value IS NOT NULL) AND (min_value <= max_value)) OR ((kind <> 'number'::text) AND (jsonb_array_length(options) > 0))))
 constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
@@ -523,6 +558,13 @@ constraint channel_members.channel_members_channel_id_fkey FOREIGN KEY (channel_
 constraint channel_members.channel_members_channel_id_user_id_key UNIQUE (channel_id, user_id)
 constraint channel_members.channel_members_pkey PRIMARY KEY (id)
 constraint channel_members.channel_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint channel_presets.channel_presets_audience_check CHECK ((audience = ANY (ARRAY['team'::text, 'owners'::text, 'above'::text, 'below'::text, 'guests'::text, 'public'::text])))
+constraint channel_presets.channel_presets_key_check CHECK ((key ~ '^[a-z][a-z0-9-]{1,40}$'::text))
+constraint channel_presets.channel_presets_name_check CHECK (((char_length(name) >= 1) AND (char_length(name) <= 40)))
+constraint channel_presets.channel_presets_phase_check CHECK ((phase = ANY (ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text])))
+constraint channel_presets.channel_presets_pkey PRIMARY KEY (key)
+constraint channel_presets.channel_presets_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
+constraint channel_presets.channel_presets_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text, 'guide'::text])))
 constraint channels.channels_audience_check CHECK ((((project_id IS NULL) AND (audience = ANY (ARRAY['users'::text, 'admins'::text]))) OR ((project_id IS NOT NULL) AND (audience = ANY (ARRAY['team'::text, 'owners'::text, 'above'::text, 'below'::text, 'guests'::text, 'public'::text])))))
 constraint channels.channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
 constraint channels.channels_pkey PRIMARY KEY (id)
@@ -638,6 +680,10 @@ constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) 
 constraint project_beats.project_beats_pkey PRIMARY KEY (id)
 constraint project_beats.project_beats_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_beats.project_beats_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
+constraint project_brief.project_brief_answered_by_fkey FOREIGN KEY (answered_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint project_brief.project_brief_pkey PRIMARY KEY (project_id, question)
+constraint project_brief.project_brief_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint project_brief.project_brief_question_fkey FOREIGN KEY (question) REFERENCES brief_questions(key) ON UPDATE CASCADE ON DELETE CASCADE
 constraint project_crew.project_crew_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
 constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id)
 constraint project_crew.project_crew_pkey PRIMARY KEY (id)
@@ -748,6 +794,7 @@ function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
+function internal.can_shape_project(pid uuid) body=ba331449795455856618ec3944851cf7
 function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae281362452785
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
@@ -758,6 +805,7 @@ function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=ee6d9912a8070df2307c0503275a23bd
+function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
@@ -778,6 +826,7 @@ function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=d176f2e809e40d5f9dd4ad6acd1bf621
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
+function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=0917dbfbbca7b0a0563d6bc00703f2a0
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
@@ -791,6 +840,7 @@ grant function internal.caller_is_admin() authenticated,postgres,service_role
 grant function internal.can_access_project(pid uuid) authenticated,postgres,service_role
 grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
 grant function internal.can_notify(target uuid) authenticated,postgres,service_role
+grant function internal.can_shape_project(pid uuid) authenticated,postgres
 grant function internal.can_view_channel(cid uuid) authenticated,postgres,service_role
 grant function internal.channels_default_audience() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
@@ -801,6 +851,7 @@ grant function internal.media_guard() postgres,service_role
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
+grant function internal.project_brief_guard() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
@@ -821,6 +872,7 @@ grant function public.get_shared_project(p_token text) anon,authenticated,postgr
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
+grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
@@ -912,6 +964,7 @@ index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (proj
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
 index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
+index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
@@ -938,6 +991,7 @@ index CREATE UNIQUE INDEX breakdown_dismissals_pkey ON public.breakdown_dismissa
 index CREATE UNIQUE INDEX breakdown_elements_id_project_key ON public.breakdown_elements USING btree (id, project_id)
 index CREATE UNIQUE INDEX breakdown_elements_pkey ON public.breakdown_elements USING btree (id)
 index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdown_elements USING btree (project_id, lower(btrim(name)))
+index CREATE UNIQUE INDEX brief_questions_pkey ON public.brief_questions USING btree (key)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
 index CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE (character_name IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE (crew_user_id IS NOT NULL)
@@ -948,6 +1002,7 @@ index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sh
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
 index CREATE UNIQUE INDEX channel_members_channel_id_user_id_key ON public.channel_members USING btree (channel_id, user_id)
 index CREATE UNIQUE INDEX channel_members_pkey ON public.channel_members USING btree (id)
+index CREATE UNIQUE INDEX channel_presets_pkey ON public.channel_presets USING btree (key)
 index CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (id)
 index CREATE UNIQUE INDEX character_castings_pkey ON public.character_castings USING btree (id)
 index CREATE UNIQUE INDEX character_castings_project_id_character_name_key ON public.character_castings USING btree (project_id, character_name)
@@ -975,6 +1030,7 @@ index CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)
 index CREATE UNIQUE INDEX profiles_username_key ON public.profiles USING btree (username)
 index CREATE UNIQUE INDEX project_audio_references_pkey ON public.project_audio_references USING btree (id)
 index CREATE UNIQUE INDEX project_beats_pkey ON public.project_beats USING btree (id)
+index CREATE UNIQUE INDEX project_brief_pkey ON public.project_brief USING btree (project_id, question)
 index CREATE UNIQUE INDEX project_crew_pkey ON public.project_crew USING btree (id)
 index CREATE UNIQUE INDEX project_crew_project_id_user_id_key ON public.project_crew USING btree (project_id, user_id)
 index CREATE UNIQUE INDEX project_formats_pkey ON public.project_formats USING btree (name)
@@ -1010,12 +1066,16 @@ policy public.breakdown_categories "breakdown_categories update" PERMISSIVE UPDA
 policy public.breakdown_categories "breakdown_categories view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.breakdown_dismissals "breakdown_dismissals access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.breakdown_elements "breakdown_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.brief_questions "brief_questions admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.brief_questions "brief_questions read" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.channel_members "channel_members manage" PERMISSIVE ALL to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
 policy public.channel_members "channel_members viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(channel_id) check -
+policy public.channel_presets "channel_presets admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.channel_presets "channel_presets read" PERMISSIVE SELECT to authenticated using true check -
 policy public.channels "channels create" PERMISSIVE INSERT to authenticated using - check (((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))) OR ((project_id IS NULL) AND internal.caller_is_admin()))
 policy public.channels "channels delete" PERMISSIVE DELETE to authenticated using can_manage_channel(id) check -
 policy public.channels "channels update" PERMISSIVE UPDATE to authenticated using can_manage_channel(id) check -
@@ -1071,6 +1131,10 @@ policy public.project_audio_references "audio refs delete" PERMISSIVE DELETE to 
 policy public.project_audio_references "audio refs insert" PERMISSIVE INSERT to authenticated using - check ((added_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
 policy public.project_audio_references "audio refs view" PERMISSIVE SELECT to authenticated using ((added_by = ( SELECT auth.uid() AS uid)) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check -
 policy public.project_beats "project_beats access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.project_brief "project_brief delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
+policy public.project_brief "project_brief insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
+policy public.project_brief "project_brief read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.project_brief "project_brief update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.project_crew "Project creators can manage crew" PERMISSIVE INSERT to authenticated using - check internal.is_project_creator(project_id)
 policy public.project_crew "Project creators can remove crew" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR (user_id = ( SELECT auth.uid() AS uid))) check -
 policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check -
@@ -1159,11 +1223,13 @@ rls audit_logs enabled=true forced=false
 rls breakdown_categories enabled=true forced=false
 rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
+rls brief_questions enabled=true forced=false
 rls budget_items enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false
 rls call_sheets enabled=true forced=false
 rls campaigns enabled=true forced=false
 rls channel_members enabled=true forced=false
+rls channel_presets enabled=true forced=false
 rls channels enabled=true forced=false
 rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
@@ -1183,6 +1249,7 @@ rls post_notes enabled=true forced=false
 rls profiles enabled=true forced=false
 rls project_audio_references enabled=true forced=false
 rls project_beats enabled=true forced=false
+rls project_brief enabled=true forced=false
 rls project_crew enabled=true forced=false
 rls project_formats enabled=true forced=false
 rls project_tasks enabled=true forced=false
@@ -1214,6 +1281,7 @@ trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items 
 trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER project_brief_guard BEFORE INSERT OR UPDATE ON public.project_brief FOR EACH ROW EXECUTE FUNCTION internal.project_brief_guard()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()

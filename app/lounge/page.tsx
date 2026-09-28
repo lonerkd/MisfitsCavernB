@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2 } from 'lucide-react';
 import { audienceLabel, audienceOptions, defaultPostPolicy, groupChannels, type ChannelAudience } from '@/lib/lounge/audience';
 import Link from 'next/link';
@@ -22,6 +22,8 @@ import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { awaitOSUser } from '@/lib/os';
+import { useProjectBrief, loadChannelPresets, suggestChannels, type ChannelPreset } from '@/lib/brief';
+import { mapStatusToPhase } from '@/lib/os/phases';
 
 interface Message {
   id: string;
@@ -590,6 +592,27 @@ export default function LoungePage() {
 
   useEffect(() => { reloadChannels(); }, [reloadChannels]);
 
+  // Channels a production tends to want, offered to its owner when they fit
+  // the phase, the brief and the crew (public.channel_presets, lib/brief).
+  const ownsActive = !!(activeProject && currentUser && activeProject.creator_id === currentUser.id);
+  const loungePhase = activeProject ? mapStatusToPhase(activeProject.status) : null;
+  const loungeBrief = useProjectBrief(ownsActive ? activeProject!.id : null, activeProject?.project_type ?? null, loungePhase, { script: false });
+  const [presets, setPresets] = useState<ChannelPreset[]>([]);
+  useEffect(() => { if (ownsActive) loadChannelPresets().then(setPresets).catch(() => setPresets([])); }, [ownsActive]);
+  const suggested = useMemo(() => {
+    if (!ownsActive || !loungePhase || loungeBrief.loading) return [];
+    const open = channels.filter((c) => c.project_id === activeProject!.id).map((c) => c.name);
+    return suggestChannels(presets, { phase: loungePhase, context: { ...loungeBrief.context, channels: open }, implied: loungeBrief.implied.channels });
+  }, [ownsActive, loungePhase, loungeBrief.loading, loungeBrief.context, loungeBrief.implied.channels, presets, channels, activeProject]);
+  const addPreset = async (p: ChannelPreset) => {
+    if (!activeProject) return;
+    const { channel, error } = await createChannel({ project_id: activeProject.id, name: p.name, type: p.type, audience: p.audience, post_policy: p.post_policy, topic: p.topic });
+    if (error) { toast(error, 'error'); return; }
+    toast(`Opened #${p.name} for ${audienceLabel(p.audience).toLowerCase()}`, 'success');
+    await reloadChannels();
+    if (channel) setActiveChannel(channel);
+  };
+
   // The people on the active project: its owner and crew (not the whole platform).
   useEffect(() => {
     let alive = true;
@@ -928,6 +951,20 @@ export default function LoungePage() {
                  <>
                    {groups.guides.length > 0 && renderGroup('Guides', groups.guides, false, 'community')}
                    {activeProject && renderGroup(activeProject.title, groups.project, isOwner, 'project')}
+                   {suggested.length > 0 && (
+                     <div style={{ margin: '-8px 0 18px' }} aria-label="Suggested channels" role="group">
+                       <div style={{ fontSize: 8.5, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2, padding: '0 6px', marginBottom: 6 }}>Suggested for this phase</div>
+                       {suggested.map((p) => (
+                         <button key={p.key} type="button" onClick={() => void addPreset(p)} title={`${p.why} ${p.topic}`.trim()}
+                           aria-label={`Open #${p.name} for ${audienceLabel(p.audience)}`}
+                           style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 8px', borderRadius: 5, background: 'transparent', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 10.5, textAlign: 'left', marginBottom: 4 }}>
+                           <span aria-hidden style={{ color: 'var(--accent)' }}>+</span>
+                           <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.type === 'voice' ? '🔊 ' : '#'}{p.name}</span>
+                           <span style={{ fontSize: 8.5, color: 'var(--fg-dim)' }}>{audienceLabel(p.audience)}</span>
+                         </button>
+                       ))}
+                     </div>
+                   )}
                    {renderGroup('Community', groups.community, isAdmin, 'community')}
                    {groups.open.length > 0 && renderGroup('Other productions', groups.open, false, 'project')}
                  </>

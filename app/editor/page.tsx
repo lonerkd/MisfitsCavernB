@@ -36,6 +36,7 @@ import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { formatRuntime, timeCharacters, timeScript } from '@/lib/scriptos/timing';
+import { useBriefAnswer } from '@/lib/brief';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -933,6 +934,7 @@ export default function EditorPage() {
   const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
   saveReadRef.current = sceneIndex.saveRead;
   const timing = useMemo(() => timeScript(lines, sceneIndex.reads), [lines, sceneIndex.reads]);
+  const targetRuntime = useBriefAnswer(currentScript?.project_id, 'target_runtime');
   const characterTiming = useMemo(() => timeCharacters(lines), [lines]);
 
   // Breakdown mode: tag what the shoot needs right in the script.
@@ -1259,6 +1261,8 @@ export default function EditorPage() {
               timing={timing} characterTiming={characterTiming}
               onJumpToScene={jumpToScene}
               onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
+              targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}
+              briefHref={currentScript?.project_id ? `/projects/${currentScript.project_id}#brief` : undefined}
             />
           )}
         </div>

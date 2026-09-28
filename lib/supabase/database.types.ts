@@ -239,6 +239,51 @@ export type Database = {
           },
         ];
       };
+      brief_questions: {
+        Row: {
+          ask_when: NonNullable<Json>;
+          created_at: string;
+          hint: string;
+          key: string;
+          kind: string;
+          label: string;
+          max_value: number | null;
+          min_value: number | null;
+          options: NonNullable<Json>;
+          phase: string;
+          position: number;
+          unit: string | null;
+        };
+        Insert: {
+          ask_when?: NonNullable<Json>;
+          created_at?: string;
+          hint?: string;
+          key: string;
+          kind: string;
+          label: string;
+          max_value?: number | null;
+          min_value?: number | null;
+          options?: NonNullable<Json>;
+          phase: string;
+          position?: number;
+          unit?: string | null;
+        };
+        Update: {
+          ask_when?: NonNullable<Json>;
+          created_at?: string;
+          hint?: string;
+          key?: string;
+          kind?: string;
+          label?: string;
+          max_value?: number | null;
+          min_value?: number | null;
+          options?: NonNullable<Json>;
+          phase?: string;
+          position?: number;
+          unit?: string | null;
+        };
+        Relationships: [];
+      };
       budget_items: {
         Row: {
           actual_cost: number | null;
@@ -524,6 +569,42 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      channel_presets: {
+        Row: {
+          audience: string;
+          key: string;
+          name: string;
+          phase: string;
+          position: number;
+          post_policy: string;
+          topic: string;
+          type: string;
+          why: string;
+        };
+        Insert: {
+          audience?: string;
+          key: string;
+          name: string;
+          phase?: string;
+          position?: number;
+          post_policy?: string;
+          topic?: string;
+          type?: string;
+          why?: string;
+        };
+        Update: {
+          audience?: string;
+          key?: string;
+          name?: string;
+          phase?: string;
+          position?: number;
+          post_policy?: string;
+          topic?: string;
+          type?: string;
+          why?: string;
+        };
+        Relationships: [];
       };
       channels: {
         Row: {
@@ -1587,6 +1668,52 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "scripts";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      project_brief: {
+        Row: {
+          answered_by: string | null;
+          project_id: string;
+          question: string;
+          updated_at: string;
+          value: NonNullable<Json>;
+        };
+        Insert: {
+          answered_by?: string | null;
+          project_id: string;
+          question: string;
+          updated_at?: string;
+          value: NonNullable<Json>;
+        };
+        Update: {
+          answered_by?: string | null;
+          project_id?: string;
+          question?: string;
+          updated_at?: string;
+          value?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_brief_answered_by_fkey";
+            columns: ["answered_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_brief_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_brief_question_fkey";
+            columns: ["question"];
+            isOneToOne: false;
+            referencedRelation: "brief_questions";
+            referencedColumns: ["key"];
           },
         ];
       };
@@ -2811,6 +2938,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };
