@@ -20,6 +20,11 @@ export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
 export type ProjectLocation = Tables<'project_locations'>;
+export type Vendor = Tables<'vendors'>;
+export type Expense = Tables<'expenses'>;
+export type Timesheet = Tables<'timesheets'>;
+export type BudgetItem = Tables<'budget_items'>;
+export type ExpenseInput = Pick<Expense, 'description' | 'amount'> & Partial<Pick<Expense, 'budget_item_id' | 'vendor_id' | 'status' | 'po_number' | 'spent_on' | 'receipt_media_id'>>;
 export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes'>>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
 export type PostCut = Tables<'post_cuts'>;
@@ -401,6 +406,78 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not remove the location');
   }
 
+  // ── Money ────────────────────────────────────────────────────────────────
+
+  async function listBudgetLines(projectId: string): Promise<BudgetItem[]> {
+    const { data, error } = await db.from('budget_items').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load the budget');
+    return data;
+  }
+
+  /** Owner, leads and contributors only (RLS); others get an empty list. */
+  async function listVendors(projectId: string): Promise<Vendor[]> {
+    const { data, error } = await db.from('vendors').select('*').eq('project_id', projectId).order('name');
+    if (error) fail(error, 'Could not load vendors');
+    return data;
+  }
+
+  async function addVendor(projectId: string, fields: Pick<Vendor, 'name'> & Partial<Pick<Vendor, 'category' | 'contact' | 'notes'>>): Promise<Vendor> {
+    const { data, error } = await db.from('vendors').insert({ project_id: projectId, ...fields, name: fields.name.trim() }).select('*').single();
+    if (error) fail(error, error.code === '23505' ? 'There’s already a vendor with that name' : 'Could not add the vendor');
+    return data;
+  }
+
+  async function listExpenses(projectId: string): Promise<Expense[]> {
+    const { data, error } = await db.from('expenses').select('*').eq('project_id', projectId).order('spent_on', { ascending: false });
+    if (error) fail(error, 'Could not load spend');
+    return data;
+  }
+
+  async function addExpense(projectId: string, fields: ExpenseInput): Promise<Expense> {
+    const { data, error } = await db.from('expenses').insert({ project_id: projectId, ...fields }).select('*').single();
+    if (error) fail(error, 'Could not add the spend');
+    return data;
+  }
+
+  async function updateExpense(id: string, patch: Partial<ExpenseInput>): Promise<Expense> {
+    const { data, error } = await db.from('expenses').update(patch).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not update the spend');
+    return data;
+  }
+
+  async function deleteExpense(id: string): Promise<void> {
+    const { error } = await db.from('expenses').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove the spend');
+  }
+
+  /** Your own hours, or everyone's for the owner and leads (RLS). */
+  async function listTimesheets(projectId: string): Promise<Timesheet[]> {
+    const { data, error } = await db.from('timesheets').select('*').eq('project_id', projectId).order('work_date', { ascending: false });
+    if (error) fail(error, 'Could not load timesheets');
+    return data;
+  }
+
+  /** Logs (or corrects) the caller's hours for a day. */
+  async function logHours(projectId: string, workDate: string, hours: number, note?: string): Promise<Timesheet> {
+    const { data, error } = await db.from('timesheets')
+      .upsert({ project_id: projectId, work_date: workDate, hours, note: note?.trim() || null, status: 'submitted' }, { onConflict: 'project_id,user_id,work_date' })
+      .select('*').single();
+    if (error) fail(error, error.code === '42501' ? 'Approved hours can’t be changed — ask the owner' : 'Could not log the hours');
+    return data;
+  }
+
+  /** Owner and leads: approve (with a rate) or reject. */
+  async function decideTimesheet(id: string, status: 'approved' | 'rejected', rate?: number | null): Promise<Timesheet> {
+    const { data, error } = await db.from('timesheets').update({ status, ...(rate !== undefined ? { rate } : {}) }).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not update the timesheet');
+    return data;
+  }
+
+  async function deleteTimesheet(id: string): Promise<void> {
+    const { error } = await db.from('timesheets').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove the timesheet');
+  }
+
   // ── Post-production ──────────────────────────────────────────────────────
 
   async function listCuts(projectId: string): Promise<PostCut[]> {
@@ -566,7 +643,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

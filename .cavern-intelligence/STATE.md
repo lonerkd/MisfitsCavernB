@@ -1,8 +1,25 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Locations as records
+## Latest Session — Money: spend, vendors, timesheets
 
-Migration `20260928080000_locations.sql` — **apply to production before merging**.
+Migration `20260928090000_money.sql` — **apply to production before merging**.
+
+- **Studio › Production › Money** (the Budget tool): planned / committed /
+  paid / left in total and per budget line ("$600 over" in red); spend
+  lines — committed (a purchase order is out, with its PO number) or paid —
+  against a budget line and a vendor (added inline); timesheets.
+- **Paid spend keeps the budget line's actual in step** (trigger), so the
+  project page's budget agrees; it links to Studio › Money.
+- **Timesheets**: everyone on the production logs their own hours per day;
+  the owner and leads approve (setting the $/h rate) or reject — approved
+  hours × rate count as paid labour. Approved hours are settled for the crew;
+  an owner's correction sends them back for approval.
+- Spend and vendors are visible only to those who shape the project; crew
+  see and log only their own hours. Sums in `lib/studio/money.ts`.
+
+## Earlier — Locations as records
+
+Migration `20260928080000_locations.sql` — applied to production; PR #79 merged.
 
 - **Studio › Production › Locations**: every location the script names
   (INT. HARBOR - NIGHT → HARBOR), busiest first, with its scenes, shoot days,
@@ -20,7 +37,7 @@ Migration `20260928080000_locations.sql` — **apply to production before mergin
 
 ## Earlier — The hiring loop
 
-Migration `20260928070000_hiring_loop.sql` — see PR #79.
+Migration `20260928070000_hiring_loop.sql` — applied to production; PR #79 merged.
 
 - **Casting calls**: the Casting board's open role → "Post a casting call"
   opens Jobs with the post written from the script (scenes, shoot days) and

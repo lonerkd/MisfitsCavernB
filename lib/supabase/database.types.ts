@@ -888,6 +888,90 @@ export type Database = {
           },
         ];
       };
+      expenses: {
+        Row: {
+          amount: number;
+          budget_item_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          id: string;
+          paid_at: string | null;
+          po_number: string | null;
+          project_id: string;
+          receipt_media_id: string | null;
+          spent_on: string;
+          status: string;
+          vendor_id: string | null;
+        };
+        Insert: {
+          amount: number;
+          budget_item_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          id?: string;
+          paid_at?: string | null;
+          po_number?: string | null;
+          project_id: string;
+          receipt_media_id?: string | null;
+          spent_on?: string;
+          status?: string;
+          vendor_id?: string | null;
+        };
+        Update: {
+          amount?: number;
+          budget_item_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          id?: string;
+          paid_at?: string | null;
+          po_number?: string | null;
+          project_id?: string;
+          receipt_media_id?: string | null;
+          spent_on?: string;
+          status?: string;
+          vendor_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "expenses_budget_item_fkey";
+            columns: ["budget_item_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "budget_items";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_receipt_fkey";
+            columns: ["receipt_media_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_vendor_fkey";
+            columns: ["vendor_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "vendors";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       job_applications: {
         Row: {
           applicant_id: string;
@@ -2872,6 +2956,118 @@ export type Database = {
           },
           {
             foreignKeyName: "timeline_items_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      timesheets: {
+        Row: {
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          hours: number;
+          id: string;
+          note: string | null;
+          project_id: string;
+          rate: number | null;
+          status: string;
+          user_id: string;
+          work_date: string;
+        };
+        Insert: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          hours: number;
+          id?: string;
+          note?: string | null;
+          project_id: string;
+          rate?: number | null;
+          status?: string;
+          user_id?: string;
+          work_date: string;
+        };
+        Update: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          hours?: number;
+          id?: string;
+          note?: string | null;
+          project_id?: string;
+          rate?: number | null;
+          status?: string;
+          user_id?: string;
+          work_date?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "timesheets_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "timesheets_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "timesheets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      vendors: {
+        Row: {
+          category: string | null;
+          contact: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          project_id: string;
+        };
+        Insert: {
+          category?: string | null;
+          contact?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          project_id: string;
+        };
+        Update: {
+          category?: string | null;
+          contact?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vendors_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "vendors_project_id_fkey";
             columns: ["project_id"];
             isOneToOne: false;
             referencedRelation: "projects";
