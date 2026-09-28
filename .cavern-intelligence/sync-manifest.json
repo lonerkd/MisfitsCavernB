@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-28T07:03:10.388Z",
+  "last_synchronized": "2026-09-28T07:55:53.716Z",
   "stats": {
-    "totalFiles": 396,
-    "totalSize": 3053647,
+    "totalFiles": 403,
+    "totalSize": 3097198,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 140,
-      ".ts": 210,
+      ".tsx": 141,
+      ".ts": 215,
       ".js": 7,
-      ".sql": 25
+      ".sql": 26
     }
   },
   "modules": {
@@ -137,7 +137,8 @@
         "app/split/page.tsx",
         "app/studio/error.tsx",
         "app/studio/loading.tsx",
-        "app/studio/page.tsx"
+        "app/studio/page.tsx",
+        "app/welcome/page.tsx"
       ]
     },
     "UI Components": {
@@ -268,7 +269,8 @@
         "supabase/migrations/20260928010000_community.sql",
         "supabase/migrations/20260928020000_project_brief.sql",
         "supabase/migrations/20260928030000_brief_detect.sql",
-        "supabase/migrations/20260928040000_phases_v2.sql"
+        "supabase/migrations/20260928040000_phases_v2.sql",
+        "supabase/migrations/20260928050000_onboarding.sql"
       ]
     }
   },
@@ -345,8 +347,8 @@
     },
     {
       "path": "app/auth/callback/page.tsx",
-      "size": 4118,
-      "last_modified": "2026-09-26T20:13:33.074Z"
+      "size": 4518,
+      "last_modified": "2026-09-28T07:38:56.763Z"
     },
     {
       "path": "app/auth/error.tsx",
@@ -355,8 +357,8 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 15278,
-      "last_modified": "2026-09-26T20:13:33.075Z"
+      "size": 15532,
+      "last_modified": "2026-09-28T07:38:46.607Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -375,8 +377,8 @@
     },
     {
       "path": "app/crew/page.tsx",
-      "size": 13506,
-      "last_modified": "2026-09-27T05:01:52.521Z"
+      "size": 14495,
+      "last_modified": "2026-09-28T07:43:35.779Z"
     },
     {
       "path": "app/editor/error.tsx",
@@ -410,8 +412,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 33378,
-      "last_modified": "2026-09-28T03:33:57.332Z"
+      "size": 34265,
+      "last_modified": "2026-09-28T07:43:44.335Z"
     },
     {
       "path": "app/layout.tsx",
@@ -435,8 +437,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 78780,
-      "last_modified": "2026-09-28T03:37:15.302Z"
+      "size": 79718,
+      "last_modified": "2026-09-28T07:44:07.015Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -465,8 +467,8 @@
     },
     {
       "path": "app/portfolio/manage/page.tsx",
-      "size": 13480,
-      "last_modified": "2026-09-27T05:40:09.152Z"
+      "size": 13910,
+      "last_modified": "2026-09-28T07:43:23.683Z"
     },
     {
       "path": "app/portfolio/page.tsx",
@@ -505,8 +507,8 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 25828,
-      "last_modified": "2026-09-27T05:54:31.764Z"
+      "size": 34303,
+      "last_modified": "2026-09-28T07:45:21.287Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -560,8 +562,13 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 10663,
-      "last_modified": "2026-09-28T06:50:07.658Z"
+      "size": 10792,
+      "last_modified": "2026-09-28T07:42:57.855Z"
+    },
+    {
+      "path": "app/welcome/page.tsx",
+      "size": 9339,
+      "last_modified": "2026-09-28T07:38:07.987Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -680,8 +687,8 @@
     },
     {
       "path": "components/brief/BriefPanel.tsx",
-      "size": 9977,
-      "last_modified": "2026-09-28T06:02:12.481Z"
+      "size": 10084,
+      "last_modified": "2026-09-28T07:37:04.339Z"
     },
     {
       "path": "components/crafts/CraftPicker.tsx",
@@ -860,8 +867,8 @@
     },
     {
       "path": "components/studio/StudioContext.tsx",
-      "size": 7425,
-      "last_modified": "2026-09-27T19:12:03.128Z"
+      "size": 7759,
+      "last_modified": "2026-09-28T07:42:50.879Z"
     },
     {
       "path": "components/studio/media/AddMedia.tsx",
@@ -925,8 +932,8 @@
     },
     {
       "path": "components/studio/production/CrewView.tsx",
-      "size": 2484,
-      "last_modified": "2026-09-28T03:35:57.302Z"
+      "size": 2940,
+      "last_modified": "2026-09-28T07:43:01.907Z"
     },
     {
       "path": "components/studio/production/OnSetView.tsx",
@@ -1000,13 +1007,13 @@
     },
     {
       "path": "components/studio/tabs/ScenesTab.tsx",
-      "size": 12055,
-      "last_modified": "2026-09-27T18:29:15.149Z"
+      "size": 12207,
+      "last_modified": "2026-09-28T07:43:13.479Z"
     },
     {
       "path": "components/studio/tabs/ShareTab.tsx",
-      "size": 7698,
-      "last_modified": "2026-09-26T07:38:36.880Z"
+      "size": 7830,
+      "last_modified": "2026-09-28T07:43:08.943Z"
     },
     {
       "path": "components/studio/ui.tsx",
@@ -1055,8 +1062,8 @@
     },
     {
       "path": "e2e/accessibility.spec.ts",
-      "size": 6656,
-      "last_modified": "2026-09-27T20:06:57.523Z"
+      "size": 6668,
+      "last_modified": "2026-09-28T07:51:38.227Z"
     },
     {
       "path": "e2e/auth-journey.spec.ts",
@@ -1112,6 +1119,11 @@
       "path": "e2e/on-set.spec.ts",
       "size": 6512,
       "last_modified": "2026-09-27T20:06:25.638Z"
+    },
+    {
+      "path": "e2e/onboarding.spec.ts",
+      "size": 7442,
+      "last_modified": "2026-09-28T07:51:05.787Z"
     },
     {
       "path": "e2e/phases.spec.ts",
@@ -1329,6 +1341,11 @@
       "last_modified": "2026-09-28T02:06:40.005Z"
     },
     {
+      "path": "lib/onboarding.ts",
+      "size": 1579,
+      "last_modified": "2026-09-28T07:37:18.139Z"
+    },
+    {
       "path": "lib/os/OSProvider.tsx",
       "size": 401,
       "last_modified": "2026-09-24T20:05:03.637Z"
@@ -1347,6 +1364,16 @@
       "path": "lib/os/actions.ts",
       "size": 6165,
       "last_modified": "2026-09-25T02:53:23.950Z"
+    },
+    {
+      "path": "lib/os/board.test.ts",
+      "size": 3513,
+      "last_modified": "2026-09-28T07:45:39.779Z"
+    },
+    {
+      "path": "lib/os/board.ts",
+      "size": 2423,
+      "last_modified": "2026-09-28T07:45:13.707Z"
     },
     {
       "path": "lib/os/boot.test.ts",
@@ -1430,8 +1457,8 @@
     },
     {
       "path": "lib/os/types.ts",
-      "size": 2270,
-      "last_modified": "2026-09-26T07:53:00.712Z"
+      "size": 2378,
+      "last_modified": "2026-09-28T07:44:29.063Z"
     },
     {
       "path": "lib/os/uiPrefs.ts",
@@ -1790,8 +1817,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 92567,
-      "last_modified": "2026-09-28T06:50:07.659Z"
+      "size": 92759,
+      "last_modified": "2026-09-28T07:41:49.355Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -1825,8 +1852,8 @@
     },
     {
       "path": "lib/supabase/progress.ts",
-      "size": 3496,
-      "last_modified": "2026-09-27T05:39:34.979Z"
+      "size": 4649,
+      "last_modified": "2026-09-28T07:36:25.799Z"
     },
     {
       "path": "lib/supabase/projects.ts",
@@ -1895,8 +1922,8 @@
     },
     {
       "path": "middleware.ts",
-      "size": 2958,
-      "last_modified": "2026-09-27T08:02:25.534Z"
+      "size": 2974,
+      "last_modified": "2026-09-28T07:38:24.891Z"
     },
     {
       "path": "next-env.d.ts",
@@ -2074,6 +2101,11 @@
       "last_modified": "2026-09-28T06:50:07.668Z"
     },
     {
+      "path": "supabase/migrations/20260928050000_onboarding.sql",
+      "size": 1140,
+      "last_modified": "2026-09-28T07:35:50.423Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2081,7 +2113,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-28T07:01:52.327Z"
+      "last_modified": "2026-09-28T07:54:48.511Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2147,6 +2179,11 @@
       "path": "tests/integration/media-library.test.ts",
       "size": 9086,
       "last_modified": "2026-09-26T07:25:04.250Z"
+    },
+    {
+      "path": "tests/integration/onboarding.test.ts",
+      "size": 2951,
+      "last_modified": "2026-09-28T07:45:56.623Z"
     },
     {
       "path": "tests/integration/phases.test.ts",

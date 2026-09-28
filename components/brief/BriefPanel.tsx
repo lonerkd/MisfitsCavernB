@@ -14,7 +14,8 @@ import b from './brief.module.css';
 
 const ICON = { warn: AlertTriangle, gap: CircleDashed, tip: Lightbulb, ask: HelpCircle } as const;
 
-function Question({ q, value, disabled, onAnswer, found = [] }: { q: BriefQuestion; value: BriefValue | undefined; disabled: boolean; onAnswer: (v: BriefValue | null) => void; found?: Evidence[] }) {
+/** One brief question as choices (or a number) — also asked when a project starts (/welcome). */
+export function Question({ q, value, disabled, onAnswer, found = [] }: { q: BriefQuestion; value: BriefValue | undefined; disabled: boolean; onAnswer: (v: BriefValue | null) => void; found?: Evidence[] }) {
   const id = `brief-${q.key}`;
   const [draft, setDraft] = useState(typeof value === 'number' ? String(value) : '');
   useEffect(() => { setDraft(typeof value === 'number' ? String(value) : ''); }, [value]);

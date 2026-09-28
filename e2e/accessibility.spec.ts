@@ -63,7 +63,7 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     if ((await picker.inputValue()) !== p!.id) await picker.selectOption(p!.id);
 
     const routes = [
-      '/', '/projects', `/projects/${p!.id}`, `/projects/${p!.id}/pitch`,
+      '/', '/welcome', '/projects', `/projects/${p!.id}`, `/projects/${p!.id}/pitch`,
       ...['overview', 'library', 'scenes', 'production', 'post', 'promos', 'pitch', 'share'].map((t) => `/studio?tab=${t}`),
       '/studio?tab=production&view=readiness',
       '/editor', '/lounge', '/soundtrack', '/jobs', `/jobs/${job!.id}`, '/crew', `/crew/${uid}`,

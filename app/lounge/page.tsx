@@ -1035,8 +1035,23 @@ export default function LoungePage() {
                   <GuideSections messages={messages} canEdit={canPost} onDelete={handleDeleteGuideSection} />
                 )
               ) : messages.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
-                  {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : activeChannel ? `NO MESSAGES IN #${activeChannel.name.toUpperCase()} YET` : 'SELECT OR CREATE A CHANNEL'}
+                <div style={{ textAlign: 'center', color: 'var(--fg-muted)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10, lineHeight: 1.7 }}>
+                  {dmTarget
+                    ? `Say hello to @${dmTarget.name} — messages here are just between you two.`
+                    : activeChannel
+                      ? `Nothing in #${activeChannel.name} yet. ${canPost ? 'Start it — write below.' : 'Only whoever runs it posts here.'}`
+                      : 'Choose a channel on the left.'}
+                  {!dmTarget && !activeChannel && (() => {
+                    const start = channels.find((c) => !c.project_id && c.name === 'start-here');
+                    return start ? (
+                      <div style={{ marginTop: 14 }}>
+                        <button type="button" onClick={() => { setActiveChannel(start); setDmTarget(null); }}
+                          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--bg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer', fontWeight: 600 }}>
+                          Open #start-here
+                        </button>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0} />)}
               <div ref={bottomRef} />

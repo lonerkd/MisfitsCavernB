@@ -181,7 +181,9 @@ export default function ManagePortfolioPage() {
             ))}
           </div>
         ) : projects.length === 0 && !showNew ? (
-          <EmptyState icon={<Film size={28} />} title="No portfolio projects yet" subtitle='Click "New Project" to add your first piece of work' />
+          <EmptyState icon={<Film size={28} />} title="No portfolio projects yet"
+            subtitle="Add work you've made — a short, a reel, a music video — with links to watch it. Projects finished in the suite can be added from their Delivery phase."
+            action={<button type="button" onClick={() => setShowNew(true)} style={{ padding: '8px 18px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600 }}>Add your first piece</button>} />
         ) : (
         <div style={{ display: 'grid', gap: 20 }}>
           {projects.map(project => {

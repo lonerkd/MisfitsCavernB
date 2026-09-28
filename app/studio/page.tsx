@@ -134,7 +134,7 @@ export default function StudioPage() {
                 onChange={(e) => { const p = projects.find((x) => x.id === e.target.value); if (p) setActiveProject(p); }}
               >
                 {!activeProject && <option value="">Choose a project</option>}
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                {projects.filter((p) => !p.archived_at || p.id === activeProject?.id).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
             </label>
           )}
@@ -185,7 +185,7 @@ export default function StudioPage() {
             <Link href="/projects" className={s.btnPrimary} style={{ marginTop: 20 }}>{projects.length ? 'Your projects' : 'Create a project'}</Link>
           </div>
         ) : (
-          <StudioProvider key={activeProject.id} project={activeProject} userId={user.id}>
+          <StudioProvider key={activeProject.id} project={activeProject} userId={user.id} onNavigate={(t, v) => navigate({ kind: 'studio', tab: t, view: v })}>
             <ProgressContext.Provider value={progressState}>
               <div role="tabpanel">
                 {tabLock && !peeked.has(tab) ? (

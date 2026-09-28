@@ -15,6 +15,8 @@ import type { Profile } from '@/lib/supabase/profiles';
 import { awaitOSUser } from '@/lib/os';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 
+const NEXT_BTN: React.CSSProperties = { display: 'inline-block', padding: '8px 18px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600, textDecoration: 'none' };
+
 
 type DisplayMember = {
   key: string;
@@ -236,6 +238,14 @@ export default function CrewPage() {
             icon={<User size={28} />}
             title={mode === 'project' ? 'No crew on this project yet' : 'No crew members found'}
             subtitle={mode === 'project' ? 'Recruit talent from Studio or accept a job application to build the team.' : 'Try adjusting your search or filters'}
+            action={mode === 'project' ? (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href="/studio?tab=production&view=crew" style={NEXT_BTN}>Recruit in Studio</Link>
+                <Link href="/jobs" style={{ ...NEXT_BTN, background: 'transparent', color: 'var(--fg)', border: '1px solid rgba(255,255,255,0.18)' }}>Post a role</Link>
+              </div>
+            ) : (search || roleFilter !== 'All' || availFilter !== 'all') ? (
+              <button type="button" style={NEXT_BTN} onClick={() => { setSearch(''); setRoleFilter('All'); setAvailFilter('all'); }}>Clear filters</button>
+            ) : undefined}
           />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>

@@ -663,6 +663,22 @@ export default function JobsPage() {
                   subtitle={loadError}
                   action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
                 />
+              ) : filtered.length === 0 && jobs.length > 0 ? (
+                <EmptyState
+                  icon={<Briefcase size={28} />}
+                  title="No role matches"
+                  subtitle={`${jobs.length} open role${jobs.length === 1 ? '' : 's'} — none for this search or craft.`}
+                  action={
+                    <button onClick={() => { setSearch(''); setRoleFilter(''); }} style={{
+                      padding: '10px 22px', borderRadius: 9999,
+                      background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+                      color: '#a78bfa', cursor: 'pointer',
+                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
+                    }}>
+                      Show every role
+                    </button>
+                  }
+                />
               ) : filtered.length === 0 ? (
                 <EmptyState
                   icon={<Briefcase size={28} />}

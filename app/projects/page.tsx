@@ -1,13 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ArrowUpRight, Clock } from 'lucide-react';
+import { Plus, ArrowUpRight, Clock, Archive, ArchiveRestore, Search } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
 import { supabase } from '@/lib/supabase/client';
-import { getProjectCardFacts, getUserProjects, createProject as createDBProject } from '@/lib/supabase/projects';
+import { getProjectCardFacts, getUserProjects } from '@/lib/supabase/projects';
+import { fetchProjectsSignals, setProjectArchived } from '@/lib/supabase/progress';
+import type { ProjectSignals } from '@/lib/os/progress';
+import { SORTS, matchesQuery as matches, readinessOf, sortProjects, type Readiness, type SortKey } from '@/lib/os/board';
+import { startProject } from '@/lib/onboarding';
+import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -55,8 +60,11 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
                 rows={2}
               />
               <Button onClick={submit} disabled={busy || !title.trim()} isLoading={busy} fullWidth style={{ marginTop: 6 }}>
-                Create &amp; open studio
+                Create project
               </Button>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', margin: 0, textAlign: 'center' }}>
+                It opens where the first step is. Prefer a few questions first? <Link href="/welcome" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Guided start</Link>
+              </p>
             </div>
           </motion.div>
         </motion.div>
@@ -70,8 +78,14 @@ interface ProjectCardViewModel {
   title: string;
   type: string;
   phase: Phase;
+  creatorId: string;
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
   /** Tasks completed / total; null when the project has no tasks. */
   progress: { done: number; total: number } | null;
+  /** How far the current phase has come (lib/os/progress), and its next step. */
+  readiness: Readiness | null;
   /** The project's end date, if one is set — never invented. */
   deadline: string | null;
   /** Usernames of the owner and crew. */
@@ -92,15 +106,32 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
-function ProjectCard({ project }: { project: ProjectCardViewModel }) {
+function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardViewModel; canArchive: boolean; onArchive: (p: ProjectCardViewModel) => void }) {
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
   const icon = useFormatIcon(project.type);
   const days = project.deadline ? daysUntil(project.deadline) : null;
   const overdue = days !== null && days < 0;
-  const pct = project.progress && project.progress.total ? Math.round((project.progress.done / project.progress.total) * 100) : null;
+  const r = project.readiness;
+  const pct = r && r.total ? Math.round((r.done / r.total) * 100) : null;
 
   return (
+    <div style={{ position: 'relative' }}>
+    {canArchive && (
+      <button
+        type="button"
+        onClick={() => onArchive(project)}
+        aria-label={`${project.archived ? 'Restore' : 'Archive'} “${project.title}”`}
+        title={project.archived ? 'Restore to the board' : 'Archive — off the board until restored'}
+        style={{
+          position: 'absolute', top: 12, right: 12, zIndex: 2,
+          width: 26, height: 26, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', cursor: 'pointer',
+        }}
+      >
+        {project.archived ? <ArchiveRestore size={12} aria-hidden /> : <Archive size={12} aria-hidden />}
+      </button>
+    )}
     <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <motion.div
         draggable
@@ -144,12 +175,14 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
               {project.type}
             </div>
           </div>
+          {!canArchive && (
           <motion.div
             animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : 4 }}
             transition={{ duration: 0.2 }}
           >
             <ArrowUpRight size={13} color="rgba(255,255,255,0.4)" />
           </motion.div>
+          )}
         </div>
 
         <div style={{
@@ -177,15 +210,27 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
           {project.description}
         </div>
 
-        {pct !== null && (
-        <div title={`${project.progress!.done} of ${project.progress!.total} tasks done`} style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1, marginBottom: 12, overflow: 'hidden' }}>
-          <motion.div
-            initial={{ width: 0 }}
-            whileInView={{ width: `${pct}%` }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ height: '100%', background: `linear-gradient(90deg, ${phase}88, ${phase})`, borderRadius: 1 }}
-          />
+        {r && pct !== null && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, color: 'var(--fg-muted)', marginBottom: 5 }}>
+            <span>{r.phaseLabel}</span>
+            <span>{r.done === r.total ? 'Ready for the next phase' : `${r.done} of ${r.total} done`}</span>
+          </div>
+          <div role="progressbar" aria-label={`${r.phaseLabel} progress`} aria-valuemin={0} aria-valuemax={r.total} aria-valuenow={r.done}
+            style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: `${pct}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              style={{ height: '100%', background: `linear-gradient(90deg, ${phase}88, ${phase})`, borderRadius: 2 }}
+            />
+          </div>
+          {r.next && (
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Next: <span style={{ color: 'var(--fg)' }}>{r.next}</span>
+            </div>
+          )}
         </div>
         )}
 
@@ -207,6 +252,12 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
             ))}
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {project.progress && (
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-muted)' }}>
+              {project.progress.done}/{project.progress.total} tasks
+            </div>
+          )}
           {days !== null && (
           <div title={`Ends ${new Date(project.deadline!).toLocaleDateString()}`} style={{
             display: 'flex', alignItems: 'center', gap: 4,
@@ -217,13 +268,15 @@ function ProjectCard({ project }: { project: ProjectCardViewModel }) {
             {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
           </div>
           )}
+          </div>
         </div>
       </motion.div>
     </Link>
+    </div>
   );
 }
 
-function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[0]; projects: ProjectCardViewModel[]; onDropProject: (projectId: string, targetPhase: Phase) => void }) {
+function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: { phase: typeof PHASES[0]; projects: ProjectCardViewModel[]; onDropProject: (projectId: string, targetPhase: Phase) => void; canArchive: (p: ProjectCardViewModel) => boolean; onArchive: (p: ProjectCardViewModel) => void }) {
   const color = PHASE_COLORS[phase.id];
   const [dragOver, setDragOver] = useState(false);
 
@@ -289,7 +342,7 @@ function PhaseColumn({ phase, projects, onDropProject }: { phase: typeof PHASES[
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ delay: i * 0.07, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              <ProjectCard project={p} />
+              <ProjectCard project={p} canArchive={canArchive(p)} onArchive={onArchive} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -327,13 +380,13 @@ export default function ProjectsPage() {
       title: 'Projects',
       accent: '#e8431a',
       fields: [
-        { label: 'Total', value: `${projectsList.length}`, color: '#e8431a' },
+        { label: 'Total', value: `${projectsList.filter((p) => !p.archived).length}`, color: '#e8431a' },
       ],
       actions: user ? [
         { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
       ] : [],
     },
-    [projectsList.length, user],
+    [projectsList, user],
   );
 
   useEffect(() => {
@@ -343,12 +396,20 @@ export default function ProjectsPage() {
       setUser(user);
       getUserProjects(user.id).then(async data => {
         const rows = data || [];
-        const facts = await getProjectCardFacts(rows).catch(() => ({} as Awaited<ReturnType<typeof getProjectCardFacts>>));
+        const [facts, signals] = await Promise.all([
+          getProjectCardFacts(rows).catch(() => ({} as Awaited<ReturnType<typeof getProjectCardFacts>>)),
+          fetchProjectsSignals(rows.map((p) => p.id)).catch(() => ({} as Record<string, ProjectSignals>)),
+        ]);
         const fetched: ProjectCardViewModel[] = rows.map(p => ({
           id: p.id,
           title: p.title,
           type: p.project_type || 'Project',
           phase: mapStatusToPhase(p.status ?? undefined),
+          creatorId: p.creator_id,
+          archived: !!p.archived_at,
+          createdAt: p.created_at ?? '',
+          updatedAt: p.updated_at ?? p.created_at ?? '',
+          readiness: readinessOf(signals[p.id]),
           progress: facts[p.id]?.tasksTotal ? { done: facts[p.id].tasksDone, total: facts[p.id].tasksTotal } : null,
           deadline: p.end_date || null,
           team: facts[p.id]?.team ?? [],
@@ -364,13 +425,38 @@ export default function ProjectsPage() {
     });
   }, []);
 
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<SortKey>('updated');
+  const [showArchived, setShowArchived] = useState(false);
+
+  const active = useMemo(() => projectsList.filter((p) => !p.archived), [projectsList]);
+  const archived = useMemo(() => projectsList.filter((p) => p.archived), [projectsList]);
+  const shown = useMemo(
+    () => sortProjects((showArchived ? archived : active).filter((p) => matches(p, query.trim())), sort),
+    [active, archived, showArchived, query, sort],
+  );
+
   const byPhase = useMemo(() => {
     const map: Record<Phase, ProjectCardViewModel[]> = {
       development: [], 'pre-production': [], production: [], 'post-production': [], delivery: [],
     };
-    projectsList.forEach(p => map[p.phase].push(p));
+    (showArchived ? [] : shown).forEach(p => map[p.phase].push(p));
     return map;
-  }, [projectsList]);
+  }, [shown, showArchived]);
+
+  const canArchive = (p: ProjectCardViewModel) => !!user?.id && p.creatorId === user.id;
+
+  const toggleArchived = async (p: ProjectCardViewModel) => {
+    const next = !p.archived;
+    setProjectsList((prev) => prev.map((x) => (x.id === p.id ? { ...x, archived: next } : x)));
+    try {
+      await setProjectArchived(p.id, next);
+      toast(next ? `Archived “${p.title}” — find it under Archived` : `“${p.title}” is back on the board`, 'success');
+    } catch (e) {
+      setProjectsList((prev) => prev.map((x) => (x.id === p.id ? { ...x, archived: p.archived } : x)));
+      toast(e instanceof Error ? e.message : 'Could not archive the project', 'error');
+    }
+  };
 
   // The page's own `user` is read once on mount; fall back to the live session
   // so a user who signed in after mount is never told to sign in.
@@ -381,24 +467,16 @@ export default function ProjectsPage() {
     setShowNew(true);
   };
 
+  // Opens the tool for the new project's first step (lib/onboarding).
   const createFromModal = async (title: string, type: string, logline: string) => {
     const uid = currentUserId();
     if (!uid) { toast('Sign in to create projects', 'error'); return; }
     try {
-      const p = await createDBProject(uid, title, logline, type);
-      const newP: ProjectCardViewModel = {
-        id: p.id, title: p.title, type, phase: 'development',
-        progress: null, deadline: p.end_date || null,
-        team: user?.username ? [user.username] : [], description: p.description || '', color: readable(p.accent_color || '#6366f1'),
-      };
-      setProjectsList(prev => [newP, ...prev]);
+      const { project: p, href } = await startProject(uid, { title, format: type, logline });
       setActiveProject(p as any);
       setShowNew(false);
-      toast('Project created — opening studio', 'success');
-
-      void logActivity(`started project "${title}"`, 'project', p.id);
-
-      router.push('/studio');
+      toast(`“${p.title}” is ready`, 'success');
+      router.push(href);
     } catch {
       toast('Failed to create project', 'error');
     }
@@ -426,8 +504,8 @@ export default function ProjectsPage() {
     }
   };
 
-  const total = projectsList.length;
-  const inFlight = projectsList.filter(p => p.phase !== 'delivery').length;
+  const total = active.length;
+  const inFlight = active.filter(p => p.phase !== 'delivery').length;
 
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', overflow: 'hidden' }}>
@@ -580,21 +658,72 @@ export default function ProjectsPage() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
             style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 4, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Welcome to the cavern</div>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.4rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 1, margin: 0 }}>Start your first<br />production</h1>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.4rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 1, margin: 0, fontWeight: 400 }}>Start your first<br />production</h2>
             <p style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', color: 'var(--fg-muted)', maxWidth: 460, lineHeight: 1.6 }}>
               One project ties your screenplay, schedule, budget, concept board, characters and pitch together. Create one to begin — everything flows from it.
             </p>
-            <Button onClick={() => setShowNew(true)} variant="solid" size="lg" className="mt-2">
-              Start Project
-            </Button>
-            <div style={{ display: 'flex', gap: 22, marginTop: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {['Write in ScriptOS', 'Auto-build the schedule', 'Plan budget & crew', 'Pitch it'].map((s, i) => (
-                <div key={s} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, color: 'var(--fg-dim)' }}>
-                  <span style={{ color: 'var(--accent)' }}>{i + 1}.</span> {s}
-                </div>
-              ))}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Button onClick={() => setShowNew(true)} variant="solid" size="lg">Start Project</Button>
+              <Button href="/welcome" variant="outline" size="lg">Guided start</Button>
             </div>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', margin: 0 }}>
+              Here to join a crew instead? <Link href="/jobs" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Browse jobs</Link> or <Link href="/crew" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>the crew directory</Link>.
+            </p>
           </motion.div>
+        ) : (
+        <>
+        <div role="search" aria-label="Projects" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <div style={{ position: 'relative', flex: '0 1 280px', minWidth: 180 }}>
+            <Search size={12} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
+            <input
+              type="search"
+              aria-label="Search projects"
+              placeholder="Search title, logline, format, people"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}
+            />
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+            Sort
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
+              style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: '#111', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'none', letterSpacing: 0 }}>
+              {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </label>
+          <button type="button" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 99, cursor: 'pointer',
+              border: `1px solid ${showArchived ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
+              background: showArchived ? 'rgba(232,67,26,0.12)' : 'transparent', color: showArchived ? 'var(--fg)' : 'var(--fg-muted)',
+              fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+            }}>
+            <Archive size={11} aria-hidden /> Archived{archived.length ? ` (${archived.length})` : ''}
+          </button>
+          <span aria-live="polite" style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)' }}>
+            {query.trim() ? `${shown.length} match${shown.length === 1 ? '' : 'es'}` : ''}
+          </span>
+        </div>
+
+        {showArchived ? (
+          shown.length === 0 ? (
+            <div style={{ maxWidth: 520 }}>
+              <EmptyState icon={<Archive size={26} />}
+                title={query.trim() ? 'No archived project matches' : 'Nothing archived'}
+                subtitle={query.trim() ? 'Try other words, or clear the search.' : 'Archive a project from its card when it’s wrapped or on hold — it leaves the board and pickers, and nothing in it changes.'}
+                action={<Button variant="outline" size="sm" onClick={() => { setShowArchived(false); setQuery(''); }}>Back to the board</Button>} />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, maxWidth: 1200 }}>
+              {shown.map((p) => <ProjectCard key={p.id} project={p} canArchive={canArchive(p)} onArchive={toggleArchived} />)}
+            </div>
+          )
+        ) : query.trim() && shown.length === 0 ? (
+          <div style={{ maxWidth: 520 }}>
+            <EmptyState icon={<Search size={26} />} title={`No project matches “${query.trim()}”`}
+              subtitle={archived.some((p) => matches(p, query.trim())) ? 'An archived project does — look under Archived.' : 'Search looks at titles, loglines, formats and people.'}
+              action={<Button variant="outline" size="sm" onClick={() => setQuery('')}>Clear search</Button>} />
+          </div>
         ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -608,9 +737,11 @@ export default function ProjectsPage() {
           }}
         >
           {PHASES.map(phase => (
-            <PhaseColumn key={phase.id} phase={phase} projects={byPhase[phase.id]} onDropProject={handleDropProject} />
+            <PhaseColumn key={phase.id} phase={phase} projects={byPhase[phase.id]} onDropProject={handleDropProject} canArchive={canArchive} onArchive={toggleArchived} />
           ))}
         </motion.div>
+        )}
+        </>
         )}
       </div>
 
