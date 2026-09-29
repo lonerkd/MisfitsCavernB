@@ -6,6 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Archive, Clapperboard, Film, Globe, LayoutGrid, Lock, Maximize2, Megaphone, Video } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useOSGate, useProject } from '@/lib/os';
@@ -16,17 +17,21 @@ import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
-import { OverviewTab } from '@/components/studio/tabs/OverviewTab';
-import { LibraryTab } from '@/components/studio/tabs/LibraryTab';
-import { ScenesTab } from '@/components/studio/tabs/ScenesTab';
-import { ProductionTab } from '@/components/studio/tabs/ProductionTab';
-import { PostTab } from '@/components/studio/tabs/PostTab';
-import { PromosTab } from '@/components/studio/tabs/PromosTab';
-import { PitchTab } from '@/components/studio/tabs/PitchTab';
-import { ShareTab } from '@/components/studio/tabs/ShareTab';
 import { cx } from '@/components/studio/ui';
 import s from '@/components/studio/studio.module.css';
 import page from './studio-page.module.css';
+
+// Each tab's code loads when it's opened, so the Studio opens fast on a phone
+// (it used to ship every tab — the stripboard, money, post — up front).
+const tabLoading = () => <div className={page.tabLoading} aria-busy="true"><span className={s.spinner} aria-label="Loading" /></div>;
+const OverviewTab = dynamic(() => import('@/components/studio/tabs/OverviewTab').then((m) => m.OverviewTab), { loading: tabLoading });
+const LibraryTab = dynamic(() => import('@/components/studio/tabs/LibraryTab').then((m) => m.LibraryTab), { loading: tabLoading });
+const ScenesTab = dynamic(() => import('@/components/studio/tabs/ScenesTab').then((m) => m.ScenesTab), { loading: tabLoading });
+const ProductionTab = dynamic(() => import('@/components/studio/tabs/ProductionTab').then((m) => m.ProductionTab), { loading: tabLoading });
+const PostTab = dynamic(() => import('@/components/studio/tabs/PostTab').then((m) => m.PostTab), { loading: tabLoading });
+const PromosTab = dynamic(() => import('@/components/studio/tabs/PromosTab').then((m) => m.PromosTab), { loading: tabLoading });
+const PitchTab = dynamic(() => import('@/components/studio/tabs/PitchTab').then((m) => m.PitchTab), { loading: tabLoading });
+const ShareTab = dynamic(() => import('@/components/studio/tabs/ShareTab').then((m) => m.ShareTab), { loading: tabLoading });
 
 type TabId = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
 const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [

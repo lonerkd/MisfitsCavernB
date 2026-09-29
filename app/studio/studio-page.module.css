@@ -124,3 +124,4 @@
   .projectPicker select { max-width: 160px; }
   .tabs { justify-content: flex-start; }
 }
+.tabLoading { min-height: 40vh; display: grid; place-items: center; }

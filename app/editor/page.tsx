@@ -9,6 +9,7 @@ import {
   Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, getScript, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
@@ -51,8 +52,10 @@ import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
-import { DiffModal } from '@/components/editor/DiffModal';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+
+// The revision diff (and its diff library) loads the first time it's opened.
+const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
@@ -572,8 +575,8 @@ export default function EditorPage() {
       exportScriptAsFdx({ ...currentScript, content });
       toast('Exported as .fdx (Final Draft)', 'success');
     } else if (format === 'pdf') {
-      exportScriptAsPdf({ ...currentScript, content }, titlePage);
-      toast('Generating PDF...', 'success');
+      toast('Generating PDF...', 'info');
+      exportScriptAsPdf({ ...currentScript, content }, titlePage).catch(() => toast('Could not make the PDF — check your connection and try again.', 'error'));
     } else {
 
       exportScriptAsText({ ...currentScript, content }, 'txt');
@@ -1344,13 +1347,13 @@ export default function EditorPage() {
 
       </div>
 
-      <DiffModal
+      {showDiff && <DiffModal
         isOpen={showDiff}
         onClose={() => { setShowDiff(false); setDiffRevisionId(null); }}
         originalText={revisions.find(r => r.id === diffRevisionId)?.snapshot ?? ''}
         modifiedText={content}
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
-      />
+      />}
 
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
