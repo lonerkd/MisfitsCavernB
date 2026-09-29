@@ -90,7 +90,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase', marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--jobs-color)', textTransform: 'uppercase', marginBottom: 6 }}>
               Crew Marketplace
             </div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
@@ -491,7 +491,7 @@ export default function JobsPage() {
             >MC</div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase' }}>Jobs</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--jobs-color)', textTransform: 'uppercase' }}>Jobs</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -670,7 +670,7 @@ export default function JobsPage() {
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: '#8b5cf6', cursor: 'pointer',
+                      color: 'var(--jobs-color)', cursor: 'pointer',
                       fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post the first one
@@ -706,7 +706,7 @@ export default function JobsPage() {
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: '#8b5cf6', cursor: 'pointer',
+                      color: 'var(--jobs-color)', cursor: 'pointer',
                       fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post your first position

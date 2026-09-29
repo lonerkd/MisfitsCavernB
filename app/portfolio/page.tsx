@@ -359,7 +359,7 @@ export default function PortfolioPage() {
             >MC</div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--portfolio-color)', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {videosList.length} Projects

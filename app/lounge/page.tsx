@@ -181,7 +181,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       </div>
 
       {replyCount > 0 && onOpenThread && (
-        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 9999, padding: '3px 10px', cursor: 'pointer', color: '#10b981', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
+        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 9999, padding: '3px 10px', cursor: 'pointer', color: 'var(--lounge-color)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
           <MessageSquare size={10} /> {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
         </button>
       )}
@@ -852,7 +852,7 @@ export default function LoungePage() {
             >MC</div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: '#10b981', textTransform: 'uppercase' }}>Lounge</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--lounge-color)', textTransform: 'uppercase' }}>Lounge</div>
         </div>
 
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
@@ -952,7 +952,7 @@ export default function LoungePage() {
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                {dmTarget ? (
                  <>
-                   <span style={{ fontSize: 11, color: '#10b981', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>
+                   <span style={{ fontSize: 11, color: 'var(--lounge-color)', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>
                    <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>@{dmTarget.name}</span>
                    {onlineIds.has(dmTarget.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />}
                  </>
@@ -1014,10 +1014,10 @@ export default function LoungePage() {
           }}>
             <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', height: 14, marginBottom: 4 }}>
               {typingUsers.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: '#10b981', letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--lounge-color)', letterSpacing: 0.5 }}>
                   <span style={{ display: 'inline-flex', gap: 2 }}>
                     {[0, 1, 2].map(i => (
-                      <motion.span key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} style={{ width: 3, height: 3, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                      <motion.span key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--lounge-color)', display: 'inline-block' }} />
                     ))}
                   </span>
                   {typingUsers.slice(0, 2).join(', ')}{typingUsers.length > 2 ? ` +${typingUsers.length - 2}` : ''} {typingUsers.length === 1 ? 'is' : 'are'} typing…
@@ -1163,7 +1163,7 @@ export default function LoungePage() {
             style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(94vw, 380px)', background: 'rgba(9,9,9,0.98)', borderLeft: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)', zIndex: 200, display: 'flex', flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
           >
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#10b981' }}>Thread</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--lounge-color)' }}>Thread</span>
               <button onClick={() => setThreadParent(null)} aria-label="Close thread" style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>

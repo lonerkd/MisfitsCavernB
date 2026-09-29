@@ -18,7 +18,7 @@ export default function LoungeLoading() {
           width: 12,
           height: 12,
           borderRadius: '50%',
-          background: '#10b981',
+          background: 'var(--lounge-color)',
           boxShadow: '0 0 12px #10b981',
           animation: 'pulse 1.5s ease-in-out infinite',
         }}
