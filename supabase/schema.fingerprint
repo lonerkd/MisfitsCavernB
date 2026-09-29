@@ -1028,6 +1028,7 @@ function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=1dab5a7c14578a22e95dbcbbd3255d64
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.search_lounge(p_query text, p_channel uuid, p_limit integer) body=eb06476586cc9c7ecf2d318c02705a9a
+function public.search_suite(p_query text, p_limit integer) body=4d14749d29aca4c8937a6d64ac672b57
 function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6c
 function public.set_my_ui_prefs(p_patch jsonb) body=338ffba35c8e715ee1c5d0516d536ef4
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
@@ -1103,6 +1104,7 @@ grant function public.projects_progress(p_projects uuid[]) authenticated,postgre
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.search_lounge(p_query text, p_channel uuid, p_limit integer) authenticated,postgres,service_role
+grant function public.search_suite(p_query text, p_limit integer) authenticated,postgres,service_role
 grant function public.send_call_sheet_reminders() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
@@ -1219,6 +1221,7 @@ index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (pr
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
 index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
+index CREATE INDEX scripts_content_search_idx ON public.scripts USING gin (to_tsvector('simple'::regconfig, COALESCE(content, ''::text)))
 index CREATE INDEX set_log_created_by_idx ON public.set_log USING btree (created_by)
 index CREATE INDEX set_log_day_idx ON public.set_log USING btree (call_sheet_id)
 index CREATE INDEX set_log_media_idx ON public.set_log USING btree (media_id)

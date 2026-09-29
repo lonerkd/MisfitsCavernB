@@ -1,8 +1,25 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Who's away on a shoot day
+## Latest Session — Search everything from ⌘K
 
-Migration `20260929030000_availability.sql` — **apply to production before merging**.
+Migration `20260929040000_search.sql` — **apply to production before merging**.
+
+- **⌘K (or the dock's search button) now searches your work**, not just
+  page names: projects (title, logline), scripts — including what's written
+  in them, with the matching line shown — scenes, characters, library items,
+  locations, paperwork, tasks and cut notes, plus open jobs and people.
+  Word starts match ("harb nig"), and punctuation splits words
+  ("mara_okafor").
+- A result opens where it lives: a script in the editor, a task on its
+  project page, a location in Studio › Locations with its project made
+  active, a person on their crew page (`lib/search.ts`, unit-tested).
+- `search_suite(query)` runs with the caller's rights, so each table's
+  policy decides; project work is limited to projects you own or are
+  confirmed crew on, and sample people stay out. Script text has a GIN index.
+
+## Earlier — Who's away on a shoot day
+
+Migration `20260929030000_availability.sql` — applied to production; PR #87 merged.
 
 - **Your profile › Dates you're away**: a day or a range, with a note only
   you see (`unavailability`, your rows alone).
