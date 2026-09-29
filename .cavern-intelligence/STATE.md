@@ -1,8 +1,25 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Transcripts and the paper edit
+## Latest Session — Links that know what they are
 
-Migration `20260929060000_transcripts.sql` (`transcript_lines`, `set_paper_edit`).
+No migration.
+
+- **Pasting a YouTube or Vimeo link** into the Library brings the video in
+  under its real title, with its channel in the notes — no more "YouTube
+  video" cards.
+- **Pasting a public Pinterest board** offers to bring its latest pins (up to
+  50) into the library as images, on a board named after it, each pin's page
+  kept in its notes for credit.
+- Both come from public sources with no keys (oEmbed, the board's RSS feed)
+  through `app/api/links` — rate-limited, and only ever calling those
+  providers with an address rebuilt from a checked one (`lib/integrations/links.ts`,
+  unit-tested). No answer means the link is added as it was.
+- Spotify sign-in's PKCE verifier and state are now uniformly random
+  (rejection sampling instead of `% 62`).
+
+## Earlier — Transcripts and the paper edit
+
+Migration `20260929060000_transcripts.sql` (`transcript_lines`, `set_paper_edit`) — applied to production; PR #91 merged.
 
 - **Every interview, take or recording in the Library has a transcript**
   (video and audio items): paste one in — subtitles (SRT, WebVTT), a

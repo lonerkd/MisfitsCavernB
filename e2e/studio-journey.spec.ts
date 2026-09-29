@@ -150,7 +150,8 @@ test.describe('Studio journey (local Supabase)', () => {
     await page.getByRole('button', { name: /Add link/ }).click();
     await page.getByLabel('Web address').fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     await page.getByRole('button', { name: 'Add', exact: true }).click();
-    await expect(crew.getByRole('button', { name: 'YouTube video — Video' })).toBeVisible({ timeout: 15_000 });
+    // Titled from YouTube when it answers (oEmbed), "YouTube video" when it doesn't.
+    await expect(crew.getByRole('button', { name: / — Video$/ })).toBeVisible({ timeout: 15_000 });
     await crewContext.close();
   });
 });

@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T06:39:09.445Z",
+  "last_synchronized": "2026-09-29T06:49:08.610Z",
   "stats": {
-    "totalFiles": 478,
-    "totalSize": 3624176,
+    "totalFiles": 482,
+    "totalSize": 3755514,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 152,
-      ".ts": 267,
+      ".ts": 271,
       ".js": 7,
       ".sql": 38
     }
@@ -93,6 +93,7 @@
         "app/admin/users/page.tsx",
         "app/api/discord/notify/route.ts",
         "app/api/discord/test/route.ts",
+        "app/api/links/route.ts",
         "app/api/references/search/route.ts",
         "app/auth/callback/page.tsx",
         "app/auth/error.tsx",
@@ -362,6 +363,11 @@
       "path": "app/api/discord/test/route.ts",
       "size": 3169,
       "last_modified": "2026-09-24T20:05:03.618Z"
+    },
+    {
+      "path": "app/api/links/route.ts",
+      "size": 2218,
+      "last_modified": "2026-09-29T06:44:30.224Z"
     },
     {
       "path": "app/api/references/search/route.ts",
@@ -925,8 +931,8 @@
     },
     {
       "path": "components/studio/media/AddMedia.tsx",
-      "size": 5710,
-      "last_modified": "2026-09-26T07:36:18.007Z"
+      "size": 7736,
+      "last_modified": "2026-09-29T06:45:09.953Z"
     },
     {
       "path": "components/studio/media/FindReferences.tsx",
@@ -1514,6 +1520,21 @@
       "last_modified": "2026-09-28T06:50:07.659Z"
     },
     {
+      "path": "lib/integrations/links.test.ts",
+      "size": 4352,
+      "last_modified": "2026-09-29T06:46:02.685Z"
+    },
+    {
+      "path": "lib/integrations/links.ts",
+      "size": 4974,
+      "last_modified": "2026-09-29T06:46:00.181Z"
+    },
+    {
+      "path": "lib/integrations/lookup.ts",
+      "size": 826,
+      "last_modified": "2026-09-29T06:44:53.257Z"
+    },
+    {
       "path": "lib/lounge/audience.test.ts",
       "size": 1416,
       "last_modified": "2026-09-28T02:06:40.006Z"
@@ -1830,8 +1851,8 @@
     },
     {
       "path": "lib/spotify/auth.ts",
-      "size": 7690,
-      "last_modified": "2026-09-27T19:31:47.116Z"
+      "size": 7907,
+      "last_modified": "2026-09-29T06:45:19.773Z"
     },
     {
       "path": "lib/spotify/moods.test.ts",
@@ -1865,8 +1886,8 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 40067,
-      "last_modified": "2026-09-29T05:32:22.213Z"
+      "size": 40912,
+      "last_modified": "2026-09-29T06:44:47.237Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -2075,8 +2096,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 0,
-      "last_modified": "2026-09-29T06:38:30.841Z"
+      "size": 115880,
+      "last_modified": "2026-09-29T06:39:11.509Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2451,7 +2472,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T05:20:28.807Z"
+      "last_modified": "2026-09-29T06:41:02.639Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",

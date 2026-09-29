@@ -12,11 +12,18 @@ function getRedirectUri() {
   return `${baseUrl}/auth/spotify-callback`;
 }
 
-// PKCE verifier / OAuth state: must be unguessable, so crypto randomness only.
+// PKCE verifier / OAuth state: must be unguessable, so crypto randomness only,
+// and uniform — bytes ≥ 248 are dropped so no character is likelier (256 % 62).
 function generateRandomString(length: number) {
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const bytes = window.crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (b) => possible[b % possible.length]).join('');
+  const limit = 256 - (256 % possible.length);
+  let out = '';
+  while (out.length < length) {
+    for (const b of window.crypto.getRandomValues(new Uint8Array(length))) {
+      if (b < limit && out.length < length) out += possible[b % possible.length];
+    }
+  }
+  return out;
 }
 
 // Local token copies belong to one app user. Signing out (by any route) and

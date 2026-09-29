@@ -42,6 +42,13 @@ notes/colours on the device and moves them in when the script joins a project).
   removes the file. Delete removes the row, then the file.
 - Links: YouTube/Vimeo play inline (privacy-friendly embeds); image/video/audio
   URLs render directly; anything else is a link card. Only http(s).
+  Pasting asks `GET /api/links?url=` first (`lib/integrations/links.ts`,
+  unit-tested; rate-limited, keyless): a YouTube/Vimeo video comes in under its
+  real title with "By <channel>" in the notes (oEmbed, rebuilt from the video
+  id — the pasted address itself is never fetched); a public Pinterest board
+  (`pinterest.<tld>/<user>/<board>/`) offers its latest pins (its RSS feed, up
+  to 50, `i.pinimg.com` images at 564px, the pin page in the notes) as image
+  items on a board named after it. Anything else, or no answer, adds as before.
 - Find references: Openverse search; results are added as links with creator
   and source kept in the notes for credit.
 - Crew can add, edit titles/boards/notes, and delete what they added; only the

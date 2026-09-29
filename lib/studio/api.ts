@@ -140,7 +140,7 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
-  async function addLink(projectId: string, userId: string, input: { url: string; title?: string; board?: string | null }): Promise<Media> {
+  async function addLink(projectId: string, userId: string, input: { url: string; title?: string; notes?: string | null; board?: string | null }): Promise<Media> {
     const link = classifyUrl(input.url);
     if (!link) throw new StudioError('That doesn’t look like a web address (it should start with https://).');
     const { data, error } = await db
@@ -150,12 +150,27 @@ export function createStudioApi(db: Client) {
         kind: link.kind,
         title: (input.title?.trim() || link.title).slice(0, 200),
         external_url: link.url,
+        notes: input.notes?.trim().slice(0, 5000) || null,
         board: input.board?.trim() || null,
         created_by: userId,
       })
       .select('*')
       .single();
     if (error) fail(error, 'Could not add the link');
+    return data;
+  }
+
+  /** Pins from a Pinterest board, as image items on one board of the library (their pin page in the notes). */
+  async function addPins(projectId: string, userId: string, pins: Array<{ title: string; pinUrl: string; imageUrl: string }>, board: string | null): Promise<Media[]> {
+    if (!pins.length) return [];
+    const rows = pins.map((p) => ({
+      project_id: projectId, kind: 'image' as const, created_by: userId,
+      title: p.title.slice(0, 200), external_url: p.imageUrl,
+      notes: `From Pinterest: ${p.pinUrl}`.slice(0, 5000),
+      board: board?.trim().slice(0, 60) || null,
+    }));
+    const { data, error } = await db.from('media').insert(rows).select('*');
+    if (error) fail(error, 'Could not add the pins');
     return data;
   }
 
@@ -743,7 +758,7 @@ export function createStudioApi(db: Client) {
   }
 
   return {
-    listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
+    listMedia, addLink, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
