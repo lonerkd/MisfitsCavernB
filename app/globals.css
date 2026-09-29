@@ -77,6 +77,9 @@
   --portfolio-color: #f59e0b;
   --jobs-color:      #8b5cf6;
 
+  /* Status — theme-independent. Green means online, done or success. */
+  --success: #10b981;
+
   /* Motion */
   --ease-expo:   cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);

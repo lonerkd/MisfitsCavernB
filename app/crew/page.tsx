@@ -271,7 +271,7 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <Avatar src={member.avatarUrl} name={member.username} size={44} />
             {online && (
-              <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #050a14', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+              <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: 'var(--success)', border: '2px solid #050a14', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
             )}
           </div>
           <div>

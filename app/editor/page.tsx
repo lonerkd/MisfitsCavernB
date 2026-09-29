@@ -1406,7 +1406,7 @@ export default function EditorPage() {
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
                             {cast?.username && (
-                              <span style={{ fontSize: 11, color: '#10b981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
+                              <span style={{ fontSize: 11, color: 'var(--success)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
                                 Playing: {cast.username}
                               </span>
                             )}

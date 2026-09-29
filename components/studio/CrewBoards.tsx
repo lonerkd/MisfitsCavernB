@@ -108,7 +108,7 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar src={member.avatar} name={member.name} size={44} />
         {isOnline && (
-          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: 'var(--success)', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
         )}
       </div>
       <div style={{ flex: 1 }}>

@@ -241,7 +241,7 @@ function LoungePreview({ messages, caption }: { messages: { from: string; text: 
           alignItems: m.mine ? 'flex-end' : 'flex-start',
         }}>
           {!m.mine && (
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#10b981', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--success)', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
             background: m.mine ? 'rgba(232, 67, 26,0.15)' : 'rgba(255,255,255,0.05)',

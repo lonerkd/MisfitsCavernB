@@ -211,7 +211,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                             style={{ width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 11, marginBottom: 8 }}
                           />
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 8, padding: '5px', cursor: 'pointer', fontSize: 11 }}>Add</button>
+                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: 'var(--success)', borderRadius: 8, padding: '5px', cursor: 'pointer', fontSize: 11 }}>Add</button>
                             <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11 }}>Cancel</button>
                           </div>
                         </div>

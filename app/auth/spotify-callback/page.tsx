@@ -69,7 +69,7 @@ export default function SpotifyCallback() {
           transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
           style={{ display: 'flex', alignItems: 'center', gap: 12 }}
         >
-          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 12px #10b981' }} />
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 12px #10b981' }} />
           Connecting to Spotify...
         </motion.div>
       )}

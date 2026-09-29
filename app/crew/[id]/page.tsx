@@ -210,8 +210,8 @@ export default function CrewMemberPage() {
                 {profile.status}
               </span>
               {isOnline && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: 1, color: '#10b981' }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: 1, color: 'var(--success)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
                   Online now
                 </span>
               )}

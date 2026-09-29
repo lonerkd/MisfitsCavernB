@@ -218,7 +218,7 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
           </div>
           {member.online && (
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
           )}
         </div>
       ))}
@@ -273,7 +273,7 @@ function PortfolioPreview({ pieces }: { pieces: { id: string; title: string }[] 
       {pieces.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Not in your portfolio yet.</span>}
       {pieces.slice(0, 4).map((p) => (
         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
         </div>
       ))}
@@ -487,8 +487,8 @@ export default function ProjectHubPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {onlineCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: '#10b981', letterSpacing: 1.5 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--success)', letterSpacing: 1.5 }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
               {onlineCount} online
             </div>
           )}
@@ -927,7 +927,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {tasks.map(t => (
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
-              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(255,255,255,0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: '#10b981', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
+              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(255,255,255,0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--success)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
               <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
