@@ -1,7 +1,7 @@
 export default function ProfileLoading() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '80px 24px 40px' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
           <div>

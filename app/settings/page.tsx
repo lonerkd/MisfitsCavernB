@@ -32,7 +32,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       aria-label={label}
       onClick={() => onChange(!on)}
       style={{
-        width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+        width: 42, height: 24, borderRadius: 9999, border: 'none', cursor: 'pointer',
         background: on ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative',
         transition: 'background 0.2s', flexShrink: 0, padding: 0,
       }}
@@ -50,9 +50,9 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
     <section style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, color: 'var(--accent)' }}>
         {icon}
-        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'rgba(255,255,255,0.6)' }}>{title}</h2>
+        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'rgba(255,255,255,0.6)' }}>{title}</h2>
       </div>
-      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
         {children}
       </div>
     </section>
@@ -63,8 +63,8 @@ function Row({ label, hint, control }: { label: string; hint?: string; control: 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>{label}</div>
-        {hint && <div style={{ fontSize: 10.5, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
+        <div style={{ fontSize: 13, color: 'var(--fg)' }}>{label}</div>
+        {hint && <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
       </div>
       <div style={{ flexShrink: 0 }}><RowLabel.Provider value={label}>{control}</RowLabel.Provider></div>
     </div>
@@ -73,15 +73,15 @@ function Row({ label, hint, control }: { label: string; hint?: string; control: 
 
 const inputStyle: React.CSSProperties = {
   padding: '8px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none', width: 200,
+  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 8, outline: 'none', width: 200,
 };
 const btnStyle: React.CSSProperties = {
-  padding: '8px 14px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 6,
-  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer', fontWeight: 600,
+  padding: '8px 14px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8,
+  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600,
 };
 const ghostBtn: React.CSSProperties = {
   padding: '8px 14px', background: 'transparent', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: 6, fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer',
+  borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer',
 };
 
 export default function SettingsPage() {
@@ -253,13 +253,13 @@ export default function SettingsPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>SETTINGS</h1>
         </Link>
         {msg && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 10, color: msg.ok ? '#34d399' : '#ff5c5c' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: msg.ok ? '#34d399' : '#ff5c5c' }}>
             {msg.ok && <Check size={12} />} {msg.text}
           </span>
         )}
       </header>
 
-      <div style={{ maxWidth: 520, margin: '60px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
+      <div style={{ maxWidth: 'var(--w-form)', margin: '60px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
 
         <Section icon={<User size={15} />} title="Account">
           <Row label="Email address" hint="Changing this sends a confirmation link to the new address." control={
@@ -290,7 +290,7 @@ export default function SettingsPage() {
                 onChange={e => setThemePref(e.target.value)}
                 style={{
                   padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none', cursor: 'pointer',
+                  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 8, outline: 'none', cursor: 'pointer',
                   width: '100%', minWidth: 200
                 }}
               >
@@ -305,18 +305,18 @@ export default function SettingsPage() {
               {theme === 'custom' && (
                 <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Background Base</label>
+                    <label style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Background Base</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input type="color" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
-                      <input type="text" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
+                      <input type="text" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 11, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Accent Core</label>
+                    <label style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Accent Core</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <input type="color" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
-                      <input type="text" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
+                      <input type="text" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 11, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
                     </div>
                   </div>
                 </div>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
           } />
         </Section>
 
-        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
           MISFITS CAVERN · {user.email}
         </div>
       </div>

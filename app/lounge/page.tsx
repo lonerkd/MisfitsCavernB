@@ -69,15 +69,15 @@ function ProductionFeed({ projectId }: { projectId: string }) {
   if (items.length === 0) return null;
   return (
     <div style={{ marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 10 }}>Production Feed</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 10 }}>Production Feed</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {items.map((it, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: it.color, marginTop: 5, flexShrink: 0, boxShadow: `0 0 6px ${it.color}` }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.label}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.label}</div>
             </div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)', flexShrink: 0 }}>{ago(it.t)}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-subtle)', flexShrink: 0 }}>{ago(it.t)}</div>
           </div>
         ))}
       </div>
@@ -96,16 +96,16 @@ function GuideSections({ messages, canEdit, onDelete }: { messages: Message[]; c
         const [head, ...rest] = m.text.split('\n');
         const body = rest.join('\n').trim();
         return (
-          <section key={m.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '16px 20px' }}>
+          <section key={m.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
               <h3 style={{ margin: 0, fontSize: 15, color: '#fff', fontWeight: 600, lineHeight: 1.4 }}>{head}</h3>
               {canEdit && (
                 <button type="button" onClick={() => onDelete(m)} aria-label={`Remove section: ${head.slice(0, 60)}`}
-                  style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'inline-flex', flexShrink: 0 }}><Trash2 size={12} /></button>
+                  style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'inline-flex', flexShrink: 0 }}><Trash2 size={12} /></button>
               )}
             </div>
-            {body && <p style={{ margin: '8px 0 0', fontSize: 13.5, lineHeight: 1.65, color: 'var(--fg)', whiteSpace: 'pre-wrap', fontFamily: 'var(--serif)' }}>{body}</p>}
-            <div style={{ marginTop: 10, fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{m.user} · {m.timestamp.toLocaleDateString()}</div>
+            {body && <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.65, color: 'var(--fg)', whiteSpace: 'pre-wrap', fontFamily: 'var(--serif)' }}>{body}</p>}
+            <div style={{ marginTop: 10, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{m.user} · {m.timestamp.toLocaleDateString()}</div>
           </section>
         );
       })}
@@ -139,7 +139,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
           <span style={{ fontFamily: 'var(--display)', fontSize: 13, letterSpacing: 2, color: 'var(--accent)' }}>
             {msg.user}
           </span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-subtle)' }}>
             {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
@@ -164,9 +164,9 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
             <Smile size={13} />
           </button>
           {pickerOpen && (
-            <div style={{ position: 'absolute', bottom: '100%', [isMe ? 'right' : 'left']: 0, marginBottom: 6, display: 'flex', gap: 2, padding: 5, background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 20 } as React.CSSProperties}>
+            <div style={{ position: 'absolute', bottom: '100%', [isMe ? 'right' : 'left']: 0, marginBottom: 6, display: 'flex', gap: 2, padding: 5, background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 20 } as React.CSSProperties}>
               {REACTION_CHOICES.map(e => (
-                <button key={e} onClick={() => { onReact(msg.id, e); setPickerOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 4px', borderRadius: 6 }}>{e}</button>
+                <button key={e} onClick={() => { onReact(msg.id, e); setPickerOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 4px', borderRadius: 8 }}>{e}</button>
               ))}
             </div>
           )}
@@ -181,7 +181,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       </div>
 
       {replyCount > 0 && onOpenThread && (
-        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 99, padding: '3px 10px', cursor: 'pointer', color: '#10b981', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
+        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 9999, padding: '3px 10px', cursor: 'pointer', color: '#10b981', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
           <MessageSquare size={10} /> {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
         </button>
       )}
@@ -192,7 +192,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
             const reacted = !!currentUserId && users.includes(currentUserId);
             return (
               <button key={emoji} onClick={() => onReact(msg.id, emoji)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(232, 67, 26,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(232, 67, 26,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 9999, cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', background: reacted ? 'rgba(232, 67, 26,0.16)' : 'rgba(255,255,255,0.05)', border: `1px solid ${reacted ? 'rgba(232, 67, 26,0.4)' : 'rgba(255,255,255,0.08)'}`, color: reacted ? '#ff7a4d' : 'var(--fg-muted)' }}>
                 <span>{emoji}</span><span>{users.length}</span>
               </button>
             );
@@ -201,7 +201,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       )}
 
       {isMe && (
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-subtle)', marginTop: 4 }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-subtle)', marginTop: 4 }}>
           {msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
         </span>
       )}
@@ -229,7 +229,7 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
               <div style={{ border: `2px solid ${m.speaking ? '#10b981' : 'rgba(255,255,255,0.15)'}`, borderRadius: '50%', boxShadow: m.speaking ? '0 0 18px rgba(16,185,129,0.6)' : 'none', transition: 'border-color 0.15s, box-shadow 0.15s' }}>
                 <Avatar src={m.avatar} name={m.name} size={56} />
               </div>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
                 {m.name}{m.id === me?.id ? ' (you)' : ''}
                 {m.id !== me?.id && !m.connected && <span style={{ color: '#f59e0b' }}> · connecting…</span>}
               </span>
@@ -240,7 +240,7 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 99, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
         </button>
         {joined && (
@@ -249,7 +249,7 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
           </button>
         )}
       </div>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: micError ? '#f59e0b' : 'var(--fg-dim)', letterSpacing: 1, maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: micError ? '#f59e0b' : 'var(--fg-dim)', letterSpacing: 1, maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
         {micError || (joined ? 'Live — peer-to-peer audio with your crew. Green ring = speaking.' : 'Join to talk with everyone in this room.')}
       </div>
     </div>
@@ -268,13 +268,13 @@ function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
   const [busy, setBusy] = useState(false);
   useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
   const submit = async () => { if (!name.trim() || busy) return; setBusy(true); try { await onCreate({ name, type, audience, is_private: isPrivate, post_policy: type === 'guide' ? 'managers' : postPolicy }); } finally { setBusy(false); } };
-  const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
+  const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
-        style={{ width: 440, maxWidth: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 26 }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>{projectTitle}</div>
+        style={{ width: 440, maxWidth: '100%', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: 26 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>{projectTitle}</div>
         <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, margin: '0 0 20px' }}>New channel</h2>
 
         <div style={{ marginBottom: 16 }}>
@@ -305,17 +305,17 @@ function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
             {audienceOptions(scope).map((o) => (
               <button key={o.id} role="radio" aria-checked={audience === o.id} title={o.hint}
                 onClick={() => { setAudience(o.id); setPostPolicy(defaultPostPolicy(o.id)); }}
-                style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: audience === o.id ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: `1px solid ${audience === o.id ? 'rgba(232, 67, 26,0.45)' : 'rgba(255,255,255,0.08)'}`, color: audience === o.id ? '#fff' : 'var(--fg-muted)' }}>
+                style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: audience === o.id ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: `1px solid ${audience === o.id ? 'rgba(232, 67, 26,0.45)' : 'rgba(255,255,255,0.08)'}`, color: audience === o.id ? '#fff' : 'var(--fg-muted)' }}>
                 <span style={{ display: 'block', fontSize: 12 }}>{o.label}</span>
-                <span style={{ display: 'block', fontSize: 10, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.35 }}>{o.hint}</span>
+                <span style={{ display: 'block', fontSize: 11, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.35 }}>{o.hint}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 10, color: 'var(--fg-dim)', marginTop: 2 }}>Invite-only, within who it’s for</div></div>
-          <button role="switch" aria-checked={isPrivate} aria-label="Private channel" onClick={() => setIsPrivate(v => !v)} style={{ width: 42, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer', background: isPrivate ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative', flexShrink: 0 }}>
+          <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2 }}>Invite-only, within who it’s for</div></div>
+          <button role="switch" aria-checked={isPrivate} aria-label="Private channel" onClick={() => setIsPrivate(v => !v)} style={{ width: 42, height: 24, borderRadius: 9999, border: 'none', cursor: 'pointer', background: isPrivate ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative', flexShrink: 0 }}>
             <span style={{ position: 'absolute', top: 3, left: isPrivate ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
           </button>
         </div>
@@ -325,7 +325,7 @@ function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
             <label style={label}>Who can post</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {([['viewers', 'Everyone who can see it'], ['members', 'Only explicit members'], ['managers', 'Only managers (announcements)']] as const).map(([v, d]) => (
-                <button key={v} onClick={() => setPostPolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
+                <button key={v} onClick={() => setPostPolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
               ))}
             </div>
           </div>
@@ -438,15 +438,15 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     onChanged(); onClose();
   };
 
-  const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
+  const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
-        style={{ width: 460, maxWidth: '100%', maxHeight: '86vh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 26 }}>
+        style={{ width: 460, maxWidth: '100%', maxHeight: '86vh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: 26 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>Manage channel</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>Manage channel</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 1, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
               {channel.is_private ? <Lock size={15} /> : <Hash size={15} />}{channel.name}
             </h2>
@@ -459,7 +459,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {audienceOptions(channel.project_id ? 'project' : 'community').map((o) => (
               <button key={o.id} role="radio" aria-checked={audience === o.id} title={o.hint} onClick={() => void saveAudience(o.id)}
-                style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 7, cursor: 'pointer', background: audience === o.id ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: `1px solid ${audience === o.id ? 'rgba(232, 67, 26,0.45)' : 'rgba(255,255,255,0.08)'}`, color: audience === o.id ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>
+                style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 8, cursor: 'pointer', background: audience === o.id ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: `1px solid ${audience === o.id ? 'rgba(232, 67, 26,0.45)' : 'rgba(255,255,255,0.08)'}`, color: audience === o.id ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>
                 {o.label}
               </button>
             ))}
@@ -471,7 +471,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
             <label style={label}>Who can post</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {([['viewers', 'Everyone who can see it'], ['members', 'Only explicit members'], ['managers', 'Only managers (announcements)']] as const).map(([v, d]) => (
-                <button key={v} onClick={() => savePolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
+                <button key={v} onClick={() => savePolicy(v)} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: postPolicy === v ? 'rgba(255,255,255,0.06)' : 'transparent', border: `1px solid ${postPolicy === v ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, color: postPolicy === v ? '#fff' : 'var(--fg-muted)', fontSize: 12 }}>{d}</button>
               ))}
             </div>
           </div>
@@ -502,12 +502,12 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
             <Input label="Add member" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by username…" />
             {(searching || results.length > 0) && (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {searching && <div style={{ fontSize: 10, color: 'var(--fg-dim)', padding: 6, fontFamily: 'var(--mono)' }}>Searching…</div>}
+                {searching && <div style={{ fontSize: 11, color: 'var(--fg-dim)', padding: 6, fontFamily: 'var(--mono)' }}>Searching…</div>}
                 {results.map(u => (
-                  <button key={u.id} disabled={busy} onClick={() => doAdd(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 7, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: '#fff', textAlign: 'left' }}>
+                  <button key={u.id} disabled={busy} onClick={() => doAdd(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 8, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', color: '#fff', textAlign: 'left' }}>
                     <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{u.username.charAt(0).toUpperCase()}</div>
                     <span style={{ fontSize: 13 }}>{u.username}</span>
-                    <span style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--accent)' }}>+ ADD</span>
+                    <span style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>+ ADD</span>
                   </button>
                 ))}
               </div>
@@ -517,7 +517,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
 
         <label style={label}>{channel.is_private ? `Members (${members.length})` : 'Roster'}</label>
         {loading ? (
-          <div style={{ fontSize: 10, color: 'var(--fg-dim)', padding: 12, fontFamily: 'var(--mono)' }}>Loading…</div>
+          <div style={{ fontSize: 11, color: 'var(--fg-dim)', padding: 12, fontFamily: 'var(--mono)' }}>Loading…</div>
         ) : members.length === 0 ? (
           <div style={{ fontSize: 11, color: 'var(--fg-dim)', padding: 12 }}>{channel.is_private ? 'No explicit members yet — add someone above.' : 'Public channel — everyone with project access can see it.'}</div>
         ) : (
@@ -525,10 +525,10 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
             {members.map(m => (
               <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{(m.profiles?.username || '?').charAt(0).toUpperCase()}</div>
-                <span style={{ fontSize: 13, color: '#fff' }}>{m.profiles?.username || 'unknown'}{m.user_id === meId && <span style={{ color: 'var(--fg-dim)', fontSize: 10 }}> (you)</span>}</span>
+                <span style={{ fontSize: 13, color: '#fff' }}>{m.profiles?.username || 'unknown'}{m.user_id === meId && <span style={{ color: 'var(--fg-dim)', fontSize: 11 }}> (you)</span>}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <button onClick={() => toggle(m, 'can_post')} disabled={busy} title="Can post" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, padding: '4px 7px', borderRadius: 5, cursor: 'pointer', background: m.can_post ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_post ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_post ? '#34d399' : '#666' }}>POST</button>
-                  <button onClick={() => toggle(m, 'can_manage')} disabled={busy} title="Can manage" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, padding: '4px 7px', borderRadius: 5, cursor: 'pointer', background: m.can_manage ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_manage ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_manage ? '#fbbf24' : '#666' }}>MANAGE</button>
+                  <button onClick={() => toggle(m, 'can_post')} disabled={busy} title="Can post" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, padding: '4px 7px', borderRadius: 4, cursor: 'pointer', background: m.can_post ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_post ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_post ? '#34d399' : '#666' }}>POST</button>
+                  <button onClick={() => toggle(m, 'can_manage')} disabled={busy} title="Can manage" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, padding: '4px 7px', borderRadius: 4, cursor: 'pointer', background: m.can_manage ? 'rgba(245,158,11,0.14)' : 'rgba(255,255,255,0.04)', border: `1px solid ${m.can_manage ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.1)'}`, color: m.can_manage ? '#fbbf24' : '#666' }}>MANAGE</button>
                   <button aria-label="Remove" onClick={() => doRemove(m)} disabled={busy} title="Remove" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-dim)', display: 'flex' }}><X size={13} /></button>
                 </div>
               </div>
@@ -852,7 +852,7 @@ export default function LoungePage() {
             >MC</div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#10b981', textTransform: 'uppercase' }}>Lounge</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: '#10b981', textTransform: 'uppercase' }}>Lounge</div>
         </div>
 
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
@@ -865,7 +865,7 @@ export default function LoungePage() {
                 const p = projects.find(p => p.id === e.target.value);
                 if (p) setActiveProject(p);
               }}
-              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 10, fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 11, fontWeight: 600, outline: 'none', cursor: 'pointer' }}
             >
               {projects.map(p => <option key={p.id} value={p.id} style={{ background: '#111' }}>{p.title}</option>)}
             </select>
@@ -879,7 +879,7 @@ export default function LoungePage() {
             borderRadius: 'var(--radius-full)',
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-muted)' }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-muted)' }}>
               {onlineCrew} of {crewList.length} online
             </span>
           </div>
@@ -903,11 +903,11 @@ export default function LoungePage() {
                const renderGroup = (label: string, list: Channel[], showAdd: boolean, scope: 'project' | 'community') => (
                  <div style={{ marginBottom: 18 }}>
                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', marginBottom: 8 }}>
-                     <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                     <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
                      {showAdd && <button aria-label={scope === 'community' ? 'New community channel' : 'New channel'} title="New channel" onClick={() => setShowNewChannel(scope)} style={{ background: 'none', border: 'none', color: 'var(--fg-subtle)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}>+</button>}
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                     {list.length === 0 && showAdd && <div style={{ fontSize: 9.5, color: 'var(--fg-dim)', fontFamily: 'var(--mono)', padding: '2px 6px' }}>No channels yet</div>}
+                     {list.length === 0 && showAdd && <div style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--mono)', padding: '2px 6px' }}>No channels yet</div>}
                      {list.map(ch => {
                        const isActive = activeChannel?.id === ch.id && !dmTarget;
                        const AUD_ICON: Record<string, typeof Hash> = { public: Globe, admins: Shield, owners: Crown, above: ArrowUp, below: ArrowDown, guests: UserCheck };
@@ -915,7 +915,7 @@ export default function LoungePage() {
                        const who = ch.audience === 'users' || ch.audience === 'team' ? undefined : audienceLabel(ch.audience);
                        return (
                          <button key={ch.id} title={[who, ch.is_private ? 'Invite-only' : null, ch.topic].filter(Boolean).join(' · ') || undefined} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
-                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
+                           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, background: isActive ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: 'none', color: isActive ? '#fff' : '#888', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
                            <Icon size={12} color={isActive ? 'var(--accent)' : '#666'} style={{ flexShrink: 0 }} />
                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.name}</span>
                          </button>
@@ -940,7 +940,7 @@ export default function LoungePage() {
                 <Avatar src={myProfile?.avatar_url} name={myProfile?.username || currentUser?.email} size={28} radius={6} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                    <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{myProfile?.username || 'You'}</div>
-                   <div style={{ fontSize: 9, color: myProfile?.status === 'BUSY' ? '#f59e0b' : '#00cc66' }}>● {myProfile?.status === 'BUSY' ? 'Busy' : 'Available'}</div>
+                   <div style={{ fontSize: 11, color: myProfile?.status === 'BUSY' ? '#f59e0b' : '#00cc66' }}>● {myProfile?.status === 'BUSY' ? 'Busy' : 'Available'}</div>
                 </div>
                 <Link href="/settings" title="Settings"><SettingsIcon size={14} color="#666" style={{ cursor: 'pointer' }} /></Link>
              </div>
@@ -952,7 +952,7 @@ export default function LoungePage() {
              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                {dmTarget ? (
                  <>
-                   <span style={{ fontSize: 8, color: '#10b981', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 99 }}>DIRECT</span>
+                   <span style={{ fontSize: 11, color: '#10b981', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>
                    <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>@{dmTarget.name}</span>
                    {onlineIds.has(dmTarget.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />}
                  </>
@@ -960,23 +960,23 @@ export default function LoungePage() {
                  <>
                    {activeChannel.is_private && <Lock size={12} color="#888" />}
                    <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{activeChannel.type === 'voice' ? '🔊 ' : activeChannel.type === 'guide' ? '' : '#'}{activeChannel.name}</span>
-                   {activeChannel.type === 'guide' && <span style={{ fontSize: 7.5, color: '#7cc4ff', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(0,153,255,0.12)', padding: '2px 6px', borderRadius: 99 }}>GUIDE</span>}
-                   {activeChannel.post_policy === 'managers' && activeChannel.type !== 'guide' && <span style={{ fontSize: 7.5, color: '#f59e0b', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 99 }}>ANNOUNCE</span>}
+                   {activeChannel.type === 'guide' && <span style={{ fontSize: 11, color: '#7cc4ff', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(0,153,255,0.12)', padding: '2px 6px', borderRadius: 9999 }}>GUIDE</span>}
+                   {activeChannel.post_policy === 'managers' && activeChannel.type !== 'guide' && <span style={{ fontSize: 11, color: '#f59e0b', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 9999 }}>ANNOUNCE</span>}
                  </>
                ) : (
                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-dim)' }}>No channels</span>
                )}
                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-               <span style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{activeChannel?.topic || `${messages.length} message${messages.length === 1 ? '' : 's'}`}</span>
+               <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{activeChannel?.topic || `${messages.length} message${messages.length === 1 ? '' : 's'}`}</span>
              </div>
-             <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>
+             <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
                 {dmTarget ? (
-                  <button onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>← CHANNELS</button>
+                  <button onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--fg-muted)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>← CHANNELS</button>
                 ) : (
                   <><Users size={13} color="#666" /> {crewList.length}</>
                 )}
                 {!dmTarget && activeChannel && canManageActive && (
-                  <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
+                  <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
                     <SettingsIcon size={12} /> MANAGE
                   </button>
                 )}
@@ -988,17 +988,17 @@ export default function LoungePage() {
           ) : (
           <>
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
-            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto' }}>
               {isGuide ? (
                 messages.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
+                  <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 11 }}>
                     {canPost ? `WRITE THE FIRST SECTION OF ${activeChannel!.name.toUpperCase()} BELOW` : `${activeChannel!.name.toUpperCase()} IS BEING WRITTEN — CHECK BACK SOON`}
                   </div>
                 ) : (
                   <GuideSections messages={messages} canEdit={canPost} onDelete={handleDeleteGuideSection} />
                 )
               ) : messages.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 10 }}>
+                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontFamily: 'var(--mono)', fontSize: 11 }}>
                   {dmTarget ? `START A CONVERSATION WITH @${dmTarget.name.toUpperCase()}` : activeChannel ? `NO MESSAGES IN #${activeChannel.name.toUpperCase()} YET` : 'SELECT OR CREATE A CHANNEL'}
                 </div>
               ) : messages.map(msg => <MessageBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} onReact={handleReact} onOpenThread={dmTarget ? undefined : setThreadParent} replyCount={replyCounts[msg.id] || 0} />)}
@@ -1012,9 +1012,9 @@ export default function LoungePage() {
             background: '#090909',
             flexShrink: 0,
           }}>
-            <div style={{ maxWidth: 720, margin: '0 auto', height: 14, marginBottom: 4 }}>
+            <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', height: 14, marginBottom: 4 }}>
               {typingUsers.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, color: '#10b981', letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: '#10b981', letterSpacing: 0.5 }}>
                   <span style={{ display: 'inline-flex', gap: 2 }}>
                     {[0, 1, 2].map(i => (
                       <motion.span key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} style={{ width: 3, height: 3, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
@@ -1024,14 +1024,14 @@ export default function LoungePage() {
                 </div>
               )}
             </div>
-            <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+            <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ position: 'relative', alignSelf: 'center' }}>
                 <button style={{ background: 'none', border: 'none', color: showEmoji ? 'var(--fg)' : 'var(--fg-muted)', padding: 10, cursor: 'pointer', transition: 'color 0.2s' }}
                   onClick={() => setShowEmoji(v => !v)} aria-label="emoji">
                   <Smile size={16} />
                 </button>
                 {showEmoji && (
-                  <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: 8, display: 'flex', gap: 4, flexWrap: 'wrap', width: 180, boxShadow: '0 12px 30px rgba(0,0,0,0.6)' }}>
+                  <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, background: 'rgba(14,14,14,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 8, display: 'flex', gap: 4, flexWrap: 'wrap', width: 180, boxShadow: '0 12px 30px rgba(0,0,0,0.6)' }}>
                     {['😀','😂','🔥','❤️','👍','🎬','🎥','✨','💡','🎉','😮','🙏'].map(e => (
                       <button key={e} onClick={() => { setInput(prev => prev + e); setShowEmoji(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 2 }}>{e}</button>
                     ))}
@@ -1075,7 +1075,7 @@ export default function LoungePage() {
                   color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
                   borderRadius: 'var(--radius-sm)',
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
                   textTransform: 'uppercase',
                   transition: 'background 0.3s, color 0.3s',
                   alignSelf: 'flex-end',
@@ -1102,7 +1102,7 @@ export default function LoungePage() {
         }}>
           {activeProject && <ProductionFeed projectId={activeProject.id} />}
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-subtle)', marginBottom: 12 }}>
             Crew
           </div>
 
@@ -1144,10 +1144,10 @@ export default function LoungePage() {
                     {member.name}
                   </div>
                   {isOnline && (
-                    <div style={{ fontSize: 7, color: '#00cc66', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
+                    <div style={{ fontSize: 11, color: '#00cc66', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
                   <span>{member.role}</span>
                 </div>
               </div>
@@ -1163,7 +1163,7 @@ export default function LoungePage() {
             style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(94vw, 380px)', background: 'rgba(9,9,9,0.98)', borderLeft: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)', zIndex: 200, display: 'flex', flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
           >
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: '#10b981' }}>Thread</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#10b981' }}>Thread</span>
               <button onClick={() => setThreadParent(null)} aria-label="Close thread" style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={16} /></button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
@@ -1172,14 +1172,14 @@ export default function LoungePage() {
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.85)' }}>{threadParent.text}</div>
               </div>
               {threadReplies.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 40, fontFamily: 'var(--mono)', fontSize: 9.5 }}>No replies yet — start the thread.</div>
+                <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 40, fontFamily: 'var(--mono)', fontSize: 11 }}>No replies yet — start the thread.</div>
               ) : threadReplies.map(r => (
                 <div key={r.id} style={{ marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: r.sender_id === currentUser?.id ? '#ff7a4d' : '#10b981', fontWeight: 600 }}>{r.sender_id === currentUser?.id ? 'You' : r.user}</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-subtle)' }}>{r.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: r.sender_id === currentUser?.id ? '#ff7a4d' : '#10b981', fontWeight: 600 }}>{r.sender_id === currentUser?.id ? 'You' : r.user}</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-subtle)' }}>{r.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.82)' }}>{r.text}</div>
+                  <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(224, 221, 174,0.82)' }}>{r.text}</div>
                 </div>
               ))}
             </div>

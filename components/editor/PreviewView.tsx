@@ -52,16 +52,16 @@ export function PreviewView({ ctx }: { ctx: EditorCtx }) {
   return (
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: nightModePreview ? '#111' : '#fff', color: nightModePreview ? '#ddd' : '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace' }}>Page 1</div>
+              <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 11, color: '#999', fontFamily: 'var(--script)' }}>Page 1</div>
               {showWatermark && (
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-30deg)', fontSize: 80, fontWeight: 900, color: 'rgba(0,0,0,0.04)', textTransform: 'uppercase', fontFamily: 'Courier Prime, monospace', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0 }}>DRAFT</div>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-30deg)', fontSize: 80, fontWeight: 900, color: 'rgba(0,0,0,0.04)', textTransform: 'uppercase', fontFamily: 'var(--script)', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0 }}>DRAFT</div>
               )}
               {titlePage.title && (
                 <div style={{ textAlign: 'center', marginBottom: 48, paddingTop: 40 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, textTransform: 'uppercase', fontFamily: 'Courier Prime, monospace', marginBottom: 24 }}>{titlePage.title}</div>
-                  {titlePage.credit && <div style={{ fontSize: 12, fontFamily: 'Courier Prime, monospace', marginBottom: 4 }}>{titlePage.credit}</div>}
-                  {titlePage.author && <div style={{ fontSize: 12, fontFamily: 'Courier Prime, monospace', marginBottom: 16 }}>{titlePage.author}</div>}
-                  {titlePage.draftDate && <div style={{ fontSize: 10, fontFamily: 'Courier Prime, monospace', color: '#888' }}>{titlePage.draftDate}</div>}
+                  <div style={{ fontSize: 20, fontWeight: 700, textTransform: 'uppercase', fontFamily: 'var(--script)', marginBottom: 24 }}>{titlePage.title}</div>
+                  {titlePage.credit && <div style={{ fontSize: 12, fontFamily: 'var(--script)', marginBottom: 4 }}>{titlePage.credit}</div>}
+                  {titlePage.author && <div style={{ fontSize: 12, fontFamily: 'var(--script)', marginBottom: 16 }}>{titlePage.author}</div>}
+                  {titlePage.draftDate && <div style={{ fontSize: 11, fontFamily: 'var(--script)', color: '#888' }}>{titlePage.draftDate}</div>}
                   <hr style={{ margin: '32px auto', width: 120, border: 'none', borderTop: '1px solid #ccc' }} />
                 </div>
               )}
@@ -75,7 +75,7 @@ export function PreviewView({ ctx }: { ctx: EditorCtx }) {
                     <React.Fragment key={i}>
                       {pageBreak && (
                         <div style={{ borderTop: '1px dashed #ccc', margin: '24px 0', position: 'relative' }}>
-                          <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 10, color: '#999', fontFamily: 'Courier Prime, monospace', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
+                          <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 11, color: '#999', fontFamily: 'var(--script)', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
                         </div>
                       )}
                       <LinePreview line={line} index={i} nightModePreview={nightModePreview} sceneNumber={line.type === 'slug' ? scenesList.indexOf(line) + 1 : undefined} showSceneNumbers={showSceneNumbers} />

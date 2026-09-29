@@ -10,6 +10,37 @@
   --display: var(--font-display), 'Bebas Neue', sans-serif;
   --mono: var(--font-mono), 'DM Mono', monospace;
   --serif: var(--font-serif), 'Cormorant Garamond', serif;
+  /* Screenplay face — the industry-standard 12pt Courier, for script surfaces only */
+  --script: var(--font-script), 'Courier Prime', 'Courier New', monospace;
+  --sans: var(--mono);
+
+  /* Type scale (1.2 ratio, 14px UI base). 11px is the floor for text, for
+     uppercase tracked labels only. Nothing smaller than --text-2xs. */
+  --text-2xs: 11px;
+  --text-xs:  12px;
+  --text-sm:  13px;
+  --text-base: 14px;
+  --text-md:  16px;
+  --text-lg:  20px;
+  --text-xl:  24px;
+  --text-2xl: 32px;
+
+  /* Layout — three container widths, nothing in between */
+  --w-form:    480px;
+  --w-reading: 720px;
+  --w-content: 1160px;
+  --gutter:    18px;
+
+  /* Space (4px base) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* Imagery — film aspect ratios, and the scrim that keeps text legible on stills */
+  --ar-scope: 2.39 / 1;
+  --ar-film:  16 / 9;
+  --ar-still: 3 / 2;
+  --ar-poster: 2 / 3;
+  --scrim: linear-gradient(to top, rgba(4, 7, 16, 0.92), rgba(4, 7, 16, 0.35) 55%, transparent);
 
   /* Surface hierarchy — deep ink-blue base */
   --bg:    #040710;
@@ -125,7 +156,7 @@ body.custom-cursor-active * {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid var(--accent);
@@ -167,7 +198,7 @@ body.reduce-motion *::after {
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #282828; }
 
 /* ═══════════════════════════════
@@ -308,7 +339,7 @@ p {
   background: var(--accent);
   color: var(--bg);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-decoration: none;
@@ -333,7 +364,7 @@ p {
   background: rgba(224, 221, 174, 0.02);
   color: var(--fg);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-decoration: none;
@@ -349,7 +380,7 @@ p {
 }
 
 .link-btn {
-  font-size: 9px;
+  font-size: 11px;
   font-family: var(--mono);
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -372,7 +403,7 @@ p {
 }
 
 .cta-btn {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--mono);
   letter-spacing: 4px;
   text-transform: uppercase;
@@ -481,7 +512,7 @@ section { padding: 90px 18px; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 2px;
   padding: 4px 10px;
   border-radius: var(--r-xs);
@@ -633,14 +664,14 @@ section { padding: 90px 18px; }
   height: 2px;
   background: #1a1a1a;
   overflow: hidden;
-  border-radius: 1px;
+  border-radius: 4px;
 }
 
 .progress-bar__fill {
   height: 100%;
   background: var(--accent);
   transition: width 1s var(--ease-expo);
-  border-radius: 1px;
+  border-radius: 4px;
 }
 
 /* magnetic-btn (legacy) */
@@ -651,7 +682,7 @@ section { padding: 90px 18px; }
   padding: 13px 28px;
   border-radius: var(--r-full);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-decoration: none;

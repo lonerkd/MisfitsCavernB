@@ -3,11 +3,11 @@
 .page { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--fg); z-index: 1; }
 
 .bar { flex-shrink: 0; height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 14px; border-bottom: 1px solid rgba(224, 221, 174, 0.08); background: rgba(4, 7, 16, 0.96); }
-.brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
 .tools { display: flex; gap: 4px; flex-wrap: wrap; }
 .tool {
   display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 8px; cursor: pointer;
-  border: 1px solid transparent; background: none; color: var(--fg-muted); font-family: var(--mono); font-size: 10.5px;
+  border: 1px solid transparent; background: none; color: var(--fg-muted); font-family: var(--mono); font-size: 11px;
 }
 .tool:hover { color: var(--fg); background: rgba(224, 221, 174, 0.05); }
 .tool:focus-visible, .pick:focus-visible, .icon:focus-visible, .menuItem:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -29,20 +29,20 @@
 .divider { position: relative; display: flex; align-items: center; justify-content: center; background: rgba(224, 221, 174, 0.04); cursor: col-resize; touch-action: none; }
 .column .divider { cursor: row-resize; }
 .divider:hover, .divider:focus-visible, .dragging .divider { background: rgba(232, 67, 26, 0.25); outline: none; }
-.grip { width: 3px; height: 36px; border-radius: 3px; background: rgba(224, 221, 174, 0.3); }
+.grip { width: 3px; height: 36px; border-radius: 4px; background: rgba(224, 221, 174, 0.3); }
 .column .grip { width: 36px; height: 3px; }
 
 .paneBar { flex-shrink: 0; height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 8px; border-bottom: 1px solid rgba(224, 221, 174, 0.06); background: rgba(8, 11, 20, 0.9); }
 .pickWrap { position: relative; }
-.pick { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border-radius: 7px; cursor: pointer; border: 1px solid rgba(224, 221, 174, 0.14); background: rgba(224, 221, 174, 0.03); color: var(--fg); font-family: var(--mono); font-size: 10.5px; }
-.where { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 9.5px; color: var(--fg-muted); }
-.icon { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; border: none; background: none; color: var(--fg-muted); cursor: pointer; }
+.pick { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border-radius: 8px; cursor: pointer; border: 1px solid rgba(224, 221, 174, 0.14); background: rgba(224, 221, 174, 0.03); color: var(--fg); font-family: var(--mono); font-size: 11px; }
+.where { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }
+.icon { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: none; color: var(--fg-muted); cursor: pointer; }
 .icon:hover { color: var(--fg); background: rgba(224, 221, 174, 0.06); }
 
-.menu { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(360px, 86vw); padding: 10px; display: flex; flex-direction: column; gap: 10px; border-radius: 12px; border: 1px solid rgba(224, 221, 174, 0.14); background: rgba(8, 11, 20, 0.98); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+.menu { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(360px, 86vw); padding: 10px; display: flex; flex-direction: column; gap: 10px; border-radius: 14px; border: 1px solid rgba(224, 221, 174, 0.14); background: rgba(8, 11, 20, 0.98); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
 .menuGroup { display: flex; flex-direction: column; gap: 5px; }
-.menuHead { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
+.menuHead { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
 .menuItems { display: flex; flex-wrap: wrap; gap: 5px; }
-.menuItem { min-height: 28px; padding: 0 10px; border-radius: 99px; cursor: pointer; border: 1px solid rgba(224, 221, 174, 0.14); background: rgba(224, 221, 174, 0.03); color: var(--fg); font-family: var(--mono); font-size: 10.5px; }
+.menuItem { min-height: 28px; padding: 0 10px; border-radius: 99px; cursor: pointer; border: 1px solid rgba(224, 221, 174, 0.14); background: rgba(224, 221, 174, 0.03); color: var(--fg); font-family: var(--mono); font-size: 11px; }
 .menuItem:hover { border-color: rgba(224, 221, 174, 0.3); }
 .menuItemOn { border-color: rgba(232, 67, 26, 0.6); background: rgba(232, 67, 26, 0.14); }

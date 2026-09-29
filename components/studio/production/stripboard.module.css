@@ -1,8 +1,8 @@
 /* The stripboard: shoot days as columns, scenes as colour-coded strips. */
 
 .bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.title { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); display: flex; align-items: center; gap: 8px; }
-.summary { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); }
+.title { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); display: flex; align-items: center; gap: 8px; }
+.summary { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
 .spacer { flex: 1; }
 
 .stepper { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--border-2); border-radius: 9999px; padding: 2px; }
@@ -10,7 +10,7 @@
 .stepBtn:hover:not(:disabled) { background: var(--panel-2); color: var(--fg); }
 .stepBtn:focus-visible { outline: 2px solid var(--studio); outline-offset: 1px; }
 .stepBtn:disabled { opacity: 0.4; cursor: default; }
-.stepValue { font-family: var(--mono); font-size: 10px; color: var(--fg); min-width: 88px; text-align: center; }
+.stepValue { font-family: var(--mono); font-size: 11px; color: var(--fg); min-width: 88px; text-align: center; }
 
 .board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; scroll-snap-type: x proximity; }
 .day {
@@ -23,15 +23,15 @@
 .dayNew { border-style: dashed; background: transparent; min-height: 160px; justify-content: center; align-items: center; text-align: center; }
 .dayHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .dayName { font-family: var(--display); font-size: 1.35rem; letter-spacing: 2px; color: var(--fg); line-height: 1; margin: 0; font-weight: 400; }
-.dayDate { font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
-.meter { height: 5px; border-radius: 3px; background: rgba(224, 221, 174, 0.08); overflow: hidden; }
-.meterFill { height: 100%; border-radius: 3px; background: #818cf8; transition: width 0.3s; }
+.dayDate { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
+.meter { height: 5px; border-radius: 4px; background: rgba(224, 221, 174, 0.08); overflow: hidden; }
+.meterFill { height: 100%; border-radius: 4px; background: #818cf8; transition: width 0.3s; }
 .meterOver { background: #f87171; }
-.dayStats { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
+.dayStats { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
 .over { color: #fca5a5; }
-.move { font-family: var(--mono); font-size: 9.5px; color: #fcd34d; display: flex; align-items: center; gap: 5px; }
+.move { font-family: var(--mono); font-size: 11px; color: #fcd34d; display: flex; align-items: center; gap: 5px; }
 .castRow { display: flex; flex-wrap: wrap; gap: 3px; }
-.castChip { font-family: var(--mono); font-size: 8.5px; color: var(--fg-muted); border: 1px solid var(--border-2); border-radius: 4px; padding: 1px 5px; }
+.castChip { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); border: 1px solid var(--border-2); border-radius: 4px; padding: 1px 5px; }
 
 .strips { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-height: 40px; }
 .strip {
@@ -47,10 +47,10 @@
 .strip:active { cursor: grabbing; }
 .dragging { opacity: 0.35; }
 .num { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--fg); grid-row: span 2; }
-.heading { font-family: var(--mono); font-size: 10px; color: var(--fg); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.meta { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); display: flex; gap: 8px; align-items: center; overflow: hidden; white-space: nowrap; }
+.heading { font-family: var(--mono); font-size: 11px; color: var(--fg); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); display: flex; gap: 8px; align-items: center; overflow: hidden; white-space: nowrap; }
 .kind { color: var(--kt); }
-.pg { font-family: var(--mono); font-size: 10px; color: var(--fg-muted); text-align: right; }
+.pg { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); text-align: right; }
 .statusBtn { grid-column: 3; justify-self: end; width: 18px; height: 18px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .statusBtn:focus-visible { outline: 2px solid var(--studio); outline-offset: 1px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; }
@@ -59,14 +59,14 @@
 .dot_wrapped { background: #34d399; }
 .wrapped .heading { text-decoration: line-through; text-decoration-color: rgba(224, 221, 174, 0.4); }
 
-.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
 .legendItem { display: inline-flex; align-items: center; gap: 6px; }
-.swatch { width: 10px; height: 10px; border-radius: 2px; }
-.hint { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); line-height: 1.5; }
+.swatch { width: 10px; height: 10px; border-radius: 4px; }
+.hint { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); line-height: 1.5; }
 
 .dood { overflow-x: auto; }
-.doodTable { border-collapse: collapse; font-family: var(--mono); font-size: 10px; }
-.doodTable th { font-weight: 400; color: var(--fg-dim); font-size: 9px; letter-spacing: 1px; padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border-2); }
+.doodTable { border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+.doodTable th { font-weight: 400; color: var(--fg-dim); font-size: 11px; letter-spacing: 1px; padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border-2); }
 .doodTable th:first-child, .doodTable td:first-child { text-align: left; padding-right: 14px; color: var(--fg); white-space: nowrap; }
 .doodTable td { padding: 5px 6px; text-align: center; border-bottom: 1px dashed var(--border); color: var(--fg-muted); }
 .code_S, .code_SF { color: #34d399; font-weight: 700; }

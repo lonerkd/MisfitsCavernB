@@ -157,9 +157,9 @@ export default function CrewPage() {
         </Link>
       </header>
 
-      <div style={{ marginTop: 60, padding: 24, maxWidth: 1100, margin: '60px auto 0' }}>
+      <div style={{ marginTop: 60, padding: 24, maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
         {activeProject && (
-          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
             {([
               { id: 'all' as const, label: 'ALL TALENT' },
               { id: 'project' as const, label: `${activeProject.title.toUpperCase()} CREW` },
@@ -168,8 +168,8 @@ export default function CrewPage() {
                 key={t.id}
                 onClick={() => setMode(t.id)}
                 style={{
-                  padding: '7px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, whiteSpace: 'nowrap',
+                  padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',
                   transition: 'background 0.2s, color 0.2s',
@@ -196,7 +196,7 @@ export default function CrewPage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
                   <button key={a} onClick={() => setAvailFilter(a)}
-                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
@@ -276,12 +276,12 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           </div>
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
-            {member.role && <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
+            {member.role && <div style={{ fontSize: 11, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
           </div>
           {member.statusLabel && (
             <div style={{ marginLeft: 'auto' }}>
               <span style={{
-                fontSize: 9, padding: '3px 8px',
+                fontSize: 11, padding: '3px 8px',
                 border: `1px solid ${member.statusOpen ? '#00ff00' : '#666'}`,
                 color: member.statusOpen ? '#00ff00' : '#666',
                 fontFamily: 'var(--mono)'
@@ -299,10 +299,10 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
         {(member.location || member.discord) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             {member.location && (
-              <div style={{ fontSize: 9, color: 'var(--fg-dim)' }}>{member.location}</div>
+              <div style={{ fontSize: 11, color: 'var(--fg-dim)' }}>{member.location}</div>
             )}
             {member.discord && (
-              <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
+              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                 Discord: {member.discord}
               </div>
             )}

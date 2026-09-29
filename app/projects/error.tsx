@@ -4,15 +4,15 @@ export default function ProjectsError({ error, reset }: { error: Error & { diges
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
       <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--accent)' }}>PROJECTS ERROR</div>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 500, textAlign: 'center', lineHeight: 1.6 }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 'var(--w-form)', textAlign: 'center', lineHeight: 1.6 }}>
         {error.message || 'Could not load your projects. Your data is safe — try again.'}
       </div>
       {error.digest && (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)'}}>Error ID: {error.digest}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)'}}>Error ID: {error.digest}</div>
       )}
       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-        <button onClick={reset} style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 6, fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer' }}>TRY AGAIN</button>
-        <button onClick={() => window.location.href = '/'} style={{ padding: '10px 24px', background: 'transparent', color: 'var(--fg)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', textDecoration: 'none' }}>GO HOME</button>
+        <button onClick={reset} style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer' }}>TRY AGAIN</button>
+        <button onClick={() => window.location.href = '/'} style={{ padding: '10px 24px', background: 'transparent', color: 'var(--fg)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', textDecoration: 'none' }}>GO HOME</button>
       </div>
     </div>
   );

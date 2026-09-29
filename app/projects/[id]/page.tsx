@@ -85,7 +85,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
         gridColumn: span === 'double' ? 'span 2' : 'span 1',
         background: 'rgba(10,10,10,0.8)',
         border: `1px solid ${hovered ? color + '30' : 'rgba(255,255,255,0.06)'}`,
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -112,7 +112,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: color, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: color, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -129,7 +129,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
           {stats.map(s => (
             <div key={s.label}>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -138,7 +138,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
             whileHover={{ scale: 1.06, x: 2 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
               textTransform: 'uppercase', color: color,
               padding: '6px 12px', borderRadius: 9999,
               background: `${color}12`, border: `1px solid ${color}28`,
@@ -160,16 +160,16 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{pages}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
       </div>
       {bars > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {Array.from({ length: bars }).map((_, i) => (
-            <div key={i} style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', width: `${40 + ((i * 53) % 60)}%` }} />
+            <div key={i} style={{ height: 3, borderRadius: 4, background: 'rgba(255,255,255,0.08)', width: `${40 + ((i * 53) % 60)}%` }} />
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No script yet — open ScriptOS to start.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>No script yet — open ScriptOS to start.</div>
       )}
     </div>
   );
@@ -183,7 +183,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
   const palette = ['#6366f1', '#e8431a', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} reference{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} reference{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
       {total > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -191,7 +191,7 @@ function AssetPreview({ concepts, scenes }: { concepts: number; scenes: number }
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1 }}>No assets yet — add them in Studio.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>No assets yet — add them in Studio.</div>
       )}
     </div>
   );
@@ -209,13 +209,13 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
             background: `hsl(${(i * 97) % 360}, 40%, 30%)`,
             border: '1px solid rgba(255,255,255,0.1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg)',
+            fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)',
           }}>
             {member.name.charAt(0)}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
           </div>
           {member.online && (
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
@@ -239,24 +239,24 @@ function TimelinePreview({ deadline, milestones }: { deadline: string; milestone
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         {daysLeft === null ? (
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>No end date set</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>No end date set</span>
         ) : (
           <>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? '#e8431a' : 'var(--fg)', lineHeight: 1 }}>{Math.abs(daysLeft)}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{daysLeft < 0 ? 'days past the end date' : 'days to the end date'}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{daysLeft < 0 ? 'days past the end date' : 'days to the end date'}</span>
           </>
         )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {upcoming.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>No milestones yet — add them below.</span>}
+        {upcoming.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No milestones yet — add them below.</span>}
         {upcoming.map((m) => {
           const done = m.status === 'done' || m.status === 'completed';
           return (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: done ? '#10b981' : 'rgba(255,255,255,0.1)' }} />
-              <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 9, color: done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: done ? 'line-through' : 'none', opacity: done ? 0.5 : 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</span>
-              {m.end_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>{new Date(m.end_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>}
+              <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: done ? 'line-through' : 'none', opacity: done ? 0.5 : 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</span>
+              {m.end_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{new Date(m.end_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>}
             </div>
           );
         })}
@@ -270,11 +270,11 @@ function TimelinePreview({ deadline, milestones }: { deadline: string; milestone
 function PortfolioPreview({ pieces }: { pieces: { id: string; title: string }[] }) {
   return (
     <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {pieces.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>Not in your portfolio yet.</span>}
+      {pieces.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Not in your portfolio yet.</span>}
       {pieces.slice(0, 4).map((p) => (
         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
         </div>
       ))}
     </div>
@@ -451,7 +451,7 @@ export default function ProjectHubPage() {
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>{project.title}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.color }}>{project.type}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: project.color }}>{project.type}</span>
           </div>
         </div>
 
@@ -464,7 +464,7 @@ export default function ProjectHubPage() {
               <React.Fragment key={phase.id}>
                 <div style={{
                   padding: '5px 12px', borderRadius: 9999,
-                  fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5, textTransform: 'uppercase',
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5, textTransform: 'uppercase',
                   background: isActive ? `${project.color}18` : 'transparent',
                   color: isActive ? project.color : isDone ? 'var(--fg-muted)' : 'var(--fg-dim)',
                   border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
@@ -487,15 +487,15 @@ export default function ProjectHubPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {onlineCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 8, color: '#10b981', letterSpacing: 1.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: '#10b981', letterSpacing: 1.5 }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
               {onlineCount} online
             </div>
           )}
           {counts.tasks > 0 && (
           <div title="Tasks completed" style={{
-            fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5,
-            padding: '5px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.04)',
+            fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1.5,
+            padding: '5px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)',
           }}>
             {counts.tasksDone}/{counts.tasks} tasks done
           </div>
@@ -508,9 +508,9 @@ export default function ProjectHubPage() {
                 aria-label="Project visibility"
                 title="Who can see this project"
                 style={{
-                  fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.2, color: 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.2, color: 'var(--fg-muted)',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 6, padding: '5px 8px', cursor: 'pointer', outline: 'none',
+                  borderRadius: 8, padding: '5px 8px', cursor: 'pointer', outline: 'none',
                 }}
               >
                 {PROJECT_VISIBILITY.map(v => (
@@ -522,9 +522,9 @@ export default function ProjectHubPage() {
                   onClick={copyShareLink}
                   title="Copy the share link — anyone with it can view this project"
                   style={{
-                    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.2, color: readable('#8b5cf6', 4.5, '#161024'),
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.2, color: readable('#8b5cf6', 4.5, '#161024'),
                     background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
-                    borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
                   }}
                 >Copy link</button>
               )}
@@ -541,7 +541,7 @@ export default function ProjectHubPage() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 400, letterSpacing: 2, lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
           <LoglineEditor
             projectId={id}
@@ -667,8 +667,8 @@ export default function ProjectHubPage() {
                     { label: 'Campaigns planned', value: String(counts.campaigns) },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{label}</span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>{value}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{value}</span>
                     </div>
                   ))}
                 </div>
@@ -702,7 +702,7 @@ const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
   planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',
 };
 
-const MINI_INPUT: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', colorScheme: 'dark' };
+const MINI_INPUT: React.CSSProperties = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', colorScheme: 'dark' };
 
 // Crew work tasks, budget and milestones with the owner; the crew list, festivals
 // and project settings live on the project row, which only its owner can change.
@@ -918,8 +918,8 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
 
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
-      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}>⚠ {err}</div>}
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
+      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
         <Panel title="Tasks" accent={accent}>
@@ -927,7 +927,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {tasks.map(t => (
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
-              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(255,255,255,0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: '#10b981', fontSize: 10, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
+              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(255,255,255,0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: '#10b981', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
               <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
@@ -966,17 +966,17 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
             />
           ))}
           {hasActuals && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)', fontFamily: 'var(--mono)', fontSize: 11 }}>
               <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
               <span style={{ color: totalActual > totalBudget ? '#ff6b6b' : '#10b981' }}>{totalActual > totalBudget ? '+' : ''}{(totalActual - totalBudget).toLocaleString()}</span>
             </div>
           )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
-          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc', borderRadius: 8, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
             {analyzing ? 'READING THE BREAKDOWN…' : '✦ UPDATE FROM THE BREAKDOWN'}
           </button>
-          <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)', lineHeight: 1.5 }}>
+          <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', lineHeight: 1.5 }}>
             {breakdownNote ?? 'Writes one “Breakdown · …” line per category from element costs. '}
             {' '}<Link href="/studio?tab=production&view=breakdown" style={{ color: '#a5b4fc', textDecoration: 'underline', textUnderlineOffset: 2 }}>Open the breakdown →</Link>
           </div>
@@ -987,7 +987,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {timeline.map(tl => (
             <Row key={tl.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{tl.title}</span>
-              {tl.start_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{new Date(tl.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              {tl.start_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{new Date(tl.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               <DelBtn onClick={() => delTimeline(tl.id)} />
             </Row>
           ))}
@@ -999,7 +999,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {crew.map(c => (
             <Row key={c.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{c.craft || (c.role === 'lead' ? 'Lead' : 'Crew')}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{c.craft || (c.role === 'lead' ? 'Lead' : 'Crew')}</span>
               {isOwner && <DelBtn onClick={() => delCrew(c.id)} />}
             </Row>
           ))}
@@ -1010,7 +1010,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {portfolio.length === 0 ? (
             <>
               <Empty>No pitch board yet</Empty>
-              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>
+              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>
                 ✦ BUILD PITCH BOARD
               </Link>
             </>
@@ -1018,7 +1018,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
             portfolio.map(p => (
               <Row key={p.id}>
                 <span style={{ flex: 1, fontSize: 11 }}>{p.title}</span>
-                <Link href={`/projects/${projectId}/pitch`} style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: accent, textDecoration: 'none' }}>EDIT BOARD</Link>
+                <Link href={`/projects/${projectId}/pitch`} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: accent, textDecoration: 'none' }}>EDIT BOARD</Link>
                 <Link href={`/p/${p.share_token}`} aria-label="view" style={{ color: 'var(--fg-dim)', display: 'flex' }}><ExternalLink size={12} /></Link>
               </Row>
             ))
@@ -1030,13 +1030,13 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {festivals.map(f => (
             <Row key={f.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{f.name}</span>
-              {f.deadline && <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>{new Date(f.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              {f.deadline && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{new Date(f.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               <select
                 value={f.status}
                 disabled={!isOwner}
                 onChange={e => setFestivalStatus(f.id, e.target.value as FestivalRow['status'])}
                 aria-label={`${f.name} submission status`}
-                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 8.5, textTransform: 'uppercase' }}
+                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'uppercase' }}
               >
                 {FESTIVAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -1047,18 +1047,18 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
         </Panel>
 
         {isOwner && <Panel title="Settings" accent={accent}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
           <select
             value={settings.defaultScriptFormat || ''}
             onChange={e => setDefaultFormat(e.target.value as ScriptFormat | '')}
             aria-label="Default script format"
-            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}
           >
             <option value="">Use the format’s default</option>
             {SCRIPT_FORMATS.map(f => <option key={f} value={f}>{SCRIPT_FORMAT_LABELS[f]}</option>)}
           </select>
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 6 }}>Ecosystem modules</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 6 }}>Ecosystem modules</div>
           {([
             ['scriptos', 'ScriptOS'], ['studio', 'Studio'], ['lounge', 'Lounge'],
             ['portfolio', 'Portfolio'], ['distribution', 'Distribution'],
@@ -1091,7 +1091,7 @@ function Panel({ title, accent, headerRight, children }: { title: string; accent
   return (
     <div style={{ background: 'rgba(10,10,10,0.8)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: accent }}>{title}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: accent }}>{title}</span>
         {headerRight && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: 'var(--fg)' }}>{headerRight}</span>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>{children}</div>
@@ -1103,7 +1103,7 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{children}</div>;
 }
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', padding: '2px 0' }}>{children}</div>;
+  return <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', padding: '2px 0' }}>{children}</div>;
 }
 function DelBtn({ onClick }: { onClick: () => void }) {
   return <button type="button" onClick={onClick} aria-label="Delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, flexShrink: 0, minWidth: 24, minHeight: 24 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>×</button>;
@@ -1135,13 +1135,13 @@ function BudgetRowItem({
     <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave} onClick={zoneHandlers.onClick}>
       <Row>
         <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
         <input
           type="number"
           defaultValue={item.actual_cost ?? ''}
           placeholder="actual"
           onBlur={(e) => { const v = e.target.value.trim(); onSetActual(v === '' ? null : Number(v)); }}
-          style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
+          style={{ width: 64, background: 'rgba(255,255,255,0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? '#ff6b6b' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textAlign: 'right', outline: 'none' }}
         />
         <button
           onClick={onPostJob}
@@ -1169,7 +1169,7 @@ function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: 
   const [vals, setVals] = useState<string[]>(fields.map(() => ''));
   const set = (i: number, v: string) => setVals(p => p.map((x, idx) => idx === i ? v : x));
   const submit = () => { onSubmit(vals); setVals(fields.map(() => '')); };
-  const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, outline: 'none' };
+  const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
   return (
     <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
       {fields.map((f, i) => (
@@ -1183,7 +1183,7 @@ function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: 
           style={{ ...inputStyle, flex: f === 'date' ? '0 0 110px' : f === 'number' ? '0 0 90px' : 1 }}
         />
       ))}
-      <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
+      <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
     </div>
   );
 }
@@ -1201,9 +1201,9 @@ function AddCrewForm({ accent, onAdd }: { accent: string; onAdd: (username: stri
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
       <label className="sr-only" htmlFor="add-crew-username">Username</label>
-      <input id="add-crew-username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void submit(); }} placeholder="Username" style={{ ...MINI_INPUT, padding: '6px 8px', fontSize: 10 }} />
+      <input id="add-crew-username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void submit(); }} placeholder="Username" style={{ ...MINI_INPUT, padding: '6px 8px', fontSize: 11 }} />
       <CraftPicker label="Their craft" value={craft} onChange={setCraft} placeholder="Their craft (optional)" noneLabel="No craft" />
-      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>ADD TO CREW</button>
+      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>ADD TO CREW</button>
     </div>
   );
 }

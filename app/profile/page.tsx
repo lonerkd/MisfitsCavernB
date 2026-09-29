@@ -126,30 +126,30 @@ export default function ProfilePage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>PROFILE</h1>
         </Link>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {message && <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)' }}>{message}</span>}
+          {message && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>{message}</span>}
           <button onClick={handleSave} disabled={saving}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
               background: 'var(--accent)', color: 'var(--bg)', border: 'none',
-              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: saving ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? 0.6 : 1 }}>
             <Save size={12} /> {saving ? 'SAVING...' : 'SAVE'}
           </button>
           <Link href="/settings" title="Settings" aria-label="Settings"
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
               background: 'transparent', color: 'var(--fg-dim)', border: '1px solid rgba(255,255,255,0.08)',
-              fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer', textDecoration: 'none' }}>
+              fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer', textDecoration: 'none' }}>
             <Settings size={12} />
           </Link>
           <button onClick={handleSignOut} aria-label="Sign out" title="Sign out"
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
               background: 'transparent', color: 'var(--fg-dim)', border: '1px solid rgba(255,255,255,0.08)',
-              fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer' }}>
+              fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}>
             <LogOut size={12} />
           </button>
         </div>
       </header>
 
-      <div style={{ marginTop: 60, maxWidth: 640, margin: '60px auto 0', padding: '40px 24px 80px' }}>
+      <div style={{ marginTop: 60, maxWidth: 'var(--w-reading)', margin: '60px auto 0', padding: '40px 24px 80px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
           <div>
@@ -160,15 +160,15 @@ export default function ProfilePage() {
               {profile.username || 'unnamed'}
             </div>
             {profile.role && (
-              <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 2, marginTop: 4, fontFamily: 'var(--mono)' }}>
+              <div style={{ fontSize: 11, color: 'var(--accent)', letterSpacing: 2, marginTop: 4, fontFamily: 'var(--mono)' }}>
                 {profile.role.toUpperCase()}
               </div>
             )}
-            <div style={{ fontSize: 9, marginTop: 4, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>{user.email}</div>
+            <div style={{ fontSize: 11, marginTop: 4, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>{user.email}</div>
           </div>
           {user.id && (
             <Link href={`/crew/${user.id}`} target="_blank"
-              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none', letterSpacing: 1 }}
+              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none', letterSpacing: 1 }}
               title="View public profile">
               <ExternalLink size={12} /> PUBLIC
             </Link>
@@ -194,7 +194,7 @@ export default function ProfilePage() {
                 onMouseLeave={e => { if (!isTabActive) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
-                <div style={{ fontSize: 8, letterSpacing: 2, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>{label.toUpperCase()}</div>
+                <div style={{ fontSize: 11, letterSpacing: 2, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>{label.toUpperCase()}</div>
               </div>
             );
           })}
@@ -212,10 +212,10 @@ export default function ProfilePage() {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 10, marginBottom: 12
             }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
                 {activeTab === 'scripts' ? 'My Screenplays' : activeTab === 'projects' ? 'My Productions' : 'My Posted Jobs'}
               </span>
-              <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+              <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
                 [CLOSE]
               </button>
             </div>
@@ -232,13 +232,13 @@ export default function ProfilePage() {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
-                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                        borderRadius: 8, textDecoration: 'none', transition: 'background 0.2s'
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     >
                       <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{s.title}</span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                         EDITED {new Date(s.updated_at).toLocaleDateString()}
                       </span>
                     </Link>
@@ -259,7 +259,7 @@ export default function ProfilePage() {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
-                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                        borderRadius: 8, textDecoration: 'none', transition: 'background 0.2s'
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.accent_color || '#e8431a' }} />
                         {p.title}
                       </span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
                         {p.status || 'production'}
                       </span>
                     </Link>
@@ -289,16 +289,16 @@ export default function ProfilePage() {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
-                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                        borderRadius: 8, textDecoration: 'none', transition: 'background 0.2s'
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     >
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{j.title}</span>
-                        {j.role && <span style={{ fontSize: 8, fontFamily: 'var(--mono)', marginTop: 2, color: 'var(--fg-dim)' }}>{j.role}</span>}
+                        {j.role && <span style={{ fontSize: 11, fontFamily: 'var(--mono)', marginTop: 2, color: 'var(--fg-dim)' }}>{j.role}</span>}
                       </div>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                         {(j.status || 'OPEN').toUpperCase()}
                       </span>
                     </Link>
@@ -312,24 +312,24 @@ export default function ProfilePage() {
         <div style={{ display: 'grid', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>USERNAME</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>USERNAME</label>
               <input type="text" value={profile.username || ''} onChange={e => setProfile({ ...profile, username: e.target.value })}
                 placeholder="your_handle" style={fieldStyle} />
             </div>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>LOCATION</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>LOCATION</label>
               <input type="text" value={profile.location || ''} onChange={e => setProfile({ ...profile, location: e.target.value })}
                 placeholder="Los Angeles, CA" style={fieldStyle} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="profile-craft" style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>CRAFT</label>
+            <label htmlFor="profile-craft" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>CRAFT</label>
             <CraftPicker id="profile-craft" label="Your craft" value={profile.role || null} onChange={(craft) => setProfile({ ...profile, role: craft })} placeholder="What do you do on a set?" noneLabel="No craft yet" />
           </div>
 
           <div>
-            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>BIO</label>
+            <label style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>BIO</label>
             <textarea value={profile.bio || ''} onChange={e => setProfile({ ...profile, bio: e.target.value })}
               placeholder="Tell the community about yourself, your style, what you're looking for..."
               style={{ ...fieldStyle, height: 100, resize: 'vertical' }} />
@@ -337,19 +337,19 @@ export default function ProfilePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>DISCORD USERNAME</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>DISCORD USERNAME</label>
               <input type="text" value={profile.discord_username || ''} onChange={e => setProfile({ ...profile, discord_username: e.target.value })}
                 placeholder="handle#0000" style={fieldStyle} />
             </div>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVATAR URL</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVATAR URL</label>
               <input type="url" value={profile.avatar_url || ''} onChange={e => setProfile({ ...profile, avatar_url: e.target.value })}
                 placeholder="https://..." style={fieldStyle} />
             </div>
           </div>
 
           <div>
-            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVAILABILITY</label>
+            <label style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVAILABILITY</label>
             <div style={{ display: 'flex', gap: 12 }}>
               {['OPEN', 'BUSY'].map(s => (
                 <button key={s} onClick={() => setProfile({ ...profile, status: s })}
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                     background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(232, 67, 26,0.08)') : 'transparent',
                     border: `1px solid ${profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(255,255,255,0.1)'}`,
                     color: profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'var(--fg-dim)',
-                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer',
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer',
                   }}>
                   {s === 'OPEN' ? '● OPEN TO WORK' : '○ BUSY'}
                 </button>
@@ -367,13 +367,13 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link href="/portfolio/manage" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
+            <Link href="/portfolio/manage" style={{ fontSize: 11, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
               → MANAGE PORTFOLIO
             </Link>
-            <Link href="/editor" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
+            <Link href="/editor" style={{ fontSize: 11, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
               → OPEN EDITOR
             </Link>
-            <Link href="/jobs?tab=mine" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
+            <Link href="/jobs?tab=mine" style={{ fontSize: 11, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
               → MY JOBS
             </Link>
           </div>

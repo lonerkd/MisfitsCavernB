@@ -57,7 +57,7 @@ const EDITOR_CHAR_WIDTH = 9.6; // Courier Prime at 16px
 function markStyle(m: Mark): React.CSSProperties {
   const c = readable(m.color);
   return m.kind === 'tag'
-    ? { background: `${m.color}33`, boxShadow: `inset 0 -2px 0 ${c}`, borderRadius: 2 }
+    ? { background: `${m.color}33`, boxShadow: `inset 0 -2px 0 ${c}`, borderRadius: 4 }
     : { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: c, textDecorationThickness: 2, textUnderlineOffset: 4 };
 }
 
@@ -130,7 +130,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 style={{
                   position: 'absolute', inset: 0, overflow: 'hidden',
                   padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px',
-                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  fontFamily: 'var(--script)', fontSize: 16, lineHeight: 1.6,
                   whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none',
                 }}
               >
@@ -174,7 +174,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                           style={{
                             position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
                             border: '1px dashed rgba(255,255,255,0.35)', color: 'var(--fg-dim)',
-                            fontSize: 9, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
+                            fontSize: 11, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
                           }}
                         >+</span>
                       )}
@@ -193,8 +193,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                                 key={t}
                                 onClick={() => setAnnotationDraft((d: any) => d ? { ...d, type: t } : d)}
                                 style={{
-                                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase',
-                                  padding: '3px 7px', borderRadius: 99, cursor: 'pointer',
+                                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase',
+                                  padding: '3px 7px', borderRadius: 9999, cursor: 'pointer',
                                   background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(255,255,255,0.04)',
                                   border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)'}`,
                                   color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)',
@@ -208,11 +208,11 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                             onChange={e => setAnnotationDraft((d: any) => d ? { ...d, text: e.target.value } : d)}
                             onKeyDown={e => { if (e.key === 'Enter') submitAnnotation(); if (e.key === 'Escape') setAnnotationDraft(null); }}
                             placeholder={`Routes to ${ANNOTATION_META[annotationDraft.type as keyof typeof ANNOTATION_META].routesTo}...`}
-                            style={{ width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, marginBottom: 8 }}
+                            style={{ width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 11, marginBottom: 8 }}
                           />
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 6, padding: '5px', cursor: 'pointer', fontSize: 10 }}>Add</button>
-                            <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 10 }}>Cancel</button>
+                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', borderRadius: 8, padding: '5px', cursor: 'pointer', fontSize: 11 }}>Add</button>
+                            <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11 }}>Cancel</button>
                           </div>
                         </div>
                       )}
@@ -242,7 +242,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   position: 'absolute', inset: 0,
                   padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
                   background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : '#e0e0e0',
-                  fontFamily: 'Courier Prime, Courier, monospace', fontSize: 16, lineHeight: 1.6,
+                  fontFamily: 'var(--script)', fontSize: 16, lineHeight: 1.6,
                   resize: 'none', outline: 'none',
                 }}
               />
@@ -272,11 +272,11 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   display: 'flex', alignItems: 'center', gap: 8,
                   background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(232,67,26,0.35)',
                   borderRadius: 20, padding: '6px 12px', backdropFilter: 'blur(12px)',
-                  fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 0.5, color: 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, color: 'var(--fg-muted)',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} aria-hidden />
                   Tag mode — select words to tag them · underlined words are suggestions
-                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9.5, textDecoration: 'underline' }}>Exit</button>
+                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'underline' }}>Exit</button>
                 </div>
               )}
 
@@ -303,7 +303,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                     Table Read
                   </span>
                 </div>
@@ -318,7 +318,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '6px 16px', background: 'rgba(8,8,8,0.9)', borderTop: '1px solid rgba(255,255,255,0.06)',
-                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 0.5,
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                   }}>
                     <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
                     <span style={{ color: 'var(--fg-dim)' }}>{status.hint}</span>

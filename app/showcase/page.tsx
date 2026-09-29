@@ -98,10 +98,10 @@ export default function ShowcasePage() {
 
       <section style={{ padding: '90px 18px', position: 'relative' }}>
         <AnimatedSection>
-          <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ maxWidth: 'var(--w-content)', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-              <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
+              <span style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
                 Concept Gallery
               </span>
             </div>
@@ -127,7 +127,7 @@ export default function ShowcasePage() {
           <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-              <span style={{ fontSize: 9, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
+              <span style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
                 Technical Excellence
               </span>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />

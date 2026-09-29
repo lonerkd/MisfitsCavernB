@@ -26,7 +26,7 @@ export default function AdminError({
         color: 'var(--fg)',
       }}
     >
-      <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
+      <div style={{ textAlign: 'center', maxWidth: 'var(--w-form)', padding: 40 }}>
         <ShieldAlert size={48} style={{ color: '#e8431a', marginBottom: 24 }} />
         <h1
           style={{
@@ -55,7 +55,7 @@ export default function AdminError({
               background: 'var(--accent)',
               color: 'var(--bg)',
               border: 'none',
-              borderRadius: 6,
+              borderRadius: 8,
               fontFamily: 'var(--mono)',
               fontSize: 11,
               letterSpacing: 1,
@@ -72,7 +72,7 @@ export default function AdminError({
               background: 'transparent',
               color: 'var(--fg-muted)',
               border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 6,
+              borderRadius: 8,
               fontFamily: 'var(--mono)',
               fontSize: 11,
               letterSpacing: 1,

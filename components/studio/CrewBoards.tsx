@@ -60,11 +60,11 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
       </div>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
       </div>
-      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
+      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
     </motion.div>
   );
 }
@@ -98,7 +98,7 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
         padding: 16,
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: 12,
+        borderRadius: 14,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
@@ -113,9 +113,9 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
-        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
       </div>
-      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 11, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
         {member.status || 'pending'}
       </div>
     </motion.div>
@@ -166,7 +166,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32 }}
+            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
@@ -205,7 +205,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 14 }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
                       {selectedUser.username.charAt(0).toUpperCase()}
                     </div>
@@ -216,7 +216,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                  </div>
 
                  <div>
-                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <label style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
                    <select
                      value={role}
                      onChange={e => setRole(e.target.value)}

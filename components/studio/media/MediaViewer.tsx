@@ -38,7 +38,7 @@ export function MediaViewer({ media, src }: { media: Pick<Media, 'kind' | 'title
       <div className={s.viewer}>
         <div className={s.viewerFallback} style={{ width: '100%' }}>
           <KindIcon kind="audio" size={28} />
-          <audio src={src} controls preload="metadata" style={{ width: '100%', maxWidth: 480 }} />
+          <audio src={src} controls preload="metadata" style={{ width: '100%', maxWidth: 'var(--w-form)' }} />
         </div>
       </div>
     );

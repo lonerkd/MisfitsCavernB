@@ -131,7 +131,7 @@ function SceneBoardCard({
         transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
       }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: 10, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {index + 1}</span>
+        <span style={{ fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {index + 1}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {activeUsers.length > 0 && (
             <div style={{ display: 'flex', marginRight: 4 }}>
@@ -140,14 +140,14 @@ function SceneBoardCard({
                   width: 16, height: 16, borderRadius: '50%', background: u.color, color: '#fff',
                   border: '2px solid var(--bg-3)', marginLeft: ui > 0 ? -6 : 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 8, fontWeight: 700, zIndex: 3 - ui,
+                  fontSize: 11, fontWeight: 700, zIndex: 3 - ui,
                 }}>
                   {u.email[0].toUpperCase()}
                 </div>
               ))}
             </div>
           )}
-          <span style={{ fontSize: 9, color: cardColor, fontFamily: 'var(--mono)' }}>{wordCount}w · ~{estMins}m</span>
+          <span style={{ fontSize: 11, color: cardColor, fontFamily: 'var(--mono)' }}>{wordCount}w · ~{estMins}m</span>
         </div>
       </div>
       <div style={{ fontSize: 13, fontWeight: 700, color: cardColor, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{scene.text}</div>
@@ -224,10 +224,10 @@ export function OutlineView({
                 {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}
                 {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
+                  {sceneChars.map(c => (<span key={c} style={{ fontSize: 11, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>{c}</span>))}
                 </div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
+              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
             </motion.div>
           );
         })
@@ -264,7 +264,7 @@ export function StatsView({
     <div style={{ flex: 1, overflowY: 'auto', padding: '36px 40px', maxWidth: 1000, margin: '0 auto', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 36 }}>
         <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg)' }}>SCRIPT ANALYTICS</div>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{currentScriptTitle}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{currentScriptTitle}</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
@@ -275,13 +275,13 @@ export function StatsView({
           { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
           { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 14px', transition: 'border-color 0.3s' }}
+          <div key={s.label} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 14px', transition: 'border-color 0.3s' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = s.color + '40'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
             <div style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: 6 }}>{s.value}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 3 }}>{s.label}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)'}}>{s.sub}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)'}}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -293,7 +293,7 @@ export function StatsView({
         const { act1End, act2End } = actStructure;
         return (
           <div style={{ marginBottom: 40 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Timeline</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Timeline</div>
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               {[
@@ -301,13 +301,13 @@ export function StatsView({
                 { label: 'EXT/Day', color: '#d97706' }, { label: 'EXT/Night', color: '#92400e' },
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 1 }}>{label}</span>
+                  <div style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{label}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: 'flex', height: 32, borderRadius: 6, overflow: 'hidden', gap: 1, background: 'var(--bg-3)', padding: 4 }}>
+            <div style={{ display: 'flex', height: 32, borderRadius: 8, overflow: 'hidden', gap: 1, background: 'var(--bg-3)', padding: 4 }}>
               {scenesList.map((scene, i) => {
                 const wc = sceneWordCounts[i] || 0;
                 const w = Math.max(4, (wc / totalWc) * 100);
@@ -319,7 +319,7 @@ export function StatsView({
                     title={`Scene ${i + 1}: ${scene.text} · ${wc}w · ${sceneChars.join(', ')}`}
                     style={{
                       flex: `0 0 ${w}%`, background: color,
-                      borderRadius: 3, cursor: 'pointer', opacity: 0.85,
+                      borderRadius: 4, cursor: 'pointer', opacity: 0.85,
                       minWidth: 4, position: 'relative',
                       transition: 'opacity 0.15s, transform 0.15s',
                       border: i === currentSceneIdx ? '1px solid rgba(255,255,255,0.6)' : 'none',
@@ -342,7 +342,7 @@ export function StatsView({
                     { pct: act2Pct, label: 'ACT III' },
                   ].map(({ pct, label }) => (
                     <div key={label} style={{ position: 'absolute', left: `${pct}%`, transform: pct > 0 ? 'translateX(-50%)' : '', top: 2 }}>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{label}</span>
                     </div>
                   ))}
                 </div>
@@ -356,7 +356,7 @@ export function StatsView({
                 return (
                   <div key={scene.id} style={{ flex: `0 0 ${w}%`, minWidth: 4, display: 'flex', justifyContent: 'center' }}>
                     {w > 3 && (
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)'}}>{i + 1}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)'}}>{i + 1}</span>
                     )}
                   </div>
                 );
@@ -368,14 +368,14 @@ export function StatsView({
 
       {charStats.length > 0 && scenesList.length > 0 && (
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Character Presence</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Character Presence</div>
           <div style={{ overflowX: 'auto' }}>
             <div style={{ minWidth: Math.max(400, scenesList.length * 22) }}>
               {charStats.slice(0, 8).map((cs, ci) => {
                 const charColor = CARD_COLORS[ci % CARD_COLORS.length];
                 return (
                   <div key={cs.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                    <div style={{ width: 76, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, color: charColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <div style={{ width: 76, textAlign: 'right', fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: charColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {cs.name}
                     </div>
                     <div style={{ display: 'flex', gap: 2, flex: 1 }}>
@@ -386,7 +386,7 @@ export function StatsView({
                             key={si}
                             title={appearsHere ? `${cs.name} in Scene ${si + 1}` : `Not in Scene ${si + 1}`}
                             style={{
-                              flex: 1, height: 14, borderRadius: 2, minWidth: 8,
+                              flex: 1, height: 14, borderRadius: 4, minWidth: 8,
                               background: appearsHere ? charColor : 'rgba(255,255,255,0.04)',
                               opacity: appearsHere ? 0.85 : 1,
                               transition: 'opacity 0.15s',
@@ -397,7 +397,7 @@ export function StatsView({
                         );
                       })}
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', flexShrink: 0, width: 30, textAlign: 'right' }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', flexShrink: 0, width: 30, textAlign: 'right' }}>
                       {cs.scenesIn.length}sc
                     </div>
                   </div>
@@ -407,7 +407,7 @@ export function StatsView({
                 {scenesList.map((_, si) => (
                   <div key={si} style={{ flex: 1, minWidth: 8 }}>
                     {(si + 1) % Math.max(1, Math.floor(scenesList.length / 8)) === 0 && (
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', textAlign: 'center' }}>{si + 1}</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', textAlign: 'center' }}>{si + 1}</div>
                     )}
                   </div>
                 ))}
@@ -418,24 +418,24 @@ export function StatsView({
       )}
 
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
-        <div style={{ display: 'flex', gap: 1, borderRadius: 6, overflow: 'hidden', height: 20 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
+        <div style={{ display: 'flex', gap: 1, borderRadius: 8, overflow: 'hidden', height: 20 }}>
           <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
           <div style={{ flex: 1, background: '#e8431a' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#818cf8' }}>{dialogueRatio}% Dialogue</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#e8431a' }}>{100 - dialogueRatio}% Action</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#818cf8' }}>{dialogueRatio}% Dialogue</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#e8431a' }}>{100 - dialogueRatio}% Action</span>
         </div>
       </div>
 
       {scenesList.length > 0 && (
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
-          <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
+          <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               {['#', 'Scene', 'Type', 'Cast', 'Words', 'Time'].map(h => (
-                <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</div>
+                <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</div>
               ))}
             </div>
             {scenesList.map((scene, i) => {
@@ -460,18 +460,18 @@ export function StatsView({
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{i + 1}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8, textTransform: 'uppercase' }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{i + 1}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8, textTransform: 'uppercase' }}>
                     {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                   </div>
                   <div>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color, background: `${color}18`, padding: '1px 5px', borderRadius: 3 }}>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color, background: `${color}18`, padding: '1px 5px', borderRadius: 4 }}>
                       {isInt?'INT':isExt?'EXT':'?'}/{isDay?'D':isNight?'N':'?'}
                     </span>
                   </div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{sceneCast.length}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>{wc.toLocaleString()}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{timeStr}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{sceneCast.length}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>{wc.toLocaleString()}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{timeStr}</div>
                 </div>
               );
             })}
@@ -479,8 +479,8 @@ export function StatsView({
         </div>
       )}
 
-      <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 12 }}>Script Health</div>
+      <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 12 }}>Script Health</div>
         <div style={{ display: 'flex', gap: 20 }}>
           {[
             { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: '#ef4444' },
@@ -489,7 +489,7 @@ export function StatsView({
           ].map(({ count, label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? '#10b981' : color, lineHeight: 1 }}>{count}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{label}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{label}</span>
             </div>
           ))}
         </div>

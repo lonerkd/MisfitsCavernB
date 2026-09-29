@@ -97,8 +97,8 @@ export default function AuthCallback() {
           MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
         </div>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>AUTHENTICATING...</div>
-        <div style={{ marginTop: 24, width: 120, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 1, margin: '24px auto 0', overflow: 'hidden' }}>
-          <div style={{ width: '40%', height: '100%', background: 'var(--accent)', borderRadius: 1, animation: 'authSlide 1.2s ease-in-out infinite' }} />
+        <div style={{ marginTop: 24, width: 120, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 4, margin: '24px auto 0', overflow: 'hidden' }}>
+          <div style={{ width: '40%', height: '100%', background: 'var(--accent)', borderRadius: 4, animation: 'authSlide 1.2s ease-in-out infinite' }} />
         </div>
         <style>{`
           @keyframes authSlide {

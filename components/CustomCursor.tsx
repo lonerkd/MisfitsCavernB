@@ -213,7 +213,7 @@ export default function CustomCursor() {
         }}
       >
         {label && (
-          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? 'rgba(224, 221, 174,0.95)' : 'rgba(224, 221, 174,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
+          <span style={{ fontSize: 11, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? 'rgba(224, 221, 174,0.95)' : 'rgba(224, 221, 174,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
         )}
       </div>
     </>

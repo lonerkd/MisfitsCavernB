@@ -15,3 +15,8 @@ playwright-report/
 test-results/
 
 *.tsbuildinfo
+
+# Local review / scratch artifacts
+.review-*.md
+.review-state.json
+screenshot.mjs

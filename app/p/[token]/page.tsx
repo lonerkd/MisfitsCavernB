@@ -137,7 +137,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             border: '1px solid rgba(255,255,255,0.15)',
             color: 'var(--fg)',
             fontFamily: 'var(--mono)',
-            fontSize: 10,
+            fontSize: 11,
             letterSpacing: 2,
             textDecoration: 'none',
             transition: 'border-color 0.2s, color 0.2s',
@@ -261,7 +261,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               {profiles.role && (
                 <div style={{
                   fontFamily: 'var(--mono)',
-                  fontSize: 9,
+                  fontSize: 11,
                   letterSpacing: 2,
                   marginTop: 2, color: 'var(--fg-dim)' }}>
                   {profiles.role.toUpperCase()}
@@ -288,7 +288,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               <div>
                 <div style={{
                   fontFamily: 'var(--mono)',
-                  fontSize: 8,
+                  fontSize: 11,
                   letterSpacing: 3,
                   marginBottom: 6, color: 'var(--fg-dim)' }}>
                   YEAR
@@ -307,7 +307,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               <div>
                 <div style={{
                   fontFamily: 'var(--mono)',
-                  fontSize: 8,
+                  fontSize: 11,
                   letterSpacing: 3,
                   marginBottom: 6, color: 'var(--fg-dim)' }}>
                   ROLE
@@ -332,7 +332,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             lineHeight: 1.8,
             color: 'var(--fg-dim)',
-            maxWidth: 720,
+            maxWidth: 'var(--w-reading)',
             marginTop: (year || role) ? 0 : 0,
           }}>
             {effectiveDescription}
@@ -354,13 +354,13 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
 
       {blocks.length === 0 && portfolio_media.length > 0 && (
         <section style={{
-          maxWidth: 1200,
+          maxWidth: 'var(--w-content)',
           margin: '0 auto',
           padding: '0 clamp(20px, 5vw, 64px) clamp(56px, 8vw, 100px)',
         }}>
           <div style={{
             fontFamily: 'var(--mono)',
-            fontSize: 8,
+            fontSize: 11,
             letterSpacing: 3,
             marginBottom: 20, color: 'var(--fg-dim)' }}>
             {portfolio_media.length === 1 ? '1 CLIP' : `${portfolio_media.length} CLIPS`}
@@ -443,7 +443,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 2,
+                borderRadius: 4,
                 transition: 'background 0.2s',
                 zIndex: 9001,
               }}
@@ -498,10 +498,10 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
 
 function DeckBlock({ block }: { block: PortfolioBlock }) {
   const label: React.CSSProperties = {
-    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'uppercase',
+    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'uppercase',
   };
   const wrap: React.CSSProperties = {
-    padding: 'clamp(16px, 3vw, 24px)', borderRadius: 12,
+    padding: 'clamp(16px, 3vw, 24px)', borderRadius: 14,
     background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
   };
   const heading: React.CSSProperties = { fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 1, margin: 0 };
@@ -526,7 +526,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
         <div style={wrap}>
           <div style={label}>Scene</div>
           <h3 style={heading}>{block.title}</h3>
-          {loc && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginTop: 4, color: 'var(--fg-dim)' }}>{loc}</div>}
+          {loc && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 4, color: 'var(--fg-dim)' }}>{loc}</div>}
         </div>
       );
     }
@@ -541,7 +541,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
           {lines.length > 0 && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {lines.map((l, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }}>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                   <span>{l.category}</span>
                   <span>${Number(l.amount).toLocaleString()}</span>
                 </div>
@@ -564,7 +564,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
           <div>
             <div style={label}>Crew</div>
             <h3 style={{ ...heading, marginTop: -6 }}>{block.title}</h3>
-            {block.body && <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginTop: 2, color: 'var(--fg-dim)' }}>{block.body}</div>}
+            {block.body && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 2, color: 'var(--fg-dim)' }}>{block.body}</div>}
           </div>
         </div>
       );
@@ -574,7 +574,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
         <div style={wrap}>
           <div style={label}>Script Excerpt</div>
           <h3 style={heading}>{block.title}</h3>
-          {block.body && <pre style={{ ...body, whiteSpace: 'pre-wrap', fontFamily: 'var(--mono)', fontSize: 11.5 }}>{block.body}</pre>}
+          {block.body && <pre style={{ ...body, whiteSpace: 'pre-wrap', fontFamily: 'var(--mono)', fontSize: 12 }}>{block.body}</pre>}
         </div>
       );
 
@@ -708,7 +708,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
         }}>
           <div style={{
             fontFamily: 'var(--mono)',
-            fontSize: 10,
+            fontSize: 11,
             letterSpacing: 0.5,
             color: 'var(--fg)',
             opacity: 0.85,
@@ -728,7 +728,7 @@ function FooterLink() {
   return (
     <span style={{
       fontFamily: 'var(--mono)',
-      fontSize: 9,
+      fontSize: 11,
       letterSpacing: 2,
       color: 'var(--fg-dim)',
     }}>

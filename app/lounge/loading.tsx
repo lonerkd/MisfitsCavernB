@@ -54,7 +54,7 @@ export default function LoungeLoading() {
                 height: 40,
                 width: `${40 + Math.random() * 50}%`,
                 background: 'rgba(255,255,255,0.03)',
-                borderRadius: 6,
+                borderRadius: 8,
               }}
             />
           ))}

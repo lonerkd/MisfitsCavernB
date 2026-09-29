@@ -27,7 +27,7 @@ const PRINT_COLORS: Record<string, string> = {
 
 function ScriptLineView({ line, index }: { line: ScriptLine; index: number }) {
   const base: React.CSSProperties = {
-    fontFamily: 'Courier Prime, Courier, monospace',
+    fontFamily: 'var(--script)',
     fontSize: 14,
     lineHeight: '1.7',
     color: PRINT_COLORS[line.type] || '#000',
@@ -121,7 +121,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
         </p>
         <Link href="/" style={{
           marginTop: 8, padding: '10px 28px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)',
-          fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none',
+          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none',
         }}>
           BACK TO HOME
         </Link>
@@ -140,27 +140,27 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
         <div>
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 2, color: '#fff' }}>{script.title}</div>
           {script.profile && (
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
               by {script.profile.username}{script.profile.role ? ` · ${script.profile.role}` : ''}
             </div>
           )}
         </div>
         <Link href="/auth" style={{
-          fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--accent)', textDecoration: 'none',
+          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--accent)', textDecoration: 'none',
         }}>
           CREATE YOUR OWN →
         </Link>
       </header>
 
-      <div style={{ maxWidth: 720, margin: '40px auto 80px', padding: '0 16px' }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '40px auto 80px', padding: '0 16px' }}>
         <div style={{
           background: '#fdfcf8', color: '#000',
           padding: 'clamp(32px, 6vw, 72px) clamp(24px, 6vw, 64px)',
           boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
-          borderRadius: 2,
+          borderRadius: 4,
         }}>
           {lines.length === 0 ? (
-            <div style={{ fontFamily: 'Courier Prime, monospace', fontSize: 13, textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>
+            <div style={{ fontFamily: 'var(--script)', fontSize: 13, textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>
               This script is empty.
             </div>
           ) : (
@@ -170,7 +170,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
       </div>
 
       <footer style={{ textAlign: 'center', paddingBottom: 28 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--fg-dim)' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>
           POWERED BY{' '}
           <Link href="/auth" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
             MISFITS CAVERN

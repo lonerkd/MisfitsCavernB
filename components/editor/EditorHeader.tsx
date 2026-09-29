@@ -77,7 +77,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 title="Open this project's hub"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
                   color: activeProject.accent_color || '#e8431a',
                   background: `${activeProject.accent_color || '#e8431a'}14`,
                   border: `1px solid ${activeProject.accent_color || '#e8431a'}30`,
@@ -132,7 +132,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 />
               </div>
 
-              <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 10, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+              <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 11, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </button>
             </div>
@@ -151,7 +151,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 onClick={() => setActiveView(id)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '5px 13px', borderRadius: 9999, fontSize: 10.5, fontWeight: 600,
+                  padding: '5px 13px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
                   letterSpacing: 0.5, border: 'none', cursor: 'pointer',
                   background: activeView === id ? 'rgba(255,255,255,0.10)' : 'transparent',
                   color: activeView === id ? 'var(--fg)' : 'var(--fg-dim)',
@@ -167,7 +167,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
 
             {sessionWordsWritten > 0 && (
-              <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
                 +{sessionWordsWritten}w
               </span>
             )}
@@ -189,7 +189,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   width: 34, height: 34,
                   background: 'transparent',
                   border: '1px solid transparent',
-                  borderRadius: 9,
+                  borderRadius: 8,
                   color: 'var(--fg-dim)',
                   cursor: 'pointer',
                   transition: 'background 0.2s, color 0.2s, border-color 0.2s',
@@ -208,7 +208,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   display: 'inline-flex', alignItems: 'center', gap: 7,
                   padding: '8px 18px',
                   background: 'var(--accent)', color: 'var(--bg)',
-                  borderRadius: 9999, fontWeight: 700, fontSize: 10,
+                  borderRadius: 9999, fontWeight: 700, fontSize: 11,
                   fontFamily: 'var(--mono)', letterSpacing: 2, textTransform: 'uppercase',
                   border: 'none', cursor: 'pointer',
                   transition: 'box-shadow 0.25s, transform 0.2s',
@@ -224,7 +224,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0,
                   background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255,255,255,0.09)',
-                  borderRadius: 12, padding: 6, minWidth: 164, zIndex: 200,
+                  borderRadius: 14, padding: 6, minWidth: 164, zIndex: 200,
                   boxShadow: '0 16px 48px rgba(0,0,0,0.6)'
                 }}>
                   {['fountain', 'fdx', 'pdf', 'txt'].map(fmt => (
@@ -232,7 +232,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                       display: 'flex', alignItems: 'center', gap: 8,
                       width: '100%', textAlign: 'left', padding: '9px 14px',
                       background: 'transparent', border: 'none', color: 'var(--fg-muted)',
-                      fontSize: 10, cursor: 'pointer', borderRadius: 7,
+                      fontSize: 11, cursor: 'pointer', borderRadius: 8,
                       textTransform: 'uppercase', letterSpacing: 2,
                       fontFamily: 'var(--mono)', fontWeight: 500,
                     }}
@@ -245,7 +245,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   <button onClick={() => { handleNormalize(); setShowFormatMenu(false); }} style={{
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
                     padding: '9px 14px', background: 'transparent', border: 'none',
-                    color: 'var(--fg-muted)', fontSize: 10, cursor: 'pointer', borderRadius: 7,
+                    color: 'var(--fg-muted)', fontSize: 11, cursor: 'pointer', borderRadius: 8,
                     textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--mono)', fontWeight: 500,
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,67,26,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
@@ -266,7 +266,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 width: 36, height: 36,
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 10, color: saving ? 'var(--fg-dim)' : 'var(--fg-muted)',
+                borderRadius: 8, color: saving ? 'var(--fg-dim)' : 'var(--fg-muted)',
                 cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = 'var(--fg)'; }}

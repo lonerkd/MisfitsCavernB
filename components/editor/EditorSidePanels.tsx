@@ -82,7 +82,7 @@ function SectionHeader({
         <Icon size={14} />
         <span>{label}</span>
         {count != null && (
-          <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color, background: `${color}1a`, padding: '1px 7px', borderRadius: 99 }}>{count}</span>
+          <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color, background: `${color}1a`, padding: '1px 7px', borderRadius: 9999 }}>{count}</span>
         )}
       </div>
       {right}
@@ -135,7 +135,7 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
                   </button>
                 ))}
               </div>
@@ -156,14 +156,14 @@ export function EditorRightPanels({
                         <div style={{
                           background: `${color}0d`,
                           border: `1px solid ${color}28`,
-                          borderRadius: 10,
+                          borderRadius: 8,
                           padding: '12px 14px',
                         }}>
                           <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: color, marginBottom: 8, opacity: 0.85 }}>
                             Now Writing · Scene {currentSceneIdx + 1}
                           </div>
                           <div style={{
-                            fontFamily: 'var(--mono)', fontSize: 12.5, color: 'var(--fg)',
+                            fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--fg)',
                             textTransform: 'uppercase', marginBottom: 10,
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                           }}>
@@ -190,7 +190,7 @@ export function EditorRightPanels({
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                         {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
-                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, color: 'var(--fg)', fontSize: 12, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
+                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, color: 'var(--fg)', fontSize: 12, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
                         ))}
                       </div>
                     </div>
@@ -246,8 +246,8 @@ export function EditorRightPanels({
                                 <span style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
                                 <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
                               </div>
-                              <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, marginBottom: 8 }}>
-                                <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: TYPE_COLORS.character, borderRadius: 2 }} />
+                              <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 4, marginBottom: 8 }}>
+                                <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: TYPE_COLORS.character, borderRadius: 4 }} />
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: 'var(--fg-muted)' }}>
                                 <span>{cs.dialogueLines} lines</span>
@@ -295,7 +295,7 @@ export function EditorRightPanels({
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {lintIssues.slice(0, 30).map((issue, idx) => (
-                                <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                                <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                     <span style={{ fontSize: 11, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
                                     <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
@@ -389,7 +389,7 @@ export function EditorRightPanels({
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {stash.rows.map(item => (
-                                <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '10px' }}>
+                                <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px' }}>
                                   <div style={{ fontSize: 12, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                     <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(item.created_at).toLocaleDateString()}</span>

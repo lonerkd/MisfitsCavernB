@@ -103,7 +103,7 @@ export default function Navigation() {
                     padding: '7px 14px',
                     borderRadius: 9999,
                     fontFamily: 'var(--mono)',
-                    fontSize: 8.5,
+                    fontSize: 11,
                     letterSpacing: 2.5,
                     textTransform: 'uppercase',
                     textDecoration: 'none',
@@ -152,7 +152,7 @@ export default function Navigation() {
               href="/profile"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
                   textTransform: 'uppercase', padding: '7px 12px',
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.08)',
@@ -163,7 +163,7 @@ export default function Navigation() {
                   width: 20, height: 20, borderRadius: '50%',
                   background: 'var(--accent)', color: '#060606',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 9, fontWeight: 700,
+                  fontSize: 11, fontWeight: 700,
                 }}>
                   {displayName.charAt(0).toUpperCase()}
                 </span>
@@ -172,7 +172,7 @@ export default function Navigation() {
               <button
                 onClick={handleSignOut}
                 style={{
-                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
                   textTransform: 'uppercase', padding: '8px 14px',
                   background: 'transparent', border: '1px solid rgba(255,255,255,0.10)',
                   color: 'var(--fg-dim)', borderRadius: 9999, cursor: 'pointer',
@@ -188,7 +188,7 @@ export default function Navigation() {
               style={{
                 marginLeft: 10,
                 fontFamily: 'var(--mono)',
-                fontSize: 8.5,
+                fontSize: 11,
                 letterSpacing: 2.5,
                 textTransform: 'uppercase',
                 padding: '9px 18px',
@@ -288,7 +288,7 @@ export default function Navigation() {
                       display: 'block', textAlign: 'center', padding: '14px',
                       background: 'rgba(255,255,255,0.06)',
                       border: '1px solid rgba(255,255,255,0.10)',
-                      color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10,
+                      color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11,
                       letterSpacing: 3, textTransform: 'uppercase',
                       textDecoration: 'none', fontWeight: 600, borderRadius: 9999,
                     }}
@@ -300,7 +300,7 @@ export default function Navigation() {
                     style={{
                       padding: '14px', background: 'transparent',
                       border: '1px solid rgba(255,255,255,0.10)', color: 'var(--fg-dim)',
-                      fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
+                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3,
                       textTransform: 'uppercase', fontWeight: 600, borderRadius: 9999,
                       cursor: 'pointer',
                     }}
@@ -319,7 +319,7 @@ export default function Navigation() {
                     background: 'var(--accent)',
                     color: '#060606',
                     fontFamily: 'var(--mono)',
-                    fontSize: 10,
+                    fontSize: 11,
                     letterSpacing: 3,
                     textTransform: 'uppercase',
                     textDecoration: 'none',

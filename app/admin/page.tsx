@@ -68,7 +68,7 @@ export default function AdminDashboard() {
           </Link>
         </header>
 
-        <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
+        <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
           <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <stat.icon size={16} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                     {stat.label}
                   </span>
                 </div>
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
                   border: 'none',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 600,
                   letterSpacing: 1,
                   cursor: 'pointer',
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
                   border: '1px solid rgba(255,255,255,0.2)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 600,
                   letterSpacing: 1,
                   cursor: 'pointer',

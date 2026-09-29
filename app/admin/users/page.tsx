@@ -83,7 +83,7 @@ export default function AdminUsersPage() {
           </Link>
         </header>
 
-        <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
+        <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
           <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
@@ -227,7 +227,7 @@ export default function AdminUsersPage() {
                               border: '1px solid rgba(232, 67, 26,0.3)',
                               color: 'var(--accent)',
                               borderRadius: 4,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontFamily: 'var(--mono)',
                             }}
                             title={user.is_admin ? 'Remove admin' : 'Make admin'}

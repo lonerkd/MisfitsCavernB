@@ -29,7 +29,7 @@ export default function SectionLabel({ text, center = false }: SectionLabelProps
         viewport={{ once: true }}
         transition={{ duration: 0.7, delay: 0.2 }}
         style={{
-          fontSize: 9,
+          fontSize: 11,
           letterSpacing: 6,
           textTransform: 'uppercase',
           color: 'var(--accent)',

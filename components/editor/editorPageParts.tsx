@@ -121,7 +121,7 @@ export function transformLineForType(text: string, type: LineType): string {
 
 export function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean }) {
   const style: React.CSSProperties = {
-    fontFamily: 'Courier Prime, Courier, monospace',
+    fontFamily: 'var(--script)',
     fontSize: 14,
     lineHeight: '1.7',
     color: nightModePreview
@@ -183,7 +183,7 @@ export function LinePreview({ line, index, nightModePreview, sceneNumber, showSc
     return null; // the caret is a marker, not content
   }
   if (line.type === 'pagebreak') {
-    return <div style={{ ...style, textAlign: 'center', color: 'var(--fg-dim)', fontSize: 10, letterSpacing: 4, margin: '12px 0' }}>· · ·</div>;
+    return <div style={{ ...style, textAlign: 'center', color: 'var(--fg-dim)', fontSize: 11, letterSpacing: 4, margin: '12px 0' }}>· · ·</div>;
   }
   if (line.type === 'centered') {
     const clean = displayContent.replace(/^>\s*/, '').replace(/\s*<$/, '');

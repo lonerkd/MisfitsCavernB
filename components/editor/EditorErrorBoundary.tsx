@@ -33,7 +33,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
         }}>
           <div style={{
             background: 'rgba(10,15,24,0.97)', border: '1px solid rgba(239,68,68,0.3)',
-            borderRadius: 16, padding: 28, maxWidth: 380, textAlign: 'center',
+            borderRadius: 14, padding: 28, maxWidth: 380, textAlign: 'center',
           }}>
             <p style={{ color: '#fff', fontSize: 14, marginBottom: 8 }}>This panel hit an error and had to close.</p>
             <p style={{ color: 'var(--fg-muted)', fontSize: 12, marginBottom: 16 }}>Your script content was not affected. You can keep writing.</p>
