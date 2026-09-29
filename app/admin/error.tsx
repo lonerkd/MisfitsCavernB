@@ -27,7 +27,7 @@ export default function AdminError({
       }}
     >
       <div style={{ textAlign: 'center', maxWidth: 'var(--w-form)', padding: 40 }}>
-        <ShieldAlert size={48} style={{ color: '#e8431a', marginBottom: 24 }} />
+        <ShieldAlert size={48} style={{ color: 'var(--accent)', marginBottom: 24 }} />
         <h1
           style={{
             fontFamily: 'var(--display)',

@@ -289,11 +289,11 @@ export default function GlobalAudioWidget() {
             {useIframeFallback ? renderFreeUI() : (!isPremium ? (
               <div style={{ padding: 24, textAlign: 'center' }}>
                 <Link2Off size={24} color="#e8431a" style={{ marginBottom: 12 }} />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#e8431a', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', marginBottom: 16 }}>Spotify blocked the Web Playback connection. You must use Free Mode.</div>
                 <button
                   onClick={() => setUseIframeFallback(true)}
-                  style={{ background: '#e8431a', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 9999, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'uppercase', cursor: 'pointer' }}
+                  style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 9999, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'uppercase', cursor: 'pointer' }}
                 >
                   Switch to Free Mode
                 </button>

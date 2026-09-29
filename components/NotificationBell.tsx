@@ -98,7 +98,7 @@ export default function NotificationBell() {
       >
         <Bell size={19} strokeWidth={1.5} />
         {unread > 0 && (
-          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 9999, background: '#e8431a', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(232, 67, 26,0.6)' }}>
+          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 9999, background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(232, 67, 26,0.6)' }}>
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -133,7 +133,7 @@ export default function NotificationBell() {
                   onClick={() => openItem(n)}
                   style={{ display: 'flex', gap: 10, padding: '11px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: n.link ? 'pointer' : 'default', background: n.read ? 'transparent' : 'rgba(232, 67, 26,0.05)', position: 'relative' }}
                 >
-                  {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: '#e8431a' }} />}
+                  {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)' }} />}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
                     <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
                     {n.body && <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}

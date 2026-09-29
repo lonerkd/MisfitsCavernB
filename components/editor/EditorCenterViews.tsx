@@ -421,11 +421,11 @@ export function StatsView({
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
         <div style={{ display: 'flex', gap: 1, borderRadius: 8, overflow: 'hidden', height: 20 }}>
           <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
-          <div style={{ flex: 1, background: '#e8431a' }} />
+          <div style={{ flex: 1, background: 'var(--accent)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
           <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#818cf8' }}>{dialogueRatio}% Dialogue</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#e8431a' }}>{100 - dialogueRatio}% Action</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>{100 - dialogueRatio}% Action</span>
         </div>
       </div>
 

@@ -562,7 +562,7 @@ export default function Home() {
               textTransform: 'uppercase',
               color: 'var(--accent)',
             }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#e8431a', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
               Digital Film Studio
             </div>
           </motion.div>

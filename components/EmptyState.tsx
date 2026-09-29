@@ -23,7 +23,15 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
         border: '1px solid rgba(255,255,255,0.05)',
       }}
     >
-      <div style={{ opacity: 0.25, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{icon}</div>
+      <div
+        aria-hidden="true"
+        style={{
+          width: 64, height: 64, margin: '0 auto 16', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--fg-dim)', border: '1px solid var(--border-2)', borderRadius: 14, background: 'var(--bg-2)',
+        }}
+      >
+        {icon}
+      </div>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
         {title}
       </p>
