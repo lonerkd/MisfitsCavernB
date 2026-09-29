@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Link2, RotateCw, Upload, X } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { ACCEPTED_UPLOAD_TYPES, studio, type Media } from '@/lib/studio';
+import { lookupLink } from '@/lib/integrations/lookup';
+import type { Pin } from '@/lib/integrations/links';
 import type { UploadItem } from './useUploader';
 import { cx } from '../ui';
 import s from '../studio.module.css';
@@ -28,38 +30,80 @@ export function UploadButton({ onFiles, primary = true, label = 'Upload' }: { on
   );
 }
 
-/** Paste a web address (YouTube, Vimeo, an image, a Pinterest pin…) into the library. */
+/**
+ * Paste a web address into the library. A YouTube or Vimeo video comes in
+ * under its real title (and channel); a public Pinterest board offers to
+ * bring in its pins; anything else (an image, a pin, a page) as it is.
+ */
 export function AddLinkForm({ projectId, userId, board, onAdded, onCancel }: { projectId: string; userId: string; board?: string | null; onAdded: (m: Media) => void; onCancel: () => void }) {
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pinboard, setPinboard] = useState<{ board: string | null; pins: Pin[] } | null>(null);
+
+  const done = (message: string) => {
+    toast(message, 'success');
+    setUrl('');
+    setPinboard(null);
+    onCancel();
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim() || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const m = await studio.addLink(projectId, userId, { url, board });
+      const found = await lookupLink(url);
+      if (found.type === 'board') {
+        if (!found.pins.length) throw new Error(found.error ?? 'That board has no pins we can see — is it public?');
+        setPinboard({ board: found.board, pins: found.pins });
+        return;
+      }
+      const details = found.type === 'video' ? found.details : null;
+      const m = await studio.addLink(projectId, userId, { url, board, title: details?.title, notes: details?.author ? `By ${details.author}` : null });
       onAdded(m);
-      toast('Added to the library', 'success');
-      setUrl('');
-      onCancel();
+      done('Added to the library');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add the link');
     } finally {
       setBusy(false);
     }
   };
+
+  const addPins = async () => {
+    if (!pinboard || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const added = await studio.addPins(projectId, userId, pinboard.pins, board || pinboard.board);
+      added.forEach(onAdded);
+      done(`${added.length} pin${added.length === 1 ? '' : 's'} added`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add the pins');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <form onSubmit={submit} className={s.panel} style={{ marginBottom: 18, padding: 14 }}>
       <div className={s.row}>
         <Link2 size={14} className={s.dim} aria-hidden />
         <label className={s.srOnly} htmlFor="studio-add-link">Web address</label>
-        <input id="studio-add-link" data-autofocus autoFocus className={s.input} type="url" inputMode="url" placeholder="Paste a link — YouTube, Vimeo, an image, a moodboard…" value={url} onChange={(e) => setUrl(e.target.value)} />
-        <button type="submit" className={s.btnPrimary} disabled={busy || !url.trim()}>{busy ? 'Adding…' : 'Add'}</button>
+        <input id="studio-add-link" data-autofocus autoFocus className={s.input} type="url" inputMode="url" placeholder="Paste a link — YouTube, Vimeo, an image, a Pinterest board…" value={url} onChange={(e) => { setUrl(e.target.value); setPinboard(null); }} />
+        <button type="submit" className={s.btnPrimary} disabled={busy || !url.trim() || !!pinboard}>{busy && !pinboard ? 'Adding…' : 'Add'}</button>
         <button type="button" className={s.btnGhost} onClick={onCancel}>Cancel</button>
       </div>
+      {pinboard && (
+        <div className={s.row} style={{ marginTop: 10, justifyContent: 'space-between', flexWrap: 'wrap' }} role="status">
+          <span className={s.hint}>
+            Pinterest board{pinboard.board ? ` “${pinboard.board}”` : ''} · its latest {pinboard.pins.length} pin{pinboard.pins.length === 1 ? '' : 's'}, onto the board “{board || pinboard.board || 'Pinterest'}”.
+          </span>
+          <button type="button" className={s.btnPrimary} disabled={busy} onClick={addPins}>{busy ? 'Adding…' : `Add ${pinboard.pins.length} pin${pinboard.pins.length === 1 ? '' : 's'}`}</button>
+        </div>
+      )}
       {error && <div className={cx(s.hint, s.queueError)} style={{ marginTop: 8 }} role="alert">{error}</div>}
     </form>
   );
