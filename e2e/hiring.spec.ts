@@ -64,7 +64,7 @@ test.describe('Hiring loop (local Supabase)', () => {
     // The actor applies from the card, with a note.
     const ana = await signIn(browser, actor);
     await ana.goto('/jobs');
-    const card = ana.getByText('Casting call · the role of Maya').locator('xpath=ancestor::div[contains(@style,"border-radius: 16px")][1]');
+    const card = ana.getByTestId('job-card').filter({ hasText: 'Casting call · the role of Maya' });
     await card.getByRole('button', { name: /Apply/ }).click();
     await card.getByLabel(/A note to/).fill('Stage and screen, reel on my profile.');
     await card.getByRole('button', { name: 'Send application' }).click();
