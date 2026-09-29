@@ -78,8 +78,8 @@ export default function GlobalAudioWidget() {
           transition={{ type: 'spring', stiffness: 500, damping: 26 }}
           style={{
             width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: hovered ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-            color: hovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s',
+            background: hovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+            color: hovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s',
           }}
         >
           <Disc size={18} strokeWidth={1.5} />
@@ -90,13 +90,13 @@ export default function GlobalAudioWidget() {
               initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
               style={{
                 position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                background: 'rgba(14,14,14,0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224,221,174,0.85)',
+                background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)',
                 fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
                 padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
               }}
             >
               Connect Spotify
-              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -110,8 +110,8 @@ export default function GlobalAudioWidget() {
         {currentTrack?.album?.images?.[0]?.url ? (
           <Image src={currentTrack.album.images[0].url} alt="" width={48} height={48} style={{ borderRadius: 8, objectFit: 'cover' }} />
         ) : (
-          <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Disc size={20} color="rgba(255,255,255,0.2)" />
+          <div style={{ width: 48, height: 48, borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Disc size={20} color="rgba(var(--ink-rgb), 0.2)" />
           </div>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -125,7 +125,7 @@ export default function GlobalAudioWidget() {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div style={{ width: '100%', height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: 4, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 2, overflow: 'hidden' }}>
           <div style={{ width: `${durationMs ? (progressMs / durationMs) * 100 : 0}%`, height: '100%', background: '#10b981', transition: 'width 1s linear' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-muted)' }}>
@@ -145,7 +145,7 @@ export default function GlobalAudioWidget() {
         <button aria-label="Next track" onClick={nextTrack} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}><SkipForward size={18} /></button>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, borderTop: '1px solid rgba(var(--ink-rgb), 0.05)', paddingTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={12} color="var(--fg-muted)" />
           <input
@@ -182,9 +182,9 @@ export default function GlobalAudioWidget() {
                   onClick={() => setActiveKey(src.key)}
                   style={{
                     padding: '6px 11px', borderRadius: 9999,
-                    background: on ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${on ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.06)'}`,
-                    color: on ? '#10b981' : 'var(--fg-dim)',
+                    background: on ? 'rgba(16,185,129,0.14)' : 'rgba(var(--ink-rgb), 0.03)',
+                    border: `1px solid ${on ? 'rgba(16,185,129,0.4)' : 'rgba(var(--ink-rgb), 0.06)'}`,
+                    color: on ? 'var(--ok)' : 'var(--fg-dim)',
                     fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
                     textTransform: 'uppercase', cursor: 'pointer',
                     transition: 'all 0.2s', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -236,15 +236,15 @@ export default function GlobalAudioWidget() {
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '7px 14px',
-          background: expanded ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.03)',
-          border: `1px solid ${expanded ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
+          background: expanded ? 'rgba(16,185,129,0.1)' : 'rgba(var(--ink-rgb), 0.03)',
+          border: `1px solid ${expanded ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
           borderRadius: 9999,
           cursor: 'pointer',
           transition: 'background 0.2s, border-color 0.2s',
         }}
       >
         <motion.div animate={{ rotate: isPlaying ? 360 : 0 }} transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}>
-          <Disc size={11} style={{ color: '#10b981', flexShrink: 0 }} />
+          <Disc size={11} style={{ color: 'var(--ok)', flexShrink: 0 }} />
         </motion.div>
         <span style={{
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
@@ -263,14 +263,14 @@ export default function GlobalAudioWidget() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{
               position: 'absolute', bottom: 'calc(100% + 14px)', right: 0,
-              width: 360, background: 'rgba(8, 8, 8, 0.98)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16,
+              width: 360, background: 'var(--surface)',
+              border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16,
               boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
               overflow: 'hidden', backdropFilter: 'blur(30px)',
               zIndex: 9000
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(var(--ink-rgb), 0.03)', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-muted)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
                 Mode: {useIframeFallback ? 'Free' : 'Premium'}
               </span>
@@ -278,7 +278,7 @@ export default function GlobalAudioWidget() {
                 onClick={() => setUseIframeFallback(!useIframeFallback)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                  fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1, color: useIframeFallback ? '#f59e0b' : '#10b981', textTransform: 'uppercase'
+                  fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1, color: useIframeFallback ? 'var(--warn)' : 'var(--ok)', textTransform: 'uppercase'
                 }}
               >
                 <RefreshCw size={9} />
@@ -288,8 +288,8 @@ export default function GlobalAudioWidget() {
 
             {useIframeFallback ? renderFreeUI() : (!isPremium ? (
               <div style={{ padding: 24, textAlign: 'center' }}>
-                <Link2Off size={24} color="#e8431a" style={{ marginBottom: 12 }} />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#e8431a', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
+                <Link2Off size={24} color="var(--accent)" style={{ marginBottom: 12 }} />
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)', marginBottom: 16 }}>Spotify blocked the Web Playback connection. You must use Free Mode.</div>
                 <button
                   onClick={() => setUseIframeFallback(true)}

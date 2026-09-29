@@ -58,7 +58,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               ] as Array<[string, number, string | undefined]>).map(([label, v, hint]) => (
                 <div key={label} className={s.panel} style={{ padding: 12 }} title={hint}>
                   <div className={s.hint}>{label}</div>
-                  <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 1, color: label === 'Left' && v < 0 ? '#fca5a5' : undefined }}>{money(v)}</div>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 1, color: label === 'Left' && v < 0 ? 'var(--danger)' : undefined }}>{money(v)}</div>
                 </div>
               ))}
             </div>
@@ -75,12 +75,12 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
                 </thead>
                 <tbody>
                   {summary.lines.map((l) => (
-                    <tr key={l.id} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <tr key={l.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
                       <td style={{ padding: 6 }}>{l.label}</td>
                       <td style={{ padding: 6, textAlign: 'right' }}>{money(l.planned)}</td>
                       <td style={{ padding: 6, textAlign: 'right' }}>{l.committed ? money(l.committed) : '—'}</td>
                       <td style={{ padding: 6, textAlign: 'right' }}>{l.paid ? money(l.paid) : '—'}</td>
-                      <td style={{ padding: 6, textAlign: 'right', color: l.left < 0 ? '#fca5a5' : undefined }}>{l.left < 0 ? `${money(-l.left)} over` : money(l.left)}</td>
+                      <td style={{ padding: 6, textAlign: 'right', color: l.left < 0 ? 'var(--danger)' : undefined }}>{l.left < 0 ? `${money(-l.left)} over` : money(l.left)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -262,7 +262,7 @@ function HoursSection({ rows, canShape, userId, nameOf, onChange, onError }: {
                   <span style={{ fontSize: 13 }}>{who} · {t.work_date} · {Number(t.hours)}h</span>
                   {t.note && <span className={s.hint} style={{ display: 'block' }}>{t.note}</span>}
                 </span>
-                <span className={s.hint} style={{ color: t.status === 'approved' ? '#6ee7b7' : t.status === 'rejected' ? '#fca5a5' : undefined }}>
+                <span className={s.hint} style={{ color: t.status === 'approved' ? '#6ee7b7' : t.status === 'rejected' ? 'var(--danger)' : undefined }}>
                   {t.status === 'approved' ? `Approved${t.rate != null ? ` · ${money(Number(t.rate))}/h = ${money(Number(t.rate) * Number(t.hours))}` : ' · no rate'}` : t.status === 'rejected' ? 'Rejected' : 'Waiting for approval'}
                 </span>
                 {canShape && t.status === 'submitted' && (

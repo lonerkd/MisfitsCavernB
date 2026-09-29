@@ -211,13 +211,13 @@ export default function SoundtrackPage() {
         </div>
       </header>
 
-      <div className="flex gap-4 mb-8 border-b border-white/5 pb-2">
+      <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
         {(['moods', 'sfx', 'project', 'search'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`mc-text uppercase tracking-widest text-xs px-4 py-2 rounded-full transition-colors ${
-              activeTab === tab ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80'
+              activeTab === tab ? 'bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-strong)]' : 'text-[var(--fg-dim)] hover:text-[var(--fg-muted)]'
             }`}
           >
             {tab}
@@ -244,7 +244,7 @@ export default function SoundtrackPage() {
               ) : (
                 <>
                   <p className="mc-text text-sm text-[var(--fg-dim)]">
-                    Read from <strong className="text-white/80">{moods.title ?? 'the script'}</strong>: each scene’s strongest mood from what happens in it. Pick one to find music for those scenes.
+                    Read from <strong className="text-[var(--fg-muted)]">{moods.title ?? 'the script'}</strong>: each scene’s strongest mood from what happens in it. Pick one to find music for those scenes.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {moods.groups.map((g) => (
@@ -253,11 +253,11 @@ export default function SoundtrackPage() {
                         type="button"
                         onClick={() => void searchMood(g)}
                         title={`Find “${g.query}” playlists`}
-                        className="text-left p-5 rounded-2xl border border-white/5 bg-black/40 hover:bg-white/5 transition-all group relative overflow-hidden"
+                        className="text-left p-5 rounded-2xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] hover:bg-[rgba(var(--ink-rgb),0.05)] transition-all group relative overflow-hidden"
                       >
                         <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ background: `radial-gradient(circle at 15% 20%, ${g.color}, transparent 70%)` }} aria-hidden />
                         <div className="relative z-10 flex items-center gap-3 mb-3">
-                          <span className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center" style={{ boxShadow: `0 0 18px ${g.color}55` }} aria-hidden><Music size={16} /></span>
+                          <span className="w-10 h-10 rounded-full bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center" style={{ boxShadow: `0 0 18px ${g.color}55` }} aria-hidden><Music size={16} /></span>
                           <span className="mc-title text-lg">{g.mood}</span>
                           <span className="mc-text text-xs text-[var(--fg-dim)] ml-auto">{g.scenes.length} scene{g.scenes.length === 1 ? '' : 's'}</span>
                         </div>
@@ -277,7 +277,7 @@ export default function SoundtrackPage() {
 
           {activeTab === 'sfx' && (
             <div className="space-y-8">
-              <div className="flex justify-between items-center bg-black/20 p-6 rounded-2xl border border-white/5">
+              <div className="flex justify-between items-center bg-[var(--sunken)] p-6 rounded-2xl border border-[rgba(var(--ink-rgb),0.06)]">
                 <div>
                   <h3 className="mc-title text-xl mb-1">Custom SFX Library</h3>
                   <p className="mc-text text-sm text-[var(--fg-dim)]">Upload raw .wav or .mp3 files to your Cavern Created library.</p>
@@ -298,7 +298,7 @@ export default function SoundtrackPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sfxAssets.length === 0 ? (
-                  <div className="col-span-full p-12 text-center border border-dashed border-white/10 rounded-2xl">
+                  <div className="col-span-full p-12 text-center border border-dashed border-[rgba(var(--ink-rgb),0.1)] rounded-2xl">
                     <Folder size={32} className="opacity-20 mb-4 mx-auto" />
                     <h4 className="mc-title text-[var(--fg-dim)]">No custom SFX uploaded yet</h4>
                   </div>
@@ -307,7 +307,7 @@ export default function SoundtrackPage() {
 
                     const publicUrl = asset.audio_url;
                     return (
-                      <div key={asset.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
+                      <div key={asset.id} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] flex items-center justify-between group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
                         <div className="flex items-center gap-4 overflow-hidden">
                           <button aria-label="Play"
                             className="w-10 h-10 shrink-0 rounded-full bg-[#1ed760]/10 flex items-center justify-center hover:bg-[#1ed760]/20 text-[#1ed760]"
@@ -321,7 +321,7 @@ export default function SoundtrackPage() {
                           </div>
                         </div>
                         <button aria-label="Save to Active Project"
-                          className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-white/50 hover:text-white shrink-0"
+                          className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] transition-all text-[var(--fg-dim)] hover:text-[var(--fg-strong)] shrink-0"
                           title="Save to Active Project"
                           onClick={() => saveToProject(asset, 'custom_upload')}
                         >
@@ -338,15 +338,15 @@ export default function SoundtrackPage() {
           {activeTab === 'project' && (
             <div className="space-y-8">
               {!activeProject ? (
-                <div className="p-12 rounded-2xl border border-dashed border-white/10 text-center">
+                <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
                   <ShieldAlert size={32} className="opacity-20 mb-4 mx-auto" />
                   <h3 className="mc-title text-xl mb-2">No Active Project</h3>
                   <p className="mc-text text-sm text-[var(--fg-dim)]">Select an active project in the Hub to view its Audio Bible.</p>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-4 mb-6 border-b border-white/10 pb-6">
-                    <div className="w-12 h-12 rounded bg-white/5 flex items-center justify-center" style={{ borderLeft: `2px solid ${activeProject.accent_color || 'white'}` }}>
+                  <div className="flex items-center gap-4 mb-6 border-b border-[rgba(var(--ink-rgb),0.1)] pb-6">
+                    <div className="w-12 h-12 rounded bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center" style={{ borderLeft: `2px solid ${activeProject.accent_color || 'white'}` }}>
                       <Folder size={20} className="opacity-60" />
                     </div>
                     <div>
@@ -356,9 +356,9 @@ export default function SoundtrackPage() {
                   </div>
 
                   {loadingRefs ? (
-                    <div className="animate-pulse flex gap-4"><div className="w-full h-16 bg-white/5 rounded-xl"></div></div>
+                    <div className="animate-pulse flex gap-4"><div className="w-full h-16 bg-[rgba(var(--ink-rgb),0.05)] rounded-xl"></div></div>
                   ) : projectRefs.length === 0 ? (
-                    <div className="p-12 rounded-2xl border border-dashed border-white/10 text-center">
+                    <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
                       <Music size={32} className="opacity-20 mb-4 mx-auto" />
                       <h3 className="mc-title text-lg mb-2">Bible is empty</h3>
                       <p className="mc-text text-sm text-[var(--fg-dim)]">Search for tracks or upload SFX, then click &quot;+&quot; to save them here.</p>
@@ -366,10 +366,10 @@ export default function SoundtrackPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {projectRefs.map(ref => (
-                        <div key={ref.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
+                        <div key={ref.id} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] flex items-center justify-between group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
                           <div className="flex items-center gap-4 overflow-hidden">
                             <button aria-label="Play"
-                              className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                              className="w-10 h-10 shrink-0 rounded-full bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center hover:bg-[rgba(var(--ink-rgb),0.1)] transition-colors"
                               onClick={() => {
                                 if (ref.reference_type === 'spotify') playUri(ref.uri);
                                 else if (ref.reference_type === 'custom_upload') {
@@ -424,13 +424,13 @@ export default function SoundtrackPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {searchResults.map((item: any) => (
-                  <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-black/40 flex items-center justify-between group hover:bg-white/5 transition-colors">
+                  <div key={item.id} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] flex items-center justify-between group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
                     <div className="flex items-center gap-4 overflow-hidden">
                       {(item.album?.images?.[2]?.url || item.images?.[0]?.url) ? (
                         // eslint-disable-next-line @next/next/no-img-element -- playlist art comes from several Spotify CDNs
                         <img src={item.album?.images?.[2]?.url || item.images[0].url} alt="" width={48} height={48} loading="lazy" className="w-12 h-12 rounded object-cover" />
                       ) : (
-                        <div className="w-12 h-12 rounded bg-white/5 flex items-center justify-center"><Disc size={16} className="opacity-40" /></div>
+                        <div className="w-12 h-12 rounded bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center"><Disc size={16} className="opacity-40" /></div>
                       )}
                       <div className="min-w-0">
                         <h4 className="mc-title text-sm truncate">{item.name}</h4>
@@ -445,7 +445,7 @@ export default function SoundtrackPage() {
                         <Play size={16} />
                       </button>
                       <button aria-label="Save to Project Bible"
-                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-dim)] hover:text-[var(--fg-strong)] transition-all"
                         title="Save to Project Bible"
                         onClick={() => saveToProject(item, 'spotify')}
                       >

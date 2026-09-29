@@ -5,7 +5,7 @@ import { Play } from 'lucide-react';
 import { formatEighths, formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
 
 const head: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 12px', fontWeight: 400 };
-const cell: React.CSSProperties = { padding: '6px 8px', borderBottom: '1px solid rgba(224,221,174,0.06)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', textAlign: 'right', whiteSpace: 'nowrap' };
+const cell: React.CSSProperties = { padding: '6px 8px', borderBottom: '1px solid rgba(var(--fg-rgb), 0.06)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', textAlign: 'right', whiteSpace: 'nowrap' };
 const th: React.CSSProperties = { ...cell, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400 };
 
 /**
@@ -38,7 +38,7 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
       {targetMinutes ? (() => {
         const ratio = timing.runtime / (targetMinutes * 60);
         const off = Math.round(Math.abs(ratio - 1) * 100);
-        const color = ratio > 1.15 || ratio < 0.85 ? '#f5a524' : '#34c77b';
+        const color = ratio > 1.15 || ratio < 0.85 ? 'var(--warn)' : '#34c77b';
         return (
           <p style={{ margin: '-6px 0 14px', fontSize: 12, color: 'var(--fg-muted)' }}>
             <span style={{ color }}>●</span> The brief aims for <strong style={{ color: 'var(--fg)' }}>{targetMinutes} min</strong>
@@ -54,21 +54,21 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
 
       {timing.scenes.length > 0 && (
         <div role="img" aria-label={`Scene lengths: ${timing.scenes.length} scenes, longest ${formatRuntime(max)}`}
-          style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 56, padding: 4, borderRadius: 8, background: 'rgba(224,221,174,0.03)', marginBottom: 14 }}>
+          style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 56, padding: 4, borderRadius: 8, background: 'rgba(var(--fg-rgb), 0.03)', marginBottom: 14 }}>
           {timing.scenes.map((s) => (
             <div key={s.index} title={`${s.index + 1}. ${s.heading} · ${formatRuntime(s.runtime)}${s.read ? ' (read)' : ''}`}
               style={{
                 flex: `${Math.max(0.6, s.runtime)} 1 0`, minWidth: 3, borderRadius: 2,
                 height: `${Math.max(12, (s.runtime / max) * 100)}%`,
                 background: s.read ? '#34c77b' : `rgba(129,140,248,${0.35 + 0.5 * s.dialogueShare})`,
-                outline: s.index === currentSceneIdx ? '1px solid rgba(255,255,255,0.7)' : undefined,
+                outline: s.index === currentSceneIdx ? '1px solid rgba(var(--ink-rgb), 0.7)' : undefined,
               }} />
           ))}
         </div>
       )}
 
       {timing.scenes.length > 0 && (
-        <div style={{ maxHeight: 360, overflowY: 'auto', borderRadius: 8, border: '1px solid rgba(224,221,174,0.08)' }}>
+        <div style={{ maxHeight: 360, overflowY: 'auto', borderRadius: 8, border: '1px solid rgba(var(--fg-rgb), 0.08)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <caption className="sr-only">Runtime by scene</caption>
             <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-3, #0d1019)' }}>
@@ -97,7 +97,7 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
                   <td style={cell}>{formatRuntime(s.runtime)}</td>
                   <td style={cell}>
                     <button type="button" onClick={() => onRead(s.index)} aria-label={`Table read from scene ${s.index + 1}`} title="Table read from here"
-                      style={{ width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, border: '1px solid rgba(224,221,174,0.14)', background: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                      style={{ width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb), 0.14)', background: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>
                       <Play size={11} aria-hidden />
                     </button>
                   </td>

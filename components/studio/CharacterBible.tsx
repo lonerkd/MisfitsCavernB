@@ -72,7 +72,7 @@ export function CharacterBible() {
           const isEditing = editing === c.name && draft;
           const charLooks = c.row ? looksByChar.get(c.row.id) ?? [] : [];
           return (
-            <div key={c.name} style={{ background: 'rgba(0,0,0,0.22)', border: `1px solid ${c.color}33`, borderLeft: `3px solid ${c.color}`, borderRadius: 10, padding: 14 }}>
+            <div key={c.name} style={{ background: 'var(--sunken)', border: `1px solid ${c.color}33`, borderLeft: `3px solid ${c.color}`, borderRadius: 10, padding: 14 }}>
               <div className={s.row} style={{ justifyContent: 'space-between' }}>
                 <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 1, color: c.color }}>{c.name}</span>
                 {!isEditing && <button type="button" className={s.iconBtn} onClick={() => startEdit(c)} aria-label={`Edit ${c.name}`}><Pencil size={12} /></button>}

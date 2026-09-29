@@ -19,7 +19,7 @@ import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */
-function Viewfinder({ size = 20, color = 'rgba(224, 221, 174,0.3)' }: { size?: number; color?: string }) {
+function Viewfinder({ size = 20, color = 'rgba(var(--fg-rgb), 0.3)' }: { size?: number; color?: string }) {
   const s = `${size}px`;
   const corner = { width: s, height: s, position: 'absolute' as const, borderColor: color };
   return (
@@ -34,11 +34,11 @@ function Viewfinder({ size = 20, color = 'rgba(224, 221, 174,0.3)' }: { size?: n
 
 /* ─── Workflow Pipeline ───────────────────────────────────────────────────── */
 const STAGES = [
-  { id: 'write',     label: 'Write',       icon: PenTool,   color: '#e8431a', href: '/editor'    },
-  { id: 'organize',  label: 'Organize',    icon: Layers,    color: '#818cf8', href: '/studio'    },
-  { id: 'crew',      label: 'Crew',        icon: Users,     color: '#10b981', href: '/lounge'    },
-  { id: 'showcase',  label: 'Showcase',    icon: Film,      color: '#f59e0b', href: '/portfolio' },
-  { id: 'launch',    label: 'Launch',      icon: Briefcase, color: '#8b5cf6', href: '/jobs'      },
+  { id: 'write',     label: 'Write',       icon: PenTool,   color: 'var(--accent)', href: '/editor'    },
+  { id: 'organize',  label: 'Organize',    icon: Layers,    color: 'var(--violet)', href: '/studio'    },
+  { id: 'crew',      label: 'Crew',        icon: Users,     color: 'var(--ok)', href: '/lounge'    },
+  { id: 'showcase',  label: 'Showcase',    icon: Film,      color: 'var(--warn)', href: '/portfolio' },
+  { id: 'launch',    label: 'Launch',      icon: Briefcase, color: 'var(--jobs-text)', href: '/jobs'      },
 ];
 
 function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: number }) {
@@ -65,8 +65,8 @@ function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: numbe
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: hovered ? `${stage.color}18` : 'rgba(255,255,255,0.03)',
-            border: `1px solid ${hovered ? stage.color + '45' : 'rgba(255,255,255,0.07)'}`,
+            background: hovered ? `${stage.color}18` : 'rgba(var(--ink-rgb), 0.03)',
+            border: `1px solid ${hovered ? stage.color + '45' : 'rgba(var(--ink-rgb), 0.07)'}`,
             color: hovered ? stage.color : 'var(--fg-dim)',
             transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
             boxShadow: hovered ? `0 8px 28px ${stage.color}22` : 'none',
@@ -110,7 +110,7 @@ function PipelineConnector({ index }: { index: number }) {
       whileInView={{ scaleX: 1 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 + 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)', transformOrigin: 'left', position: 'relative', top: -15, overflow: 'hidden' }}
+      style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.07)', transformOrigin: 'left', position: 'relative', top: -15, overflow: 'hidden' }}
     >
       <div style={{
         position: 'absolute',
@@ -159,7 +159,7 @@ function ScriptOSPreview({ lines, caption }: { lines?: string[]; caption: string
   return (
     <div style={{ padding: '22px 16px', display: 'flex', flexDirection: 'column', gap: 7 }} aria-hidden>
       {[['52%', 0, 'var(--accent)'], ['92%', 0], ['78%', 0], [0], ['22%', '38%'], ['52%', '20%'], ['40%', '20%'], [0], ['46%', 0, 'var(--accent)'], ['88%', 0]].map(([w, ml, c], i) => (
-        w ? <div key={i} style={{ height: 5, width: w as string, marginLeft: ml as string, borderRadius: 3, background: (c as string) ?? 'rgba(255,255,255,0.08)', opacity: c ? 0.45 : 1 }} />
+        w ? <div key={i} style={{ height: 5, width: w as string, marginLeft: ml as string, borderRadius: 3, background: (c as string) ?? 'rgba(var(--ink-rgb), 0.08)', opacity: c ? 0.45 : 1 }} />
           : <div key={i} style={{ height: 4 }} />
       ))}
       <PreviewCaption>{caption}</PreviewCaption>
@@ -177,9 +177,9 @@ function StudioPreview({ items, caption }: { items: { label: string; color: stri
       <div style={{ padding: '16px 14px' }} aria-hidden>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {['#818cf8', '#10b981', '#e8431a', '#f59e0b'].map((c) => (
-            <div key={c} style={{ height: 34, borderRadius: 8, border: '1px dashed rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
+            <div key={c} style={{ height: 34, borderRadius: 8, border: '1px dashed rgba(var(--ink-rgb), 0.08)', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: c, opacity: 0.5 }} />
-              <div style={{ height: 4, flex: 1, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }} />
+              <div style={{ height: 4, flex: 1, borderRadius: 2, background: 'rgba(var(--ink-rgb), 0.06)' }} />
             </div>
           ))}
         </div>
@@ -191,8 +191,8 @@ function StudioPreview({ items, caption }: { items: { label: string; color: stri
     <div style={{ padding: '16px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
       {items.map((item, i) => (
         <div key={i} style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(var(--ink-rgb), 0.03)',
+          border: '1px solid rgba(var(--ink-rgb), 0.06)',
           borderRadius: 8,
           padding: '10px 12px',
           display: 'flex',
@@ -226,7 +226,7 @@ function LoungePreview({ messages, caption }: { messages: { from: string; text: 
     return (
       <div style={{ padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }} aria-hidden>
         {[['58%', false], ['44%', true], ['66%', false]].map(([w, mine], i) => (
-          <div key={i} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', width: w as string, height: 24, borderRadius: mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px', border: `1px dashed ${mine ? 'rgba(232, 67, 26,0.25)' : 'rgba(255,255,255,0.08)'}` }} />
+          <div key={i} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', width: w as string, height: 24, borderRadius: mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px', border: `1px dashed ${mine ? 'rgba(232, 67, 26,0.25)' : 'rgba(var(--ink-rgb), 0.08)'}` }} />
         ))}
         <PreviewCaption>{caption}</PreviewCaption>
       </div>
@@ -241,16 +241,16 @@ function LoungePreview({ messages, caption }: { messages: { from: string; text: 
           alignItems: m.mine ? 'flex-end' : 'flex-start',
         }}>
           {!m.mine && (
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: '#10b981', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--ok)', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
-            background: m.mine ? 'rgba(232, 67, 26,0.15)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${m.mine ? 'rgba(232, 67, 26,0.2)' : 'rgba(255,255,255,0.07)'}`,
+            background: m.mine ? 'rgba(232, 67, 26,0.15)' : 'rgba(var(--ink-rgb), 0.05)',
+            border: `1px solid ${m.mine ? 'rgba(232, 67, 26,0.2)' : 'rgba(var(--ink-rgb), 0.07)'}`,
             borderRadius: m.mine ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
             padding: '7px 12px',
             maxWidth: '80%',
           }}>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(224, 221, 174,0.75)' }}>{m.text}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(var(--fg-rgb), 0.75)' }}>{m.text}</span>
           </div>
         </div>
       ))}
@@ -263,7 +263,7 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
     return (
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${works.length}, minmax(0, 1fr))`, gap: 10, padding: 14, minHeight: 140 }}>
         {works.map((w, i) => (
-          <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', minHeight: 120, background: `linear-gradient(160deg, #0d0d0f 0%, ${w.accent || '#1a1008'} 160%)`, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', minHeight: 120, background: `linear-gradient(160deg, #0d0d0f 0%, ${w.accent || '#1a1008'} 160%)`, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
               <div style={{ fontFamily: 'var(--display)', fontSize: 18, letterSpacing: 0.5, lineHeight: 1.1, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
@@ -286,7 +286,7 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
           left: 0, right: 0,
           top: `${y * 100}%`,
           height: 1,
-          background: 'rgba(255,255,255,0.04)',
+          background: 'rgba(var(--ink-rgb), 0.04)',
         }} />
       ))}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '14%', background: '#000', opacity: 0.6 }} />
@@ -337,7 +337,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
             position: 'relative',
             overflow: 'hidden',
             background: 'var(--bg-2)',
-            border: `1px solid ${hovered ? color + '30' : 'rgba(255,255,255,0.05)'}`,
+            border: `1px solid ${hovered ? color + '30' : 'rgba(var(--ink-rgb), 0.05)'}`,
             borderRadius: 16,
             transition: 'border-color 0.45s var(--ease-expo)',
             boxShadow: hovered ? `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px ${color}18` : 'none',
@@ -360,7 +360,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
           <div style={{
             flex: 1,
             overflow: 'hidden',
-            borderBottom: `1px solid ${hovered ? color + '20' : 'rgba(255,255,255,0.04)'}`,
+            borderBottom: `1px solid ${hovered ? color + '20' : 'rgba(var(--ink-rgb), 0.04)'}`,
             transition: 'border-color 0.4s',
           }}>
             {preview}
@@ -583,7 +583,7 @@ export default function Home() {
               }}
             >
               <span style={{
-                WebkitTextStroke: '2px rgba(224, 221, 174,0.85)',
+                WebkitTextStroke: '2px rgba(var(--fg-rgb), 0.85)',
                 color: 'transparent',
                 display: 'block',
               }}>
@@ -644,7 +644,7 @@ export default function Home() {
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
           >
-            <div style={{ width: 1, height: 36, background: 'linear-gradient(180deg, transparent, rgba(224, 221, 174,0.4))' }} />
+            <div style={{ width: 1, height: 36, background: 'linear-gradient(180deg, transparent, rgba(var(--fg-rgb), 0.4))' }} />
           </motion.div>
         </motion.div>
       </section>
@@ -705,13 +705,13 @@ export default function Home() {
         <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
             {[
-              { label: 'Creators', color: '#10b981' },
-              { label: 'Screenplays', color: '#e8431a' },
-              { label: 'Productions', color: '#818cf8' },
-              { label: 'Concept Assets', color: '#f59e0b' },
+              { label: 'Creators', color: 'var(--ok)' },
+              { label: 'Screenplays', color: 'var(--accent)' },
+              { label: 'Productions', color: 'var(--violet)' },
+              { label: 'Concept Assets', color: 'var(--warn)' },
             ].map((s, i) => (
               <div key={s.label}
-                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14 }}>
+                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
                 <motion.div
                   animate={{ opacity: [0.15, 0.45, 0.15] }}
                   transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
@@ -728,17 +728,17 @@ export default function Home() {
         <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
             {[
-              { n: stats.creators, label: 'Creators', color: '#10b981' },
-              { n: stats.scripts, label: 'Screenplays', color: '#e8431a' },
-              { n: stats.projects, label: 'Productions', color: '#818cf8' },
-              { n: stats.concepts, label: 'References & Media', color: '#f59e0b' },
+              { n: stats.creators, label: 'Creators', color: 'var(--ok)' },
+              { n: stats.scripts, label: 'Screenplays', color: 'var(--accent)' },
+              { n: stats.projects, label: 'Productions', color: 'var(--violet)' },
+              { n: stats.concepts, label: 'References & Media', color: 'var(--warn)' },
             ].map((s, i) => (
               <motion.div key={s.label}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.6 }}
-                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14 }}>
+                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: 1, lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
               </motion.div>
@@ -762,14 +762,14 @@ export default function Home() {
           <ModuleTile
             title="ScriptOS"
             tag="Screenplay Editor"
-            color="#e8431a"
+            color="var(--accent)"
             href="/editor"
             index={0}
             preview={
               <div style={{ minHeight: 220 }}>
                 <div style={{
                   padding: '10px 16px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
@@ -796,7 +796,7 @@ export default function Home() {
             <ModuleTile
               title="Lounge"
               tag="Crew Collaboration"
-              color="#10b981"
+              color="var(--ok)"
               href="/lounge"
               index={2}
               preview={<LoungePreview messages={live.messages} caption={loggedIn ? 'Your crew channels appear here' : 'Channels and calls with your crew'} />}
@@ -807,7 +807,7 @@ export default function Home() {
         <ModuleTile
           title="Portfolio"
           tag="Cinematic Showcase"
-          color="#f59e0b"
+          color="var(--warn)"
           href="/portfolio"
           index={3}
           preview={<PortfolioPreview works={works} />}

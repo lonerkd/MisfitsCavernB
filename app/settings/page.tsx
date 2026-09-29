@@ -10,6 +10,7 @@ import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS
 import { checkHibpBreach } from '@/lib/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
+import { ThemePicker } from '@/components/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 
@@ -36,7 +37,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       onClick={() => onChange(!on)}
       style={{
         width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
-        background: on ? 'var(--accent)' : 'rgba(255,255,255,0.12)', position: 'relative',
+        background: on ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.12)', position: 'relative',
         transition: 'background 0.2s', flexShrink: 0, padding: 0,
       }}
     >
@@ -53,9 +54,9 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
     <section style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, color: 'var(--accent)' }}>
         {icon}
-        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'rgba(255,255,255,0.6)' }}>{title}</h2>
+        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'var(--fg-muted)' }}>{title}</h2>
       </div>
-      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 12, overflow: 'hidden' }}>
         {children}
       </div>
     </section>
@@ -64,7 +65,7 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 
 function Row({ label, hint, control }: { label: string; hint?: string; control: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>{label}</div>
         {hint && <div style={{ fontSize: 10.5, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
@@ -75,15 +76,15 @@ function Row({ label, hint, control }: { label: string; hint?: string; control: 
 }
 
 const inputStyle: React.CSSProperties = {
-  padding: '8px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+  padding: '8px 10px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
   color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none', width: 200,
 };
 const btnStyle: React.CSSProperties = {
-  padding: '8px 14px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 6,
+  padding: '8px 14px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 6,
   fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer', fontWeight: 600,
 };
 const ghostBtn: React.CSSProperties = {
-  padding: '8px 14px', background: 'transparent', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)',
+  padding: '8px 14px', background: 'transparent', color: 'var(--fg-muted)', border: '1px solid rgba(var(--ink-rgb), 0.12)',
   borderRadius: 6, fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer',
 };
 
@@ -99,7 +100,6 @@ export default function SettingsPage() {
 
   const [cursor, setCursor] = useState(true);
   const [motion, setMotion] = useState(false);
-  const [theme, setTheme] = useState('default');
   const [taskbarScale, setTaskbarScale] = useState(1);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
@@ -113,8 +113,6 @@ export default function SettingsPage() {
        DEPTHS.find((x) => x.id === depthOf(guide))?.label].filter(Boolean).join(' · ')
     : 'Not set yet — every project’s guide asks the first time.';
 
-  const [customBg, setCustomBg] = useState('#040710');
-  const [customAccent, setCustomAccent] = useState('#e8431a');
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -131,9 +129,6 @@ export default function SettingsPage() {
     setCursor(getPref(PREF_KEYS.cursor, true));
     setMotion(getPref(PREF_KEYS.motion, false));
     try {
-      setTheme(localStorage.getItem('mc_theme') || 'default');
-      setCustomBg(localStorage.getItem('mc_theme_custom_bg') || '#040710');
-      setCustomAccent(localStorage.getItem('mc_theme_custom_accent') || '#e8431a');
       setTaskbarScale(parseFloat(localStorage.getItem('mc_taskbar_scale') || '1'));
     } catch {}
   }, [router]);
@@ -159,24 +154,6 @@ export default function SettingsPage() {
   const setMotionPref = (v: boolean) => {
     setMotion(v); savePref(PREF_KEYS.motion, v);
     window.dispatchEvent(new Event(MOTION_PREF_EVENT));
-  };
-  const setThemePref = (v: string) => {
-    setTheme(v);
-    try {
-      localStorage.setItem('mc_theme', v);
-      window.dispatchEvent(new Event('mc-theme-change'));
-    } catch {}
-  };
-
-  const setCustomColorPref = (key: 'bg' | 'accent', val: string) => {
-    if (key === 'bg') setCustomBg(val);
-    if (key === 'accent') setCustomAccent(val);
-    try {
-      localStorage.setItem(`mc_theme_custom_${key}`, val);
-      if (theme === 'custom') {
-        window.dispatchEvent(new Event('mc-theme-change'));
-      }
-    } catch {}
   };
   const setTaskbarScalePref = (v: number) => {
     setTaskbarScale(v);
@@ -254,8 +231,8 @@ export default function SettingsPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '0 24px',
+        background: 'var(--surface)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', padding: '0 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100,
       }}>
         <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
@@ -263,7 +240,7 @@ export default function SettingsPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>SETTINGS</h1>
         </Link>
         {msg && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 10, color: msg.ok ? '#34d399' : '#ff5c5c' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 10, color: msg.ok ? 'var(--ok)' : 'var(--danger)' }}>
             {msg.ok && <Check size={12} />} {msg.text}
           </span>
         )}
@@ -310,47 +287,13 @@ export default function SettingsPage() {
         <Section icon={<Palette size={15} />} title="Appearance">
           <Row label="Custom cursor" hint="The adaptive Misfits cursor on mouse/trackpad devices." control={<Toggle on={cursor} onChange={setCursorPref} />} />
           <Row label="Reduce motion" hint="Minimise animations and transitions across the app." control={<Toggle on={motion} onChange={setMotionPref} />} />
-          <Row label="Color Theme" hint="Choose a color palette for the entire platform interface." control={
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-end' }}>
-              <select
-                aria-label="Color theme"
-                value={theme}
-                onChange={e => setThemePref(e.target.value)}
-                style={{
-                  padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none', cursor: 'pointer',
-                  width: '100%', minWidth: 200
-                }}
-              >
-                <option value="default" style={{ background: '#111', color: '#fff' }}>Default (Sinopia / Vanilla)</option>
-                <option value="cyberpunk" style={{ background: '#111', color: '#fff' }}>Cyberpunk (Neon Pink / Aqua)</option>
-                <option value="forest" style={{ background: '#111', color: '#fff' }}>Forest (Sage Green / Gold)</option>
-                <option value="obsidian" style={{ background: '#111', color: '#fff' }}>Obsidian (Monochrome Slate)</option>
-                <option value="vampire" style={{ background: '#111', color: '#fff' }}>Vampire (Crimson / Violet)</option>
-                <option value="custom" style={{ background: '#111', color: '#fff' }}>Custom Hex Theme...</option>
-              </select>
-
-              {theme === 'custom' && (
-                <div style={{ display: 'flex', gap: 10, width: '100%', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(0,0,0,0.3)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Background Base</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input type="color" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
-                      <input type="text" value={customBg} onChange={e => setCustomColorPref('bg', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Accent Core</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input type="color" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 24, height: 24, padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }} />
-                      <input type="text" value={customAccent} onChange={e => setCustomColorPref('accent', e.target.value)} style={{ width: 70, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontSize: 10, fontFamily: 'var(--mono)', padding: '4px 6px', borderRadius: 4 }} />
-                    </div>
-                  </div>
-                </div>
-              )}
+          <div style={{ borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)' }}>
+            <div style={{ padding: '14px 16px 0' }}>
+              <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>Theme</div>
+              <div style={{ fontSize: 10.5, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>The look of the whole suite, on every device you sign in on.</div>
             </div>
-          } />
+            <ThemePicker signedIn={!!user} />
+          </div>
           <Row label="Taskbar Scale" hint={`Adjust taskbar sizing. Current: ${taskbarScale.toFixed(2)}x`} control={
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input
@@ -388,7 +331,7 @@ export default function SettingsPage() {
             <button style={{ ...ghostBtn, display: 'flex', alignItems: 'center', gap: 6 }} onClick={signOut}><LogOut size={12} /> SIGN OUT</button>
           } />
           <Row label="Sign out everywhere" hint="End every active session on all devices." control={
-            <button style={{ ...ghostBtn, color: '#ff5c5c', borderColor: 'rgba(255,92,92,0.3)' }} onClick={signOutEverywhere} disabled={busy === 'global'}>
+            <button style={{ ...ghostBtn, color: 'var(--danger)', borderColor: 'color-mix(in srgb, var(--danger) 35%, transparent)' }} onClick={signOutEverywhere} disabled={busy === 'global'}>
               {busy === 'global' ? '…' : 'SIGN OUT ALL'}
             </button>
           } />

@@ -70,7 +70,7 @@ export default function ShortcutsOverlay() {
             initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={e => e.stopPropagation()}
-            style={{ width: 'min(94vw, 520px)', maxHeight: '84vh', overflowY: 'auto', background: 'rgba(5, 10, 18, 0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', padding: 24 }}
+            style={{ width: 'min(94vw, 520px)', maxHeight: '84vh', overflowY: 'auto', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', padding: 24 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--accent)' }}>
@@ -87,8 +87,8 @@ export default function ShortcutsOverlay() {
                   <div style={{ display: 'grid', gap: 4 }}>
                     {g.items.map(([keys, desc]) => (
                       <div key={desc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '6px 0' }}>
-                        <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.75)' }}>{desc}</span>
-                        <kbd style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 5, padding: '3px 8px', whiteSpace: 'nowrap' }}>{keys}</kbd>
+                        <span style={{ fontSize: 12.5, color: 'rgba(var(--ink-rgb), 0.75)' }}>{desc}</span>
+                        <kbd style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg)', background: 'rgba(var(--ink-rgb), 0.06)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 5, padding: '3px 8px', whiteSpace: 'nowrap' }}>{keys}</kbd>
                       </div>
                     ))}
                   </div>
@@ -96,8 +96,8 @@ export default function ShortcutsOverlay() {
               ))}
             </div>
 
-            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
-              Press <kbd style={{ fontSize: 9, border: '1px solid rgba(255,255,255,0.15)', borderRadius: 3, padding: '1px 5px' }}>?</kbd> anytime to reopen
+            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+              Press <kbd style={{ fontSize: 9, border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 3, padding: '1px 5px' }}>?</kbd> anytime to reopen
             </div>
           </motion.div>
         </motion.div>

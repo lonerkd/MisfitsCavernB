@@ -44,9 +44,9 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
       .logline{font-size:16px;color:#444;max-width:640px}h2{font-size:11px;letter-spacing:3px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:28px 0 12px}
       .chip{display:inline-block;font-size:12px;padding:4px 10px;background:#eef;border:1px solid #ccd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
       <div class="slide"><h1>${esc(project.title).toUpperCase()}</h1><div class="logline">${esc(project.description || '')}</div></div>
-      <div class="slide"><h2>THE VISUAL WORLD</h2>${imgs || '<div style="color:#999">No concept references yet.</div>'}</div>
-      <div class="slide"><h2>THE CHARACTERS</h2>${characters.length ? characters.map(c => `<span class="chip">${esc(c)}</span>`).join('') : '<div style="color:#999">No characters yet.</div>'}</div>
-      <div class="slide"><h2>STORY ENGINE</h2>${beats.length ? beats.slice(0, 6).map((b) => `<div>• ${esc(b.title)}</div>`).join('') : '<div style="color:#999">No story beats yet.</div>'}</div>
+      <div class="slide"><h2>THE VISUAL WORLD</h2>${imgs || '<div style="color:var(--fg-dim)">No concept references yet.</div>'}</div>
+      <div class="slide"><h2>THE CHARACTERS</h2>${characters.length ? characters.map(c => `<span class="chip">${esc(c)}</span>`).join('') : '<div style="color:var(--fg-dim)">No characters yet.</div>'}</div>
+      <div class="slide"><h2>STORY ENGINE</h2>${beats.length ? beats.slice(0, 6).map((b) => `<div>• ${esc(b.title)}</div>`).join('') : '<div style="color:var(--fg-dim)">No story beats yet.</div>'}</div>
       <script>window.onload=()=>window.print()</script></body></html>`);
     w.document.close();
   };
@@ -90,15 +90,15 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="link-btn" onClick={printDeck}>⎙ Export PDF</button>
-          <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--bg)' }} onClick={() => { setIdx(0); setPresent(true); }}>Enter Presentation View</button>
+          <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }} onClick={() => { setIdx(0); setPresent(true); }}>Enter Presentation View</button>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
         {slides.map((s, i) => (
-          <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+          <div key={i} style={{ background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 12, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} /></>)}
+            {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'var(--sunken)' }} /></>)}
             <div style={{ position: 'relative', zIndex: 1 }}>
               <SectionLabel text={`Slide 0${i + 1}`} />
               {s.render(false)}
@@ -109,14 +109,14 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
 
       <div style={{ marginTop: 40, padding: 24, background: 'rgba(232, 67, 26,0.05)', border: '1px solid rgba(232, 67, 26,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
         <Info size={20} color="var(--accent)" />
-        <div style={{ fontSize: 12, color: '#ccc' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, the Library, the Character Bible and story beats — update them and this updates.</div>
+        <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}><span style={{ fontWeight: 700, color: 'var(--accent)' }}>Live deck:</span> built from your logline, the Library, the Character Bible and story beats — update them and this updates.</div>
       </div>
 
       <AnimatePresence>
         {present && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
-            <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
+            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
+            <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {slides[idx].bg && (<><img src={slides[idx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
               <div style={{ position: 'relative', zIndex: 1 }}>{slides[idx].render(true)}</div>

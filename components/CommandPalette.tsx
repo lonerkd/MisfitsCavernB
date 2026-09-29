@@ -236,10 +236,10 @@ export default function CommandPalette() {
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={e => e.stopPropagation()}
             role="dialog" aria-modal="true" aria-label="Search the suite"
-            style={{ width: 'min(92vw, 560px)', background: 'rgba(5, 10, 18, 0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
+            style={{ width: 'min(92vw, 560px)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <Search size={16} color="rgba(255,255,255,0.4)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+              <Search size={16} color="rgba(var(--ink-rgb), 0.4)" />
               <input
                 ref={inputRef}
                 value={query}
@@ -249,7 +249,7 @@ export default function CommandPalette() {
                 aria-label="Search the suite"
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--mono)' }}
               />
-              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
+              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
             </div>
 
             <div ref={listRef} style={{ maxHeight: '52vh', overflowY: 'auto', padding: 8 }}>
@@ -271,7 +271,7 @@ export default function CommandPalette() {
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8,
                           background: active ? 'rgba(232, 67, 26,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
-                          color: active ? 'var(--fg)' : 'rgba(255,255,255,0.75)', transition: 'background 0.12s',
+                          color: active ? 'var(--fg)' : 'rgba(var(--ink-rgb), 0.75)', transition: 'background 0.12s',
                         }}
                       >
                         <span style={{ color: active ? 'var(--accent)' : 'var(--fg-dim)', display: 'flex' }}>{c.icon}</span>
@@ -280,7 +280,7 @@ export default function CommandPalette() {
                           {c.detail && <span style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.detail}</span>}
                         </span>
                         {c.hint && <span style={{ fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
-                        {active && <CornerDownLeft size={13} color="rgba(255,255,255,0.4)" />}
+                        {active && <CornerDownLeft size={13} color="rgba(var(--ink-rgb), 0.4)" />}
                       </button>
                     );
                   })}

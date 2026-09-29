@@ -48,9 +48,9 @@ export default function AdminDashboard() {
           left: 0,
           width: '100%',
           height: 60,
-          background: 'rgba(8,8,8,0.95)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
         </header>
 
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
-          <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
               style={{
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
+          <div style={{ padding: 24, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8 }}>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, marginBottom: 16 }}>
               QUICK ACTIONS
             </h2>
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
                 style={{
                   padding: '12px 24px',
                   background: 'var(--accent)',
-                  color: 'var(--bg)',
+                  color: 'var(--on-accent)',
                   border: 'none',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
                   padding: '12px 24px',
                   background: 'transparent',
                   color: 'var(--fg)',
-                  border: '1px solid rgba(255,255,255,0.2)',
+                  border: '1px solid rgba(var(--ink-rgb), 0.2)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 10,

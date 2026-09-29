@@ -32,7 +32,7 @@
   padding: 6px 6px; border-radius: 7px; border: 1px solid transparent; background: transparent; cursor: pointer; text-align: left;
   font: inherit; color: var(--fg);
 }
-.row:hover { background: rgba(224, 221, 174, 0.04); }
+.row:hover { background: rgba(var(--fg-rgb), 0.04); }
 .row:focus-visible { outline: 2px solid var(--studio); outline-offset: 1px; }
 .rowOn { border-color: color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 9%, transparent); }
 .rowName { font-family: var(--mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -53,7 +53,7 @@
 .box { --c: #888; border-radius: 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); padding: 8px 10px; }
 .boxLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--c); margin-bottom: 4px; }
 .boxItems { display: flex; flex-wrap: wrap; gap: 4px; }
-.boxItem { font-family: var(--mono); font-size: 10.5px; color: var(--fg); background: rgba(224, 221, 174, 0.05); border: 1px solid transparent; border-radius: 5px; padding: 2px 7px; cursor: pointer; }
+.boxItem { font-family: var(--mono); font-size: 10.5px; color: var(--fg); background: rgba(var(--fg-rgb), 0.05); border: 1px solid transparent; border-radius: 5px; padding: 2px 7px; cursor: pointer; }
 .boxItem:hover { border-color: var(--c); }
 .boxItem:focus-visible { outline: 2px solid var(--c); outline-offset: 1px; }
 .empty { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); }

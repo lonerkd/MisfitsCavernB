@@ -60,7 +60,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <motion.label
           htmlFor={textareaId}
           className={`absolute left-4 top-4 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${
-            isActive ? 'text-[#ff7a4d]' : 'text-[var(--fg-muted)]'
+            isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
           animate={{
@@ -82,12 +82,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           onChange={handleChange}
           maxLength={maxLength}
           className={`
-            w-full bg-[rgba(0,0,0,0.3)]
-            border ${error || isOverLimit ? 'border-red-500/50' : isFocused ? 'border-[var(--accent)]' : 'border-[rgba(255,255,255,0.08)]'}
+            w-full bg-[var(--sunken)]
+            border ${error || isOverLimit ? 'border-red-500/50' : isFocused ? 'border-[var(--accent)]' : 'border-[rgba(var(--ink-rgb),0.08)]'}
             rounded-lg px-4 py-4 min-h-[120px] resize-none
             text-[var(--fg)] font-serif text-sm leading-relaxed
             outline-none transition-all duration-300
-            hover:border-[rgba(255,255,255,0.2)]
+            hover:border-[rgba(var(--ink-rgb),0.2)]
             ${isFocused && !error && !isOverLimit ? 'shadow-[0_0_0_3px_rgba(232,67,26,0.05)]' : ''}
             ${(error || isOverLimit) ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}
           `}

@@ -259,8 +259,8 @@ export default function PitchBoardPage() {
       <h1 className="sr-only">Pitch board</h1>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50, height: 60,
-        background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        background: 'var(--surface)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px',
       }}>
         <Link href={`/projects/${projectId}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg)', textDecoration: 'none' }}>
@@ -284,16 +284,16 @@ export default function PitchBoardPage() {
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) 1fr', gap: 0, alignItems: 'stretch', minHeight: 'calc(100vh - 60px)' }}>
-        <aside style={{ borderRight: '1px solid rgba(255,255,255,0.05)', padding: 16, overflowY: 'auto' }}>
+        <aside style={{ borderRight: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 16, overflowY: 'auto' }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 12 }}>ASSET LIBRARY</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
             {TAB_META.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 7, cursor: 'pointer',
                 fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, whiteSpace: 'nowrap',
-                background: tab === t.id ? accent : 'rgba(255,255,255,0.04)',
+                background: tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.04)',
                 color: tab === t.id ? textOn(accent) : 'var(--fg-muted)',
-                border: `1px solid ${tab === t.id ? accent : 'rgba(255,255,255,0.06)'}`,
+                border: `1px solid ${tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.06)'}`,
               }}>
                 {t.icon}{t.label}
               </button>
@@ -460,8 +460,8 @@ function BlockCard({ block, accent, isDragging, isDropTarget, onDragStart, onDra
       onDrop={e => { e.preventDefault(); onDrop(); }}
       style={{
         display: 'flex', alignItems: 'flex-start', gap: 10, padding: 14, borderRadius: 12,
-        background: 'rgba(12,12,12,0.85)',
-        border: `1px solid ${isDropTarget ? accent : 'rgba(255,255,255,0.07)'}`,
+        background: 'var(--glass)',
+        border: `1px solid ${isDropTarget ? accent : 'rgba(var(--ink-rgb), 0.07)'}`,
         borderLeft: `3px solid ${accent}`,
         opacity: isDragging ? 0.4 : 1,
         transition: 'border-color 0.15s, opacity 0.15s',
@@ -582,11 +582,11 @@ function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: R
       title="Drag onto the board, or click to add"
       style={{
         display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px', borderRadius: 8, cursor: 'grab',
-        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.06)',
         transition: 'border-color 0.15s, background 0.15s',
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = `${accent}66`; e.currentTarget.style.background = `${accent}0f`; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.06)'; e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.03)'; }}
     >
       {children}
       <Plus size={13} style={{ marginLeft: 'auto', flexShrink: 0, color: accent }} />
@@ -597,16 +597,16 @@ function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: R
 const chipLabel: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 };
 const previewTitle: React.CSSProperties = { fontFamily: 'var(--sans, var(--serif))', fontSize: 12.5, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 const previewBody: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', marginTop: 3 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 6 };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 6 };
 const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', padding: 3, opacity: 0.8, minWidth: 24, minHeight: 24, justifyContent: 'center' };
 
 function btnStyle(accent: string, filled: boolean): React.CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
     fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 1,
-    background: filled ? accent : 'rgba(255,255,255,0.05)',
+    background: filled ? accent : 'rgba(var(--ink-rgb), 0.05)',
     color: filled ? textOn(accent) : 'var(--fg)',
-    border: `1px solid ${filled ? accent : 'rgba(255,255,255,0.1)'}`,
+    border: `1px solid ${filled ? accent : 'rgba(var(--ink-rgb), 0.1)'}`,
   };
 }
 function addAllStyle(accent: string): React.CSSProperties {

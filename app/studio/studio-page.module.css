@@ -14,7 +14,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: rgba(4, 7, 16, 0.92);
+  background: var(--surface);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
 }
@@ -35,14 +35,14 @@
   font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #818cf8;
+  color: var(--violet);
 }
 .projectPicker select {
   max-width: 280px;
   height: 30px;
   padding: 0 28px 0 12px;
   border-radius: var(--r-full);
-  background: rgba(224, 221, 174, 0.04);
+  background: rgba(var(--fg-rgb), 0.04);
   border: 1px solid var(--border-2);
   color: var(--fg);
   font-size: 12px;
@@ -52,7 +52,7 @@
   text-overflow: ellipsis;
 }
 .projectPicker select:focus-visible { border-color: var(--studio-color, #6366f1); }
-.projectPicker option { background: #0b0f1a; }
+.projectPicker option { background: var(--bg-2); color: var(--fg); }
 
 .tabs {
   position: sticky;
@@ -61,7 +61,7 @@
   display: flex;
   justify-content: center;
   padding: 8px 16px;
-  background: rgba(4, 7, 16, 0.88);
+  background: var(--glass);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
 }
@@ -70,7 +70,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: var(--r-full);
-  background: rgba(224, 221, 174, 0.03);
+  background: rgba(var(--fg-rgb), 0.03);
   border: 1px solid var(--border);
   overflow-x: auto;
   scrollbar-width: none;

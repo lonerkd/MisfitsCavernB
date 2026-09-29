@@ -33,13 +33,13 @@ const statusBadgeStyle = (status: string): React.CSSProperties => {
   };
   switch (status) {
     case 'open':
-      return { ...base, color: '#22c55e', borderColor: '#22c55e', background: 'rgba(34,197,94,0.08)' };
+      return { ...base, color: 'var(--ok)', borderColor: '#22c55e', background: 'rgba(34,197,94,0.08)' };
     case 'in-progress':
-      return { ...base, color: '#facc15', borderColor: '#facc15', background: 'rgba(250,204,21,0.08)' };
+      return { ...base, color: 'var(--warn)', borderColor: '#facc15', background: 'rgba(250,204,21,0.08)' };
     case 'closed':
-      return { ...base, color: 'var(--fg-dim)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
+      return { ...base, color: 'var(--fg-dim)', borderColor: 'rgba(var(--fg-rgb), 0.2)', background: 'transparent' };
     default:
-      return { ...base, color: 'var(--fg-dim)', borderColor: 'rgba(224, 221, 174,0.2)', background: 'transparent' };
+      return { ...base, color: 'var(--fg-dim)', borderColor: 'rgba(var(--fg-rgb), 0.2)', background: 'transparent' };
   }
 };
 
@@ -48,9 +48,9 @@ const appStatusStyle = (status: 'pending' | 'accepted' | 'rejected'): React.CSSP
     case 'accepted':
       return { border: '1px solid #22c55e' };
     case 'rejected':
-      return { border: '1px solid rgba(255,255,255,0.06)', opacity: 0.45 };
+      return { border: '1px solid rgba(var(--ink-rgb), 0.06)', opacity: 0.45 };
     default:
-      return { border: '1px solid rgba(255,255,255,0.06)' };
+      return { border: '1px solid rgba(var(--ink-rgb), 0.06)' };
   }
 };
 
@@ -206,8 +206,8 @@ export default function JobDetailPage() {
 
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
-        background: 'rgba(6,6,6,0.92)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        background: 'var(--surface)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', zIndex: 100, boxSizing: 'border-box',
@@ -219,14 +219,14 @@ export default function JobDetailPage() {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
           <Link href="/jobs" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.6')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
             >Jobs</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
           <div style={{
             fontFamily: 'var(--display)', fontSize: '0.85rem', letterSpacing: 2,
             color: 'var(--fg-dim)',
@@ -290,7 +290,7 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginBottom: 40 }} />
+        <div style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', marginBottom: 40 }} />
 
         {job.description && (
           <div style={{ marginBottom: 48 }}>
@@ -303,7 +303,7 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginBottom: 40 }} />
+        <div style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', marginBottom: 40 }} />
 
         {/* ─── CREATOR VIEW: Applications Panel ─── */}
         {isCreator && (
@@ -337,7 +337,7 @@ export default function JobDetailPage() {
             ) : applications.length === 0 ? (
               <div style={{
                 padding: 40, textAlign: 'center',
-                border: '1px dashed rgba(255,255,255,0.08)',
+                border: '1px dashed rgba(var(--ink-rgb), 0.08)',
                 fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--fg-dim)' }}>
                 NO APPLICATIONS YET
               </div>
@@ -346,7 +346,7 @@ export default function JobDetailPage() {
                 {applications.map(app => (
                   <div key={app.id} style={{
                     padding: 24,
-                    background: 'rgba(10,10,10,0.8)',
+                    background: 'var(--glass)',
                     borderRadius: 14,
                     ...appStatusStyle(app.status),
                     transition: 'border-color 0.2s',
@@ -389,7 +389,7 @@ export default function JobDetailPage() {
                           </span>
                         )}
                         {app.status === 'accepted' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: '#22c55e' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--ok)' }}>
                             <CheckCircle size={10} /> ACCEPTED
                           </span>
                         )}
@@ -408,7 +408,7 @@ export default function JobDetailPage() {
                     {app.cover_note && (
                       <div style={{
                         marginTop: 12, padding: '12px 16px',
-                        background: 'rgba(255,255,255,0.03)',
+                        background: 'rgba(var(--ink-rgb), 0.03)',
                         borderLeft: '2px solid rgba(232, 67, 26,0.3)',
                       }}>
                         <p style={{
@@ -428,7 +428,7 @@ export default function JobDetailPage() {
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e',
-                            color: '#22c55e', fontFamily: 'var(--mono)', fontSize: 9,
+                            color: 'var(--ok)', fontFamily: 'var(--mono)', fontSize: 9,
                             letterSpacing: 2, cursor: 'pointer', transition: 'background 0.15s',
                           }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(34,197,94,0.2)')}
@@ -440,7 +440,7 @@ export default function JobDetailPage() {
                           onClick={() => handleApplicationStatus(app.id, 'rejected')}
                           style={{
                             padding: '7px 18px',
-                            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.15)',
+                            background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
                             color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9,
                             letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                           }}
@@ -449,8 +449,8 @@ export default function JobDetailPage() {
                             e.currentTarget.style.color = 'rgba(232, 67, 26,0.8)';
                           }}
                           onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                            e.currentTarget.style.color = 'rgba(224, 221, 174,0.5)';
+                            e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.15)';
+                            e.currentTarget.style.color = 'rgba(var(--fg-rgb), 0.5)';
                           }}
                         >
                           REJECT
@@ -464,17 +464,17 @@ export default function JobDetailPage() {
                         style={{
                           marginTop: 16,
                           padding: '6px 14px',
-                          background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.1)',
                           color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9,
                           letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                         }}
                         onMouseEnter={e => {
-                          e.currentTarget.style.color = 'rgba(224, 221, 174,0.7)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+                          e.currentTarget.style.color = 'rgba(var(--fg-rgb), 0.7)';
+                          e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.25)';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.color = 'rgba(224, 221, 174,0.3)';
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                          e.currentTarget.style.color = 'rgba(var(--fg-rgb), 0.3)';
+                          e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.1)';
                         }}
                       >
                         {app.status === 'accepted' ? 'MARK REJECTED' : 'MARK ACCEPTED'}
@@ -496,7 +496,7 @@ export default function JobDetailPage() {
 
             {!user && (
               <div style={{
-                padding: 32, border: '1px solid rgba(255,255,255,0.08)',
+                padding: 32, border: '1px solid rgba(var(--ink-rgb), 0.08)',
                 textAlign: 'center',
               }}>
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 11, margin: '0 0 16px', letterSpacing: 1, color: 'var(--fg-dim)' }}>
@@ -504,7 +504,7 @@ export default function JobDetailPage() {
                 </p>
                 <Link href="/auth" style={{
                   display: 'inline-block', padding: '10px 28px',
-                  background: 'var(--accent)', color: 'var(--bg)',
+                  background: 'var(--accent)', color: 'var(--on-accent)',
                   fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none',
                 }}>
                   SIGN IN
@@ -518,9 +518,9 @@ export default function JobDetailPage() {
                 background: 'rgba(34,197,94,0.05)',
                 display: 'flex', alignItems: 'center', gap: 14,
               }}>
-                <CheckCircle size={20} style={{ color: '#22c55e', flexShrink: 0 }} />
+                <CheckCircle size={20} style={{ color: 'var(--ok)', flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: '#22c55e', marginBottom: 4 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--ok)', marginBottom: 4 }}>
                     APPLICATION SUBMITTED
                   </div>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
@@ -552,8 +552,8 @@ export default function JobDetailPage() {
                   style={{
                     alignSelf: 'flex-start',
                     padding: '12px 36px',
-                    background: applying ? 'rgba(232, 67, 26,0.3)' : 'var(--accent)',
-                    color: 'var(--bg)', border: 'none',
+                    background: applying ? 'var(--accent-dim)' : 'var(--accent)',
+                    color: applying ? 'var(--fg)' : 'var(--on-accent)', border: 'none',
                     fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
                     cursor: applying ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s, opacity 0.15s',

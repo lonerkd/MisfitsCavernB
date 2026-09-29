@@ -146,7 +146,7 @@ export function PromosTab() {
             {byPlatform.map(([name, v]) => (
               <div key={name} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 160px) minmax(0, 1fr) auto', gap: 10, alignItems: 'center' }}>
                 <span style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.05)' }} aria-hidden>
+                <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'rgba(var(--ink-rgb), 0.05)' }} aria-hidden>
                   <div style={{ position: 'absolute', inset: 0, width: `${(v.budget / maxBudget) * 100}%`, borderRadius: 4, background: 'rgba(129,140,248,0.35)' }} />
                   <div style={{ position: 'absolute', inset: 0, width: `${(v.spend / maxBudget) * 100}%`, borderRadius: 4, background: v.spend > v.budget ? '#ff6b6b' : '#818cf8' }} />
                 </div>

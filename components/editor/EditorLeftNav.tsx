@@ -42,7 +42,7 @@ export function EditorLeftNav({
 }: EditorLeftNavProps) {
   return (
     <>
-              <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
                 <button onClick={async () => {
                   const s = await createNewScript('Untitled Script');
                   if (s) {
@@ -55,13 +55,13 @@ export function EditorLeftNav({
                   }
                 }} style={{
                   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
                   padding: '8px 12px', borderRadius: 9, color: 'var(--fg-muted)',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase',
                   cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.04)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
                 >
                   <Plus size={12} /> New Script
                 </button>
@@ -73,14 +73,14 @@ export function EditorLeftNav({
                   ].map(({ icon: Icon, label, onClick }) => (
                     <button key={label} onClick={onClick} style={{
                       flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      background: 'transparent', border: '1px solid rgba(255,255,255,0.06)',
+                      background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.06)',
                       padding: '6px', borderRadius: 7,
                       color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 8.5,
                       letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.14)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.06)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >
                       <Icon size={11} /> {label}
                     </button>
@@ -105,14 +105,14 @@ export function EditorLeftNav({
                     }} style={{
                       fontSize: 8, padding: '4px 9px',
                       background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(var(--ink-rgb), 0.07)',
                       borderRadius: 6, color: 'var(--fg-dim)',
                       cursor: 'pointer', textTransform: 'capitalize',
                       fontFamily: 'var(--mono)', letterSpacing: 1,
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.07)'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                     >{key}</button>
                   ))}
                 </div>
@@ -155,11 +155,11 @@ export function EditorLeftNav({
                             display: 'flex', alignItems: 'center', gap: 6,
                             margin: '6px 0 4px', paddingLeft: 4,
                           }}>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                            <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.08)' }} />
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 7, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', flexShrink: 0 }}>
                               Act {isAct2Start ? 'II' : 'III'}
                             </span>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                            <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.08)' }} />
                           </div>
                         )}
 
@@ -174,16 +174,16 @@ export function EditorLeftNav({
                           style={{
                             width: '100%', textAlign: 'left', padding: '10px',
                             marginBottom: 4,
-                            background: isActive ? 'rgba(255,255,255,0.04)' : dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? 'rgba(255,255,255,0.05)' : 'transparent',
+                            background: isActive ? 'rgba(var(--ink-rgb), 0.04)' : dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? 'rgba(var(--ink-rgb), 0.05)' : 'transparent',
                             border: '1px solid',
-                            borderColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                            borderColor: isActive ? 'rgba(var(--ink-rgb), 0.1)' : 'transparent',
                             borderRadius: 10, cursor: 'grab',
                             borderLeft: `3px solid ${isActive ? color : dropSceneIdx === i && dragSceneIdx !== i ? color : 'transparent'}`,
                             boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
                             opacity: dragSceneIdx === i ? 0.4 : 1,
                             transition: 'border-color 0.25s, background 0.18s, opacity 0.2s, box-shadow 0.2s',
                           }}
-                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'; }}
                           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
@@ -193,7 +193,7 @@ export function EditorLeftNav({
                             }}>{typeLabel}</span>
                             <span style={{
                               fontFamily: 'var(--mono)', fontSize: 10.5,
-                              color: isActive ? 'var(--fg)' : 'rgba(224, 221, 174,0.7)',
+                              color: isActive ? 'var(--fg)' : 'rgba(var(--fg-rgb), 0.7)',
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                               textTransform: 'uppercase', flex: 1, letterSpacing: 0.5
                             }}>
@@ -204,7 +204,7 @@ export function EditorLeftNav({
                             </span>
                           </div>
 
-                          <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 1.5, marginBottom: 8, overflow: 'hidden' }}>
+                          <div style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.06)', borderRadius: 1.5, marginBottom: 8, overflow: 'hidden' }}>
                             <div style={{
                               height: '100%', width: `${barPct}%`,
                               background: isActive ? color : `${color}88`,
@@ -218,11 +218,11 @@ export function EditorLeftNav({
                               {chars.slice(0, 4).map(c => (
                                 <span key={c} style={{
                                   fontFamily: 'var(--mono)', fontSize: 8,
-                                  color: isActive ? 'var(--fg)' : 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)',
+                                  color: isActive ? 'var(--fg)' : 'var(--fg-dim)', background: 'rgba(var(--ink-rgb), 0.05)',
                                   padding: '2px 6px', borderRadius: 4,
                                   overflow: 'hidden', maxWidth: 65,
                                   textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                  border: '1px solid rgba(255,255,255,0.03)'
+                                  border: '1px solid rgba(var(--ink-rgb), 0.03)'
                                 }}>
                                   {c.split(' ')[0]}
                                 </span>

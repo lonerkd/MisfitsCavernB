@@ -78,9 +78,9 @@ export default function AdminAnalyticsPage() {
           left: 0,
           width: '100%',
           height: 60,
-          background: 'rgba(8,8,8,0.95)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
@@ -101,8 +101,8 @@ export default function AdminAnalyticsPage() {
         </header>
 
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
-          {loadError && <div role="alert" style={{ color: '#ff6b6b', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {loadError}</div>}
-          <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
+          {loadError && <div role="alert" style={{ color: 'var(--danger)', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {loadError}</div>}
+          <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
               style={{
@@ -158,9 +158,9 @@ export default function AdminAnalyticsPage() {
                 onClick={() => setTimeRange(range)}
                 style={{
                   padding: '8px 16px',
-                  background: timeRange === range ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                  background: timeRange === range ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.05)',
                   color: timeRange === range ? 'var(--bg)' : 'var(--fg)',
-                  border: timeRange === range ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  border: timeRange === range ? 'none' : '1px solid rgba(var(--ink-rgb), 0.1)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 10,
@@ -203,7 +203,7 @@ export default function AdminAnalyticsPage() {
             ))}
           </div>
 
-          <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
+          <div style={{ padding: 24, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8 }}>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, marginBottom: 16 }}>
               DETAILED METRICS
             </h2>

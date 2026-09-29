@@ -79,7 +79,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{
+      <div data-theme="default" style={{
         minHeight: '100vh',
         background: 'var(--bg)',
         display: 'flex',
@@ -103,7 +103,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
   // ── Not Found ─────────────────────────────────────────────────────────────────
   if (notFound || !project) {
     return (
-      <div style={{
+      <div data-theme="default" style={{
         minHeight: '100vh',
         background: 'var(--bg)',
         color: 'var(--fg)',
@@ -134,7 +134,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
           style={{
             marginTop: 8,
             padding: '10px 28px',
-            border: '1px solid rgba(255,255,255,0.15)',
+            border: '1px solid rgba(var(--ink-rgb), 0.15)',
             color: 'var(--fg)',
             fontFamily: 'var(--mono)',
             fontSize: 10,
@@ -147,7 +147,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.15)';
+            (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(var(--ink-rgb), 0.15)';
             (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg)';
           }}
         >
@@ -170,14 +170,14 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
 
   // ── Main Page ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+    <div data-theme="default" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
       <header style={{
         position: 'relative',
         width: '100%',
         minHeight: 'clamp(260px, 38vw, 480px)',
         background: 'linear-gradient(160deg, #111 0%, #080808 60%, rgba(232, 67, 26,0.06) 100%)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-end',
@@ -187,7 +187,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
         <div style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(var(--ink-rgb), 0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--ink-rgb), 0.015) 1px, transparent 1px)',
           backgroundSize: '48px 48px',
           pointerEvents: 'none',
         }} />
@@ -388,14 +388,14 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
           margin: '0 auto',
           padding: '0 clamp(20px, 5vw, 64px) 80px',
         }}>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 32 }}>
+          <div style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.05)', paddingTop: 32 }}>
             <EmptyState icon={<Film size={28} />} title="No media yet" />
           </div>
         </div>
       )}
 
       <footer style={{
-        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
         padding: '28px 24px',
         textAlign: 'center',
       }}>
@@ -434,8 +434,8 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                 position: 'fixed',
                 top: 20,
                 right: 24,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(var(--ink-rgb), 0.06)',
+                border: '1px solid rgba(var(--ink-rgb), 0.1)',
                 color: 'var(--fg)',
                 cursor: 'pointer',
                 width: 40,
@@ -448,7 +448,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
                 zIndex: 9001,
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(232, 67, 26,0.18)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.06)')}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="1" y1="1" x2="13" y2="13" />
@@ -502,7 +502,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
   };
   const wrap: React.CSSProperties = {
     padding: 'clamp(16px, 3vw, 24px)', borderRadius: 12,
-    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+    background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)',
   };
   const heading: React.CSSProperties = { fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 1, margin: 0 };
   const body: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.7, color: 'var(--fg-muted)', marginTop: 8 };
@@ -635,7 +635,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
       style={{
         aspectRatio: '16/9',
         background: '#111',
-        border: `1px solid ${hovered ? 'var(--accent)' : 'rgba(255,255,255,0.07)'}`,
+        border: `1px solid ${hovered ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.07)'}`,
         boxShadow: hovered ? '0 12px 28px rgba(0,0,0,0.5), 0 0 16px rgba(232, 67, 26,0.25)' : 'none',
         cursor: 'pointer',
         overflow: 'hidden',
@@ -680,7 +680,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
           width: 52,
           height: 52,
           borderRadius: '50%',
-          background: hovered ? 'var(--accent)' : 'rgba(255,255,255,0.18)',
+          background: hovered ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.18)',
           border: `2px solid ${hovered ? 'var(--accent)' : 'rgba(255,255,255,0.5)'}`,
           display: 'flex',
           alignItems: 'center',
@@ -738,7 +738,7 @@ function FooterLink() {
         style={{
           color: 'var(--fg)',
           textDecoration: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.15)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.15)',
           paddingBottom: 1,
           transition: 'color 0.2s, border-color 0.2s',
         }}
@@ -748,7 +748,7 @@ function FooterLink() {
         }}
         onMouseLeave={e => {
           (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg)';
-          (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.15)';
+          (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(var(--ink-rgb), 0.15)';
         }}
       >
         MISFITS CAVERN
@@ -759,7 +759,7 @@ function FooterLink() {
         style={{
           color: 'var(--fg)',
           textDecoration: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.15)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.15)',
           paddingBottom: 1,
           transition: 'color 0.2s, border-color 0.2s',
         }}
@@ -769,7 +769,7 @@ function FooterLink() {
         }}
         onMouseLeave={e => {
           (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg)';
-          (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.15)';
+          (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(var(--ink-rgb), 0.15)';
         }}
       >
         CREATE YOUR OWN

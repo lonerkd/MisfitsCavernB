@@ -87,8 +87,8 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 520,
-          background: 'rgba(10,10,10,0.98)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--surface)',
+          border: '1px solid rgba(var(--ink-rgb), 0.08)',
           borderRadius: 20,
           padding: 32,
           boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
@@ -96,7 +96,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase', marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', marginBottom: 6 }}>
               Crew Marketplace
             </div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
@@ -145,7 +145,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
-              <DollarSign size={12} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+              <DollarSign size={12} color="rgba(var(--fg-rgb), 0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="number"
                 value={form.rate}
@@ -153,8 +153,8 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
                 placeholder="0.00"
                 style={{
                   width: '100%', padding: '12px 14px 12px 32px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(var(--ink-rgb), 0.04)',
+                  border: '1px solid rgba(var(--ink-rgb), 0.08)',
                   borderRadius: 10, color: 'var(--fg)',
                   fontFamily: 'var(--mono)', fontSize: 12,
                   outline: 'none', boxSizing: 'border-box',
@@ -168,8 +168,8 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             disabled={!form.title || submitting}
             style={{
               marginTop: 6, padding: '14px',
-              background: form.title ? '#8b5cf6' : 'rgba(255,255,255,0.05)',
-              color: form.title ? '#fff' : 'var(--fg-dim)',
+              background: form.title ? '#8b5cf6' : 'rgba(var(--ink-rgb), 0.05)',
+              color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 12,
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
@@ -209,8 +209,8 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       style={{
-        background: 'rgba(10,10,10,0.8)',
-        border: `1px solid ${hovered ? color + '33' : 'rgba(255,255,255,0.06)'}`,
+        background: 'var(--glass)',
+        border: `1px solid ${hovered ? color + '33' : 'rgba(var(--ink-rgb), 0.06)'}`,
         borderRadius: 16, padding: '22px 24px',
         position: 'relative', overflow: 'hidden',
         boxShadow: hovered ? `0 16px 48px rgba(0,0,0,0.6), 0 0 28px ${color}10` : '0 2px 8px rgba(0,0,0,0.3)',
@@ -277,7 +277,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
 
         {applied ? (
           <div role="status" style={{
-            flexShrink: 0, padding: '10px 16px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.12)',
+            flexShrink: 0, padding: '10px 16px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)',
             fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)',
           }}>
             Applied · {applied}
@@ -330,8 +330,8 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
       style={{
-        background: 'rgba(10,10,10,0.8)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--glass)',
+        border: '1px solid rgba(var(--ink-rgb), 0.06)',
         borderRadius: 16, padding: '20px 22px',
       }}
     >
@@ -348,10 +348,10 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             </div>
             <div style={{
               padding: '3px 9px', borderRadius: 9999,
-              background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
+              background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(var(--ink-rgb), 0.04)',
+              border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
               fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
-              color: job.status === 'open' ? '#10b981' : 'var(--fg-dim)',
+              color: job.status === 'open' ? 'var(--ok)' : 'var(--fg-dim)',
               textTransform: 'uppercase',
             }}>
               {job.status}
@@ -375,7 +375,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             style={{
               padding: '7px 14px', borderRadius: 9999,
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(var(--ink-rgb), 0.08)',
               color: 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
               textTransform: 'uppercase', cursor: 'pointer',
@@ -383,11 +383,11 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)';
-              (e.currentTarget as HTMLElement).style.color = '#ef4444';
+              (e.currentTarget as HTMLElement).style.color = 'var(--danger)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
-              (e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.3)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(var(--ink-rgb), 0.08)';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.3)';
             }}
           >
             {closing ? 'Closing…' : 'Close'}
@@ -513,7 +513,7 @@ export default function JobsPage() {
       title: tab === 'mine' ? 'My Jobs' : 'Jobs Board',
       accent: '#8b5cf6',
       fields: [
-        { label: 'Open', value: `${jobs.length}`, color: '#8b5cf6' },
+        { label: 'Open', value: `${jobs.length}`, color: 'var(--jobs-text)' },
         ...(roleFilter ? [{ label: 'Shown', value: `${filtered.length}` }] : []),
         ...(user ? [{ label: 'Mine', value: `${myJobs.length}` }] : []),
       ],
@@ -537,9 +537,9 @@ export default function JobsPage() {
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', zIndex: 200,
-        background: 'rgba(6,6,6,0.92)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -549,16 +549,16 @@ export default function JobsPage() {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#8b5cf6', textTransform: 'uppercase' }}>Jobs</div>
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase' }}>Jobs</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {user && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 2,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(var(--ink-rgb), 0.03)',
+              border: '1px solid rgba(var(--ink-rgb), 0.06)',
               borderRadius: 9999, padding: '3px 4px',
             }}>
               {(['open', 'mine'] as const).map(t => (
@@ -621,10 +621,10 @@ export default function JobsPage() {
       <div style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
 
         <div style={{
-          width: 220, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.04)',
+          width: 220, flexShrink: 0, borderRight: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '32px 20px', position: 'sticky', top: 58,
           height: 'calc(100vh - 58px)', overflowY: 'auto',
-          background: 'rgba(6,6,6,0.6)',
+          background: 'var(--surface-2)',
         }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
@@ -635,7 +635,7 @@ export default function JobsPage() {
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               width: '100%', padding: '8px 10px', borderRadius: 8,
-              background: !roleFilter ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: !roleFilter ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
               color: !roleFilter ? 'var(--fg)' : 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
@@ -650,7 +650,7 @@ export default function JobsPage() {
           {postedCrafts.map(r => {
             const count = roleCounts[r] ?? 0;
             const active = roleFilter === r;
-            const color = readable(craftColor(craftByName, r));
+            const color = craftColor(craftByName, r);
             return (
               <button
                 key={r}
@@ -660,19 +660,19 @@ export default function JobsPage() {
                   width: '100%', padding: '8px 10px', borderRadius: 8,
                   background: active ? `${color}12` : 'transparent',
                   border: 'none', cursor: 'pointer', marginBottom: 2,
-                  color: active ? color : 'var(--fg-dim)',
+                  color: active ? readable(color) : 'var(--fg-dim)',
                   fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
                   textTransform: 'uppercase', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
                 }}
-                onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.7)')}
-                onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.35)')}
+                onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.7)')}
+                onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.35)')}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'var(--fg-dim)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
                   {r}
                 </div>
-                {count > 0 && <span style={{ fontSize: 8, color: active ? color : 'var(--fg-dim)' }}>{count}</span>}
+                {count > 0 && <span style={{ fontSize: 8, color: active ? readable(color) : 'var(--fg-dim)' }}>{count}</span>}
               </button>
             );
           })}
@@ -683,7 +683,7 @@ export default function JobsPage() {
           {tab === 'open' && (
             <>
               <div style={{ position: 'relative', marginBottom: 28 }}>
-                <Search size={13} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                <Search size={13} color="rgba(var(--fg-rgb), 0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
                   value={search}
@@ -691,22 +691,22 @@ export default function JobsPage() {
                   placeholder="Search positions…"
                   style={{
                     width: '100%', padding: '12px 16px 12px 38px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: 'rgba(var(--ink-rgb), 0.03)',
+                    border: '1px solid rgba(var(--ink-rgb), 0.07)',
                     borderRadius: 12, color: 'var(--fg)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                     outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.2s',
                   }}
                   onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.07)')}
                 />
               </div>
 
               {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} style={{ padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, height: 120 }}>
+                    <div key={i} style={{ padding: 24, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, height: 120 }}>
                       <div className="skeleton" style={{ width: 120, height: 14, borderRadius: 4, marginBottom: 16 }} />
                       <div className="skeleton" style={{ width: '40%', height: 10, borderRadius: 4, marginBottom: 8 }} />
                       <div className="skeleton" style={{ width: '30%', height: 10, borderRadius: 4 }} />
@@ -718,7 +718,7 @@ export default function JobsPage() {
                   icon={<Briefcase size={28} />}
                   title="Couldn't load job listings"
                   subtitle={loadError}
-                  action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+                  action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
                 />
               ) : filtered.length === 0 && jobs.length > 0 ? (
                 <EmptyState
@@ -729,7 +729,7 @@ export default function JobsPage() {
                     <button onClick={() => { setSearch(''); setRoleFilter(''); }} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: '#a78bfa', cursor: 'pointer',
+                      color: 'var(--violet)', cursor: 'pointer',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Show every role
@@ -745,7 +745,7 @@ export default function JobsPage() {
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: '#8b5cf6', cursor: 'pointer',
+                      color: 'var(--jobs-text)', cursor: 'pointer',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post the first one
@@ -767,7 +767,7 @@ export default function JobsPage() {
               <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
-              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#060606', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
+              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
             </div>
           )}
 
@@ -781,7 +781,7 @@ export default function JobsPage() {
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: '#8b5cf6', cursor: 'pointer',
+                      color: 'var(--jobs-text)', cursor: 'pointer',
                       fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post your first position
@@ -805,15 +805,15 @@ export default function JobsPage() {
               ) : (
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {myApps.filter((a) => a.jobs).map((a) => (
-                    <li key={a.jobs!.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(10,10,10,0.8)' }}>
+                    <li key={a.jobs!.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(var(--ink-rgb), 0.06)', background: 'var(--glass)' }}>
                       <Link href={`/jobs/${a.jobs!.id}`} style={{ flex: 1, minWidth: 0, color: 'var(--fg)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 11 }}>
                         {a.jobs!.title}
                         <span style={{ color: 'var(--fg-muted)' }}> · {a.jobs!.role}{a.jobs!.projects?.title ? ` · ${a.jobs!.projects.title}` : ''}{a.jobs!.status === 'closed' ? ' · closed' : ''}</span>
                       </Link>
                       <span style={{
                         fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 99,
-                        color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? '#fca5a5' : 'var(--fg-muted)',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
+                        border: '1px solid rgba(var(--ink-rgb), 0.1)',
                       }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>
                     </li>
                   ))}
@@ -841,7 +841,7 @@ export default function JobsPage() {
       </AnimatePresence>
 
       <style>{`
-        input::placeholder, textarea::placeholder { color: rgba(224, 221, 174,0.18); }
+        input::placeholder, textarea::placeholder { color: rgba(var(--fg-rgb), 0.18); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
     </div>

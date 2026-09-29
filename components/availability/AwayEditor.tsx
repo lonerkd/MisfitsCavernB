@@ -11,7 +11,7 @@ import { describeRange, localToday, rangeProblem, useMyUnavailability } from '@/
 
 const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 6, color: 'var(--fg-dim)' };
 const field: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+  width: '100%', padding: '10px 12px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
   color: 'var(--fg)', fontSize: 13, borderRadius: 6, colorScheme: 'dark',
 };
 const btn: React.CSSProperties = {
@@ -57,13 +57,13 @@ export function AwayEditor({ userId }: { userId: string | null }) {
       <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
         Productions you’re on see these dates when they plan shoot days — never your note.
       </p>
-      {error && <p role="alert" style={{ fontSize: 12, color: '#ff6b6b' }}>{error}</p>}
+      {error && <p role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{error}</p>}
       {loaded && current.length > 0 && (
         <ul aria-label="Dates you’re away" style={{ listStyle: 'none', margin: '0 0 12px', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {current.map((r) => {
             const text = describeRange(r.starts_on, r.ends_on);
             return (
-              <li key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6 }}>
+              <li key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 6 }}>
                 <span style={{ fontSize: 13, color: 'var(--fg)' }}>{text}</span>
                 {r.note && <span style={{ fontSize: 11.5, color: 'var(--fg-muted)', flex: 1 }}>{r.note}</span>}
                 <button type="button" onClick={() => drop(r.id, text)} aria-label={`Remove ${text}`}

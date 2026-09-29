@@ -60,8 +60,8 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
     w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Call Sheet Day ${day}</title>
       <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px;line-height:1.5}
       h1{font-size:20px;margin:0 0 2px;letter-spacing:2px}h2{font-size:11px;color:#b45309;letter-spacing:3px;margin:0 0 16px}
-      h3{font-size:10px;letter-spacing:2px;color:#666;border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
-      .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:#999}b{font-size:10px;letter-spacing:1px;color:#666;margin-right:6px}
+      h3{font-size:10px;letter-spacing:2px;color:var(--fg-dim);border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
+      .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:var(--fg-dim)}b{font-size:10px;letter-spacing:1px;color:var(--fg-dim);margin-right:6px}
       table{border-collapse:collapse;width:100%;font-size:12px}td{padding:4px;border-bottom:1px solid #eee}</style></head><body>
       <h1>${esc(project.title).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}${sheet?.shoot_date ? ` · ${esc(new Date(sheet.shoot_date + 'T00:00').toDateString())}` : ''}</h2>
       <div class="row"><div class="col">${line('GENERAL CALL', hhmm(sheet?.general_call))}${line('SHOOTING CALL', hhmm(sheet?.shooting_call))}${line('EST. WRAP', hhmm(sheet?.estimated_wrap))}</div>
@@ -79,7 +79,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   return (
     <div className={s.panel}>
       <div className={s.panelTitle}><FileText size={14} /> Call sheets <span className={s.hint}>· {days.length} shoot {days.length === 1 ? 'day' : 'days'}</span></div>
-      {(sheets.status === 'error' || calls.status === 'error') && <div className={s.hint} style={{ color: '#ff6b6b' }}>{sheets.error || calls.error}</div>}
+      {(sheets.status === 'error' || calls.status === 'error') && <div className={s.hint} style={{ color: 'var(--danger)' }}>{sheets.error || calls.error}</div>}
       <div className={s.callGrid}>
         {days.map((day) => {
           const d = dayFacts(scenes, day);
@@ -99,7 +99,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                 </span>
               </button>
               {clash.length > 0 && (
-                <p className={s.hint} role="note" style={{ color: '#f5a524', margin: '4px 12px 8px' }}>
+                <p className={s.hint} role="note" style={{ color: 'var(--warn)', margin: '4px 12px 8px' }}>
                   Away that day: {clash.map((a) => `${nameOf(a.user_id)} (${describeRange(a.starts_on, a.ends_on)})`).join(', ')}
                 </p>
               )}
@@ -159,7 +159,7 @@ function IssueBar({ sheet, state, crew, acks, onIssued }: {
   const dated = !!sheet?.shoot_date;
 
   return (
-    <div className={s.stack} style={{ gap: 8, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+    <div className={s.stack} style={{ gap: 8, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.08)', background: 'rgba(var(--ink-rgb), 0.02)' }}>
       <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <span className={s.hint} role="status">
           {state.status === 'draft' && 'Draft — the crew haven’t been sent this yet.'}

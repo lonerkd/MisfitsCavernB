@@ -148,11 +148,11 @@ export function LinePreview({ line, index, nightModePreview, sceneNumber, showSc
 
   if (line.type === 'slug') {
     return (
-      <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
+      <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(var(--ink-rgb), 0.02)', padding: '4px 8px', borderRadius: 4 }}>
         {showSceneNumbers && sceneNumber != null && (
           <>
-            <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
-            <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? '#888' : '#999' }}>{sceneNumber}</span>
+            <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? 'var(--fg-dim)' : 'var(--fg-dim)' }}>{sceneNumber}</span>
+            <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? 'var(--fg-dim)' : 'var(--fg-dim)' }}>{sceneNumber}</span>
           </>
         )}
         {displayContent}

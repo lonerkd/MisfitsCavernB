@@ -55,10 +55,10 @@ export default function Navigation() {
           justifyContent: 'space-between',
           alignItems: 'center',
           zIndex: 1000,
-          background: scrolled ? 'rgba(6,6,6,0.90)' : 'transparent',
+          background: scrolled ? 'var(--surface)' : 'transparent',
           backdropFilter: scrolled ? 'blur(24px) saturate(1.4)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(1.4)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent',
+          borderBottom: scrolled ? '1px solid rgba(var(--ink-rgb), 0.04)' : '1px solid transparent',
           transition: 'padding 0.4s, background 0.4s, border-color 0.4s',
         }}
       >
@@ -85,8 +85,8 @@ export default function Navigation() {
             display: 'flex',
             alignItems: 'center',
             gap: 2,
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(var(--ink-rgb), 0.03)',
+            border: '1px solid rgba(var(--ink-rgb), 0.06)',
             borderRadius: 9999,
             padding: '4px 6px',
           }}>
@@ -108,19 +108,19 @@ export default function Navigation() {
                     textTransform: 'uppercase',
                     textDecoration: 'none',
                     color: active ? 'var(--fg)' : 'var(--fg-dim)',
-                    background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    background: active ? 'rgba(var(--ink-rgb), 0.08)' : 'transparent',
                     transition: 'color 0.25s, background 0.25s',
                     zIndex: 1,
                   }}
                   onMouseEnter={e => {
                     if (!active) {
                       e.currentTarget.style.color = 'var(--fg-muted)';
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.04)';
                     }
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.color = active ? 'var(--fg)' : 'var(--fg-dim)';
-                    e.currentTarget.style.background = active ? 'rgba(255,255,255,0.08)' : 'transparent';
+                    e.currentTarget.style.background = active ? 'rgba(var(--ink-rgb), 0.08)' : 'transparent';
                   }}
                 >
                   {active && (
@@ -130,8 +130,8 @@ export default function Navigation() {
                         position: 'absolute',
                         inset: 0,
                         borderRadius: 9999,
-                        background: 'rgba(255,255,255,0.07)',
-                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(var(--ink-rgb), 0.07)',
+                        border: '1px solid rgba(var(--ink-rgb), 0.10)',
                         zIndex: -1,
                       }}
                       transition={{ type: 'spring', stiffness: 500, damping: 36 }}
@@ -154,14 +154,14 @@ export default function Navigation() {
                   display: 'flex', alignItems: 'center', gap: 8,
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
                   textTransform: 'uppercase', padding: '7px 12px',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(var(--ink-rgb), 0.05)',
+                  border: '1px solid rgba(var(--ink-rgb), 0.08)',
                   color: 'var(--fg)', textDecoration: 'none', borderRadius: 9999,
                 }}
               >
                 <span style={{
                   width: 20, height: 20, borderRadius: '50%',
-                  background: 'var(--accent)', color: '#060606',
+                  background: 'var(--accent)', color: 'var(--on-accent)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 9, fontWeight: 700,
                 }}>
@@ -174,7 +174,7 @@ export default function Navigation() {
                 style={{
                   fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
                   textTransform: 'uppercase', padding: '8px 14px',
-                  background: 'transparent', border: '1px solid rgba(255,255,255,0.10)',
+                  background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.10)',
                   color: 'var(--fg-dim)', borderRadius: 9999, cursor: 'pointer',
                 }}
               >
@@ -193,7 +193,7 @@ export default function Navigation() {
                 textTransform: 'uppercase',
                 padding: '9px 18px',
                 background: 'var(--accent)',
-                color: '#060606',
+                color: 'var(--on-accent)',
                 textDecoration: 'none',
                 borderRadius: 9999,
                 fontWeight: 600,
@@ -237,9 +237,9 @@ export default function Navigation() {
               top: 0, right: 0,
               width: 280,
               height: '100dvh',
-              background: 'rgba(8,8,8,0.97)',
+              background: 'var(--surface)',
               backdropFilter: 'blur(24px)',
-              borderLeft: '1px solid rgba(255,255,255,0.06)',
+              borderLeft: '1px solid rgba(var(--ink-rgb), 0.06)',
               zIndex: 999,
               padding: '72px 28px 36px',
               display: 'flex',
@@ -265,7 +265,7 @@ export default function Navigation() {
                     color: pathname.startsWith(link.href) ? 'var(--accent)' : 'var(--fg)',
                     textDecoration: 'none',
                     padding: '13px 0',
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
                   }}
                 >
                   {link.label}
@@ -286,8 +286,8 @@ export default function Navigation() {
               href="/profile"
                     style={{
                       display: 'block', textAlign: 'center', padding: '14px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.10)',
+                      background: 'rgba(var(--ink-rgb), 0.06)',
+                      border: '1px solid rgba(var(--ink-rgb), 0.10)',
                       color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10,
                       letterSpacing: 3, textTransform: 'uppercase',
                       textDecoration: 'none', fontWeight: 600, borderRadius: 9999,
@@ -299,7 +299,7 @@ export default function Navigation() {
                     onClick={() => { handleSignOut(); setOpen(false); }}
                     style={{
                       padding: '14px', background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.10)', color: 'var(--fg-dim)',
+                      border: '1px solid rgba(var(--ink-rgb), 0.10)', color: 'var(--fg-dim)',
                       fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
                       textTransform: 'uppercase', fontWeight: 600, borderRadius: 9999,
                       cursor: 'pointer',
@@ -317,7 +317,7 @@ export default function Navigation() {
                     textAlign: 'center',
                     padding: '14px',
                     background: 'var(--accent)',
-                    color: '#060606',
+                    color: 'var(--on-accent)',
                     fontFamily: 'var(--mono)',
                     fontSize: 10,
                     letterSpacing: 3,

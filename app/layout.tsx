@@ -10,6 +10,7 @@ import { SpotifyProvider } from '@/lib/context/SpotifyContext';
 
 import ClientShell from '@/components/ClientShell';
 import MotionPreference from '@/components/MotionPreference';
+import { EARLY_THEME_SCRIPT } from '@/lib/themes';
 
 const bebasNeue = Bebas_Neue({
   weight: '400',
@@ -45,12 +46,17 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: '#040710',
-  colorScheme: 'dark',
+  colorScheme: 'dark light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
+    // data-theme is set before paint by the script below (the chosen theme on
+    // this device), so the attribute differs from the server's on purpose.
+    <html lang="en" data-theme="default" suppressHydrationWarning className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: EARLY_THEME_SCRIPT }} />
+      </head>
       <body>
         <a href="#main-content" className="skip-link">Skip to content</a>
         <MotionPreference>
