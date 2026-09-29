@@ -96,7 +96,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', marginBottom: 6 }}>
               Crew Marketplace
             </div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
@@ -115,7 +115,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           border: `1px solid ${projectId ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
         }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: projectId ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>
             {projectId ? <>Posting for <strong style={{ color: 'var(--fg)' }}>{projectTitle}</strong></> : 'No active project selected — this posting won’t be linked to a project'}
             {character && <> · casting call for <strong style={{ color: 'var(--fg)' }}>{character}</strong> — accepting someone casts them in the role</>}
           </span>
@@ -123,7 +123,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Craft</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Craft</div>
             <CraftPicker label="Craft" value={form.role || null} onChange={(craft) => setForm(f => ({ ...f, role: craft ?? '' }))} placeholder="Which craft is this for?" />
           </div>
 
@@ -143,7 +143,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           />
 
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
               <DollarSign size={12} color="rgba(var(--fg-rgb), 0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
@@ -171,7 +171,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
               background: form.title ? '#8b5cf6' : 'rgba(var(--ink-rgb), 0.05)',
               color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 12,
-              fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
               cursor: form.title ? 'pointer' : 'default',
               transition: 'background 0.3s, box-shadow 0.3s',
@@ -230,13 +230,13 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
               padding: '4px 10px', borderRadius: 9999,
               background: `${color}14`,
               border: `1px solid ${color}33`,
-              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2,
               color, textTransform: 'uppercase',
             }}>
               {job.role}
             </div>
             {job.projects?.title && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
                 {job.projects.title}
               </div>
             )}
@@ -246,7 +246,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
             <Link href={`/jobs/${job.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{job.title}</Link>
           </div>
           {job.character_name && (
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 8 }}>
               Casting call · the role of {job.character_name}
             </div>
           )}
@@ -269,7 +269,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
                 <DollarSign size={10} /> {job.rate}/hr
               </div>
             )}
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, color: 'var(--fg-dim)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
               {job.profiles?.username ?? 'creator'} · {daysAgo === 0 ? 'today' : `${daysAgo}d ago`}
             </div>
           </div>
@@ -278,7 +278,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
         {applied ? (
           <div role="status" style={{
             flexShrink: 0, padding: '10px 16px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)',
-            fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)',
+            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)',
           }}>
             Applied · {applied}
           </div>
@@ -294,7 +294,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
             background: `${color}18`,
             border: `1px solid ${color}44`,
             color: readable(color), cursor: 'pointer',
-            fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
             textTransform: 'uppercase',
           }}
         >
@@ -309,9 +309,9 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button type="button" onClick={() => void send()} disabled={sending} style={{
               padding: '9px 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', background: '#8b5cf6', color: '#fff',
-              fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
+              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
             }}>{sending ? 'Sending…' : 'Send application'}</button>
-            <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase' }}>Cancel</button>
+            <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -341,7 +341,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             <div style={{
               padding: '3px 9px', borderRadius: 9999,
               background: `${color}14`, border: `1px solid ${color}33`,
-              fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
               color, textTransform: 'uppercase',
             }}>
               {job.role}
@@ -350,14 +350,14 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               padding: '3px 9px', borderRadius: 9999,
               background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(var(--ink-rgb), 0.04)',
               border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
-              fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
               color: job.status === 'open' ? 'var(--ok)' : 'var(--fg-dim)',
               textTransform: 'uppercase',
             }}>
               {job.status}
             </div>
             {(job.application_count ?? 0) > 0 && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
                 {job.application_count} applicant{job.application_count !== 1 ? 's' : ''}
               </div>
             )}
@@ -377,7 +377,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               background: 'transparent',
               border: '1px solid rgba(var(--ink-rgb), 0.08)',
               color: 'var(--fg-dim)',
-              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
               textTransform: 'uppercase', cursor: 'pointer',
               transition: 'border-color 0.2s, color 0.2s',
             }}
@@ -550,7 +550,7 @@ export default function JobsPage() {
             >MC</div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase' }}>Jobs</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase' }}>Jobs</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -568,7 +568,7 @@ export default function JobsPage() {
                   style={{
                     position: 'relative', padding: '6px 14px', borderRadius: 9999,
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                    fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
                     textTransform: 'uppercase',
                     color: tab === t ? 'var(--fg)' : 'var(--fg-dim)',
                     transition: 'color 0.2s',
@@ -599,7 +599,7 @@ export default function JobsPage() {
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 16px', borderRadius: 9999,
                 background: '#7c3aed', color: '#fff', border: 'none',
-                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
                 textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.3s',
               }}
@@ -626,7 +626,7 @@ export default function JobsPage() {
           height: 'calc(100vh - 58px)', overflowY: 'auto',
           background: 'var(--surface-2)',
         }}>
-          <div className="mc-hide-phone" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div className="mc-hide-phone" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
           </div>
 
@@ -638,13 +638,13 @@ export default function JobsPage() {
               background: !roleFilter ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
               color: !roleFilter ? 'var(--fg)' : 'var(--fg-dim)',
-              fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
               textTransform: 'uppercase', textAlign: 'left',
               transition: 'background 0.2s, color 0.2s',
             }}
           >
             All Roles
-            <span style={{ fontSize: 8, color: 'var(--fg-dim)' }}>{jobs.length}</span>
+            <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{jobs.length}</span>
           </button>
 
           {postedCrafts.map(r => {
@@ -661,7 +661,7 @@ export default function JobsPage() {
                   background: active ? `${color}12` : 'transparent',
                   border: 'none', cursor: 'pointer', marginBottom: 2,
                   color: active ? readable(color) : 'var(--fg-dim)',
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5,
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
                   textTransform: 'uppercase', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
                 }}
@@ -672,7 +672,7 @@ export default function JobsPage() {
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'var(--fg-dim)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
                   {r}
                 </div>
-                {count > 0 && <span style={{ fontSize: 8, color: active ? readable(color) : 'var(--fg-dim)' }}>{count}</span>}
+                {count > 0 && <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: active ? readable(color) : 'var(--fg-dim)' }}>{count}</span>}
               </button>
             );
           })}
@@ -730,7 +730,7 @@ export default function JobsPage() {
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
                       color: 'var(--violet)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Show every role
                     </button>
@@ -746,7 +746,7 @@ export default function JobsPage() {
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
                       color: 'var(--jobs-text)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post the first one
                     </button>
@@ -767,7 +767,7 @@ export default function JobsPage() {
               <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
-              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
+              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
             </div>
           )}
 
@@ -782,7 +782,7 @@ export default function JobsPage() {
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
                       color: 'var(--jobs-text)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, textTransform: 'uppercase',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post your first position
                     </button>
@@ -795,7 +795,7 @@ export default function JobsPage() {
                   ))}
                 </div>
               )}
-              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400, margin: '32px 0 12px' }}>
+              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400, margin: '32px 0 12px' }}>
                 Applied to · {myApps.length}
               </h2>
               {myApps.length === 0 ? (
@@ -811,7 +811,7 @@ export default function JobsPage() {
                         <span style={{ color: 'var(--fg-muted)' }}> · {a.jobs!.role}{a.jobs!.projects?.title ? ` · ${a.jobs!.projects.title}` : ''}{a.jobs!.status === 'closed' ? ' · closed' : ''}</span>
                       </Link>
                       <span style={{
-                        fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 99,
+                        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 99,
                         color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
                         border: '1px solid rgba(var(--ink-rgb), 0.1)',
                       }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>

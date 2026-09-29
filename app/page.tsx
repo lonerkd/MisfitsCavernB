@@ -91,7 +91,7 @@ function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: numbe
       </Link>
       <span style={{
         fontFamily: 'var(--mono)',
-        fontSize: 8,
+        fontSize: 'max(8px, var(--mc-min-font, 0px))',
         letterSpacing: 3,
         textTransform: 'uppercase',
         color: hovered ? stage.color : 'var(--fg-dim)',
@@ -168,7 +168,7 @@ function ScriptOSPreview({ lines, caption }: { lines?: string[]; caption: string
 }
 
 function PreviewCaption({ children }: { children: React.ReactNode }) {
-  return <p style={{ margin: '10px 0 0', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{children}</p>;
+  return <p style={{ margin: '10px 0 0', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{children}</p>;
 }
 
 function StudioPreview({ items, caption }: { items: { label: string; color: string }[]; caption: string }) {
@@ -209,7 +209,7 @@ function StudioPreview({ items, caption }: { items: { label: string; color: stri
           }} />
           <span style={{
             fontFamily: 'var(--mono)',
-            fontSize: 8.5,
+            fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
             color: 'var(--fg-dim)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -241,7 +241,7 @@ function LoungePreview({ messages, caption }: { messages: { from: string; text: 
           alignItems: m.mine ? 'flex-end' : 'flex-start',
         }}>
           {!m.mine && (
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--ok)', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
             background: m.mine ? 'rgba(232, 67, 26,0.15)' : 'rgba(var(--ink-rgb), 0.05)',
@@ -250,7 +250,7 @@ function LoungePreview({ messages, caption }: { messages: { from: string; text: 
             padding: '7px 12px',
             maxWidth: '80%',
           }}>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(var(--fg-rgb), 0.75)' }}>{m.text}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'rgba(var(--fg-rgb), 0.75)' }}>{m.text}</span>
           </div>
         </div>
       ))}
@@ -266,7 +266,7 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
           <div key={i} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', minHeight: 120, background: `linear-gradient(160deg, #0d0d0f 0%, ${w.accent || '#1a1008'} 160%)`, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
               <div style={{ fontFamily: 'var(--display)', fontSize: 18, letterSpacing: 0.5, lineHeight: 1.1, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
             </div>
           </div>
         ))}
@@ -302,7 +302,7 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
         position: 'absolute',
         bottom: '18%', right: 16,
         fontFamily: 'var(--mono)',
-        fontSize: 7,
+        fontSize: 'max(7px, var(--mc-min-font, 0px))',
         letterSpacing: 3,
         textTransform: 'uppercase',
         color: 'var(--fg-dim)',
@@ -370,7 +370,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
             <div>
               <div style={{
                 fontFamily: 'var(--mono)',
-                fontSize: 7.5,
+                fontSize: 'max(7.5px, var(--mc-min-font, 0px))',
                 letterSpacing: 3.5,
                 textTransform: 'uppercase',
                 color: readable(color),
@@ -417,7 +417,7 @@ function StatsTicker({ items }: { items: string[] }) {
         {repeated.map((item, i) => (
           <span key={i} style={{
             fontFamily: 'var(--mono)',
-            fontSize: 9,
+            fontSize: 'max(9px, var(--mc-min-font, 0px))',
             letterSpacing: 3.5,
             textTransform: 'uppercase',
             color: 'var(--fg-dim)',
@@ -557,7 +557,7 @@ export default function Home() {
               border: '1px solid rgba(232, 67, 26,0.20)',
               borderRadius: 9999,
               fontFamily: 'var(--mono)',
-              fontSize: 8.5,
+              fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
               letterSpacing: 3,
               textTransform: 'uppercase',
               color: 'var(--accent)',
@@ -662,11 +662,11 @@ export default function Home() {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(232, 67, 26,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(232, 67, 26,0.18)', borderRadius: 16 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(232, 67, 26,0.8)', marginBottom: 6 }}>Welcome back</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(232, 67, 26,0.8)', marginBottom: 6 }}>Welcome back</div>
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, lineHeight: 1 }}>
                 {activeProject ? `Resume ${activeProject.title}` : 'Continue your screenplay'}
               </div>
-              {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
+              {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <Button href="/editor" variant="ghost" size="sm">Open ScriptOS</Button>
@@ -717,7 +717,7 @@ export default function Home() {
                   transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
                   style={{ height: 42, width: 80, margin: '0 auto', background: s.color, borderRadius: 8, filter: 'blur(4px)' }}
                 />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -740,7 +740,7 @@ export default function Home() {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: 1, lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
               </motion.div>
             ))}
           </div>
@@ -777,7 +777,7 @@ export default function Home() {
                   {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
                     <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: c, opacity: 0.7 }} />
                   ))}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ?? 'ScriptOS'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ?? 'ScriptOS'}</span>
                 </div>
                 <ScriptOSPreview lines={live.scriptLines} caption={loggedIn ? 'Your latest script appears here' : 'Screenplay formatting as you type'} />
               </div>
@@ -862,7 +862,7 @@ export default function Home() {
       <footer style={{
         textAlign: 'center',
         padding: '20px 0 44px',
-        fontSize: 7.5,
+        fontSize: 'max(7.5px, var(--mc-min-font, 0px))',
         letterSpacing: 4,
         textTransform: 'uppercase',
         fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>

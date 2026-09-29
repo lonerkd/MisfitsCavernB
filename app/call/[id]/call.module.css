@@ -35,7 +35,7 @@
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .fact { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; }
-.factLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
+.factLabel { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
 .factValue { font-size: 15px; }
 .map { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--fg); text-decoration: underline; margin-left: 6px; }
 
@@ -46,7 +46,7 @@
 .dim { color: var(--fg-muted); }
 
 .table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.table th { text-align: left; font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.table th { text-align: left; font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .table td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .me td { background: var(--pa-dim); }
 

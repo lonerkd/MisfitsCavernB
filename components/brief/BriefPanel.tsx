@@ -167,7 +167,7 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
                 {shown.map((m) => <MoveItem key={m.id} m={m} brief={brief} projectTitle={projectTitle} format={format} onAsk={goTo} onAdd={addOption} canEdit={canEdit} />)}
               </ul>
               {moves.length > 5 && (
-                <button type="button" className={b.more} onClick={() => setShowAll((v) => !v)}>
+                <button type="button" className={`${b.more} mc-hit`} onClick={() => setShowAll((v) => !v)}>
                   {showAll ? 'Show fewer' : `Show all ${moves.length}`}
                 </button>
               )}

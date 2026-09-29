@@ -17,7 +17,7 @@ const headStyle: React.CSSProperties = { padding: '14px 18px', borderBottom: '1p
 const titleStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--ok)', display: 'inline-flex', alignItems: 'center', gap: 6 };
 const closeStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' };
 const rowStyle: React.CSSProperties = { display: 'block', width: '100%', textAlign: 'left', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', color: 'var(--fg)' };
-const metaStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', display: 'flex', gap: 6, marginBottom: 4 };
+const metaStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', display: 'flex', gap: 6, marginBottom: 4 };
 
 const when = (iso: string) => {
   const d = new Date(iso);
@@ -73,7 +73,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
           <div role="radiogroup" aria-label="Where to search" style={{ display: 'flex', gap: 6 }}>
             {[{ v: true, l: `#${channel.name}` }, { v: false, l: 'Everywhere' }].map((o) => (
               <button key={o.l} type="button" role="radio" aria-checked={here === o.v} onClick={() => setHere(o.v)}
-                style={{ padding: '4px 10px', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 9.5, cursor: 'pointer', border: `1px solid ${here === o.v ? 'rgba(16,185,129,0.5)' : 'rgba(var(--ink-rgb), 0.1)'}`, background: here === o.v ? 'rgba(16,185,129,0.12)' : 'transparent', color: here === o.v ? 'var(--ok)' : 'var(--fg-muted)' }}>
+                style={{ padding: '4px 10px', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', cursor: 'pointer', border: `1px solid ${here === o.v ? 'rgba(16,185,129,0.5)' : 'rgba(var(--ink-rgb), 0.1)'}`, background: here === o.v ? 'rgba(16,185,129,0.12)' : 'transparent', color: here === o.v ? 'var(--ok)' : 'var(--fg-muted)' }}>
                 {o.l}
               </button>
             ))}
@@ -85,7 +85,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
         {state === 'searching' && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0 }}>Searching…</p>}
         {state === 'error' && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--danger)', margin: 0 }}>Search failed — try again.</p>}
         {state === 'done' && hits.length === 0 && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0 }}>Nothing matches{here && channel ? ` in #${channel.name}` : ''}.</p>}
-        {state === 'done' && hits.length > 0 && <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', margin: 0 }}>{hits.length === 40 ? 'The 40 newest matches' : `${hits.length} match${hits.length === 1 ? '' : 'es'}`}</p>}
+        {state === 'done' && hits.length > 0 && <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', margin: 0 }}>{hits.length === 40 ? 'The 40 newest matches' : `${hits.length} match${hits.length === 1 ? '' : 'es'}`}</p>}
         {hits.map((h) => (
           <button key={h.id} type="button" onClick={() => onJump(h)} style={rowStyle}>
             <span style={metaStyle}>

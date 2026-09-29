@@ -8,7 +8,7 @@ export default function StudioError({ error, reset }: { error: Error & { digest?
         {error.message || 'The studio hit an unexpected error. Your assets and project data are safe.'}
       </div>
       {error.digest && (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)'}}>Error ID: {error.digest}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)'}}>Error ID: {error.digest}</div>
       )}
       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
         <button onClick={reset} style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 6, fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer' }}>TRY AGAIN</button>

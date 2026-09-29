@@ -27,7 +27,14 @@ Migration `20260929070000_pocket.sql` (a `note` kind of library item; `ui_prefs.
   and the first page of a visit on the desk — offers "Continue from your
   desktop · 20 min ago: Night Shift — script", switching to the right project
   first. Waved off per device.
-- Search moved into More on the phone ("Search everything").
+- Search moved into More on the phone ("Search everything"), with a search
+  button on Today.
+- **Small print is readable on a phone**: every size under 10px suite-wide is
+  now `max(Npx, var(--mc-min-font))` — unchanged on a desk, 11px at phone
+  width (the 390px audit's sub-10px text went from dozens per page to ~0, with
+  no new sideways scroll). `.mc-hit` gives small controls (the project page's
+  module switches, inline links, "Show all") a thumb-sized touch area on touch
+  screens without changing their look.
 - Tests: `lib/pocket/places.test.ts`, `lib/pocket/capture.test.ts`,
   `tests/integration/pocket.test.ts` (notes by persona, never shared, words
   only; places validated and private), `e2e/mobile.spec.ts` (Continue from the

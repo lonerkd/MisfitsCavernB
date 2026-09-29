@@ -337,7 +337,7 @@ export default function SettingsPage() {
           } />
         </Section>
 
-        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
           MISFITS CAVERN · {user.email}
         </div>
       </div>

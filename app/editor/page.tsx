@@ -1369,7 +1369,7 @@ export default function EditorPage() {
               {item}
             </div>
           ))}
-          <div style={{ padding: '4px 12px 2px', fontSize: 8.5, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
+          <div style={{ padding: '4px 12px 2px', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
         </div>
       )}
 
@@ -1418,7 +1418,7 @@ export default function EditorPage() {
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
                             {cast?.username && (
-                              <span style={{ fontSize: 9, color: 'var(--ok)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
+                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
                                 Playing: {cast.username}
                               </span>
                             )}
@@ -1503,7 +1503,7 @@ export default function EditorPage() {
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
-        fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
+        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
       }}>
@@ -1532,7 +1532,7 @@ export default function EditorPage() {
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
               <span style={{ display: 'flex' }}>
                 {collaborators.slice(0, 4).map((c, i) => (
-                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
                     {c.username.charAt(0)}
                   </span>
                 ))}
@@ -1558,12 +1558,12 @@ export default function EditorPage() {
       {conflict.detected && (
         <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 520 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--warn)', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--warn)', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
             <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 7, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1 }}>KEEP MINE</button>
-            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 7, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
+            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 7, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>KEEP MINE</button>
+            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 7, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
           </div>
         </div>
       )}

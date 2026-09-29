@@ -261,7 +261,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               {profiles.role && (
                 <div style={{
                   fontFamily: 'var(--mono)',
-                  fontSize: 9,
+                  fontSize: 'max(9px, var(--mc-min-font, 0px))',
                   letterSpacing: 2,
                   marginTop: 2, color: 'var(--fg-dim)' }}>
                   {profiles.role.toUpperCase()}
@@ -288,7 +288,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               <div>
                 <div style={{
                   fontFamily: 'var(--mono)',
-                  fontSize: 8,
+                  fontSize: 'max(8px, var(--mc-min-font, 0px))',
                   letterSpacing: 3,
                   marginBottom: 6, color: 'var(--fg-dim)' }}>
                   YEAR
@@ -307,7 +307,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
               <div>
                 <div style={{
                   fontFamily: 'var(--mono)',
-                  fontSize: 8,
+                  fontSize: 'max(8px, var(--mc-min-font, 0px))',
                   letterSpacing: 3,
                   marginBottom: 6, color: 'var(--fg-dim)' }}>
                   ROLE
@@ -360,7 +360,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
         }}>
           <div style={{
             fontFamily: 'var(--mono)',
-            fontSize: 8,
+            fontSize: 'max(8px, var(--mc-min-font, 0px))',
             letterSpacing: 3,
             marginBottom: 20, color: 'var(--fg-dim)' }}>
             {portfolio_media.length === 1 ? '1 CLIP' : `${portfolio_media.length} CLIPS`}
@@ -498,7 +498,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
 
 function DeckBlock({ block }: { block: PortfolioBlock }) {
   const label: React.CSSProperties = {
-    fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'uppercase',
+    fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'uppercase',
   };
   const wrap: React.CSSProperties = {
     padding: 'clamp(16px, 3vw, 24px)', borderRadius: 12,
@@ -728,7 +728,7 @@ function FooterLink() {
   return (
     <span style={{
       fontFamily: 'var(--mono)',
-      fontSize: 9,
+      fontSize: 'max(9px, var(--mc-min-font, 0px))',
       letterSpacing: 2,
       color: 'var(--fg-dim)',
     }}>

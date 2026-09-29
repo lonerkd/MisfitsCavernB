@@ -18,7 +18,7 @@
 .cat:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .catOn { background: color-mix(in srgb, var(--c) 24%, transparent); border-color: var(--c); color: var(--fg); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
-.key { font-size: 8.5px; color: var(--fg-dim); border: 1px solid rgba(var(--fg-rgb), 0.2); border-radius: 3px; padding: 0 3px; line-height: 13px; }
+.key { font-size: max(8.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); border: 1px solid rgba(var(--fg-rgb), 0.2); border-radius: 3px; padding: 0 3px; line-height: 13px; }
 
 /* ── Floating tag bar ─────────────────────────────────── */
 .bar {
@@ -28,7 +28,7 @@
 }
 .barHead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-family: var(--mono); font-size: 10px; color: var(--fg-muted); }
 .barName { color: var(--fg); font-weight: 600; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.barHint { margin-left: auto; font-size: 9px; color: var(--fg-dim); white-space: nowrap; }
+.barHint { margin-left: auto; font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); white-space: nowrap; }
 .barActions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 
 .btn {
@@ -45,14 +45,14 @@
 /* ── Panel ────────────────────────────────────────────── */
 .panel { display: flex; flex-direction: column; gap: 18px; }
 .head { display: flex; align-items: flex-start; gap: 10px; }
-.eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); }
+.eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); }
 .heading { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--fg); text-transform: uppercase; line-height: 1.4; margin-top: 4px; }
 .hint { font-family: var(--mono); font-size: 10.5px; line-height: 1.6; color: var(--fg-muted); margin: 0; }
 .section { display: flex; flex-direction: column; gap: 8px; }
-.sectionTitle { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); margin: 0; font-weight: 400; }
-.count { font-size: 9px; color: var(--fg-dim); letter-spacing: 0; }
+.sectionTitle { display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); margin: 0; font-weight: 400; }
+.count { font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); letter-spacing: 0; }
 
-.switch { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; background: none; border: none; cursor: pointer; font-family: var(--mono); font-size: 9.5px; color: var(--fg-muted); padding: 2px; flex-shrink: 0; }
+.switch { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; background: none; border: none; cursor: pointer; font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-muted); padding: 2px; flex-shrink: 0; }
 .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .track { width: 28px; height: 16px; border-radius: 9999px; border: 1px solid rgba(var(--fg-rgb), 0.25); position: relative; }
 .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--fg-dim); transition: left 0.18s; }
@@ -60,7 +60,7 @@
 .switchOn .track::after { left: 14px; background: var(--accent); }
 
 .group { display: flex; flex-direction: column; gap: 5px; }
-.groupLabel { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 9.5px; color: var(--c); }
+.groupLabel { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--c); }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip {
   --c: #888;
@@ -78,7 +78,7 @@
 
 .suggestion { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 7px 9px; border-radius: 8px; border: 1px dashed rgba(var(--fg-rgb), 0.16); }
 .sName { font-family: var(--mono); font-size: 11px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sWhy { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+.sWhy { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
 .sActions { display: flex; gap: 4px; }
 .iconBtn { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; border: 1px solid rgba(var(--fg-rgb), 0.14); background: transparent; color: var(--fg-muted); cursor: pointer; }
 .iconBtn:hover { color: var(--fg); background: rgba(var(--fg-rgb), 0.07); }
@@ -91,7 +91,7 @@
 }
 .input:focus { outline: none; border-color: var(--accent); }
 .textarea { composes: input; min-height: 56px; resize: vertical; line-height: 1.5; }
-.fieldLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 5px; display: block; }
+.fieldLabel { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 5px; display: block; }
 
 .card { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c, #888) 40%, transparent); background: color-mix(in srgb, var(--c, #888) 6%, transparent); }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -107,6 +107,6 @@
 .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .total { padding: 8px; border-radius: 8px; background: rgba(var(--fg-rgb), 0.03); border: 1px solid rgba(var(--fg-rgb), 0.07); }
 .totalValue { font-family: var(--mono); font-size: 15px; color: var(--fg); }
-.totalLabel { font-family: var(--mono); font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--fg-dim); margin-top: 2px; }
+.totalLabel { font-family: var(--mono); font-size: max(8.5px, var(--mc-min-font, 0px)); letter-spacing: 1px; text-transform: uppercase; color: var(--fg-dim); margin-top: 2px; }
 .link { font-family: var(--mono); font-size: 10.5px; color: var(--accent-text, #f0764f); text-decoration: none; }
 .link:hover { text-decoration: underline; }

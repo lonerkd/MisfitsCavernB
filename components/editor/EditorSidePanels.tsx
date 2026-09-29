@@ -138,7 +138,7 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
+                    <span style={{ fontSize: 'max(9.5px, var(--mc-min-font, 0px))', fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
                   </button>
                 ))}
               </div>

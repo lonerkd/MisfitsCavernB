@@ -4,9 +4,9 @@ import React from 'react';
 import { Play } from 'lucide-react';
 import { formatEighths, formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
 
-const head: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 12px', fontWeight: 400 };
+const head: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-muted)', margin: '0 0 12px', fontWeight: 400 };
 const cell: React.CSSProperties = { padding: '6px 8px', borderBottom: '1px solid rgba(var(--fg-rgb), 0.06)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', textAlign: 'right', whiteSpace: 'nowrap' };
-const th: React.CSSProperties = { ...cell, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400 };
+const th: React.CSSProperties = { ...cell, fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400 };
 
 /**
  * Runtime from the script's printed length (lib/scriptos/timing), per scene,

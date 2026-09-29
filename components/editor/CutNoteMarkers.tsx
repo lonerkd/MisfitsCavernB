@@ -95,7 +95,7 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
                   boxShadow: '0 16px 40px rgba(0,0,0,0.55)', fontFamily: 'var(--sans, inherit)', zIndex: 2,
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>From the cut</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>From the cut</span>
                   <button type="button" onClick={() => setOpenLine(null)} aria-label="Close"
                     style={{ width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>
                     <X size={12} />
