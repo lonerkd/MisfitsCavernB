@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json, Tables } from '@/lib/supabase/database.types';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
+import type { TranscriptLineDraft } from './transcript';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
 export type Client = SupabaseClient<Database>;
@@ -26,6 +27,8 @@ export type Timesheet = Tables<'timesheets'>;
 export type BudgetItem = Tables<'budget_items'>;
 export type ExpenseInput = Pick<Expense, 'description' | 'amount'> & Partial<Pick<Expense, 'budget_item_id' | 'vendor_id' | 'status' | 'po_number' | 'spent_on' | 'receipt_media_id'>>;
 export type ProjectDocument = Tables<'project_documents'>;
+export type TranscriptLine = Tables<'transcript_lines'>;
+export type TranscriptPatch = Partial<Pick<TranscriptLine, 'start_ms' | 'end_ms' | 'speaker' | 'text'>>;
 export type DocumentFields = Partial<Pick<ProjectDocument, 'kind' | 'title' | 'status' | 'person_id' | 'vendor_id' | 'location_id' | 'party' | 'expires_on' | 'notes'>>;
 export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes'>>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
@@ -484,6 +487,49 @@ export function createStudioApi(db: Client) {
 
   // ── Paperwork ────────────────────────────────────────────────────────────
 
+  // ── Transcripts and the paper edit ──────────────────────────────────────
+
+  /** Every line of every transcript in the project (the paper edit spans them). */
+  async function listTranscriptLines(projectId: string): Promise<TranscriptLine[]> {
+    const { data, error } = await db.from('transcript_lines').select('*').eq('project_id', projectId).order('media_id').order('position');
+    if (error) fail(error, 'Could not load transcripts');
+    return data;
+  }
+
+  /** Adds lines to the end of a recording's transcript, in order. */
+  async function addTranscriptLines(media: Pick<Media, 'id' | 'project_id'>, userId: string, lines: TranscriptLineDraft[], after: number): Promise<TranscriptLine[]> {
+    if (!lines.length) return [];
+    const rows = lines.map((l, i) => ({
+      project_id: media.project_id, media_id: media.id, position: after + 1 + i, created_by: userId,
+      start_ms: l.start_ms, end_ms: l.end_ms, speaker: l.speaker?.trim() || null, text: l.text.trim(),
+    }));
+    const out: TranscriptLine[] = [];
+    for (let i = 0; i < rows.length; i += 500) {
+      const { data, error } = await db.from('transcript_lines').insert(rows.slice(i, i + 500)).select('*');
+      if (error) fail(error, 'Could not add the transcript');
+      out.push(...data);
+    }
+    return out;
+  }
+
+  async function updateTranscriptLine(id: string, patch: TranscriptPatch): Promise<TranscriptLine> {
+    const { data, error } = await db.from('transcript_lines').update(patch).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not save the line');
+    return data;
+  }
+
+  async function deleteTranscriptLines(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    const { error } = await db.from('transcript_lines').delete().in('id', ids);
+    if (error) fail(error, 'Could not remove the lines');
+  }
+
+  /** The paper edit, in order: these lines, and no others, are the selects. */
+  async function setPaperEdit(projectId: string, lineIds: string[]): Promise<void> {
+    const { error } = await db.rpc('set_paper_edit', { p_project: projectId, p_line_ids: lineIds });
+    if (error) fail(error, 'Could not save the paper edit');
+  }
+
   /** All of it for those who shape the project; your own for anyone else (RLS). */
   async function listDocuments(projectId: string): Promise<ProjectDocument[]> {
     const { data, error } = await db.from('project_documents').select('*').eq('project_id', projectId).order('created_at');
@@ -700,7 +746,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

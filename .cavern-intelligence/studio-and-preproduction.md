@@ -132,6 +132,16 @@ pitch boards and portfolios.
   `/studio?tab=post&project=…&cut=…&t=…` (the Post tab opens even before its
   phase). "In script" on a note opens `/editor?…&note=…`, or goes to the other
   pane in a split screen, on its line with the note open.
+- **Transcripts and the paper edit** (`transcript_lines`): a video or audio
+  item in the Library has a transcript (`media/TranscriptPanel.tsx`) — pasted
+  (SRT, WebVTT, "00:01:23 NAME: …" or plain paragraphs; `parseTranscript` in
+  `lib/studio/transcript.ts`), typed against the player (blank time = the
+  player's time) or dictated with the browser's speech recognition. Times seek
+  the player; the line playing is highlighted. Starring a line sets its
+  `paper_order`; Post › Paper edit (`post/PaperEdit.tsx`) orders the selects
+  across recordings (`set_paper_edit(project, ids[])`, all or nothing, caller's
+  rights), shows the runtime, and copies/downloads it as text. Same access as
+  the library; crew remove their own lines, the owner any.
 - **Pipeline & deliverables** (`post_items`): stages and deliverables with
   status, due date and owner; "Set up the standard pipeline" seeds
   `STANDARD_POST`.
@@ -139,7 +149,7 @@ pitch boards and portfolios.
 ## 7. Tests
 
 - `lib/studio/*.test.ts` — alignment, classification (incl. YouTube/Vimeo/Drive embeds), scheduling, shot numbering, timecodes.
-- `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed,production-records,post-production,cut-note-lines,privacy}.test.ts`
+- `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed,production-records,post-production,cut-note-lines,transcripts,privacy}.test.ts`
   — personas through PostgREST/Storage/Realtime/RLS.
 - `e2e/studio-journey.spec.ts` — real browser, local stack: upload → link to a
   scene → editor → publish → logged-out share link → revoke → live crew sync.

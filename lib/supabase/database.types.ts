@@ -3236,6 +3236,73 @@ export type Database = {
           },
         ];
       };
+      transcript_lines: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          end_ms: number | null;
+          id: string;
+          media_id: string;
+          paper_order: number | null;
+          position: number;
+          project_id: string;
+          speaker: string | null;
+          start_ms: number | null;
+          text: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          end_ms?: number | null;
+          id?: string;
+          media_id: string;
+          paper_order?: number | null;
+          position: number;
+          project_id: string;
+          speaker?: string | null;
+          start_ms?: number | null;
+          text: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          end_ms?: number | null;
+          id?: string;
+          media_id?: string;
+          paper_order?: number | null;
+          position?: number;
+          project_id?: string;
+          speaker?: string | null;
+          start_ms?: number | null;
+          text?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transcript_lines_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transcript_lines_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "transcript_lines_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       unavailability: {
         Row: {
           created_at: string;
@@ -3656,6 +3723,10 @@ export type Database = {
         Returns: number;
       };
       set_my_ui_prefs: { Args: { p_patch: Json }; Returns: Json };
+      set_paper_edit: {
+        Args: { p_line_ids: string[]; p_project: string };
+        Returns: undefined;
+      };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };
         Returns: undefined;

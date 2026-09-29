@@ -1,8 +1,30 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Themes for the whole suite
+## Latest Session — Transcripts and the paper edit
 
-Migration `20260929050000_themes.sql` (`set_my_ui_prefs` accepts `theme`).
+Migration `20260929060000_transcripts.sql` (`transcript_lines`, `set_paper_edit`).
+
+- **Every interview, take or recording in the Library has a transcript**
+  (video and audio items): paste one in — subtitles (SRT, WebVTT), a
+  transcription service's text ("[00:01:23] Ana: …"), or plain paragraphs —
+  type lines as you watch (a blank time takes the player's), or **dictate**
+  with the browser's speech recognition, each sentence stamped at the
+  player's time. Click a time to play from it; the line playing is
+  highlighted; find in the transcript; copy it out.
+- **Star the lines that tell the story** and they line up in **Studio › Post
+  › Paper edit**, across every recording, in order: move them up and down,
+  take them out, see the running time, copy or download it for the edit.
+- The documentary and podcast guides' "Log your footage" step now points at it.
+- Same access as the library (owner and crew; outsiders see nothing); crew
+  remove the lines they added, the owner any. `set_paper_edit` is all or
+  nothing and runs with the caller's rights.
+- Tests: `lib/studio/transcript.test.ts` (parsing every format, stamps, the
+  paper edit), `tests/integration/transcripts.test.ts` (personas, bad input,
+  deletes, cascade, ordering), `e2e/transcripts.spec.ts`.
+
+## Earlier — Themes for the whole suite
+
+Migration `20260929050000_themes.sql` — applied to production; PR #90 merged.
 
 - **Settings › Appearance › Theme**: twelve presets shown as small previews —
   Cavern, Terminal, Blueprint, Mono, Paper, Editorial, Glass, Neon, Slate,

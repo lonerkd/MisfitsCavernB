@@ -16,10 +16,11 @@ import { formatTimecode, parseTimecode } from '@/lib/studio/timecode';
 import { useStudio } from '../StudioContext';
 import { CutPlayer, type CutPlayerHandle } from '../post/CutPlayer';
 import { CutScript, type LinePick } from '../post/CutScript';
+import { PaperEdit } from '../post/PaperEdit';
 import { SectionHeader, ErrorBar, cx } from '../ui';
 import s from '../studio.module.css';
 
-type View = 'review' | 'pipeline';
+type View = 'review' | 'paper' | 'pipeline';
 const DEPT_LABEL = POST_DEPT_LABEL;
 const STATUS_LABEL: Record<PostStatus, string> = { todo: 'To do', in_progress: 'In progress', review: 'In review', done: 'Done' };
 
@@ -61,12 +62,13 @@ export function PostTab() {
   });
   return (
     <section aria-labelledby="post-title">
-      <SectionHeader id="post-title" eyebrow="Post-production" title="Post" subtitle="Review each cut with timecoded notes, then take every department and deliverable to done." />
+      <SectionHeader id="post-title" eyebrow="Post-production" title="Post" subtitle="Build the story from your transcripts, review each cut with timecoded notes, then take every department and deliverable to done." />
       <div className={s.chips} role="tablist" aria-label="Post views" style={{ marginBottom: 24 }}>
         <button type="button" role="tab" aria-selected={view === 'review'} className={cx(s.chip, view === 'review' && s.chipOn)} onClick={() => setView('review')}><Film size={12} /> Cut review</button>
+        <button type="button" role="tab" aria-selected={view === 'paper'} className={cx(s.chip, view === 'paper' && s.chipOn)} onClick={() => setView('paper')}><FileText size={12} /> Paper edit</button>
         <button type="button" role="tab" aria-selected={view === 'pipeline'} className={cx(s.chip, view === 'pipeline' && s.chipOn)} onClick={() => setView('pipeline')}><ListChecks size={12} /> Pipeline & deliverables</button>
       </div>
-      {view === 'review' ? <ReviewView deepLink={deepLink} /> : <PipelineView />}
+      {view === 'review' ? <ReviewView deepLink={deepLink} /> : view === 'paper' ? <PaperEdit /> : <PipelineView />}
     </section>
   );
 }
