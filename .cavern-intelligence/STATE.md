@@ -4,7 +4,7 @@
 
 ## Latest Session — Type, layout and imagery tokens
 
-Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Not yet checked in a browser:** dense views (breakdown, stripboard, schedule, taskbar) may wrap after the size bump.
+Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Checked in a browser** (local Supabase, production build, 1280px): breakdown and stripboard show no wrapping or overflow and pass axe; stripboard strip headings and cast lines ellipsize by design in the 256px day column. Narrower widths not yet checked.
 
 ## Latest Session — The Lounge: who each channel is for, guides, the community
 
