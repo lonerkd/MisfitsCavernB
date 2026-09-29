@@ -44,7 +44,7 @@ button.time:hover { color: var(--fg); }
   padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--sunken);
 }
 .num { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--fg-muted); padding-top: 1px; }
-.source { font-family: var(--mono); font-size: 9.5px; letter-spacing: 1px; color: var(--fg-dim); text-transform: uppercase; margin: 0 0 3px; }
+.source { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1px; color: var(--fg-dim); text-transform: uppercase; margin: 0 0 3px; }
 .sourceBtn { background: none; border: 0; padding: 0; font: inherit; color: var(--fg-muted); cursor: pointer; text-decoration: underline; letter-spacing: inherit; text-transform: inherit; }
 .sourceBtn:hover { color: var(--fg); }
 .sourceBtn:focus-visible { outline: 2px solid var(--studio); outline-offset: 2px; border-radius: 3px; }

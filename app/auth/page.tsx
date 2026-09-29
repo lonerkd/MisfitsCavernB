@@ -164,7 +164,7 @@ export default function AuthPage() {
           alignItems: 'center',
           gap: 8,
           fontFamily: 'var(--mono)',
-          fontSize: 9,
+          fontSize: 'max(9px, var(--mc-min-font, 0px))',
           letterSpacing: 3,
           textTransform: 'uppercase',
           color: 'var(--fg-muted)',
@@ -231,7 +231,7 @@ export default function AuthPage() {
                   border: 'none',
                   color: mode === m ? 'var(--fg)' : 'var(--fg-muted)',
                   fontFamily: 'var(--mono)',
-                  fontSize: 9,
+                  fontSize: 'max(9px, var(--mc-min-font, 0px))',
                   letterSpacing: 3,
                   textTransform: 'uppercase',
                   borderRadius: 'calc(var(--radius-sm) - 2px)',
@@ -321,7 +321,7 @@ export default function AuthPage() {
 
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--fg-subtle)' }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-subtle)' }}>
               or
             </span>
             <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />

@@ -77,7 +77,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 title="Open this project's hub"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1,
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1,
                   color: activeProject.accent_color || 'var(--accent)',
                   background: `${activeProject.accent_color || '#e8431a'}14`,
                   border: `1px solid ${activeProject.accent_color || '#e8431a'}30`,

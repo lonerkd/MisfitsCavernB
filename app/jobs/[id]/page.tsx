@@ -25,7 +25,7 @@ interface Application {
 const statusBadgeStyle = (status: string): React.CSSProperties => {
   const base: React.CSSProperties = {
     fontFamily: 'var(--mono)',
-    fontSize: 9,
+    fontSize: 'max(9px, var(--mc-min-font, 0px))',
     letterSpacing: 2,
     padding: '3px 8px',
     textTransform: 'uppercase' as const,
@@ -221,7 +221,7 @@ export default function JobDetailPage() {
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
           <Link href="/jobs" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.6')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
             >Jobs</div>
@@ -244,14 +244,14 @@ export default function JobDetailPage() {
         <div style={{ marginBottom: 40 }}>
           <div style={{ marginBottom: 14 }}>
             <span style={{
-              fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3,
               color: 'var(--accent)', textTransform: 'uppercase',
               borderBottom: '1px solid var(--accent)', paddingBottom: 2,
             }}>
               {job.role}
             </span>
             {job.projects?.title && (
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, marginLeft: 12, color: 'var(--fg-dim)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, marginLeft: 12, color: 'var(--fg-dim)' }}>
                 · {job.projects.title}
               </span>
             )}
@@ -276,7 +276,7 @@ export default function JobDetailPage() {
                 <span>${job.rate}/hr</span>
               </div>
             )}
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
               Posted by{' '}
               <span style={{ opacity: 1, color: 'var(--fg)' }}>
                 {job.profiles?.username || 'unknown'}
@@ -375,7 +375,7 @@ export default function JobDetailPage() {
                             {app.profiles?.username || 'unknown'}
                           </div>
                           {app.profiles?.role && (
-                            <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, marginTop: 2, color: 'var(--fg-dim)' }}>
+                            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, marginTop: 2, color: 'var(--fg-dim)' }}>
                               {app.profiles.role}
                             </div>
                           )}
@@ -384,24 +384,24 @@ export default function JobDetailPage() {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {app.status === 'pending' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
                             <Clock size={10} /> PENDING
                           </span>
                         )}
                         {app.status === 'accepted' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--ok)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--ok)' }}>
                             <CheckCircle size={10} /> ACCEPTED
                           </span>
                         )}
                         {app.status === 'rejected' && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
                             <XCircle size={10} /> REJECTED
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, marginBottom: app.cover_note ? 16 : 0, color: 'var(--fg-dim)' }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, marginBottom: app.cover_note ? 16 : 0, color: 'var(--fg-dim)' }}>
                       Applied {new Date(app.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
 
@@ -428,7 +428,7 @@ export default function JobDetailPage() {
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e',
-                            color: 'var(--ok)', fontFamily: 'var(--mono)', fontSize: 9,
+                            color: 'var(--ok)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))',
                             letterSpacing: 2, cursor: 'pointer', transition: 'background 0.15s',
                           }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(34,197,94,0.2)')}
@@ -441,7 +441,7 @@ export default function JobDetailPage() {
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
-                            color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9,
+                            color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))',
                             letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                           }}
                           onMouseEnter={e => {
@@ -465,7 +465,7 @@ export default function JobDetailPage() {
                           marginTop: 16,
                           padding: '6px 14px',
                           background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-                          color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9,
+                          color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))',
                           letterSpacing: 2, cursor: 'pointer', transition: 'all 0.15s',
                         }}
                         onMouseEnter={e => {
@@ -523,7 +523,7 @@ export default function JobDetailPage() {
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--ok)', marginBottom: 4 }}>
                     APPLICATION SUBMITTED
                   </div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
                     The creator will review your application and get back to you.
                   </div>
                 </div>

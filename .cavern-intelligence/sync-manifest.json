@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T13:55:01.021Z",
+  "last_synchronized": "2026-09-29T15:03:27.935Z",
   "stats": {
-    "totalFiles": 487,
-    "totalSize": 3795913,
+    "totalFiles": 496,
+    "totalSize": 3872280,
     "byExtension": {
       ".json": 7,
       ".md": 7,
-      ".tsx": 154,
-      ".ts": 274,
+      ".tsx": 156,
+      ".ts": 280,
       ".js": 7,
-      ".sql": 38
+      ".sql": 39
     }
   },
   "modules": {
@@ -201,6 +201,8 @@
         "components/guides/GuidePanel.tsx",
         "components/guides/GuideSetup.tsx",
         "components/lounge/LoungePanels.tsx",
+        "components/mobile/Capture.tsx",
+        "components/mobile/Continue.tsx",
         "components/mobile/MobileTabBar.tsx",
         "components/progress/Bricks.tsx",
         "components/progress/LockedTool.tsx",
@@ -296,7 +298,8 @@
         "supabase/migrations/20260929030000_availability.sql",
         "supabase/migrations/20260929040000_search.sql",
         "supabase/migrations/20260929050000_themes.sql",
-        "supabase/migrations/20260929060000_transcripts.sql"
+        "supabase/migrations/20260929060000_transcripts.sql",
+        "supabase/migrations/20260929070000_pocket.sql"
       ]
     }
   },
@@ -333,13 +336,13 @@
     },
     {
       "path": "app/admin/analytics/page.tsx",
-      "size": 9609,
-      "last_modified": "2026-09-29T04:53:09.262Z"
+      "size": 9643,
+      "last_modified": "2026-09-29T14:43:54.463Z"
     },
     {
       "path": "app/admin/audit-logs/page.tsx",
-      "size": 16632,
-      "last_modified": "2026-09-29T05:00:22.699Z"
+      "size": 16734,
+      "last_modified": "2026-09-29T14:43:54.467Z"
     },
     {
       "path": "app/admin/error.tsx",
@@ -383,13 +386,13 @@
     },
     {
       "path": "app/auth/error.tsx",
-      "size": 1528,
-      "last_modified": "2026-09-29T05:20:55.127Z"
+      "size": 1562,
+      "last_modified": "2026-09-29T14:43:54.467Z"
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 15546,
-      "last_modified": "2026-09-29T04:52:00.972Z"
+      "size": 15648,
+      "last_modified": "2026-09-29T14:43:54.467Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -403,8 +406,8 @@
     },
     {
       "path": "app/crew/[id]/page.tsx",
-      "size": 19983,
-      "last_modified": "2026-09-29T05:20:55.132Z"
+      "size": 20289,
+      "last_modified": "2026-09-29T14:43:54.467Z"
     },
     {
       "path": "app/crew/loading.tsx",
@@ -413,13 +416,13 @@
     },
     {
       "path": "app/crew/page.tsx",
-      "size": 14585,
-      "last_modified": "2026-09-29T05:20:55.131Z"
+      "size": 14789,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/editor/error.tsx",
-      "size": 1603,
-      "last_modified": "2026-09-29T05:20:55.121Z"
+      "size": 1637,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/editor/loading.tsx",
@@ -428,8 +431,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 80205,
-      "last_modified": "2026-09-29T05:07:28.260Z"
+      "size": 80443,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/error.tsx",
@@ -438,8 +441,8 @@
     },
     {
       "path": "app/jobs/[id]/page.tsx",
-      "size": 25776,
-      "last_modified": "2026-09-29T05:22:01.972Z"
+      "size": 26252,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/jobs/loading.tsx",
@@ -448,8 +451,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 40970,
-      "last_modified": "2026-09-29T13:29:53.460Z"
+      "size": 42024,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/layout.tsx",
@@ -463,8 +466,8 @@
     },
     {
       "path": "app/lounge/error.tsx",
-      "size": 1547,
-      "last_modified": "2026-09-29T05:20:55.128Z"
+      "size": 1581,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/lounge/loading.tsx",
@@ -473,8 +476,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 94587,
-      "last_modified": "2026-09-29T13:34:58.992Z"
+      "size": 96015,
+      "last_modified": "2026-09-29T14:43:54.471Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -488,13 +491,13 @@
     },
     {
       "path": "app/p/[token]/page.tsx",
-      "size": 26932,
-      "last_modified": "2026-09-29T04:48:24.748Z"
+      "size": 27136,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/page.tsx",
-      "size": 38947,
-      "last_modified": "2026-09-29T05:22:01.971Z"
+      "size": 39491,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/portfolio/loading.tsx",
@@ -503,13 +506,13 @@
     },
     {
       "path": "app/portfolio/manage/page.tsx",
-      "size": 13978,
-      "last_modified": "2026-09-29T05:20:55.131Z"
+      "size": 14114,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/portfolio/page.tsx",
-      "size": 24366,
-      "last_modified": "2026-09-29T05:22:01.974Z"
+      "size": 24638,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/profile/loading.tsx",
@@ -518,23 +521,23 @@
     },
     {
       "path": "app/profile/page.tsx",
-      "size": 20754,
-      "last_modified": "2026-09-29T05:20:55.128Z"
+      "size": 21562,
+      "last_modified": "2026-09-29T14:48:21.639Z"
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 66923,
-      "last_modified": "2026-09-29T13:37:41.983Z"
+      "size": 68454,
+      "last_modified": "2026-09-29T14:48:40.039Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
-      "size": 32059,
-      "last_modified": "2026-09-29T04:52:00.972Z"
+      "size": 32399,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/projects/error.tsx",
-      "size": 1541,
-      "last_modified": "2026-09-29T05:20:55.125Z"
+      "size": 1575,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/projects/loading.tsx",
@@ -543,13 +546,13 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 34574,
-      "last_modified": "2026-09-29T13:41:58.713Z"
+      "size": 35322,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
-      "size": 7263,
-      "last_modified": "2026-09-29T04:48:24.748Z"
+      "size": 7365,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/settings/loading.tsx",
@@ -558,8 +561,8 @@
     },
     {
       "path": "app/settings/page.tsx",
-      "size": 18225,
-      "last_modified": "2026-09-29T05:20:55.132Z"
+      "size": 18259,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/shared/[token]/page.tsx",
@@ -568,8 +571,8 @@
     },
     {
       "path": "app/showcase/page.tsx",
-      "size": 6273,
-      "last_modified": "2026-09-29T04:46:08.873Z"
+      "size": 6341,
+      "last_modified": "2026-09-29T14:43:54.475Z"
     },
     {
       "path": "app/soundtrack/loading.tsx",
@@ -588,8 +591,8 @@
     },
     {
       "path": "app/studio/error.tsx",
-      "size": 1566,
-      "last_modified": "2026-09-29T05:20:55.133Z"
+      "size": 1600,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "app/studio/loading.tsx",
@@ -603,8 +606,8 @@
     },
     {
       "path": "app/today/page.tsx",
-      "size": 14434,
-      "last_modified": "2026-09-29T13:45:20.595Z"
+      "size": 14774,
+      "last_modified": "2026-09-29T14:13:48.634Z"
     },
     {
       "path": "app/welcome/page.tsx",
@@ -623,8 +626,8 @@
     },
     {
       "path": "components/ClientShell.tsx",
-      "size": 1234,
-      "last_modified": "2026-09-29T13:25:22.058Z"
+      "size": 1668,
+      "last_modified": "2026-09-29T14:09:31.999Z"
     },
     {
       "path": "components/CommandPalette.tsx",
@@ -718,8 +721,8 @@
     },
     {
       "path": "components/availability/AwayEditor.tsx",
-      "size": 4885,
-      "last_modified": "2026-09-29T04:53:09.297Z"
+      "size": 4953,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/breakdown/CategoryChips.tsx",
@@ -738,18 +741,18 @@
     },
     {
       "path": "components/brief/BriefPanel.tsx",
-      "size": 10084,
-      "last_modified": "2026-09-28T07:37:04.339Z"
+      "size": 10096,
+      "last_modified": "2026-09-29T14:48:41.287Z"
     },
     {
       "path": "components/crafts/CraftPicker.tsx",
-      "size": 5021,
-      "last_modified": "2026-09-27T05:00:16.391Z"
+      "size": 5055,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/CutNoteMarkers.tsx",
-      "size": 7974,
-      "last_modified": "2026-09-29T04:53:09.290Z"
+      "size": 8008,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/DiffModal.tsx",
@@ -758,8 +761,8 @@
     },
     {
       "path": "components/editor/EditorCenterViews.tsx",
-      "size": 29030,
-      "last_modified": "2026-09-29T05:22:01.975Z"
+      "size": 29948,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/EditorErrorBoundary.tsx",
@@ -768,13 +771,13 @@
     },
     {
       "path": "components/editor/EditorHeader.tsx",
-      "size": 16497,
-      "last_modified": "2026-09-29T05:20:55.136Z"
+      "size": 16531,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
-      "size": 14455,
-      "last_modified": "2026-09-29T04:44:59.367Z"
+      "size": 14795,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/EditorModals.tsx",
@@ -783,8 +786,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 31769,
-      "last_modified": "2026-09-29T05:20:55.137Z"
+      "size": 31803,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -793,23 +796,23 @@
     },
     {
       "path": "components/editor/SceneReferencesPanel.tsx",
-      "size": 7676,
-      "last_modified": "2026-09-29T05:03:21.903Z"
+      "size": 7744,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/TimingPanel.tsx",
-      "size": 8127,
-      "last_modified": "2026-09-29T04:53:09.291Z"
+      "size": 8195,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/WriteFooter.tsx",
-      "size": 6529,
-      "last_modified": "2026-09-29T13:37:25.671Z"
+      "size": 6597,
+      "last_modified": "2026-09-29T14:43:54.479Z"
     },
     {
       "path": "components/editor/WriteView.tsx",
-      "size": 20314,
-      "last_modified": "2026-09-29T05:07:57.860Z"
+      "size": 20484,
+      "last_modified": "2026-09-29T14:43:54.483Z"
     },
     {
       "path": "components/editor/WritingLoop.tsx",
@@ -873,13 +876,23 @@
     },
     {
       "path": "components/lounge/LoungePanels.tsx",
-      "size": 10576,
-      "last_modified": "2026-09-29T04:53:09.295Z"
+      "size": 10678,
+      "last_modified": "2026-09-29T14:43:54.483Z"
+    },
+    {
+      "path": "components/mobile/Capture.tsx",
+      "size": 18196,
+      "last_modified": "2026-09-29T14:11:46.590Z"
+    },
+    {
+      "path": "components/mobile/Continue.tsx",
+      "size": 6670,
+      "last_modified": "2026-09-29T14:09:07.163Z"
     },
     {
       "path": "components/mobile/MobileTabBar.tsx",
-      "size": 8444,
-      "last_modified": "2026-09-29T13:29:36.955Z"
+      "size": 9668,
+      "last_modified": "2026-09-29T14:11:53.786Z"
     },
     {
       "path": "components/progress/Bricks.tsx",
@@ -918,8 +931,8 @@
     },
     {
       "path": "components/studio/CastingBoard.tsx",
-      "size": 13773,
-      "last_modified": "2026-09-29T05:22:01.977Z"
+      "size": 13841,
+      "last_modified": "2026-09-29T14:43:54.483Z"
     },
     {
       "path": "components/studio/CharacterBible.tsx",
@@ -928,8 +941,8 @@
     },
     {
       "path": "components/studio/CrewBoards.tsx",
-      "size": 12406,
-      "last_modified": "2026-09-29T05:00:00.320Z"
+      "size": 12508,
+      "last_modified": "2026-09-29T14:43:54.483Z"
     },
     {
       "path": "components/studio/PitchDeck.tsx",
@@ -943,23 +956,23 @@
     },
     {
       "path": "components/studio/media/AddMedia.tsx",
-      "size": 7736,
-      "last_modified": "2026-09-29T07:03:04.406Z"
+      "size": 9792,
+      "last_modified": "2026-09-29T14:10:41.734Z"
     },
     {
       "path": "components/studio/media/FindReferences.tsx",
-      "size": 4443,
-      "last_modified": "2026-09-26T07:39:17.111Z"
+      "size": 4477,
+      "last_modified": "2026-09-29T14:43:54.483Z"
     },
     {
       "path": "components/studio/media/MediaDetail.tsx",
-      "size": 8955,
-      "last_modified": "2026-09-29T06:35:43.845Z"
+      "size": 9228,
+      "last_modified": "2026-09-29T14:10:28.478Z"
     },
     {
       "path": "components/studio/media/MediaGrid.tsx",
-      "size": 5535,
-      "last_modified": "2026-09-26T07:36:27.071Z"
+      "size": 5569,
+      "last_modified": "2026-09-29T14:10:35.498Z"
     },
     {
       "path": "components/studio/media/MediaPicker.tsx",
@@ -968,13 +981,13 @@
     },
     {
       "path": "components/studio/media/MediaThumb.tsx",
-      "size": 2647,
-      "last_modified": "2026-09-26T19:17:21.428Z"
+      "size": 2879,
+      "last_modified": "2026-09-29T14:10:11.578Z"
     },
     {
       "path": "components/studio/media/MediaViewer.tsx",
-      "size": 2452,
-      "last_modified": "2026-09-29T06:34:09.241Z"
+      "size": 2597,
+      "last_modified": "2026-09-29T14:10:13.374Z"
     },
     {
       "path": "components/studio/media/TranscriptPanel.tsx",
@@ -1073,8 +1086,8 @@
     },
     {
       "path": "components/studio/tabs/LibraryTab.tsx",
-      "size": 4009,
-      "last_modified": "2026-09-26T07:39:23.156Z"
+      "size": 4505,
+      "last_modified": "2026-09-29T14:10:51.150Z"
     },
     {
       "path": "components/studio/tabs/OverviewTab.tsx",
@@ -1248,8 +1261,8 @@
     },
     {
       "path": "e2e/mobile.spec.ts",
-      "size": 7949,
-      "last_modified": "2026-09-29T13:45:20.595Z"
+      "size": 11486,
+      "last_modified": "2026-09-29T14:13:14.322Z"
     },
     {
       "path": "e2e/money.spec.ts",
@@ -1683,13 +1696,38 @@
     },
     {
       "path": "lib/os/uiPrefs.ts",
-      "size": 3472,
-      "last_modified": "2026-09-29T04:46:54.776Z"
+      "size": 3681,
+      "last_modified": "2026-09-29T14:09:07.158Z"
     },
     {
       "path": "lib/password-strength.ts",
       "size": 3098,
       "last_modified": "2026-09-24T20:05:03.637Z"
+    },
+    {
+      "path": "lib/pocket/capture.test.ts",
+      "size": 2376,
+      "last_modified": "2026-09-29T14:09:07.163Z"
+    },
+    {
+      "path": "lib/pocket/capture.ts",
+      "size": 3422,
+      "last_modified": "2026-09-29T14:09:07.166Z"
+    },
+    {
+      "path": "lib/pocket/outbox.ts",
+      "size": 3857,
+      "last_modified": "2026-09-29T14:09:07.166Z"
+    },
+    {
+      "path": "lib/pocket/places.test.ts",
+      "size": 4002,
+      "last_modified": "2026-09-29T14:09:07.166Z"
+    },
+    {
+      "path": "lib/pocket/places.ts",
+      "size": 5857,
+      "last_modified": "2026-09-29T14:09:07.166Z"
     },
     {
       "path": "lib/references/search.ts",
@@ -1903,8 +1941,8 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 40912,
-      "last_modified": "2026-09-29T07:03:04.408Z"
+      "size": 41679,
+      "last_modified": "2026-09-29T14:09:07.158Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -2114,7 +2152,7 @@
     {
       "path": "lib/supabase/database.types.ts",
       "size": 115880,
-      "last_modified": "2026-09-29T06:39:11.509Z"
+      "last_modified": "2026-09-29T14:40:45.627Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2492,6 +2530,11 @@
       "last_modified": "2026-09-29T05:31:08.543Z"
     },
     {
+      "path": "supabase/migrations/20260929070000_pocket.sql",
+      "size": 6550,
+      "last_modified": "2026-09-29T14:40:07.283Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2499,7 +2542,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T13:54:11.126Z"
+      "last_modified": "2026-09-29T14:53:34.031Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2615,6 +2658,11 @@
       "path": "tests/integration/phases.test.ts",
       "size": 3863,
       "last_modified": "2026-09-28T06:50:07.668Z"
+    },
+    {
+      "path": "tests/integration/pocket.test.ts",
+      "size": 4635,
+      "last_modified": "2026-09-29T14:12:33.982Z"
     },
     {
       "path": "tests/integration/post-production.test.ts",

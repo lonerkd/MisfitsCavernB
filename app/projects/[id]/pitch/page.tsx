@@ -285,12 +285,12 @@ export default function PitchBoardPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) 1fr', gap: 0, alignItems: 'stretch', minHeight: 'calc(100vh - 60px)' }}>
         <aside style={{ borderRight: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 16, overflowY: 'auto' }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 12 }}>ASSET LIBRARY</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 12 }}>ASSET LIBRARY</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
             {TAB_META.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 7, cursor: 'pointer',
-                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, whiteSpace: 'nowrap',
+                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                 background: tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.04)',
                 color: tab === t.id ? textOn(accent) : 'var(--fg-muted)',
                 border: `1px solid ${tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.06)'}`,
@@ -359,7 +359,7 @@ export default function PitchBoardPage() {
           {tab === 'custom' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 6 }}>TEXT BLOCK</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 6 }}>TEXT BLOCK</div>
                 <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Heading (optional)" style={inputStyle} />
                 <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} placeholder="Write anything — a logline, a director's note, a pitch…" style={{ ...inputStyle, minHeight: 70, marginTop: 6, resize: 'vertical' }} />
                 <button
@@ -371,7 +371,7 @@ export default function PitchBoardPage() {
                 </button>
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 6 }}>MEDIA (YOUTUBE / IMAGE URL)</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 6 }}>MEDIA (YOUTUBE / IMAGE URL)</div>
                 <input value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="https://youtube.com/… or image URL" style={inputStyle} />
                 <button
                   disabled={!mediaUrl.trim()}
@@ -400,7 +400,7 @@ export default function PitchBoardPage() {
             transition: 'background 0.2s',
           }}
         >
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 16 }}>
             THE DECK · {blocks.length} BLOCK{blocks.length === 1 ? '' : 'S'} · drag to reorder, drag from the library to add
           </div>
 
@@ -472,7 +472,7 @@ function BlockCard({ block, accent, isDragging, isDropTarget, onDragStart, onDra
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <span style={{ color: accent, display: 'flex' }}>{BLOCK_ICON[block.block_type]}</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{block.block_type}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{block.block_type}</span>
         </div>
 
         {editing ? (
@@ -569,7 +569,7 @@ function Centered({ children }: { children: React.ReactNode }) {
   return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>{children}</div>;
 }
 function LibList({ children, empty }: { children?: React.ReactNode; empty?: string }) {
-  if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-dim)', padding: '8px 0' }}>{empty}</div>;
+  if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', padding: '8px 0' }}>{empty}</div>;
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>{children}</div>;
 }
 function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: React.ReactNode; accent: string; onAdd: () => void; onDragStart: () => void; onDragEnd: () => void }) {
@@ -594,7 +594,7 @@ function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: R
   );
 }
 
-const chipLabel: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 };
+const chipLabel: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 };
 const previewTitle: React.CSSProperties = { fontFamily: 'var(--sans, var(--serif))', fontSize: 12.5, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
 const previewBody: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', marginTop: 3 };
 const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 6 };
@@ -603,12 +603,12 @@ const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color
 function btnStyle(accent: string, filled: boolean): React.CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
-    fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 1,
+    fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 1,
     background: filled ? accent : 'rgba(var(--ink-rgb), 0.05)',
     color: filled ? textOn(accent) : 'var(--fg)',
     border: `1px solid ${filled ? accent : 'rgba(var(--ink-rgb), 0.1)'}`,
   };
 }
 function addAllStyle(accent: string): React.CSSProperties {
-  return { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 1, background: `${accent}22`, color: accent, border: `1px solid ${accent}55` };
+  return { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 1, background: `${accent}22`, color: accent, border: `1px solid ${accent}55` };
 }

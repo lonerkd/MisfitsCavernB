@@ -13,14 +13,14 @@
 }
 
 .head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
-.eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); }
+.eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); }
 .title { font-family: var(--display); font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: 2px; line-height: 1.05; color: var(--fg); margin: 4px 0 0; font-weight: 400; }
 .count { font-family: var(--mono); font-size: 10px; color: var(--fg-muted); }
 
 .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; margin-top: 18px; }
 @media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
 
-.sectionTitle { font-family: var(--mono); font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 10px; font-weight: 400; }
+.sectionTitle { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 10px; font-weight: 400; }
 
 /* ── Next moves ───────────────────────────── */
 .moves { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -34,19 +34,19 @@
 .moveDetail { font-size: 11.5px; color: var(--fg-muted); line-height: 1.5; margin: 3px 0 0; }
 .moveActions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .link {
-  display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 1px;
+  display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1px;
   color: var(--fg); text-decoration: none; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--pa-line);
   background: var(--pa-dim); cursor: pointer;
 }
 .link:hover { border-color: var(--pa); }
 .link:focus-visible, .chip:focus-visible, .tab:focus-visible, .numberInput:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }
-.more { background: none; border: none; color: var(--fg-muted); font-family: var(--mono); font-size: 9.5px; letter-spacing: 1px; cursor: pointer; padding: 6px 0 0; text-decoration: underline; }
+.more { background: none; border: none; color: var(--fg-muted); font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1px; cursor: pointer; padding: 6px 0 0; text-decoration: underline; }
 .empty { font-size: 12px; color: var(--fg-muted); margin: 0; line-height: 1.5; }
 
 /* ── The brief ────────────────────────────── */
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .tab {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 10px;
+  font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 10px;
   border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--fg-muted); cursor: pointer;
 }
 .tab[aria-selected='true'] { color: var(--fg); border-color: var(--pa-line); background: var(--pa-dim); }

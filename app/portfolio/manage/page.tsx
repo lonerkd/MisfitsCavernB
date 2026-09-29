@@ -195,7 +195,7 @@ export default function ManagePortfolioPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 'bold' }}>{project.title}</div>
-                    <div style={{ fontSize: 9, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>
+                    <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>
                       {[project.category, project.year, project.role].filter(Boolean).join(' · ')}
                     </div>
                   </div>
@@ -210,14 +210,14 @@ export default function ManagePortfolioPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                   <LinkIcon size={10} /> /p/{project.share_token}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
                   {project.portfolio_media.map(media => (
                     <div key={media.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-                      <span style={{ fontSize: 9, fontFamily: 'var(--mono)', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{media.media_type}</span>
+                      <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{media.media_type}</span>
                       <span style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.title || media.url}</span>
                       <button onClick={() => removeMedia(project.id, media.id)} aria-label={`Remove ${media.title || 'media'}`} title="Remove" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}><Trash2 size={12} /></button>
                     </div>
@@ -233,7 +233,7 @@ export default function ManagePortfolioPage() {
                   </select>
                   <input type="text" placeholder="Title (optional)" value={form.title} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, title: e.target.value } }))} style={{ ...fieldStyle, flex: 1 }} />
                   <input type="url" placeholder="Media URL" value={form.url} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, url: e.target.value } }))} style={{ ...fieldStyle, flex: 2 }} />
-                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
+                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
                 </div>
               </div>
             );

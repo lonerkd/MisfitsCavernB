@@ -98,11 +98,18 @@ Chrome lives in two places, and nothing else mounts itself globally:
   `CommandPalette` (⌘K), `ShortcutsOverlay`, `ThemeInitializer`,
   `EcosystemTaskbar` (the desktop dock; embeds `NotificationBell`) and
   `MobileTabBar`. CSS decides which navigation shows: at ≤760px the dock
-  (`.mc-dock`) is hidden and the tab bar shows — Today · Projects · Search ·
-  Lounge (unread badge) · More (a sheet with every tool, the active project,
-  and the page's dock context actions as "On this page"). The tab bar hides on
-  the editor (full-screen writing), split, auth and public pages, and slides
-  away while a field has focus (the keyboard needs the room).
+  (`.mc-dock`) is hidden and the tab bar shows — Today · Projects · Capture ·
+  Lounge (unread badge) · More (a sheet with Search, every tool, the active
+  project, and the page's dock context actions as "On this page"). The tab bar
+  hides on the editor (full-screen writing), split, auth and public pages, and
+  slides away while a field has focus (the keyboard needs the room).
+- Pocket (`components/mobile/Capture.tsx`, `Continue.tsx`, `lib/pocket/*`),
+  also from `ClientShell`: `OutboxFlusher` sends captures kept on the device
+  (IndexedDB) when online / back in front; `PlaceTracker` saves the last
+  resumable place per device kind to `ui_prefs.places`; `ContinueOffer`
+  offers the other device's place (a card on Today, a note on the first page
+  of a visit elsewhere). `/today?capture=1` (home-screen shortcut) and
+  `/today?url=|text=|title=` (the manifest's `share_target`) open Capture.
 - Phones, suite-wide (`app/globals.css`): no sideways scroll, fields at 16px
   (no iOS zoom), room for the tab bar and the home indicator
   (`viewport-fit=cover`, `env(safe-area-inset-*)`), `.mc-phone-only` /

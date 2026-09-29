@@ -152,24 +152,24 @@ export default function ProfilePage() {
 
       <div style={{ marginTop: 60, maxWidth: 640, margin: '60px auto 0', padding: '40px 24px 80px' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
-          <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 4vw, 24px)', marginBottom: 40 }}>
+          <div style={{ flexShrink: 0 }}>
             <Avatar src={profile.avatar_url} name={profile.username || user.email} size={72} style={{ border: '2px solid rgba(232, 67, 26,0.3)' }} />
           </div>
-          <div>
+          <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
               {profile.username || 'unnamed'}
             </div>
             {profile.role && (
-              <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 2, marginTop: 4, fontFamily: 'var(--mono)' }}>
+              <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--accent)', letterSpacing: 2, marginTop: 4, fontFamily: 'var(--mono)' }}>
                 {profile.role.toUpperCase()}
               </div>
             )}
-            <div style={{ fontSize: 9, marginTop: 4, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>{user.email}</div>
+            <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', marginTop: 4, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>{user.email}</div>
           </div>
           {user.id && (
             <Link href={`/crew/${user.id}`} target="_blank"
-              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none', letterSpacing: 1 }}
+              style={{ marginLeft: 'auto', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center', gap: 6, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none', letterSpacing: 1 }}
               title="View public profile">
               <ExternalLink size={12} /> PUBLIC
             </Link>
@@ -195,7 +195,7 @@ export default function ProfilePage() {
                 onMouseLeave={e => { if (!isTabActive) e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.06)'; }}>
                 <div style={{ color: 'var(--accent)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>{icon}</div>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2, color: 'var(--fg)' }}>{count}</div>
-                <div style={{ fontSize: 8, letterSpacing: 2, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>{label.toUpperCase()}</div>
+                <div style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>{label.toUpperCase()}</div>
               </div>
             );
           })}
@@ -213,10 +213,10 @@ export default function ProfilePage() {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)', paddingBottom: 10, marginBottom: 12
             }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
                 {activeTab === 'scripts' ? 'My Screenplays' : activeTab === 'projects' ? 'My Productions' : 'My Posted Jobs'}
               </span>
-              <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1 }}>
+              <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', letterSpacing: 1 }}>
                 [CLOSE]
               </button>
             </div>
@@ -239,7 +239,7 @@ export default function ProfilePage() {
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
                     >
                       <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{s.title}</span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
                         EDITED {new Date(s.updated_at).toLocaleDateString()}
                       </span>
                     </Link>
@@ -269,7 +269,7 @@ export default function ProfilePage() {
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.accent_color || '#e8431a' }} />
                         {p.title}
                       </span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
                         {p.status || 'production'}
                       </span>
                     </Link>
@@ -297,9 +297,9 @@ export default function ProfilePage() {
                     >
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span style={{ fontFamily: 'var(--display)', fontSize: '0.95rem', color: 'var(--fg)' }}>{j.title}</span>
-                        {j.role && <span style={{ fontSize: 8, fontFamily: 'var(--mono)', marginTop: 2, color: 'var(--fg-dim)' }}>{j.role}</span>}
+                        {j.role && <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', marginTop: 2, color: 'var(--fg-dim)' }}>{j.role}</span>}
                       </div>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)' }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
                         {(j.status || 'OPEN').toUpperCase()}
                       </span>
                     </Link>
@@ -313,24 +313,24 @@ export default function ProfilePage() {
         <div style={{ display: 'grid', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>USERNAME</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>USERNAME</label>
               <input type="text" value={profile.username || ''} onChange={e => setProfile({ ...profile, username: e.target.value })}
                 placeholder="your_handle" style={fieldStyle} />
             </div>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>LOCATION</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>LOCATION</label>
               <input type="text" value={profile.location || ''} onChange={e => setProfile({ ...profile, location: e.target.value })}
                 placeholder="Los Angeles, CA" style={fieldStyle} />
             </div>
           </div>
 
           <div>
-            <label htmlFor="profile-craft" style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>CRAFT</label>
+            <label htmlFor="profile-craft" style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>CRAFT</label>
             <CraftPicker id="profile-craft" label="Your craft" value={profile.role || null} onChange={(craft) => setProfile({ ...profile, role: craft })} placeholder="What do you do on a set?" noneLabel="No craft yet" />
           </div>
 
           <div>
-            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>BIO</label>
+            <label style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>BIO</label>
             <textarea value={profile.bio || ''} onChange={e => setProfile({ ...profile, bio: e.target.value })}
               placeholder="Tell the community about yourself, your style, what you're looking for..."
               style={{ ...fieldStyle, height: 100, resize: 'vertical' }} />
@@ -338,19 +338,19 @@ export default function ProfilePage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>DISCORD USERNAME</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>DISCORD USERNAME</label>
               <input type="text" value={profile.discord_username || ''} onChange={e => setProfile({ ...profile, discord_username: e.target.value })}
                 placeholder="handle#0000" style={fieldStyle} />
             </div>
             <div>
-              <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVATAR URL</label>
+              <label style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVATAR URL</label>
               <input type="url" value={profile.avatar_url || ''} onChange={e => setProfile({ ...profile, avatar_url: e.target.value })}
                 placeholder="https://..." style={fieldStyle} />
             </div>
           </div>
 
           <div>
-            <label style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVAILABILITY</label>
+            <label style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 8, color: 'var(--fg-dim)' }}>AVAILABILITY</label>
             <div style={{ display: 'flex', gap: 12 }}>
               {['OPEN', 'BUSY'].map(s => (
                 <button key={s} onClick={() => setProfile({ ...profile, status: s })}
@@ -370,13 +370,13 @@ export default function ProfilePage() {
           <AwayEditor userId={user?.id ?? null} />
 
           <div style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.05)', paddingTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link href="/portfolio/manage" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
+            <Link href="/portfolio/manage" style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
               → MANAGE PORTFOLIO
             </Link>
-            <Link href="/editor" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
+            <Link href="/editor" style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
               → OPEN EDITOR
             </Link>
-            <Link href="/jobs?tab=mine" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
+            <Link href="/jobs?tab=mine" style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>
               → MY JOBS
             </Link>
           </div>

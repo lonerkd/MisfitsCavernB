@@ -239,7 +239,7 @@ export default function AuditLogsPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <stat.icon size={14} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{stat.label}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{stat.label}</span>
                 </div>
                 <div style={{ fontSize: '1.5rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)' }}>
                   {stat.value}
@@ -353,7 +353,7 @@ export default function AuditLogsPage() {
                         {log.resource_type}
                         {log.resource_id && ` (${log.resource_id})`}
                       </td>
-                      <td style={{ padding: 12, fontSize: 9, color: 'var(--fg-dim)' }}>
+                      <td style={{ padding: 12, fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
                         {Object.keys(log.details).length > 0
                           ? JSON.stringify(log.details).substring(0, 50) + '...'
                           : '-'}
@@ -429,7 +429,7 @@ export default function AuditLogsPage() {
                     <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>
                       {user.actionCount}
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)' }}>actions</div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>actions</div>
                   </div>
                 ))}
               </div>

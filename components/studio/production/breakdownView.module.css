@@ -5,7 +5,7 @@
 .totals { display: flex; gap: 8px; flex-wrap: wrap; }
 .total { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel); min-width: 92px; }
 .totalValue { font-family: var(--mono); font-size: 16px; color: var(--fg); }
-.totalLabel { font-family: var(--mono); font-size: 8.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); margin-top: 2px; }
+.totalLabel { font-family: var(--mono); font-size: max(8.5px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); margin-top: 2px; }
 .spacer { flex: 1; }
 .filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
 .search { width: 200px; }
@@ -24,7 +24,7 @@
 }
 .catHead { display: flex; align-items: center; gap: 8px; }
 .catName { font-family: var(--mono); font-size: 11px; color: var(--c); letter-spacing: 0.5px; margin: 0; font-weight: 600; flex: 1; }
-.catMeta { font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
+.catMeta { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
 .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .row {
@@ -36,7 +36,7 @@
 .row:focus-visible { outline: 2px solid var(--studio); outline-offset: 1px; }
 .rowOn { border-color: color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 9%, transparent); }
 .rowName { font-family: var(--mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rowSub { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowSub { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rowCost { font-family: var(--mono); font-size: 10px; color: var(--fg-muted); white-space: nowrap; }
 .status { width: 8px; height: 8px; border-radius: 50%; }
 .status_needed { border: 1.5px solid #f87171; }
@@ -48,10 +48,10 @@
 .sheetHead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .sheetNum { font-family: var(--display); font-size: 1.5rem; letter-spacing: 1px; color: var(--fg); line-height: 1; }
 .sheetHeading { font-family: var(--mono); font-size: 11px; color: var(--fg); text-transform: uppercase; }
-.sheetMeta { font-family: var(--mono); font-size: 9.5px; color: var(--fg-dim); }
+.sheetMeta { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
 .boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
 .box { --c: #888; border-radius: 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); padding: 8px 10px; }
-.boxLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--c); margin-bottom: 4px; }
+.boxLabel { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1px; text-transform: uppercase; color: var(--c); margin-bottom: 4px; }
 .boxItems { display: flex; flex-wrap: wrap; gap: 4px; }
 .boxItem { font-family: var(--mono); font-size: 10.5px; color: var(--fg); background: rgba(var(--fg-rgb), 0.05); border: 1px solid transparent; border-radius: 5px; padding: 2px 7px; cursor: pointer; }
 .boxItem:hover { border-color: var(--c); }
@@ -63,4 +63,4 @@
 .edRow { display: grid; grid-template-columns: 34px minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; }
 .colorInput { width: 34px; height: 30px; border: 1px solid var(--border-2); border-radius: 8px; background: transparent; padding: 2px; cursor: pointer; }
 .edActions { display: flex; gap: 2px; }
-.edCount { font-family: var(--mono); font-size: 9px; color: var(--fg-dim); }
+.edCount { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); }

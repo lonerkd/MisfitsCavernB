@@ -1,7 +1,7 @@
 /* The format picker: format cards, and the selected format's journey. */
 
 .wrap { display: flex; flex-direction: column; gap: 8px; }
-.label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--fg-muted); text-transform: uppercase; }
+.label { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; color: var(--fg-muted); text-transform: uppercase; }
 .loading { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); padding: 6px 0; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
@@ -29,6 +29,6 @@
 .phase + .phase::before { content: '→'; margin: 0 4px; color: var(--fg-dim); }
 .phaseNum {
   width: 17px; height: 17px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(var(--fg-rgb), 0.08); color: var(--fg-muted); font-size: 9px;
+  background: rgba(var(--fg-rgb), 0.08); color: var(--fg-muted); font-size: max(9px, var(--mc-min-font, 0px));
 }
 .meta { margin: 0; font-family: var(--mono); font-size: 10px; color: var(--fg-muted); }

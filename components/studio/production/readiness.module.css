@@ -1,7 +1,7 @@
 /* Scene readiness: can we shoot it? */
 
 .wrap { display: flex; flex-direction: column; gap: 18px; }
-.eyebrow { margin: 0 0 8px; font-family: var(--mono); font-size: 9px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); }
+.eyebrow { margin: 0 0 8px; font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); }
 .empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 28px; border-radius: 14px; border: 1px dashed rgba(var(--fg-rgb), 0.14); color: var(--fg-muted); font-size: 13px; }
 .empty p { margin: 0; max-width: 520px; line-height: 1.6; }
 .clear { margin: 0; font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }

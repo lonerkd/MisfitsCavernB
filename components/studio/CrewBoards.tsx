@@ -64,7 +64,7 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--fg-muted)' }}>{beat.content}</div>
       </div>
-      <div style={{ fontSize: 9, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
+      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
     </motion.div>
   );
 }
@@ -116,7 +116,7 @@ export function CrewMemberCard({ member, index, isOnline, away }: { member: any;
         <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
         {away && <div style={{ fontSize: 11, color: 'var(--warn)', marginTop: 3 }}>Away {away}</div>}
       </div>
-      <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'uppercase' }}>
         {member.status || 'pending'}
       </div>
     </motion.div>
@@ -217,7 +217,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                  </div>
 
                  <div>
-                   <label style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <label style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
                    <select
                      value={role}
                      onChange={e => setRole(e.target.value)}

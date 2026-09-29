@@ -117,7 +117,7 @@ export function CraftBadge({ craft, color, upper = false }: { craft: string; col
   const { byName } = useCrafts();
   const c = color ?? byName.get(craft)?.color ?? '#a3a3a3';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: upper ? 1.5 : 0.3, textTransform: upper ? 'uppercase' : 'none', color: readable(c) }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: upper ? 1.5 : 0.3, textTransform: upper ? 'uppercase' : 'none', color: readable(c) }}>
       <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: c }} />{craft}
     </span>
   );

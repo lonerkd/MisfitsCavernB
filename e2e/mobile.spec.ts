@@ -120,6 +120,60 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await ctx.close();
   });
 
+  test('Pocket: capture a note and a link from the phone; continue where the desk left off', async ({ browser }) => {
+    test.setTimeout(120_000);
+    // Where the desk was, twenty minutes ago.
+    const desk = { path: `/projects/${projectId}`, label: `Tidewater ${TAG} — project page`, at: new Date(Date.now() - 20 * 60_000).toISOString(), project: projectId };
+    await admin.from('profiles').update({ ui_prefs: { places: { desktop: desk } } }).eq('id', owner.id);
+
+    const ctx = await browser.newContext(PHONE);
+    const page = await ctx.newPage();
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', owner.email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+
+    // Today offers the desk's place, and taking it goes there.
+    await page.goto('/today');
+    const offer = page.getByRole('complementary', { name: 'Continue from your desktop' }).first();
+    await expect(offer).toContainText(`Tidewater ${TAG} — project page`, { timeout: 30_000 });
+    await expect(offer).toContainText('20 min ago');
+    await offer.getByRole('button', { name: /project page/ }).click();
+    await page.waitForURL(`**/projects/${projectId}`);
+
+    // Capture a note into the project, from the tab bar.
+    await page.goto('/today');
+    await page.locator('[data-mobile-tabbar]').getByRole('button', { name: /Capture/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'Capture' });
+    await sheet.getByLabel('Project to capture into').selectOption(projectId);
+    await sheet.getByRole('button', { name: 'Note' }).click();
+    await sheet.getByLabel('Note', { exact: true }).fill(`Ferry at six ${TAG}\nbring coats`);
+    await sheet.getByRole('button', { name: 'Save note' }).click();
+    await expect(sheet.getByRole('status').filter({ hasText: `in Tidewater ${TAG}` })).toBeVisible({ timeout: 20_000 });
+    await expect.poll(async () => (await admin.from('media').select('kind, title, notes').eq('project_id', projectId).eq('kind', 'note')).data)
+      .toEqual([{ kind: 'note', title: `Ferry at six ${TAG}`, notes: `Ferry at six ${TAG}\nbring coats` }]);
+
+    // Shared from another app: a link lands as a link.
+    await page.goto(`/today?text=${encodeURIComponent('look https://example.com/harbour')}`);
+    const shared = page.getByRole('dialog', { name: 'Capture' });
+    await expect(shared.getByLabel('Web address')).toHaveValue('https://example.com/harbour');
+    await shared.getByLabel('Project to capture into').selectOption(projectId);
+    await shared.getByRole('button', { name: 'Add link' }).click();
+    await expect.poll(async () => (await admin.from('media').select('external_url').eq('project_id', projectId).eq('kind', 'link')).data)
+      .toEqual([{ external_url: 'https://example.com/harbour' }]);
+    await shared.getByRole('button', { name: 'Close' }).click();
+
+    // The note is in the Studio library, on any device.
+    await page.goto('/studio?tab=library');
+    await expect(page.getByText(`Ferry at six ${TAG}`).first()).toBeVisible({ timeout: 30_000 });
+
+    // And the phone remembered where it was, for the desk to offer back.
+    await expect.poll(async () => ((await admin.from('profiles').select('ui_prefs').eq('id', owner.id).single()).data?.ui_prefs as { places?: { phone?: { path: string } } })?.places?.phone?.path, { timeout: 20_000 })
+      .toBe('/studio?tab=library');
+    await ctx.close();
+  });
+
   test('on a desk the dock stays and the tab bar does not show', async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();

@@ -215,7 +215,7 @@ export default function AdminAnalyticsPage() {
                 { label: 'Completion Rate', value: analytics.totalProjects > 0 ? `${Math.round((analytics.completedProjects / analytics.totalProjects) * 100)}%` : '—' },
               ].map(metric => (
                 <div key={metric.label} style={{ padding: 16, background: 'rgba(0,153,255,0.05)', borderRadius: 4 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 9, marginBottom: 8, color: 'var(--fg-dim)' }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', marginBottom: 8, color: 'var(--fg-dim)' }}>
                     {metric.label}
                   </div>
                   <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', fontWeight: 700 }}>

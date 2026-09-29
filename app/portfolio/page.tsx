@@ -80,7 +80,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         position: 'absolute',
         top: 14,
         right: 14,
-        fontSize: 8,
+        fontSize: 'max(8px, var(--mc-min-font, 0px))',
         letterSpacing: 3,
         textTransform: 'uppercase',
         color: 'light-dark(#ffb199, var(--accent))',
@@ -135,7 +135,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         }}>
           {video.title}
         </h2>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {[video.role, video.year].filter(Boolean).join(' · ')}
         </div>
         {hover && (
@@ -187,11 +187,11 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: 8, lineHeight: 1, marginBottom: 20 }}>{project.title}</h1>
             <div style={{ display: 'flex', gap: 24, marginBottom: 60 }}>
                <div>
-                 <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Role</div>
+                 <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Role</div>
                  <div style={{ fontSize: 14, color: 'var(--fg-strong)' }}>{project.role}</div>
                </div>
                <div>
-                 <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Category</div>
+                 <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Category</div>
                  <div style={{ fontSize: 14, color: 'var(--fg-strong)' }}>{project.category}</div>
                </div>
             </div>
@@ -359,9 +359,9 @@ export default function PortfolioPage() {
             >MC</div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--warn)', textTransform: 'uppercase' }}>Portfolio</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--warn)', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {videosList.length} Projects
         </span>
       </nav>
@@ -415,7 +415,7 @@ export default function PortfolioPage() {
                   <div key={f.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${col}`, borderRadius: 10, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                       <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{f.name}</span>
-                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 99, padding: '3px 9px' }}>{f.status}</span>
+                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 99, padding: '3px 9px' }}>{f.status}</span>
                     </div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{f.projectTitle}{f.deadline ? ` · ${f.deadline}` : ''}</div>
                   </div>
@@ -435,7 +435,7 @@ export default function PortfolioPage() {
                 <div key={c.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 10, padding: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                     <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{c.title}</span>
-                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 99, padding: '3px 9px' }}>{c.platform}</span>}
+                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 99, padding: '3px 9px' }}>{c.platform}</span>}
                   </div>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{c.projectTitle}{c.budget ? ` · $${Number(c.budget).toLocaleString()}` : ''}</div>
                 </div>

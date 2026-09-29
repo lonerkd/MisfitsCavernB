@@ -160,6 +160,20 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /** A written note in the library: a line, an idea, what someone said. Its words live in notes. */
+  async function addNote(projectId: string, userId: string, input: { title?: string; text: string; board?: string | null }): Promise<Media> {
+    const text = input.text.trim().slice(0, 5000);
+    if (!text) throw new StudioError('Write something first.');
+    const title = (input.title?.trim() || text.split('\n')[0]).replace(/\s+/g, ' ').slice(0, 80);
+    const { data, error } = await db
+      .from('media')
+      .insert({ project_id: projectId, kind: 'note', title, notes: text, board: input.board?.trim() || null, created_by: userId })
+      .select('*')
+      .single();
+    if (error) fail(error, 'Could not save the note');
+    return data;
+  }
+
   /** Pins from a Pinterest board, as image items on one board of the library (their pin page in the notes). */
   async function addPins(projectId: string, userId: string, pins: Array<{ title: string; pinUrl: string; imageUrl: string }>, board: string | null): Promise<Media[]> {
     if (!pins.length) return [];
@@ -758,7 +772,7 @@ export function createStudioApi(db: Client) {
   }
 
   return {
-    listMedia, addLink, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
+    listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,

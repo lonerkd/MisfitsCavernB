@@ -32,7 +32,7 @@
 .divider { width: 1px; height: 16px; background: var(--border-2); }
 .module {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: max(9px, var(--mc-min-font, 0px));
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--violet);

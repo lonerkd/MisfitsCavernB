@@ -2,7 +2,7 @@
 
 // The suite on a phone. The desktop dock has room for every app; a phone
 // has room for a thumb. Five tabs cover what people do on the go — Today,
-// Projects, Search, Lounge — and More opens a sheet with everything else:
+// Projects, Capture, Lounge — and More opens a sheet with everything else:
 // every tool, the active project (switchable), and whatever the page in view
 // offers in the desktop dock's context capsule ("On this page"), so nothing
 // on desktop is out of reach here. Shown only at phone widths (CSS); the bar
@@ -14,12 +14,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Sun, FolderOpen, Search, MessageSquare, Grid2x2, X, FileText, LayoutGrid, Briefcase, Users, Film, Music,
-  User, Settings, Bell, type LucideIcon,
+  User, Settings, Bell, Plus, type LucideIcon,
 } from 'lucide-react';
 import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/context/PillContext';
 import { getLoungeUnread } from '@/lib/supabase/messages';
 import { readable } from '@/lib/color';
+import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture';
 import m from './mobile.module.css';
 
 const TOOLS = [
@@ -97,6 +98,10 @@ function MoreSheet({ onClose }: { onClose: () => void }) {
           </>
         )}
 
+        <button type="button" className={m.row} onClick={() => { onClose(); window.dispatchEvent(new Event('mc-open-command-palette')); }}>
+          <Search size={18} className={m.tileIcon} aria-hidden /> Search everything
+        </button>
+
         <p className={m.section}>Tools</p>
         <nav className={m.grid} aria-label="Tools">
           {TOOLS.map(({ href, label, icon: Icon }) => {
@@ -138,10 +143,23 @@ export default function MobileTabBar() {
   const { status } = useSession();
   const keyboard = useKeyboardOpen();
   const [more, setMore] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [start, setStart] = useState<CaptureStart | null>(null);
+  const waiting = useOutbox().length;
   const [unread, setUnread] = useState(0);
   const authed = status === 'authed';
 
-  useEffect(() => { setMore(false); }, [pathname]);
+  useEffect(() => { setMore(false); setCapturing(false); }, [pathname]);
+  // The home-screen shortcut and the share menu land on Today with what to
+  // capture: open Capture with it, then tidy the address.
+  useEffect(() => {
+    if (!authed || pathname !== '/today') return;
+    const shared = fromShare(new URLSearchParams(location.search));
+    if (!shared) return;
+    setStart(shared);
+    setCapturing(true);
+    history.replaceState(history.state, '', '/today');
+  }, [authed, pathname]);
   useEffect(() => {
     if (!authed) return;
     let live = true;
@@ -172,9 +190,10 @@ export default function MobileTabBar() {
       <nav className={`${m.bar} ${keyboard ? m.hidden : ''}`} aria-label="Suite" data-mobile-tabbar>
         {tab('/today', 'Today', Sun, (p) => p === '/today')}
         {tab('/projects', 'Projects', FolderOpen, (p) => p.startsWith('/projects') || p.startsWith('/studio') || p.startsWith('/editor'))}
-        <button type="button" className={m.tab} onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))}>
-          <Search size={21} aria-hidden />
-          Search
+        <button type="button" className={`${m.tab} ${m.captureTab}`} aria-haspopup="dialog" aria-expanded={capturing} onClick={() => { setStart(null); setCapturing(true); }}>
+          <span className={m.captureDisc}><Plus size={22} aria-hidden /></span>
+          Capture
+          {waiting > 0 && <span className={m.badge} aria-label={`${waiting} waiting to send`}>{waiting}</span>}
         </button>
         {tab('/lounge', 'Lounge', MessageSquare, (p) => p.startsWith('/lounge'), unread)}
         <button type="button" className={`${m.tab} ${more ? m.on : ''}`} aria-expanded={more} aria-haspopup="dialog" onClick={() => setMore(true)}>
@@ -183,6 +202,7 @@ export default function MobileTabBar() {
         </button>
       </nav>
       {more && <MoreSheet onClose={() => setMore(false)} />}
+      {capturing && <CaptureSheet start={start} onClose={() => setCapturing(false)} />}
     </>
   );
 }

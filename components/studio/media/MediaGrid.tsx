@@ -15,6 +15,7 @@ const KINDS: Array<{ id: KindFilter; label: string }> = [
   { id: 'audio', label: 'Audio' },
   { id: 'document', label: 'PDFs' },
   { id: 'link', label: 'Links' },
+  { id: 'note', label: 'Notes' },
 ];
 
 /** Kind + board filters and search over a media list. */

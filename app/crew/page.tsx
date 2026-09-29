@@ -171,7 +171,7 @@ export default function CrewPage() {
                 onClick={() => setMode(t.id)}
                 style={{
                   padding: '7px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, whiteSpace: 'nowrap',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',
                   transition: 'background 0.2s, color 0.2s',
@@ -198,7 +198,7 @@ export default function CrewPage() {
               <div style={{ display: 'flex', gap: 8 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
                   <button key={a} onClick={() => setAvailFilter(a)}
-                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
@@ -286,12 +286,12 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           </div>
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
-            {member.role && <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
+            {member.role && <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
           </div>
           {member.statusLabel && (
             <div style={{ marginLeft: 'auto' }}>
               <span style={{
-                fontSize: 9, padding: '3px 8px',
+                fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '3px 8px',
                 border: `1px solid ${member.statusOpen ? '#00ff00' : '#666'}`,
                 color: member.statusOpen ? 'var(--ok)' : 'var(--fg-dim)',
                 fontFamily: 'var(--mono)'
@@ -309,10 +309,10 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
         {(member.location || member.discord) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             {member.location && (
-              <div style={{ fontSize: 9, color: 'var(--fg-dim)' }}>{member.location}</div>
+              <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{member.location}</div>
             )}
             {member.discord && (
-              <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
+              <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                 Discord: {member.discord}
               </div>
             )}

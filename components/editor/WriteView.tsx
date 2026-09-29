@@ -174,7 +174,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                           style={{
                             position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
                             border: '1px dashed rgba(var(--ink-rgb), 0.35)', color: 'var(--fg-dim)',
-                            fontSize: 9, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
+                            fontSize: 'max(9px, var(--mc-min-font, 0px))', lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
                           }}
                         >+</span>
                       )}
@@ -193,7 +193,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                                 key={t}
                                 onClick={() => setAnnotationDraft((d: any) => d ? { ...d, type: t } : d)}
                                 style={{
-                                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase',
+                                  fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, textTransform: 'uppercase',
                                   padding: '3px 7px', borderRadius: 99, cursor: 'pointer',
                                   background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(var(--ink-rgb), 0.04)',
                                   border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)'}`,
@@ -272,11 +272,11 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   display: 'flex', alignItems: 'center', gap: 8,
                   background: 'var(--surface)', border: '1px solid rgba(232,67,26,0.35)',
                   borderRadius: 20, padding: '6px 12px', backdropFilter: 'blur(12px)',
-                  fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: 0.5, color: 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: 'var(--fg-muted)',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} aria-hidden />
                   Tag mode — select words to tag them · underlined words are suggestions
-                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 9.5, textDecoration: 'underline' }}>Exit</button>
+                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', textDecoration: 'underline' }}>Exit</button>
                 </div>
               )}
 
@@ -303,7 +303,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                     Table Read
                   </span>
                 </div>

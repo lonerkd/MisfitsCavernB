@@ -79,7 +79,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                 { pct: 90, label: 'Finale' },
               ].map(m => (
                 <div key={m.label} title={m.label} style={{ position: 'absolute', top: `${m.pct}%`, left: -1, width: 4, height: 4, borderRadius: '50%', background: 'rgba(var(--ink-rgb), 0.25)', transform: 'translateY(-50%)' }}>
-                  <span className="mc-hide-phone" style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 0.5, color: 'var(--fg-dim)', whiteSpace: 'nowrap' }}>{m.label}</span>
+                  <span className="mc-hide-phone" style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: 'var(--fg-dim)', whiteSpace: 'nowrap' }}>{m.label}</span>
                 </div>
               ))}
 
@@ -96,7 +96,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                 const act2Share = act2Words / totalWords;
                 if (act2Share < 0.55) return null;
                 return (
-                  <div className="mc-hide-phone" style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 0.5, color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
+                  <div className="mc-hide-phone" style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
                     Act II lagging · {Math.round(act2Share * 100)}% of words
                   </div>
                 );
