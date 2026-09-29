@@ -3640,6 +3640,17 @@ export type Database = {
           sender_id: string;
         }[];
       };
+      search_suite: {
+        Args: { p_limit?: number; p_query: string };
+        Returns: {
+          detail: string;
+          id: string;
+          kind: string;
+          project_id: string;
+          rank: number;
+          title: string;
+        }[];
+      };
       send_call_sheet_reminders: {
         Args: Record<PropertyKey, never>;
         Returns: number;
