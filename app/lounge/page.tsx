@@ -1024,8 +1024,10 @@ export default function LoungePage() {
     }
   };
 
+  // Exactly one screen tall, ending above the dock: each pane scrolls on its
+  // own, so a long channel list never pushes the composer under the dock.
   return (
-    <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
+    <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: '100dvh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
       <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
 

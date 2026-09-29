@@ -1170,7 +1170,7 @@ export default function EditorPage() {
   const editorCtx: EditorCtx = { tools, cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && (
@@ -1241,7 +1241,8 @@ export default function EditorPage() {
 
                     {activeView === 'write' && <WriteView ctx={editorCtx} />}
 
-                    {activeView === 'write' && !focusMode && <WriteFooter ctx={editorCtx} />}
+                    {/* The beat timeline hugs the screen's left edge — only when the story map isn't open there already. */}
+                    {activeView === 'write' && !focusMode && !showSidebar && <WriteFooter ctx={editorCtx} />}
 
                     {activeView === 'preview' && <PreviewView ctx={editorCtx} />}
 

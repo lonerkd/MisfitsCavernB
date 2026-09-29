@@ -127,7 +127,7 @@ export function EditorRightPanels({
     <>
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
                 {TABS.filter(([key]) => key !== 'breakdown' || showBreakdown || rightPanel === 'breakdown').map(([key, Icon, label]) => (
-                  <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} style={{
+                  <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} title={label} style={{
                     flex: 1, minWidth: 0, padding: '8px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',
                     color: rightPanel === key ? 'var(--fg)' : 'var(--fg-dim)',
@@ -138,7 +138,8 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    <span style={{ fontSize: 'max(9.5px, var(--mc-min-font, 0px))', fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
+                    {/* Six tabs share a narrow panel: each label stays inside its own tab. */}
+                    <span style={{ fontSize: 'max(9.5px, var(--mc-min-font, 0px))', fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 2px' }}>{label}</span>
                   </button>
                 ))}
               </div>

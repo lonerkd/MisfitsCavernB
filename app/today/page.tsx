@@ -186,7 +186,7 @@ export default function TodayPage() {
         )}
       </section>
 
-      <section className={t.card} aria-labelledby="today-lounge">
+      <section className={`${t.card} ${t.tall}`} aria-labelledby="today-lounge">
         <div className={t.cardHead}>
           <h2 id="today-lounge" className={t.cardTitle}><MessageSquare size={14} aria-hidden /> Lounge</h2>
           <Link href="/lounge" className={t.more}>Open</Link>
