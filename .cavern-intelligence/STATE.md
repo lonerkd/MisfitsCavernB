@@ -19,6 +19,10 @@ No migration.
 - **Today on a desk**: the Lounge card sits beside "Yours to do" and
   "Updates", as tall as both — no hole under it.
 - Projects search placeholder fits ("Search projects, people…").
+- **Crew directory**: the search is one compact row like the Projects board
+  (icon inside, 40px tall), with matching All / Open / Busy buttons (a
+  labelled group, pressed state announced) — it was a tall floating-label
+  field with the filters stretched into tall boxes beside it.
 - Verified in screenshots at 1440×900; lounge, mobile, accessibility, Studio
   journey and themes e2e pass.
 
