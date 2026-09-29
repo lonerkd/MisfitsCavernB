@@ -7,6 +7,7 @@ const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), 
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
 const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
+const MobileTabBar = dynamic(() => import('@/components/mobile/MobileTabBar'), { ssr: false });
 
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { PaneReporter, SplitShortcut } from '@/components/split/PaneShell';
@@ -24,6 +25,7 @@ export default function ClientShell() {
       <ShortcutsOverlay />
       <ThemeInitializer />
       <EcosystemTaskbar />
+      <MobileTabBar />
     </>
   );
 }

@@ -1,8 +1,39 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Links that know what they are
+## Latest Session — The suite on a phone
 
 No migration.
+
+- **A phone gets its own navigation**, not the desktop dock squeezed: a
+  thumb-reach tab bar — **Today · Projects · Search · Lounge · More**. More is
+  a sheet with every tool, the project you're working on (switch it there),
+  and whatever the page offers in the desktop dock's context capsule ("On this
+  page"), so nothing on desktop is out of reach. It steps aside while typing,
+  in the editor, and on public pages. Desktop keeps the dock (now with Today).
+- **Today** (`/today`) is the working home on the go: the coming days on set
+  with your own call time, crew call, weather and the address a tap from maps
+  ("Open On Set" on the day); what's yours to do, most urgent first, ticked off
+  right there; what's unread in the Lounge by channel and person; updates; and
+  each project with one-tap Script / Studio / Schedule. Crew see issued days
+  only; the owner sees drafts, marked.
+- **The Lounge on a phone** is one pane at a time — channels and people, or
+  the conversation — with a back button; links open a conversation directly
+  (`/lounge?channel=…`, `?dm=…`), and mention / reply / DM notifications now
+  land there.
+- **Every route was measured at 390px** (overflow, tap targets, text size,
+  iOS zoom): no page scrolls sideways any more; fields don't zoom; Studio
+  buttons, chips, toggles, stripboard status and phase "Go" buttons are
+  thumb-sized on touch screens; the production board is one phase per screen,
+  swiped; the phase rail scrolls instead of overlapping; Jobs' role filter is
+  a chip row; the project and Studio headers fit; scene cards stack; the
+  editor's beat labels no longer cover the script.
+- Tests: `lib/today/core.test.ts` (days, calls, urgency, ordering),
+  `e2e/mobile.spec.ts` (tab bar vs dock, Today → tick off a task, More,
+  Lounge link → back, no sideways scroll on nine routes, axe on Today).
+
+## Earlier — Links that know what they are
+
+No migration — PR #92 merged.
 
 - **Pasting a YouTube or Vimeo link** into the Library brings the video in
   under its real title, with its channel in the notes — no more "YouTube

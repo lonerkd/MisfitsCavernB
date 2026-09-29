@@ -106,7 +106,8 @@ test.describe('Lounge (local Supabase)', () => {
     await search.getByRole('radio', { name: 'Everywhere' }).click();
     await search.getByLabel('Search messages').fill('warm lay');
     await search.getByRole('button', { name: /Bring warm layers tonight/ }).click();
-    await expect(page.getByText('Bring warm layers tonight')).toBeInViewport();
+    // The message itself (the search panel may still be sliding away with its copy of the text).
+    await expect(page.locator('[id^="msg-"]', { hasText: 'Bring warm layers tonight' })).toBeInViewport();
     await expect(await axeViolations(page)).toEqual([]);
   });
 });

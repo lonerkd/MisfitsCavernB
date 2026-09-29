@@ -13,7 +13,8 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
   `/s/[token]`, `/showcase` stay logged-out-accessible).
 - **PROTECTED** — redirects to `/auth?redirect=<path>` if no valid session:
   `/editor`, `/lounge`, `/studio`, `/projects`, `/crew`, `/jobs`,
-  `/portfolio`, `/profile`, `/settings`, `/soundtrack`.
+  `/portfolio`, `/profile`, `/settings`, `/soundtrack`, `/split`, `/welcome`,
+  `/today`, `/call`.
 - **ADMIN** — protected **and** server-verifies `profiles.is_admin`; non-admins
   redirect to `/`: `/admin/*`.
 
@@ -32,6 +33,7 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/auth` | public | Auth | `app/auth/page.tsx`, `lib/supabase/auth.ts`, `lib/password-strength.ts` |
 | `/auth/callback` | public | Auth | OAuth code exchange |
 | `/auth/spotify-callback` | protected* | Soundtrack | `lib/spotify/*`, `SpotifyContext` |
+| `/today` | protected | Today | `app/today`, `lib/today/core.ts` — the working home on a phone (first tab), fine on a desk (dock): the coming days on set with your call and the way there (maps), your tasks by urgency (tick off here), Lounge unread by channel/person (deep links), updates, your projects with Script/Studio/Schedule jumps. Crew see issued days; the owner sees drafts too. |
 | `/projects` | protected | Projects hub | `lib/supabase/projects.ts` |
 | `/projects/[id]` | protected | Project hub | project dashboard; links to editor/studio/pitch |
 | `/projects/[id]/pitch` | protected | Pitch board | portfolio publish flow |
@@ -41,7 +43,7 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/welcome` | protected | Onboarding | `app/welcome`, `lib/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
 | `/call/[id]` | protected | Crew call sheet | `app/call/[id]` — where call sheet notifications land: the viewer's own call, "Got it" (confirms the issued version), the day, scenes, everyone's calls; RLS-scoped to the production. |
 | `/soundtrack` | protected | Soundtrack | `lib/spotify/*`, `GlobalAudioWidget`, SFX/Audio Bible |
-| `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md` |
+| `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md`. `?channel=<id>` / `?dm=<user>` open a conversation (notifications link there). |
 | `/jobs`, `/jobs/[id]` | protected | Jobs board | `lib/supabase/jobs.ts` |
 | `/crew`, `/crew/[id]` | protected | Crew directory | `lib/supabase/crew-management.ts`, `CrewManagementModal` |
 | `/portfolio`, `/portfolio/manage` | protected | Portfolio | `lib/supabase/portfolio.ts` |
@@ -93,9 +95,19 @@ Mounted for the whole app, in order (`app/layout.tsx`):
 
 Chrome lives in two places, and nothing else mounts itself globally:
 - `components/ClientShell.tsx` (root layout) renders `CustomCursor`,
-  `CommandPalette` (⌘K), `ShortcutsOverlay`, `ThemeInitializer`, and
-  `EcosystemTaskbar` — the taskbar is how every authed surface navigates, and
-  it embeds `NotificationBell`.
+  `CommandPalette` (⌘K), `ShortcutsOverlay`, `ThemeInitializer`,
+  `EcosystemTaskbar` (the desktop dock; embeds `NotificationBell`) and
+  `MobileTabBar`. CSS decides which navigation shows: at ≤760px the dock
+  (`.mc-dock`) is hidden and the tab bar shows — Today · Projects · Search ·
+  Lounge (unread badge) · More (a sheet with every tool, the active project,
+  and the page's dock context actions as "On this page"). The tab bar hides on
+  the editor (full-screen writing), split, auth and public pages, and slides
+  away while a field has focus (the keyboard needs the room).
+- Phones, suite-wide (`app/globals.css`): no sideways scroll, fields at 16px
+  (no iOS zoom), room for the tab bar and the home indicator
+  (`viewport-fit=cover`, `env(safe-area-inset-*)`), `.mc-phone-only` /
+  `.mc-hide-phone` helpers; controls sized for touch under
+  `(pointer: coarse)`. `e2e/mobile.spec.ts` guards it.
 - The landing page (`app/page.tsx`) additionally renders `Navigation`.
 - `GrainOverlay` is rendered per-page, not globally.
 

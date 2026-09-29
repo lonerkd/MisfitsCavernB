@@ -30,6 +30,7 @@ export async function middleware(request: NextRequest) {
     '/soundtrack',
     '/split',
     '/welcome',
+    '/today',
     '/call',
   ];
   const isAdminPath = path.startsWith('/admin');

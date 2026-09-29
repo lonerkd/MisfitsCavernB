@@ -215,3 +215,15 @@
 }
 .introClose:hover { color: var(--fg); }
 .introClose:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }
+
+@media (pointer: coarse), (max-width: 760px) {
+  .go { min-height: 40px; min-width: 52px; display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* On a phone the phases keep their size and the rail scrolls. */
+@media (max-width: 760px) {
+  .railItem { flex: 0 0 auto; }
+  .railLine { flex: 0 0 14px; }
+  .rail { scrollbar-width: none; padding-bottom: 2px; }
+  .rail::-webkit-scrollbar { display: none; }
+}

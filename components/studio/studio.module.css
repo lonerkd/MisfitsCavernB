@@ -462,3 +462,21 @@
 
 /* Linked split screen: the scene the script's caret is in. */
 .sceneFollow { box-shadow: 0 0 0 2px rgba(52, 199, 123, 0.5); transition: box-shadow 0.3s; }
+
+/* ── Touch: controls sized for a thumb on phones and tablets ─────────── */
+@media (pointer: coarse), (max-width: 760px) {
+  .btn, .btnPrimary, .btnGhost, .btnDanger { min-height: 40px; }
+  .small { height: 40px; padding: 0 14px; font-size: 10.5px; }
+  .iconBtn { width: 40px; height: 40px; }
+  .chip { height: 40px; padding: 0 14px; font-size: 11px; }
+  .toggle { width: 48px; height: 28px; border-radius: 14px; }
+  .toggle::after { top: 4px; left: 4px; width: 20px; height: 20px; }
+  .toggleOn::after { transform: translateX(20px); }
+  .input, .select { min-height: 44px; }
+}
+
+/* Scene cards on a phone: the heading gets the width; actions wrap under it. */
+@media (max-width: 760px) {
+  .sceneHead { flex-wrap: wrap; }
+  .sceneHead > div:first-child { flex: 1 1 100%; }
+}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
+import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -17,6 +17,7 @@ const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget')
 
 const APPS = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: 'var(--accent)' },
+  { id: 'today',     name: 'Today',     icon: Sun,           path: '/today',     color: 'var(--warn)' },
   { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' as const },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' as const },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' as const },
@@ -687,6 +688,7 @@ export default function EcosystemTaskbar() {
   return (
     <nav
       aria-label="Suite"
+      className="mc-dock"
       data-taskbar
       style={{
         position: 'fixed',

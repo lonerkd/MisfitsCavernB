@@ -533,7 +533,7 @@ export default function JobsPage() {
       <h1 className="sr-only">Jobs</h1>
       <GrainOverlay />
 
-      <nav style={{
+      <nav className="mc-jobs-top" style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', zIndex: 200,
@@ -612,21 +612,21 @@ export default function JobsPage() {
                 (e.currentTarget as HTMLElement).style.boxShadow = 'none';
               }}
             >
-              <Plus size={11} strokeWidth={2.5} /> Post Job
+              <Plus size={11} strokeWidth={2.5} /> Post<span className="mc-hide-phone">&nbsp;Job</span>
             </button>
           )}
         </div>
       </nav>
 
-      <div style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
+      <div className="mc-jobs-body" style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
 
-        <div style={{
+        <div className="mc-jobs-filter" style={{
           width: 220, flexShrink: 0, borderRight: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '32px 20px', position: 'sticky', top: 58,
           height: 'calc(100vh - 58px)', overflowY: 'auto',
           background: 'var(--surface-2)',
         }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div className="mc-hide-phone" style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
           </div>
 

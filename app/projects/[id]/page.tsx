@@ -448,22 +448,23 @@ export default function ProjectHubPage() {
           padding: '0 28px', height: 58,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
+        className="mc-project-top"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link href="/projects" aria-label="Back to projects" style={{ color: 'var(--fg-dim)', display: 'flex', transition: 'color 0.2s' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+          <Link href="/projects" aria-label="Back to projects" className="mc-touch" style={{ color: 'var(--fg-dim)', display: 'flex', transition: 'color 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--fg)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--fg-dim)'}
           >
             <ArrowLeft size={16} />
           </Link>
           <div style={{ width: 1, height: 20, background: 'rgba(var(--ink-rgb), 0.07)' }} />
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>{project.title}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
+            <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.title}</span>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: project.color }}>{project.type}</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
           {typePhases.map((phase, i) => {
             const isDone   = i < typePhaseIdx;
             const isActive = i === typePhaseIdx;
@@ -495,13 +496,13 @@ export default function ProjectHubPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {onlineCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--ok)', letterSpacing: 1.5 }}>
+            <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--ok)', letterSpacing: 1.5 }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
               {onlineCount} online
             </div>
           )}
           {counts.tasks > 0 && (
-          <div title="Tasks completed" style={{
+          <div title="Tasks completed" className="mc-hide-phone" style={{
             fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', letterSpacing: 1.5,
             padding: '5px 10px', borderRadius: 6, background: 'rgba(var(--ink-rgb), 0.04)',
           }}>
@@ -541,7 +542,7 @@ export default function ProjectHubPage() {
         </div>
       </motion.header>
 
-      <div style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
+      <div className="mc-project-body" style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

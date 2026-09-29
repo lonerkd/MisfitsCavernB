@@ -73,3 +73,7 @@
 .code_F { color: var(--danger); font-weight: 700; }
 .code_H { color: var(--warn); }
 .code_W { color: var(--fg); }
+
+@media (pointer: coarse), (max-width: 760px) {
+  .statusBtn { width: 40px; height: 40px; margin: -10px -10px -10px 0; }
+}
