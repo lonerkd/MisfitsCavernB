@@ -19,7 +19,7 @@ import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
 import { usePillZone } from '@/lib/context/PillContext';
-import { type Phase, mapStatusToPhase, phaseIndexIn, useProject } from '@/lib/os';
+import { type Phase, mapStatusToPhase, phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
 import { findFormat, formatPhases, useFormats } from '@/lib/formats';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
@@ -31,6 +31,7 @@ import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { useProjectBrief, useCanShape } from '@/lib/brief';
 import { BriefPanel } from '@/components/brief/BriefPanel';
 import { PhasePanel } from '@/components/progress/PhasePanel';
+import { GuidePanel } from '@/components/guides/GuidePanel';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
@@ -338,6 +339,7 @@ export default function ProjectHubPage() {
   const brief = useProjectBrief(realProject ? id : null, briefFormat, progressState.progress?.current.id ?? null);
   const canShape = useCanShape(realProject ? id : null, !!realProject?.isOwner);
   const { formats } = useFormats();
+  const me = useCurrentUser().user;
   useEffect(() => {
     let active = true;
     (async () => {
@@ -570,6 +572,14 @@ export default function ProjectHubPage() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
             <BriefPanel brief={brief} projectTitle={project.title} format={briefFormat} phase={progressState.progress.current.id}
               canEdit={canShape} accent={project.color} />
+          </motion.div>
+        )}
+
+        {isRealProject && progressState.signals && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
+            <GuidePanel projectId={id} signals={progressState.signals} isOwner={project.isOwner} format={briefFormat}
+              structure={typeof brief.answers.structure === 'string' ? brief.answers.structure : null}
+              accent={project.color} userId={me?.id ?? null} role={me?.role ?? null} />
           </motion.div>
         )}
 

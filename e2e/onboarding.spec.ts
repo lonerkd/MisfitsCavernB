@@ -4,9 +4,10 @@ import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Onboarding against a local stack: /welcome starts a first project with a
-// few brief answers and opens the tool for its first step; the projects
-// board searches, shows each project's next step, and archives/restores.
+// Onboarding against a local stack: /welcome asks how you work (it sets the
+// guides' depth), starts a first project with a few brief answers and opens
+// the tool for its first step; the projects board searches, shows each
+// project's next step, and archives/restores.
 // Opt-in: E2E_LOCAL_STACK=1.
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
@@ -68,13 +69,25 @@ test.describe('Onboarding + the projects board (local Supabase)', () => {
 
     await expect(page.getByRole('heading', { name: 'What do you do?' })).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: 'Skip' }).click();
+    // How they work sets how deep every project's guide goes.
+    await expect(page.getByRole('heading', { name: 'How do you work?' })).toBeVisible();
+    await page.getByRole('radiogroup', { name: 'How much have you made before?' }).getByRole('radio', { name: /^This is my first/ }).click();
+    await page.getByRole('radiogroup', { name: 'Hours a week' }).getByRole('radio', { name: '3h' }).click();
+    await page.getByRole('radiogroup', { name: 'Who’s making it with you?' }).getByRole('radio', { name: /^Just me/ }).click();
+    await expect(page.getByRole('radio', { name: /^Match my experience/ })).toContainText('walk me through it');
+    const guideViolations = await axeViolations(page);
+    expect(guideViolations, guideViolations.join('\n')).toEqual([]);
+    await page.getByRole('button', { name: /Continue/ }).click();
     await expect(page.getByRole('heading', { name: 'What brings you here?' })).toBeVisible();
+    await expect.poll(async () => (await admin.from('profiles').select('ui_prefs').eq('id', me.id).single()).data?.ui_prefs?.guide)
+      .toEqual({ hours: 3, experience: 'first', team: 'solo' });
     await expect(page.getByRole('link', { name: /Find work on a crew/ })).toHaveAttribute('href', '/jobs');
     await page.getByRole('button', { name: /Make something/ }).click();
 
     await expect(page.getByRole('heading', { name: 'Start your first project' })).toBeVisible();
     await page.getByLabel('Title').fill(`Lantern Road ${TAG}`);
     await page.getByLabel('Logline (optional)').fill('A night courier finds a lantern that shows the next hour.');
+    await page.getByRole('radiogroup', { name: 'Where is it now?' }).getByRole('radio', { name: 'Writing it' }).click();
     // The format's first brief questions, as choices.
     await page.getByRole('group', { name: 'Genre' }).getByRole('button', { name: 'Drama' }).click();
     await page.getByRole('radiogroup', { name: 'Tone' }).getByRole('radio', { name: 'Grounded' }).click();
@@ -86,8 +99,9 @@ test.describe('Onboarding + the projects board (local Supabase)', () => {
     await page.getByRole('button', { name: /Create & start writing/ }).click();
     // A logline is there, so the first step is the script.
     await page.waitForURL(/\/editor/, { timeout: 30_000 });
-    const project = (await admin.from('projects').select('id, project_type, description').eq('creator_id', me.id).single()).data!;
+    const project = (await admin.from('projects').select('id, project_type, description, status').eq('creator_id', me.id).single()).data!;
     expect(project.description).toContain('lantern');
+    expect(project.status).toBe('concept');
     const brief = (await admin.from('project_brief').select('question, value').eq('project_id', project.id).order('question')).data;
     expect(brief).toEqual([{ question: 'genre', value: ['drama'] }, { question: 'tone', value: 'grounded' }]);
     await expect.poll(async () => (await admin.from('scripts').select('id').eq('project_id', project.id)).data?.length, { timeout: 20_000 }).toBe(1);

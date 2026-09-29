@@ -5,12 +5,15 @@
 //   show_all_tools — every tool in every project at once (else phase by phase)
 //   seen_tools     — tools whose one-line intro has been read
 //   dismissed      — phase suggestions waved off, "<project>:<phase>"
+//   guide          — how they work: hours a week, experience, team, depth (lib/guides)
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { toGuideProfile, type GuideProfile } from '@/lib/guides/profile';
+import type { Json } from '@/lib/supabase/database.types';
 
-export interface UiPrefs { show_all_tools: boolean; seen_tools: string[]; dismissed: string[] }
-export const DEFAULT_UI_PREFS: UiPrefs = { show_all_tools: false, seen_tools: [], dismissed: [] };
+export interface UiPrefs { show_all_tools: boolean; seen_tools: string[]; dismissed: string[]; guide: GuideProfile | null }
+export const DEFAULT_UI_PREFS: UiPrefs = { show_all_tools: false, seen_tools: [], dismissed: [], guide: null };
 
 const EVENT = 'mc:ui-prefs';
 let cache: Promise<UiPrefs> | null = null;
@@ -18,7 +21,7 @@ let cache: Promise<UiPrefs> | null = null;
 const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
 function toPrefs(raw: unknown): UiPrefs {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  return { show_all_tools: r.show_all_tools === true, seen_tools: strings(r.seen_tools), dismissed: strings(r.dismissed) };
+  return { show_all_tools: r.show_all_tools === true, seen_tools: strings(r.seen_tools), dismissed: strings(r.dismissed), guide: toGuideProfile(r.guide) };
 }
 
 export function loadUiPrefs(): Promise<UiPrefs> {
@@ -33,7 +36,7 @@ export function loadUiPrefs(): Promise<UiPrefs> {
 
 /** Save part of the prefs; every open view hears about it. */
 export async function saveUiPrefs(patch: Partial<UiPrefs>): Promise<UiPrefs> {
-  const { data, error } = await supabase.rpc('set_my_ui_prefs', { p_patch: patch });
+  const { data, error } = await supabase.rpc('set_my_ui_prefs', { p_patch: patch as Json });
   if (error) throw new Error(error.message);
   const next = toPrefs(data);
   cache = Promise.resolve(next);

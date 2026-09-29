@@ -21,8 +21,8 @@ export async function firstStepHref(projectId: string): Promise<string> {
   }
 }
 
-export async function startProject(userId: string, o: { title: string; format: string; logline: string; answers?: Answers }) {
-  const project = await createProject(userId, o.title, o.logline, o.format);
+export async function startProject(userId: string, o: { title: string; format: string; logline: string; answers?: Answers; status?: string }) {
+  const project = await createProject(userId, o.title, o.logline, o.format, o.status);
   // The brief is a head start, never a blocker: an answer that fails to save
   // can be given again on the project page.
   const answers = Object.entries(o.answers ?? {});

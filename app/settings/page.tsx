@@ -10,6 +10,8 @@ import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS
 import { checkHibpBreach } from '@/lib/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
+import { GuideSetup } from '@/components/guides/GuideSetup';
+import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -104,6 +106,12 @@ export default function SettingsPage() {
   const [notifyProduct, setNotifyProduct] = useState(false);
   const [leakCheck, setLeakCheck] = useState(true);
   const { prefs: uiPrefs, save: saveUiPrefs } = useUiPrefs();
+  const [editingGuide, setEditingGuide] = useState(false);
+  const guide = uiPrefs.guide;
+  const guideSummary = guide
+    ? [EXPERIENCES.find((x) => x.id === guide.experience)?.label, `${guide.hours}h a week`, TEAMS.find((x) => x.id === guide.team)?.label,
+       DEPTHS.find((x) => x.id === depthOf(guide))?.label].filter(Boolean).join(' · ')
+    : 'Not set yet — every project’s guide asks the first time.';
 
   const [customBg, setCustomBg] = useState('#040710');
   const [customAccent, setCustomAccent] = useState('#e8431a');
@@ -285,6 +293,18 @@ export default function SettingsPage() {
           <Row label="Show every tool" hint="Open every tool in every project at once, instead of each arriving with its phase. You can also open everything in a single project from its phase panel." control={
             <Toggle on={uiPrefs.show_all_tools} onChange={(v) => { void saveUiPrefs({ show_all_tools: v }).catch((e: any) => flash(e?.message || 'Could not save that setting', false)); }} />
           } />
+          <Row label="Project guides" hint={guideSummary} control={
+            <button type="button" style={ghostBtn} aria-label={editingGuide ? 'Close project guides' : 'Edit project guides'} aria-expanded={editingGuide} onClick={() => setEditingGuide((v) => !v)}>{editingGuide ? 'CLOSE' : 'EDIT'}</button>
+          } />
+          {editingGuide && (
+            <div style={{ padding: '0 16px 16px', ['--pa' as string]: 'var(--accent)', ['--pa-dim' as string]: 'color-mix(in srgb, var(--accent) 14%, transparent)', ['--pa-line' as string]: 'color-mix(in srgb, var(--accent) 45%, transparent)' }}>
+              <GuideSetup initial={guide} idPrefix="settings-guide" onCancel={() => setEditingGuide(false)}
+                onSave={async (p) => {
+                  try { await saveUiPrefs({ guide: p }); setEditingGuide(false); flash('Guides updated', true); }
+                  catch (e: any) { flash(e?.message || 'Could not save that setting', false); }
+                }} />
+            </div>
+          )}
         </Section>
 
         <Section icon={<Palette size={15} />} title="Appearance">

@@ -972,6 +972,48 @@ export type Database = {
           },
         ];
       };
+      guide_progress: {
+        Row: {
+          done: string[];
+          hidden: boolean;
+          project_id: string;
+          updated_at: string;
+          user_id: string;
+          workflow: string | null;
+        };
+        Insert: {
+          done?: string[];
+          hidden?: boolean;
+          project_id: string;
+          updated_at?: string;
+          user_id?: string;
+          workflow?: string | null;
+        };
+        Update: {
+          done?: string[];
+          hidden?: boolean;
+          project_id?: string;
+          updated_at?: string;
+          user_id?: string;
+          workflow?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "guide_progress_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "guide_progress_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_applications: {
         Row: {
           applicant_id: string;
