@@ -6,8 +6,12 @@ import { videoEmbed, type Media } from '@/lib/studio';
 import { KindIcon } from './MediaThumb';
 import s from '../studio.module.css';
 
-/** Full-size, playable view of a media item. `src` is signed for files. */
-export function MediaViewer({ media, src }: { media: Pick<Media, 'kind' | 'title' | 'external_url' | 'storage_path' | 'mime_type'>; src: string | null }) {
+/**
+ * Full-size, playable view of a media item. `src` is signed for files.
+ * `playerRef` gets the <video>/<audio> element of an uploaded recording (for
+ * the transcript to seek and stamp times); embeds have none.
+ */
+export function MediaViewer({ media, src, playerRef }: { media: Pick<Media, 'kind' | 'title' | 'external_url' | 'storage_path' | 'mime_type'>; src: string | null; playerRef?: React.Ref<HTMLMediaElement> }) {
   const embed = media.kind === 'video' && media.external_url ? videoEmbed(media.external_url) : null;
 
   if (embed) {
@@ -31,14 +35,14 @@ export function MediaViewer({ media, src }: { media: Pick<Media, 'kind' | 'title
     return <div className={s.viewer}><img src={src} alt={media.title} /></div>;
   }
   if (media.kind === 'video' && src) {
-    return <div className={s.viewer}><video src={src} controls playsInline preload="metadata" /></div>;
+    return <div className={s.viewer}><video ref={playerRef as React.Ref<HTMLVideoElement>} src={src} controls playsInline preload="metadata" /></div>;
   }
   if (media.kind === 'audio' && src) {
     return (
       <div className={s.viewer}>
         <div className={s.viewerFallback} style={{ width: '100%' }}>
           <KindIcon kind="audio" size={28} />
-          <audio src={src} controls preload="metadata" style={{ width: '100%', maxWidth: 480 }} />
+          <audio ref={playerRef as React.Ref<HTMLAudioElement>} src={src} controls preload="metadata" style={{ width: '100%', maxWidth: 480 }} />
         </div>
       </div>
     );

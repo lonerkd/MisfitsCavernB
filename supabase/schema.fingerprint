@@ -574,6 +574,18 @@ column timesheets.rate numeric(10,2)
 column timesheets.status text default 'submitted'::text not null
 column timesheets.user_id uuid default auth.uid() not null
 column timesheets.work_date date not null
+column transcript_lines.created_at timestamp with time zone default now() not null
+column transcript_lines.created_by uuid default auth.uid()
+column transcript_lines.end_ms integer
+column transcript_lines.id uuid default gen_random_uuid() not null
+column transcript_lines.media_id uuid not null
+column transcript_lines.paper_order integer
+column transcript_lines.position integer not null
+column transcript_lines.project_id uuid not null
+column transcript_lines.speaker text
+column transcript_lines.start_ms integer
+column transcript_lines.text text not null
+column transcript_lines.updated_at timestamp with time zone default now() not null
 column unavailability.created_at timestamp with time zone default now() not null
 column unavailability.ends_on date not null
 column unavailability.id uuid default gen_random_uuid() not null
@@ -945,6 +957,15 @@ constraint timesheets.timesheets_project_id_fkey FOREIGN KEY (project_id) REFERE
 constraint timesheets.timesheets_rate_check CHECK (((rate IS NULL) OR (rate >= (0)::numeric)))
 constraint timesheets.timesheets_status_check CHECK ((status = ANY (ARRAY['submitted'::text, 'approved'::text, 'rejected'::text])))
 constraint timesheets.timesheets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint transcript_lines.transcript_lines_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint transcript_lines.transcript_lines_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
+constraint transcript_lines.transcript_lines_paper_order_check CHECK (((paper_order IS NULL) OR (paper_order >= 0)))
+constraint transcript_lines.transcript_lines_pkey PRIMARY KEY (id)
+constraint transcript_lines.transcript_lines_position_check CHECK (("position" >= 0))
+constraint transcript_lines.transcript_lines_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint transcript_lines.transcript_lines_speaker_check CHECK (((speaker IS NULL) OR ((char_length(btrim(speaker)) >= 1) AND (char_length(btrim(speaker)) <= 60))))
+constraint transcript_lines.transcript_lines_text_check CHECK (((char_length(btrim(text)) >= 1) AND (char_length(btrim(text)) <= 2000)))
+constraint transcript_lines.transcript_lines_times_check CHECK ((((start_ms IS NULL) OR (start_ms >= 0)) AND ((end_ms IS NULL) OR ((start_ms IS NOT NULL) AND (end_ms >= start_ms)))))
 constraint unavailability.unavailability_note_len CHECK (((note IS NULL) OR (char_length(note) <= 200)))
 constraint unavailability.unavailability_pkey PRIMARY KEY (id)
 constraint unavailability.unavailability_range CHECK (((ends_on >= starts_on) AND ((ends_on - starts_on) <= 366)))
@@ -995,6 +1016,7 @@ function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=94eebb05bb53f6f692a20c77ad4d51a1
+function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
@@ -1031,6 +1053,7 @@ function public.search_lounge(p_query text, p_channel uuid, p_limit integer) bod
 function public.search_suite(p_query text, p_limit integer) body=4d14749d29aca4c8937a6d64ac672b57
 function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6c
 function public.set_my_ui_prefs(p_patch jsonb) body=0779a108c9c32340d6d5aa3b656d02d9
+function public.set_paper_edit(p_project uuid, p_line_ids uuid[]) body=b5a59a26ef1800855579b43d2ea7bc72
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
@@ -1071,6 +1094,7 @@ grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
+grant function internal.transcript_lines_touch() postgres
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
@@ -1107,6 +1131,7 @@ grant function public.search_lounge(p_query text, p_channel uuid, p_limit intege
 grant function public.search_suite(p_query text, p_limit integer) authenticated,postgres,service_role
 grant function public.send_call_sheet_reminders() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
+grant function public.set_paper_edit(p_project uuid, p_line_ids uuid[]) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
 grant function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) authenticated,postgres,service_role
@@ -1231,6 +1256,9 @@ index CREATE INDEX set_log_shot_idx ON public.set_log USING btree (shot_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE INDEX timesheets_project_idx ON public.timesheets USING btree (project_id)
 index CREATE INDEX timesheets_user_idx ON public.timesheets USING btree (user_id)
+index CREATE INDEX transcript_lines_created_by_idx ON public.transcript_lines USING btree (created_by)
+index CREATE INDEX transcript_lines_media_idx ON public.transcript_lines USING btree (media_id, "position")
+index CREATE INDEX transcript_lines_paper_idx ON public.transcript_lines USING btree (project_id, paper_order) WHERE (paper_order IS NOT NULL)
 index CREATE INDEX unavailability_user_idx ON public.unavailability USING btree (user_id, starts_on)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
@@ -1318,6 +1346,7 @@ index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
 index CREATE UNIQUE INDEX timesheets_day_key ON public.timesheets USING btree (project_id, user_id, work_date)
 index CREATE UNIQUE INDEX timesheets_pkey ON public.timesheets USING btree (id)
+index CREATE UNIQUE INDEX transcript_lines_pkey ON public.transcript_lines USING btree (id)
 index CREATE UNIQUE INDEX unavailability_pkey ON public.unavailability USING btree (id)
 index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (id, project_id)
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
@@ -1466,6 +1495,10 @@ policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated 
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.timesheets "timesheets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_shape_project(project_id)) check -
 policy public.timesheets "timesheets remove" PERMISSIVE DELETE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check -
+policy public.transcript_lines "transcript_lines delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
+policy public.transcript_lines "transcript_lines insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.transcript_lines "transcript_lines update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.transcript_lines "transcript_lines view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.unavailability "unavailability own delete" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.unavailability "unavailability own insert" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.unavailability "unavailability own read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
@@ -1513,6 +1546,7 @@ realtime public.set_log
 realtime public.shots
 realtime public.timeline_items
 realtime public.timesheets
+realtime public.transcript_lines
 rls activity_feed enabled=true forced=false
 rls audit_logs enabled=true forced=false
 rls breakdown_categories enabled=true forced=false
@@ -1570,6 +1604,7 @@ rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
 rls timeline_items enabled=true forced=false
 rls timesheets enabled=true forced=false
+rls transcript_lines enabled=true forced=false
 rls unavailability enabled=true forced=false
 rls vendors enabled=true forced=false
 rls writing_days enabled=true forced=false
@@ -1599,3 +1634,4 @@ trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
+trigger CREATE TRIGGER transcript_lines_touch BEFORE INSERT OR UPDATE ON public.transcript_lines FOR EACH ROW EXECUTE FUNCTION internal.transcript_lines_touch()

@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type ProjectDocument, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -15,6 +15,7 @@ export * from './call-sheet';
 export * from './locations';
 export * from './money';
 export * from './documents';
+export * from './transcript';
 export { useLiveRows } from './live';
 export type { LiveRows, LiveStatus } from './live';
 
@@ -343,4 +344,17 @@ export async function fetchScriptContent(scriptId: string): Promise<string> {
   const { data, error } = await supabase.from('scripts').select('content').eq('id', scriptId).single();
   if (error) throw new Error(error.message);
   return data.content ?? '';
+}
+
+// ── Transcripts ────────────────────────────────────────────────────────────
+
+export function useTranscriptLines(projectId: string | null) {
+  return useLiveRows<TranscriptLine>({
+    scope: projectId,
+    table: 'transcript_lines',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listTranscriptLines(projectId!),
+    keyOf: (l) => String(l.id),
+    sort: (a, b) => (a.media_id === b.media_id ? a.position - b.position : a.media_id.localeCompare(b.media_id)),
+  });
 }

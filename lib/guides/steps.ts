@@ -347,7 +347,7 @@ const S: StepDef[] = [
     do: 'Log and transcribe what you shot.',
     tip: 'A paper edit from transcripts is faster than scrubbing footage.',
     why: 'Documentaries are written in the edit; you can’t write with material you can’t find.',
-    how: ['Transcribe interviews.', 'Mark the best moments.', 'Build a paper edit in the order of the story.'],
+    how: ['Open each interview in Studio › Library and paste, type or dictate its transcript.', 'Star the best moments.', 'Put them in story order in Studio › Post › Paper edit.'],
   } },
   { id: 'cut', phase: 'post-production', title: 'Add your first cut', place: studio('post'), hours: 10, milestone: 'cut', text: {
     do: 'Assemble the footage and add the cut for review.',

@@ -8,6 +8,7 @@ import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { Modal, Toggle, cx } from '../ui';
 import { MediaViewer } from './MediaViewer';
+import { TranscriptPanel } from './TranscriptPanel';
 import { kindLabel } from './MediaThumb';
 import s from '../studio.module.css';
 
@@ -30,6 +31,7 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
   const [notes, setNotes] = useState(item?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [linkTo, setLinkTo] = useState('');
+  const [player, setPlayer] = useState<HTMLMediaElement | null>(null);
 
   // Follow live edits from teammates unless this field is being edited here.
   useEffect(() => { if (item && document.activeElement?.getAttribute('name') !== 'title') setTitle(item.title); }, [item?.title]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -120,8 +122,9 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
     >
       <div className={s.detail}>
         <div className={s.stack}>
-          <MediaViewer media={item} src={src} />
+          <MediaViewer media={item} src={src} playerRef={setPlayer} />
           <div className={s.hint}>{details}</div>
+          {(item.kind === 'video' || item.kind === 'audio') && <TranscriptPanel item={item} player={player} />}
         </div>
 
         <div className={s.stack}>
