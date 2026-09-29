@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T20:11:23.226Z",
+  "last_synchronized": "2026-09-29T20:46:21.846Z",
   "stats": {
-    "totalFiles": 496,
-    "totalSize": 3877112,
+    "totalFiles": 499,
+    "totalSize": 3887625,
     "byExtension": {
-      ".json": 7,
-      ".md": 7,
+      ".json": 8,
+      ".md": 8,
       ".tsx": 156,
-      ".ts": 280,
+      ".ts": 281,
       ".js": 7,
       ".sql": 39
     }
@@ -306,8 +306,8 @@
   "all_monitored_files": [
     {
       "path": ".claude/settings.json",
-      "size": 6403,
-      "last_modified": "2026-09-24T20:05:03.615Z"
+      "size": 6853,
+      "last_modified": "2026-09-29T20:45:41.446Z"
     },
     {
       "path": ".claude/settings.local.json",
@@ -318,6 +318,11 @@
       "path": ".eslintrc.json",
       "size": 40,
       "last_modified": "2026-09-24T20:05:03.615Z"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "size": 635,
+      "last_modified": "2026-09-29T20:45:30.101Z"
     },
     {
       "path": "AGENTS.md",
@@ -456,8 +461,8 @@
     },
     {
       "path": "app/layout.tsx",
-      "size": 2884,
-      "last_modified": "2026-09-29T13:25:27.326Z"
+      "size": 4037,
+      "last_modified": "2026-09-29T20:38:15.368Z"
     },
     {
       "path": "app/loading.tsx",
@@ -477,7 +482,7 @@
     {
       "path": "app/lounge/page.tsx",
       "size": 96191,
-      "last_modified": "2026-09-29T19:40:35.834Z"
+      "last_modified": "2026-09-29T20:42:29.288Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -647,7 +652,7 @@
     {
       "path": "components/EcosystemTaskbar.tsx",
       "size": 46902,
-      "last_modified": "2026-09-29T19:41:32.110Z"
+      "last_modified": "2026-09-29T20:40:49.323Z"
     },
     {
       "path": "components/EmptyState.tsx",
@@ -1176,8 +1181,8 @@
     },
     {
       "path": "e2e/auth-journey.spec.ts",
-      "size": 5379,
-      "last_modified": "2026-09-24T20:05:03.635Z"
+      "size": 5562,
+      "last_modified": "2026-09-29T20:37:16.002Z"
     },
     {
       "path": "e2e/auth-validation.spec.ts",
@@ -1245,14 +1250,19 @@
       "last_modified": "2026-09-24T20:05:03.636Z"
     },
     {
+      "path": "e2e/layout.spec.ts",
+      "size": 5862,
+      "last_modified": "2026-09-29T20:42:11.283Z"
+    },
+    {
       "path": "e2e/locations.spec.ts",
       "size": 5067,
       "last_modified": "2026-09-28T08:40:49.710Z"
     },
     {
       "path": "e2e/login-smoke.spec.ts",
-      "size": 932,
-      "last_modified": "2026-09-24T20:05:03.636Z"
+      "size": 2111,
+      "last_modified": "2026-09-29T20:37:32.936Z"
     },
     {
       "path": "e2e/lounge.spec.ts",
@@ -2296,8 +2306,13 @@
     },
     {
       "path": "package.json",
-      "size": 1958,
-      "last_modified": "2026-09-28T19:56:42.422Z"
+      "size": 2164,
+      "last_modified": "2026-09-29T20:45:02.801Z"
+    },
+    {
+      "path": "performance-budget.json",
+      "size": 845,
+      "last_modified": "2026-09-29T20:38:43.694Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2542,7 +2557,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T20:00:21.643Z"
+      "last_modified": "2026-09-29T20:43:54.542Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
