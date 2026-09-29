@@ -28,8 +28,8 @@ interface PortfolioProject {
 }
 
 const fieldStyle: React.CSSProperties = {
-  width: '100%', padding: 10, background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)',
+  width: '100%', padding: 10, background: 'rgba(var(--ink-rgb), 0.05)',
+  border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)',
   fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none',
 };
 
@@ -137,8 +137,8 @@ export default function ManagePortfolioPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        background: 'var(--surface)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100,
       }}>
         <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
@@ -146,14 +146,14 @@ export default function ManagePortfolioPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>MANAGE PORTFOLIO</h1>
         </Link>
         <button onClick={() => setShowNew(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer' }}>
           <Plus size={12} /> NEW PROJECT
         </button>
       </header>
 
       <div style={{ marginTop: 60, maxWidth: 'var(--w-reading)', margin: '60px auto 0', padding: '40px 24px 80px' }}>
         {showNew && (
-          <div style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
+          <div style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
             <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <select aria-label="Format" value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })} style={{ ...fieldStyle, cursor: 'pointer' }}>
@@ -171,7 +171,7 @@ export default function ManagePortfolioPage() {
         {loading ? (
           <div style={{ display: 'grid', gap: 20 }}>
             {[0, 1].map(i => (
-              <div key={i} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14 }}>
+              <div key={i} style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div className="skeleton" style={{ width: 150, height: 14, borderRadius: 4 }} />
                   <div className="skeleton" style={{ width: 60, height: 14, borderRadius: 4 }} />
@@ -181,25 +181,27 @@ export default function ManagePortfolioPage() {
             ))}
           </div>
         ) : projects.length === 0 && !showNew ? (
-          <EmptyState icon={<Film size={28} />} title="No portfolio projects yet" subtitle='Click "New Project" to add your first piece of work' />
+          <EmptyState icon={<Film size={28} />} title="No portfolio projects yet"
+            subtitle="Add work you've made — a short, a reel, a music video — with links to watch it. Projects finished in the suite can be added from their Delivery phase."
+            action={<button type="button" onClick={() => setShowNew(true)} style={{ padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600 }}>Add your first piece</button>} />
         ) : (
         <div style={{ display: 'grid', gap: 20 }}>
           {projects.map(project => {
             const form = mediaForm[project.id] || { title: '', url: '', media_type: 'youtube' };
             return (
-              <div key={project.id} style={{ padding: 20, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+              <div key={project.id} style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', transition: 'border-color 0.2s, box-shadow 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.3)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(232, 67, 26,0.15)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.06)'; e.currentTarget.style.boxShadow = 'none'; }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 'bold' }}>{project.title}</div>
-                    <div style={{ fontSize: 11, fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>
+                    <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', marginTop: 4, color: 'var(--fg-dim)' }}>
                       {[project.category, project.year, project.role].filter(Boolean).join(' · ')}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => copyShareLink(project.share_token)} title="Copy share link" aria-label="Copy share link"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
+                      style={{ background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
                       <Copy size={12} />
                     </button>
                     <button onClick={() => removeProject(project.id)} aria-label={`Delete ${project.title}`} title="Delete" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4, padding: 6 }}>
@@ -208,14 +210,14 @@ export default function ManagePortfolioPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                   <LinkIcon size={10} /> /p/{project.share_token}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
                   {project.portfolio_media.map(media => (
-                    <div key={media.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <span style={{ fontSize: 11, fontFamily: 'var(--mono)', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{media.media_type}</span>
+                    <div key={media.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+                      <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{media.media_type}</span>
                       <span style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.title || media.url}</span>
                       <button onClick={() => removeMedia(project.id, media.id)} aria-label={`Remove ${media.title || 'media'}`} title="Remove" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}><Trash2 size={12} /></button>
                     </div>
@@ -231,7 +233,7 @@ export default function ManagePortfolioPage() {
                   </select>
                   <input type="text" placeholder="Title (optional)" value={form.title} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, title: e.target.value } }))} style={{ ...fieldStyle, flex: 1 }} />
                   <input type="url" placeholder="Media URL" value={form.url} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, url: e.target.value } }))} style={{ ...fieldStyle, flex: 2 }} />
-                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
+                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
                 </div>
               </div>
             );

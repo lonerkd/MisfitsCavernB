@@ -14,6 +14,8 @@ const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the lantern.\n\nSAM\nWho’s there?\n\nEXT. RIDGE - DAWN\n\nWind over the ridge.\n';
 
 async function axeViolations(page: Page): Promise<string[]> {
+  // Measure the settled page: colours mid-fade (the status pill animating in) aren't what anyone reads.
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), undefined, { timeout: 5_000 }).catch(() => {});
   await page.addScriptTag({ content: AXE });
   return page.evaluate(async () => {
     const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] }, resultTypes: ['violations'] });
@@ -66,6 +68,7 @@ test.describe('Scene readiness (local Supabase)', () => {
     await expect(todo.getByText('Break down 2 scenes')).toBeVisible();
     await expect(todo.getByText('Plan shots for 2 scenes')).toBeVisible();
     await expect(todo.getByText('Date day 1')).toBeVisible();
+    await expect(todo.getByText(/^Lock down /)).toBeVisible();
     await expect(page.getByRole('region', { name: 'Next shoot day' })).toContainText('2 blocked');
 
     // A scene's checks, with the fix for each.
@@ -91,6 +94,10 @@ test.describe('Scene readiness (local Supabase)', () => {
     await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: '2030-01-15' });
     await expect(todo.getByText('1 element still needed or sourcing')).toBeVisible({ timeout: 20_000 });
 
+    // Every location confirmed (Production › Locations).
+    const places = Array.from(new Set((await admin.from('scenes').select('location').eq('project_id', projectId).is('removed_at', null)).data!.map((r) => String(r.location).toUpperCase())));
+    await admin.from('project_locations').insert(places.map((name) => ({ project_id: projectId, name, status: 'confirmed', permit: 'not_needed' })));
+    await expect(todo.getByText(/^Lock down /)).toHaveCount(0, { timeout: 20_000 });
     await admin.from('breakdown_elements').update({ status: 'ready' }).eq('id', lantern.id);
     await expect(todo.getByText('Nothing blocking — every scene left to shoot is ready.')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('region', { name: 'Next shoot day' })).toContainText('all ready');

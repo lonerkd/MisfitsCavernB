@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json, Tables } from '@/lib/supabase/database.types';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
+import type { TranscriptLineDraft } from './transcript';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
 export type Client = SupabaseClient<Database>;
@@ -18,6 +19,18 @@ export type CharacterMedia = Tables<'character_media'>;
 export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
+export type CallSheetAck = Tables<'call_sheet_acks'>;
+export type ProjectLocation = Tables<'project_locations'>;
+export type Vendor = Tables<'vendors'>;
+export type Expense = Tables<'expenses'>;
+export type Timesheet = Tables<'timesheets'>;
+export type BudgetItem = Tables<'budget_items'>;
+export type ExpenseInput = Pick<Expense, 'description' | 'amount'> & Partial<Pick<Expense, 'budget_item_id' | 'vendor_id' | 'status' | 'po_number' | 'spent_on' | 'receipt_media_id'>>;
+export type ProjectDocument = Tables<'project_documents'>;
+export type TranscriptLine = Tables<'transcript_lines'>;
+export type TranscriptPatch = Partial<Pick<TranscriptLine, 'start_ms' | 'end_ms' | 'speaker' | 'text'>>;
+export type DocumentFields = Partial<Pick<ProjectDocument, 'kind' | 'title' | 'status' | 'person_id' | 'vendor_id' | 'location_id' | 'party' | 'expires_on' | 'notes'>>;
+export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes'>>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
 export type PostCut = Tables<'post_cuts'>;
 export type PostNote = Tables<'post_notes'>;
@@ -65,6 +78,8 @@ export function nextShotNumber(shots: Pick<Shot, 'shot_number'>[]): string {
 }
 
 export const MEDIA_BUCKET = 'project-media';
+/** Paperwork files: private to those who shape the project (and the person a document is about). */
+export const PAPERS_BUCKET = 'project-papers';
 
 export interface MediaMeta {
   width?: number | null;
@@ -125,7 +140,7 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
-  async function addLink(projectId: string, userId: string, input: { url: string; title?: string; board?: string | null }): Promise<Media> {
+  async function addLink(projectId: string, userId: string, input: { url: string; title?: string; notes?: string | null; board?: string | null }): Promise<Media> {
     const link = classifyUrl(input.url);
     if (!link) throw new StudioError('That doesn’t look like a web address (it should start with https://).');
     const { data, error } = await db
@@ -135,12 +150,41 @@ export function createStudioApi(db: Client) {
         kind: link.kind,
         title: (input.title?.trim() || link.title).slice(0, 200),
         external_url: link.url,
+        notes: input.notes?.trim().slice(0, 5000) || null,
         board: input.board?.trim() || null,
         created_by: userId,
       })
       .select('*')
       .single();
     if (error) fail(error, 'Could not add the link');
+    return data;
+  }
+
+  /** A written note in the library: a line, an idea, what someone said. Its words live in notes. */
+  async function addNote(projectId: string, userId: string, input: { title?: string; text: string; board?: string | null }): Promise<Media> {
+    const text = input.text.trim().slice(0, 5000);
+    if (!text) throw new StudioError('Write something first.');
+    const title = (input.title?.trim() || text.split('\n')[0]).replace(/\s+/g, ' ').slice(0, 80);
+    const { data, error } = await db
+      .from('media')
+      .insert({ project_id: projectId, kind: 'note', title, notes: text, board: input.board?.trim() || null, created_by: userId })
+      .select('*')
+      .single();
+    if (error) fail(error, 'Could not save the note');
+    return data;
+  }
+
+  /** Pins from a Pinterest board, as image items on one board of the library (their pin page in the notes). */
+  async function addPins(projectId: string, userId: string, pins: Array<{ title: string; pinUrl: string; imageUrl: string }>, board: string | null): Promise<Media[]> {
+    if (!pins.length) return [];
+    const rows = pins.map((p) => ({
+      project_id: projectId, kind: 'image' as const, created_by: userId,
+      title: p.title.slice(0, 200), external_url: p.imageUrl,
+      notes: `From Pinterest: ${p.pinUrl}`.slice(0, 5000),
+      board: board?.trim().slice(0, 60) || null,
+    }));
+    const { data, error } = await db.from('media').insert(rows).select('*');
+    if (error) fail(error, 'Could not add the pins');
     return data;
   }
 
@@ -356,6 +400,216 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /** Owner and leads: sends the sheet to the production as the next version. */
+  async function issueCallSheet(sheetId: string, note?: string): Promise<CallSheet> {
+    const { data, error } = await db.rpc('issue_call_sheet', { p_sheet: sheetId, p_note: note?.trim() || undefined });
+    if (error) fail(error, 'Could not issue the call sheet');
+    return data as CallSheet;
+  }
+
+  /** "Got it": confirms the version the caller has seen. Returns that version. */
+  async function ackCallSheet(sheetId: string): Promise<number> {
+    const { data, error } = await db.rpc('ack_call_sheet', { p_sheet: sheetId });
+    if (error) fail(error, 'Could not confirm the call sheet');
+    return data as number;
+  }
+
+  async function listCallSheetAcks(projectId: string): Promise<CallSheetAck[]> {
+    const { data, error } = await db.from('call_sheet_acks').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load confirmations');
+    return data;
+  }
+
+  // ── Locations ────────────────────────────────────────────────────────────
+
+  async function listLocations(projectId: string): Promise<ProjectLocation[]> {
+    const { data, error } = await db.from('project_locations').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load locations');
+    return data;
+  }
+
+  /** Creates the location's record on first save (keyed by its name); later saves change only the given fields. */
+  async function saveLocation(projectId: string, name: string, patch: LocationPatch): Promise<ProjectLocation> {
+    const { data, error } = await db.from('project_locations')
+      .upsert({ project_id: projectId, name: name.trim().toUpperCase(), ...patch }, { onConflict: 'project_id,name' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save the location');
+    return data;
+  }
+
+  async function deleteLocation(id: string): Promise<void> {
+    const { error } = await db.from('project_locations').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove the location');
+  }
+
+  // ── Money ────────────────────────────────────────────────────────────────
+
+  async function listBudgetLines(projectId: string): Promise<BudgetItem[]> {
+    const { data, error } = await db.from('budget_items').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load the budget');
+    return data;
+  }
+
+  /** Owner, leads and contributors only (RLS); others get an empty list. */
+  async function listVendors(projectId: string): Promise<Vendor[]> {
+    const { data, error } = await db.from('vendors').select('*').eq('project_id', projectId).order('name');
+    if (error) fail(error, 'Could not load vendors');
+    return data;
+  }
+
+  async function addVendor(projectId: string, fields: Pick<Vendor, 'name'> & Partial<Pick<Vendor, 'category' | 'contact' | 'notes'>>): Promise<Vendor> {
+    const { data, error } = await db.from('vendors').insert({ project_id: projectId, ...fields, name: fields.name.trim() }).select('*').single();
+    if (error) fail(error, error.code === '23505' ? 'There’s already a vendor with that name' : 'Could not add the vendor');
+    return data;
+  }
+
+  async function listExpenses(projectId: string): Promise<Expense[]> {
+    const { data, error } = await db.from('expenses').select('*').eq('project_id', projectId).order('spent_on', { ascending: false });
+    if (error) fail(error, 'Could not load spend');
+    return data;
+  }
+
+  async function addExpense(projectId: string, fields: ExpenseInput): Promise<Expense> {
+    const { data, error } = await db.from('expenses').insert({ project_id: projectId, ...fields }).select('*').single();
+    if (error) fail(error, 'Could not add the spend');
+    return data;
+  }
+
+  async function updateExpense(id: string, patch: Partial<ExpenseInput>): Promise<Expense> {
+    const { data, error } = await db.from('expenses').update(patch).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not update the spend');
+    return data;
+  }
+
+  async function deleteExpense(id: string): Promise<void> {
+    const { error } = await db.from('expenses').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove the spend');
+  }
+
+  /** Your own hours, or everyone's for the owner and leads (RLS). */
+  async function listTimesheets(projectId: string): Promise<Timesheet[]> {
+    const { data, error } = await db.from('timesheets').select('*').eq('project_id', projectId).order('work_date', { ascending: false });
+    if (error) fail(error, 'Could not load timesheets');
+    return data;
+  }
+
+  /** Logs (or corrects) the caller's hours for a day. */
+  async function logHours(projectId: string, workDate: string, hours: number, note?: string): Promise<Timesheet> {
+    const { data, error } = await db.from('timesheets')
+      .upsert({ project_id: projectId, work_date: workDate, hours, note: note?.trim() || null, status: 'submitted' }, { onConflict: 'project_id,user_id,work_date' })
+      .select('*').single();
+    if (error) fail(error, error.code === '42501' ? 'Approved hours can’t be changed — ask the owner' : 'Could not log the hours');
+    return data;
+  }
+
+  /** Owner and leads: approve (with a rate) or reject. */
+  async function decideTimesheet(id: string, status: 'approved' | 'rejected', rate?: number | null): Promise<Timesheet> {
+    const { data, error } = await db.from('timesheets').update({ status, ...(rate !== undefined ? { rate } : {}) }).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not update the timesheet');
+    return data;
+  }
+
+  async function deleteTimesheet(id: string): Promise<void> {
+    const { error } = await db.from('timesheets').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove the timesheet');
+  }
+
+  // ── Paperwork ────────────────────────────────────────────────────────────
+
+  // ── Transcripts and the paper edit ──────────────────────────────────────
+
+  /** Every line of every transcript in the project (the paper edit spans them). */
+  async function listTranscriptLines(projectId: string): Promise<TranscriptLine[]> {
+    const { data, error } = await db.from('transcript_lines').select('*').eq('project_id', projectId).order('media_id').order('position');
+    if (error) fail(error, 'Could not load transcripts');
+    return data;
+  }
+
+  /** Adds lines to the end of a recording's transcript, in order. */
+  async function addTranscriptLines(media: Pick<Media, 'id' | 'project_id'>, userId: string, lines: TranscriptLineDraft[], after: number): Promise<TranscriptLine[]> {
+    if (!lines.length) return [];
+    const rows = lines.map((l, i) => ({
+      project_id: media.project_id, media_id: media.id, position: after + 1 + i, created_by: userId,
+      start_ms: l.start_ms, end_ms: l.end_ms, speaker: l.speaker?.trim() || null, text: l.text.trim(),
+    }));
+    const out: TranscriptLine[] = [];
+    for (let i = 0; i < rows.length; i += 500) {
+      const { data, error } = await db.from('transcript_lines').insert(rows.slice(i, i + 500)).select('*');
+      if (error) fail(error, 'Could not add the transcript');
+      out.push(...data);
+    }
+    return out;
+  }
+
+  async function updateTranscriptLine(id: string, patch: TranscriptPatch): Promise<TranscriptLine> {
+    const { data, error } = await db.from('transcript_lines').update(patch).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not save the line');
+    return data;
+  }
+
+  async function deleteTranscriptLines(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    const { error } = await db.from('transcript_lines').delete().in('id', ids);
+    if (error) fail(error, 'Could not remove the lines');
+  }
+
+  /** The paper edit, in order: these lines, and no others, are the selects. */
+  async function setPaperEdit(projectId: string, lineIds: string[]): Promise<void> {
+    const { error } = await db.rpc('set_paper_edit', { p_project: projectId, p_line_ids: lineIds });
+    if (error) fail(error, 'Could not save the paper edit');
+  }
+
+  /** All of it for those who shape the project; your own for anyone else (RLS). */
+  async function listDocuments(projectId: string): Promise<ProjectDocument[]> {
+    const { data, error } = await db.from('project_documents').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load paperwork');
+    return data;
+  }
+
+  async function addDocument(projectId: string, fields: DocumentFields & Pick<ProjectDocument, 'kind' | 'title'>): Promise<ProjectDocument> {
+    const { data, error } = await db.from('project_documents').insert({ project_id: projectId, ...fields }).select('*').single();
+    if (error) fail(error, 'Could not add the document');
+    return data;
+  }
+
+  async function updateDocument(id: string, patch: DocumentFields): Promise<ProjectDocument> {
+    const { data, error } = await db.from('project_documents').update(patch).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not update the document');
+    return data;
+  }
+
+  async function deleteDocument(doc: Pick<ProjectDocument, 'id' | 'storage_path'>): Promise<void> {
+    const { error } = await db.from('project_documents').delete().eq('id', doc.id);
+    if (error) fail(error, 'Could not remove the document');
+    if (doc.storage_path) await db.storage.from(PAPERS_BUCKET).remove([doc.storage_path]);
+  }
+
+  /** Attaches (or replaces) the document's file: a PDF or a photo of it. */
+  async function attachDocumentFile(doc: Pick<ProjectDocument, 'id' | 'project_id' | 'storage_path'>, file: Blob & { name: string }): Promise<ProjectDocument> {
+    const ok = file.type === 'application/pdf' || file.type.startsWith('image/');
+    if (!ok) throw new StudioError(`${file.name}: attach a PDF or an image.`);
+    if (file.size > 20 * 1024 * 1024) throw new StudioError(`${file.name}: files up to 20 MB.`);
+    const path = `${doc.project_id}/${doc.id}/${crypto.randomUUID().slice(0, 8)}-${safeFileName(file.name)}`;
+    const up = await db.storage.from(PAPERS_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) throw new StudioError(`Upload failed: ${up.error.message}`);
+    const { data, error } = await db.from('project_documents')
+      .update({ storage_path: path, file_name: file.name.slice(0, 200), mime_type: file.type, size_bytes: file.size })
+      .eq('id', doc.id).select('*').single();
+    if (error) {
+      await db.storage.from(PAPERS_BUCKET).remove([path]);
+      fail(error, 'Could not save the file');
+    }
+    if (doc.storage_path) await db.storage.from(PAPERS_BUCKET).remove([doc.storage_path]);
+    return data;
+  }
+
+  /** A short-lived link to open a document's file. */
+  async function documentUrl(path: string): Promise<string> {
+    const { data, error } = await db.storage.from(PAPERS_BUCKET).createSignedUrl(path, 300);
+    if (error || !data) throw new StudioError('Could not open the file');
+    return data.signedUrl;
+  }
+
   // ── Post-production ──────────────────────────────────────────────────────
 
   async function listCuts(projectId: string): Promise<PostCut[]> {
@@ -518,10 +772,10 @@ export function createStudioApi(db: Client) {
   }
 
   return {
-    listMedia, addLink, uploadFile, updateMedia, deleteMedia, signedUrls,
+    listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

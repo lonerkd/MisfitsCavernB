@@ -107,3 +107,27 @@ construct their clients lazily *inside* the handler, so a missing key fails at
 request time with a clean 500 rather than breaking `next build`.
 
 Full template: `.env.example`. Reading `.env*` is `deny`-blocked for agents.
+
+## 7. CI, checks and local tooling
+
+What guards `main`, and the commands behind each guard:
+
+| Guard | Where | Local command |
+|---|---|---|
+| Types, lint, unit tests, build | CI `checks` | `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` |
+| Page weight (first-load JS per page, gzipped) | CI `checks` | `npm run budget` (after a build); `-- --update` rewrites `performance-budget.json` (+10%) — raise a number only on purpose |
+| Schema = migrations; types = schema; persona tests | CI `database` | `npm run db:drift`, `npm run db:types:check`, `npm run test:integration` |
+| Every e2e spec against a fresh local stack, in 3 parallel parts | CI `e2e-local` | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |
+| Unauthenticated smoke against the PR's own build | CI `e2e-smoke` | `npx playwright test e2e/route-smoke.spec.ts` |
+| Production = committed schema | `production-drift.yml`: nightly and after schema changes land on main. Needs the `PRODUCTION_DB_URL` secret (a read-only role) and **fails without it** | `DRIFT_TARGET_DB_URL=… npm run db:drift -- --target` |
+
+- `e2e-local` runs the whole `e2e/` folder; each spec skips itself unless its
+  stack is there, so a new spec is in CI the moment it's added.
+- `e2e/layout.spec.ts` guards the desk layout (every dock app visible; the
+  Lounge composer and the editor footer above the dock; no sideways scroll).
+- Git hooks (`.githooks/`, enabled by `npm install` via `prepare`): pre-commit
+  lints staged files; pre-push runs types and unit tests.
+- Node is pinned in `.nvmrc` (22) for CI and local; `engines` allows ≥20.
+- Fonts are self-hosted in `app/fonts` (SIL OFL) — builds never fetch Google Fonts.
+- Dependabot opens grouped weekly updates; CODEOWNERS asks the owner to review;
+  the PR template carries the Database / Tests / checklist sections.

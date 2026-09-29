@@ -48,14 +48,14 @@ import {
 import type { EditorCtx } from './editorCtx';
 
 export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
-  const { activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
+  const { tools, activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
   return (
         <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
-          background: 'rgba(6,6,6,0.94)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(24px) saturate(1.4)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
           padding: '0 20px',
           height: 58,
           display: 'flex',
@@ -77,8 +77,8 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 title="Open this project's hub"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
-                  color: activeProject.accent_color || '#e8431a',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1,
+                  color: activeProject.accent_color || 'var(--accent)',
                   background: `${activeProject.accent_color || '#e8431a'}14`,
                   border: `1px solid ${activeProject.accent_color || '#e8431a'}30`,
                   padding: '4px 10px', borderRadius: 9999, textDecoration: 'none',
@@ -90,10 +90,10 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
               </Link>
             )}
 
-            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ width: 1, height: 24, background: 'rgba(var(--ink-rgb), 0.1)' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 6px', background: 'rgba(var(--ink-rgb), 0.03)', borderRadius: 'var(--radius-sm)' }}>
                 <button
                   type="button"
                   onClick={() => setShowSidebar(!showSidebar)}
@@ -118,7 +118,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#fff',
+                    color: 'var(--fg-strong)',
                     fontSize: 14,
                     fontWeight: 700,
                     outline: 'none',
@@ -127,18 +127,18 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                     width: 'auto',
                     minWidth: 120
                   }}
-                  onFocus={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                  onFocus={(e) => e.target.style.background = 'rgba(var(--ink-rgb), 0.05)'}
                   onBlur={(e) => e.target.style.background = 'transparent'}
                 />
               </div>
 
-              <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 11, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(255,255,255,0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+              {tools.revisions && <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 11, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
-              </button>
+              </button>}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9999, padding: '3px 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 9999, padding: '3px 4px' }}>
             {([
               { id: 'write',   icon: Type,            label: 'Write'   },
               { id: 'board',   icon: LayoutDashboard, label: 'Board'   },
@@ -153,7 +153,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   padding: '5px 13px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
                   letterSpacing: 0.5, border: 'none', cursor: 'pointer',
-                  background: activeView === id ? 'rgba(255,255,255,0.10)' : 'transparent',
+                  background: activeView === id ? 'rgba(var(--ink-rgb), 0.10)' : 'transparent',
                   color: activeView === id ? 'var(--fg)' : 'var(--fg-dim)',
                   fontFamily: 'var(--mono)',
                   transition: 'background 0.2s, color 0.2s',
@@ -167,7 +167,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
 
             {sessionWordsWritten > 0 && (
-              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: '#00cc66', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--ok)', padding: '4px 8px', background: 'rgba(0,204,102,0.1)', borderRadius: 4 }}>
                 +{sessionWordsWritten}w
               </span>
             )}
@@ -178,7 +178,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },
               { icon: Settings,   title: 'Tools Panel', onClick: () => setShowRightSidebar(!showRightSidebar) },
-              { icon: Lock,       title: 'Lock Revision', onClick: handleLockRevision },
+              ...(tools.revisions ? [{ icon: Lock, title: 'Lock Revision', onClick: handleLockRevision }] : []),
             ].map(({ icon: Icon, title, onClick }) => (
               <button aria-label={title}
                 key={title}
@@ -194,7 +194,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   cursor: 'pointer',
                   transition: 'background 0.2s, color 0.2s, border-color 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'var(--fg)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.06)'; e.currentTarget.style.color = 'var(--fg)'; e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.08)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-dim)'; e.currentTarget.style.borderColor = 'transparent'; }}
               >
                 <Icon size={14} />
@@ -207,7 +207,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 7,
                   padding: '8px 18px',
-                  background: 'var(--accent)', color: 'var(--bg)',
+                  background: 'var(--accent)', color: 'var(--on-accent)',
                   borderRadius: 9999, fontWeight: 700, fontSize: 11,
                   fontFamily: 'var(--mono)', letterSpacing: 2, textTransform: 'uppercase',
                   border: 'none', cursor: 'pointer',
@@ -222,8 +222,8 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
               {showFormatMenu && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                  background: 'rgba(10,10,10,0.96)', backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.09)',
+                  background: 'var(--surface)', backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(var(--ink-rgb), 0.09)',
                   borderRadius: 14, padding: 6, minWidth: 164, zIndex: 200,
                   boxShadow: '0 16px 48px rgba(0,0,0,0.6)'
                 }}>
@@ -236,12 +236,12 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                       textTransform: 'uppercase', letterSpacing: 2,
                       fontFamily: 'var(--mono)', fontWeight: 500,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--fg)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.05)'; e.currentTarget.style.color = 'var(--fg)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>
                       .{fmt.toUpperCase()}
                     </button>
                   ))}
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 6px' }} />
+                  <div style={{ height: 1, background: 'rgba(var(--ink-rgb), 0.08)', margin: '4px 6px' }} />
                   <button onClick={() => { handleNormalize(); setShowFormatMenu(false); }} style={{
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
                     padding: '9px 14px', background: 'transparent', border: 'none',
@@ -264,13 +264,13 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 36, height: 36,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(var(--ink-rgb), 0.05)',
+                border: '1px solid rgba(var(--ink-rgb), 0.08)',
                 borderRadius: 8, color: saving ? 'var(--fg-dim)' : 'var(--fg-muted)',
                 cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = 'var(--fg)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.09)'; e.currentTarget.style.color = 'var(--fg)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.05)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
             >
               {saving ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
             </button>

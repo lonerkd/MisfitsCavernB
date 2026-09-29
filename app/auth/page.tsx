@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,8 +52,10 @@ export default function AuthPage() {
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
   // destination page's gate cannot bounce them back here. This also forwards
   // someone who is already signed in and lands on /auth.
+  // A new account with nowhere particular to go starts at /welcome.
+  const isNewAccount = useRef(false);
   useEffect(() => {
-    if (status === 'authed') router.replace(redirectTo);
+    if (status === 'authed') router.replace(isNewAccount.current && redirectTo === '/projects' ? '/welcome' : redirectTo);
   }, [status, redirectTo, router]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +96,7 @@ export default function AuthPage() {
         await withTimeout(signIn(form.email, form.password), 30000, 'Sign-in timed out.');
         toast('Welcome back.', 'success');
       } else {
+        isNewAccount.current = true;
         const created = await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
         // Email-confirmation deployments return a user but no session: stay put
         // and tell them what to do rather than bouncing into a gated page.
@@ -106,6 +109,7 @@ export default function AuthPage() {
       // No navigation here: the status effect above moves us once the OS store
       // reports 'authed' (osSignIn/osSignUp already awaited hydration).
     } catch (err: any) {
+      isNewAccount.current = false;
       const code = err.code || '';
       const msg = err.message || '';
 
@@ -160,7 +164,7 @@ export default function AuthPage() {
           alignItems: 'center',
           gap: 8,
           fontFamily: 'var(--mono)',
-          fontSize: 11,
+          fontSize: 'max(9px, var(--mc-min-font, 0px))',
           letterSpacing: 3,
           textTransform: 'uppercase',
           color: 'var(--fg-muted)',
@@ -202,8 +206,8 @@ export default function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            background: 'rgba(10,10,10,0.8)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--glass)',
+            border: '1px solid rgba(var(--ink-rgb), 0.06)',
             backdropFilter: 'blur(20px)',
             padding: '40px 36px',
             borderRadius: 'var(--radius-sm)',
@@ -212,7 +216,7 @@ export default function AuthPage() {
           <div style={{
             display: 'flex',
             marginBottom: 32,
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(var(--ink-rgb), 0.03)',
             padding: 3,
             borderRadius: 'var(--radius-sm)',
           }}>
@@ -223,11 +227,11 @@ export default function AuthPage() {
                 style={{
                   flex: 1,
                   padding: '10px',
-                  background: mode === m ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  background: mode === m ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
                   border: 'none',
                   color: mode === m ? 'var(--fg)' : 'var(--fg-muted)',
                   fontFamily: 'var(--mono)',
-                  fontSize: 11,
+                  fontSize: 'max(9px, var(--mc-min-font, 0px))',
                   letterSpacing: 3,
                   textTransform: 'uppercase',
                   borderRadius: 'calc(var(--radius-sm) - 2px)',
@@ -316,11 +320,11 @@ export default function AuthPage() {
           </form>
 
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-subtle)' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-subtle)' }}>
               or
             </span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
           </div>
 
           <button

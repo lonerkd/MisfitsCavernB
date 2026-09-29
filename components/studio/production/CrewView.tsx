@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserPlus, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Briefcase, UserPlus, Users } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import { useCanShape } from '@/lib/brief';
+import { describeRange, localToday, upcoming, useProjectAvailability } from '@/lib/availability';
 import { CrewMemberCard, RecruitModal } from '../CrewBoards';
 import { CastingBoard } from '../CastingBoard';
 import { useStudio } from '../StudioContext';
@@ -13,14 +16,22 @@ import s from '../studio.module.css';
 export type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; status?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
 /** The crew, who's online, recruiting, and casting. */
+import { BriefHints } from '@/components/brief/BriefHints';
+
 export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () => void }) {
   const { project, userId, isOwner } = useStudio();
   const online = useOnlinePresence(userId);
   const [recruiting, setRecruiting] = useState(false);
+  // Those who plan the production see when people are away (dates only).
+  const canShape = useCanShape(project.id, isOwner);
+  const away = useProjectAvailability(project.id, canShape);
+  const today = localToday();
+  const awayText = (userId: string) => upcoming(away, userId, today).slice(0, 3).map((a) => describeRange(a.starts_on, a.ends_on)).join(' · ') || null;
 
   return (
     <div className={s.stack} style={{ gap: 32 }}>
       <div style={{ maxWidth: 760 }}>
+        <BriefHints projectId={project.id} projectTitle={project.title} accent={project.accent_color} ids={['roles', 'casting', 'night']} style={{ marginBottom: 16 }} />
         <div className={s.toolbar}>
           <div className={s.panelTitle} style={{ marginBottom: 0 }}><Users size={14} /> Cast & crew · {crew.length}</div>
           {isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}
@@ -32,12 +43,19 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
                 key={m.id}
                 index={i}
                 isOnline={online.has(m.user_id)}
+                away={awayText(m.user_id)}
                 member={{ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status, avatar: m.profiles?.avatar_url, userId: m.user_id }}
               />
             ))}
           </div>
         ) : (
-          <EmptyState icon={<Users size={26} />} title="No crew yet" subtitle={isOwner ? 'Recruit people from the community, or post roles to Jobs.' : 'The project owner recruits crew.'} />
+          <EmptyState icon={<Users size={26} />} title="No crew yet" subtitle={isOwner ? 'Recruit people from the community, or post roles to Jobs.' : 'The project owner recruits crew.'}
+            action={isOwner ? (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className={s.btnPrimary} onClick={() => setRecruiting(true)}><UserPlus size={12} /> Recruit</button>
+                <Link href="/jobs" className={s.btn}><Briefcase size={12} /> Post a role</Link>
+              </div>
+            ) : undefined} />
         )}
       </div>
       <CastingBoard crew={crew} />

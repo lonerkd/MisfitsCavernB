@@ -1,5 +1,6 @@
 'use client';
 
+import { readable } from '@/lib/color';
 import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
@@ -13,6 +14,8 @@ const CHARACTER_COLOR = '#ffaa00';
 export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'history' | 'audio';
 
 export interface EditorRightPanelsProps {
+  /** Hide the Breakdown tab until the project reaches it (see lib/os/progress). */
+  showBreakdown?: boolean;
   rightPanel: RightPanelTab;
   setRightPanel: (p: RightPanelTab) => void;
   activeView: string;
@@ -71,13 +74,13 @@ function SectionHeader({
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         cursor: 'pointer', padding: '10px 12px', borderRadius: 8,
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)',
         userSelect: 'none',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.045)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.045)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)' }}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Icon size={14} />
         <span>{label}</span>
@@ -98,7 +101,7 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, breakdownPanel,
+  referencesPanel, breakdownPanel, showBreakdown = true,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -122,9 +125,9 @@ export function EditorRightPanels({
 
   return (
     <>
-              <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                {TABS.map(([key, Icon, label]) => (
-                  <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} style={{
+              <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
+                {TABS.filter(([key]) => key !== 'breakdown' || showBreakdown || rightPanel === 'breakdown').map(([key, Icon, label]) => (
+                  <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} title={label} style={{
                     flex: 1, minWidth: 0, padding: '8px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',
                     color: rightPanel === key ? 'var(--fg)' : 'var(--fg-dim)',
@@ -135,7 +138,8 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{label}</span>
+                    {/* Six tabs share a narrow panel: each label stays inside its own tab. */}
+                    <span style={{ fontSize: 'max(9.5px, var(--mc-min-font, 0px))', fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 2px' }}>{label}</span>
                   </button>
                 ))}
               </div>
@@ -159,7 +163,7 @@ export function EditorRightPanels({
                           borderRadius: 8,
                           padding: '12px 14px',
                         }}>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: color, marginBottom: 8, opacity: 0.85 }}>
+                          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: readable(color), marginBottom: 8 }}>
                             Now Writing · Scene {currentSceneIdx + 1}
                           </div>
                           <div style={{
@@ -170,13 +174,13 @@ export function EditorRightPanels({
                             {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                           </div>
                           <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: color, background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(color), background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{wc}w · {estTime}</span>
                           </div>
                           {chars.length > 0 && (
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {chars.slice(0, 5).map(c => (
-                                <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: 4 }}>{c}</span>
+                                <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.08)', padding: '2px 7px', borderRadius: 4 }}>{c}</span>
                               ))}
                             </div>
                           )}
@@ -185,19 +189,19 @@ export function EditorRightPanels({
                     })()}
 
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', marginBottom: 12 }}>
                         <Wand2 size={14} /> Quick Insert
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                         {['scene', 'action', 'character', 'dialogue', 'transition', 'note'].map(type => (
-                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, color: 'var(--fg)', fontSize: 12, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>{type}</button>
+                          <button key={type} onClick={() => insertElement(type)} style={{ padding: '8px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, color: 'var(--fg)', fontSize: 12, fontWeight: 500, textTransform: 'capitalize', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.03)'}>{type}</button>
                         ))}
                       </div>
                     </div>
                     {writingPanel}
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
+                    <div style={{ height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                           <span>Typewriter Mode</span>
@@ -223,12 +227,12 @@ export function EditorRightPanels({
                       {breakdownOpen && (
                         <>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, padding: '0 4px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Scenes</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{scenesList.length}</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Characters</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{chars.length}</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Est. Runtime</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>~{Math.ceil(pageEst * 0.8)} min</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Pages</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{pageEst}</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: '#fff', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Scenes</span><span style={{ color: 'var(--fg-strong)', fontFamily: 'var(--mono)' }}>{scenesList.length}</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Characters</span><span style={{ color: 'var(--fg-strong)', fontFamily: 'var(--mono)' }}>{chars.length}</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Est. Runtime</span><span style={{ color: 'var(--fg-strong)', fontFamily: 'var(--mono)' }}>~{Math.ceil(pageEst * 0.8)} min</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Pages</span><span style={{ color: 'var(--fg-strong)', fontFamily: 'var(--mono)' }}>{pageEst}</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Words</span><span style={{ color: 'var(--fg-strong)', fontFamily: 'var(--mono)' }}>{wordCount.toLocaleString()}</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--fg-muted)' }}><span>Dialogue/Action</span><span style={{ color: 'var(--fg-strong)', fontFamily: 'var(--mono)' }}>{dialogueRatio}% / {100 - dialogueRatio}%</span></div>
                           </div>
                         </>
                       )}
@@ -241,12 +245,12 @@ export function EditorRightPanels({
                           <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontStyle: 'italic', padding: '0 4px' }}>No characters detected yet.</div>
                         ) : (
                           charStats.slice(0, 15).map((cs) => (
-                            <div key={cs.name} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: 12 }}>
+                            <div key={cs.name} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: 12 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                 <span style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
                                 <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
                               </div>
-                              <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 4, marginBottom: 8 }}>
+                              <div style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, marginBottom: 8 }}>
                                 <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: TYPE_COLORS.character, borderRadius: 4 }} />
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: 'var(--fg-muted)' }}>
@@ -256,7 +260,7 @@ export function EditorRightPanels({
                                 <span>~{cs.avgWordsPerLine} w/line</span>
                               </div>
                               {Object.keys(cs.speaksTo).length > 0 && (
-                                <div style={{ marginTop: 8, fontSize: 11, color: '#888' }}>Shares scenes with: {Object.entries(cs.speaksTo).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name]) => name).join(', ')}</div>
+                                <div style={{ marginTop: 8, fontSize: 11, color: 'var(--fg-dim)' }}>Shares scenes with: {Object.entries(cs.speaksTo).sort((a,b) => b[1]-a[1]).slice(0,3).map(([name]) => name).join(', ')}</div>
                               )}
                             </div>
                           ))
@@ -269,7 +273,7 @@ export function EditorRightPanels({
                         icon={AlertCircle}
                         label="Validation"
                         count={lintIssues.length || null}
-                        color={errorCount > 0 ? '#ef4444' : warnCount > 0 ? '#eab308' : '#00cc66'}
+                        color={errorCount > 0 ? 'var(--danger)' : warnCount > 0 ? '#eab308' : 'var(--ok)'}
                         open={lintOpen}
                         onToggle={() => setLintOpen(o => !o)}
                       />
@@ -286,22 +290,22 @@ export function EditorRightPanels({
                             </label>
                           </div>
                           <div style={{ display: 'flex', gap: 8 }}>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>{errorCount} errors</span>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: 'var(--danger)' }}>{errorCount} errors</span>
                             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>{warnCount} warnings</span>
                             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
                           </div>
                           {lintIssues.length === 0 ? (
-                            <div style={{ fontSize: 12, color: '#00cc66', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
+                            <div style={{ fontSize: 12, color: 'var(--ok)', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                               {lintIssues.slice(0, 30).map((issue, idx) => (
-                                <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
+                                <div key={idx} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <span style={{ fontSize: 11, color: issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
+                                    <span style={{ fontSize: 11, color: issue.type === 'error' ? 'var(--danger)' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
                                     <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
                                   </div>
-                                  <div style={{ fontSize: 12, color: '#ccc' }}>{issue.message}</div>
-                                  <div style={{ fontSize: 11, color: '#888', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{issue.message}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2, fontFamily: 'var(--mono)' }}>{issue.rule}</div>
                                 </div>
                               ))}
                             </div>
@@ -322,7 +326,7 @@ export function EditorRightPanels({
                         open={revisionsOpen}
                         onToggle={() => setRevisionsOpen(o => !o)}
                         right={(
-                          <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px', color: '#fff', cursor: 'pointer' }}>Lock Current</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-strong)', cursor: 'pointer' }}>Lock Current</button>
                         )}
                       />
                       {revisionsOpen && (
@@ -338,7 +342,7 @@ export function EditorRightPanels({
                                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: revColor.color }} />
                                 </div>
                                 <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(rev.date).toLocaleString()}</div>
-                                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
+                                <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 4 }}>{rev.snapshot.split('\n').length} lines · {rev.snapshot.split(/\s+/).filter(Boolean).length} words</div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: `1px solid ${revColor.color}22` }}>
                                   <button
                                     onClick={() => { setContent(rev.snapshot); toast(`Restored to ${rev.label}`, 'success'); }}
@@ -376,22 +380,22 @@ export function EditorRightPanels({
                             addToStash(currentScript.id, sel)
                               .then((row) => { stash.upsertLocal(row); toast('Added to stash', 'success'); })
                               .catch((err: Error) => toast(err.message || 'Could not stash that', 'error'));
-                          }} style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: '#fff', cursor: 'pointer' }}>+ Add Selected</button>
+                          }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: 'none', padding: '4px 8px', borderRadius: 4, color: 'var(--fg-strong)', cursor: 'pointer' }}>+ Add Selected</button>
                         )}
                       />
                       {stashOpen && (
                         <>
                           <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4, padding: '0 4px' }}>Save snippets, alt dialogue, or cut scenes here for later use.</div>
                           {stash.status === 'error' ? (
-                            <div style={{ fontSize: 12, color: '#ef4444', textAlign: 'center', padding: 12 }}>{stash.error || 'Could not load the stash'}</div>
+                            <div style={{ fontSize: 12, color: 'var(--danger)', textAlign: 'center', padding: 12 }}>{stash.error || 'Could not load the stash'}</div>
                           ) : stash.rows.length === 0 ? (
-                            <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click &quot;+ Add Selected&quot; to save it here.</div>
+                            <div style={{ fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>Stash is empty.<br/><br/>Select text in the editor and click &quot;+ Add Selected&quot; to save it here.</div>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {stash.rows.map(item => (
-                                <div key={item.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px' }}>
-                                  <div style={{ fontSize: 12, color: '#ccc', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div key={item.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: '10px' }}>
+                                  <div style={{ fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.text}</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
                                     <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{new Date(item.created_at).toLocaleDateString()}</span>
                                     <div style={{ display: 'flex', gap: 8 }}>
                                       <button onClick={() => {
@@ -403,7 +407,7 @@ export function EditorRightPanels({
                                           toast('Inserted from stash', 'success');
                                         }
                                       }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
-                                      <button onClick={() => { stash.removeLocal(item.id); removeFromStash(item.id).catch((err: Error) => { stash.upsertLocal(item); toast(err.message || 'Could not delete', 'error'); }); }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}>Delete</button>
+                                      <button onClick={() => { stash.removeLocal(item.id); removeFromStash(item.id).catch((err: Error) => { stash.upsertLocal(item); toast(err.message || 'Could not delete', 'error'); }); }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}>Delete</button>
                                     </div>
                                   </div>
                                 </div>
@@ -418,24 +422,24 @@ export function EditorRightPanels({
 
                 {rightPanel === 'audio' && (
                   <>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 }}><Music size={14} /> Project Audio</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 }}><Music size={14} /> Project Audio</div>
                     <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4 }}>Reference tracks and sound design linked to this project.</div>
                     {projectAudioRefs.length === 0 ? (
-                      <div style={{ fontSize: 12, color: '#888', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No audio references yet.<br/><br/>Link tracks from the Soundtrack module or upload sound design to populate this panel.</div>
+                      <div style={{ fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No audio references yet.<br/><br/>Link tracks from the Soundtrack module or upload sound design to populate this panel.</div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {projectAudioRefs.map((ref: any) => (
-                          <div key={ref.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div key={ref.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                             <button aria-label="Play"
                               onClick={() => playAudioRef?.(ref)}
                               disabled={!playAudioRef}
                               title="Play"
-                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
+                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
                             >
                               <Play size={13} />
                             </button>
                             <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontSize: 12, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ref.title || ref.name || ref.uri || 'Untitled track'}</div>
+                              <div style={{ fontSize: 12, color: 'var(--fg-strong)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ref.title || ref.name || ref.uri || 'Untitled track'}</div>
                               <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                 {ref.reference_type === 'spotify' ? 'Spotify' : ref.reference_type === 'custom_upload' ? 'Upload' : (ref.reference_type || 'audio')}
                               </div>

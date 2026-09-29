@@ -53,6 +53,13 @@ async function ensureProfile(session: Session) {
   }
 }
 
+/** A brand-new account: its first sign-in is its creation. */
+function isFirstSignIn(session: Session): boolean {
+  const created = Date.parse(session.user.created_at ?? '');
+  const signedIn = Date.parse(session.user.last_sign_in_at ?? '');
+  return Number.isFinite(created) && Number.isFinite(signedIn) && Math.abs(signedIn - created) < 60_000;
+}
+
 export default function AuthCallback() {
   const router = useRouter();
 
@@ -66,7 +73,7 @@ export default function AuthCallback() {
         if (session) {
           try { await ensureProfile(session); } catch (e) { console.error('Failed to ensure profile:', e); }
         }
-        router.push(path);
+        router.push(session && isFirstSignIn(session) ? '/welcome' : path);
       })();
     };
 
@@ -97,7 +104,7 @@ export default function AuthCallback() {
           MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
         </div>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>AUTHENTICATING...</div>
-        <div style={{ marginTop: 24, width: 120, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 4, margin: '24px auto 0', overflow: 'hidden' }}>
+        <div style={{ marginTop: 24, width: 120, height: 2, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, margin: '24px auto 0', overflow: 'hidden' }}>
           <div style={{ width: '40%', height: '100%', background: 'var(--accent)', borderRadius: 4, animation: 'authSlide 1.2s ease-in-out infinite' }} />
         </div>
         <style>{`

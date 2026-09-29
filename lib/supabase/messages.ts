@@ -113,3 +113,63 @@ export async function toggleReaction(messageId: string, emoji: string, _userId?:
   if (error) throw error;
   return (data || {}) as Record<string, string[]>;
 }
+
+// ── Editing, pinning, unread, search (20260929000000_lounge.sql) ────────────
+
+/** Rewords your own message; it's marked edited. */
+export async function editMessage(messageId: string, content: string) {
+  const { data, error } = await supabase.rpc('edit_message', { p_message: messageId, p_content: content });
+  if (error) throw new Error(error.message || 'Could not edit the message');
+  return data;
+}
+
+/** Pins or unpins a message: whoever runs the channel, or either side of a DM. */
+export async function pinMessage(messageId: string, pinned: boolean) {
+  const { data, error } = await supabase.rpc('pin_message', { p_message: messageId, p_pinned: pinned });
+  if (error) throw new Error(error.message || 'Could not pin the message');
+  return data;
+}
+
+export async function getPinnedMessages(channelUuid: string) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('id, content, created_at, pinned_at, sender_id, parent_message_id, profiles!messages_sender_id_fkey(username)')
+    .eq('channel_uuid', channelUuid)
+    .eq('pinned', true)
+    .order('pinned_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+/** Marks a channel, or a direct conversation with someone, read up to now. */
+export async function markLoungeRead(target: { channel: string } | { partner: string }) {
+  const { error } = await supabase.rpc('mark_lounge_read', 'channel' in target ? { p_channel: target.channel } : { p_partner: target.partner });
+  if (error) console.warn('mark read', error.message);
+}
+
+export interface LoungeUnread { channels: Record<string, number>; people: Record<string, number> }
+
+/** What arrived from others since you last read, per channel and per person. */
+export async function getLoungeUnread(): Promise<LoungeUnread> {
+  const { data, error } = await supabase.rpc('lounge_unread');
+  const out: LoungeUnread = { channels: {}, people: {} };
+  if (error || !data) return out;
+  for (const r of data) {
+    if (r.channel_id) out.channels[r.channel_id] = r.unread;
+    else if (r.partner_id) out.people[r.partner_id] = r.unread;
+  }
+  return out;
+}
+
+export interface LoungeHit {
+  id: string; content: string; created_at: string; sender_id: string; sender: string | null;
+  channel_uuid: string | null; channel_name: string | null; project_id: string | null;
+  parent_message_id: string | null; receiver_id: string | null;
+}
+
+/** Words (and word starts) across every message you can read; optionally one channel. */
+export async function searchLounge(query: string, channelUuid?: string | null): Promise<LoungeHit[]> {
+  const { data, error } = await supabase.rpc('search_lounge', { p_query: query, p_channel: channelUuid ?? undefined, p_limit: 40 });
+  if (error) throw new Error(error.message || 'Search failed');
+  return (data ?? []) as LoungeHit[];
+}

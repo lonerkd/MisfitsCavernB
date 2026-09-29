@@ -16,10 +16,11 @@ import { formatTimecode, parseTimecode } from '@/lib/studio/timecode';
 import { useStudio } from '../StudioContext';
 import { CutPlayer, type CutPlayerHandle } from '../post/CutPlayer';
 import { CutScript, type LinePick } from '../post/CutScript';
+import { PaperEdit } from '../post/PaperEdit';
 import { SectionHeader, ErrorBar, cx } from '../ui';
 import s from '../studio.module.css';
 
-type View = 'review' | 'pipeline';
+type View = 'review' | 'paper' | 'pipeline';
 const DEPT_LABEL = POST_DEPT_LABEL;
 const STATUS_LABEL: Record<PostStatus, string> = { todo: 'To do', in_progress: 'In progress', review: 'In review', done: 'Done' };
 
@@ -61,12 +62,13 @@ export function PostTab() {
   });
   return (
     <section aria-labelledby="post-title">
-      <SectionHeader id="post-title" eyebrow="Post-production" title="Post" subtitle="Review each cut with timecoded notes, then take every department and deliverable to done." />
+      <SectionHeader id="post-title" eyebrow="Post-production" title="Post" subtitle="Build the story from your transcripts, review each cut with timecoded notes, then take every department and deliverable to done." />
       <div className={s.chips} role="tablist" aria-label="Post views" style={{ marginBottom: 24 }}>
         <button type="button" role="tab" aria-selected={view === 'review'} className={cx(s.chip, view === 'review' && s.chipOn)} onClick={() => setView('review')}><Film size={12} /> Cut review</button>
+        <button type="button" role="tab" aria-selected={view === 'paper'} className={cx(s.chip, view === 'paper' && s.chipOn)} onClick={() => setView('paper')}><FileText size={12} /> Paper edit</button>
         <button type="button" role="tab" aria-selected={view === 'pipeline'} className={cx(s.chip, view === 'pipeline' && s.chipOn)} onClick={() => setView('pipeline')}><ListChecks size={12} /> Pipeline & deliverables</button>
       </div>
-      {view === 'review' ? <ReviewView deepLink={deepLink} /> : <PipelineView />}
+      {view === 'review' ? <ReviewView deepLink={deepLink} /> : view === 'paper' ? <PaperEdit /> : <PipelineView />}
     </section>
   );
 }
@@ -315,7 +317,7 @@ function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObjec
                   <div className={s.noteBody}>{n.body}</div>
                 </div>
                 <button type="button" className={s.iconBtnPlain} onClick={() => void toggle(n)} aria-label={n.resolved_at ? 'Reopen note' : 'Resolve note'} title={n.resolved_at ? 'Reopen' : 'Resolve'}>
-                  {n.resolved_at ? <CheckCircle2 size={15} color="#10b981" /> : <Circle size={15} />}
+                  {n.resolved_at ? <CheckCircle2 size={15} color="var(--ok)" /> : <Circle size={15} />}
                 </button>
                 {(n.created_by === userId || isOwner) && (
                   <button type="button" className={s.refRemoveInline} onClick={() => void remove(n)} aria-label="Delete note"><Trash2 size={12} /></button>
@@ -410,7 +412,7 @@ function ItemList({ kind, title, items, people }: { kind: 'stage' | 'deliverable
             <div className={s.itemMeta}>
             <input
               type="date" className={s.input} aria-label={`Due date for ${item.title}`} value={item.due_date ?? ''}
-              style={{ color: item.status !== 'done' && item.due_date && item.due_date < today ? '#ff6b6b' : undefined }}
+              style={{ color: item.status !== 'done' && item.due_date && item.due_date < today ? 'var(--danger)' : undefined }}
               onChange={(e) => void save(item, { due_date: e.target.value || null })}
             />
             <select className={s.select} aria-label={`Owner of ${item.title}`} value={item.assigned_to ?? ''} onChange={(e) => void save(item, { assigned_to: e.target.value || null })}>

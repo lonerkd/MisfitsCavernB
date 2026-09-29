@@ -6,6 +6,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Archive, Clapperboard, Film, Globe, LayoutGrid, Lock, Maximize2, Megaphone, Video } from 'lucide-react';
 import GrainOverlay from '@/components/GrainOverlay';
 import { useOSGate, useProject } from '@/lib/os';
@@ -15,17 +16,22 @@ import { StudioProvider } from '@/components/studio/StudioContext';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
-import { OverviewTab } from '@/components/studio/tabs/OverviewTab';
-import { LibraryTab } from '@/components/studio/tabs/LibraryTab';
-import { ScenesTab } from '@/components/studio/tabs/ScenesTab';
-import { ProductionTab } from '@/components/studio/tabs/ProductionTab';
-import { PostTab } from '@/components/studio/tabs/PostTab';
-import { PromosTab } from '@/components/studio/tabs/PromosTab';
-import { PitchTab } from '@/components/studio/tabs/PitchTab';
-import { ShareTab } from '@/components/studio/tabs/ShareTab';
+import { ToolIntro } from '@/components/progress/ToolIntro';
 import { cx } from '@/components/studio/ui';
 import s from '@/components/studio/studio.module.css';
 import page from './studio-page.module.css';
+
+// Each tab's code loads when it's opened, so the Studio opens fast on a phone
+// (it used to ship every tab — the stripboard, money, post — up front).
+const tabLoading = () => <div className={page.tabLoading} aria-busy="true"><span className={s.spinner} aria-label="Loading" /></div>;
+const OverviewTab = dynamic(() => import('@/components/studio/tabs/OverviewTab').then((m) => m.OverviewTab), { loading: tabLoading });
+const LibraryTab = dynamic(() => import('@/components/studio/tabs/LibraryTab').then((m) => m.LibraryTab), { loading: tabLoading });
+const ScenesTab = dynamic(() => import('@/components/studio/tabs/ScenesTab').then((m) => m.ScenesTab), { loading: tabLoading });
+const ProductionTab = dynamic(() => import('@/components/studio/tabs/ProductionTab').then((m) => m.ProductionTab), { loading: tabLoading });
+const PostTab = dynamic(() => import('@/components/studio/tabs/PostTab').then((m) => m.PostTab), { loading: tabLoading });
+const PromosTab = dynamic(() => import('@/components/studio/tabs/PromosTab').then((m) => m.PromosTab), { loading: tabLoading });
+const PitchTab = dynamic(() => import('@/components/studio/tabs/PitchTab').then((m) => m.PitchTab), { loading: tabLoading });
+const ShareTab = dynamic(() => import('@/components/studio/tabs/ShareTab').then((m) => m.ShareTab), { loading: tabLoading });
 
 type TabId = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
 const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
@@ -39,7 +45,7 @@ const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
 ];
 
-const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'schedule', 'onset', 'crew'];
+const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations', 'money', 'paperwork', 'schedule', 'onset', 'crew'];
 
 /** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
 function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
@@ -109,7 +115,7 @@ export default function StudioPage() {
           module: 'studio',
           title: activeProject.title,
           accent: activeProject.accent_color || '#6366f1',
-          fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: '#818cf8' }],
+          fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: 'var(--violet)' }],
           actions: [{ id: 'next-tab', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) }],
         }
       : null,
@@ -124,7 +130,7 @@ export default function StudioPage() {
         <div className={page.barLeft}>
           <Link href="/" className={page.logo} aria-label="Misfits Cavern home">MC</Link>
           <span className={page.divider} aria-hidden />
-          <span className={page.module}>Studio</span>
+          <span className={cx(page.module, 'mc-hide-phone')}>Studio</span>
           {projects.length > 0 && (
             <label className={page.projectPicker}>
               <select
@@ -133,13 +139,13 @@ export default function StudioPage() {
                 onChange={(e) => { const p = projects.find((x) => x.id === e.target.value); if (p) setActiveProject(p); }}
               >
                 {!activeProject && <option value="">Choose a project</option>}
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                {projects.filter((p) => !p.archived_at || p.id === activeProject?.id).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
             </label>
           )}
         </div>
         {activeProject && (
-          <Link href={`/projects/${activeProject.id}`} className={cx(s.btnGhost, s.small)}>Project page</Link>
+          <Link href={`/projects/${activeProject.id}`} className={cx(s.btnGhost, s.small)}>Project<span className="mc-hide-phone">&nbsp;page</span></Link>
         )}
       </header>
 
@@ -184,7 +190,7 @@ export default function StudioPage() {
             <Link href="/projects" className={s.btnPrimary} style={{ marginTop: 20 }}>{projects.length ? 'Your projects' : 'Create a project'}</Link>
           </div>
         ) : (
-          <StudioProvider key={activeProject.id} project={activeProject} userId={user.id}>
+          <StudioProvider key={activeProject.id} project={activeProject} userId={user.id} onNavigate={(t, v) => navigate({ kind: 'studio', tab: t, view: v })}>
             <ProgressContext.Provider value={progressState}>
               <div role="tabpanel">
                 {tabLock && !peeked.has(tab) ? (
@@ -196,6 +202,7 @@ export default function StudioPage() {
                   />
                 ) : (
                   <>
+                    {STUDIO_TAB_TOOL[tab] && <ToolIntro tool={toolState(progress, STUDIO_TAB_TOOL[tab]!)} accent={activeProject.accent_color} />}
                     {tab === 'overview' && <OverviewTab onOpen={setTab} onNavigate={navigate} />}
                     {tab === 'library' && <LibraryTab />}
                     {tab === 'scenes' && <ScenesTab />}

@@ -161,15 +161,49 @@ Defined in `app/globals.css`. See `docs/DESIGN_DIRECTION_2026-09.md`.
 
 ## Themes
 
-Alternative themes applied via `body.theme-*`:
-| Theme | Key Color Shift |
-|---|---|
-| `theme-cyberpunk` | Pink fg, cyan accent |
-| `theme-forest` | Warm cream fg, teal accent |
-| `theme-obsidian` | White fg, white accent (monochrome) |
-| `theme-vampire` | Warm cream fg, deep red accent |
+Settings › Appearance (`components/ThemePicker.tsx`) picks the look of the
+whole suite. Presets live in `lib/themes.ts` (`THEMES`) and as CSS token
+blocks on `[data-theme="<id>"]` in `app/globals.css`:
 
-Each theme overrides `--bg`, `--fg`, `--accent`, `--border`, and module accent colors.
+| Theme | Mode | Look |
+|---|---|---|
+| `default` (Cavern) | dark | near-black, cream text, ember accent |
+| `terminal` | dark | green phosphor, mono type |
+| `blueprint` | dark | drafting blue, sky accent, grid |
+| `mono` | dark | black and white |
+| `paper` | light | warm off-white, ink text, rust accent |
+| `editorial` | light | white, black type, red accent, serif display |
+| `glass` | dark | frosted gradients, periwinkle accent |
+| `neon` | dark | violet night, magenta accent |
+| `slate` | dark | cool slate, soft blue accent |
+| `lagoon` | light | pale teal, teal accent |
+| `forest` | dark | deep green, sage accent |
+| `vampire` | dark | black, blood red accent |
+
+Plus **System** (Paper when the device is light, Cavern when dark) and
+**Custom** (a background + an accent; `customTokens()` derives readable text,
+lines and status colours from the background's luminance).
+
+- The choice is saved to the account (`profiles.ui_prefs.theme`, validated by
+  `set_my_ui_prefs`) and copied to the device (`localStorage.mc_theme`, plus
+  `mc_theme_vars` for Custom). An inline script in `<head>` paints the device
+  copy before first paint; `ThemeInitializer` then applies the account's.
+- Public pages (`/p`, `/s`, `/shared`) set `data-theme="default"` on their
+  root — a shared page always looks the way its maker designed it.
+- **Never hard-code** white/black/cream in UI. Use the tokens every theme sets:
+  `--fg`, `--fg-strong`, `--fg-muted`, `--fg-dim`; `rgba(var(--fg-rgb), a)`
+  for text-coloured tints; `rgba(var(--ink-rgb), a)` for hairlines and
+  overlays; `--surface`/`--surface-2`/`--glass` for panels; `--sunken` for
+  recessed wells; `--bg-2…4` for solid fills; `--on-accent` for text on an
+  accent fill; `--ok`/`--warn`/`--info`/`--danger`/`--violet` for status.
+- Colours from data (project accents, crafts, scene types) go through
+  `readable()` for text — it returns a `light-dark()` pair, darkened for the
+  light themes and lightened for the dark ones. Keep the raw hex for tints
+  (`${hex}22`).
+- `lib/themes.test.ts` checks every preset's block: tokens present, text ≥ 7:1
+  on the background, accent ≥ 3:1, `--on-accent` ≥ 4.5:1 on the accent.
+  `e2e/themes.spec.ts` checks it applies, persists, follows the account, and
+  passes axe colour-contrast in Paper.
 
 
 ## Accessibility (WCAG 2.2 AA — enforced in CI)
@@ -180,8 +214,8 @@ route — signed out, signed in, admin, mobile — against a local stack in the 
 
 - **Text colour**: never below 4.5:1. Use `--fg`, `--fg-muted` (0.72) or
   `--fg-dim` (0.58) — never `opacity` on text, never `rgba(…, 0.3)` text.
-  Accents used as text go through `readable()` (`lib/color.ts`); labels on a
-  filled accent use `textOn(accent)`.
+  Accents used as text go through `readable()` (`lib/color.ts`, theme-aware);
+  labels on a filled accent use `var(--on-accent)` or `textOn(hex)`.
 - **Accent** is `#e8431a` (5:1 as text and behind dark text). Studio indigo:
   `--studio` `#4f46e5` for fills, `--studio-text` `#818cf8` for text.
 - **Names**: every icon-only button/link gets `aria-label`; every input/select

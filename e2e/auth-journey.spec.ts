@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 // Live auth journey. This spec is OPT-IN (E2E_LIVE_AUTH=1) because it creates a
-// real account against whatever baseURL it runs against. It is deliberately not
-// part of the default CI job (which runs only the unauthenticated specs).
+// real account against whatever baseURL it runs against. CI runs it against the
+// local stack (disposable accounts); pointing it at production is a choice.
 //
 // Run it against production with:
 //   $env:E2E_LIVE_AUTH=1; $env:PLAYWRIGHT_BASE_URL='https://misfits-cavern-b.vercel.app'; npx playwright test e2e/auth-journey.spec.ts
@@ -62,12 +62,14 @@ test.describe('auth journey (live backend)', () => {
     console.log('BODY SNIPPET:', (await page.locator('body').innerText()).slice(0, 300).replace(/\s+/g, ' '));
 
     expect(trace.filter((p) => p.startsWith('/auth')).length, 'should have visited /auth at least once').toBeGreaterThan(0);
-    expect(new URL(page.url()).pathname).toBe('/projects');
+    // A new account lands on the welcome steps (onboarding); anywhere in the app is fine.
+    const landed = new URL(page.url()).pathname;
+    expect(['/welcome', '/projects', '/today'], `landed on ${landed}`).toContain(landed);
 
     // The real loop test: once we have landed in the app, we must not be sent
     // back to /auth at any point afterwards.
-    const firstProjects = trace.indexOf('/projects');
-    const afterLanding = firstProjects >= 0 ? trace.slice(firstProjects + 1) : trace;
+    const firstInApp = trace.findIndex((p) => !p.startsWith('/auth'));
+    const afterLanding = firstInApp >= 0 ? trace.slice(firstInApp + 1) : trace;
     expect(afterLanding.filter((p) => p.startsWith('/auth')), 'bounced back to /auth after landing').toHaveLength(0);
   });
 

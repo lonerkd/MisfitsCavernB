@@ -48,7 +48,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <motion.label
           htmlFor={inputId}
           className={`absolute top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${icon ? 'left-10' : 'left-4'} ${
-            isActive ? 'text-[#ff7a4d]' : 'text-[var(--fg-muted)]'
+            isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
           animate={{
@@ -72,13 +72,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           onBlur={handleBlur}
           onChange={handleChange}
           className={`
-            w-full bg-[rgba(0,0,0,0.3)]
-            border ${error ? 'border-red-500/50' : isFocused ? 'border-[var(--accent)]' : 'border-[rgba(255,255,255,0.08)]'}
+            w-full bg-[var(--sunken)]
+            border ${error ? 'border-red-500/50' : isFocused ? 'border-[var(--accent)]' : 'border-[rgba(var(--ink-rgb),0.08)]'}
             rounded-lg py-4
             ${icon ? 'pl-10 pr-4' : 'px-4'}
             text-[var(--fg)] font-mono text-sm
             outline-none transition-all duration-300
-            hover:border-[rgba(255,255,255,0.2)]
+            hover:border-[rgba(var(--ink-rgb),0.2)]
             ${props.type === 'password' ? 'pr-12' : ''}
             ${isFocused && !error ? 'shadow-[0_0_0_3px_rgba(232,67,26,0.05)]' : ''}
             ${error ? 'shadow-[0_0_0_3px_rgba(239,68,68,0.05)]' : ''}

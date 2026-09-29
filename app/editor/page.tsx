@@ -9,6 +9,7 @@ import {
   Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, getScript, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
@@ -36,6 +37,9 @@ import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { formatRuntime, timeCharacters, timeScript } from '@/lib/scriptos/timing';
+import { useBriefAnswer } from '@/lib/brief';
+import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/context/PillContext';
 import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
@@ -48,8 +52,10 @@ import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
-import { DiffModal } from '@/components/editor/DiffModal';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+
+// The revision diff (and its diff library) loads the first time it's opened.
+const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
@@ -569,8 +575,8 @@ export default function EditorPage() {
       exportScriptAsFdx({ ...currentScript, content });
       toast('Exported as .fdx (Final Draft)', 'success');
     } else if (format === 'pdf') {
-      exportScriptAsPdf({ ...currentScript, content }, titlePage);
-      toast('Generating PDF...', 'success');
+      toast('Generating PDF...', 'info');
+      exportScriptAsPdf({ ...currentScript, content }, titlePage).catch(() => toast('Could not make the PDF — check your connection and try again.', 'error'));
     } else {
 
       exportScriptAsText({ ...currentScript, content }, 'txt');
@@ -933,6 +939,8 @@ export default function EditorPage() {
   const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
   saveReadRef.current = sceneIndex.saveRead;
   const timing = useMemo(() => timeScript(lines, sceneIndex.reads), [lines, sceneIndex.reads]);
+  const targetRuntime = useBriefAnswer(currentScript?.project_id, 'target_runtime');
+  const editorProgress = useProjectProgress(currentScript?.project_id ?? null);
   const characterTiming = useMemo(() => timeCharacters(lines), [lines]);
 
   // Breakdown mode: tag what the shoot needs right in the script.
@@ -1113,10 +1121,10 @@ export default function EditorPage() {
       module: 'editor',
       title: currentScript?.title || 'Untitled',
       fields: [
-        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: '#e8431a' },
-        { label: 'Words', value: wordCount.toLocaleString(), color: '#818cf8' },
+        { label: 'Scene', value: scenesList.length ? `${Math.max(0, currentSceneIdx) + 1} / ${scenesList.length}` : '—', color: 'var(--accent)' },
+        { label: 'Words', value: wordCount.toLocaleString(), color: 'var(--violet)' },
         { label: 'Pages', value: `${pageEst}` },
-        { label: 'Save', value: saving ? 'Saving…' : syncPending ? 'On device — syncing' : 'Saved', color: saving || syncPending ? '#f59e0b' : '#10b981' },
+        { label: 'Save', value: saving ? 'Saving…' : syncPending ? 'On device — syncing' : 'Saved', color: saving || syncPending ? 'var(--warn)' : 'var(--ok)' },
       ],
       toggles: [
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
@@ -1155,10 +1163,14 @@ export default function EditorPage() {
   }, [scenesList]);
 
   const cutNotes: EditorCtx['cutNotes'] = { byLine: cutNotesByLine, openLine: cutNoteLine, setOpenLine: setCutNoteLine, resolve: resolveCutNote, canResolve: !!sessionUser?.id };
-  const editorCtx: EditorCtx = { cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  // Tools that arrive with the project's phase (a personal script has them all).
+  const scriptProjectId = currentScript?.project_id ?? null;
+  const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
+  const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
+  const editorCtx: EditorCtx = { tools, cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
-    <div style={{ height: '100dvh', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && (
@@ -1193,8 +1205,8 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 width: 248,
-                background: 'rgba(8,8,8,0.98)',
-                borderRight: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--surface)',
+                borderRight: '1px solid rgba(var(--ink-rgb), 0.05)',
                 display: 'flex', flexDirection: 'column', flexShrink: 0,
                 ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
@@ -1229,7 +1241,8 @@ export default function EditorPage() {
 
                     {activeView === 'write' && <WriteView ctx={editorCtx} />}
 
-                    {activeView === 'write' && !focusMode && <WriteFooter ctx={editorCtx} />}
+                    {/* The beat timeline hugs the screen's left edge — only when the story map isn't open there already. */}
+                    {activeView === 'write' && !focusMode && !showSidebar && <WriteFooter ctx={editorCtx} />}
 
                     {activeView === 'preview' && <PreviewView ctx={editorCtx} />}
 
@@ -1259,6 +1272,8 @@ export default function EditorPage() {
               timing={timing} characterTiming={characterTiming}
               onJumpToScene={jumpToScene}
               onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
+              targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}
+              briefHref={currentScript?.project_id ? `/projects/${currentScript.project_id}#brief` : undefined}
             />
           )}
         </div>
@@ -1270,12 +1285,13 @@ export default function EditorPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 272, opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              style={{ width: 272, maxWidth: '86vw', background: 'rgba(8,8,8,0.98)', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
+              style={{ width: 272, maxWidth: '86vw', background: 'var(--surface)', borderLeft: '1px solid rgba(var(--ink-rgb), 0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
               <EditorErrorBoundary onCrash={() => {
                 try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
               }}>
                 <EditorRightPanels
+                  showBreakdown={tools.breakdown}
                   rightPanel={rightPanel} setRightPanel={setRightPanel}
                   activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
                   getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
@@ -1332,18 +1348,18 @@ export default function EditorPage() {
 
       </div>
 
-      <DiffModal
+      {showDiff && <DiffModal
         isOpen={showDiff}
         onClose={() => { setShowDiff(false); setDiffRevisionId(null); }}
         originalText={revisions.find(r => r.id === diffRevisionId)?.snapshot ?? ''}
         modifiedText={content}
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
-      />
+      />}
 
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
           position: 'fixed', top: cursorPos.top, left: cursorPos.left,
-          background: '#111', border: '1px solid rgba(255,255,255,0.12)',
+          background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.12)',
           borderRadius: 8, padding: 4, zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
           maxHeight: 200, overflowY: 'auto', minWidth: 160
         }}>
@@ -1352,21 +1368,21 @@ export default function EditorPage() {
               key={idx}
               onMouseDown={(e) => { e.preventDefault(); acceptAutocomplete(item); }}
               onMouseEnter={() => setAutocompleteIdx(idx)}
-              style={{ padding: '6px 12px', fontSize: 12, color: idx === autocompleteIdx ? '#fff' : 'var(--fg-muted)', background: idx === autocompleteIdx ? 'rgba(255,255,255,0.08)' : 'transparent', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--script)', letterSpacing: 0.5 }}
+              style={{ padding: '6px 12px', fontSize: 12, color: idx === autocompleteIdx ? 'var(--fg-strong)' : 'var(--fg-muted)', background: idx === autocompleteIdx ? 'rgba(var(--ink-rgb), 0.08)' : 'transparent', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--script)', letterSpacing: 0.5 }}
             >
               {item}
             </div>
           ))}
-          <div style={{ padding: '4px 12px 2px', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
+          <div style={{ padding: '4px 12px 2px', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
         </div>
       )}
 
       <AnimatePresence>
         {showTitleEditor && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowTitleEditor(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 480, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 480, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Title Page</h2>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Title Page</h2>
                 <button aria-label="Close" onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
               </div>
               {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
@@ -1385,9 +1401,9 @@ export default function EditorPage() {
       <AnimatePresence>
         {showCharBible && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCharBible(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(32px)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, padding: 32, width: 680, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
                 <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
               </div>
               {chars.length === 0 ? (
@@ -1400,13 +1416,13 @@ export default function EditorPage() {
                     const stat = charStats.find(cs => cs.name === name);
                     const cast = castings[name.toUpperCase()];
                     return (
-                      <div key={name} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
-                        <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff' }}>
+                      <div key={name} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${isSelected ? 'rgba(var(--ink-rgb), 0.2)' : 'rgba(var(--ink-rgb), 0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
+                        <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-strong)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
                             {cast?.username && (
-                              <span style={{ fontSize: 11, color: 'var(--success)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
+                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
                                 Playing: {cast.username}
                               </span>
                             )}
@@ -1421,7 +1437,7 @@ export default function EditorPage() {
                                 value={cast?.crew_user_id || ''}
                                 onChange={e => handleCastCharacter(name, e.target.value)}
                                 disabled={projectCrew.length === 0}
-                                style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '6px 10px', color: '#ccc', fontSize: 12, outline: 'none' }}
+                                style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg-muted)', fontSize: 12, outline: 'none' }}
                               >
                                 <option value="">— Not cast —</option>
                                 {projectCrew.map(m => (
@@ -1486,12 +1502,12 @@ export default function EditorPage() {
 
       <div style={{
         height: 26,
-        background: 'rgba(4,4,4,0.97)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
-        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
+        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
       }}>
@@ -1499,14 +1515,14 @@ export default function EditorPage() {
           <span style={{ color: 'var(--fg-muted)' }}>{currentScript?.title || 'Untitled'}</span>
           <span style={{
             padding: '1px 7px', borderRadius: 4,
-            background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)',
-            color: revisionMode ? '#818cf8' : 'var(--fg-dim)',
+            background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(var(--ink-rgb), 0.04)',
+            color: revisionMode ? 'var(--violet)' : 'var(--fg-dim)',
             letterSpacing: 2,
           }}>
             {revisionMode ? 'REVISION' : 'DRAFT'}
           </span>
           {(sprint.active || sprint.running) && (
-            <span style={{ color: '#818cf8', letterSpacing: 2 }}>
+            <span style={{ color: 'var(--violet)', letterSpacing: 2 }}>
               ◉ {Math.floor(sprint.left / 60).toString().padStart(2, '0')}:{(sprint.left % 60).toString().padStart(2, '0')} · {sprint.words}w
             </span>
           )}
@@ -1520,7 +1536,7 @@ export default function EditorPage() {
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
               <span style={{ display: 'flex' }}>
                 {collaborators.slice(0, 4).map((c, i) => (
-                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
                     {c.username.charAt(0)}
                   </span>
                 ))}
@@ -1530,7 +1546,7 @@ export default function EditorPage() {
           )}
           <span style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            color: isSyncing ? '#818cf8' : '#10b981',
+            color: isSyncing ? 'var(--violet)' : 'var(--ok)',
           }}>
             <span style={{
               width: 5, height: 5, borderRadius: '50%',
@@ -1544,24 +1560,24 @@ export default function EditorPage() {
       </div>
 
       {conflict.detected && (
-        <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'rgba(17,17,17,0.97)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 'var(--w-form)' }}>
+        <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 'var(--w-form)' }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: '#f59e0b', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--warn)', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
             <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}>KEEP MINE</button>
-            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 8, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
+            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>KEEP MINE</button>
+            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 8, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
           </div>
         </div>
       )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        textarea::placeholder { color: rgba(224, 221, 174,0.15); }
+        textarea::placeholder { color: rgba(var(--fg-rgb), 0.15); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(var(--ink-rgb), 0.1); border-radius: 4px; }
       `}</style>
     </div>
   );

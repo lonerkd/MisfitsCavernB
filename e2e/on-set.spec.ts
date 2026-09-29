@@ -65,7 +65,8 @@ test.describe('On set (local Supabase)', () => {
     await admin.from('shots').insert({ project_id: projectId, scene_id: scene, shot_number: '1.1', shot_size: 'CU', created_by: userId });
     await page.reload();
 
-    await expect(page.getByText('Today', { exact: true })).toBeVisible({ timeout: 20_000 });
+    // The day's own "Today" eyebrow — not the phone tab bar's Today link, which is in the page too.
+    await expect(page.getByLabel(/^Day 1 — /).getByText('Today', { exact: true })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('heading', { name: /^Day 1 — / })).toBeVisible();
     const card = page.getByRole('article', { name: /^Scene 1:/ });
     await expect(card).toBeVisible({ timeout: 20_000 });

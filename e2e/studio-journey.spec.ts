@@ -134,7 +134,10 @@ test.describe('Studio journey (local Supabase)', () => {
     await page.getByRole('radio', { name: /^Team/ }).click();
     await expect.poll(async () => (await admin.from('projects').select('visibility').eq('id', projectId).single()).data?.visibility).toBe('team');
     await anon.goto(shareUrl);
-    await expect(anon.getByText('This project isn’t shared, or the link is wrong.')).toBeVisible();
+    // Look in <main>: while the page streams in, React briefly keeps a hidden
+    // copy of it in its streaming buffer (<div hidden id="S:…"> under <body>),
+    // which a document-wide text query would also match.
+    await expect(anon.locator('main').getByText('This project isn’t shared, or the link is wrong.')).toBeVisible();
     await viewer.close();
 
     // 7. Crew sees library changes live, without reloading.
@@ -147,7 +150,8 @@ test.describe('Studio journey (local Supabase)', () => {
     await page.getByRole('button', { name: /Add link/ }).click();
     await page.getByLabel('Web address').fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     await page.getByRole('button', { name: 'Add', exact: true }).click();
-    await expect(crew.getByRole('button', { name: 'YouTube video — Video' })).toBeVisible({ timeout: 15_000 });
+    // Titled from YouTube when it answers (oEmbed), "YouTube video" when it doesn't.
+    await expect(crew.getByRole('button', { name: / — Video$/ })).toBeVisible({ timeout: 15_000 });
     await crewContext.close();
   });
 });

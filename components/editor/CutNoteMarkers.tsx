@@ -81,7 +81,7 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
               style={{
                 position: 'absolute', right: 10, top: top + 2, pointerEvents: 'auto',
                 display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 9999,
-                border: `1px solid ${color}66`, background: open.length ? `${color}1f` : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${color}66`, background: open.length ? `${color}1f` : 'rgba(var(--ink-rgb), 0.03)',
                 color: open.length ? color : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer',
               }}
             >
@@ -91,11 +91,11 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
               <div role="dialog" aria-label={`Cut notes on line ${line + 1}`}
                 style={{
                   position: 'absolute', right: 10, top: top + 28, width: 300, maxWidth: 'calc(100% - 20px)', pointerEvents: 'auto',
-                  background: 'rgba(12,12,16,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: 10,
+                  background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: 10,
                   boxShadow: '0 16px 40px rgba(0,0,0,0.55)', fontFamily: 'var(--sans, inherit)', zIndex: 2,
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>From the cut</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>From the cut</span>
                   <button type="button" onClick={() => setOpenLine(null)} aria-label="Close"
                     style={{ width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>
                     <X size={12} />
@@ -113,7 +113,7 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
                         <span style={{ fontSize: 11, color: 'var(--fg-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{n.cut_title}</span>
                         {canResolve && (
                           <button type="button" onClick={() => onResolve(n, !n.resolved_at)} aria-label={n.resolved_at ? 'Reopen note' : 'Resolve note'} title={n.resolved_at ? 'Reopen' : 'Resolve'}
-                            style={{ width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: n.resolved_at ? '#10b981' : 'var(--fg-muted)', cursor: 'pointer' }}>
+                            style={{ width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: n.resolved_at ? 'var(--ok)' : 'var(--fg-muted)', cursor: 'pointer' }}>
                             {n.resolved_at ? <CheckCircle2 size={14} /> : <Circle size={14} />}
                           </button>
                         )}

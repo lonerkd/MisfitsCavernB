@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { textOn } from '@/lib/color';
 
 export default function Avatar({ src, name, size = 40, radius, accent = 'var(--accent)', style }: {
   src?: string | null;
@@ -33,7 +34,7 @@ export default function Avatar({ src, name, size = 40, radius, accent = 'var(--a
     );
   }
   return (
-    <div style={{ width: size, height: size, borderRadius: br, background: accent, color: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display)', fontSize: size * 0.42, flexShrink: 0, ...style }}>
+    <div style={{ width: size, height: size, borderRadius: br, background: accent, color: accent.startsWith('#') ? textOn(accent) : 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--display)', fontSize: size * 0.42, flexShrink: 0, ...style }}>
       {initial}
     </div>
   );

@@ -72,6 +72,8 @@ export interface Project {
   campaigns?: Campaign[];
   settings?: ProjectSettings;
   festival_submissions?: FestivalSubmission[];
+  /** Shelved by the owner: off the board and the pickers until restored. */
+  archived_at?: string | null;
 }
 
 export type SessionStatus = 'resolving' | 'authed' | 'anon';

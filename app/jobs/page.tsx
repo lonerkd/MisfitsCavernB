@@ -17,6 +17,7 @@ import { useProject } from '@/lib/os';
 import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { logActivity } from '@/lib/supabase/activity';
+import { notify } from '@/lib/supabase/notifications';
 import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
 import { useCrafts, type Craft } from '@/lib/crafts';
@@ -25,7 +26,7 @@ import { CraftPicker } from '@/components/crafts/CraftPicker';
 // Crafts (and their colours) come from public.crafts — see lib/crafts.
 const craftColor = (byName: Map<string, Craft>, role: string) => byName.get(role)?.color ?? '#737373';
 
-function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole }: {
+function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initialTitle, initialRole, initialDescription, initialCharacter }: {
   onClose: () => void;
   onCreated: () => void;
   userId: string;
@@ -33,8 +34,12 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   projectTitle: string | null;
   initialTitle?: string;
   initialRole?: string;
+  initialDescription?: string;
+  /** A casting call: accepting an applicant casts them in this role of the project. */
+  initialCharacter?: string;
 }) {
-  const [form, setForm] = useState({ title: initialTitle || '', description: '', role: initialRole || '', rate: '' });
+  const character = projectId && initialCharacter ? initialCharacter : null;
+  const [form, setForm] = useState({ title: initialTitle || '', description: initialDescription || '', role: initialRole || '', rate: '' });
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -47,6 +52,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       role: form.role,
       rate: form.rate ? parseFloat(form.rate) : null,
       project_id: projectId,
+      character_name: character,
       created_by: userId,
       status: 'open',
     }).select('id').single();
@@ -81,8 +87,8 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 'var(--w-form)',
-          background: 'rgba(10,10,10,0.98)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--surface)',
+          border: '1px solid rgba(var(--ink-rgb), 0.08)',
           borderRadius: 20,
           padding: 32,
           boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
@@ -90,7 +96,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--jobs-color)', textTransform: 'uppercase', marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', marginBottom: 6 }}>
               Crew Marketplace
             </div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
@@ -109,14 +115,15 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           border: `1px solid ${projectId ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
         }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: projectId ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>
             {projectId ? <>Posting for <strong style={{ color: 'var(--fg)' }}>{projectTitle}</strong></> : 'No active project selected — this posting won’t be linked to a project'}
+            {character && <> · casting call for <strong style={{ color: 'var(--fg)' }}>{character}</strong> — accepting someone casts them in the role</>}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Craft</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Craft</div>
             <CraftPicker label="Craft" value={form.role || null} onChange={(craft) => setForm(f => ({ ...f, role: craft ?? '' }))} placeholder="Which craft is this for?" />
           </div>
 
@@ -136,9 +143,9 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           />
 
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
-              <DollarSign size={12} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+              <DollarSign size={12} color="rgba(var(--fg-rgb), 0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="number"
                 value={form.rate}
@@ -146,8 +153,8 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
                 placeholder="0.00"
                 style={{
                   width: '100%', padding: '12px 14px 12px 32px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(var(--ink-rgb), 0.04)',
+                  border: '1px solid rgba(var(--ink-rgb), 0.08)',
                   borderRadius: 8, color: 'var(--fg)',
                   fontFamily: 'var(--mono)', fontSize: 12,
                   outline: 'none', boxSizing: 'border-box',
@@ -161,10 +168,10 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             disabled={!form.title || submitting}
             style={{
               marginTop: 6, padding: '14px',
-              background: form.title ? '#8b5cf6' : 'rgba(255,255,255,0.05)',
-              color: form.title ? '#fff' : 'var(--fg-dim)',
+              background: form.title ? '#8b5cf6' : 'rgba(var(--ink-rgb), 0.05)',
+              color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 14,
-              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
               cursor: form.title ? 'pointer' : 'default',
               transition: 'background 0.3s, box-shadow 0.3s',
@@ -179,9 +186,18 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   );
 }
 
-function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => void; index: number }) {
+function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: string, note: string) => Promise<boolean>; applied?: string; index: number }) {
   const { byName } = useCrafts();
   const [hovered, setHovered] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [note, setNote] = useState('');
+  const [sending, setSending] = useState(false);
+  const send = async () => {
+    setSending(true);
+    const ok = await onApply(job.id, note);
+    setSending(false);
+    if (ok) { setComposing(false); setNote(''); }
+  };
   const color = craftColor(byName, job.role);
   const daysAgo = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 86400000);
 
@@ -193,8 +209,8 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       style={{
-        background: 'rgba(10,10,10,0.8)',
-        border: `1px solid ${hovered ? color + '33' : 'rgba(255,255,255,0.06)'}`,
+        background: 'var(--glass)',
+        border: `1px solid ${hovered ? color + '33' : 'rgba(var(--ink-rgb), 0.06)'}`,
         borderRadius: 14, padding: '22px 24px',
         position: 'relative', overflow: 'hidden',
         boxShadow: hovered ? `0 16px 48px rgba(0,0,0,0.6), 0 0 28px ${color}10` : '0 2px 8px rgba(0,0,0,0.3)',
@@ -214,21 +230,26 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
               padding: '4px 10px', borderRadius: 9999,
               background: `${color}14`,
               border: `1px solid ${color}33`,
-              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2,
               color, textTransform: 'uppercase',
             }}>
               {job.role}
             </div>
             {job.projects?.title && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
                 {job.projects.title}
               </div>
             )}
           </div>
 
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 2, marginBottom: 8, lineHeight: 1.2 }}>
-            {job.title}
+            <Link href={`/jobs/${job.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{job.title}</Link>
           </div>
+          {job.character_name && (
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 8 }}>
+              Casting call · the role of {job.character_name}
+            </div>
+          )}
 
           {job.description && (
             <div style={{
@@ -248,14 +269,23 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
                 <DollarSign size={10} /> {job.rate}/hr
               </div>
             )}
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
               {job.profiles?.username ?? 'creator'} · {daysAgo === 0 ? 'today' : `${daysAgo}d ago`}
             </div>
           </div>
         </div>
 
+        {applied ? (
+          <div role="status" style={{
+            flexShrink: 0, padding: '10px 16px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)',
+            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)',
+          }}>
+            Applied · {applied}
+          </div>
+        ) : (
         <motion.button
-          onClick={() => onApply(job.id)}
+          onClick={() => setComposing((v) => !v)}
+          aria-expanded={composing}
           animate={{ scale: hovered ? 1 : 0.97 }}
           transition={{ duration: 0.2 }}
           style={{
@@ -264,13 +294,27 @@ function JobCard({ job, onApply, index }: { job: Job; onApply: (id: string) => v
             background: `${color}18`,
             border: `1px solid ${color}44`,
             color: readable(color), cursor: 'pointer',
-            fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
             textTransform: 'uppercase',
           }}
         >
           Apply <ChevronRight size={10} />
         </motion.button>
+        )}
       </div>
+      {composing && !applied && (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Textarea label={`A note to ${job.profiles?.username ?? 'the poster'} (optional)`} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="Your experience, your reel, when you're free." rows={3} maxLength={2000} />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button type="button" onClick={() => void send()} disabled={sending} style={{
+              padding: '9px 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', background: 'var(--jobs-color)', color: '#fff',
+              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
+            }}>{sending ? 'Sending…' : 'Send application'}</button>
+            <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase' }}>Cancel</button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -286,8 +330,8 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
       style={{
-        background: 'rgba(10,10,10,0.8)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--glass)',
+        border: '1px solid rgba(var(--ink-rgb), 0.06)',
         borderRadius: 14, padding: '20px 22px',
       }}
     >
@@ -297,23 +341,23 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             <div style={{
               padding: '3px 9px', borderRadius: 9999,
               background: `${color}14`, border: `1px solid ${color}33`,
-              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
               color, textTransform: 'uppercase',
             }}>
               {job.role}
             </div>
             <div style={{
               padding: '3px 9px', borderRadius: 9999,
-              background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`,
-              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
-              color: job.status === 'open' ? '#10b981' : 'var(--fg-dim)',
+              background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(var(--ink-rgb), 0.04)',
+              border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
+              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+              color: job.status === 'open' ? 'var(--ok)' : 'var(--fg-dim)',
               textTransform: 'uppercase',
             }}>
               {job.status}
             </div>
             {(job.application_count ?? 0) > 0 && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
                 {job.application_count} applicant{job.application_count !== 1 ? 's' : ''}
               </div>
             )}
@@ -331,19 +375,19 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             style={{
               padding: '7px 14px', borderRadius: 9999,
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid rgba(var(--ink-rgb), 0.08)',
               color: 'var(--fg-dim)',
-              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
               textTransform: 'uppercase', cursor: 'pointer',
               transition: 'border-color 0.2s, color 0.2s',
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)';
-              (e.currentTarget as HTMLElement).style.color = '#ef4444';
+              (e.currentTarget as HTMLElement).style.color = 'var(--danger)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
-              (e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.3)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(var(--ink-rgb), 0.08)';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.3)';
             }}
           >
             {closing ? 'Closing…' : 'Close'}
@@ -372,15 +416,20 @@ export default function JobsPage() {
 
   const prefillTitle = searchParams.get('title') || '';
   const prefillRole = searchParams.get('role') || '';
+  const prefillDescription = searchParams.get('description') || '';
+  const prefillCharacter = searchParams.get('character') || '';
+  // job id → my application's status
+  const [applied, setApplied] = useState<Record<string, string>>({});
+  const [myApps, setMyApps] = useState<{ status: string; applied_at: string | null; jobs: { id: string; title: string; role: string; status: string | null; projects: { title: string } | null } | null }[]>([]);
   useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
 
   useEffect(() => {
     awaitOSUser().then((user) => {
       setUser(user);
-      if (user) loadMyJobs(user.id);
+      if (user) { loadMyJobs(user.id); void loadMyApplications(user.id); }
     });
     loadJobs();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on mount
 
   const loadJobs = async () => {
     setLoading(true);
@@ -417,18 +466,28 @@ export default function JobsPage() {
     setMyJobs(withCounts as unknown as Job[]);
   };
 
-  const handleApply = async (jobId: string) => {
-    if (!user) { window.location.href = '/auth'; return; }
-    const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id });
-    if (error) {
-      if (error.code === '23505') {
-        toast('You already applied to this job.', 'info');
-      } else {
-        toast('Failed to submit application.', 'error');
-      }
-    } else {
-      toast('Application submitted.', 'success');
+  const loadMyApplications = async (userId: string) => {
+    const { data } = await supabase.from('job_applications')
+      .select('status, applied_at, jobs(id, title, role, status, projects(title))')
+      .eq('applicant_id', userId).order('applied_at', { ascending: false });
+    const rows = (data ?? []) as unknown as typeof myApps;
+    setMyApps(rows);
+    setApplied(Object.fromEntries(rows.filter((r) => r.jobs).map((r) => [r.jobs!.id, r.status])));
+  };
+
+  /** Applies with an optional note and tells the poster. */
+  const handleApply = async (jobId: string, note: string): Promise<boolean> => {
+    if (!user) { window.location.href = '/auth'; return false; }
+    const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id, cover_note: note.trim() || null });
+    if (error && error.code !== '23505') { toast('Failed to submit application.', 'error'); return false; }
+    if (error) toast('You already applied to this job.', 'info');
+    else {
+      toast('Application sent.', 'success');
+      const job = jobs.find((j) => j.id === jobId);
+      if (job) void notify(job.created_by, { type: 'application', title: `New application · ${job.title}`, body: note.trim() ? note.trim().slice(0, 300) : 'Someone applied to your posting.', link: `/jobs/${job.id}` }, user.id);
     }
+    void loadMyApplications(user.id);
+    return true;
   };
 
   const handleCloseJob = async (jobId: string) => {
@@ -454,7 +513,7 @@ export default function JobsPage() {
       title: tab === 'mine' ? 'My Jobs' : 'Jobs Board',
       accent: '#8b5cf6',
       fields: [
-        { label: 'Open', value: `${jobs.length}`, color: '#8b5cf6' },
+        { label: 'Open', value: `${jobs.length}`, color: 'var(--jobs-text)' },
         ...(roleFilter ? [{ label: 'Shown', value: `${filtered.length}` }] : []),
         ...(user ? [{ label: 'Mine', value: `${myJobs.length}` }] : []),
       ],
@@ -474,13 +533,13 @@ export default function JobsPage() {
       <h1 className="sr-only">Jobs</h1>
       <GrainOverlay />
 
-      <nav style={{
+      <nav className="mc-jobs-top" style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 28px', zIndex: 200,
-        background: 'rgba(6,6,6,0.92)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -490,16 +549,16 @@ export default function JobsPage() {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--jobs-color)', textTransform: 'uppercase' }}>Jobs</div>
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase' }}>Jobs</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {user && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 2,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(var(--ink-rgb), 0.03)',
+              border: '1px solid rgba(var(--ink-rgb), 0.06)',
               borderRadius: 9999, padding: '3px 4px',
             }}>
               {(['open', 'mine'] as const).map(t => (
@@ -509,7 +568,7 @@ export default function JobsPage() {
                   style={{
                     position: 'relative', padding: '6px 14px', borderRadius: 9999,
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+                    fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
                     textTransform: 'uppercase',
                     color: tab === t ? 'var(--fg)' : 'var(--fg-dim)',
                     transition: 'color 0.2s',
@@ -540,7 +599,7 @@ export default function JobsPage() {
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 16px', borderRadius: 9999,
                 background: '#7c3aed', color: '#fff', border: 'none',
-                fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
                 textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.3s',
               }}
@@ -553,21 +612,21 @@ export default function JobsPage() {
                 (e.currentTarget as HTMLElement).style.boxShadow = 'none';
               }}
             >
-              <Plus size={11} strokeWidth={2.5} /> Post Job
+              <Plus size={11} strokeWidth={2.5} /> Post<span className="mc-hide-phone">&nbsp;Job</span>
             </button>
           )}
         </div>
       </nav>
 
-      <div style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
+      <div className="mc-jobs-body" style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
 
-        <div style={{
-          width: 220, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.04)',
+        <div className="mc-jobs-filter" style={{
+          width: 220, flexShrink: 0, borderRight: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '32px 20px', position: 'sticky', top: 58,
           height: 'calc(100vh - 58px)', overflowY: 'auto',
-          background: 'rgba(6,6,6,0.6)',
+          background: 'var(--surface-2)',
         }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div className="mc-hide-phone" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
             Filter by Role
           </div>
 
@@ -576,22 +635,22 @@ export default function JobsPage() {
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               width: '100%', padding: '8px 10px', borderRadius: 8,
-              background: !roleFilter ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: !roleFilter ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
               color: !roleFilter ? 'var(--fg)' : 'var(--fg-dim)',
-              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
               textTransform: 'uppercase', textAlign: 'left',
               transition: 'background 0.2s, color 0.2s',
             }}
           >
             All Roles
-            <span style={{ fontSize: 11, color: 'var(--fg-dim)' }}>{jobs.length}</span>
+            <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{jobs.length}</span>
           </button>
 
           {postedCrafts.map(r => {
             const count = roleCounts[r] ?? 0;
             const active = roleFilter === r;
-            const color = readable(craftColor(craftByName, r));
+            const color = craftColor(craftByName, r);
             return (
               <button
                 key={r}
@@ -601,19 +660,19 @@ export default function JobsPage() {
                   width: '100%', padding: '8px 10px', borderRadius: 8,
                   background: active ? `${color}12` : 'transparent',
                   border: 'none', cursor: 'pointer', marginBottom: 2,
-                  color: active ? color : 'var(--fg-dim)',
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
+                  color: active ? readable(color) : 'var(--fg-dim)',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
                   textTransform: 'uppercase', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
                 }}
-                onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.7)')}
-                onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(224, 221, 174,0.35)')}
+                onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.7)')}
+                onMouseLeave={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.35)')}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: active ? color : 'var(--fg-dim)', flexShrink: 0, boxShadow: active ? `0 0 6px ${color}` : 'none' }} />
                   {r}
                 </div>
-                {count > 0 && <span style={{ fontSize: 11, color: active ? color : 'var(--fg-dim)' }}>{count}</span>}
+                {count > 0 && <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: active ? readable(color) : 'var(--fg-dim)' }}>{count}</span>}
               </button>
             );
           })}
@@ -624,7 +683,7 @@ export default function JobsPage() {
           {tab === 'open' && (
             <>
               <div style={{ position: 'relative', marginBottom: 28 }}>
-                <Search size={13} color="rgba(224, 221, 174,0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                <Search size={13} color="rgba(var(--fg-rgb), 0.25)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
                   value={search}
@@ -632,22 +691,22 @@ export default function JobsPage() {
                   placeholder="Search positions…"
                   style={{
                     width: '100%', padding: '12px 16px 12px 38px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: 'rgba(var(--ink-rgb), 0.03)',
+                    border: '1px solid rgba(var(--ink-rgb), 0.07)',
                     borderRadius: 14, color: 'var(--fg)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                     outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.2s',
                   }}
                   onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.4)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.07)')}
                 />
               </div>
 
               {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} style={{ padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, height: 120 }}>
+                    <div key={i} style={{ padding: 24, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, height: 120 }}>
                       <div className="skeleton" style={{ width: 120, height: 14, borderRadius: 4, marginBottom: 16 }} />
                       <div className="skeleton" style={{ width: '40%', height: 10, borderRadius: 4, marginBottom: 8 }} />
                       <div className="skeleton" style={{ width: '30%', height: 10, borderRadius: 4 }} />
@@ -659,7 +718,23 @@ export default function JobsPage() {
                   icon={<Briefcase size={28} />}
                   title="Couldn't load job listings"
                   subtitle={loadError}
-                  action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+                  action={<button onClick={loadJobs} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+                />
+              ) : filtered.length === 0 && jobs.length > 0 ? (
+                <EmptyState
+                  icon={<Briefcase size={28} />}
+                  title="No role matches"
+                  subtitle={`${jobs.length} open role${jobs.length === 1 ? '' : 's'} — none for this search or craft.`}
+                  action={
+                    <button onClick={() => { setSearch(''); setRoleFilter(''); }} style={{
+                      padding: '10px 22px', borderRadius: 9999,
+                      background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
+                      color: 'var(--violet)', cursor: 'pointer',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
+                    }}>
+                      Show every role
+                    </button>
+                  }
                 />
               ) : filtered.length === 0 ? (
                 <EmptyState
@@ -670,8 +745,8 @@ export default function JobsPage() {
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: 'var(--jobs-color)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
+                      color: 'var(--jobs-text)', cursor: 'pointer',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post the first one
                     </button>
@@ -680,7 +755,7 @@ export default function JobsPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {filtered.map((job, i) => (
-                    <JobCard key={job.id} job={job} onApply={handleApply} index={i} />
+                    <JobCard key={job.id} job={job} onApply={handleApply} applied={applied[job.id]} index={i} />
                   ))}
                 </div>
               )}
@@ -692,7 +767,7 @@ export default function JobsPage() {
               <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
-              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#060606', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
+              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
             </div>
           )}
 
@@ -706,8 +781,8 @@ export default function JobsPage() {
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
-                      color: 'var(--jobs-color)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase',
+                      color: 'var(--jobs-text)', cursor: 'pointer',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
                     }}>
                       Post your first position
                     </button>
@@ -719,6 +794,30 @@ export default function JobsPage() {
                     <MyJobCard key={job.id} job={job} onClose={handleCloseJob} index={i} />
                   ))}
                 </div>
+              )}
+              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400, margin: '32px 0 12px' }}>
+                Applied to · {myApps.length}
+              </h2>
+              {myApps.length === 0 ? (
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
+                  Nothing yet. <button type="button" onClick={() => setTab('open')} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--fg)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Browse open roles</button>
+                </p>
+              ) : (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {myApps.filter((a) => a.jobs).map((a) => (
+                    <li key={a.jobs!.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.06)', background: 'var(--glass)' }}>
+                      <Link href={`/jobs/${a.jobs!.id}`} style={{ flex: 1, minWidth: 0, color: 'var(--fg)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 11 }}>
+                        {a.jobs!.title}
+                        <span style={{ color: 'var(--fg-muted)' }}> · {a.jobs!.role}{a.jobs!.projects?.title ? ` · ${a.jobs!.projects.title}` : ''}{a.jobs!.status === 'closed' ? ' · closed' : ''}</span>
+                      </Link>
+                      <span style={{
+                        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 9999,
+                        color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
+                        border: '1px solid rgba(var(--ink-rgb), 0.1)',
+                      }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </>
           )}
@@ -735,12 +834,14 @@ export default function JobsPage() {
             projectTitle={activeProject?.title ?? null}
             initialTitle={prefillTitle}
             initialRole={prefillRole}
+            initialDescription={prefillDescription}
+            initialCharacter={prefillCharacter}
           />
         )}
       </AnimatePresence>
 
       <style>{`
-        input::placeholder, textarea::placeholder { color: rgba(224, 221, 174,0.18); }
+        input::placeholder, textarea::placeholder { color: rgba(var(--fg-rgb), 0.18); }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
       `}</style>
     </div>

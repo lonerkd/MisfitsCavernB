@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
-import { Input } from '@/components/ui/Input';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useProject } from '@/lib/os';
@@ -14,6 +13,8 @@ import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management'
 import type { Profile } from '@/lib/supabase/profiles';
 import { awaitOSUser } from '@/lib/os';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
+
+const NEXT_BTN: React.CSSProperties = { display: 'inline-block', padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600, textDecoration: 'none' };
 
 
 type DisplayMember = {
@@ -72,7 +73,7 @@ export default function CrewPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('is_sample', false).order('created_at', { ascending: false });
 
       if (searchTerm) {
         const clean = searchTerm.replace(/[(),.:\\]/g, ' ').trim();
@@ -146,8 +147,8 @@ export default function CrewPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'rgba(8, 8, 8, 0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+        background: 'var(--surface)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         padding: '16px 24px', display: 'flex', justifyContent: 'space-between',
         alignItems: 'center', zIndex: 100
       }}>
@@ -159,7 +160,7 @@ export default function CrewPage() {
 
       <div style={{ marginTop: 60, padding: 24, maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
         {activeProject && (
-          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             {([
               { id: 'all' as const, label: 'ALL TALENT' },
               { id: 'project' as const, label: `${activeProject.title.toUpperCase()} CREW` },
@@ -169,7 +170,7 @@ export default function CrewPage() {
                 onClick={() => setMode(t.id)}
                 style={{
                   padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, whiteSpace: 'nowrap',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',
                   transition: 'background 0.2s, color 0.2s',
@@ -183,20 +184,23 @@ export default function CrewPage() {
 
         {mode === 'all' && (
           <>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <Input
-                  icon={<Search size={14} />}
-                  label="Search"
-                  placeholder="Search by name, skill, bio..."
+            {/* One compact row, like the Projects board: search, then who's free. */}
+            <div role="search" aria-label="Crew" style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: '1 1 260px', minWidth: 200 }}>
+                <Search size={14} aria-hidden style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
+                <input
+                  type="search"
+                  aria-label="Search crew"
+                  placeholder="Search by name, skill, bio…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
+                  style={{ width: '100%', minHeight: 40, padding: '9px 12px 9px 34px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12 }}
                 />
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div role="group" aria-label="Availability" style={{ display: 'flex', gap: 6 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
-                  <button key={a} onClick={() => setAvailFilter(a)}
-                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(255,255,255,0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <button key={a} type="button" aria-pressed={availFilter === a} onClick={() => setAvailFilter(a)}
+                    style={{ minHeight: 40, borderRadius: 8, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
@@ -211,7 +215,7 @@ export default function CrewPage() {
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {[0, 1, 2, 3, 4, 5].map(i => (
-              <div key={i} style={{ padding: 24, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, height: 160 }}>
+              <div key={i} style={{ padding: 24, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, height: 160 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
                   <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%' }} />
                   <div style={{ flex: 1 }}>
@@ -229,13 +233,21 @@ export default function CrewPage() {
             icon={<User size={28} />}
             title={mode === 'project' ? "Couldn't load this project's crew" : "Couldn't load the crew directory"}
             subtitle={loadError}
-            action={<button onClick={retry} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
+            action={<button onClick={retry} style={{ marginTop: 16, padding: '8px 20px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Retry</button>}
           />
         ) : displayList.length === 0 ? (
           <EmptyState
             icon={<User size={28} />}
             title={mode === 'project' ? 'No crew on this project yet' : 'No crew members found'}
             subtitle={mode === 'project' ? 'Recruit talent from Studio or accept a job application to build the team.' : 'Try adjusting your search or filters'}
+            action={mode === 'project' ? (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href="/studio?tab=production&view=crew" style={NEXT_BTN}>Recruit in Studio</Link>
+                <Link href="/jobs" style={{ ...NEXT_BTN, background: 'transparent', color: 'var(--fg)', border: '1px solid rgba(var(--ink-rgb), 0.18)' }}>Post a role</Link>
+              </div>
+            ) : (search || roleFilter !== 'All' || availFilter !== 'all') ? (
+              <button type="button" style={NEXT_BTN} onClick={() => { setSearch(''); setRoleFilter('All'); setAvailFilter('all'); }}>Clear filters</button>
+            ) : undefined}
           />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
@@ -253,8 +265,8 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
   return (
     <Link href={`/crew/${member.linkId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
       <div style={{
-        padding: 24, background: '#0a0a0a',
-        border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.2s', height: '100%',
+        padding: 24, background: 'var(--bg-2)',
+        border: '1px solid rgba(var(--ink-rgb), 0.06)', transition: 'all 0.2s', height: '100%',
         borderRadius: 14,
       }}
         onMouseEnter={e => {
@@ -263,7 +275,7 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.6), 0 0 28px rgba(232, 67, 26,0.06)';
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+          e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.06)';
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.boxShadow = 'none';
         }}>
@@ -276,14 +288,14 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           </div>
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
-            {member.role && <div style={{ fontSize: 11, color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
+            {member.role && <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
           </div>
           {member.statusLabel && (
             <div style={{ marginLeft: 'auto' }}>
               <span style={{
-                fontSize: 11, padding: '3px 8px',
+                fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '3px 8px',
                 border: `1px solid ${member.statusOpen ? '#00ff00' : '#666'}`,
-                color: member.statusOpen ? '#00ff00' : '#666',
+                color: member.statusOpen ? 'var(--ok)' : 'var(--fg-dim)',
                 fontFamily: 'var(--mono)'
               }}>
                 {member.statusLabel}
@@ -299,10 +311,10 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
         {(member.location || member.discord) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
             {member.location && (
-              <div style={{ fontSize: 11, color: 'var(--fg-dim)' }}>{member.location}</div>
+              <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{member.location}</div>
             )}
             {member.discord && (
-              <div style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
+              <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                 Discord: {member.discord}
               </div>
             )}

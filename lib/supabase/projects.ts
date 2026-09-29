@@ -52,14 +52,14 @@ export async function updateProjectVisibility(projectId: string, visibility: Pro
   return shareUrlFor(token);
 }
 
-export async function createProject(userId: string, title: string, description = '', projectType?: string) {
+export async function createProject(userId: string, title: string, description = '', projectType?: string, status = 'concept') {
   const { data, error } = await supabase
     .from('projects')
     .insert({
       title,
       description,
       creator_id: userId,
-      status: 'concept',
+      status,
       ...(projectType ? { project_type: projectType } : {}),
     })
     .select()

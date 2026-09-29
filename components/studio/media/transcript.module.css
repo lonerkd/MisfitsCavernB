@@ -1,0 +1,51 @@
+/* Transcripts on a recording, and the paper edit built from them. */
+
+.panel { display: flex; flex-direction: column; gap: 10px; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 360px; overflow-y: auto; }
+.line {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px; align-items: start;
+  padding: 6px 8px; border-radius: 8px; border: 1px solid transparent;
+}
+.line:hover { background: var(--sunken); }
+.now { border-color: var(--studio-line); background: var(--studio-dim); }
+.picked { box-shadow: inset 3px 0 0 var(--warn); }
+
+.time {
+  font-family: var(--mono); font-size: 11px; color: var(--fg-muted); background: none; border: 0; padding: 2px 0;
+  text-align: left; cursor: default;
+}
+button.time { cursor: pointer; text-decoration: underline; text-decoration-color: rgba(var(--fg-rgb), 0.25); }
+button.time:hover { color: var(--fg); }
+.time:focus-visible { outline: 2px solid var(--studio); outline-offset: 2px; border-radius: 4px; }
+
+.words { font-size: 13px; line-height: 1.5; color: var(--fg); margin: 0; overflow-wrap: anywhere; }
+.speaker { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--violet); margin-right: 6px; }
+.mark { background: color-mix(in srgb, var(--warn) 28%, transparent); color: inherit; border-radius: 4px; }
+
+.acts { display: flex; gap: 2px; }
+.star[aria-pressed='true'] { color: var(--warn); }
+
+.add { display: grid; grid-template-columns: 72px 110px minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+@media (max-width: 640px) { .add { grid-template-columns: 72px minmax(0, 1fr); } }
+
+.importBox { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 8px; border: 1px dashed var(--border-2); }
+.live { font-family: var(--mono); font-size: 11px; color: var(--danger); display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+
+/* ── The paper edit ───────────────────────────── */
+.paper { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.select {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: start;
+  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--sunken);
+}
+.num { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--fg-muted); padding-top: 1px; }
+.source { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1px; color: var(--fg-dim); text-transform: uppercase; margin: 0 0 3px; }
+.sourceBtn { background: none; border: 0; padding: 0; font: inherit; color: var(--fg-muted); cursor: pointer; text-decoration: underline; letter-spacing: inherit; text-transform: inherit; }
+.sourceBtn:hover { color: var(--fg); }
+.sourceBtn:focus-visible { outline: 2px solid var(--studio); outline-offset: 2px; border-radius: 4px; }
+.total { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }

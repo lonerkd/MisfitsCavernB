@@ -156,7 +156,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
         exit={{ opacity: 0 }}
         style={{
           position: 'fixed', inset: 0, zIndex: 100000,
-          background: 'rgba(4, 7, 16, 0.92)', backdropFilter: 'blur(10px)',
+          background: 'var(--surface)', backdropFilter: 'blur(10px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 24,
         }}
@@ -169,7 +169,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
           exit={{ opacity: 0, y: -16, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           style={{
-            background: '#0d1117', border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
             borderRadius: 14, width: '100%', maxWidth: 960, maxHeight: '90vh',
             display: 'flex', flexDirection: 'column',
             boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
@@ -178,31 +178,31 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
         >
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+            padding: '14px 20px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)',
             gap: 12, flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--display)', color: 'var(--fg)', letterSpacing: 0.5 }}>
                 Diff — <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{label}</span>
               </h3>
-              <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: '#34d399', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
+              <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: 'var(--ok)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
                 +{stats.added}
               </span>
-              <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.15)', color: '#f87171', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
+              <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
                 −{stats.removed}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 2 }}>
+              <div style={{ display: 'flex', background: 'rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: 2 }}>
                 {(['lines', 'words'] as DiffMode[]).map(m => (
                   <button
                     key={m}
                     onClick={() => setMode(m)}
                     title={m === 'lines' ? 'Line diff' : 'Word diff'}
                     style={{
-                      background: mode === m ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      background: mode === m ? 'rgba(var(--ink-rgb), 0.1)' : 'transparent',
                       border: 'none', borderRadius: 8, padding: '4px 10px',
-                      color: mode === m ? '#fff' : 'var(--fg-dim)',
+                      color: mode === m ? 'var(--fg-strong)' : 'var(--fg-dim)',
                       cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
                       transition: 'all 0.15s',
                     }}
@@ -214,7 +214,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               </div>
               <button aria-label="Close"
                 onClick={onClose}
-                style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: '6px 8px', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'rgba(var(--ink-rgb), 0.06)', border: 'none', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: '6px 8px', display: 'flex', alignItems: 'center' }}
               >
                 <X size={16} />
               </button>
@@ -228,7 +228,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               </div>
             ) : mode === 'words' ? (
               /* ── Word diff ───────────────────────────────────── */
-              <div style={{ padding: '0 20px', fontFamily: 'var(--mono)', fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'rgba(255,255,255,0.65)' }}>
+              <div style={{ padding: '0 20px', fontFamily: 'var(--mono)', fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'rgba(var(--ink-rgb), 0.65)' }}>
                 {wordChanges.map((part, i) => (
                   <span
                     key={i}
@@ -238,7 +238,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                         : part.removed
                           ? 'rgba(239,68,68,0.25)'
                           : 'transparent',
-                      color: part.added ? '#34d399' : part.removed ? '#f87171' : 'rgba(255,255,255,0.65)',
+                      color: part.added ? 'var(--ok)' : part.removed ? 'var(--danger)' : 'rgba(var(--ink-rgb), 0.65)',
                       textDecoration: part.removed ? 'line-through' : 'none',
                       borderRadius: 4,
                       padding: part.added || part.removed ? '0 2px' : 0,
@@ -286,8 +286,8 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                           display: 'flex', alignItems: 'center', gap: 8,
                           padding: '4px 20px', cursor: 'pointer',
                           background: 'rgba(139,92,246,0.08)',
-                          borderTop: hi > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                          color: '#8b5cf6', fontSize: 12, userSelect: 'none',
+                          borderTop: hi > 0 ? '1px solid rgba(var(--ink-rgb), 0.04)' : 'none',
+                          color: 'var(--jobs-text)', fontSize: 12, userSelect: 'none',
                         }}
                       >
                         {collapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
@@ -302,7 +302,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                         const fg =
                           part.type === 'added' ? '#34d399' :
                           part.type === 'removed' ? '#f87171' :
-                          'rgba(255,255,255,0.4)';
+                          'rgba(var(--ink-rgb), 0.4)';
                         const gutter =
                           part.type === 'added' ? '+' :
                           part.type === 'removed' ? '−' : ' ';
@@ -328,7 +328,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                             <span style={{
                               flex: 1, padding: '2px 12px 2px 0',
                               whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                              color: part.type === 'unchanged' ? 'rgba(255,255,255,0.38)' : fg,
+                              color: part.type === 'unchanged' ? 'rgba(var(--ink-rgb), 0.38)' : fg,
                               fontSize: 13, lineHeight: 1.65,
                             }}>
                               {part.removedParts ? (
@@ -360,7 +360,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
           </div>
 
           <div style={{
-            padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.06)',
+            padding: '10px 20px', borderTop: '1px solid rgba(var(--ink-rgb), 0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             flexShrink: 0,
           }}>
@@ -371,8 +371,8 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               onClick={onClose}
               style={{
                 fontSize: 12, padding: '6px 16px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.07)', border: 'none',
-                color: 'rgba(255,255,255,0.6)', cursor: 'pointer',
+                background: 'rgba(var(--ink-rgb), 0.07)', border: 'none',
+                color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer',
               }}
             >
               Close

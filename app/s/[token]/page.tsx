@@ -98,7 +98,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div data-theme="default" style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', animation: 'pulse 1.6s ease-in-out infinite' }}>
           LOADING
         </div>
@@ -109,7 +109,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
 
   if (notFound || !script) {
     return (
-      <div style={{
+      <div data-theme="default" style={{
         minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 24, fontFamily: 'var(--mono)',
@@ -120,7 +120,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
           This link may have expired, or the author has turned off public sharing.
         </p>
         <Link href="/" style={{
-          marginTop: 8, padding: '10px 28px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)',
+          marginTop: 8, padding: '10px 28px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)',
           fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none',
         }}>
           BACK TO HOME
@@ -130,23 +130,23 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#1a1a1a' }}>
+    <div data-theme="default" style={{ minHeight: '100vh', background: '#1a1a1a' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 10,
-        background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--surface)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.08)',
         padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 2, color: '#fff' }}>{script.title}</div>
           {script.profile && (
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
               by {script.profile.username}{script.profile.role ? ` · ${script.profile.role}` : ''}
             </div>
           )}
         </div>
         <Link href="/auth" style={{
-          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--accent)', textDecoration: 'none',
+          fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--accent)', textDecoration: 'none',
         }}>
           CREATE YOUR OWN →
         </Link>
@@ -170,9 +170,9 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
       </div>
 
       <footer style={{ textAlign: 'center', paddingBottom: 28 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)' }}>
           POWERED BY{' '}
-          <Link href="/auth" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
+          <Link href="/auth" style={{ color: 'rgba(var(--ink-rgb), 0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(var(--ink-rgb), 0.2)' }}>
             MISFITS CAVERN
           </Link>
         </span>

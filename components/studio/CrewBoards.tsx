@@ -20,8 +20,8 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
       transition={{ delay: index * 0.05 }}
       style={{
         padding: 20,
-        background: 'rgba(255,255,255,0.03)',
-        border: `1px solid ${beat.color || 'rgba(255,255,255,0.06)'}`,
+        background: 'rgba(var(--ink-rgb), 0.03)',
+        border: `1px solid ${beat.color || 'rgba(var(--ink-rgb), 0.06)'}`,
         borderTop: `4px solid ${beat.color || 'var(--accent)'}`,
         borderRadius: 8,
         minHeight: 140,
@@ -62,14 +62,14 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
         </div>
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: '#ccc' }}>{beat.content}</div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--fg-muted)' }}>{beat.content}</div>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
+      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
     </motion.div>
   );
 }
 
-export function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
+export function CrewMemberCard({ member, index, isOnline, away }: { member: any; index: number; isOnline?: boolean; away?: string | null }) {
   const router = useRouter();
 
   const zoneHandlers = usePillZone(member.userId ? {
@@ -78,7 +78,7 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
     accent: isOnline ? '#10b981' : undefined,
     fields: [
       { label: 'Role', value: member.role || '—' },
-      { label: 'Status', value: isOnline ? 'Online' : (member.status || 'pending'), color: isOnline ? '#10b981' : undefined },
+      { label: 'Status', value: isOnline ? 'Online' : (member.status || 'pending'), color: isOnline ? 'var(--ok)' : undefined },
     ],
     actions: [
       { id: 'message-crew', label: '→ Message in Lounge', onClick: () => router.push('/lounge') },
@@ -96,13 +96,13 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
         alignItems: 'center',
         gap: 16,
         padding: 16,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(var(--ink-rgb), 0.02)',
+        border: '1px solid rgba(var(--ink-rgb), 0.05)',
         borderRadius: 14,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.05)'; e.currentTarget.style.boxShadow = 'none'; zoneHandlers.onMouseLeave(); }}
       onClick={zoneHandlers.onClick}
     >
       <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -112,10 +112,11 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
         )}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)' }}>{member.name}</div>
         <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+        {away && <div style={{ fontSize: 11, color: 'var(--warn)', marginTop: 3 }}>Away {away}</div>}
       </div>
-      <div style={{ fontSize: 11, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'uppercase' }}>
         {member.status || 'pending'}
       </div>
     </motion.div>
@@ -166,7 +167,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 500, background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: 32 }}
+            style={{ width: 500, background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
@@ -179,7 +180,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                     onChange={e => setQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                     placeholder="Search by username..."
-                    style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: '12px 40px 12px 16px', borderRadius: 8, fontSize: 13 }}
+                    style={{ width: '100%', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.2)', color: 'var(--fg-strong)', padding: '12px 40px 12px 16px', borderRadius: 8, fontSize: 13 }}
                   />
                   <Search size={16} style={{ position: 'absolute', right: 14, top: 14, color: 'var(--fg-dim)' }} />
                 </div>
@@ -190,11 +191,11 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                     <div
                       key={u.id}
                       onClick={() => setSelectedUser(u)}
-                      style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                      style={{ padding: 12, background: 'rgba(var(--ink-rgb), 0.03)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.06)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.03)'}
                     >
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
                         {u.username.charAt(0).toUpperCase()}
                       </div>
                       <div style={{ fontSize: 14 }}>{u.username}</div>
@@ -205,8 +206,8 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 14 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(var(--ink-rgb), 0.03)', borderRadius: 14 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
                       {selectedUser.username.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -216,11 +217,11 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                  </div>
 
                  <div>
-                   <label style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <label style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
                    <select
                      value={role}
                      onChange={e => setRole(e.target.value)}
-                     style={{ width: '100%', background: '#0a0a0a', border: '1px solid #333', color: '#fff', padding: 12, borderRadius: 8, fontSize: 13 }}
+                     style={{ width: '100%', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.2)', color: 'var(--fg-strong)', padding: 12, borderRadius: 8, fontSize: 13 }}
                    >
                      <option>Director</option>
                      <option>Director of Photography</option>

@@ -42,9 +42,9 @@ export default function ShowcasePage() {
           justifyContent: 'space-between',
           alignItems: 'center',
           zIndex: 100,
-          background: 'rgba(8, 8, 8, 0.8)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.04)'
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)'
         }}
       >
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
@@ -101,7 +101,7 @@ export default function ShowcasePage() {
           <div style={{ maxWidth: 'var(--w-content)', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-              <span style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
+              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
                 Concept Gallery
               </span>
             </div>
@@ -122,12 +122,12 @@ export default function ShowcasePage() {
         </AnimatedSection>
       </section>
 
-      <section style={{ padding: '90px 18px', background: '#0a0a0a' }}>
+      <section style={{ padding: '90px 18px', background: 'var(--bg-2)' }}>
         <AnimatedSection delay={0.2}>
           <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
-              <span style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
+              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>
                 Technical Excellence
               </span>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />

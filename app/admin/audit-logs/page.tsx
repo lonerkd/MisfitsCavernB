@@ -104,12 +104,12 @@ export default function AuditLogsPage() {
     a.click();
   };
 
-  const getActionColor = (action: AuditAction) => readable(
+  const actionHex = (action: AuditAction) => (
     action.includes('created') || action.includes('invited') ? '#10b981'
       : action.includes('deleted') || action.includes('removed') ? '#ef4444'
       : action.includes('changed') || action.includes('updated') ? '#f59e0b'
       : action.includes('login') || action.includes('logout') ? '#6366f1'
-      : '#0099ff',
+      : '#0099ff'
   );
 
   const totalPages = Math.ceil(totalLogs / pageSize);
@@ -124,9 +124,9 @@ export default function AuditLogsPage() {
             left: 0,
             width: '100%',
             height: 60,
-            background: 'rgba(8,8,8,0.95)',
+            background: 'var(--surface)',
             backdropFilter: 'blur(10px)',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
@@ -168,7 +168,7 @@ export default function AuditLogsPage() {
               display: 'flex',
               gap: 24,
               marginBottom: 40,
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)',
               paddingBottom: 16,
             }}
           >
@@ -239,7 +239,7 @@ export default function AuditLogsPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <stat.icon size={14} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{stat.label}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{stat.label}</span>
                 </div>
                 <div style={{ fontSize: '1.5rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)' }}>
                   {stat.value}
@@ -270,8 +270,8 @@ export default function AuditLogsPage() {
               }}
               style={{
                 padding: '10px 12px',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(var(--ink-rgb), 0.05)',
+                border: '1px solid rgba(var(--ink-rgb), 0.1)',
                 borderRadius: 4,
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
@@ -298,7 +298,7 @@ export default function AuditLogsPage() {
               }}
             >
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)' }}>
                   <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)', fontWeight: 600 }}>TIMESTAMP</th>
                   <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)', fontWeight: 600 }}>USER</th>
                   <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)', fontWeight: 600 }}>ACTION</th>
@@ -321,7 +321,7 @@ export default function AuditLogsPage() {
                   </tr>
                 ) : (
                   logs.map(log => (
-                    <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <tr key={log.id} style={{ borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
                       <td style={{ padding: 12, opacity: 0.7 }}>
                         {new Date(log.created_at).toLocaleString()}
                       </td>
@@ -340,10 +340,10 @@ export default function AuditLogsPage() {
                       <td style={{ padding: 12 }}>
                         <span
                           style={{
-                            background: `${getActionColor(log.action)}20`,
+                            background: `${actionHex(log.action)}20`,
                             padding: '2px 8px',
                             borderRadius: 4,
-                            color: getActionColor(log.action),
+                            color: readable(actionHex(log.action)),
                           }}
                         >
                           {log.action.replace(/_/g, ' ')}
@@ -353,7 +353,7 @@ export default function AuditLogsPage() {
                         {log.resource_type}
                         {log.resource_id && ` (${log.resource_id})`}
                       </td>
-                      <td style={{ padding: 12, fontSize: 11, color: 'var(--fg-dim)' }}>
+                      <td style={{ padding: 12, fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
                         {Object.keys(log.details).length > 0
                           ? JSON.stringify(log.details).substring(0, 50) + '...'
                           : '-'}
@@ -372,9 +372,9 @@ export default function AuditLogsPage() {
                 disabled={page === 0}
                 style={{
                   padding: '8px 12px',
-                  background: page === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(232, 67, 26,0.1)',
+                  background: page === 0 ? 'rgba(var(--ink-rgb), 0.02)' : 'rgba(232, 67, 26,0.1)',
                   border: '1px solid rgba(232, 67, 26,0.2)',
-                  color: page === 0 ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
+                  color: page === 0 ? 'rgba(var(--ink-rgb), 0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
@@ -393,9 +393,9 @@ export default function AuditLogsPage() {
                 disabled={page >= totalPages - 1}
                 style={{
                   padding: '8px 12px',
-                  background: page >= totalPages - 1 ? 'rgba(255,255,255,0.02)' : 'rgba(232, 67, 26,0.1)',
+                  background: page >= totalPages - 1 ? 'rgba(var(--ink-rgb), 0.02)' : 'rgba(232, 67, 26,0.1)',
                   border: '1px solid rgba(232, 67, 26,0.2)',
-                  color: page >= totalPages - 1 ? 'rgba(255,255,255,0.3)' : 'var(--accent)',
+                  color: page >= totalPages - 1 ? 'rgba(var(--ink-rgb), 0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
@@ -408,7 +408,7 @@ export default function AuditLogsPage() {
           )}
 
           {activeUsers.length > 0 && (
-            <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8 }}>
+            <div style={{ padding: 24, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8 }}>
               <h2
                 style={{
                   fontFamily: 'var(--display)',
@@ -429,7 +429,7 @@ export default function AuditLogsPage() {
                     <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>
                       {user.actionCount}
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>actions</div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>actions</div>
                   </div>
                 ))}
               </div>

@@ -51,7 +51,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
   const { currentSceneIdx, sceneWordCounts, scenesList } = ctx;
   return (
 
-            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(255,255,255,0.03)', zIndex: 0 }}>
+            <div style={{ position: 'fixed', left: 40, top: 120, bottom: 80, width: 2, background: 'rgba(var(--ink-rgb), 0.03)', zIndex: 0 }}>
               {scenesList.map((s: any, idx: number) => {
                 const pos = (idx / scenesList.length) * 100;
                 const isActBreak = s.text.includes('ACT');
@@ -64,7 +64,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                       left: -4,
                       width: 10,
                       height: 2,
-                      background: isActBreak ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                      background: isActBreak ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.1)',
                     }}
                     title={s.text}
                   />
@@ -78,8 +78,8 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                 { pct: 75, label: 'Break into Three' },
                 { pct: 90, label: 'Finale' },
               ].map(m => (
-                <div key={m.label} title={m.label} style={{ position: 'absolute', top: `${m.pct}%`, left: -1, width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', transform: 'translateY(-50%)' }}>
-                  <span className="beat-label" style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, color: 'var(--fg-dim)', whiteSpace: 'nowrap' }}>{m.label}</span>
+                <div key={m.label} title={m.label} style={{ position: 'absolute', top: `${m.pct}%`, left: -1, width: 4, height: 4, borderRadius: '50%', background: 'rgba(var(--ink-rgb), 0.25)', transform: 'translateY(-50%)' }}>
+                  <span className="mc-hide-phone" style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: 'var(--fg-dim)', whiteSpace: 'nowrap' }}>{m.label}</span>
                 </div>
               ))}
 
@@ -96,7 +96,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                 const act2Share = act2Words / totalWords;
                 if (act2Share < 0.55) return null;
                 return (
-                  <div style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
+                  <div className="mc-hide-phone" style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
                     Act II lagging · {Math.round(act2Share * 100)}% of words
                   </div>
                 );

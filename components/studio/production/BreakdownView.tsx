@@ -27,6 +27,8 @@ const esc = (x: unknown) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * script; this is where the team sources, prices and prints it, and where
  * the categories and their unit costs are set.
  */
+import { BriefHints } from '@/components/brief/BriefHints';
+
 export function BreakdownView({ crew }: { crew: Array<{ user_id: string; username: string }> }) {
   const { project, scenes, scriptId, isOwner } = useStudio();
   const { refreshProject } = useProject();
@@ -89,7 +91,7 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
       }).join('');
       return `<section><header><b>${sc.scene_number}</b> ${esc(sc.heading ?? sc.title)}<span>${STRIP_LABEL[stripKind(sc)]} · ${pages(eighthsOf(sc.est_duration))} pp · Day ${sc.shoot_day ?? 1}</span></header><div class="grid">${boxes || '<i>Nothing tagged</i>'}</div>${sc.note ? `<p class="note">${esc(sc.note)}</p>` : ''}</section>`;
     };
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Breakdown sheets</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:32px}h1{font-size:20px;letter-spacing:2px}section{page-break-inside:avoid;border:1px solid #ccc;border-radius:8px;padding:14px;margin:0 0 16px}header{font-size:13px;margin-bottom:10px;display:flex;gap:10px;align-items:baseline}header span{margin-left:auto;color:#777;font-size:11px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.box{border:2px solid;border-radius:6px;padding:6px 8px;font-size:12px;line-height:1.5}.lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:3px}.note{font-size:11px;color:#555;margin:10px 0 0}</style></head><body><h1>${esc(project.title).toUpperCase()} — BREAKDOWN</h1>${scenes.rows.map(sheet).join('')}<script>window.onload=()=>window.print()</script></body></html>`);
+    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Breakdown sheets</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:32px}h1{font-size:20px;letter-spacing:2px}section{page-break-inside:avoid;border:1px solid #ccc;border-radius:8px;padding:14px;margin:0 0 16px}header{font-size:13px;margin-bottom:10px;display:flex;gap:10px;align-items:baseline}header span{margin-left:auto;color:var(--fg-dim);font-size:11px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.box{border:2px solid;border-radius:6px;padding:6px 8px;font-size:12px;line-height:1.5}.lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:3px}.note{font-size:11px;color:var(--fg-dim);margin:10px 0 0}</style></head><body><h1>${esc(project.title).toUpperCase()} — BREAKDOWN</h1>${scenes.rows.map(sheet).join('')}<script>window.onload=()=>window.print()</script></body></html>`);
     w.document.close();
   };
 
@@ -111,6 +113,8 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
         <button type="button" className={cx(s.btn, s.small)} onClick={pushToBudget} disabled={pushing || !elements.length} title="Write the breakdown’s cost per category into the project budget"><DollarSign size={11} aria-hidden /> {pushing ? 'Updating…' : 'Push to budget'}</button>
         <button type="button" className={cx(s.btn, s.small)} onClick={printSheets} disabled={!scenes.rows.length}><Printer size={11} aria-hidden /> Breakdown sheets</button>
       </div>
+
+      <BriefHints projectId={project.id} projectTitle={project.title} accent={project.accent_color} ids={['breakdown']} style={{ marginBottom: 16 }} />
 
       {elements.length === 0 ? (
         <EmptyState

@@ -92,8 +92,8 @@ export default function NotificationBell() {
         title="Notifications"
         style={{
           width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: open ? 'rgba(232, 67, 26,0.10)' : hovered ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-          color: open ? '#e8431a' : hovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s', position: 'relative',
+          background: open ? 'rgba(232, 67, 26,0.10)' : hovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+          color: open ? 'var(--accent)' : hovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s', position: 'relative',
         }}
       >
         <Bell size={19} strokeWidth={1.5} />
@@ -109,9 +109,9 @@ export default function NotificationBell() {
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', background: 'rgba(12,12,12,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}
+            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
                 Notifications{unread > 0 ? ` · ${unread} new` : ''}
               </span>
@@ -131,7 +131,7 @@ export default function NotificationBell() {
                 <div
                   key={n.id}
                   onClick={() => openItem(n)}
-                  style={{ display: 'flex', gap: 10, padding: '11px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: n.link ? 'pointer' : 'default', background: n.read ? 'transparent' : 'rgba(232, 67, 26,0.05)', position: 'relative' }}
+                  style={{ display: 'flex', gap: 10, padding: '11px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', cursor: n.link ? 'pointer' : 'default', background: n.read ? 'transparent' : 'rgba(232, 67, 26,0.05)', position: 'relative' }}
                 >
                   {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)' }} />}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>

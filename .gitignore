@@ -15,6 +15,7 @@ playwright-report/
 test-results/
 
 *.tsbuildinfo
+scripts/demo/world.sql
 
 # Local review / scratch artifacts
 .review-*.md

@@ -45,9 +45,9 @@ export function useSprint(loop: WritingLoop, toast: Toast) {
 export type Sprint = ReturnType<typeof useSprint>;
 
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-const card: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: 12, borderRadius: 8 };
-const title: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: 6 };
-const iconBtn: React.CSSProperties = { width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'none', color: 'var(--fg)', cursor: 'pointer' };
+const card: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 12, borderRadius: 8 };
+const title: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 };
+const iconBtn: React.CSSProperties = { width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'none', color: 'var(--fg)', cursor: 'pointer' };
 
 /**
  * Today's words against the goal, the streak and the last four weeks, the
@@ -83,18 +83,18 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
           <form onSubmit={(e) => { e.preventDefault(); void saveGoal(); }} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <label htmlFor="daily-goal" style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Daily goal</label>
             <input id="daily-goal" type="number" min={50} max={20000} step={50} value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus
-              style={{ width: 90, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: 'var(--fg)', padding: '4px 6px', fontFamily: 'var(--mono)' }} />
+              style={{ width: 90, background: 'var(--sunken)', border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 8, color: 'var(--fg)', padding: '4px 6px', fontFamily: 'var(--mono)' }} />
             <button type="submit" style={iconBtn} aria-label="Save the goal"><Check size={12} /></button>
             <button type="button" style={iconBtn} aria-label="Cancel" onClick={() => setEditing(false)}><X size={12} /></button>
           </form>
         ) : (
           <p style={{ margin: 0, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <strong style={{ fontSize: 26, fontFamily: 'var(--mono)', color: pct >= 100 ? '#34c77b' : '#fff' }}>{s.today.words.toLocaleString()}</strong>
+            <strong style={{ fontSize: 26, fontFamily: 'var(--mono)', color: pct >= 100 ? 'var(--ok)' : 'var(--fg-strong)' }}>{s.today.words.toLocaleString()}</strong>
             <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>/ {s.today.goal.toLocaleString()} words typed today</span>
           </p>
         )}
         <div role="progressbar" aria-label="Progress toward today’s goal" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
-          style={{ height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden', marginTop: 8 }}>
+          style={{ height: 4, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, overflow: 'hidden', marginTop: 8 }}>
           <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#34c77b' : '#0099ff', transition: 'width 0.5s' }} />
         </div>
       </div>
@@ -112,8 +112,8 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
             <div key={d.day} title={`${d.day}: ${d.words} words`}
               style={{
                 aspectRatio: '1', borderRadius: 4,
-                background: d.met ? '#34c77b' : d.words > 0 ? 'rgba(52,199,123,0.3)' : 'rgba(255,255,255,0.05)',
-                outline: i === s.recent.length - 1 ? '1px solid rgba(255,255,255,0.5)' : undefined,
+                background: d.met ? '#34c77b' : d.words > 0 ? 'rgba(52,199,123,0.3)' : 'rgba(var(--ink-rgb), 0.05)',
+                outline: i === s.recent.length - 1 ? '1px solid rgba(var(--ink-rgb), 0.5)' : undefined,
               }} />
           ))}
         </div>
@@ -123,12 +123,12 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
         <div style={{ ...title, justifyContent: 'space-between', marginBottom: 8 }}>
           <span>Sprint</span>
           <span style={{ display: 'flex', gap: 4 }}>
-            <button type="button" style={{ ...iconBtn, color: sprint.active ? '#e8431a' : '#0099ff' }} aria-label={sprint.active ? 'Pause sprint' : 'Start sprint'}
+            <button type="button" style={{ ...iconBtn, color: sprint.active ? 'var(--accent)' : '#0099ff' }} aria-label={sprint.active ? 'Pause sprint' : 'Start sprint'}
               onClick={sprint.active ? sprint.pause : sprint.start}>{sprint.active ? <Pause size={13} /> : <Play size={13} />}</button>
             <button type="button" style={iconBtn} aria-label="Reset sprint" onClick={sprint.reset} disabled={!sprint.running && !sprint.active}><RotateCcw size={12} /></button>
           </span>
         </div>
-        <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprint.active ? '#fff' : 'var(--fg-muted)', textAlign: 'center' }} aria-live="off">{mmss(sprint.left)}</div>
+        <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--mono)', color: sprint.active ? 'var(--fg-strong)' : 'var(--fg-muted)', textAlign: 'center' }} aria-live="off">{mmss(sprint.left)}</div>
         {sprint.running || sprint.active ? (
           <p style={{ margin: '6px 0 0', textAlign: 'center', fontSize: 12, color: 'var(--fg-muted)' }}>{sprint.words} word{sprint.words === 1 ? '' : 's'} this sprint</p>
         ) : (
@@ -145,7 +145,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {loop.badges.map((b) => (
             <li key={b.id} title={b.hint}
-              style={{ fontSize: 11, fontFamily: 'var(--mono)', padding: '3px 8px', borderRadius: 9999, border: `1px solid ${b.earned ? 'rgba(52,199,123,0.5)' : 'rgba(255,255,255,0.08)'}`, color: b.earned ? '#5fd99a' : 'var(--fg-muted)' }}>
+              style={{ fontSize: 11, fontFamily: 'var(--mono)', padding: '3px 8px', borderRadius: 9999, border: `1px solid ${b.earned ? 'rgba(52,199,123,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, color: b.earned ? '#5fd99a' : 'var(--fg-muted)' }}>
               {b.earned ? '✓ ' : ''}{b.label}<span className="sr-only">{b.earned ? ' — earned' : ` — ${b.hint}`}</span>
             </li>
           ))}

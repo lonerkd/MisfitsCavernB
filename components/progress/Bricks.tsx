@@ -3,23 +3,23 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  Archive, BookOpen, Briefcase, Calendar, Clapperboard, DollarSign, Film, Globe,
-  Lock, Maximize2, Megaphone, Music, PenTool, Timer, Trophy, UserSquare, Users, type LucideIcon,
+  Archive, BookOpen, Briefcase, Calendar, Clapperboard, DollarSign, Film, Globe, History,
+  Lock, Maximize2, Megaphone, Music, PenTool, Tags, Timer, Trophy, UserSquare, Users, type LucideIcon,
 } from 'lucide-react';
-import { readable, textOn } from '@/lib/color';
+import { readable, textOnReadable } from '@/lib/color';
 import { placeHref, type Place, type ToolId, type ToolState } from '@/lib/os/progress';
 import p from './progress.module.css';
 
 export const TOOL_ICON: Record<ToolId, LucideIcon> = {
   script: PenTool, library: Archive, story: BookOpen, pitch: Maximize2, soundtrack: Music,
-  scenes: Clapperboard, schedule: Calendar, crew: Users, budget: DollarSign, share: Globe, jobs: Briefcase,
+  scenes: Clapperboard, breakdown: Tags, revisions: History, schedule: Calendar, crew: Users, budget: DollarSign, share: Globe, jobs: Briefcase,
   onset: Timer, post: Film, promos: Megaphone, festivals: Trophy, portfolio: UserSquare,
 };
 
 /** The project accent as CSS variables, legible on the dark panels. */
 export function accentVars(accent: string | null | undefined): React.CSSProperties {
-  const pa = readable(accent || '#e8431a');
-  return { ['--pa' as string]: pa, ['--pa-ink' as string]: textOn(pa) };
+  const raw = accent || '#e8431a';
+  return { ['--pa' as string]: readable(raw), ['--pa-ink' as string]: textOnReadable(raw) };
 }
 
 /** Goes to a place: in-page when the host handles it (the Studio switching tabs), else a link. */

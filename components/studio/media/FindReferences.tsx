@@ -78,7 +78,7 @@ export function FindReferences({ projectId, userId, existingUrls, board, onAdded
                 </div>
                 <div className={s.cardBody}>
                   <div className={s.cardTitle} title={ref.title}>{ref.title}</div>
-                  <div className={s.hint} style={{ fontSize: 11 }}>{[ref.creator, ref.source].filter(Boolean).join(' · ')}</div>
+                  <div className={s.hint} style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))' }}>{[ref.creator, ref.source].filter(Boolean).join(' · ')}</div>
                   <button type="button" className={cx(isAdded ? s.btn : s.btnPrimary, s.small)} disabled={isAdded || pending.has(ref.id)} onClick={() => void add(ref)}>
                     {isAdded ? <><Check size={11} /> In library</> : pending.has(ref.id) ? 'Adding…' : <><Plus size={11} /> Add</>}
                   </button>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Bebas_Neue, DM_Mono, Cormorant_Garamond, Courier_Prime } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { ConfirmProvider } from '@/components/Confirm';
@@ -10,32 +10,47 @@ import { SpotifyProvider } from '@/lib/context/SpotifyContext';
 
 import ClientShell from '@/components/ClientShell';
 import MotionPreference from '@/components/MotionPreference';
+import { EARLY_THEME_SCRIPT } from '@/lib/themes';
 
-const bebasNeue = Bebas_Neue({
-  weight: '400',
-  subsets: ['latin'],
+// The suite's typefaces ship with it (app/fonts, SIL Open Font License), so a
+// build never depends on reaching Google Fonts — the one thing that failed CI.
+const bebasNeue = localFont({
+  src: [{ path: './fonts/bebas-neue-latin-400-normal.woff2', weight: '400', style: 'normal' }],
   display: 'swap',
   variable: '--font-display',
 });
-const dmMono = DM_Mono({
-  weight: ['300', '400', '500'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
+const dmMono = localFont({
+  src: [
+    { path: './fonts/dm-mono-latin-300-normal.woff2', weight: '300', style: 'normal' },
+    { path: './fonts/dm-mono-latin-300-italic.woff2', weight: '300', style: 'italic' },
+    { path: './fonts/dm-mono-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/dm-mono-latin-400-italic.woff2', weight: '400', style: 'italic' },
+    { path: './fonts/dm-mono-latin-500-normal.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/dm-mono-latin-500-italic.woff2', weight: '500', style: 'italic' },
+  ],
   display: 'swap',
   variable: '--font-mono',
 });
-const cormorant = Cormorant_Garamond({
-  weight: ['300', '400', '600'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
+const cormorant = localFont({
+  src: [
+    { path: './fonts/cormorant-garamond-latin-300-normal.woff2', weight: '300', style: 'normal' },
+    { path: './fonts/cormorant-garamond-latin-300-italic.woff2', weight: '300', style: 'italic' },
+    { path: './fonts/cormorant-garamond-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/cormorant-garamond-latin-400-italic.woff2', weight: '400', style: 'italic' },
+    { path: './fonts/cormorant-garamond-latin-600-normal.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/cormorant-garamond-latin-600-italic.woff2', weight: '600', style: 'italic' },
+  ],
   display: 'swap',
   variable: '--font-serif',
 });
 
-const courierPrime = Courier_Prime({
-  weight: ['400', '700'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
+const courierPrime = localFont({
+  src: [
+    { path: './fonts/courier-prime-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/courier-prime-latin-400-italic.woff2', weight: '400', style: 'italic' },
+    { path: './fonts/courier-prime-latin-700-normal.woff2', weight: '700', style: 'normal' },
+    { path: './fonts/courier-prime-latin-700-italic.woff2', weight: '700', style: 'italic' },
+  ],
   display: 'swap',
   variable: '--font-script',
 });
@@ -52,13 +67,19 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
   themeColor: '#040710',
-  colorScheme: 'dark',
+  colorScheme: 'dark light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable} ${courierPrime.variable}`}>
+    // data-theme is set before paint by the script below (the chosen theme on
+    // this device), so the attribute differs from the server's on purpose.
+    <html lang="en" data-theme="default" suppressHydrationWarning className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable} ${courierPrime.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: EARLY_THEME_SCRIPT }} />
+      </head>
       <body>
         <a href="#main-content" className="skip-link">Skip to content</a>
         <MotionPreference>

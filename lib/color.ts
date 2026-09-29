@@ -1,6 +1,7 @@
-// Readable accents: user- and module-chosen colours are used for text on the
-// suite's near-black surfaces, where some (indigo, violet, deep reds) fall
-// below WCAG AA. `readable` lightens a colour just enough to reach the ratio.
+// Readable accents: user- and module-chosen colours are used as text on the
+// suite's surfaces, where some fall below WCAG AA — indigo and deep reds on the
+// dark themes, yellows and pale tints on the light ones. `readable` moves a
+// colour just enough to reach the ratio, in the direction the theme needs.
 
 const hex6 = (h: string) => {
   const m = h.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -19,20 +20,46 @@ export function contrastRatio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/** The darkest panel the dark themes draw text on, and the light themes'. */
+const DARK_PANEL = '#24406f';
+const LIGHT_PANEL = '#e7dfcd';
+
 /**
- * The colour, lightened toward white until it reaches `min` against `bg`
- * (default: the lightest tinted panel the suite draws, so it passes on all of
- * them). Non-hex input is returned as is.
+ * The colour, moved toward white (on a dark `bg`) or black (on a light one)
+ * until it reaches `min` against `bg`. Non-hex input is returned as is.
  */
-export function readable(color: string, min = 4.5, bg = '#1a1d33'): string {
+export function readableOn(color: string, min = 4.5, bg = DARK_PANEL): string {
   const rgb = hex6(color);
-  if (!rgb) return color;
+  const back = hex6(bg);
+  if (!rgb || !back) return color;
+  const toward = luminance(back) > 0.4 ? 0 : 255;
   for (let t = 0; t <= 1.0001; t += 0.05) {
-    const mixed = rgb.map((c) => Math.round(c + (255 - c) * t));
+    const mixed = rgb.map((c) => Math.round(c + (toward - c) * t));
     const out = '#' + mixed.map((c) => c.toString(16).padStart(2, '0')).join('');
     if (contrastRatio(out, bg) >= min) return out;
   }
-  return '#ffffff';
+  return toward ? '#ffffff' : '#000000';
+}
+
+/**
+ * The colour as text in any theme: a CSS `light-dark()` pair — darkened for
+ * the light themes, lightened for the dark ones (`darkBg` is the panel it
+ * must pass on there). The page's color-scheme picks the side. Non-hex input
+ * is returned as is.
+ */
+export function readable(color: string, min = 4.5, darkBg = DARK_PANEL): string {
+  if (!hex6(color)) return color;
+  const light = readableOn(color, min, LIGHT_PANEL);
+  const dark = readableOn(color, min, darkBg);
+  return light === dark ? dark : `light-dark(${light}, ${dark})`;
+}
+
+/** Black or white text for a fill of `readable(color)` — in any theme. */
+export function textOnReadable(color: string): string {
+  if (!hex6(color)) return textOn(color);
+  const light = textOn(readableOn(color, 4.5, LIGHT_PANEL));
+  const dark = textOn(readableOn(color));
+  return light === dark ? dark : `light-dark(${light}, ${dark})`;
 }
 
 /** Black or white — whichever reads better on a filled `bg` (for buttons in any accent). */

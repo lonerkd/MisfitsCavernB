@@ -115,6 +115,7 @@ export function ScenesTab() {
           icon={<Clapperboard size={28} />}
           title="This script has no scene headings yet"
           subtitle="Scenes start with INT. or EXT. — add one in ScriptOS and it shows up here."
+          action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Write a scene</Link> : undefined}
         />
       ) : (
         <div className={s.sceneList}>
@@ -201,7 +202,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
           <div style={{ minWidth: 0 }}>
             <div className={s.sceneHeading}>{scene.heading ?? scene.title}</div>
             {meta && <div className={s.sceneMeta}>{meta}</div>}
-            {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: '#fbbf24' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
+            {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: 'var(--warn)' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
           </div>
           <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript(scene)} aria-label={`Open scene ${scene.scene_number} in the script`}>
             <FileText size={11} aria-hidden /> In script

@@ -239,6 +239,51 @@ export type Database = {
           },
         ];
       };
+      brief_questions: {
+        Row: {
+          ask_when: NonNullable<Json>;
+          created_at: string;
+          hint: string;
+          key: string;
+          kind: string;
+          label: string;
+          max_value: number | null;
+          min_value: number | null;
+          options: NonNullable<Json>;
+          phase: string;
+          position: number;
+          unit: string | null;
+        };
+        Insert: {
+          ask_when?: NonNullable<Json>;
+          created_at?: string;
+          hint?: string;
+          key: string;
+          kind: string;
+          label: string;
+          max_value?: number | null;
+          min_value?: number | null;
+          options?: NonNullable<Json>;
+          phase: string;
+          position?: number;
+          unit?: string | null;
+        };
+        Update: {
+          ask_when?: NonNullable<Json>;
+          created_at?: string;
+          hint?: string;
+          key?: string;
+          kind?: string;
+          label?: string;
+          max_value?: number | null;
+          min_value?: number | null;
+          options?: NonNullable<Json>;
+          phase?: string;
+          position?: number;
+          unit?: string | null;
+        };
+        Relationships: [];
+      };
       budget_items: {
         Row: {
           actual_cost: number | null;
@@ -300,6 +345,45 @@ export type Database = {
           },
         ];
       };
+      call_sheet_acks: {
+        Row: {
+          acked_at: string;
+          call_sheet_id: string;
+          project_id: string;
+          user_id: string;
+          version: number;
+        };
+        Insert: {
+          acked_at?: string;
+          call_sheet_id: string;
+          project_id: string;
+          user_id: string;
+          version: number;
+        };
+        Update: {
+          acked_at?: string;
+          call_sheet_id?: string;
+          project_id?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "call_sheet_acks_sheet_fkey";
+            columns: ["call_sheet_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "call_sheets";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "call_sheet_acks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       call_sheet_calls: {
         Row: {
           call_sheet_id: string;
@@ -357,14 +441,19 @@ export type Database = {
           estimated_wrap: string | null;
           general_call: string | null;
           id: string;
+          issued: Json | null;
+          issued_at: string | null;
+          issued_by: string | null;
           location_address: string | null;
           notes: string | null;
           project_id: string;
+          reminded_at: string | null;
           shoot_date: string | null;
           shoot_day: number;
           shooting_call: string | null;
           updated_at: string | null;
           updated_by: string | null;
+          version: number;
           weather: string | null;
         };
         Insert: {
@@ -372,14 +461,19 @@ export type Database = {
           estimated_wrap?: string | null;
           general_call?: string | null;
           id?: string;
+          issued?: Json | null;
+          issued_at?: string | null;
+          issued_by?: string | null;
           location_address?: string | null;
           notes?: string | null;
           project_id: string;
+          reminded_at?: string | null;
           shoot_date?: string | null;
           shoot_day: number;
           shooting_call?: string | null;
           updated_at?: string | null;
           updated_by?: string | null;
+          version?: number;
           weather?: string | null;
         };
         Update: {
@@ -387,17 +481,29 @@ export type Database = {
           estimated_wrap?: string | null;
           general_call?: string | null;
           id?: string;
+          issued?: Json | null;
+          issued_at?: string | null;
+          issued_by?: string | null;
           location_address?: string | null;
           notes?: string | null;
           project_id?: string;
+          reminded_at?: string | null;
           shoot_date?: string | null;
           shoot_day?: number;
           shooting_call?: string | null;
           updated_at?: string | null;
           updated_by?: string | null;
+          version?: number;
           weather?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "call_sheets_issued_by_fkey";
+            columns: ["issued_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "call_sheets_project_id_fkey";
             columns: ["project_id"];
@@ -524,6 +630,42 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      channel_presets: {
+        Row: {
+          audience: string;
+          key: string;
+          name: string;
+          phase: string;
+          position: number;
+          post_policy: string;
+          topic: string;
+          type: string;
+          why: string;
+        };
+        Insert: {
+          audience?: string;
+          key: string;
+          name: string;
+          phase?: string;
+          position?: number;
+          post_policy?: string;
+          topic?: string;
+          type?: string;
+          why?: string;
+        };
+        Update: {
+          audience?: string;
+          key?: string;
+          name?: string;
+          phase?: string;
+          position?: number;
+          post_policy?: string;
+          topic?: string;
+          type?: string;
+          why?: string;
+        };
+        Relationships: [];
       };
       channels: {
         Row: {
@@ -746,6 +888,132 @@ export type Database = {
           },
         ];
       };
+      expenses: {
+        Row: {
+          amount: number;
+          budget_item_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          id: string;
+          paid_at: string | null;
+          po_number: string | null;
+          project_id: string;
+          receipt_media_id: string | null;
+          spent_on: string;
+          status: string;
+          vendor_id: string | null;
+        };
+        Insert: {
+          amount: number;
+          budget_item_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          id?: string;
+          paid_at?: string | null;
+          po_number?: string | null;
+          project_id: string;
+          receipt_media_id?: string | null;
+          spent_on?: string;
+          status?: string;
+          vendor_id?: string | null;
+        };
+        Update: {
+          amount?: number;
+          budget_item_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          id?: string;
+          paid_at?: string | null;
+          po_number?: string | null;
+          project_id?: string;
+          receipt_media_id?: string | null;
+          spent_on?: string;
+          status?: string;
+          vendor_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "expenses_budget_item_fkey";
+            columns: ["budget_item_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "budget_items";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_receipt_fkey";
+            columns: ["receipt_media_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_vendor_fkey";
+            columns: ["vendor_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "vendors";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
+      guide_progress: {
+        Row: {
+          done: string[];
+          hidden: boolean;
+          project_id: string;
+          updated_at: string;
+          user_id: string;
+          workflow: string | null;
+        };
+        Insert: {
+          done?: string[];
+          hidden?: boolean;
+          project_id: string;
+          updated_at?: string;
+          user_id?: string;
+          workflow?: string | null;
+        };
+        Update: {
+          done?: string[];
+          hidden?: boolean;
+          project_id?: string;
+          updated_at?: string;
+          user_id?: string;
+          workflow?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "guide_progress_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "guide_progress_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_applications: {
         Row: {
           applicant_id: string;
@@ -791,6 +1059,7 @@ export type Database = {
       jobs: {
         Row: {
           budget_item_id: string | null;
+          character_name: string | null;
           created_at: string | null;
           created_by: string;
           description: string | null;
@@ -805,6 +1074,7 @@ export type Database = {
         };
         Insert: {
           budget_item_id?: string | null;
+          character_name?: string | null;
           created_at?: string | null;
           created_by: string;
           description?: string | null;
@@ -819,6 +1089,7 @@ export type Database = {
         };
         Update: {
           budget_item_id?: string | null;
+          character_name?: string | null;
           created_at?: string | null;
           created_by?: string;
           description?: string | null;
@@ -859,6 +1130,52 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "crafts";
             referencedColumns: ["name"];
+          },
+        ];
+      };
+      lounge_reads: {
+        Row: {
+          channel_id: string | null;
+          id: string;
+          last_read_at: string;
+          partner_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          channel_id?: string | null;
+          id?: string;
+          last_read_at?: string;
+          partner_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          channel_id?: string | null;
+          id?: string;
+          last_read_at?: string;
+          partner_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lounge_reads_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lounge_reads_partner_id_fkey";
+            columns: ["partner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lounge_reads_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -943,9 +1260,12 @@ export type Database = {
           channel_uuid: string | null;
           content: string;
           created_at: string | null;
+          edited_at: string | null;
           id: string;
           parent_message_id: string | null;
           pinned: boolean | null;
+          pinned_at: string | null;
+          pinned_by: string | null;
           reactions: Json | null;
           receiver_id: string | null;
           sender_id: string;
@@ -955,9 +1275,12 @@ export type Database = {
           channel_uuid?: string | null;
           content: string;
           created_at?: string | null;
+          edited_at?: string | null;
           id?: string;
           parent_message_id?: string | null;
           pinned?: boolean | null;
+          pinned_at?: string | null;
+          pinned_by?: string | null;
           reactions?: Json | null;
           receiver_id?: string | null;
           sender_id: string;
@@ -967,9 +1290,12 @@ export type Database = {
           channel_uuid?: string | null;
           content?: string;
           created_at?: string | null;
+          edited_at?: string | null;
           id?: string;
           parent_message_id?: string | null;
           pinned?: boolean | null;
+          pinned_at?: string | null;
+          pinned_by?: string | null;
           reactions?: Json | null;
           receiver_id?: string | null;
           sender_id?: string;
@@ -987,6 +1313,13 @@ export type Database = {
             columns: ["parent_message_id"];
             isOneToOne: false;
             referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_pinned_by_fkey";
+            columns: ["pinned_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {
@@ -1418,11 +1751,13 @@ export type Database = {
           discord_username: string | null;
           id: string;
           is_admin: boolean | null;
+          is_sample: boolean;
           location: string | null;
           notification_prefs: NonNullable<Json>;
           role: string | null;
           sprint_minutes: number;
           status: string | null;
+          ui_prefs: NonNullable<Json>;
           updated_at: string | null;
           username: string;
         };
@@ -1436,11 +1771,13 @@ export type Database = {
           discord_username?: string | null;
           id: string;
           is_admin?: boolean | null;
+          is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
+          ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username: string;
         };
@@ -1454,11 +1791,13 @@ export type Database = {
           discord_username?: string | null;
           id?: string;
           is_admin?: boolean | null;
+          is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
+          ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username?: string;
         };
@@ -1590,6 +1929,52 @@ export type Database = {
           },
         ];
       };
+      project_brief: {
+        Row: {
+          answered_by: string | null;
+          project_id: string;
+          question: string;
+          updated_at: string;
+          value: NonNullable<Json>;
+        };
+        Insert: {
+          answered_by?: string | null;
+          project_id: string;
+          question: string;
+          updated_at?: string;
+          value: NonNullable<Json>;
+        };
+        Update: {
+          answered_by?: string | null;
+          project_id?: string;
+          question?: string;
+          updated_at?: string;
+          value?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_brief_answered_by_fkey";
+            columns: ["answered_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_brief_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_brief_question_fkey";
+            columns: ["question"];
+            isOneToOne: false;
+            referencedRelation: "brief_questions";
+            referencedColumns: ["key"];
+          },
+        ];
+      };
       project_crew: {
         Row: {
           craft: string | null;
@@ -1652,6 +2037,105 @@ export type Database = {
           },
         ];
       };
+      project_documents: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          expires_on: string | null;
+          file_name: string | null;
+          id: string;
+          kind: string;
+          location_id: string | null;
+          mime_type: string | null;
+          notes: string | null;
+          party: string | null;
+          person_id: string | null;
+          project_id: string;
+          size_bytes: number | null;
+          status: string;
+          storage_path: string | null;
+          title: string;
+          updated_at: string;
+          vendor_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          expires_on?: string | null;
+          file_name?: string | null;
+          id?: string;
+          kind: string;
+          location_id?: string | null;
+          mime_type?: string | null;
+          notes?: string | null;
+          party?: string | null;
+          person_id?: string | null;
+          project_id: string;
+          size_bytes?: number | null;
+          status?: string;
+          storage_path?: string | null;
+          title: string;
+          updated_at?: string;
+          vendor_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          expires_on?: string | null;
+          file_name?: string | null;
+          id?: string;
+          kind?: string;
+          location_id?: string | null;
+          mime_type?: string | null;
+          notes?: string | null;
+          party?: string | null;
+          person_id?: string | null;
+          project_id?: string;
+          size_bytes?: number | null;
+          status?: string;
+          storage_path?: string | null;
+          title?: string;
+          updated_at?: string;
+          vendor_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_documents_location_fkey";
+            columns: ["location_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "project_locations";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "project_documents_person_fkey";
+            columns: ["person_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_documents_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_documents_vendor_fkey";
+            columns: ["vendor_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "vendors";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       project_formats: {
         Row: {
           blurb: string;
@@ -1687,6 +2171,66 @@ export type Database = {
           skip_phases?: string[];
         };
         Relationships: [];
+      };
+      project_locations: {
+        Row: {
+          address: string | null;
+          contact: string | null;
+          cost: number | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          permit: string;
+          project_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          address?: string | null;
+          contact?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          permit?: string;
+          project_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string | null;
+          contact?: string | null;
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          permit?: string;
+          project_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_locations_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_locations_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       project_tasks: {
         Row: {
@@ -1736,6 +2280,7 @@ export type Database = {
       projects: {
         Row: {
           accent_color: string | null;
+          archived_at: string | null;
           budget: number | null;
           created_at: string | null;
           creator_id: string;
@@ -1743,6 +2288,7 @@ export type Database = {
           end_date: string | null;
           festival_submissions: Json | null;
           id: string;
+          is_sample: boolean;
           project_type: string;
           settings: Json | null;
           share_token: string;
@@ -1754,6 +2300,7 @@ export type Database = {
         };
         Insert: {
           accent_color?: string | null;
+          archived_at?: string | null;
           budget?: number | null;
           created_at?: string | null;
           creator_id: string;
@@ -1761,6 +2308,7 @@ export type Database = {
           end_date?: string | null;
           festival_submissions?: Json | null;
           id?: string;
+          is_sample?: boolean;
           project_type?: string;
           settings?: Json | null;
           share_token?: string;
@@ -1772,6 +2320,7 @@ export type Database = {
         };
         Update: {
           accent_color?: string | null;
+          archived_at?: string | null;
           budget?: number | null;
           created_at?: string | null;
           creator_id?: string;
@@ -1779,6 +2328,7 @@ export type Database = {
           end_date?: string | null;
           festival_submissions?: Json | null;
           id?: string;
+          is_sample?: boolean;
           project_type?: string;
           settings?: Json | null;
           share_token?: string;
@@ -2622,6 +3172,220 @@ export type Database = {
           },
         ];
       };
+      timesheets: {
+        Row: {
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          hours: number;
+          id: string;
+          note: string | null;
+          project_id: string;
+          rate: number | null;
+          status: string;
+          user_id: string;
+          work_date: string;
+        };
+        Insert: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          hours: number;
+          id?: string;
+          note?: string | null;
+          project_id: string;
+          rate?: number | null;
+          status?: string;
+          user_id?: string;
+          work_date: string;
+        };
+        Update: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          hours?: number;
+          id?: string;
+          note?: string | null;
+          project_id?: string;
+          rate?: number | null;
+          status?: string;
+          user_id?: string;
+          work_date?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "timesheets_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "timesheets_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "timesheets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      transcript_lines: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          end_ms: number | null;
+          id: string;
+          media_id: string;
+          paper_order: number | null;
+          position: number;
+          project_id: string;
+          speaker: string | null;
+          start_ms: number | null;
+          text: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          end_ms?: number | null;
+          id?: string;
+          media_id: string;
+          paper_order?: number | null;
+          position: number;
+          project_id: string;
+          speaker?: string | null;
+          start_ms?: number | null;
+          text: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          end_ms?: number | null;
+          id?: string;
+          media_id?: string;
+          paper_order?: number | null;
+          position?: number;
+          project_id?: string;
+          speaker?: string | null;
+          start_ms?: number | null;
+          text?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transcript_lines_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transcript_lines_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "transcript_lines_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      unavailability: {
+        Row: {
+          created_at: string;
+          ends_on: string;
+          id: string;
+          note: string | null;
+          starts_on: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          ends_on: string;
+          id?: string;
+          note?: string | null;
+          starts_on: string;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          ends_on?: string;
+          id?: string;
+          note?: string | null;
+          starts_on?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "unavailability_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      vendors: {
+        Row: {
+          category: string | null;
+          contact: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          project_id: string;
+        };
+        Insert: {
+          category?: string | null;
+          contact?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          project_id: string;
+        };
+        Update: {
+          category?: string | null;
+          contact?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vendors_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "vendors_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       writing_days: {
         Row: {
           day: string;
@@ -2662,6 +3426,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      ack_call_sheet: { Args: { p_sheet: string }; Returns: number };
       add_script_annotation: {
         Args: {
           p_line: number;
@@ -2720,6 +3485,30 @@ export type Database = {
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
       can_post_channel: { Args: { cid: string }; Returns: boolean };
+      edit_message: {
+        Args: { p_content: string; p_message: string };
+        Returns: {
+          channel_id: string | null;
+          channel_uuid: string | null;
+          content: string;
+          created_at: string | null;
+          edited_at: string | null;
+          id: string;
+          parent_message_id: string | null;
+          pinned: boolean | null;
+          pinned_at: string | null;
+          pinned_by: string | null;
+          reactions: Json | null;
+          receiver_id: string | null;
+          sender_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       get_my_account: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2728,6 +3517,7 @@ export type Database = {
           notification_prefs: Json;
         }[];
       };
+      get_my_ui_prefs: { Args: Record<PropertyKey, never>; Returns: Json };
       get_my_writing_prefs: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2781,6 +3571,16 @@ export type Database = {
           storage_path: string;
         }[];
       };
+      get_recent_work: {
+        Args: { p_limit?: number };
+        Returns: {
+          accent_color: string;
+          category: string;
+          role: string;
+          title: string;
+          year: number;
+        }[];
+      };
       get_shared_lookbook: { Args: { p_token: string }; Returns: Json };
       get_shared_project: {
         Args: { p_token: string };
@@ -2794,6 +3594,35 @@ export type Database = {
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
+      issue_call_sheet: {
+        Args: { p_note?: string; p_sheet: string };
+        Returns: {
+          created_at: string | null;
+          estimated_wrap: string | null;
+          general_call: string | null;
+          id: string;
+          issued: Json | null;
+          issued_at: string | null;
+          issued_by: string | null;
+          location_address: string | null;
+          notes: string | null;
+          project_id: string;
+          reminded_at: string | null;
+          shoot_date: string | null;
+          shoot_day: number;
+          shooting_call: string | null;
+          updated_at: string | null;
+          updated_by: string | null;
+          version: number;
+          weather: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "call_sheets";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       log_writing: {
         Args: { p_day: string; p_sprint?: boolean; p_words: number };
         Returns: {
@@ -2811,7 +3640,93 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      lounge_unread: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          channel_id: string;
+          last_at: string;
+          partner_id: string;
+          unread: number;
+        }[];
+      };
+      mark_lounge_read: {
+        Args: { p_channel?: string; p_partner?: string };
+        Returns: undefined;
+      };
+      pin_message: {
+        Args: { p_message: string; p_pinned: boolean };
+        Returns: {
+          channel_id: string | null;
+          channel_uuid: string | null;
+          content: string;
+          created_at: string | null;
+          edited_at: string | null;
+          id: string;
+          parent_message_id: string | null;
+          pinned: boolean | null;
+          pinned_at: string | null;
+          pinned_by: string | null;
+          reactions: Json | null;
+          receiver_id: string | null;
+          sender_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      project_availability: {
+        Args: { p_from?: string; p_project: string; p_to?: string };
+        Returns: {
+          ends_on: string;
+          starts_on: string;
+          user_id: string;
+        }[];
+      };
+      project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
+      projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      respond_to_application: {
+        Args: { p_application: string; p_close?: boolean; p_status: string };
+        Returns: Json;
+      };
+      search_lounge: {
+        Args: { p_channel?: string; p_limit?: number; p_query: string };
+        Returns: {
+          channel_name: string;
+          channel_uuid: string;
+          content: string;
+          created_at: string;
+          id: string;
+          parent_message_id: string;
+          project_id: string;
+          receiver_id: string;
+          sender: string;
+          sender_id: string;
+        }[];
+      };
+      search_suite: {
+        Args: { p_limit?: number; p_query: string };
+        Returns: {
+          detail: string;
+          id: string;
+          kind: string;
+          project_id: string;
+          rank: number;
+          title: string;
+        }[];
+      };
+      send_call_sheet_reminders: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      set_my_ui_prefs: { Args: { p_patch: Json }; Returns: Json };
+      set_paper_edit: {
+        Args: { p_line_ids: string[]; p_project: string };
+        Returns: undefined;
+      };
       set_user_admin: {
         Args: { p_admin: boolean; p_user: string };
         Returns: undefined;

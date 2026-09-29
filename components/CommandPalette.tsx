@@ -3,16 +3,27 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2 } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users } from 'lucide-react';
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
+import { HIT_KINDS, hitTarget, searchSuite, searchable, type HitKind, type SearchHit } from '@/lib/search';
+
+const HIT_ICON: Record<HitKind, React.ReactNode> = {
+  project: <Film size={15} />, script: <FileText size={15} />, scene: <Clapperboard size={15} />, character: <UserRound size={15} />,
+  media: <LayoutGrid size={15} />, location: <MapPin size={15} />, document: <FileCheck2 size={15} />, task: <ListChecks size={15} />,
+  note: <MessageSquareText size={15} />, job: <Briefcase size={15} />, person: <Users size={15} />,
+};
 
 interface Command {
   id: string;
   label: string;
   hint?: string;
+  /** A second line: where in the text it matched. */
+  detail?: string | null;
+  /** Found by the database for this query — not filtered again here. */
+  found?: boolean;
   icon: React.ReactNode;
   keywords?: string;
   run: () => void;
@@ -40,6 +51,22 @@ export default function CommandPalette() {
 
   const [scripts, setScripts] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
+  // Everything else you can open, found by the database as you type.
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!open || !searchable(query)) { setHits([]); setSearching(false); return; }
+    let alive = true;
+    setSearching(true);
+    const t = setTimeout(() => {
+      searchSuite(query)
+        .then((h) => { if (alive) setHits(h); })
+        .catch(() => { if (alive) setHits([]); })
+        .finally(() => { if (alive) setSearching(false); });
+    }, 180);
+    return () => { alive = false; clearTimeout(t); };
+  }, [open, query]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -141,12 +168,33 @@ export default function CommandPalette() {
       };
     });
 
-    return [...nav, ...proj, ...scriptCmds, ...assetCmds];
-  }, [projects, router, scripts, assets]); // eslint-disable-line react-hooks/exhaustive-deps
+    const hitCmds: Command[] = hits.map((h) => {
+      const projMatch = h.project_id ? projects.find((p) => p.id === h.project_id) : undefined;
+      const target = hitTarget(h);
+      return {
+        id: `hit-${h.kind}-${h.id}`,
+        label: h.title || 'Untitled',
+        hint: projMatch && h.kind !== 'project' ? `${HIT_KINDS[h.kind].label} · ${projMatch.title}` : HIT_KINDS[h.kind].label,
+        detail: h.detail,
+        found: true,
+        icon: HIT_ICON[h.kind],
+        group: HIT_KINDS[h.kind].group,
+        run: () => {
+          if (target.needsProject && projMatch) setActiveProject(projMatch);
+          router.push(target.href);
+          setOpen(false);
+        },
+      };
+    });
+    // What the database found leads; the quick lists don't repeat it.
+    const foundIds = new Set(hits.map((h) => h.id));
+    const quick = [...scriptCmds, ...assetCmds].filter((c) => !foundIds.has(c.id.replace(/^(script|asset)-/, '')));
+    return [...nav, ...hitCmds, ...proj.filter((c) => !foundIds.has(c.id.replace(/^proj-/, ''))), ...quick];
+  }, [projects, router, scripts, assets, hits]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
-    const list = commands.filter(c => fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));
-    return list.slice(0, 50);
+    const list = commands.filter(c => c.found || fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));
+    return list.slice(0, 80);
   }, [commands, query]);
 
   const groups = useMemo(() => {
@@ -187,24 +235,26 @@ export default function CommandPalette() {
             initial={{ opacity: 0, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={e => e.stopPropagation()}
-            style={{ width: 'min(92vw, 560px)', background: 'rgba(5, 10, 18, 0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
+            role="dialog" aria-modal="true" aria-label="Search the suite"
+            style={{ width: 'min(92vw, 560px)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <Search size={16} color="rgba(255,255,255,0.4)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+              <Search size={16} color="rgba(var(--ink-rgb), 0.4)" />
               <input
                 ref={inputRef}
                 value={query}
                 onChange={e => { setQuery(e.target.value); setSel(0); }}
                 onKeyDown={onKeyDown}
-                placeholder="Search actions, projects, pages…"
+                placeholder="Search your work, people, jobs, pages…"
+                aria-label="Search the suite"
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--mono)' }}
               />
-              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
+              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
             </div>
 
             <div ref={listRef} style={{ maxHeight: '52vh', overflowY: 'auto', padding: 8 }}>
               {filtered.length === 0 ? (
-                <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>No matches for “{query}”</div>
+                <div role="status" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>{searching ? 'Searching…' : `No matches for “${query}”`}</div>
               ) : groups.map(g => (
                 <div key={g.group} style={{ marginBottom: 6 }}>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
@@ -221,13 +271,16 @@ export default function CommandPalette() {
                         style={{
                           width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px', borderRadius: 8,
                           background: active ? 'rgba(232, 67, 26,0.12)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
-                          color: active ? 'var(--fg)' : 'rgba(255,255,255,0.75)', transition: 'background 0.12s',
+                          color: active ? 'var(--fg)' : 'rgba(var(--ink-rgb), 0.75)', transition: 'background 0.12s',
                         }}
                       >
                         <span style={{ color: active ? 'var(--accent)' : 'var(--fg-dim)', display: 'flex' }}>{c.icon}</span>
-                        <span style={{ flex: 1, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
+                        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
+                          {c.detail && <span style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.detail}</span>}
+                        </span>
                         {c.hint && <span style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
-                        {active && <CornerDownLeft size={13} color="rgba(255,255,255,0.4)" />}
+                        {active && <CornerDownLeft size={13} color="rgba(var(--ink-rgb), 0.4)" />}
                       </button>
                     );
                   })}

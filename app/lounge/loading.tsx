@@ -29,8 +29,8 @@ export default function LoungeLoading() {
             width: 200,
             height: 420,
             borderRadius: 8,
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'rgba(var(--ink-rgb), 0.02)',
+            border: '1px solid rgba(var(--ink-rgb), 0.04)',
             flexShrink: 0,
           }}
         />
@@ -39,8 +39,8 @@ export default function LoungeLoading() {
             flex: 1,
             height: 420,
             borderRadius: 8,
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'rgba(var(--ink-rgb), 0.02)',
+            border: '1px solid rgba(var(--ink-rgb), 0.04)',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
@@ -53,7 +53,7 @@ export default function LoungeLoading() {
               style={{
                 height: 40,
                 width: `${40 + Math.random() * 50}%`,
-                background: 'rgba(255,255,255,0.03)',
+                background: 'rgba(var(--ink-rgb), 0.03)',
                 borderRadius: 8,
               }}
             />
@@ -66,8 +66,8 @@ export default function LoungeLoading() {
           maxWidth: 900,
           height: 48,
           borderRadius: 8,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(var(--ink-rgb), 0.03)',
+          border: '1px solid rgba(var(--ink-rgb), 0.05)',
         }}
       />
       <span

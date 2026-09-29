@@ -51,6 +51,7 @@ conventions.
 | `design-tokens.md` | UI work — colors, typography, components |
 | `playbook.md` | Detailed change workflow |
 | `scriptos-engine.md` | ScriptOS editor work |
+| `project-brief.md` | Brief / project context / tools adapting to the project |
 | `lounge-and-audio.md` | Lounge + WebRTC work |
 | `studio-and-preproduction.md` | Studio module work |
 | `sync-protocol.md` | Multi-agent sync rules |

@@ -11,7 +11,7 @@ import { MediaThumbVisual } from '@/components/studio/media/MediaThumb';
 import { MediaViewer } from '@/components/studio/media/MediaViewer';
 import { Modal } from '@/components/studio/ui';
 
-const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 };
+const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 };
 const hint: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6, color: 'var(--fg-muted)' };
 
 /**
@@ -83,7 +83,7 @@ export function SceneReferencesPanel({
         <div style={label}>References</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
           {refs.map((m) => (
-            <div key={m.id} style={{ position: 'relative', aspectRatio: '16 / 10', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.12)', background: 'rgba(0,0,0,0.35)' }}>
+            <div key={m.id} style={{ position: 'relative', aspectRatio: '16 / 10', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(var(--fg-rgb), 0.12)', background: 'var(--sunken)' }}>
               <button type="button" onClick={() => setViewing(m)} title={m.title} aria-label={`Open ${m.title || 'reference'}`} style={{ width: '100%', height: '100%', padding: 0, border: 0, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-dim)' }}>
                 <MediaThumbVisual media={m} src={mediaSrc(m, signed)} />
               </button>
@@ -96,7 +96,7 @@ export function SceneReferencesPanel({
             type="button"
             disabled={!row}
             onClick={() => setPicking(true)}
-            style={{ aspectRatio: '16 / 10', borderRadius: 8, border: '1px dashed rgba(99,102,241,0.45)', background: 'transparent', color: '#a5b4fc', cursor: row ? 'pointer' : 'not-allowed', opacity: row ? 1 : 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 }}
+            style={{ aspectRatio: '16 / 10', borderRadius: 8, border: '1px dashed rgba(99,102,241,0.45)', background: 'transparent', color: '#a5b4fc', cursor: row ? 'pointer' : 'not-allowed', opacity: row ? 1 : 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}
           >
             <ImagePlus size={15} /> Add
           </button>
@@ -112,7 +112,7 @@ export function SceneReferencesPanel({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => { if (draft !== null) { onNote(draft); setDraft(null); } }}
           rows={3}
-          style={{ width: '100%', resize: 'vertical', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(224,221,174,0.12)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.5, outline: 'none' }}
+          style={{ width: '100%', resize: 'vertical', background: 'var(--sunken)', border: '1px solid rgba(var(--fg-rgb), 0.12)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.5, outline: 'none' }}
         />
       </div>
 

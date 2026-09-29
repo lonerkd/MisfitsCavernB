@@ -2,6 +2,9 @@
   "name": "misfits-cavern",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -16,8 +19,12 @@
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,mailpit,supavisor,postgres-meta",
     "db:reset": "supabase db reset --local",
     "db:drift": "node scripts/db-drift.mjs",
+    "demo:sql": "jiti scripts/demo/build.ts",
     "db:types": "supabase gen types typescript --local --schema public | prettier --parser typescript > lib/supabase/database.types.ts",
-    "db:types:check": "npm run db:types && git diff --exit-code -- lib/supabase/database.types.ts"
+    "db:types:check": "npm run db:types && git diff --exit-code -- lib/supabase/database.types.ts",
+    "budget": "node scripts/bundle-budget.mjs",
+    "stack:up": "bash scripts/dev-stack.sh",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

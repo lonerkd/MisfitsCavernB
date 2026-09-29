@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
+import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -16,11 +16,12 @@ import dynamic from 'next/dynamic';
 const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
 
 const APPS = [
-  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: '#e8431a' },
-  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: '#e8431a', module: 'scriptos' as const },
-  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: '#818cf8', module: 'studio' as const },
-  { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: '#10b981', module: 'lounge' as const },
-  { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: '#f59e0b', module: 'portfolio' as const },
+  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: 'var(--accent)' },
+  { id: 'today',     name: 'Today',     icon: Sun,           path: '/today',     color: 'var(--warn)' },
+  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' as const },
+  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' as const },
+  { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' as const },
+  { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: 'var(--warn)', module: 'portfolio' as const },
 ];
 
 const SPRING = { type: 'spring', stiffness: 380, damping: 30 } as const;
@@ -41,9 +42,9 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         left: '50%',
         transform: 'translateX(-50%)',
         marginBottom: 10,
-        background: 'rgba(5, 10, 18, 0.96)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(28px)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(var(--ink-rgb), 0.08)',
         borderRadius: 14,
         padding: 10,
         width: 220,
@@ -55,7 +56,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5,
         textTransform: 'uppercase', color: 'var(--fg-dim)',
         padding: '4px 8px 8px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
         marginBottom: 6,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
@@ -65,7 +66,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
           letterSpacing: 1.5,
           transition: 'color 0.2s',
         }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#e8431a')}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--accent)')}
           onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'rgba(232, 67, 26,0.7)')}
         >
           All →
@@ -78,7 +79,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         </div>
       )}
       {projects.map((proj, i) => {
-        const color = proj.accent_color || '#e8431a';
+        const color = proj.accent_color || 'var(--accent)';
         const isActive = activeProject?.id === proj.id;
         return (
           <motion.div
@@ -90,10 +91,10 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 8px', borderRadius: 8, cursor: 'pointer',
-              background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: isActive ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
               transition: 'background 0.2s',
             }}
-            whileHover={{ background: 'rgba(255,255,255,0.05)' } as any}
+            whileHover={{ background: 'rgba(var(--ink-rgb), 0.05)' } as any}
           >
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -119,7 +120,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
 
 // ── Transient activity (Dynamic-Island live event) ────────────────────────
 function TransientView({ label, tone }: { label: string; tone: 'default' | 'success' | 'accent' }) {
-  const color = tone === 'success' ? '#10b981' : tone === 'accent' ? '#e8431a' : 'rgba(224, 221, 174,0.8)';
+  const color = tone === 'success' ? 'var(--ok)' : tone === 'accent' ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.8)';
   return (
     <motion.div
       layout
@@ -197,11 +198,11 @@ function ContextCapsule({
           display: 'flex', alignItems: 'center', gap: expanded ? 12 : 8,
           height: 52, padding: expanded ? '0 16px 0 13px' : '0 14px',
           borderRadius: 28, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
-          background: 'rgba(8, 8, 8, 0.85)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(28px) saturate(1.6)',
           WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
           border: `1px solid ${accent}40`,
-          boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 22px ${accent}20, inset 0 1px 0 rgba(255,255,255,0.04)`,
+          boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 22px ${accent}20, inset 0 1px 0 rgba(var(--ink-rgb), 0.04)`,
         }}
       >
         <motion.span
@@ -242,7 +243,7 @@ function ContextCapsule({
               )}
 
               {title && hasStrip && (
-                <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                <div style={{ width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.1)', flexShrink: 0 }} />
               )}
 
               {fields.map((f, i) => (
@@ -285,7 +286,7 @@ function ContextCapsule({
                 >
                   <span style={{
                     width: 15, height: 15, borderRadius: 4,
-                    border: `1px solid ${t.active ? accent : 'rgba(255,255,255,0.18)'}`,
+                    border: `1px solid ${t.active ? accent : 'rgba(var(--ink-rgb), 0.18)'}`,
                     background: t.active ? accent : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
@@ -361,8 +362,8 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
         style={{
           width: APP_ICON, height: APP_ICON, borderRadius: 14,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: isActive ? `${app.color}18` : isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
-          color: isActive ? app.color : isHovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)',
+          background: isActive ? `${app.color}18` : isHovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
+          color: isActive ? app.color : isHovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)',
           position: 'relative', transition: 'background 0.25s, color 0.25s',
           boxShadow: isActive ? `0 0 18px ${app.color}22` : 'none',
         }}
@@ -385,14 +386,14 @@ function AppIcon({ app, isActive, isHovered, onHoverStart }: {
               transition={{ duration: 0.18 }}
               style={{
                 position: 'fixed', left: tooltipPos.left, bottom: tooltipPos.bottom, transform: 'translateX(-50%)',
-                background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
+                background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)',
                 fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
                 padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
                 zIndex: 100000,
               }}
             >
               {app.name}
-              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
             </motion.div>
           )}
         </AnimatePresence>,
@@ -556,20 +557,25 @@ function AppIconCarousel({ apps, pathname, shrunk }: {
         {loopApps.map((app, i) => {
           const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
           return (
-            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'center' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
+            // Snap icon starts to the strip's start, in whole-icon steps like
+            // snapToNearest — centre-snapping an even set of icons shifted
+            // the row half an icon and cut an app off at each end.
+            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'start' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
               <AppIcon app={app} isActive={isActive} isHovered={hoveredIndex === i} onHoverStart={() => setHoveredIndex(i)} />
             </div>
           );
         })}
       </div>
 
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 14, background: 'linear-gradient(to right, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 14, background: 'linear-gradient(to left, rgba(8,8,8,0.92), transparent)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 14, background: 'linear-gradient(to right, var(--surface), transparent)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 14, background: 'linear-gradient(to left, var(--surface), transparent)', pointerEvents: 'none' }} />
 
       <style>{`.mc-app-carousel::-webkit-scrollbar { display: none; }`}</style>
     </motion.div>
   );
 }
+
+const DOCK_BOTTOM = 28;
 
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
@@ -577,6 +583,24 @@ export default function EcosystemTaskbar() {
   const { activeProject } = useProject();
   const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
   const activeColor = activeProject?.accent_color || '#e8431a';
+
+  // Publish the room the dock takes at the bottom of the screen as
+  // --taskbar-height, so full-height pages (Lounge, editor) end above it and
+  // scrolling pages leave space for it. 0 where the dock is hidden (phones use
+  // the tab bar); it follows the dock as it grows or collapses.
+  const dockRef = useRef<HTMLElement>(null);
+  const noDock = pathname === '/login' || pathname === '/auth' || pathname === '/split' || /^\/(shared|p|s)\//.test(pathname);
+  useEffect(() => {
+    const el = dockRef.current;
+    const root = document.documentElement;
+    if (noDock || !el) { root.style.setProperty('--taskbar-height', '0px'); return; }
+    const publish = () => root.style.setProperty('--taskbar-height', `${el.offsetHeight ? el.offsetHeight + DOCK_BOTTOM : 0}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    window.addEventListener('resize', publish);
+    return () => { ro.disconnect(); window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
+  }, [noDock]);
 
   const modules = getProjectModules(activeProject?.settings);
   const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
@@ -686,11 +710,13 @@ export default function EcosystemTaskbar() {
 
   return (
     <nav
+      ref={dockRef}
       aria-label="Suite"
+      className="mc-dock"
       data-taskbar
       style={{
         position: 'fixed',
-        bottom: 28,
+        bottom: DOCK_BOTTOM,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,
@@ -708,17 +734,17 @@ export default function EcosystemTaskbar() {
           layout
           className="mc-taskbar"
           style={{
-            background: 'rgba(8, 8, 8, 0.85)',
+            background: 'var(--surface)',
             backdropFilter: 'blur(28px) saturate(1.6)',
             WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-            border: '1px solid rgba(255, 255, 255, 0.07)',
+            border: '1px solid rgba(var(--ink-rgb), 0.07)',
             borderRadius: 28,
             padding: '8px 10px',
             display: 'flex',
             alignItems: 'center',
             gap: 2,
             pointerEvents: 'auto',
-            boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.02) inset, 0 -1px 0 ${moduleColor}22 inset`,
+            boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--ink-rgb), 0.02) inset, 0 -1px 0 ${moduleColor}22 inset`,
             position: 'relative',
           }}
           onMouseLeave={() => setHoveredId(null)}
@@ -735,7 +761,7 @@ export default function EcosystemTaskbar() {
               background: 'transparent', border: 'none', cursor: 'pointer',
             }}
           >
-            {dockCollapsed ? <ChevronUp size={14} color="rgba(224, 221, 174,0.4)" /> : <ChevronDown size={14} color="rgba(224, 221, 174,0.4)" />}
+            {dockCollapsed ? <ChevronUp size={14} color="rgba(var(--fg-rgb), 0.4)" /> : <ChevronDown size={14} color="rgba(var(--fg-rgb), 0.4)" />}
             {dockCollapsed && (
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: moduleColor, boxShadow: `0 0 6px ${moduleColor}` }} />
             )}
@@ -761,8 +787,8 @@ export default function EcosystemTaskbar() {
               transition={{ type: 'spring', stiffness: 500, damping: 26 }}
               style={{
                 width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: hoveredId === 'search' ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-                color: hoveredId === 'search' ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s',
+                background: hoveredId === 'search' ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+                color: hoveredId === 'search' ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s',
               }}
             >
               <Search size={18} strokeWidth={1.5} />
@@ -771,10 +797,10 @@ export default function EcosystemTaskbar() {
               {hoveredId === 'search' && (
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
-                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
+                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
                 >
-                  Search <kbd style={{ fontSize: 11, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 4px' }}>⌘K</kbd>
-                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+                  Search <kbd style={{ fontSize: 11, border: '1px solid rgba(var(--ink-rgb), 0.2)', borderRadius: 4, padding: '1px 4px' }}>⌘K</kbd>
+                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -791,8 +817,8 @@ export default function EcosystemTaskbar() {
               transition={{ type: 'spring', stiffness: 500, damping: 26 }}
               style={{
                 width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: hoveredId === 'split' ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-                color: hoveredId === 'split' ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)', transition: 'background 0.25s, color 0.25s',
+                background: hoveredId === 'split' ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
+                color: hoveredId === 'split' ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s',
               }}
             >
               <Columns2 size={18} strokeWidth={1.5} />
@@ -801,20 +827,20 @@ export default function EcosystemTaskbar() {
               {hoveredId === 'split' && (
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
-                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
+                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
                 >
-                  Split screen <kbd style={{ fontSize: 11, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, padding: '1px 4px' }}>Ctrl {'\\'}</kbd>
+                  Split screen <kbd style={{ fontSize: 11, border: '1px solid rgba(var(--ink-rgb), 0.2)', borderRadius: 4, padding: '1px 4px' }}>Ctrl {'\\'}</kbd>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.07)', margin: '0 4px', flexShrink: 0 }} />
 
           <AppIconCarousel apps={visibleApps} pathname={pathname} shrunk={contextOpen} />
 
           <div style={{
-            width: 1, height: 22, background: 'rgba(255,255,255,0.07)',
+            width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.07)',
             margin: '0 4px', flexShrink: 0,
           }} />
 
@@ -834,7 +860,7 @@ export default function EcosystemTaskbar() {
                 background: projectsOpen
                   ? `${activeColor}18`
                   : hoveredId === 'projects'
-                  ? 'rgba(255,255,255,0.06)'
+                  ? 'rgba(var(--ink-rgb), 0.06)'
                   : 'transparent',
                 border: 'none', cursor: 'pointer',
                 position: 'relative',
@@ -856,8 +882,8 @@ export default function EcosystemTaskbar() {
                 color={projectsOpen
                   ? (activeColor)
                   : hoveredId === 'projects'
-                  ? 'rgba(224, 221, 174,0.7)'
-                  : 'rgba(224, 221, 174,0.3)'}
+                  ? 'rgba(var(--fg-rgb), 0.7)'
+                  : 'rgba(var(--fg-rgb), 0.3)'}
               />
               <motion.div
                 animate={{ rotate: projectsOpen ? 0 : 180 }}
@@ -866,7 +892,7 @@ export default function EcosystemTaskbar() {
               >
                 <ChevronUp
                   size={8}
-                  color={projectsOpen ? (activeColor) : 'rgba(224, 221, 174,0.25)'}
+                  color={projectsOpen ? (activeColor) : 'rgba(var(--fg-rgb), 0.25)'}
                 />
               </motion.div>
             </motion.button>
@@ -883,9 +909,9 @@ export default function EcosystemTaskbar() {
                     bottom: '100%',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: 'rgba(5, 10, 18, 0.96)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'rgba(224, 221, 174,0.85)',
+                    background: 'var(--surface)',
+                    border: '1px solid rgba(var(--ink-rgb), 0.1)',
+                    color: 'rgba(var(--fg-rgb), 0.85)',
                     fontFamily: 'var(--mono)',
                     fontSize: 11,
                     letterSpacing: 1.5,
@@ -905,7 +931,7 @@ export default function EcosystemTaskbar() {
                     width: 0, height: 0,
                     borderLeft: '4px solid transparent',
                     borderRight: '4px solid transparent',
-                    borderTop: '4px solid rgba(255,255,255,0.1)',
+                    borderTop: '4px solid rgba(var(--ink-rgb), 0.1)',
                   }} />
                 </motion.div>
               )}
@@ -918,7 +944,7 @@ export default function EcosystemTaskbar() {
             </AnimatePresence>
           </div>
 
-          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.07)', margin: '0 4px', flexShrink: 0 }} />
+          <div style={{ width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.07)', margin: '0 4px', flexShrink: 0 }} />
 
           <NotificationBell />
 
@@ -942,8 +968,8 @@ export default function EcosystemTaskbar() {
                   transition={{ type: 'spring', stiffness: 500, damping: 26 }}
                   style={{
                     width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isActive ? 'rgba(232, 67, 26,0.10)' : isHovered ? 'rgba(255,255,255,0.06)' : 'transparent',
-                    color: isActive ? '#e8431a' : isHovered ? 'rgba(224, 221, 174,0.7)' : 'rgba(224, 221, 174,0.3)',
+                    background: isActive ? 'rgba(232, 67, 26,0.10)' : isHovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
+                    color: isActive ? 'var(--accent)' : isHovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)',
                     transition: 'background 0.25s, color 0.25s',
                   }}
                 >
@@ -958,13 +984,13 @@ export default function EcosystemTaskbar() {
                       transition={{ duration: 0.18 }}
                       style={{
                         position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                        background: 'rgba(5, 10, 18, 0.96)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(224, 221, 174,0.85)',
+                        background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)',
                         fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
                         padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
                       }}
                     >
                       {item.name}
-                      <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(255,255,255,0.1)' }} />
+                      <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -993,7 +1019,7 @@ export default function EcosystemTaskbar() {
                 <div style={{
                   display: 'flex', alignItems: 'center', height: 52, padding: '0 16px',
                   borderRadius: 28,
-                  background: 'rgba(8, 8, 8, 0.85)',
+                  background: 'var(--surface)',
                   backdropFilter: 'blur(28px) saturate(1.6)',
                   WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
                   border: `1px solid ${moduleColor}40`,

@@ -74,16 +74,16 @@ export function Button({
         classes += 'bg-[var(--accent)] text-[var(--bg)] hover:bg-[var(--accent-hover)] border border-[var(--accent)] hover:shadow-[0_4px_24px_rgba(232,67,26,0.25)] ';
         break;
       case 'ghost':
-        classes += 'bg-transparent text-[var(--fg)] hover:bg-[rgba(255,255,255,0.05)] border border-transparent ';
+        classes += 'bg-transparent text-[var(--fg)] hover:bg-[rgba(var(--ink-rgb),0.05)] border border-transparent ';
         break;
       case 'outline':
-        classes += 'bg-transparent text-[var(--fg)] border border-[rgba(255,255,255,0.15)] hover:border-[rgba(255,255,255,0.3)] hover:bg-[rgba(255,255,255,0.02)] ';
+        classes += 'bg-transparent text-[var(--fg)] border border-[rgba(var(--ink-rgb),0.15)] hover:border-[rgba(var(--ink-rgb),0.3)] hover:bg-[rgba(var(--ink-rgb),0.02)] ';
         break;
       case 'danger':
         classes += 'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 ';
         break;
       case 'icon':
-        classes += 'bg-transparent text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[rgba(255,255,255,0.05)] border border-transparent ';
+        classes += 'bg-transparent text-[var(--fg-muted)] hover:text-[var(--fg)] hover:bg-[rgba(var(--ink-rgb),0.05)] border border-transparent ';
         break;
     }
 
@@ -127,7 +127,7 @@ export function Button({
               height: 100,
               marginLeft: -50,
               marginTop: -50,
-              background: variant === 'solid' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+              background: variant === 'solid' ? 'rgba(var(--ink-rgb), 0.3)' : 'rgba(var(--ink-rgb), 0.1)',
             }}
           />
         ))}

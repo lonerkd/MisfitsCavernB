@@ -5,12 +5,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
 export * from './api';
 export * from './media-kind';
+export * from './call-sheet';
+export * from './locations';
+export * from './money';
+export * from './documents';
+export * from './transcript';
 export { useLiveRows } from './live';
 export type { LiveRows, LiveStatus } from './live';
 
@@ -77,6 +82,49 @@ export function useCallSheets(projectId: string | null) {
     filter: `project_id=eq.${projectId}`,
     load: () => studio.listCallSheets(projectId!),
     keyOf: (x) => String(x.id),
+  });
+}
+
+export function useDocuments(projectId: string | null) {
+  return useLiveRows<ProjectDocument>({
+    scope: projectId, table: 'project_documents', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listDocuments(projectId!), keyOf: (x) => String(x.id),
+  });
+}
+
+export function useExpenses(projectId: string | null) {
+  return useLiveRows<Expense>({
+    scope: projectId, table: 'expenses', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listExpenses(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => b.spent_on.localeCompare(a.spent_on) || b.created_at.localeCompare(a.created_at),
+  });
+}
+
+export function useTimesheets(projectId: string | null) {
+  return useLiveRows<Timesheet>({
+    scope: projectId, table: 'timesheets', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listTimesheets(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => b.work_date.localeCompare(a.work_date),
+  });
+}
+
+export function useProjectLocations(projectId: string | null) {
+  return useLiveRows<ProjectLocation>({
+    scope: projectId,
+    table: 'project_locations',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listLocations(projectId!),
+    keyOf: (x) => String(x.id),
+  });
+}
+
+export function useCallSheetAcks(projectId: string | null) {
+  return useLiveRows<CallSheetAck>({
+    scope: projectId,
+    table: 'call_sheet_acks',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listCallSheetAcks(projectId!),
+    keyOf: (x) => `${x.call_sheet_id}:${x.user_id}`,
   });
 }
 
@@ -296,4 +344,17 @@ export async function fetchScriptContent(scriptId: string): Promise<string> {
   const { data, error } = await supabase.from('scripts').select('content').eq('id', scriptId).single();
   if (error) throw new Error(error.message);
   return data.content ?? '';
+}
+
+// ── Transcripts ────────────────────────────────────────────────────────────
+
+export function useTranscriptLines(projectId: string | null) {
+  return useLiveRows<TranscriptLine>({
+    scope: projectId,
+    table: 'transcript_lines',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listTranscriptLines(projectId!),
+    keyOf: (l) => String(l.id),
+    sort: (a, b) => (a.media_id === b.media_id ? a.position - b.position : a.media_id.localeCompare(b.media_id)),
+  });
 }

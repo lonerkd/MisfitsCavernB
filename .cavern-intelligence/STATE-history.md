@@ -2,6 +2,484 @@
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
 
+## Earlier — The suite on a phone
+
+No migration — PR #93 merged.
+
+- **A phone gets its own navigation**, not the desktop dock squeezed: a
+  thumb-reach tab bar — **Today · Projects · Search · Lounge · More**. More is
+  a sheet with every tool, the project you're working on (switch it there),
+  and whatever the page offers in the desktop dock's context capsule ("On this
+  page"), so nothing on desktop is out of reach. It steps aside while typing,
+  in the editor, and on public pages. Desktop keeps the dock (now with Today).
+- **Today** (`/today`) is the working home on the go: the coming days on set
+  with your own call time, crew call, weather and the address a tap from maps
+  ("Open On Set" on the day); what's yours to do, most urgent first, ticked off
+  right there; what's unread in the Lounge by channel and person; updates; and
+  each project with one-tap Script / Studio / Schedule. Crew see issued days
+  only; the owner sees drafts, marked.
+- **The Lounge on a phone** is one pane at a time — channels and people, or
+  the conversation — with a back button; links open a conversation directly
+  (`/lounge?channel=…`, `?dm=…`), and mention / reply / DM notifications now
+  land there.
+- **Every route was measured at 390px** (overflow, tap targets, text size,
+  iOS zoom): no page scrolls sideways any more; fields don't zoom; Studio
+  buttons, chips, toggles, stripboard status and phase "Go" buttons are
+  thumb-sized on touch screens; the production board is one phase per screen,
+  swiped; the phase rail scrolls instead of overlapping; Jobs' role filter is
+  a chip row; the project and Studio headers fit; scene cards stack; the
+  editor's beat labels no longer cover the script.
+- Tests: `lib/today/core.test.ts` (days, calls, urgency, ordering),
+  `e2e/mobile.spec.ts` (tab bar vs dock, Today → tick off a task, More,
+  Lounge link → back, no sideways scroll on nine routes, axe on Today).
+
+## Earlier — Links that know what they are
+
+No migration — PR #92 merged.
+
+- **Pasting a YouTube or Vimeo link** into the Library brings the video in
+  under its real title, with its channel in the notes — no more "YouTube
+  video" cards.
+- **Pasting a public Pinterest board** offers to bring its latest pins (up to
+  50) into the library as images, on a board named after it, each pin's page
+  kept in its notes for credit.
+- Both come from public sources with no keys (oEmbed, the board's RSS feed)
+  through `app/api/links` — rate-limited, and only ever calling those
+  providers with an address rebuilt from a checked one (`lib/integrations/links.ts`,
+  unit-tested). No answer means the link is added as it was.
+- Spotify sign-in's PKCE verifier and state are now uniformly random
+  (rejection sampling instead of `% 62`).
+
+## Earlier — Transcripts and the paper edit
+
+Migration `20260929060000_transcripts.sql` (`transcript_lines`, `set_paper_edit`) — applied to production; PR #91 merged.
+
+- **Every interview, take or recording in the Library has a transcript**
+  (video and audio items): paste one in — subtitles (SRT, WebVTT), a
+  transcription service's text ("[00:01:23] Ana: …"), or plain paragraphs —
+  type lines as you watch (a blank time takes the player's), or **dictate**
+  with the browser's speech recognition, each sentence stamped at the
+  player's time. Click a time to play from it; the line playing is
+  highlighted; find in the transcript; copy it out.
+- **Star the lines that tell the story** and they line up in **Studio › Post
+  › Paper edit**, across every recording, in order: move them up and down,
+  take them out, see the running time, copy or download it for the edit.
+- The documentary and podcast guides' "Log your footage" step now points at it.
+- Same access as the library (owner and crew; outsiders see nothing); crew
+  remove the lines they added, the owner any. `set_paper_edit` is all or
+  nothing and runs with the caller's rights.
+- Tests: `lib/studio/transcript.test.ts` (parsing every format, stamps, the
+  paper edit), `tests/integration/transcripts.test.ts` (personas, bad input,
+  deletes, cascade, ordering), `e2e/transcripts.spec.ts`.
+
+## Earlier — Themes for the whole suite
+
+Migration `20260929050000_themes.sql` — applied to production; PR #90 merged.
+
+- **Settings › Appearance › Theme**: twelve presets shown as small previews —
+  Cavern, Terminal, Blueprint, Mono, Paper, Editorial, Glass, Neon, Slate,
+  Lagoon (light + teal), Forest, Vampire — plus **System** (Paper when the
+  device is light, Cavern when dark) and **Custom** (pick a background and an
+  accent; text, lines and status colours are worked out from them).
+- The choice applies at once, is saved to the account (`ui_prefs.theme`) so
+  every device follows it, and is painted before first paint from the device
+  copy — a light theme never flashes dark. Old device choices (cyberpunk,
+  obsidian) map to Neon and Mono.
+- **Every page reads in every theme**: hard-coded white, cream and black were
+  replaced with theme tokens suite-wide (`--fg-strong`, `--fg-rgb`,
+  `--ink-rgb`, `--surface`, `--sunken`, `--on-accent`, status colours with
+  light-theme variants). Colours from data (project accents, crafts, scene
+  types) go through `readable()`, now a `light-dark()` pair. axe colour
+  contrast is clean on hub, projects, a project, Studio, the editor, Lounge,
+  Jobs, Crew, Settings and Profile in the light themes.
+- Shared pages (`/p`, `/s`, `/shared`) keep the maker's Cavern look.
+- Tests: `lib/themes.test.ts` (every preset's tokens and contrast, choices,
+  System, Custom), `lib/color.test.ts`, `tests/integration/themes.test.ts`
+  (saved, refused, owner-only), `e2e/themes.spec.ts`.
+
+## Earlier — On set without signal
+
+No migration.
+
+- **On Set keeps working when the connection drops** (basements, fields,
+  car parks). A shot got or dropped, a scene wrapped, a clock stamp or its
+  correction, a continuity note, a day note — each shows at once; if it
+  can't be sent it waits in a queue on the device (`lib/studio/onset-offline.ts`,
+  unit-tested) and is sent in order the moment the connection is back
+  (`useOnSetSync`). Only the last status of a shot or scene is sent; an entry
+  removed before it was sent is never sent; a resend of something already
+  saved counts as sent; anything refused is reported.
+- A banner says where things stand: "No signal — keep working… 3 changes
+  waiting", "Back online — sending…", "3 changes sent".
+- **It opens without signal**, too: the last copy of the day is saved on the
+  device on every change, and the project list and profile are cached per
+  account (`lib/os/boot.ts`), so a cold start offline opens the day straight
+  away — boot no longer waits on the network when the device says it's
+  offline.
+- Photos still need a connection (a continuity photo is a file upload); the
+  note can be logged without it. Signing out clears the device copies.
+
+## Earlier — Search everything from ⌘K
+
+Migration `20260929040000_search.sql` — applied to production; PR #88 merged.
+
+- **⌘K (or the dock's search button) now searches your work**, not just
+  page names: projects (title, logline), scripts — including what's written
+  in them, with the matching line shown — scenes, characters, library items,
+  locations, paperwork, tasks and cut notes, plus open jobs and people.
+  Word starts match ("harb nig"), and punctuation splits words
+  ("mara_okafor").
+- A result opens where it lives: a script in the editor, a task on its
+  project page, a location in Studio › Locations with its project made
+  active, a person on their crew page (`lib/search.ts`, unit-tested).
+- `search_suite(query)` runs with the caller's rights, so each table's
+  policy decides; project work is limited to projects you own or are
+  confirmed crew on, and sample people stay out. Script text has a GIN index.
+
+## Earlier — Who's away on a shoot day
+
+Migration `20260929030000_availability.sql` — applied to production; PR #87 merged.
+
+- **Your profile › Dates you're away**: a day or a range, with a note only
+  you see (`unavailability`, your rows alone).
+- **The people who plan a production** (owner, leads, contributors) see
+  who on it is away — dates only, never the note — through
+  `project_availability(project, from, to)`:
+  - **Schedule › Call sheets**: a dated shoot day that falls in someone's
+    time away says so ("Away that day: mara (Oct 9–11)") before it's issued.
+  - **Cast & crew**: each person's coming time away under their name.
+- Crew who don't plan the production, outsiders and strangers see nobody's
+  dates. Pure helpers (ranges, conflicts, "Oct 3–5") in
+  `lib/availability/core.ts`, unit-tested.
+
+## Earlier — Guides, as deep as each person needs
+
+Migration `20260929020000_guides.sql` — applied to production; PR #86 merged.
+
+- **Every project has a guide** (project page, under the brief): the
+  workflow that fits it — *Your first short*, *Short film*, *Feature film*,
+  *Series*, *Music video*, *Documentary*, *Podcast*, *Commercial*, or *On the
+  crew* for someone else's project — picked from the format and experience,
+  and switchable. Steps come from one library (`lib/guides/steps.ts`); most
+  tick themselves from the project's data (the phase milestones, the
+  breakdown, locked revisions), the rest are ticked by hand.
+- **How deep it goes is the person's call**: four answers — how much
+  they've made, hours a week, who's making it with them, how much
+  explanation — asked on /welcome (a new step), the first time a guide
+  appears, and in Settings › Workspace. *Walk me through it* adds why, how
+  and what to watch for, plus the basics (how a shoot day runs, coverage,
+  the order of post); *Steps and tips* gives one tip per step; *Just the
+  checklist* one line. The default follows experience.
+- **Paced to their time**: effort scales with team (alone ×1.3, crew ×0.8)
+  and experience (first ×1.3, seasoned ×0.8); "This week" fills their hours;
+  the header says what's left ("about 146 hours — about 4 months at 8h a
+  week"). A solo filmmaker gets no crew or table-read steps; only a real crew
+  locks a shooting script.
+- **Structure-aware**: the outline step speaks the brief's story structure
+  (Save the Cat beats, the story circle, TV acts, a documentary arc…).
+- **Role-aware on the crew**: an actor gets "Know your scenes" and "Learn
+  your lines"; a DP "Walk the shot list"; everyone "Check your call sheet"
+  and "Sign your paperwork" (department from their craft on the project).
+- /welcome also asks where a new project is (an idea … getting it out
+  there) and starts it in that phase.
+- Storage: `profiles.ui_prefs.guide` (validated by `set_my_ui_prefs`) and
+  `guide_progress` (per person and project: workflow, ticked steps, hidden —
+  own rows only, on projects they can open).
+
+## Earlier — The landing page counts only real work
+
+Migration `20260929010000_sample_data.sql` — applied to production; PR #85 merged.
+
+- The landing page already ran on real data (platform totals, open jobs,
+  published work — no invented testimonials, stats or pricing). But the demo
+  world's sample people and projects are real rows, so they counted too and
+  their casting calls reached everyone's Jobs board. Now `profiles.is_sample`
+  and `projects.is_sample` mark them (the demo seed sets both), and public
+  surfaces leave them out: platform totals (`get_platform_stats`), recent
+  work (`get_recent_work`), the showcase, the crew directory and people
+  search. Sample jobs are listed only for the people inside that production
+  (`internal.job_listed` in the jobs policy); nobody flags or unflags
+  themselves (`profiles_guard`).
+
+## Earlier — The Lounge: unread, pinned, edited, searchable
+
+Migration `20260929000000_lounge.sql` — applied to production; PR #84 merged.
+
+- **Unread**: channels with news are bold with a count, and so are crew with
+  unread direct messages; the pill shows the total. Opening a channel (or a
+  conversation) marks it read, and it stays read as messages arrive while
+  it's open. Counts refresh live (`lounge_reads`, `lounge_unread()`).
+- **Pinned**: whoever runs a channel pins a message (either person can in a
+  DM); pinned messages carry a PINNED mark and are listed under **Pinned**
+  in the channel header, one click away.
+- **Edited**: you can reword your own message (Enter saves, Esc cancels); it
+  reads "(edited)". Nothing else about a message can be changed.
+- **Search**: across everything you can read or within the channel; word
+  starts match ("warm lay"); a result opens its channel — in another
+  production if need be — or the conversation, and scrolls to the message.
+
+## Earlier — A demo world to play in
+
+`scripts/demo/` seeds an account with the whole pipeline (`npm run demo:sql -- <email> [tz] > demo.sql`, then run it as the database owner; `--portable` leaves the email out and reads `set demo.owner = '…'`). Seeded into kingsavyt@gmail.com in production (its own projects untouched); PR #83 merged:
+
+- **Salt Lines** (short, an idea: logline, two answers, two references) ·
+  **The Quiet Hours** (feature, development done: draft, characters, beats,
+  mood board) · **Night Shift at the Lantern** (short, pre-production: crew,
+  casting, shots, breakdown, locations, money, call sheets — night one issued
+  — paperwork, an open casting call with an applicant) · **Paper Moons**
+  (music video shooting *now*: yesterday wrapped with a set log, today
+  rolling, timesheets) · **Ashfall** (post: cuts, open notes, the pipeline
+  half done) · **Harbor Lights** (delivered: link-shared, festivals,
+  campaigns, portfolio) · **Late Checkout** (podcast) · **Wolf Moon**
+  (archived) · **Undertow** (someone else's film where the account is cast:
+  tomorrow's call sheet, a release to sign, an application pending).
+- Sample people are password-less accounts on `demo.misfitscavern.invalid`.
+  Re-running replaces the demo projects with fresh ones (dates relative to
+  the run; "today" is today in the account's time zone).
+- Fix: the projects board no longer counts down to a delivered project's end date.
+
+## Earlier — Paperwork: permits, insurance, releases, contracts
+
+Migration `20260928100000_documents.sql` — applied to production; PR #82 merged.
+
+- **Studio › Production › Paperwork** (the Crew tool): every document the
+  production keeps — permits, insurance, releases, contracts, other — each
+  with its state in its own words (permit Applied for / Granted, release
+  Sent / Signed, insurance Quoted / Active), who or what it's about (a crew
+  member, a location, a vendor, another party), an expiry ("Active ·
+  expires in 9d", "Expired 3d ago"), and a private file (PDF or image, 20 MB).
+- **Still needed**, read from the production: insurance once there's a crew
+  or a location, a permit for each location that needs one, a release for
+  everyone cast, a deal memo for the rest of the crew — one click adds it
+  (`lib/studio/documents.ts`, unit-tested).
+- **A permit on file moves its location along**: pending → the location's
+  permit reads Applied, done → Granted, so Readiness unblocks the scene.
+- Crew see only "Your paperwork": the documents naming them and their files.
+
+## Earlier — Money: spend, vendors, timesheets
+
+Migration `20260928090000_money.sql` — applied to production; PR #81 merged.
+
+- **Studio › Production › Money** (the Budget tool): planned / committed /
+  paid / left in total and per budget line ("$600 over" in red); spend
+  lines — committed (a purchase order is out, with its PO number) or paid —
+  against a budget line and a vendor (added inline); timesheets.
+- **Paid spend keeps the budget line's actual in step** (trigger), so the
+  project page's budget agrees; it links to Studio › Money.
+- **Timesheets**: everyone on the production logs their own hours per day;
+  the owner and leads approve (setting the $/h rate) or reject — approved
+  hours × rate count as paid labour. Approved hours are settled for the crew;
+  an owner's correction sends them back for approval.
+- Spend and vendors are visible only to those who shape the project; crew
+  see and log only their own hours. Sums in `lib/studio/money.ts`.
+
+## Earlier — Locations as records
+
+Migration `20260928080000_locations.sql` — applied to production; PR #79 merged.
+
+- **Studio › Production › Locations**: every location the script names
+  (INT. HARBOR - NIGHT → HARBOR), busiest first, with its scenes, shoot days,
+  exterior/night — and a record the production fills in: status (scouting →
+  on hold → confirmed), permit (not checked / not needed / needed / applied
+  / granted), address (with a map link), contact, cost, notes. Locations the
+  script doesn't name yet can be added. "2 of 5 locked down".
+- `project_locations` is keyed by the heading's name (upper case), so scenes
+  link through the script with nothing to maintain; RLS as call sheets.
+- **Readiness** gains a Location check: a scene is blocked until its location
+  is confirmed with any permit it needs granted ("HARBOR permit pending");
+  "What unblocks the most" says "Lock down CAVE, RIDGE".
+- **Call sheets** offer the day's location address: "CAVE is at 1 Cave Rd.
+  Use this address".
+
+## Earlier — The hiring loop
+
+Migration `20260928070000_hiring_loop.sql` — applied to production; PR #79 merged.
+
+- **Casting calls**: the Casting board's open role → "Post a casting call"
+  opens Jobs with the post written from the script (scenes, shoot days) and
+  `jobs.character_name` set. Cards and the job page say "Casting call · the
+  role of Maya".
+- **Apply from the card**: Apply opens a note to the poster inline; the card
+  then reads "Applied · pending/accepted". My Jobs lists what you applied to
+  with its status (applicants can still read a posting after it closes).
+- **Accept in one step** (`respond_to_application`): status, the crew (craft =
+  the job's role; someone already on the crew keeps their role — the old
+  client upsert demoted leads), the casting for a casting call, "Close the
+  posting when I accept someone", and the applicant told ("You're cast as
+  Maya in Tidewater.", linking to the project).
+- **Fix**: anyone could link a posting to any project; now only people who
+  can shape the project (owner, leads, contributors) can.
+
+## Earlier — Call sheets reach the crew
+
+Migration `20260928060000_call_sheets_issue.sql` — applied to production (pg_cron enabled, job scheduled); PR #78 merged.
+
+- **Issue, then revise**: a call sheet is a live draft until the owner or a
+  lead issues it (Studio › Schedule › a day › "Issue to the crew", with an
+  optional note). Later edits show "Changed since v1: location, 1 call" and
+  go out as "Issue revision (v2)". `issue_call_sheet()` stamps the version
+  and a snapshot of what went out (`call_sheets.issued`).
+- **Everyone gets their own call**: a notification per person — "Your call
+  07:00 as MAYA. At 40 Pier St." — and on a revision what changed for them
+  ("Changed: location, your call 06:30 → 07:00."). Cast get the call of the
+  role they're cast in (`character_castings`).
+- **The crew view** `/call/[id]` (where the notification lands): their call
+  first, "Got it" to confirm the version (`ack_call_sheet`,
+  `call_sheet_acks`), the day's facts with a map link, scenes, everyone's
+  calls; prints clean. Studio shows "Confirmed v2: 3 of 5" live.
+- **Reminders**: pg_cron runs `send_call_sheet_reminders()` hourly; each
+  issued sheet reminds everyone once from the day before its date (UTC).
+- Snapshot logic mirrored client-side in `lib/studio/call-sheet.ts`.
+
+## Earlier — Onboarding, the projects board, empty states that lead somewhere
+
+Migration `20260928050000_onboarding.sql` — applied to production; PR #77 merged.
+
+- **`/welcome`** (a new account lands here after sign-up, email or OAuth):
+  what you do (craft → `profiles.role`), what you came for (make something /
+  find work → Jobs / meet filmmakers → Lounge / show my work → portfolio), and
+  — to make something — title, format, logline and the format's first three
+  development brief questions. The project opens where its first step is
+  (`lib/onboarding.ts`, via the phase engine): with a logline, the script;
+  without, the project page at the logline. The New Project modal does the
+  same and links to the guided start.
+- **The projects board**: search (title, logline, format, people), sort
+  (recently active, newest, title, end date, furthest along), and each card
+  shows its phase progress and next step ("Development · 1 of 5 done · Next:
+  Start the script") from `projects_progress(ids)` — one call for every card.
+  Owners **archive** a project (`projects.archived_at`): off the board and the
+  Studio picker until restored from the Archived view. Board logic in
+  `lib/os/board.ts` (unit-tested).
+- **Empty states name the next step and link to it**: Studio crew (Recruit /
+  Post a role), scenes with no headings (Write a scene), share (Open the
+  Library), the crew directory (Recruit in Studio / Post a role / Clear
+  filters), Jobs (filtered to nothing → Show every role), portfolio (Add your
+  first piece), the Lounge (Open #start-here; who can post). Studio tabs can
+  jump to each other in place (`useStudio().goTo`).
+
+## Earlier — Phases v2: the suite grows with the production
+
+Migration `20260928040000_phases_v2.sql` — applied to production; PR #76 merged.
+
+- **The suite suggests the phase** the project's data says it has reached
+  (`suggestPhase` in `lib/os/progress.ts`): the first shoot day has come,
+  every scene is wrapped, the post pipeline or deliverables are done, the
+  next phase's work has deliberately started (not scenes from writing or a
+  dated call sheet), or this phase's milestones are all done. On the phase
+  panel: "Looks like Production — your first shoot day has passed" with
+  Move / Not yet (remembered per project and phase).
+- **Tools arrive inside the editor and Studio**: new tools *Breakdown &
+  readiness* and *Revisions* (pre-production; early once elements are tagged
+  or a draft is locked). A development project's editor has no revision
+  toggle, Lock Revision or Breakdown tab; Studio's Breakdown and Readiness
+  views show the "opens in …" card. Personal scripts keep everything.
+- **Show every tool** (Settings › Workspace): the account's choice to open
+  everything in every project; per-project "Open all" stays.
+- **One-line intros**: the first time you open a tool that arrived after the
+  start — "New here: Schedule & call sheets. … It arrived with
+  Pre-Production." — dismissed once, for good.
+- `project_progress()` adds `shoot_start`, `shoot_end`, `breakdown_elements`,
+  `revisions`; `profiles.ui_prefs` holds the choices (private, via RPCs).
+
+## Earlier — ScriptOS reads the brief out of the screenplay
+
+Migration `20260928030000_brief_detect.sql` — applied to production; PR #75 merged.
+
+- The special-needs question is answered by the script before anyone ticks
+  it: fights, weapons, vehicles, animals, children (a character intro with
+  an age under 13), water/weather, crowds, night exteriors, blood and
+  prosthetics, VFX — each with the scenes it's in.
+- Until the question is answered, what the script shows drives roles and
+  the breakdown ("Roles this project needs: Gaffer — because of night
+  exteriors in the script (scene 1)"); after, it's a suggestion with a
+  one-click Add, and the chips say "· script".
+
+## Earlier — The project brief: the suite adapts to the project
+
+Migration `20260928020000_project_brief.sql` — applied to production; PR #74 merged.
+
+- **The brief** (project page, under the phase panel): what the project is,
+  answered as choices phase by phase — genre, tone, target length, when it's
+  set, goals, audience, structure; budget level, planned days, camera style,
+  shooting on, locations, special needs; dailies; music, sound mix, frame,
+  finishing; festivals, platforms, accessibility. Questions follow the
+  format and earlier answers (festivals only if the goal includes them).
+  Questions and options are data (`brief_questions`); each option says what
+  it implies for the rest of the suite.
+- **What moves it forward**: ranked, phase-aware — the script vs the target
+  length, a festival short over 40 minutes, shooting days vs the budget's
+  pace, roles the brief needs that nobody on the crew does (each with a
+  "Post" link that opens Jobs with the post written from the project), empty
+  breakdown categories the brief calls for, night exteriors without a gaffer,
+  scenes without references, uncast characters, channels to open, a
+  vertical cut for social, licensed music vs release.
+- **Tools adapt**: Studio › Crew shows the roles/casting/night moves; the
+  Breakdown shows categories to tag; the editor's Stats measure runtime
+  against the brief's target; the Lounge offers the owner the channels the
+  phase calls for (script-notes → above the line, legal → owners,
+  production → below the line, dailies once the shoot starts, updates →
+  public at delivery…, from `channel_presets`).
+- Docs: `.cavern-intelligence/project-brief.md`.
+
+## Earlier — The Lounge: who each channel is for, guides, the community
+
+Migration `20260928010000_community.sql` — applied to production; PR #73 merged.
+
+- **Who it’s for** (`channels.audience`, enforced by `internal.can_view_channel`).
+  Project channels: *Whole team*, *Owners* (creator + leads), *Above the line*
+  / *Below the line* (by the member's craft — `crafts.above_the_line`: Director,
+  Producer, Writer, Story editor, Actor, Voice actor; owners see both),
+  *Guests* (members added as viewers, plus owners) and *Public* (anyone signed
+  in can read — a production's updates; listed under "Other productions").
+  Community channels: *Everyone* or *Admins*. Chosen when creating a channel
+  and changeable in Manage. "Private" stays an invite-only overlay.
+- **Guides** — a channel type for FAQ, the start-here tour and tutorials. It
+  reads as a document (each post a section, first line its heading); only
+  whoever runs it writes (and can remove a section); no chat box for readers.
+- **The community**: admins create and run site-wide channels (nobody could
+  before). Starters: start-here, faq, tutorials (guides — empty until an
+  admin writes them), announcements, general, craft-talk, crew-call,
+  feedback, showcase, the-lounge (voice), admins. Existing ones kept.
+- **Fixes**: a private community channel was visible to everyone signed in —
+  now members (and admins) only. Messages can be removed by their author or
+  whoever runs the channel (there was no delete policy).
+- **Lounge refetch loop (live bug)**: the page reloaded messages and profiles
+  in a tight loop for every signed-in user (an effect set the user object it
+  depended on), eventually freezing the tab and hammering the DB. Fixed.
+
+## Earlier — Credits & the press kit
+
+Migration `20260928000000_credits.sql` — applied to production; PR #72 merged.
+
+- Credits come from the work itself, never typed twice: projects someone
+  created, the crew they were confirmed on (their craft) and the parts they
+  were cast in.
+- **Crew profiles** list them ("Salt (2026) — Gaffer · Plays MAYA"); on your
+  own profile, **Add to portfolio** makes a portfolio entry linked back to the
+  project (title, format, year, your credits).
+- **Share page = press kit**: festival laurels ("Official selection" for
+  accepted submissions) under the logline, and Cast & crew by department.
+- Privacy: outsiders see a project in someone's credits only when it's
+  public; teammates see their team's. The press kit only exists for
+  link/public projects.
+
+## Earlier — The writing loop
+
+Migration `20260927110000_writing_loop.sql` — applied to production; PR #71 merged.
+
+- The editor's daily goal and sprint were cosmetic (a goal of 1,000 fixed in
+  code measured against the script's *total* size; the sprint couldn't be
+  restarted without a reload; nothing was saved). Now:
+- **Today**: words actually typed today (a paste or a loaded file doesn't
+  count) against your own goal (click to change; saved to your profile).
+- **Streak**: consecutive days you met your goal (each day judged by the goal
+  you had that day), best streak, and the last four weeks as a grid.
+- **Sprint**: your length (5–120 min), start / pause / reset, words this
+  sprint (also in the header), logged when it ends.
+- **Earned**: first goal, 7- and 30-day streaks, a 2,000-word day, 10
+  sprints, 20,000 words — all derived from your real days.
+- Saved a few seconds after typing pauses, every 20s, and when you leave.
+
 ## Earlier — On set
 
 Migration `20260927100000_set_log.sql` — applied to production; PR #71 merged.

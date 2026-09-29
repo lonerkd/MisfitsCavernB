@@ -136,7 +136,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
               >
                 {content.split('\n').map((lineText: any, i: number) => {
                   const type = lines[i]?.type;
-                  const color = (type && TYPE_COLORS[type]) || (revisionMode ? '#0099ff' : '#e0e0e0');
+                  const color = (type && TYPE_COLORS[type]) || (revisionMode ? 'var(--info)' : 'var(--fg)');
                   const bold = type === 'slug' || type === 'character' || type === 'transition';
                   const isReadingLine = tableReadLineIdx === i;
                   const isCurrentLine = i === cursorLine;
@@ -145,8 +145,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     <div key={i} style={{
                       position: 'relative',
                       color, fontWeight: bold ? 700 : 400,
-                      background: isReadingLine ? 'rgba(232, 67, 26,0.14)' : isCurrentLine ? 'rgba(255,255,255,0.035)' : undefined,
-                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : isCurrentLine ? 'inset 2px 0 0 rgba(255,255,255,0.25)' : undefined,
+                      background: isReadingLine ? 'rgba(232, 67, 26,0.14)' : isCurrentLine ? 'rgba(var(--ink-rgb), 0.035)' : undefined,
+                      boxShadow: isReadingLine ? 'inset 3px 0 0 var(--accent)' : isCurrentLine ? 'inset 2px 0 0 rgba(var(--ink-rgb), 0.25)' : undefined,
                     }}>
                       {!lineText.length ? ' ' : showMarks && bd.view.marks.has(i)
                         ? segments(lineText, bd.view.marks.get(i)).map((seg, si) => seg.mark
@@ -173,8 +173,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                           title="Add margin note"
                           style={{
                             position: 'absolute', left: -22, top: 2, width: 11, height: 11, borderRadius: '50%',
-                            border: '1px dashed rgba(255,255,255,0.35)', color: 'var(--fg-dim)',
-                            fontSize: 11, lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
+                            border: '1px dashed rgba(var(--ink-rgb), 0.35)', color: 'var(--fg-dim)',
+                            fontSize: 'max(9px, var(--mc-min-font, 0px))', lineHeight: '10px', textAlign: 'center', cursor: 'pointer', pointerEvents: 'auto',
                           }}
                         >+</span>
                       )}
@@ -182,7 +182,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                         <div
                           style={{
                             position: 'absolute', left: -22, top: 18, zIndex: 30, width: 220,
-                            background: 'rgba(10,10,10,0.98)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8,
+                            background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8,
                             padding: 10, pointerEvents: 'auto', boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
                           }}
                           onClick={e => e.stopPropagation()}
@@ -193,9 +193,9 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                                 key={t}
                                 onClick={() => setAnnotationDraft((d: any) => d ? { ...d, type: t } : d)}
                                 style={{
-                                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase',
+                                  fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, textTransform: 'uppercase',
                                   padding: '3px 7px', borderRadius: 9999, cursor: 'pointer',
-                                  background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(255,255,255,0.04)',
+                                  background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(var(--ink-rgb), 0.04)',
                                   border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)'}`,
                                   color: annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)',
                                 }}
@@ -208,11 +208,11 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                             onChange={e => setAnnotationDraft((d: any) => d ? { ...d, text: e.target.value } : d)}
                             onKeyDown={e => { if (e.key === 'Enter') submitAnnotation(); if (e.key === 'Escape') setAnnotationDraft(null); }}
                             placeholder={`Routes to ${ANNOTATION_META[annotationDraft.type as keyof typeof ANNOTATION_META].routesTo}...`}
-                            style={{ width: '100%', padding: '6px 8px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 11, marginBottom: 8 }}
+                            style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, color: 'var(--fg-strong)', fontSize: 11, marginBottom: 8 }}
                           />
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: 'var(--success)', borderRadius: 8, padding: '5px', cursor: 'pointer', fontSize: 11 }}>Add</button>
-                            <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: '#888', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11 }}>Cancel</button>
+                            <button onClick={submitAnnotation} disabled={!annotationDraft.text.trim()} style={{ flex: 1, background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: 'var(--ok)', borderRadius: 8, padding: '5px', cursor: 'pointer', fontSize: 11 }}>Add</button>
+                            <button onClick={() => setAnnotationDraft(null)} style={{ background: 'none', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg-dim)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11 }}>Cancel</button>
                           </div>
                         </div>
                       )}
@@ -270,13 +270,13 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 <div id="tag-mode-help" style={{
                   position: 'absolute', top: 16, left: 16, zIndex: 5,
                   display: 'flex', alignItems: 'center', gap: 8,
-                  background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(232,67,26,0.35)',
+                  background: 'var(--surface)', border: '1px solid rgba(232,67,26,0.35)',
                   borderRadius: 20, padding: '6px 12px', backdropFilter: 'blur(12px)',
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, color: 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: 'var(--fg-muted)',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} aria-hidden />
                   Tag mode — select words to tag them · underlined words are suggestions
-                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'underline' }}>Exit</button>
+                  <button type="button" onClick={() => bd.setMode(false)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', textDecoration: 'underline' }}>Exit</button>
                 </div>
               )}
 
@@ -284,7 +284,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 <div style={{
                   position: 'absolute', top: 16, right: 16, zIndex: 5,
                   display: 'flex', alignItems: 'center', gap: 6,
-                  background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
                   borderRadius: 20, padding: '6px 10px', backdropFilter: 'blur(12px)',
                 }}>
                   <button type="button" aria-label={tableReadPlaying ? 'Pause table read' : 'Resume table read'}
@@ -303,7 +303,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                     Table Read
                   </span>
                 </div>
@@ -312,12 +312,12 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
               {!focusMode && (() => {
                 const currentType = lines[cursorLine]?.type || 'empty';
                 const status = ELEMENT_STATUS[currentType] || ELEMENT_STATUS.empty;
-                const color = TYPE_COLORS[currentType] || 'rgba(224, 221, 174,0.6)';
+                const color = TYPE_COLORS[currentType] || 'rgba(var(--fg-rgb), 0.6)';
                 return (
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '6px 16px', background: 'rgba(8,8,8,0.9)', borderTop: '1px solid rgba(255,255,255,0.06)',
+                    padding: '6px 16px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.06)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                   }}>
                     <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
