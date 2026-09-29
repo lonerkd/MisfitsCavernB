@@ -9,6 +9,7 @@ import { withTimeout } from '@/lib/supabase/withTimeout';
 import Avatar from '@/components/Avatar';
 import { useConfirm } from '@/components/Confirm';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { AwayEditor } from '@/components/availability/AwayEditor';
 
 
 const fieldStyle: React.CSSProperties = {
@@ -365,6 +366,8 @@ export default function ProfilePage() {
               ))}
             </div>
           </div>
+
+          <AwayEditor userId={user?.id ?? null} />
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Link href="/portfolio/manage" style={{ fontSize: 9, letterSpacing: 2, fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textDecoration: 'none' }}>

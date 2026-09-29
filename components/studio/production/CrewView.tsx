@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Briefcase, UserPlus, Users } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import { useCanShape } from '@/lib/brief';
+import { describeRange, localToday, upcoming, useProjectAvailability } from '@/lib/availability';
 import { CrewMemberCard, RecruitModal } from '../CrewBoards';
 import { CastingBoard } from '../CastingBoard';
 import { useStudio } from '../StudioContext';
@@ -20,6 +22,11 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
   const { project, userId, isOwner } = useStudio();
   const online = useOnlinePresence(userId);
   const [recruiting, setRecruiting] = useState(false);
+  // Those who plan the production see when people are away (dates only).
+  const canShape = useCanShape(project.id, isOwner);
+  const away = useProjectAvailability(project.id, canShape);
+  const today = localToday();
+  const awayText = (userId: string) => upcoming(away, userId, today).slice(0, 3).map((a) => describeRange(a.starts_on, a.ends_on)).join(' · ') || null;
 
   return (
     <div className={s.stack} style={{ gap: 32 }}>
@@ -36,6 +43,7 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
                 key={m.id}
                 index={i}
                 isOnline={online.has(m.user_id)}
+                away={awayText(m.user_id)}
                 member={{ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status, avatar: m.profiles?.avatar_url, userId: m.user_id }}
               />
             ))}

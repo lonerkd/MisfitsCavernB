@@ -69,7 +69,7 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
   );
 }
 
-export function CrewMemberCard({ member, index, isOnline }: { member: any; index: number; isOnline?: boolean }) {
+export function CrewMemberCard({ member, index, isOnline, away }: { member: any; index: number; isOnline?: boolean; away?: string | null }) {
   const router = useRouter();
 
   const zoneHandlers = usePillZone(member.userId ? {
@@ -114,6 +114,7 @@ export function CrewMemberCard({ member, index, isOnline }: { member: any; index
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{member.name}</div>
         <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+        {away && <div style={{ fontSize: 11, color: '#f5a524', marginTop: 3 }}>Away {away}</div>}
       </div>
       <div style={{ fontSize: 9, padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(255,255,255,0.05)', color: member.status === 'confirmed' ? '#00cc66' : '#666', borderRadius: 4, textTransform: 'uppercase' }}>
         {member.status || 'pending'}

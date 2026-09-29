@@ -1,8 +1,24 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Guides, as deep as each person needs
+## Latest Session — Who's away on a shoot day
 
-Migration `20260929020000_guides.sql` — **apply to production before merging**.
+Migration `20260929030000_availability.sql` — **apply to production before merging**.
+
+- **Your profile › Dates you're away**: a day or a range, with a note only
+  you see (`unavailability`, your rows alone).
+- **The people who plan a production** (owner, leads, contributors) see
+  who on it is away — dates only, never the note — through
+  `project_availability(project, from, to)`:
+  - **Schedule › Call sheets**: a dated shoot day that falls in someone's
+    time away says so ("Away that day: mara (Oct 9–11)") before it's issued.
+  - **Cast & crew**: each person's coming time away under their name.
+- Crew who don't plan the production, outsiders and strangers see nobody's
+  dates. Pure helpers (ranges, conflicts, "Oct 3–5") in
+  `lib/availability/core.ts`, unit-tested.
+
+## Earlier — Guides, as deep as each person needs
+
+Migration `20260929020000_guides.sql` — applied to production; PR #86 merged.
 
 - **Every project has a guide** (project page, under the brief): the
   workflow that fits it — *Your first short*, *Short film*, *Feature film*,

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check, ExternalLink, FileText, Printer, Send } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { useCanShape } from '@/lib/brief';
+import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
 import {
   issueState, locationKey, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls, useProjectLocations,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
@@ -41,6 +42,12 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
   const sheetFor = (day: number) => sheets.rows.find((x) => x.shoot_day === day);
+  // Who's away on a dated day — seen by those who plan the production.
+  const { isOwner, userId: me } = useStudio();
+  const canShape = useCanShape(project.id, isOwner);
+  const away = useProjectAvailability(project.id, canShape);
+  const conflicts = useMemo(() => dayConflicts(sheets.rows, away), [sheets.rows, away]);
+  const nameOf = (userId: string) => (userId === me ? 'You' : crew.find((m) => m.user_id === userId)?.username || 'The owner');
 
   const print = (day: number) => {
     const d = dayFacts(scenes, day);
@@ -80,6 +87,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
           const open = openDay === day;
           const dayCalls = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
           const state = issueState(sheet, dayCalls);
+          const clash = conflicts.get(day) ?? [];
           return (
             <div key={day} className={cx(s.callDay, open && s.callDayOpen)}>
               <button type="button" className={s.callDayHead} onClick={() => setOpenDay(open ? null : day)} aria-expanded={open}>
@@ -90,6 +98,11 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                   {' · '}{state.status === 'draft' ? 'draft' : state.status === 'issued' ? `issued v${state.version}` : `changed since v${state.version}`}
                 </span>
               </button>
+              {clash.length > 0 && (
+                <p className={s.hint} role="note" style={{ color: '#f5a524', margin: '4px 12px 8px' }}>
+                  Away that day: {clash.map((a) => `${nameOf(a.user_id)} (${describeRange(a.starts_on, a.ends_on)})`).join(', ')}
+                </p>
+              )}
               {open && (
                 <DayEditor
                   day={day} sheet={sheet} facts={d} crew={crew} state={state}
