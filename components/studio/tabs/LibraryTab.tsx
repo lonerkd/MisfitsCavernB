@@ -1,26 +1,28 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { Archive, Link2, Search } from 'lucide-react';
+import { Archive, Link2, Search, StickyNote } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import type { Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, ErrorBar } from '../ui';
 import { MediaFilters, MediaGrid, GridSkeleton, useMediaFilters } from '../media/MediaGrid';
-import { AddLinkForm, DropOverlay, UploadButton, UploadQueue, useFileDrop } from '../media/AddMedia';
+import { AddLinkForm, AddNoteForm, DropOverlay, UploadButton, UploadQueue, useFileDrop } from '../media/AddMedia';
 import { MediaDetail } from '../media/MediaDetail';
 import { useUploader } from '../media/useUploader';
 import { FindReferences } from '../media/FindReferences';
 import s from '../studio.module.css';
 
 /**
- * The project library: every reference photo, clip, track, PDF and link the
- * team has gathered. Shared with all crew, live.
+ * The project library: every reference photo, clip, track, PDF, link and note
+ * the team has gathered — at the desk or captured on a phone. Shared with all
+ * crew, live.
  */
 export function LibraryTab() {
   const { project, userId, media, scenesByMedia } = useStudio();
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [finding, setFinding] = useState(false);
   const f = useMediaFilters(media.rows);
 
@@ -41,7 +43,10 @@ export function LibraryTab() {
             <button type="button" className={s.btn} onClick={() => setFinding(true)}>
               <Search size={12} /> Find references
             </button>
-            <button type="button" className={s.btn} aria-expanded={adding} onClick={() => setAdding((a) => !a)}>
+            <button type="button" className={s.btn} aria-expanded={writing} onClick={() => { setWriting((w) => !w); setAdding(false); }}>
+              <StickyNote size={12} /> Note
+            </button>
+            <button type="button" className={s.btn} aria-expanded={adding} onClick={() => { setAdding((a) => !a); setWriting(false); }}>
               <Link2 size={12} /> Add link
             </button>
             <UploadButton onFiles={(files) => void uploader.add(files)} />
@@ -49,6 +54,7 @@ export function LibraryTab() {
         }
       />
       {adding && <AddLinkForm projectId={project.id} userId={userId} board={f.board} onAdded={onUploaded} onCancel={() => setAdding(false)} />}
+      {writing && <AddNoteForm projectId={project.id} userId={userId} board={f.board} onAdded={onUploaded} onCancel={() => setWriting(false)} />}
       <UploadQueue queue={uploader.queue} onRetry={uploader.retry} onDismiss={uploader.dismiss} />
       {media.status === 'error' && <ErrorBar message={media.error ?? 'Could not load the library'} onRetry={() => void media.reload()} />}
 

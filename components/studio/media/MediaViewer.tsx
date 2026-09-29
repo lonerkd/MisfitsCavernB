@@ -11,7 +11,8 @@ import s from '../studio.module.css';
  * `playerRef` gets the <video>/<audio> element of an uploaded recording (for
  * the transcript to seek and stamp times); embeds have none.
  */
-export function MediaViewer({ media, src, playerRef }: { media: Pick<Media, 'kind' | 'title' | 'external_url' | 'storage_path' | 'mime_type'>; src: string | null; playerRef?: React.Ref<HTMLMediaElement> }) {
+export function MediaViewer({ media, src, playerRef }: { media: Pick<Media, 'kind' | 'title' | 'external_url' | 'storage_path' | 'mime_type'> & { notes?: string | null }; src: string | null; playerRef?: React.Ref<HTMLMediaElement> }) {
+  if (media.kind === 'note') return <div className={s.viewer}><div className={s.noteView}>{media.notes}</div></div>;
   const embed = media.kind === 'video' && media.external_url ? videoEmbed(media.external_url) : null;
 
   if (embed) {

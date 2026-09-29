@@ -138,8 +138,8 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
             <datalist id="studio-boards">{boards.map((b) => <option key={b} value={b} />)}</datalist>
           </label>
           <label className={s.field}>
-            <span className={s.label}>Notes · team only</span>
-            <textarea name="notes" className={s.textarea} value={notes} maxLength={5000} placeholder="Why this reference — what to take from it" onChange={(e) => setNotes(e.target.value)} onBlur={() => { if ((notes || null) !== (item.notes || null)) void save({ notes: notes || null }); }} />
+            <span className={s.label}>{item.kind === 'note' ? 'The note · team only' : 'Notes · team only'}</span>
+            <textarea name="notes" className={s.textarea} value={notes} maxLength={5000} rows={item.kind === 'note' ? 8 : undefined} placeholder={item.kind === 'note' ? 'A line, an idea, what someone said' : 'Why this reference — what to take from it'} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if ((notes || null) !== (item.notes || null)) void save({ notes: notes || null }); }} />
           </label>
 
           <div className={s.divider} />
@@ -168,15 +168,18 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
             )}
           </div>
 
-          <div className={s.divider} />
-
-          <div className={s.row} style={{ justifyContent: 'space-between' }}>
-            <div>
-              <div className={s.optionName}><Globe size={13} /> Include in share link</div>
-              <div className={s.hint}>{isOwner ? 'Viewers of your share link see this item (never the notes).' : 'Only the project owner decides what is shared.'}</div>
-            </div>
-            <Toggle on={item.shared} disabled={!isOwner} label="Include in share link" onChange={(next) => void save({ shared: next })} />
-          </div>
+          {item.kind !== 'note' && (
+            <>
+              <div className={s.divider} />
+              <div className={s.row} style={{ justifyContent: 'space-between' }}>
+                <div>
+                  <div className={s.optionName}><Globe size={13} /> Include in share link</div>
+                  <div className={s.hint}>{isOwner ? 'Viewers of your share link see this item (never the notes).' : 'Only the project owner decides what is shared.'}</div>
+                </div>
+                <Toggle on={item.shared} disabled={!isOwner} label="Include in share link" onChange={(next) => void save({ shared: next })} />
+              </div>
+            </>
+          )}
 
           {canDelete && (
             <>

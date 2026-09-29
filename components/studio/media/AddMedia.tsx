@@ -109,6 +109,43 @@ export function AddLinkForm({ projectId, userId, board, onAdded, onCancel }: { p
   );
 }
 
+/** Write a note into the library — the same kind of note a phone captures on the go. */
+export function AddNoteForm({ projectId, userId, board, onAdded, onCancel }: { projectId: string; userId: string; board?: string | null; onAdded: (m: Media) => void; onCancel: () => void }) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState('');
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onAdded(await studio.addNote(projectId, userId, { title, text, board }));
+      toast('Note added to the library', 'success');
+      onCancel();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save the note');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={submit} className={s.panel} style={{ marginBottom: 18, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label className={s.srOnly} htmlFor="studio-note-title">Note title</label>
+      <input id="studio-note-title" className={s.input} placeholder="Title (optional)" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+      <label className={s.srOnly} htmlFor="studio-note-text">Note</label>
+      <textarea id="studio-note-text" data-autofocus autoFocus className={s.textarea} rows={4} maxLength={5000} placeholder="A line, an idea, what someone said…" value={text} onChange={(e) => setText(e.target.value)} />
+      <div className={s.row} style={{ justifyContent: 'flex-end' }}>
+        <button type="button" className={s.btnGhost} onClick={onCancel}>Cancel</button>
+        <button type="submit" className={s.btnPrimary} disabled={busy || !text.trim()}>{busy ? 'Saving…' : 'Add note'}</button>
+      </div>
+      {error && <div className={cx(s.hint, s.queueError)} role="alert">{error}</div>}
+    </form>
+  );
+}
+
 export function UploadQueue({ queue, onRetry, onDismiss }: { queue: UploadItem[]; onRetry: (key: string) => void; onDismiss: (key: string) => void }) {
   if (!queue.length) return null;
   return (

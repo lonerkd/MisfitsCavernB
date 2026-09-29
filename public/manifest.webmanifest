@@ -2,7 +2,8 @@
   "name": "Misfits Cavern",
   "short_name": "Misfits Cavern",
   "description": "Screenplay editor and production suite for indie filmmakers.",
-  "start_url": "/",
+  "id": "/",
+  "start_url": "/today",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -10,5 +11,15 @@
   "theme_color": "#040710",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
-  ]
+  ],
+  "shortcuts": [
+    { "name": "Capture", "short_name": "Capture", "description": "A photo, clip, voice memo, note or link into a project", "url": "/today?capture=1", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Today", "url": "/today", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Lounge", "url": "/lounge", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+  ],
+  "share_target": {
+    "action": "/today",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
 }

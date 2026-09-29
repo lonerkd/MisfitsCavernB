@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun } from 'lucide-react';
+import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES } from '@/lib/os';
 import { useToast } from '@/components/Toast';
@@ -18,6 +18,7 @@ import { fetchNotifications, markRead, type Notification } from '@/lib/supabase/
 import { getLoungeUnread, type LoungeUnread } from '@/lib/supabase/messages';
 import { clock, dayLabel, daysUntil, dueLabel, greeting, localDay, mapsHref, nextShootDays, openTasks, urgency } from '@/lib/today/core';
 import { readable } from '@/lib/color';
+import { ContinueOffer } from '@/components/mobile/Continue';
 import t from './today.module.css';
 
 interface Sheet { id: string; project_id: string; shoot_date: string | null; shoot_day: number; general_call: string | null; location_address: string | null; weather: string | null; issued_at: string | null }
@@ -116,7 +117,12 @@ export default function TodayPage() {
           <p className={t.date}>{now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
           <h1 className={t.hello}>{greeting(now.getHours())}{name ? `, ${name}` : ''}</h1>
         </div>
+        <button type="button" className={t.search} onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))} aria-label="Search everything">
+          <Search size={18} aria-hidden />
+        </button>
       </header>
+
+      <ContinueOffer inline className={t.wide} />
 
       <section className={`${t.card} ${t.wide}`} aria-labelledby="today-set">
         <div className={t.cardHead}><h2 id="today-set" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> On set</h2></div>

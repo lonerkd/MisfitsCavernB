@@ -7,15 +7,17 @@
 //   dismissed      — phase suggestions waved off, "<project>:<phase>"
 //   guide          — how they work: hours a week, experience, team, depth (lib/guides)
 //   theme          — the look of the suite (lib/themes), the same on every device
+//   places         — where they last worked on a phone and on a desk (lib/pocket/places)
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { toGuideProfile, type GuideProfile } from '@/lib/guides/profile';
 import { toThemeChoice, type ThemeChoice } from '@/lib/themes';
+import { toPlaces, type Places } from '@/lib/pocket/places';
 import type { Json } from '@/lib/supabase/database.types';
 
-export interface UiPrefs { show_all_tools: boolean; seen_tools: string[]; dismissed: string[]; guide: GuideProfile | null; theme: ThemeChoice | null }
-export const DEFAULT_UI_PREFS: UiPrefs = { show_all_tools: false, seen_tools: [], dismissed: [], guide: null, theme: null };
+export interface UiPrefs { show_all_tools: boolean; seen_tools: string[]; dismissed: string[]; guide: GuideProfile | null; theme: ThemeChoice | null; places: Places }
+export const DEFAULT_UI_PREFS: UiPrefs = { show_all_tools: false, seen_tools: [], dismissed: [], guide: null, theme: null, places: {} };
 
 const EVENT = 'mc:ui-prefs';
 let cache: Promise<UiPrefs> | null = null;
@@ -23,7 +25,7 @@ let cache: Promise<UiPrefs> | null = null;
 const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
 function toPrefs(raw: unknown): UiPrefs {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  return { show_all_tools: r.show_all_tools === true, seen_tools: strings(r.seen_tools), dismissed: strings(r.dismissed), guide: toGuideProfile(r.guide), theme: r.theme ? toThemeChoice(r.theme) : null };
+  return { show_all_tools: r.show_all_tools === true, seen_tools: strings(r.seen_tools), dismissed: strings(r.dismissed), guide: toGuideProfile(r.guide), theme: r.theme ? toThemeChoice(r.theme) : null, places: toPlaces(r.places) };
 }
 
 export function loadUiPrefs(): Promise<UiPrefs> {
