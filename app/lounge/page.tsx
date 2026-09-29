@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2, Pin, PinOff, Pencil, Search } from 'lucide-react';
+import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2, Pin, PinOff, Pencil, Search, ChevronLeft } from 'lucide-react';
 import { audienceLabel, audienceOptions, defaultPostPolicy, groupChannels, type ChannelAudience } from '@/lib/lounge/audience';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -646,6 +646,22 @@ export default function LoungePage() {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const pendingChannel = useRef<string | null>(null);
+  // On a phone the Lounge is one pane at a time: the list (channels and
+  // people) or the conversation. Desktop shows both; CSS decides.
+  const [pane, setPane] = useState<'list' | 'chat'>('list');
+  const openChannel = (ch: Channel) => { setActiveChannel(ch); setDmTarget(null); setPane('chat'); };
+  const openDM = (t: { id: string; name: string }) => { setDmTarget(t); setPane('chat'); };
+
+  // A link straight into a conversation: /lounge?channel=<id> or ?dm=<person>.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const channel = q.get('channel'), dm = q.get('dm');
+    if (channel) { pendingChannel.current = channel; setPane('chat'); }
+    if (dm) {
+      supabase.from('profiles').select('id, username').eq('id', dm).maybeSingle()
+        .then(({ data }) => { if (data) openDM({ id: data.id, name: data.username || 'someone' }); });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const reloadChannels = useCallback(async () => {
     const list = await listChannels(activeProject?.id);
@@ -678,7 +694,7 @@ export default function LoungePage() {
     if (error) { toast(error, 'error'); return; }
     toast(`Opened #${p.name} for ${audienceLabel(p.audience).toLowerCase()}`, 'success');
     await reloadChannels();
-    if (channel) setActiveChannel(channel);
+    if (channel) openChannel(channel);
   };
 
   // The people on the active project: its owner and crew (not the whole platform).
@@ -935,6 +951,7 @@ export default function LoungePage() {
   // another production's), or the direct conversation — and scrolls to it.
   const jumpTo = (hit: LoungeHit) => {
     setShowSearch(false);
+    setPane('chat');
     setFocusId(hit.parent_message_id ?? hit.id);
     if (hit.channel_uuid) {
       const here = channels.find((c) => c.id === hit.channel_uuid);
@@ -964,7 +981,7 @@ export default function LoungePage() {
           type: 'reply',
           title: `${myProfile?.username || 'Someone'} replied in a thread`,
           body: text.length > 90 ? text.slice(0, 90) + '…' : text,
-          link: '/lounge',
+          link: `/lounge?channel=${activeChannel.id}`,
         }, currentUser.id);
       }
     } catch (e: any) { console.error(e); setThreadInput(text); toast(e?.message || 'Reply failed to send', 'error'); }
@@ -982,7 +999,7 @@ export default function LoungePage() {
           type: 'reply',
           title: `Direct message from ${from}`,
           body: text.length > 90 ? text.slice(0, 90) + '…' : text,
-          link: '/lounge',
+          link: `/lounge?dm=${currentUser.id}`,
         }, currentUser.id);
         return;
       }
@@ -997,7 +1014,7 @@ export default function LoungePage() {
             type: 'mention',
             title: `${from} mentioned you in #${activeChannel.name}`,
             body: text.length > 90 ? text.slice(0, 90) + '…' : text,
-            link: '/lounge',
+            link: `/lounge?channel=${activeChannel.id}`,
           }, currentUser.id));
       }
     } catch (e: any) {
@@ -1008,11 +1025,11 @@ export default function LoungePage() {
   };
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
+    <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(var(--taskbar-height, 94px) + 16px)' }}>
       <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
 
-      <nav style={{
+      <nav className="mc-lounge-top" style={{
         position: 'sticky',
         top: 0,
         padding: '0 28px',
@@ -1052,7 +1069,7 @@ export default function LoungePage() {
             </select>
           </div>
 
-          <div style={{
+          <div className="mc-lounge-online" style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '7px 14px',
             background: 'rgba(var(--ink-rgb), 0.03)',
@@ -1067,7 +1084,7 @@ export default function LoungePage() {
         </div>
       </nav>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="mc-lounge-body" data-pane={pane} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         <div className="mc-lounge-channels" style={{
           width: 220,
@@ -1085,7 +1102,7 @@ export default function LoungePage() {
                  <div style={{ marginBottom: 18 }}>
                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', marginBottom: 8 }}>
                      <span style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-                     {showAdd && <button aria-label={scope === 'community' ? 'New community channel' : 'New channel'} title="New channel" onClick={() => setShowNewChannel(scope)} style={{ background: 'none', border: 'none', color: 'var(--fg-subtle)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0 }}>+</button>}
+                     {showAdd && <button aria-label={scope === 'community' ? 'New community channel' : 'New channel'} title="New channel" onClick={() => setShowNewChannel(scope)} style={{ background: 'none', border: 'none', color: 'var(--fg-subtle)', cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: '0 6px', minWidth: 32, minHeight: 32 }}>+</button>}
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                      {list.length === 0 && showAdd && <div style={{ fontSize: 9.5, color: 'var(--fg-dim)', fontFamily: 'var(--mono)', padding: '2px 6px' }}>No channels yet</div>}
@@ -1096,7 +1113,7 @@ export default function LoungePage() {
                        const who = ch.audience === 'users' || ch.audience === 'team' ? undefined : audienceLabel(ch.audience);
                        const n = unreadOf(ch.id);
                        return (
-                         <button key={ch.id} title={[who, ch.is_private ? 'Invite-only' : null, ch.topic].filter(Boolean).join(' · ') || undefined} onClick={() => { setActiveChannel(ch); setDmTarget(null); }}
+                         <button key={ch.id} title={[who, ch.is_private ? 'Invite-only' : null, ch.topic].filter(Boolean).join(' · ') || undefined} onClick={() => openChannel(ch)}
                            aria-label={n > 0 ? `${ch.name}, ${n >= 100 ? '99+' : n} unread` : undefined}
                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 5, background: isActive ? 'rgba(232, 67, 26,0.1)' : 'transparent', border: 'none', color: isActive || n > 0 ? 'var(--fg-strong)' : 'var(--fg-dim)', fontWeight: n > 0 ? 700 : 400, cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--mono)', fontSize: 11, width: '100%', textAlign: 'left' }}>
                            <Icon size={12} color={isActive ? 'var(--accent)' : n > 0 ? 'var(--ok)' : 'var(--fg-dim)'} style={{ flexShrink: 0 }} />
@@ -1145,9 +1162,10 @@ export default function LoungePage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 32px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--ink-rgb), 0.01)' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="mc-lounge-chat" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="mc-lounge-chathead" style={{ padding: '12px 32px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--ink-rgb), 0.01)' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+               <button type="button" className="mc-phone-only mc-lounge-back" onClick={() => setPane('list')} aria-label="Back to channels and people"><ChevronLeft size={20} aria-hidden /></button>
                {dmTarget ? (
                  <>
                    <span style={{ fontSize: 8, color: 'var(--ok)', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 99 }}>DIRECT</span>
@@ -1169,23 +1187,23 @@ export default function LoungePage() {
              </div>
              <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-muted)' }}>
                 {dmTarget ? (
-                  <button onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>← CHANNELS</button>
+                  <button className="mc-hide-phone" onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-muted)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>← CHANNELS</button>
                 ) : (
                   <><Users size={13} color="var(--fg-dim)" /> {crewList.length}</>
                 )}
                 <button type="button" onClick={() => { setShowPinned(false); setShowSearch(true); }} aria-label="Search messages" title="Search"
                   style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
-                  <Search size={12} /> SEARCH
+                  <Search size={12} /> <span className="mc-hide-phone">SEARCH</span>
                 </button>
                 {!dmTarget && activeChannel && activeChannel.type !== 'voice' && (
                   <button type="button" onClick={() => { setShowSearch(false); setShowPinned(true); }} aria-label={`Pinned messages in #${activeChannel.name}`} title="Pinned"
                     style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
-                    <Pin size={12} /> PINNED{messages.some((m) => m.pinned) ? ` · ${messages.filter((m) => m.pinned).length}` : ''}
+                    <Pin size={12} /> <span className="mc-hide-phone">PINNED</span>{messages.some((m) => m.pinned) ? ` · ${messages.filter((m) => m.pinned).length}` : ''}
                   </button>
                 )}
                 {!dmTarget && activeChannel && canManageActive && (
                   <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1 }}>
-                    <SettingsIcon size={12} /> MANAGE
+                    <SettingsIcon size={12} /> <span className="mc-hide-phone">MANAGE</span>
                   </button>
                 )}
              </div>
@@ -1195,7 +1213,7 @@ export default function LoungePage() {
             <VoiceRoom channel={activeChannel} me={currentUser ? { id: currentUser.id, name: myProfile?.username || 'You', avatar: myProfile?.avatar_url } : null} />
           ) : (
           <>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
+          <div className="mc-lounge-thread" style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
               {isGuide ? (
                 messages.length === 0 ? (
@@ -1216,7 +1234,7 @@ export default function LoungePage() {
                     const start = channels.find((c) => !c.project_id && c.name === 'start-here');
                     return start ? (
                       <div style={{ marginTop: 14 }}>
-                        <button type="button" onClick={() => { setActiveChannel(start); setDmTarget(null); }}
+                        <button type="button" onClick={() => openChannel(start)}
                           style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer', fontWeight: 600 }}>
                           Open #start-here
                         </button>
@@ -1232,7 +1250,7 @@ export default function LoungePage() {
             </div>
           </div>
 
-          {(!isGuide || canPost) && <div style={{
+          {(!isGuide || canPost) && <div className="mc-lounge-composer" style={{
             padding: '16px 28px',
             borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
             background: 'var(--bg-2)',
@@ -1341,7 +1359,7 @@ export default function LoungePage() {
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: Math.min(i, 8) * 0.05 }}
-              onClick={() => { if (!isSelf) setDmTarget({ id: member.id, name: member.name }); }}
+              onClick={() => { if (!isSelf) openDM({ id: member.id, name: member.name }); }}
               title={isSelf ? 'This is you' : `Message ${member.name}`}
               style={{
                 padding: '10px 12px',

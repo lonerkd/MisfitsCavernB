@@ -83,14 +83,14 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, marginBottom: 40 }}>
         <div>
           <SectionLabel text="Investor Relations" />
           <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck</h2>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="link-btn" onClick={printDeck}>⎙ Export PDF</button>
-          <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }} onClick={() => { setIdx(0); setPresent(true); }}>Enter Presentation View</button>
+          <button className="link-btn" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }} onClick={() => { setIdx(0); setPresent(true); }}>Present</button>
         </div>
       </div>
 

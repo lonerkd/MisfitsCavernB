@@ -282,7 +282,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
   const [dragOver, setDragOver] = useState(false);
 
   return (
-    <div style={{ minWidth: 260, flex: '0 0 260px' }}>
+    <div className="mc-board-col" style={{ minWidth: 260, flex: '0 0 260px' }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         marginBottom: 14, padding: '0 2px',
@@ -645,7 +645,7 @@ export default function ProjectsPage() {
         paddingRight: 24,
         overflowX: 'auto',
         minHeight: '100vh',
-      }}>
+      }} className="mc-board">
         {!loaded ? (
           <div style={{ display: 'flex', gap: 18, padding: '4px 2px' }}>
             {[0, 1, 2, 3].map(c => (

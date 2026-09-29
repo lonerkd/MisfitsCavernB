@@ -125,7 +125,7 @@ export default function StudioPage() {
         <div className={page.barLeft}>
           <Link href="/" className={page.logo} aria-label="Misfits Cavern home">MC</Link>
           <span className={page.divider} aria-hidden />
-          <span className={page.module}>Studio</span>
+          <span className={cx(page.module, 'mc-hide-phone')}>Studio</span>
           {projects.length > 0 && (
             <label className={page.projectPicker}>
               <select
@@ -140,7 +140,7 @@ export default function StudioPage() {
           )}
         </div>
         {activeProject && (
-          <Link href={`/projects/${activeProject.id}`} className={cx(s.btnGhost, s.small)}>Project page</Link>
+          <Link href={`/projects/${activeProject.id}`} className={cx(s.btnGhost, s.small)}>Project<span className="mc-hide-phone">&nbsp;page</span></Link>
         )}
       </header>
 
