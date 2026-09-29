@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { reportError } from '@/lib/errors/report';
 import Link from 'next/link';
 import { ShieldAlert } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export default function AdminError({
 }) {
   useEffect(() => {
     console.error('Admin error:', error);
+    void reportError('render', error, error?.digest);
   }, [error]);
 
   return (

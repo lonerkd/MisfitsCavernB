@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T20:46:21.846Z",
+  "last_synchronized": "2026-09-29T20:54:24.843Z",
   "stats": {
-    "totalFiles": 499,
-    "totalSize": 3887625,
+    "totalFiles": 507,
+    "totalSize": 3919300,
     "byExtension": {
       ".json": 8,
       ".md": 8,
-      ".tsx": 156,
-      ".ts": 281,
+      ".tsx": 159,
+      ".ts": 285,
       ".js": 7,
-      ".sql": 39
+      ".sql": 40
     }
   },
   "modules": {
@@ -89,6 +89,7 @@
         "app/admin/analytics/page.tsx",
         "app/admin/audit-logs/page.tsx",
         "app/admin/error.tsx",
+        "app/admin/errors/page.tsx",
         "app/admin/page.tsx",
         "app/admin/users/page.tsx",
         "app/api/discord/notify/route.ts",
@@ -107,6 +108,7 @@
         "app/editor/loading.tsx",
         "app/editor/page.tsx",
         "app/error.tsx",
+        "app/global-error.tsx",
         "app/jobs/[id]/page.tsx",
         "app/jobs/loading.tsx",
         "app/jobs/page.tsx",
@@ -156,6 +158,7 @@
         "components/CustomCursor.tsx",
         "components/EcosystemTaskbar.tsx",
         "components/EmptyState.tsx",
+        "components/ErrorReporter.tsx",
         "components/GlobalAudioWidget.tsx",
         "components/GrainOverlay.tsx",
         "components/MotionPreference.tsx",
@@ -299,7 +302,8 @@
         "supabase/migrations/20260929040000_search.sql",
         "supabase/migrations/20260929050000_themes.sql",
         "supabase/migrations/20260929060000_transcripts.sql",
-        "supabase/migrations/20260929070000_pocket.sql"
+        "supabase/migrations/20260929070000_pocket.sql",
+        "supabase/migrations/20260929080000_client_errors.sql"
       ]
     }
   },
@@ -351,13 +355,18 @@
     },
     {
       "path": "app/admin/error.tsx",
-      "size": 2405,
-      "last_modified": "2026-09-29T05:20:55.123Z"
+      "size": 2510,
+      "last_modified": "2026-09-29T20:49:03.237Z"
+    },
+    {
+      "path": "app/admin/errors/page.tsx",
+      "size": 8648,
+      "last_modified": "2026-09-29T20:49:47.946Z"
     },
     {
       "path": "app/admin/page.tsx",
-      "size": 7771,
-      "last_modified": "2026-09-29T05:20:55.123Z"
+      "size": 8108,
+      "last_modified": "2026-09-29T20:50:00.986Z"
     },
     {
       "path": "app/admin/users/page.tsx",
@@ -441,8 +450,13 @@
     },
     {
       "path": "app/error.tsx",
-      "size": 2417,
-      "last_modified": "2026-09-29T04:44:59.347Z"
+      "size": 2522,
+      "last_modified": "2026-09-29T20:49:03.236Z"
+    },
+    {
+      "path": "app/global-error.tsx",
+      "size": 1924,
+      "last_modified": "2026-09-29T20:49:12.438Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
@@ -461,8 +475,8 @@
     },
     {
       "path": "app/layout.tsx",
-      "size": 4037,
-      "last_modified": "2026-09-29T20:38:15.368Z"
+      "size": 4400,
+      "last_modified": "2026-09-29T20:50:32.142Z"
     },
     {
       "path": "app/loading.tsx",
@@ -631,8 +645,8 @@
     },
     {
       "path": "components/ClientShell.tsx",
-      "size": 1668,
-      "last_modified": "2026-09-29T14:09:31.999Z"
+      "size": 1783,
+      "last_modified": "2026-09-29T20:49:03.224Z"
     },
     {
       "path": "components/CommandPalette.tsx",
@@ -658,6 +672,11 @@
       "path": "components/EmptyState.tsx",
       "size": 1143,
       "last_modified": "2026-09-29T04:43:38.799Z"
+    },
+    {
+      "path": "components/ErrorReporter.tsx",
+      "size": 760,
+      "last_modified": "2026-09-29T20:49:03.210Z"
     },
     {
       "path": "components/GlobalAudioWidget.tsx",
@@ -1230,6 +1249,11 @@
       "last_modified": "2026-09-28T19:19:42.730Z"
     },
     {
+      "path": "e2e/errors.spec.ts",
+      "size": 2976,
+      "last_modified": "2026-09-29T20:51:38.686Z"
+    },
+    {
       "path": "e2e/guides.spec.ts",
       "size": 7373,
       "last_modified": "2026-09-28T23:03:15.106Z"
@@ -1493,6 +1517,16 @@
       "path": "lib/credits/index.ts",
       "size": 1031,
       "last_modified": "2026-09-28T01:28:52.765Z"
+    },
+    {
+      "path": "lib/errors/report.test.ts",
+      "size": 1794,
+      "last_modified": "2026-09-29T20:48:29.134Z"
+    },
+    {
+      "path": "lib/errors/report.ts",
+      "size": 3219,
+      "last_modified": "2026-09-29T20:48:22.945Z"
     },
     {
       "path": "lib/formats-core.ts",
@@ -2161,8 +2195,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 115880,
-      "last_modified": "2026-09-29T14:40:45.627Z"
+      "size": 117478,
+      "last_modified": "2026-09-29T20:54:13.838Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2301,18 +2335,18 @@
     },
     {
       "path": "package-lock.json",
-      "size": 317373,
-      "last_modified": "2026-09-26T20:13:33.088Z"
+      "size": 319617,
+      "last_modified": "2026-09-29T20:50:23.674Z"
     },
     {
       "path": "package.json",
-      "size": 2164,
-      "last_modified": "2026-09-29T20:45:02.801Z"
+      "size": 2239,
+      "last_modified": "2026-09-29T20:50:23.574Z"
     },
     {
       "path": "performance-budget.json",
-      "size": 845,
-      "last_modified": "2026-09-29T20:38:43.694Z"
+      "size": 871,
+      "last_modified": "2026-09-29T20:53:12.538Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2550,6 +2584,11 @@
       "last_modified": "2026-09-29T14:40:07.283Z"
     },
     {
+      "path": "supabase/migrations/20260929080000_client_errors.sql",
+      "size": 3594,
+      "last_modified": "2026-09-29T20:48:01.262Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2557,7 +2596,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T20:43:54.542Z"
+      "last_modified": "2026-09-29T20:52:52.606Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2603,6 +2642,11 @@
       "path": "tests/integration/campaigns.test.ts",
       "size": 2520,
       "last_modified": "2026-09-27T19:32:02.480Z"
+    },
+    {
+      "path": "tests/integration/client-errors.test.ts",
+      "size": 3792,
+      "last_modified": "2026-09-29T20:51:19.430Z"
     },
     {
       "path": "tests/integration/community.test.ts",

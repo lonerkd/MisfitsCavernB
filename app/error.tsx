@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import { reportError } from '@/lib/errors/report';
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error('Unhandled page error:', error);
+    void reportError('render', error, error?.digest);
   }, [error]);
 
   return (

@@ -1,6 +1,30 @@
 # Misfits Cavern — Project State
 
-## Latest Session — The workflow that guards the suite
+## Latest Session — Hearing about problems in production
+
+Migration `20260929080000_client_errors.sql` (`client_errors`, `report_client_error`).
+
+- **The suite reports its own errors**: every crash screen (`app/error.tsx`,
+  the admin one, and the new `app/global-error.tsx` for the root layout) and
+  every uncaught error / unhandled rejection in the browser
+  (`components/ErrorReporter.tsx`) goes to `client_errors` via
+  `lib/errors/report.ts` — message, stack, page (no query string), build,
+  browser, and who (if signed in). Browser noise is ignored; each error is
+  sent once per visit, at most 10 per visit.
+- **Admin › Errors** (`/admin/errors`): grouped by message and page, with
+  count, people affected, last seen, build and a stack; cleared once fixed.
+- The log is safe to expose: anyone can report (signed-out pages count), but
+  only through the function, which trims fields and rate-limits (20/min per
+  person, 60/min signed out); only admins read or clear; 30 days kept.
+- **Vercel Analytics + Speed Insights** (cookieless) on Vercel builds only —
+  enable Web Analytics / Speed Insights in the Vercel project to see data.
+- Tests: `lib/errors/report.test.ts`, `tests/integration/client-errors.test.ts`
+  (personas, trimming, junk, rate limit, no direct writes, admin-only read and
+  clear), `e2e/errors.spec.ts` (an uncaught error is logged once and cleared
+  from Admin › Errors).
+
+
+## Earlier — The workflow that guards the suite
 
 No migration.
 
