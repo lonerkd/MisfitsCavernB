@@ -3236,6 +3236,41 @@ export type Database = {
           },
         ];
       };
+      unavailability: {
+        Row: {
+          created_at: string;
+          ends_on: string;
+          id: string;
+          note: string | null;
+          starts_on: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          ends_on: string;
+          id?: string;
+          note?: string | null;
+          starts_on: string;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          ends_on?: string;
+          id?: string;
+          note?: string | null;
+          starts_on?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "unavailability_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       vendors: {
         Row: {
           category: string | null;
@@ -3574,6 +3609,14 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      project_availability: {
+        Args: { p_from?: string; p_project: string; p_to?: string };
+        Returns: {
+          ends_on: string;
+          starts_on: string;
+          user_id: string;
+        }[];
       };
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };

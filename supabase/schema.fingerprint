@@ -574,6 +574,12 @@ column timesheets.rate numeric(10,2)
 column timesheets.status text default 'submitted'::text not null
 column timesheets.user_id uuid default auth.uid() not null
 column timesheets.work_date date not null
+column unavailability.created_at timestamp with time zone default now() not null
+column unavailability.ends_on date not null
+column unavailability.id uuid default gen_random_uuid() not null
+column unavailability.note text
+column unavailability.starts_on date not null
+column unavailability.user_id uuid default auth.uid() not null
 column vendors.category text
 column vendors.contact text
 column vendors.created_at timestamp with time zone default now() not null
@@ -939,6 +945,10 @@ constraint timesheets.timesheets_project_id_fkey FOREIGN KEY (project_id) REFERE
 constraint timesheets.timesheets_rate_check CHECK (((rate IS NULL) OR (rate >= (0)::numeric)))
 constraint timesheets.timesheets_status_check CHECK ((status = ANY (ARRAY['submitted'::text, 'approved'::text, 'rejected'::text])))
 constraint timesheets.timesheets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint unavailability.unavailability_note_len CHECK (((note IS NULL) OR (char_length(note) <= 200)))
+constraint unavailability.unavailability_pkey PRIMARY KEY (id)
+constraint unavailability.unavailability_range CHECK (((ends_on >= starts_on) AND ((ends_on - starts_on) <= 366)))
+constraint unavailability.unavailability_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint vendors.vendors_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint vendors.vendors_id_project_key UNIQUE (id, project_id)
 constraint vendors.vendors_name_check CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 200)))
@@ -1011,6 +1021,7 @@ function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=
 function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
 function public.mark_lounge_read(p_channel uuid, p_partner uuid) body=57f11db548b93389ff29027e6e7dba3d
 function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
+function public.project_availability(p_project uuid, p_from date, p_to date) body=34fc5b8eb18eca5b8a479c54a05f7290
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
@@ -1085,6 +1096,7 @@ grant function public.log_writing(p_day date, p_words integer, p_sprint boolean)
 grant function public.lounge_unread() authenticated,postgres,service_role
 grant function public.mark_lounge_read(p_channel uuid, p_partner uuid) authenticated,postgres,service_role
 grant function public.pin_message(p_message uuid, p_pinned boolean) authenticated,postgres,service_role
+grant function public.project_availability(p_project uuid, p_from date, p_to date) authenticated,postgres,service_role
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
@@ -1216,6 +1228,7 @@ index CREATE INDEX set_log_shot_idx ON public.set_log USING btree (shot_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE INDEX timesheets_project_idx ON public.timesheets USING btree (project_id)
 index CREATE INDEX timesheets_user_idx ON public.timesheets USING btree (user_id)
+index CREATE INDEX unavailability_user_idx ON public.unavailability USING btree (user_id, starts_on)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX breakdown_categories_id_project_key ON public.breakdown_categories USING btree (id, project_id)
@@ -1302,6 +1315,7 @@ index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
 index CREATE UNIQUE INDEX timesheets_day_key ON public.timesheets USING btree (project_id, user_id, work_date)
 index CREATE UNIQUE INDEX timesheets_pkey ON public.timesheets USING btree (id)
+index CREATE UNIQUE INDEX unavailability_pkey ON public.unavailability USING btree (id)
 index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (id, project_id)
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
 index CREATE UNIQUE INDEX vendors_project_name_idx ON public.vendors USING btree (project_id, lower(btrim(name)))
@@ -1449,6 +1463,10 @@ policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated 
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.timesheets "timesheets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_shape_project(project_id)) check -
 policy public.timesheets "timesheets remove" PERMISSIVE DELETE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check -
+policy public.unavailability "unavailability own delete" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.unavailability "unavailability own insert" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.unavailability "unavailability own read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.unavailability "unavailability own update" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
 policy public.vendors "vendors shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.writing_days "writing_days own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
@@ -1549,6 +1567,7 @@ rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
 rls timeline_items enabled=true forced=false
 rls timesheets enabled=true forced=false
+rls unavailability enabled=true forced=false
 rls vendors enabled=true forced=false
 rls writing_days enabled=true forced=false
 schema internal
