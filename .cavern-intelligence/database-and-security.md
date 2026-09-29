@@ -91,6 +91,7 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 - Private data (budgets, crew rosters, chats) must have **no** select policy granted to `anon`.
 - **Project share links** (`/shared/<share_token>`) resolve only through `SECURITY DEFINER` RPCs that check the exact token and `visibility in ('link','public')`: `get_shared_project` (overview fields) and `get_shared_lookbook` (published media + the scene headings they're linked to — never notes or unpublished items).
 - **Published files** are readable by anon only while `media.shared` and the project is link/public (storage policy `project-media: shared read`). `/m/<media_id>` is the stable permalink: it checks `get_published_media` and redirects to a fresh short-lived signed URL, uncached, so unpublishing takes effect at once.
+- **Error log** (`client_errors`): written only through `report_client_error` (anon and authenticated — a crash on a public page counts), which trims every field, rate-limits (20/min per person, 60/min for everyone signed out) and keeps 30 days. No insert policy; admins read and clear (`internal.caller_is_admin()`).
 - **Showcase** (`get_public_showcase`) lists published media of `public` projects only. **Platform totals** come from `get_platform_stats` (counts only) — counting through RLS shows each person their own numbers.
 
 ---

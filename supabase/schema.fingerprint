@@ -150,6 +150,16 @@ column character_media.created_by uuid default auth.uid()
 column character_media.media_id uuid not null
 column character_media.position integer default 0 not null
 column character_media.project_id uuid not null
+column client_errors.created_at timestamp with time zone default now() not null
+column client_errors.digest text
+column client_errors.id bigint not null
+column client_errors.kind text not null
+column client_errors.message text not null
+column client_errors.path text
+column client_errors.release text
+column client_errors.stack text
+column client_errors.user_agent text
+column client_errors.user_id uuid
 column crafts.above_the_line boolean default false not null
 column crafts.color text not null
 column crafts.created_at timestamp with time zone default now() not null
@@ -697,6 +707,15 @@ constraint character_media.character_media_character_fkey FOREIGN KEY (character
 constraint character_media.character_media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_media.character_media_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint character_media.character_media_pkey PRIMARY KEY (character_id, media_id)
+constraint client_errors.client_errors_digest_check CHECK ((char_length(digest) <= 100))
+constraint client_errors.client_errors_kind_check CHECK ((kind = ANY (ARRAY['render'::text, 'window'::text, 'promise'::text])))
+constraint client_errors.client_errors_message_check CHECK (((char_length(message) >= 1) AND (char_length(message) <= 1000)))
+constraint client_errors.client_errors_path_check CHECK ((char_length(path) <= 300))
+constraint client_errors.client_errors_pkey PRIMARY KEY (id)
+constraint client_errors.client_errors_release_check CHECK ((char_length(release) <= 60))
+constraint client_errors.client_errors_stack_check CHECK ((char_length(stack) <= 8000))
+constraint client_errors.client_errors_ua_check CHECK ((char_length(user_agent) <= 300))
+constraint client_errors.client_errors_user_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint crafts.crafts_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) >= 1) AND (char_length(btrim(department)) <= 40)))
 constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
@@ -1048,6 +1067,7 @@ function public.project_availability(p_project uuid, p_from date, p_to date) bod
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
+function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=34e87ff37f99ce2f1cf4b6a3e71071d4
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=1dab5a7c14578a22e95dbcbbd3255d64
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.search_lounge(p_query text, p_channel uuid, p_limit integer) body=eb06476586cc9c7ecf2d318c02705a9a
@@ -1126,6 +1146,7 @@ grant function public.project_availability(p_project uuid, p_from date, p_to dat
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
+grant function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) anon,authenticated,postgres,service_role
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.search_lounge(p_query text, p_channel uuid, p_limit integer) authenticated,postgres,service_role
@@ -1153,6 +1174,8 @@ index CREATE INDEX channel_members_channel_idx ON public.channel_members USING b
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
 index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
 index CREATE INDEX character_media_project_idx ON public.character_media USING btree (project_id)
+index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree (created_at DESC)
+index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
 index CREATE INDEX expenses_budget_item_idx ON public.expenses USING btree (budget_item_id)
 index CREATE INDEX expenses_project_idx ON public.expenses USING btree (project_id)
@@ -1288,6 +1311,7 @@ index CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (id)
 index CREATE UNIQUE INDEX character_castings_pkey ON public.character_castings USING btree (id)
 index CREATE UNIQUE INDEX character_castings_project_id_character_name_key ON public.character_castings USING btree (project_id, character_name)
 index CREATE UNIQUE INDEX character_media_pkey ON public.character_media USING btree (character_id, media_id)
+index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
 index CREATE UNIQUE INDEX expenses_pkey ON public.expenses USING btree (id)
@@ -1383,6 +1407,8 @@ policy public.character_castings "Castings writable by project creator or crew" 
 policy public.character_media "character_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.character_media "character_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (script_characters c JOIN scripts s ON ((s.id = c.script_id))) WHERE ((c.id = character_media.character_id) AND (s.project_id = character_media.project_id)))))
 policy public.character_media "character_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.client_errors "client_errors: admins clear" PERMISSIVE DELETE to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
+policy public.client_errors "client_errors: admins read" PERMISSIVE SELECT to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
 policy public.crafts "crafts admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
@@ -1564,6 +1590,7 @@ rls channel_presets enabled=true forced=false
 rls channels enabled=true forced=false
 rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
+rls client_errors enabled=true forced=false
 rls crafts enabled=true forced=false
 rls discord_integrations enabled=true forced=false
 rls expenses enabled=true forced=false

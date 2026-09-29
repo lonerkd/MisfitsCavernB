@@ -56,6 +56,7 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/admin/users` | admin | Admin | user management |
 | `/admin/analytics` | admin | Admin | `lib/supabase/stats.ts` |
 | `/admin/audit-logs` | admin | Admin | `lib/supabase/audit.ts` |
+| `/admin/errors` | admin | Admin | errors people hit, grouped (`client_errors`, reported by `lib/errors/report.ts`) |
 
 \* `/auth/spotify-callback` isn't in the protected list but is only reached
 mid-OAuth from an authed session.
