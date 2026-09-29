@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T02:51:46.779Z",
+  "last_synchronized": "2026-09-29T03:24:21.075Z",
   "stats": {
-    "totalFiles": 461,
-    "totalSize": 3624886,
+    "totalFiles": 465,
+    "totalSize": 3651820,
     "byExtension": {
       ".json": 7,
       ".md": 7,
       ".tsx": 149,
-      ".ts": 255,
+      ".ts": 259,
       ".js": 7,
       ".sql": 36
     }
@@ -990,8 +990,8 @@
     },
     {
       "path": "components/studio/production/OnSetView.tsx",
-      "size": 22750,
-      "last_modified": "2026-09-29T02:51:46.191Z"
+      "size": 28019,
+      "last_modified": "2026-09-29T03:16:20.826Z"
     },
     {
       "path": "components/studio/production/PaperworkView.tsx",
@@ -1222,6 +1222,11 @@
       "path": "e2e/onboarding.spec.ts",
       "size": 8698,
       "last_modified": "2026-09-28T23:00:40.433Z"
+    },
+    {
+      "path": "e2e/onset-offline.spec.ts",
+      "size": 5979,
+      "last_modified": "2026-09-29T03:23:00.064Z"
     },
     {
       "path": "e2e/phases.spec.ts",
@@ -1530,8 +1535,8 @@
     },
     {
       "path": "lib/os/boot.ts",
-      "size": 9796,
-      "last_modified": "2026-09-26T08:46:45.019Z"
+      "size": 11547,
+      "last_modified": "2026-09-29T03:21:48.348Z"
     },
     {
       "path": "lib/os/guards.tsx",
@@ -1914,6 +1919,16 @@
       "last_modified": "2026-09-28T09:14:16.217Z"
     },
     {
+      "path": "lib/studio/onset-offline.test.ts",
+      "size": 3546,
+      "last_modified": "2026-09-29T03:16:20.831Z"
+    },
+    {
+      "path": "lib/studio/onset-offline.ts",
+      "size": 6078,
+      "last_modified": "2026-09-29T03:16:20.831Z"
+    },
+    {
       "path": "lib/studio/onset.test.ts",
       "size": 3508,
       "last_modified": "2026-09-27T19:59:23.612Z"
@@ -1977,6 +1992,11 @@
       "path": "lib/studio/timecode.ts",
       "size": 997,
       "last_modified": "2026-09-26T19:35:11.444Z"
+    },
+    {
+      "path": "lib/studio/useOnSetSync.ts",
+      "size": 4311,
+      "last_modified": "2026-09-29T03:16:20.831Z"
     },
     {
       "path": "lib/supabase/activity.ts",
@@ -2371,7 +2391,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T01:57:39.391Z"
+      "last_modified": "2026-09-29T03:24:03.584Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",

@@ -1,8 +1,30 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Search everything from ⌘K
+## Latest Session — On set without signal
 
-Migration `20260929040000_search.sql` — **apply to production before merging**.
+No migration.
+
+- **On Set keeps working when the connection drops** (basements, fields,
+  car parks). A shot got or dropped, a scene wrapped, a clock stamp or its
+  correction, a continuity note, a day note — each shows at once; if it
+  can't be sent it waits in a queue on the device (`lib/studio/onset-offline.ts`,
+  unit-tested) and is sent in order the moment the connection is back
+  (`useOnSetSync`). Only the last status of a shot or scene is sent; an entry
+  removed before it was sent is never sent; a resend of something already
+  saved counts as sent; anything refused is reported.
+- A banner says where things stand: "No signal — keep working… 3 changes
+  waiting", "Back online — sending…", "3 changes sent".
+- **It opens without signal**, too: the last copy of the day is saved on the
+  device on every change, and the project list and profile are cached per
+  account (`lib/os/boot.ts`), so a cold start offline opens the day straight
+  away — boot no longer waits on the network when the device says it's
+  offline.
+- Photos still need a connection (a continuity photo is a file upload); the
+  note can be logged without it. Signing out clears the device copies.
+
+## Earlier — Search everything from ⌘K
+
+Migration `20260929040000_search.sql` — applied to production; PR #88 merged.
 
 - **⌘K (or the dock's search button) now searches your work**, not just
   page names: projects (title, logline), scripts — including what's written

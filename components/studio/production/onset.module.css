@@ -68,3 +68,11 @@
 .logTime { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); min-width: 64px; }
 .logKind { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #c7c9ff; min-width: 64px; }
 .logBody { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* Connection state: empty (and invisible) when everything is sent. */
+.sync:empty { display: none; }
+.sync {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; padding: 10px 12px; border-radius: 10px;
+  font-size: 12.5px; line-height: 1.5; color: var(--fg); border: 1px solid rgba(124, 196, 255, 0.35); background: rgba(124, 196, 255, 0.08);
+}
+.syncOff { border-color: rgba(245, 165, 36, 0.5); background: rgba(245, 165, 36, 0.1); }

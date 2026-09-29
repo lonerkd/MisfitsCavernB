@@ -25,6 +25,9 @@ export async function refreshActiveProject(id: string) {
 }
 
 const OFFLINE_PROFILE_KEY = 'mc_offline_profile';
+// The project list as last loaded, so a cold start with no signal (a set in a
+// basement) can still open the active project. Device-level, per account.
+const OFFLINE_PROJECTS_KEY = 'mc_offline_projects';
 
 // getUser() validates the token against the auth server (fails offline);
 // getSession() reads the locally cached cookie session. Prefer the stricter
@@ -35,13 +38,18 @@ const OFFLINE_PROFILE_KEY = 'mc_offline_profile';
 // local session rather than stranding the boot.
 const GET_USER_TIMEOUT_MS = 8000;
 
+/** The device says there's no connection: don't wait on the network to find that out. */
+const offlineNow = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
 async function getOfflineSafeUser(): Promise<{ id: string; email: string | null } | null> {
-  try {
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), GET_USER_TIMEOUT_MS));
-    const res = await Promise.race([supabase.auth.getUser(), timeout]);
-    const user = res?.data.user;
-    if (user) return { id: user.id, email: user.email ?? null };
-  } catch { /* offline: use local session */ }
+  if (!offlineNow()) {
+    try {
+      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), GET_USER_TIMEOUT_MS));
+      const res = await Promise.race([supabase.auth.getUser(), timeout]);
+      const user = res?.data.user;
+      if (user) return { id: user.id, email: user.email ?? null };
+    } catch { /* offline: use local session */ }
+  }
   try {
     const { data } = await supabase.auth.getSession();
     if (data.session?.user) return { id: data.session.user.id, email: data.session.user.email ?? null };
@@ -96,7 +104,7 @@ async function resolveSessionUser(userId: string, email: string | null) {
 
   // A transient failure here must not demote a signed-in user to anon, so retry
   // briefly before falling back to the cache / a minimal identity below.
-  for (let attempt = 0; attempt < 3 && !profile; attempt++) {
+  for (let attempt = 0; attempt < 3 && !profile && !offlineNow(); attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * attempt));
     try {
       const { data } = await supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', userId).maybeSingle();
@@ -118,16 +126,40 @@ async function resolveSessionUser(userId: string, email: string | null) {
   setAuthed(userId, email, profile ?? readCachedProfile(userId) ?? minimalProfile(userId, email));
 }
 
+function readCachedProjects(userId: string | undefined): Project[] | null {
+  if (typeof window === 'undefined' || !userId) return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(OFFLINE_PROJECTS_KEY) || 'null');
+    return parsed?.__uid === userId && Array.isArray(parsed.rows) ? parsed.rows as Project[] : null;
+  } catch {
+    return null; // corrupt cache
+  }
+}
+
 async function loadProjects() {
   const { setProject } = osState();
-  const { data, error } = await supabase.from('projects').select('*').order('updated_at', { ascending: false });
+  const userId = osState().session.user?.id;
+  let data: unknown[] | null = null;
+  let error: unknown = offlineNow() ? 'offline' : null;
+  if (!error) {
+    try {
+      ({ data, error } = await supabase.from('projects').select('*').order('updated_at', { ascending: false }));
+    } catch (e) { error = e; }
+  }
 
   if (error || !data) {
-    setProject({ status: 'ready' });
+    // No signal: the list as last seen on this device, if it's this account's.
+    const cached = readCachedProjects(userId);
+    if (!cached) { setProject({ status: 'ready' }); return; }
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_PROJECT_KEY) : null;
+    setProject({ status: 'ready', list: cached, active: cached.find((p) => p.id === savedId) ?? cached[0] ?? null });
     return;
   }
 
   const rows = data as unknown as Project[];
+  if (typeof window !== 'undefined' && userId) {
+    try { localStorage.setItem(OFFLINE_PROJECTS_KEY, JSON.stringify({ __uid: userId, rows })); } catch { /* full: no offline copy */ }
+  }
   let active: Project | null = null;
   if (rows.length > 0) {
     const savedId = typeof window !== 'undefined' ? localStorage.getItem(ACTIVE_PROJECT_KEY) : null;
@@ -188,9 +220,11 @@ export function resetOS() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(ACTIVE_PROJECT_KEY);
     localStorage.removeItem(LEGACY_SCRIPT_KEY);
+    localStorage.removeItem(OFFLINE_PROJECTS_KEY);
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(SCRIPT_POINTER_PREFIX)) localStorage.removeItem(key);
+      // Script pointers, and the on-set copies of a day (a shared device on set).
+      if (key && (key.startsWith(SCRIPT_POINTER_PREFIX) || key.startsWith('mc:onset-'))) localStorage.removeItem(key);
     }
   }
   osState().resetToAnon();

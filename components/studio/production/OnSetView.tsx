@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Check, Clapperboard, FileText, MapPin, Minus, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
-import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type SceneRow, type SetLogRow, type Shot } from '@/lib/studio';
+import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type CallSheet, type CallSheetCall, type SceneRow, type SetLogEntry, type SetLogRow, type Shot } from '@/lib/studio';
+import { changes, draftLogRow, loadSnapshot, saveSnapshot } from '@/lib/studio/onset-offline';
+import { useOnSetSync, type OnSetSync } from '@/lib/studio/useOnSetSync';
 import { CLOCK, dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, localDateTime, pickDay, type ClockKind } from '@/lib/studio/onset';
 import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
@@ -48,6 +50,41 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
   const now = useNow(30_000);
   const today = localToday();
 
+  // Without signal the day keeps working: changes wait on this device and
+  // are sent in order when the connection is back.
+  const sync = useOnSetSync(project.id, {
+    reload: () => Promise.all([sheets.reload(), calls.reload(), log.reload(), scenes.reload(), shots.reload()]),
+    onRefused: (m) => toast(`${changes(m.length)} made offline couldn’t be saved — ${m[0]}`, 'error'),
+  });
+  // The last copy of the day seen here, so the view can open without signal.
+  const [fromCopy, setFromCopy] = useState<string | null>(null);
+  // Saved on every change, not debounced: on set the tab may close (or the
+  // battery die) a moment after the last tap.
+  useEffect(() => {
+    if (!sheets.rows.length) return;
+    saveSnapshot(project.id, {
+      savedAt: new Date().toISOString(), sheets: sheets.rows, calls: calls.rows, log: log.rows, scenes: scenes.rows, shots: shots.rows,
+    });
+  }, [project.id, sheets.rows, calls.rows, log.rows, scenes.rows, shots.rows]);
+  useEffect(() => {
+    if (sheets.status === 'ready') { setFromCopy(null); return; }
+    // With no signal there's nothing to wait for; otherwise only once the load has failed.
+    if ((sheets.status !== 'error' && sync.online) || sheets.rows.length) return;
+    const snap = loadSnapshot<CallSheet, CallSheetCall, SetLogRow, SceneRow, Shot>(project.id);
+    if (!snap) return;
+    // Next tick: the Studio's own lists (scenes, shots) reset when they mount,
+    // and their effects run after this one.
+    const t = window.setTimeout(() => {
+      snap.sheets.forEach(sheets.upsertLocal);
+      snap.calls.forEach(calls.upsertLocal);
+      snap.log.forEach(log.upsertLocal);
+      snap.scenes.forEach(scenes.upsertLocal);
+      snap.shots.forEach(shots.upsertLocal);
+      setFromCopy(snap.savedAt);
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [project.id, sheets.status, sync.online]); // eslint-disable-line react-hooks/exhaustive-deps -- seed once when there's no data to be had
+
   const days = useMemo(() => [...sheets.rows].sort((a, b) => a.shoot_day - b.shoot_day), [sheets.rows]);
   const picked = useMemo(() => pickDay(sheets.rows, today), [sheets.rows, today]);
   const [dayId, setDayId] = useState<string | null>(null);
@@ -78,12 +115,15 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
   if (!sheet) return <p className={s.hint}>Loading the schedule…</p>;
 
   const stamp = async (kind: ClockKind) => {
-    try { log.upsertLocal(await studio.addSetLog({ project_id: project.id, kind, call_sheet_id: sheet.id, at: new Date().toISOString() })); }
-    catch (e) { toast(e instanceof Error ? e.message : 'Could not stamp the time', 'error'); }
+    const entry = { id: crypto.randomUUID(), project_id: project.id, kind, call_sheet_id: sheet.id, at: new Date().toISOString() };
+    log.upsertLocal(draftLogRow(entry, userId));
+    try { await sync.run({ kind: 'log-add', entry }, async () => { log.upsertLocal(await studio.addSetLog(entry)); }); }
+    catch (e) { log.removeLocal(entry.id); toast(e instanceof Error ? e.message : 'Could not stamp the time', 'error'); }
   };
 
   return (
     <div className={o.wrap}>
+      <SyncBanner sync={sync} fromCopy={fromCopy} />
       <div className={s.chips} role="group" aria-label="Shoot days">
         {days.map((d) => (
           <button key={d.id} type="button" className={cx(s.chip, d.id === sheet.id && s.chipOn)} aria-pressed={d.id === sheet.id} onClick={() => setDayId(d.id)}>
@@ -114,8 +154,9 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
               canEdit={(r) => r.created_by === userId || isOwner}
               onStamp={() => void stamp(c.kind)}
               onCorrect={async (row, at) => {
-                try { log.upsertLocal(await studio.updateSetLog(row.id, { at })); }
-                catch (e) { toast(e instanceof Error ? e.message : 'Could not correct the time', 'error'); }
+                log.upsertLocal({ ...row, at });
+                try { await sync.run({ kind: 'log-update', id: row.id, patch: { at } }, async () => { log.upsertLocal(await studio.updateSetLog(row.id, { at })); }); }
+                catch (e) { log.upsertLocal(row); toast(e instanceof Error ? e.message : 'Could not correct the time', 'error'); }
               }} />
           ))}
         </div>
@@ -138,7 +179,7 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
       ) : (
         <div className={o.scenes}>
           {dayScenes.map((sc) => (
-            <SceneOnSet key={sc.id} scene={sc} shots={shots.rows.filter((sh) => sh.scene_id === sc.id)}
+            <SceneOnSet key={sc.id} sync={sync} scene={sc} shots={shots.rows.filter((sh) => sh.scene_id === sc.id)}
               continuity={log.rows.filter((r) => r.kind === 'continuity' && r.scene_id === sc.id)}
               onLog={(row) => log.upsertLocal(row)} onUnlog={(id) => log.removeLocal(id)}
               onOpenScript={() => openInScript(sc)} />
@@ -146,9 +187,25 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
         </div>
       )}
 
-      <DayNotes sheetId={sheet.id} rows={dayLog} onLog={(row) => log.upsertLocal(row)} onUnlog={(id) => log.removeLocal(id)} />
+      <DayNotes sync={sync} sheetId={sheet.id} rows={dayLog} onLog={(row) => log.upsertLocal(row)} onUnlog={(id) => log.removeLocal(id)} />
     </div>
   );
+}
+
+/** What the connection means for the day: nothing when all is sent. */
+function SyncBanner({ sync, fromCopy }: { sync: OnSetSync; fromCopy: string | null }) {
+  let text: React.ReactNode = null;
+  if (!sync.online) {
+    text = <><CloudOff size={13} aria-hidden /> <strong>No signal.</strong> Keep working — changes stay on this device and are sent when you’re back online.
+      {sync.pending > 0 && <> {changes(sync.pending)} waiting.</>}{fromCopy && <> Showing the day as of {fmtTime(fromCopy)}.</>}</>;
+  } else if (sync.syncing) {
+    text = <><RefreshCw size={13} aria-hidden /> Back online — sending {changes(sync.pending)}…</>;
+  } else if (sync.pending > 0) {
+    text = <><RefreshCw size={13} aria-hidden /> {changes(sync.pending)} waiting to send.</>;
+  } else if (sync.justSent > 0) {
+    text = <><Check size={13} aria-hidden /> Back online — {changes(sync.justSent)} sent.</>;
+  }
+  return <p className={cx(o.sync, !sync.online && o.syncOff)} role="status">{text}</p>;
 }
 
 function Meter({ label, done, total, format = String, note }: { label: string; done: number; total: number; format?: (n: number) => string; note?: string }) {
@@ -203,8 +260,8 @@ function ClockButton({ label, at, entry, canEdit, onStamp, onCorrect }: {
   );
 }
 
-function SceneOnSet({ scene, shots, continuity, onLog, onUnlog, onOpenScript }: {
-  scene: SceneRow; shots: Shot[]; continuity: SetLogRow[];
+function SceneOnSet({ sync, scene, shots, continuity, onLog, onUnlog, onOpenScript }: {
+  sync: OnSetSync; scene: SceneRow; shots: Shot[]; continuity: SetLogRow[];
   onLog: (row: SetLogRow) => void; onUnlog: (id: string) => void; onOpenScript: () => void;
 }) {
   const { project, userId, isOwner, scenes, shots: liveShots, media } = useStudio();
@@ -216,16 +273,24 @@ function SceneOnSet({ scene, shots, continuity, onLog, onUnlog, onOpenScript }: 
   const got = shots.filter((sh) => sh.status === 'shot').length;
 
   const setShot = async (sh: Shot, next: 'planned' | 'shot' | 'omitted') => {
+    // The first shot got starts the scene.
+    const start = next === 'shot' && (scene.status ?? 'planned') === 'planned';
     liveShots.upsertLocal({ ...sh, status: next });
+    if (start) scenes.upsertLocal({ ...scene, status: 'shot' });
     try {
-      liveShots.upsertLocal(await studio.updateShot(sh.id, { status: next }));
-      // The first shot got starts the scene.
-      if (next === 'shot' && (scene.status ?? 'planned') === 'planned') scenes.upsertLocal(await studio.updateScene(scene.id, { status: 'shot' }));
-    } catch (e) { liveShots.upsertLocal(sh); toast(e instanceof Error ? e.message : 'Could not update the shot', 'error'); }
+      await sync.run({ kind: 'shot', id: sh.id, status: next }, async () => { liveShots.upsertLocal(await studio.updateShot(sh.id, { status: next })); });
+      if (start) await sync.run({ kind: 'scene', id: scene.id, status: 'shot' }, async () => { scenes.upsertLocal(await studio.updateScene(scene.id, { status: 'shot' })); });
+    } catch (e) {
+      liveShots.upsertLocal(sh);
+      if (start) scenes.upsertLocal(scene);
+      toast(e instanceof Error ? e.message : 'Could not update the shot', 'error');
+    }
   };
   const setWrapped = async (w: boolean) => {
-    try { scenes.upsertLocal(await studio.updateScene(scene.id, { status: w ? 'wrapped' : 'shot' })); }
-    catch (e) { toast(e instanceof Error ? e.message : 'Could not update the scene', 'error'); }
+    const status = w ? 'wrapped' : 'shot';
+    scenes.upsertLocal({ ...scene, status });
+    try { await sync.run({ kind: 'scene', id: scene.id, status }, async () => { scenes.upsertLocal(await studio.updateScene(scene.id, { status })); }); }
+    catch (e) { scenes.upsertLocal(scene); toast(e instanceof Error ? e.message : 'Could not update the scene', 'error'); }
   };
 
   const photos = useSignedUrls(continuity.map((r) => (r.media_id ? media.rows.find((m) => m.id === r.media_id)?.storage_path : null)));
@@ -291,7 +356,8 @@ function SceneOnSet({ scene, shots, continuity, onLog, onUnlog, onOpenScript }: 
                       <button type="button" className={s.refRemoveInline} aria-label="Remove this continuity note" onClick={async () => {
                         if (!await confirm('Remove this continuity note?')) return;
                         onUnlog(r.id);
-                        try { await studio.deleteSetLog(r.id); } catch (e) { onLog(r); toast(e instanceof Error ? e.message : 'Could not remove it', 'error'); }
+                        try { await sync.run({ kind: 'log-delete', id: r.id }, () => studio.deleteSetLog(r.id)); }
+                        catch (e) { onLog(r); toast(e instanceof Error ? e.message : 'Could not remove it', 'error'); }
                       }}><Trash2 size={12} /></button>
                     )}
                   </li>
@@ -299,16 +365,16 @@ function SceneOnSet({ scene, shots, continuity, onLog, onUnlog, onOpenScript }: 
               })}
             </ul>
           )}
-          <ContinuityComposer projectId={project.id} userId={userId} scene={scene} shots={ordered} onLog={onLog} onMedia={(m) => media.upsertLocal(m)} />
+          <ContinuityComposer sync={sync} projectId={project.id} userId={userId} scene={scene} shots={ordered} onLog={onLog} onUnlog={onUnlog} onMedia={(m) => media.upsertLocal(m)} />
         </div>
       )}
     </article>
   );
 }
 
-function ContinuityComposer({ projectId, userId, scene, shots, onLog, onMedia }: {
-  projectId: string; userId: string; scene: SceneRow; shots: Shot[];
-  onLog: (row: SetLogRow) => void; onMedia: (m: Awaited<ReturnType<typeof studio.uploadFile>>) => void;
+function ContinuityComposer({ sync, projectId, userId, scene, shots, onLog, onUnlog, onMedia }: {
+  sync: OnSetSync; projectId: string; userId: string; scene: SceneRow; shots: Shot[];
+  onLog: (row: SetLogRow) => void; onUnlog: (id: string) => void; onMedia: (m: Awaited<ReturnType<typeof studio.uploadFile>>) => void;
 }) {
   const { toast } = useToast();
   const [body, setBody] = useState('');
@@ -321,7 +387,10 @@ function ContinuityComposer({ projectId, userId, scene, shots, onLog, onMedia }:
 
   const save = async () => {
     if ((!body.trim() && !photo) || busy) return;
+    // A photo is a file upload: it needs the connection. Notes don't.
+    if (photo && !sync.online) { toast('Photos need a connection — log the note now and add the photo when you’re back online', 'error'); return; }
     setBusy(true);
+    let entry: (SetLogEntry & { id: string }) | null = null;
     try {
       let mediaId: string | null = null;
       if (photo) {
@@ -330,13 +399,20 @@ function ContinuityComposer({ projectId, userId, scene, shots, onLog, onMedia }:
         mediaId = m.id;
       }
       const n = Number(take);
-      onLog(await studio.addSetLog({
-        project_id: projectId, kind: 'continuity', scene_id: scene.id, shot_id: shotId || null,
-        take: Number.isInteger(n) && n >= 1 && n <= 999 ? n : null, body: body.trim() || null, media_id: mediaId,
-      }));
+      const e: SetLogEntry & { id: string } = {
+        id: crypto.randomUUID(), project_id: projectId, kind: 'continuity', scene_id: scene.id, shot_id: shotId || null,
+        take: Number.isInteger(n) && n >= 1 && n <= 999 ? n : null, body: body.trim() || null, media_id: mediaId, at: new Date().toISOString(),
+      };
+      entry = e;
+      // Shown at once; the form is ready for the next note.
+      onLog(draftLogRow(e, userId));
       setBody(''); setTake(''); setPhoto(null);
       if (file.current) file.current.value = '';
-    } catch (e) { toast(e instanceof Error ? e.message : 'Could not save the note', 'error'); }
+      await sync.run({ kind: 'log-add', entry: e }, async () => { onLog(await studio.addSetLog(e)); });
+    } catch (err) {
+      if (entry) { onUnlog(entry.id); setBody(entry.body ?? ''); setTake(entry.take ? String(entry.take) : ''); }
+      toast(err instanceof Error ? err.message : 'Could not save the note', 'error');
+    }
     finally { setBusy(false); }
   };
 
@@ -362,15 +438,18 @@ function ContinuityComposer({ projectId, userId, scene, shots, onLog, onMedia }:
   );
 }
 
-function DayNotes({ sheetId, rows, onLog, onUnlog }: { sheetId: string; rows: SetLogRow[]; onLog: (r: SetLogRow) => void; onUnlog: (id: string) => void }) {
+function DayNotes({ sync, sheetId, rows, onLog, onUnlog }: { sync: OnSetSync; sheetId: string; rows: SetLogRow[]; onLog: (r: SetLogRow) => void; onUnlog: (id: string) => void }) {
   const { project, userId, isOwner } = useStudio();
   const { toast } = useToast();
   const [body, setBody] = useState('');
   const add = async () => {
     const text = body.trim();
     if (!text) return;
-    try { onLog(await studio.addSetLog({ project_id: project.id, kind: 'note', call_sheet_id: sheetId, body: text, at: new Date().toISOString() })); setBody(''); }
-    catch (e) { toast(e instanceof Error ? e.message : 'Could not add the note', 'error'); }
+    const entry = { id: crypto.randomUUID(), project_id: project.id, kind: 'note', call_sheet_id: sheetId, body: text, at: new Date().toISOString() };
+    onLog(draftLogRow(entry, userId));
+    setBody('');
+    try { await sync.run({ kind: 'log-add', entry }, async () => { onLog(await studio.addSetLog(entry)); }); }
+    catch (e) { onUnlog(entry.id); setBody(text); toast(e instanceof Error ? e.message : 'Could not add the note', 'error'); }
   };
   const label = (r: SetLogRow) => CLOCK.find((c) => c.kind === r.kind)?.label ?? 'Note';
   return (
@@ -386,7 +465,8 @@ function DayNotes({ sheetId, rows, onLog, onUnlog }: { sheetId: string; rows: Se
               {r.kind === 'note' && (r.created_by === userId || isOwner) && (
                 <button type="button" className={s.refRemoveInline} aria-label="Remove this note" onClick={async () => {
                   onUnlog(r.id);
-                  try { await studio.deleteSetLog(r.id); } catch (e) { onLog(r); toast(e instanceof Error ? e.message : 'Could not remove it', 'error'); }
+                  try { await sync.run({ kind: 'log-delete', id: r.id }, () => studio.deleteSetLog(r.id)); }
+                  catch (e) { onLog(r); toast(e instanceof Error ? e.message : 'Could not remove it', 'error'); }
                 }}><Trash2 size={11} /></button>
               )}
             </li>
