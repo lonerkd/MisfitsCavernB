@@ -176,7 +176,7 @@ body.custom-cursor-active * {
 /* Lounge on a phone: one pane at a time — the list (channels, then people)
    or the conversation, full width, the composer above the tab bar. */
 @media (max-width: 760px) {
-  .mc-lounge { padding-bottom: 0 !important; min-height: 0 !important; }
+  .mc-lounge { padding-bottom: 0 !important; min-height: 0 !important; height: auto !important; }
   .mc-lounge-top { padding: 0 12px !important; gap: 8px; }
   .mc-lounge-online { display: none !important; }
   .mc-lounge-body { height: calc(100dvh - 62px - 76px - env(safe-area-inset-bottom)); flex: none !important; }

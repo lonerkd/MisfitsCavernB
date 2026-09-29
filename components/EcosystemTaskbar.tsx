@@ -557,7 +557,10 @@ function AppIconCarousel({ apps, pathname, shrunk }: {
         {loopApps.map((app, i) => {
           const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
           return (
-            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'center' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
+            // Snap icon starts to the strip's start, in whole-icon steps like
+            // snapToNearest — centre-snapping an even set of icons shifted
+            // the row half an icon and cut an app off at each end.
+            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'start' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
               <AppIcon app={app} isActive={isActive} isHovered={hoveredIndex === i} onHoverStart={() => setHoveredIndex(i)} />
             </div>
           );
@@ -572,12 +575,32 @@ function AppIconCarousel({ apps, pathname, shrunk }: {
   );
 }
 
+const DOCK_BOTTOM = 28;
+
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { activeProject } = useProject();
   const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
   const activeColor = activeProject?.accent_color || '#e8431a';
+
+  // Publish the room the dock takes at the bottom of the screen as
+  // --taskbar-height, so full-height pages (Lounge, editor) end above it and
+  // scrolling pages leave space for it. 0 where the dock is hidden (phones use
+  // the tab bar); it follows the dock as it grows or collapses.
+  const dockRef = useRef<HTMLElement>(null);
+  const noDock = pathname === '/login' || pathname === '/auth' || pathname === '/split' || /^\/(shared|p|s)\//.test(pathname);
+  useEffect(() => {
+    const el = dockRef.current;
+    const root = document.documentElement;
+    if (noDock || !el) { root.style.setProperty('--taskbar-height', '0px'); return; }
+    const publish = () => root.style.setProperty('--taskbar-height', `${el.offsetHeight ? el.offsetHeight + DOCK_BOTTOM : 0}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    window.addEventListener('resize', publish);
+    return () => { ro.disconnect(); window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
+  }, [noDock]);
 
   const modules = getProjectModules(activeProject?.settings);
   const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
@@ -687,12 +710,13 @@ export default function EcosystemTaskbar() {
 
   return (
     <nav
+      ref={dockRef}
       aria-label="Suite"
       className="mc-dock"
       data-taskbar
       style={{
         position: 'fixed',
-        bottom: 28,
+        bottom: DOCK_BOTTOM,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,

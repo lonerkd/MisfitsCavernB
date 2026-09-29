@@ -679,7 +679,7 @@ export default function ProjectsPage() {
             <input
               type="search"
               aria-label="Search projects"
-              placeholder="Search title, logline, format, people"
+              placeholder="Search projects, people…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 9, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}

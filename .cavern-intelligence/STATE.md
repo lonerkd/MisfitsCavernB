@@ -1,6 +1,29 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Faster to open (phones first)
+## Latest Session — Polish: nothing hidden behind the dock
+
+No migration.
+
+- **The dock shows every app**: its strip snapped icons to the centre, which
+  with an even number of apps cut one off at each end at desk sizes. It now
+  snaps from the start, in the same whole-icon steps as its own drag/fling.
+- **The dock says how much room it takes**: it publishes `--taskbar-height`
+  (its real height + gap; 0 where it's hidden — phones, sign-in, split,
+  shared pages). The Lounge is exactly one screen tall and ends above it, so a
+  long channel list no longer pushes the composer (and Send) under the dock;
+  the editor's footer sits above it too. Every page already using
+  `var(--taskbar-height, 94px)` now gets the true value.
+- **Editor**: the beat timeline (Setup, Break into Two, Midpoint…) no longer
+  draws over the story map — it shows only when that sidebar is closed. The
+  right panel's six tabs keep their labels inside their own tab.
+- **Today on a desk**: the Lounge card sits beside "Yours to do" and
+  "Updates", as tall as both — no hole under it.
+- Projects search placeholder fits ("Search projects, people…").
+- Verified in screenshots at 1440×900; lounge, mobile, accessibility, Studio
+  journey and themes e2e pass.
+
+## Earlier — Faster to open (phones first)
+
 
 No migration.
 
