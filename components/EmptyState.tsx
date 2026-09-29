@@ -26,7 +26,7 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
       <div
         aria-hidden="true"
         style={{
-          width: 64, height: 64, margin: '0 auto 16', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 64, height: 64, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--fg-dim)', border: '1px solid var(--border-2)', borderRadius: 14, background: 'var(--bg-2)',
         }}
       >

@@ -172,6 +172,9 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 }
 
 .mc-masonry { column-count: 4; column-gap: 16px; }
+/* The structure rail is fixed at the left edge; its labels would run into the script column. */
+@media (max-width: 1100px) { .beat-label { display: none; } }
+
 @media (max-width: 1100px) { .mc-masonry { column-count: 3; } }
 @media (max-width: 760px)  { .mc-masonry { column-count: 2; } }
 @media (max-width: 460px)  { .mc-masonry { column-count: 1; } }

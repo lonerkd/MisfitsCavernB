@@ -79,7 +79,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                 { pct: 90, label: 'Finale' },
               ].map(m => (
                 <div key={m.label} title={m.label} style={{ position: 'absolute', top: `${m.pct}%`, left: -1, width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', transform: 'translateY(-50%)' }}>
-                  <span style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, color: 'var(--fg-dim)', whiteSpace: 'nowrap' }}>{m.label}</span>
+                  <span className="beat-label" style={{ position: 'absolute', left: 10, top: -6, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5, color: 'var(--fg-dim)', whiteSpace: 'nowrap' }}>{m.label}</span>
                 </div>
               ))}
 
