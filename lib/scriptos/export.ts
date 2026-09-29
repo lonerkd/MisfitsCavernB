@@ -1,7 +1,6 @@
 import { StoredScript } from './storage';
 import { parseScript } from './parser';
 import { serializeFountain } from './fountain-export';
-import { jsPDF } from 'jspdf';
 
 export function exportScriptAsText(script: StoredScript, format: 'txt' | 'fountain' = 'txt'): void {
   // '.fountain' downloads a canonically-formatted Fountain document — parse and
@@ -114,7 +113,9 @@ ${paragraphs}
   URL.revokeObjectURL(url);
 }
 
-export function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): void {
+/** jsPDF is large and only needed here, so it loads when a PDF is asked for. */
+export async function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const result = parseScript(script.content);
 
   const doc = new jsPDF({ unit: 'in', format: 'letter' });

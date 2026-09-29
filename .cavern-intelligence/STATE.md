@@ -1,6 +1,17 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Pocket: the suite on the go
+## Latest Session — Faster to open (phones first)
+
+No migration.
+
+- **Studio opens with only the tab you're on**: each tab, and each Production
+  view (stripboard, money, On Set…), loads when opened — first load 376 kB →
+  272 kB.
+- **The editor opens without the PDF engine**: jsPDF loads when you export a
+  PDF, the revision diff when you open it — first load 478 kB → 347 kB. PDF
+  export verified end to end (a real `%PDF` download).
+
+## Earlier — Pocket: the suite on the go
 
 Migration `20260929070000_pocket.sql` (a `note` kind of library item; `ui_prefs.places`).
 

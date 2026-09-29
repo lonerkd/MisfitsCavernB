@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T15:03:27.935Z",
+  "last_synchronized": "2026-09-29T15:33:17.863Z",
   "stats": {
     "totalFiles": 496,
-    "totalSize": 3872280,
+    "totalSize": 3874538,
     "byExtension": {
       ".json": 7,
       ".md": 7,
@@ -431,8 +431,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 80443,
-      "last_modified": "2026-09-29T14:43:54.471Z"
+      "size": 80720,
+      "last_modified": "2026-09-29T15:32:48.805Z"
     },
     {
       "path": "app/error.tsx",
@@ -601,8 +601,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 10898,
-      "last_modified": "2026-09-29T13:41:58.713Z"
+      "size": 11748,
+      "last_modified": "2026-09-29T15:32:48.806Z"
     },
     {
       "path": "app/today/page.tsx",
@@ -1106,8 +1106,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 5306,
-      "last_modified": "2026-09-28T19:17:10.101Z"
+      "size": 6329,
+      "last_modified": "2026-09-29T15:32:48.807Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1761,8 +1761,8 @@
     },
     {
       "path": "lib/scriptos/export.ts",
-      "size": 9088,
-      "last_modified": "2026-09-24T20:05:03.638Z"
+      "size": 9196,
+      "last_modified": "2026-09-29T15:32:48.807Z"
     },
     {
       "path": "lib/scriptos/fountain-export.ts",
@@ -2542,7 +2542,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T14:53:34.031Z"
+      "last_modified": "2026-09-29T15:10:03.594Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
