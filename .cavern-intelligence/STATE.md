@@ -19,7 +19,7 @@ No migration.
 
 ## Earlier — Transcripts and the paper edit
 
-Migration `20260929060000_transcripts.sql` (`transcript_lines`, `set_paper_edit`).
+Migration `20260929060000_transcripts.sql` (`transcript_lines`, `set_paper_edit`) — applied to production; PR #91 merged.
 
 - **Every interview, take or recording in the Library has a transcript**
   (video and audio items): paste one in — subtitles (SRT, WebVTT), a
