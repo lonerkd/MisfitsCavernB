@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T19:54:21.009Z",
+  "last_synchronized": "2026-09-29T20:11:23.226Z",
   "stats": {
     "totalFiles": 496,
-    "totalSize": 3876453,
+    "totalSize": 3877112,
     "byExtension": {
       ".json": 7,
       ".md": 7,
@@ -416,8 +416,8 @@
     },
     {
       "path": "app/crew/page.tsx",
-      "size": 14789,
-      "last_modified": "2026-09-29T14:43:54.471Z"
+      "size": 15448,
+      "last_modified": "2026-09-29T20:11:02.503Z"
     },
     {
       "path": "app/editor/error.tsx",
@@ -2542,7 +2542,7 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T19:48:02.618Z"
+      "last_modified": "2026-09-29T20:00:21.643Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",

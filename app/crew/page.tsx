@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
-import { Input } from '@/components/ui/Input';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useProject } from '@/lib/os';
@@ -185,20 +184,23 @@ export default function CrewPage() {
 
         {mode === 'all' && (
           <>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <Input
-                  icon={<Search size={14} />}
-                  label="Search"
-                  placeholder="Search by name, skill, bio..."
+            {/* One compact row, like the Projects board: search, then who's free. */}
+            <div role="search" aria-label="Crew" style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: '1 1 260px', minWidth: 200 }}>
+                <Search size={14} aria-hidden style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
+                <input
+                  type="search"
+                  aria-label="Search crew"
+                  placeholder="Search by name, skill, bio…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
+                  style={{ width: '100%', minHeight: 40, padding: '9px 12px 9px 34px', borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12 }}
                 />
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div role="group" aria-label="Availability" style={{ display: 'flex', gap: 6 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
-                  <button key={a} onClick={() => setAvailFilter(a)}
-                    style={{ padding: '8px 12px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <button key={a} type="button" aria-pressed={availFilter === a} onClick={() => setAvailFilter(a)}
+                    style={{ minHeight: 40, borderRadius: 10, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
