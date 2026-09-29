@@ -115,7 +115,7 @@ export async function getAuditLogs(
     return {
       logs: (data || []).map((log: any) => ({
         ...log,
-        username: (log.profiles as any)?.username || 'Unknown',
+        username: (log.profiles as any)?.username || 'Deleted account',
       })),
       count: count || 0,
     };
@@ -175,7 +175,7 @@ export async function getMostActiveUsers(limit: number = 10) {
     (data || []).forEach((log: any) => {
       const userId = log.user_id;
 
-      const username = log.profiles?.username || 'Unknown';
+      const username = log.profiles?.username || 'Deleted account';
       const avatar = log.profiles?.avatar_url;
 
       if (userCounts.has(userId)) {

@@ -778,7 +778,7 @@ export default function LoungePage() {
         if (!mounted) return;
         const formatted = data.map((m: any) => ({
           id: m.id,
-          user: m.profiles?.username || 'Unknown',
+          user: m.profiles?.username || 'Deleted account',
           text: m.content,
           timestamp: new Date(m.created_at),
           sender_id: m.sender_id,
@@ -884,7 +884,7 @@ export default function LoungePage() {
     const load = async () => {
       const data = await getThreadReplies(threadParent.id);
       if (!mounted) return;
-      setThreadReplies(data.map((m: any) => ({ id: m.id, user: m.profiles?.username || 'Unknown', text: m.content, timestamp: new Date(m.created_at), sender_id: m.sender_id, reactions: m.reactions || {} })));
+      setThreadReplies(data.map((m: any) => ({ id: m.id, user: m.profiles?.username || 'Deleted account', text: m.content, timestamp: new Date(m.created_at), sender_id: m.sender_id, reactions: m.reactions || {} })));
     };
     load();
     const ch = supabase.channel(`thread:${threadParent.id}`)

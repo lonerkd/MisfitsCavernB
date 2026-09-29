@@ -255,7 +255,7 @@ function HoursSection({ rows, canShape, userId, nameOf, onChange, onError }: {
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((t) => {
-            const who = t.user_id === userId ? 'You' : nameOf.get(t.user_id) ?? 'Crew';
+            const who = t.user_id === userId ? 'You' : (t.user_id ? nameOf.get(t.user_id) ?? 'Crew' : 'Deleted account');
             return (
               <li key={t.id} className={s.panel} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <span style={{ flex: '1 1 200px' }}>

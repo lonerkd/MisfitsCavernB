@@ -90,7 +90,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
           <button key={h.id} type="button" onClick={() => onJump(h)} style={rowStyle}>
             <span style={metaStyle}>
               <span style={{ color: 'var(--ok)' }}>{h.channel_name ? `#${h.channel_name}` : h.sender_id === meId ? 'Your direct message' : `@${h.sender ?? 'someone'}`}</span>
-              <span>· {h.sender_id === meId ? 'you' : h.sender ?? 'someone'}</span>
+              <span>· {h.sender_id === meId ? 'you' : h.sender ?? 'Deleted account'}</span>
               <span>· {when(h.created_at)}</span>
               {h.parent_message_id && <span>· in a thread</span>}
             </span>
@@ -139,7 +139,7 @@ export function PinnedPanel({ channel, refreshKey, canUnpin, onUnpin, onClose, o
         {rows?.map((r) => (
           <div key={r.id} style={{ ...rowStyle, cursor: 'default', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <button type="button" onClick={() => onJump(r.parent_message_id ?? r.id)} style={{ flex: 1, background: 'none', border: 'none', textAlign: 'left', padding: 0, cursor: 'pointer', color: 'inherit' }}>
-              <span style={metaStyle}><span style={{ color: 'var(--warn)' }}>{r.profiles?.username ?? 'someone'}</span><span>· {when(r.created_at)}</span></span>
+              <span style={metaStyle}><span style={{ color: 'var(--warn)' }}>{r.profiles?.username ?? 'Deleted account'}</span><span>· {when(r.created_at)}</span></span>
               <span style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.55, color: 'rgba(var(--fg-rgb), 0.85)', whiteSpace: 'pre-wrap' }}>{r.content}</span>
             </button>
             {canUnpin && (
