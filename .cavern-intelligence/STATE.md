@@ -1,6 +1,31 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Polish: nothing hidden behind the dock
+## Latest Session — The workflow that guards the suite
+
+No migration.
+
+- **Production drift check can't pass silently**: it fails when the
+  `PRODUCTION_DB_URL` secret is missing (it had never actually run), and it
+  now also runs right after schema changes land on main.
+- **Every e2e spec runs in CI**: 9 specs (sign-up journey, sign-in, credits,
+  cut notes, On Set, shot designer, split screen, the writing loop, real data)
+  never ran. CI now runs the whole `e2e/` folder against a fresh local stack,
+  split three ways in parallel. Two had rotted: the sign-up journey expected
+  `/projects` (new accounts land on the welcome steps) and the sign-in smoke
+  needed a pre-made account — both fixed.
+- **Layout guard** (`e2e/layout.spec.ts`): the dock hides no app, the Lounge
+  composer and editor footer stay above it, nothing scrolls sideways — shown
+  to fail on the old code for both the dock and the Lounge.
+- **Page-weight budget** (`npm run budget`, `performance-budget.json`), checked
+  in CI after the build.
+- **Fonts self-hosted** (`app/fonts`, OFL): builds no longer fetch Google Fonts
+  (the one CI failure this week).
+- Dependabot, a PR template, CODEOWNERS, git hooks (lint on commit; types +
+  tests on push), Node pinned (`.nvmrc`), `npm run stack:up` for the local
+  stack, a wider command allowlist. See tools-and-access.md §7.
+
+## Earlier — Polish: nothing hidden behind the dock
+
 
 No migration.
 

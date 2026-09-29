@@ -1,0 +1,4 @@
+#!/bin/sh
+# Before anything leaves the machine: types and unit tests (what CI's first job runs).
+npx --no-install tsc --noEmit || { echo "pre-push: type errors"; exit 1; }
+npx --no-install vitest run --reporter=dot || { echo "pre-push: unit tests failed"; exit 1; }
