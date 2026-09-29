@@ -61,9 +61,9 @@ export default function AdminUsersPage() {
           left: 0,
           width: '100%',
           height: 60,
-          background: 'rgba(8,8,8,0.95)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
         </header>
 
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
-          <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)', paddingBottom: 16 }}>
             <Link
               href="/admin"
               style={{
@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
 
           <div style={{
             overflowX: 'auto',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid rgba(var(--ink-rgb), 0.1)',
             borderRadius: 8,
           }}>
             <table style={{
@@ -145,7 +145,7 @@ export default function AdminUsersPage() {
               fontSize: 11,
             }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)' }}>
                   <th style={{ padding: 16, textAlign: 'left', color: 'var(--fg-muted)', fontWeight: 600 }}>
                     USERNAME
                   </th>
@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
                     <tr
                       key={user.id}
                       style={{
-                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
                         background: selectedUser === user.id ? 'rgba(232, 67, 26,0.05)' : undefined,
                       }}
                       onClick={() => setSelectedUser(selectedUser === user.id ? null : user.id)}
@@ -205,7 +205,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td style={{ padding: 16 }}>
                         <span style={{
-                          color: user.status === 'OPEN' ? '#00cc66' : '#ff9500',
+                          color: user.status === 'OPEN' ? 'var(--ok)' : '#ff9500',
                         }}>
                           {user.status}
                         </span>

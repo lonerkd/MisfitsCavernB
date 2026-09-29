@@ -315,7 +315,7 @@ function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObjec
                   <div className={s.noteBody}>{n.body}</div>
                 </div>
                 <button type="button" className={s.iconBtnPlain} onClick={() => void toggle(n)} aria-label={n.resolved_at ? 'Reopen note' : 'Resolve note'} title={n.resolved_at ? 'Reopen' : 'Resolve'}>
-                  {n.resolved_at ? <CheckCircle2 size={15} color="#10b981" /> : <Circle size={15} />}
+                  {n.resolved_at ? <CheckCircle2 size={15} color="var(--ok)" /> : <Circle size={15} />}
                 </button>
                 {(n.created_by === userId || isOwner) && (
                   <button type="button" className={s.refRemoveInline} onClick={() => void remove(n)} aria-label="Delete note"><Trash2 size={12} /></button>
@@ -410,7 +410,7 @@ function ItemList({ kind, title, items, people }: { kind: 'stage' | 'deliverable
             <div className={s.itemMeta}>
             <input
               type="date" className={s.input} aria-label={`Due date for ${item.title}`} value={item.due_date ?? ''}
-              style={{ color: item.status !== 'done' && item.due_date && item.due_date < today ? '#ff6b6b' : undefined }}
+              style={{ color: item.status !== 'done' && item.due_date && item.due_date < today ? 'var(--danger)' : undefined }}
               onChange={(e) => void save(item, { due_date: e.target.value || null })}
             />
             <select className={s.select} aria-label={`Owner of ${item.title}`} value={item.assigned_to ?? ''} onChange={(e) => void save(item, { assigned_to: e.target.value || null })}>

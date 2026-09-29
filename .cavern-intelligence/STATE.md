@@ -1,6 +1,31 @@
 # Misfits Cavern — Project State
 
-## Latest Session — On set without signal
+## Latest Session — Themes for the whole suite
+
+Migration `20260929050000_themes.sql` (`set_my_ui_prefs` accepts `theme`).
+
+- **Settings › Appearance › Theme**: twelve presets shown as small previews —
+  Cavern, Terminal, Blueprint, Mono, Paper, Editorial, Glass, Neon, Slate,
+  Lagoon (light + teal), Forest, Vampire — plus **System** (Paper when the
+  device is light, Cavern when dark) and **Custom** (pick a background and an
+  accent; text, lines and status colours are worked out from them).
+- The choice applies at once, is saved to the account (`ui_prefs.theme`) so
+  every device follows it, and is painted before first paint from the device
+  copy — a light theme never flashes dark. Old device choices (cyberpunk,
+  obsidian) map to Neon and Mono.
+- **Every page reads in every theme**: hard-coded white, cream and black were
+  replaced with theme tokens suite-wide (`--fg-strong`, `--fg-rgb`,
+  `--ink-rgb`, `--surface`, `--sunken`, `--on-accent`, status colours with
+  light-theme variants). Colours from data (project accents, crafts, scene
+  types) go through `readable()`, now a `light-dark()` pair. axe colour
+  contrast is clean on hub, projects, a project, Studio, the editor, Lounge,
+  Jobs, Crew, Settings and Profile in the light themes.
+- Shared pages (`/p`, `/s`, `/shared`) keep the maker's Cavern look.
+- Tests: `lib/themes.test.ts` (every preset's tokens and contrast, choices,
+  System, Custom), `lib/color.test.ts`, `tests/integration/themes.test.ts`
+  (saved, refused, owner-only), `e2e/themes.spec.ts`.
+
+## Earlier — On set without signal
 
 No migration.
 

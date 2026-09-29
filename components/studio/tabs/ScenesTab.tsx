@@ -202,7 +202,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
           <div style={{ minWidth: 0 }}>
             <div className={s.sceneHeading}>{scene.heading ?? scene.title}</div>
             {meta && <div className={s.sceneMeta}>{meta}</div>}
-            {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: '#fbbf24' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
+            {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: 'var(--warn)' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
           </div>
           <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript(scene)} aria-label={`Open scene ${scene.scene_number} in the script`}>
             <FileText size={11} aria-hidden /> In script

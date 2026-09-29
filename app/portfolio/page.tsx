@@ -46,7 +46,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         overflow: 'hidden',
         aspectRatio,
         background: '#0e0e0e',
-        border: '1px solid rgba(255,255,255,0.04)',
+        border: '1px solid rgba(var(--ink-rgb), 0.04)',
         cursor: 'none',
         gridColumn: span === 'wide' ? '1 / -1' : undefined,
         gridRow: span === 'tall' ? 'span 2' : undefined,
@@ -83,7 +83,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         fontSize: 8,
         letterSpacing: 3,
         textTransform: 'uppercase',
-        color: 'var(--accent)',
+        color: 'light-dark(#ffb199, var(--accent))',
         fontFamily: 'var(--mono)',
         padding: '4px 8px',
         background: 'rgba(0,0,0,0.6)',
@@ -112,7 +112,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           transition: 'border-color 0.4s, background 0.4s',
         }}
       >
-        <Play size={16} fill={hover ? '#e8431a' : '#fff'} color={hover ? '#e8431a' : '#fff'} style={{ marginLeft: 2 }} />
+        <Play size={16} fill={hover ? '#e8431a' : '#fff'} color={hover ? 'var(--accent)' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
 
       <motion.div
@@ -170,7 +170,7 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
         exit={{ opacity: 0 }}
         style={{
           position: 'fixed', inset: 0, zIndex: 9000,
-          background: 'rgba(5,5,5,0.98)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(40px)',
           overflowY: 'auto',
           padding: '80px 20px',
@@ -188,17 +188,17 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             <div style={{ display: 'flex', gap: 24, marginBottom: 60 }}>
                <div>
                  <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Role</div>
-                 <div style={{ fontSize: 14, color: '#fff' }}>{project.role}</div>
+                 <div style={{ fontSize: 14, color: 'var(--fg-strong)' }}>{project.role}</div>
                </div>
                <div>
                  <div style={{ fontSize: 9, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>Category</div>
-                 <div style={{ fontSize: 14, color: '#fff' }}>{project.category}</div>
+                 <div style={{ fontSize: 14, color: 'var(--fg-strong)' }}>{project.category}</div>
                </div>
             </div>
           </motion.div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 80 }}>
-            <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ aspectRatio: '16/9', background: '#000', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, overflow: 'hidden' }}>
               {project.embedSrc ? (
                 <iframe
                   src={project.embedSrc}
@@ -220,13 +220,13 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {project.description && (
-                <div style={{ padding: 24, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8 }}>
+                <div style={{ padding: 24, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8 }}>
                   <h2 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Summary</h2>
                   <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'var(--fg-muted)', fontStyle: 'italic' }}>{project.description}</p>
                 </div>
               )}
               {project.sourceProjectId && (
-                <Link href={`/projects/${project.sourceProjectId}`} style={{ padding: 20, background: 'var(--accent)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', textAlign: 'center', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
+                <Link href={`/projects/${project.sourceProjectId}`} style={{ padding: 20, background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 8, textDecoration: 'none', textAlign: 'center', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>
                   Open the project
                 </Link>
               )}
@@ -330,7 +330,7 @@ export default function PortfolioPage() {
       title: 'The Cavern Collection',
       accent: '#f59e0b',
       fields: [
-        { label: 'Works', value: `${videosList.length}`, color: '#f59e0b' },
+        { label: 'Works', value: `${videosList.length}`, color: 'var(--warn)' },
       ],
     },
     [videosList.length],
@@ -346,9 +346,9 @@ export default function PortfolioPage() {
         padding: '0 32px', height: 62,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(6,6,6,0.88)',
+        background: 'var(--glass)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         boxShadow: '0 1px 0 rgba(245,158,11,0.08) inset',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -358,15 +358,15 @@ export default function PortfolioPage() {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             >MC</div>
           </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: '#f59e0b', textTransform: 'uppercase' }}>Portfolio</div>
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--warn)', textTransform: 'uppercase' }}>Portfolio</div>
         </div>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
           {videosList.length} Projects
         </span>
       </nav>
 
-      <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(232, 67, 26,0.08), transparent 55%), #060606' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
@@ -375,12 +375,12 @@ export default function PortfolioPage() {
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
              <SectionLabel text="Featured Work" />
              <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(4rem, 8vw, 6rem)', letterSpacing: 4, lineHeight: 1, marginBottom: 20 }}>THE CAVERN<br/>COLLECTION</h1>
-             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: '#ccc', maxWidth: 500, lineHeight: 1.6 }}>A curated selection of cinematic projects, from conceptual ideation to final delivery. Built with precision, driven by story.</p>
+             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 500, lineHeight: 1.6 }}>A curated selection of cinematic projects, from conceptual ideation to final delivery. Built with precision, driven by story.</p>
            </motion.div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 4, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 4, borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
         {([['showcase', 'Showcase'], ['distribution', 'Distribution']] as const).map(([key, label]) => {
           const active = view === key;
           return (
@@ -412,7 +412,7 @@ export default function PortfolioPage() {
               {festivals.map(f => {
                 const col = FEST_COLOR[f.status] || '#6b7280';
                 return (
-                  <div key={f.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${col}`, borderRadius: 10, padding: 16 }}>
+                  <div key={f.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${col}`, borderRadius: 10, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                       <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{f.name}</span>
                       <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 99, padding: '3px 9px' }}>{f.status}</span>
@@ -432,10 +432,10 @@ export default function PortfolioPage() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
               {campaigns.map(c => (
-                <div key={c.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
+                <div key={c.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 10, padding: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                     <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{c.title}</span>
-                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: '#8b5cf6', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 99, padding: '3px 9px' }}>{c.platform}</span>}
+                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 99, padding: '3px 9px' }}>{c.platform}</span>}
                   </div>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{c.projectTitle}{c.budget ? ` · $${Number(c.budget).toLocaleString()}` : ''}</div>
                 </div>
@@ -452,7 +452,7 @@ export default function PortfolioPage() {
         </AnimatedSection>
 
         {videosList.length === 0 ? (
-          <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 16 }}>
+          <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(var(--ink-rgb), 0.1)', borderRadius: 16 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 10 }}>
               {loading ? 'LOADING…' : loadError ? `⚠ ${loadError}` : 'NO PUBLISHED WORK YET'}
             </div>
@@ -485,8 +485,8 @@ export default function PortfolioPage() {
       <div style={{
         padding: '28px 0',
         overflow: 'hidden',
-        borderTop: '1px solid rgba(255,255,255,0.03)',
-        borderBottom: '1px solid rgba(255,255,255,0.03)',
+        borderTop: '1px solid rgba(var(--ink-rgb), 0.03)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.03)',
         marginBottom: 0,
       }}>
         <div style={{ display: 'flex', gap: 44, animation: 'marquee 28s linear infinite', whiteSpace: 'nowrap' }}>

@@ -4,7 +4,7 @@
   --pa: #e8431a;
   --pa-dim: color-mix(in srgb, var(--pa) 14%, transparent);
   --pa-line: color-mix(in srgb, var(--pa) 45%, transparent);
-  --line: rgba(224, 221, 174, 0.08);
+  --line: rgba(var(--fg-rgb), 0.08);
   min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
@@ -30,7 +30,7 @@
 .paths { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .path {
   width: 100%; display: grid; grid-template-columns: 40px minmax(0, 1fr) 16px; align-items: center; gap: 14px;
-  padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+  padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(var(--ink-rgb), 0.02);
   color: var(--fg); text-decoration: none; text-align: left; cursor: pointer; font: inherit;
   transition: border-color 0.2s, background 0.2s;
 }
@@ -63,8 +63,8 @@
 .stageChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stageChip {
   font-size: 12px; padding: 5px 11px; border-radius: 99px; cursor: pointer;
-  border: 1px solid rgba(224, 221, 174, 0.14); background: transparent; color: var(--fg-muted);
+  border: 1px solid rgba(var(--fg-rgb), 0.14); background: transparent; color: var(--fg-muted);
 }
-.stageChip:hover:not(:disabled) { color: var(--fg); border-color: rgba(224, 221, 174, 0.3); }
+.stageChip:hover:not(:disabled) { color: var(--fg); border-color: rgba(var(--fg-rgb), 0.3); }
 .stageChip[aria-checked='true'] { color: var(--fg); border-color: var(--pa); background: var(--pa-dim); }
 .stageChip:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }

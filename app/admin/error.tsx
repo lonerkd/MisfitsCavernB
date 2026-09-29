@@ -27,7 +27,7 @@ export default function AdminError({
       }}
     >
       <div style={{ textAlign: 'center', maxWidth: 480, padding: 40 }}>
-        <ShieldAlert size={48} style={{ color: '#e8431a', marginBottom: 24 }} />
+        <ShieldAlert size={48} style={{ color: 'var(--accent)', marginBottom: 24 }} />
         <h1
           style={{
             fontFamily: 'var(--display)',
@@ -53,7 +53,7 @@ export default function AdminError({
             style={{
               padding: '10px 24px',
               background: 'var(--accent)',
-              color: 'var(--bg)',
+              color: 'var(--on-accent)',
               border: 'none',
               borderRadius: 6,
               fontFamily: 'var(--mono)',
@@ -71,7 +71,7 @@ export default function AdminError({
               padding: '10px 24px',
               background: 'transparent',
               color: 'var(--fg-muted)',
-              border: '1px solid rgba(255,255,255,0.15)',
+              border: '1px solid rgba(var(--ink-rgb), 0.15)',
               borderRadius: 6,
               fontFamily: 'var(--mono)',
               fontSize: 11,

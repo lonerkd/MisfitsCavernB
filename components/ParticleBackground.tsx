@@ -49,7 +49,7 @@ export default function ParticleBackground() {
             value: '#e8431a',
           },
           links: {
-            color: '#e8431a',
+            color: 'var(--accent)',
             distance: 150,
             enable: true,
             opacity: 0.15,

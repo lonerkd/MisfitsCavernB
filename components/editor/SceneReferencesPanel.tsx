@@ -83,7 +83,7 @@ export function SceneReferencesPanel({
         <div style={label}>References</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
           {refs.map((m) => (
-            <div key={m.id} style={{ position: 'relative', aspectRatio: '16 / 10', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(224,221,174,0.12)', background: 'rgba(0,0,0,0.35)' }}>
+            <div key={m.id} style={{ position: 'relative', aspectRatio: '16 / 10', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(var(--fg-rgb), 0.12)', background: 'var(--sunken)' }}>
               <button type="button" onClick={() => setViewing(m)} title={m.title} aria-label={`Open ${m.title || 'reference'}`} style={{ width: '100%', height: '100%', padding: 0, border: 0, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg-dim)' }}>
                 <MediaThumbVisual media={m} src={mediaSrc(m, signed)} />
               </button>
@@ -112,7 +112,7 @@ export function SceneReferencesPanel({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => { if (draft !== null) { onNote(draft); setDraft(null); } }}
           rows={3}
-          style={{ width: '100%', resize: 'vertical', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(224,221,174,0.12)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.5, outline: 'none' }}
+          style={{ width: '100%', resize: 'vertical', background: 'var(--sunken)', border: '1px solid rgba(var(--fg-rgb), 0.12)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.5, outline: 'none' }}
         />
       </div>
 

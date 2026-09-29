@@ -19,8 +19,8 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
         textAlign: 'center',
         padding: '56px 24px',
         borderRadius: 16,
-        background: 'rgba(255,255,255,0.015)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(var(--ink-rgb), 0.015)',
+        border: '1px solid rgba(var(--ink-rgb), 0.05)',
       }}
     >
       <div style={{ opacity: 0.25, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{icon}</div>

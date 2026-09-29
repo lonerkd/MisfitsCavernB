@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const colors = {
     success: '#00cc66',
     error: 'var(--accent)',
-    info: 'rgba(224, 221, 174, 0.6)',
+    info: 'rgba(var(--fg-rgb), 0.6)',
   };
 
   return (

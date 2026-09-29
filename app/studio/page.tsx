@@ -110,7 +110,7 @@ export default function StudioPage() {
           module: 'studio',
           title: activeProject.title,
           accent: activeProject.accent_color || '#6366f1',
-          fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: '#818cf8' }],
+          fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: 'var(--violet)' }],
           actions: [{ id: 'next-tab', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) }],
         }
       : null,

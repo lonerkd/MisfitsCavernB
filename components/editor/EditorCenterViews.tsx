@@ -35,7 +35,7 @@ export function BoardView({
   if (scenesList.length === 0) {
     return (
       <div style={{ flex: 1, overflowY: 'auto', padding: '40px', display: 'flex', flexWrap: 'wrap', gap: 20, alignContent: 'flex-start' }}>
-        <div style={{ width: '100%', textAlign: 'center', color: '#888', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
+        <div style={{ width: '100%', textAlign: 'center', color: 'var(--fg-dim)', marginTop: 100, fontStyle: 'italic' }}>No scenes to display on board.</div>
       </div>
     );
   }
@@ -124,7 +124,7 @@ function SceneBoardCard({
       style={{
         width: 272, minHeight: 180,
         background: 'var(--bg-3)',
-        border: `1px solid ${isDropTarget ? cardColor : 'rgba(255,255,255,0.06)'}`,
+        border: `1px solid ${isDropTarget ? cardColor : 'rgba(var(--ink-rgb), 0.06)'}`,
         borderTop: `2px solid ${cardColor}`,
         borderRadius: 14, padding: 16, display: 'flex', flexDirection: 'column',
         opacity: isDragging ? 0.4 : 1,
@@ -156,9 +156,9 @@ function SceneBoardCard({
         onClick={e => e.stopPropagation()}
         onBlur={e => onSetNote(e.target.value)}
         placeholder="Beat / summary — what has to happen here?"
-        style={{ width: '100%', minHeight: 44, resize: 'none', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
+        style={{ width: '100%', minHeight: 44, resize: 'none', background: 'var(--sunken)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
       />
-      <div style={{ flex: 1, fontSize: 11, color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+      <div style={{ flex: 1, fontSize: 11, color: 'var(--fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {lines.slice(startIdx + 1, startIdx + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}
       </div>
       </motion.div>
@@ -185,7 +185,7 @@ export function OutlineView({
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
-          <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)', color: sceneFilter === f ? '#fff' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
+          <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.03)', color: sceneFilter === f ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
         ))}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
       </div>
@@ -201,7 +201,7 @@ export function OutlineView({
           const wc = sceneLines.reduce((s, l) => s + l.text.split(/\s+/).filter(Boolean).length, 0);
           const actionPreview = sceneLines.filter(l => l.type === 'action').slice(0, 2).map(l => l.text).join(' ');
           return (
-            <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <motion.div key={scene.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
               {(() => { const tag = sceneColors[globalIdx]; return (
                 <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
               ); })()}
@@ -216,13 +216,13 @@ export function OutlineView({
                         key={color}
                         title={active ? 'Remove tag' : 'Tag scene'}
                         onClick={() => tagScene(globalIdx, color)}
-                        style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
+                        style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(var(--ink-rgb), 0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
                       />
                     ); })}
                   </div>
                 </div>
-                {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: '#bbb', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}
-                {actionPreview && <div style={{ fontSize: 12, color: '#888', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
+                {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}
+                {actionPreview && <div style={{ fontSize: 12, color: 'var(--fg-dim)', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {sceneChars.map(c => (<span key={c} style={{ fontSize: 9, background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 3, fontWeight: 600 }}>{c}</span>))}
                 </div>
@@ -271,11 +271,11 @@ export function StatsView({
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
         {[
-          { label: 'Words',   value: wordCount.toLocaleString(), color: '#818cf8', sub: `${pageEst} pages` },
-          { label: 'Runtime', value: formatRuntime(timing.runtime), color: '#10b981', sub: timing.readScenes ? `${timing.readScenes} scenes timed` : 'a minute a page' },
-          { label: 'Scenes',  value: `${scenesList.length}`, color: '#e8431a', sub: `${uniqueLocations.length} locations` },
-          { label: 'Cast',    value: `${chars.length}`, color: '#f59e0b', sub: `${charStats[0]?.name ?? '—'} leads` },
-          { label: 'Balance', value: `${dialogueRatio}%`, color: '#8b5cf6', sub: 'dialogue' },
+          { label: 'Words',   value: wordCount.toLocaleString(), color: 'var(--violet)', sub: `${pageEst} pages` },
+          { label: 'Runtime', value: formatRuntime(timing.runtime), color: 'var(--ok)', sub: timing.readScenes ? `${timing.readScenes} scenes timed` : 'a minute a page' },
+          { label: 'Scenes',  value: `${scenesList.length}`, color: 'var(--accent)', sub: `${uniqueLocations.length} locations` },
+          { label: 'Cast',    value: `${chars.length}`, color: 'var(--warn)', sub: `${charStats[0]?.name ?? '—'} leads` },
+          { label: 'Balance', value: `${dialogueRatio}%`, color: 'var(--jobs-text)', sub: 'dialogue' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 14px', transition: 'border-color 0.3s' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = s.color + '40'}
@@ -299,7 +299,7 @@ export function StatsView({
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               {[
-                { label: 'INT/Day', color: '#818cf8' }, { label: 'INT/Night', color: '#9194f6' },
+                { label: 'INT/Day', color: 'var(--violet)' }, { label: 'INT/Night', color: '#9194f6' },
                 { label: 'EXT/Day', color: '#d97706' }, { label: 'EXT/Night', color: '#92400e' },
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -324,7 +324,7 @@ export function StatsView({
                       borderRadius: 3, cursor: 'pointer', opacity: 0.85,
                       minWidth: 4, position: 'relative',
                       transition: 'opacity 0.15s, transform 0.15s',
-                      border: i === currentSceneIdx ? '1px solid rgba(255,255,255,0.6)' : 'none',
+                      border: i === currentSceneIdx ? '1px solid rgba(var(--ink-rgb), 0.6)' : 'none',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scaleY(1.15)'; }}
                     onMouseLeave={e => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = ''; }}
@@ -389,7 +389,7 @@ export function StatsView({
                             title={appearsHere ? `${cs.name} in Scene ${si + 1}` : `Not in Scene ${si + 1}`}
                             style={{
                               flex: 1, height: 14, borderRadius: 2, minWidth: 8,
-                              background: appearsHere ? charColor : 'rgba(255,255,255,0.04)',
+                              background: appearsHere ? charColor : 'rgba(var(--ink-rgb), 0.04)',
                               opacity: appearsHere ? 0.85 : 1,
                               transition: 'opacity 0.15s',
                             }}
@@ -426,8 +426,8 @@ export function StatsView({
           <div style={{ flex: 1, background: '#e8431a' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#818cf8' }}>{dialogueRatio}% Dialogue</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: '#e8431a' }}>{100 - dialogueRatio}% Action</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--violet)' }}>{dialogueRatio}% Dialogue</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--accent)' }}>{100 - dialogueRatio}% Action</span>
         </div>
       </div>
 
@@ -435,7 +435,7 @@ export function StatsView({
         <div style={{ marginBottom: 40 }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
           <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
               {['#', 'Scene', 'Type', 'Cast', 'Words', 'Time'].map(h => (
                 <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 7.5, color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</div>
               ))}
@@ -456,10 +456,10 @@ export function StatsView({
                     gap: 0, padding: '9px 14px',
                     background: isActive ? `${color}0d` : 'transparent',
                     borderLeft: isActive ? `2px solid ${color}` : '2px solid transparent',
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
                     transition: 'background 0.2s',
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'; }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                 >
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)' }}>{i + 1}</div>
@@ -485,12 +485,12 @@ export function StatsView({
         <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 12 }}>Script Health</div>
         <div style={{ display: 'flex', gap: 20 }}>
           {[
-            { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: '#ef4444' },
+            { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: 'var(--danger)' },
             { count: lintIssues.filter(i => i.type === 'warning').length, label: 'Warnings', color: '#eab308' },
-            { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: '#818cf8' },
+            { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: 'var(--violet)' },
           ].map(({ count, label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? '#10b981' : color, lineHeight: 1 }}>{count}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? 'var(--ok)' : color, lineHeight: 1 }}>{count}</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{label}</span>
             </div>
           ))}

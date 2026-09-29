@@ -206,8 +206,8 @@ export default function AuthPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            background: 'rgba(10,10,10,0.8)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--glass)',
+            border: '1px solid rgba(var(--ink-rgb), 0.06)',
             backdropFilter: 'blur(20px)',
             padding: '40px 36px',
             borderRadius: 'var(--radius-sm)',
@@ -216,7 +216,7 @@ export default function AuthPage() {
           <div style={{
             display: 'flex',
             marginBottom: 32,
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(var(--ink-rgb), 0.03)',
             padding: 3,
             borderRadius: 'var(--radius-sm)',
           }}>
@@ -227,7 +227,7 @@ export default function AuthPage() {
                 style={{
                   flex: 1,
                   padding: '10px',
-                  background: mode === m ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  background: mode === m ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
                   border: 'none',
                   color: mode === m ? 'var(--fg)' : 'var(--fg-muted)',
                   fontFamily: 'var(--mono)',
@@ -320,11 +320,11 @@ export default function AuthPage() {
           </form>
 
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
             <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, color: 'var(--fg-subtle)' }}>
               or
             </span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
           </div>
 
           <button

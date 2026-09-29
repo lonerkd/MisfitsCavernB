@@ -115,7 +115,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
     const body = board.filter((d) => d.scenes.length).map((d) => `<h2>DAY ${d.day}${dateOf.get(d.day) ? ` — ${esc(new Date(`${dateOf.get(d.day)}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}` : ''} · ${pages(d.eighths)} pp${d.locations.length > 1 ? ` · ${d.locations.length} locations` : ''}</h2><table><tr><th>#</th><th>Scene</th><th>I/E · D/N</th><th>Cast</th><th>Pages</th><th>Status</th></tr>${d.scenes
       .map((sc) => `<tr><td>${sc.scene_number}</td><td>${esc(sc.heading ?? sc.title)}</td><td>${STRIP_LABEL[stripKind(sc)]}</td><td>${esc(castOf(sc).join(', ') || '—')}</td><td>${pages(eighthsOf(sc.est_duration))}</td><td>${esc(sc.status)}</td></tr>`)
       .join('')}</table>`).join('');
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Shooting Schedule</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:22px;letter-spacing:2px;margin:0 0 4px}h2{font-size:11px;letter-spacing:2px;color:#b45309;margin:24px 0 8px}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:#888;font-size:9px;letter-spacing:1px;border-bottom:1px solid #ccc;padding:4px}td{padding:5px 4px;border-bottom:1px solid #eee}</style></head><body><h1>${esc(project.title).toUpperCase()} — SHOOTING SCHEDULE</h1><div style="color:#888;font-size:11px">${list.length} scenes · ${board.filter((d) => d.scenes.length).length} days · ${pages(totalEighths)} pages</div>${body}<script>window.onload=()=>window.print()</script></body></html>`);
+    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Shooting Schedule</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:22px;letter-spacing:2px;margin:0 0 4px}h2{font-size:11px;letter-spacing:2px;color:#b45309;margin:24px 0 8px}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:var(--fg-dim);font-size:9px;letter-spacing:1px;border-bottom:1px solid #ccc;padding:4px}td{padding:5px 4px;border-bottom:1px solid #eee}</style></head><body><h1>${esc(project.title).toUpperCase()} — SHOOTING SCHEDULE</h1><div style="color:var(--fg-dim);font-size:11px">${list.length} scenes · ${board.filter((d) => d.scenes.length).length} days · ${pages(totalEighths)} pages</div>${body}<script>window.onload=()=>window.print()</script></body></html>`);
     w.document.close();
   };
 
@@ -196,7 +196,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                           key={sc.id}
                           ref={(el) => { if (el) stripRefs.current.set(sc.id, el); else stripRefs.current.delete(sc.id); }}
                           className={cx(b.strip, dragId === sc.id && b.dragging, status === 'wrapped' && b.wrapped)}
-                          style={{ ['--k' as string]: KIND_COLOR[kind], ['--kt' as string]: readable(KIND_COLOR[kind], 4.5, '#262a2e'), minHeight: 44 + Math.min(e, 16) * 2 }}
+                          style={{ ['--k' as string]: KIND_COLOR[kind], ['--kt' as string]: readable(KIND_COLOR[kind]), minHeight: 44 + Math.min(e, 16) * 2 }}
                           draggable
                           tabIndex={0}
                           aria-label={`Scene ${sc.scene_number}, ${sc.heading ?? sc.title}, ${pages(e)} pages, ${status}`}

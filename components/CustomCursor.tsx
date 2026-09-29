@@ -13,23 +13,6 @@ export default function CustomCursor() {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const updateTheme = () => {
-      try {
-        const theme = localStorage.getItem('mc_theme') || 'default';
-
-        const classesToRemove = Array.from(document.body.classList).filter(cls => cls.startsWith('theme-'));
-        classesToRemove.forEach(cls => document.body.classList.remove(cls));
-        if (theme !== 'default') {
-          document.body.classList.add(`theme-${theme}`);
-        }
-      } catch {}
-    };
-    updateTheme();
-    window.addEventListener('mc-theme-change', updateTheme);
-    return () => window.removeEventListener('mc-theme-change', updateTheme);
-  }, []);
-
-  useEffect(() => {
     const evaluate = () => {
       const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
       const pref = (() => { try { return localStorage.getItem('mc_custom_cursor'); } catch { return null; } })();
@@ -156,13 +139,13 @@ export default function CustomCursor() {
 
   const ring = (() => {
     switch (mode) {
-      case 'action': return { size: 48, border: `1px solid ${accent}`, radius: '50%', bg: 'rgba(255,255,255,0.08)', backdrop: 'blur(2px)' };
-      case 'grab': return { size: 36, border: `2px solid ${accent}`, radius: '8px', bg: 'rgba(255,255,255,0.15)', backdrop: 'blur(4px)' };
+      case 'action': return { size: 48, border: `1px solid ${accent}`, radius: '50%', bg: 'rgba(var(--ink-rgb), 0.08)', backdrop: 'blur(2px)' };
+      case 'grab': return { size: 36, border: `2px solid ${accent}`, radius: '8px', bg: 'rgba(var(--ink-rgb), 0.15)', backdrop: 'blur(4px)' };
       case 'view': return { size: 60, border: '1px solid rgba(255,255,255,0.4)', radius: '50%', bg: 'rgba(0,0,0,0.2)', backdrop: 'blur(4px)' };
-      case 'help': return { size: 42, border: `1.5px dotted ${accent}`, radius: '50%', bg: 'rgba(255,255,255,0.05)', backdrop: 'none' };
+      case 'help': return { size: 42, border: `1.5px dotted ${accent}`, radius: '50%', bg: 'rgba(var(--ink-rgb), 0.05)', backdrop: 'none' };
       case 'disabled': return { size: 30, border: '1.5px solid #ff5c5c', radius: '50%', bg: 'rgba(255, 92, 92, 0.1)', backdrop: 'none' };
       case 'text': return { size: 0, border: '1px solid transparent', radius: '50%', bg: 'transparent', backdrop: 'none' };
-      default: return { size: clicking ? 24 : 34, border: '1.5px solid rgba(255,255,255,0.3)', radius: '50%', bg: clicking ? 'rgba(255,255,255,0.1)' : 'transparent', backdrop: 'none' };
+      default: return { size: clicking ? 24 : 34, border: '1.5px solid rgba(var(--ink-rgb), 0.3)', radius: '50%', bg: clicking ? 'rgba(var(--ink-rgb), 0.1)' : 'transparent', backdrop: 'none' };
     }
   })();
 
@@ -213,7 +196,7 @@ export default function CustomCursor() {
         }}
       >
         {label && (
-          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? 'rgba(224, 221, 174,0.95)' : 'rgba(224, 221, 174,0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
+          <span style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: mode === 'grab' ? 'rgba(var(--fg-rgb), 0.95)' : 'rgba(var(--fg-rgb), 0.7)', fontFamily: 'var(--mono, monospace)', pointerEvents: 'none' }}>{label}</span>
         )}
       </div>
     </>

@@ -39,7 +39,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
-            style={{ width: 560, maxWidth: '100%', maxHeight: '92dvh', overflowY: 'auto', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 28 }}>
+            style={{ width: 560, maxWidth: '100%', maxHeight: '92dvh', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, padding: 28 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -127,7 +127,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
         style={{
           position: 'absolute', top: 12, right: 12, zIndex: 2,
           width: 26, height: 26, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', cursor: 'pointer',
+          background: 'var(--glass)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg-muted)', cursor: 'pointer',
         }}
       >
         {project.archived ? <ArchiveRestore size={12} aria-hidden /> : <Archive size={12} aria-hidden />}
@@ -145,8 +145,8 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
         animate={{ y: hovered ? -3 : 0 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         style={{
-          background: 'rgba(12,12,12,0.8)',
-          border: `1px solid ${hovered ? phase + '44' : 'rgba(255,255,255,0.06)'}`,
+          background: 'var(--glass)',
+          border: `1px solid ${hovered ? phase + '44' : 'rgba(var(--ink-rgb), 0.06)'}`,
           borderRadius: 16,
           padding: 18,
           position: 'relative',
@@ -170,9 +170,9 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
               border: `1px solid ${phase}33`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ color: phase, display: 'flex' }}><FormatIcon icon={icon} size={13} /></span>
+              <span style={{ color: readable(phase), display: 'flex' }}><FormatIcon icon={icon} size={13} /></span>
             </div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: phase, textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, color: readable(phase), textTransform: 'uppercase' }}>
               {project.type}
             </div>
           </div>
@@ -181,7 +181,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
             animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : 4 }}
             transition={{ duration: 0.2 }}
           >
-            <ArrowUpRight size={13} color="rgba(255,255,255,0.4)" />
+            <ArrowUpRight size={13} color="rgba(var(--ink-rgb), 0.4)" />
           </motion.div>
           )}
         </div>
@@ -218,7 +218,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
             <span>{r.done === r.total ? 'Ready for the next phase' : `${r.done} of ${r.total} done`}</span>
           </div>
           <div role="progressbar" aria-label={`${r.phaseLabel} progress`} aria-valuemin={0} aria-valuemax={r.total} aria-valuenow={r.done}
-            style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+            style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.06)', borderRadius: 2, overflow: 'hidden' }}>
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: `${pct}%` }}
@@ -241,9 +241,9 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
               <div key={name} title={name} style={{
                 width: 20, height: 20, borderRadius: '50%',
                 background: `${phase}22`,
-                border: `1.5px solid rgba(8,8,8,0.9)`,
+                border: `1.5px solid var(--surface)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--mono)', fontSize: 7, color: phase,
+                fontFamily: 'var(--mono)', fontSize: 7, color: readable(phase),
                 marginLeft: i > 0 ? -6 : 0,
                 zIndex: project.team.length - i,
                 position: 'relative',
@@ -263,7 +263,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
           <div title={`Ends ${new Date(project.deadline!).toLocaleDateString()}`} style={{
             display: 'flex', alignItems: 'center', gap: 4,
             fontFamily: 'var(--mono)', fontSize: 8.5,
-            color: overdue ? '#ef4444' : days < 30 ? '#f59e0b' : 'var(--fg-dim)',
+            color: overdue ? 'var(--danger)' : days < 30 ? 'var(--warn)' : 'var(--fg-dim)',
           }}>
             <Clock size={9} />
             {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
@@ -293,7 +293,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           boxShadow: `0 0 8px ${color}`,
           flexShrink: 0,
         }} />
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2.5, color, textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2.5, color: readable(color), textTransform: 'uppercase' }}>
           {phase.abbr}
         </div>
         <div style={{
@@ -307,8 +307,8 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           marginLeft: 'auto',
           fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1,
           color: 'var(--fg-dim)',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(var(--ink-rgb), 0.04)',
+          border: '1px solid rgba(var(--ink-rgb), 0.06)',
           borderRadius: 6,
           padding: '2px 7px',
         }}>
@@ -327,7 +327,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
         }}
         style={{
           display: 'flex', flexDirection: 'column', gap: 10, minHeight: '60vh',
-          background: dragOver ? 'rgba(255,255,255,0.015)' : 'transparent',
+          background: dragOver ? 'rgba(var(--ink-rgb), 0.015)' : 'transparent',
           border: dragOver ? `1px dashed ${color}33` : '1px solid transparent',
           borderRadius: 16,
           padding: 8,
@@ -351,7 +351,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
         {projects.length === 0 && (
           <div style={{
             height: 80, borderRadius: 16,
-            border: '1px dashed rgba(255,255,255,0.05)',
+            border: '1px dashed rgba(var(--ink-rgb), 0.05)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 1.5,
             color: 'var(--fg-dim)',
@@ -381,7 +381,7 @@ export default function ProjectsPage() {
       title: 'Projects',
       accent: '#e8431a',
       fields: [
-        { label: 'Total', value: `${projectsList.filter((p) => !p.archived).length}`, color: '#e8431a' },
+        { label: 'Total', value: `${projectsList.filter((p) => !p.archived).length}`, color: 'var(--accent)' },
       ],
       actions: user ? [
         { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
@@ -415,7 +415,7 @@ export default function ProjectsPage() {
           deadline: p.end_date || null,
           team: facts[p.id]?.team ?? [],
           description: p.description || 'No description.',
-          color: readable(p.accent_color || '#e8431a'),
+          color: readable(p.accent_color || 'var(--accent)'),
         }));
         setProjectsList(fetched);
         setLoaded(true);
@@ -518,9 +518,9 @@ export default function ProjectsPage() {
         position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 24px',
-        background: 'rgba(6,6,6,0.92)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         zIndex: 200,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -535,7 +535,7 @@ export default function ProjectsPage() {
             MC
           </Link>
 
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
 
           <div style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
             Production Board
@@ -559,13 +559,13 @@ export default function ProjectsPage() {
             ))}
           </div>
 
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
 
           <button
             onClick={handleNewProject}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              background: 'var(--accent)', color: '#060606',
+              background: 'var(--accent)', color: 'var(--on-accent)',
               border: 'none', borderRadius: 9999,
               fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
               textTransform: 'uppercase', fontWeight: 600,
@@ -590,9 +590,9 @@ export default function ProjectsPage() {
       <div style={{
         position: 'fixed', top: 58, left: 0, width: '100%', height: 32,
         display: 'flex', alignItems: 'center',
-        background: 'rgba(8,8,8,0.85)',
+        background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.03)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.03)',
         zIndex: 199,
         padding: '0 24px',
         gap: 0,
@@ -612,7 +612,7 @@ export default function ProjectsPage() {
                 <span style={{
                   fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2,
                   textTransform: 'uppercase',
-                  color: count > 0 ? color : 'var(--fg-dim)',
+                  color: count > 0 ? readable(color) : 'var(--fg-dim)',
                   transition: 'color 0.3s',
                 }}>
                   {phase.abbr}
@@ -682,20 +682,20 @@ export default function ProjectsPage() {
               placeholder="Search title, logline, format, people"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}
+              style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 9, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}
             />
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
             Sort
             <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
-              style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: '#111', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'none', letterSpacing: 0 }}>
+              style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'var(--bg-3)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'none', letterSpacing: 0 }}>
               {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </label>
           <button type="button" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}
             style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 99, cursor: 'pointer',
-              border: `1px solid ${showArchived ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
+              border: `1px solid ${showArchived ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.1)'}`,
               background: showArchived ? 'rgba(232,67,26,0.12)' : 'transparent', color: showArchived ? 'var(--fg)' : 'var(--fg-muted)',
               fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
             }}>
@@ -749,8 +749,8 @@ export default function ProjectsPage() {
       <style>{`
         ::-webkit-scrollbar { height: 4px; width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+        ::-webkit-scrollbar-thumb { background: rgba(var(--ink-rgb), 0.08); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(var(--ink-rgb), 0.16); }
       `}</style>
     </div>
   );

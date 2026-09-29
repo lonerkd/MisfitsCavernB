@@ -136,7 +136,7 @@ export function ElementCard({ element, state, crew, scenes, scenesLabel, onJumpT
         {onUntagHere && (
           <button type="button" className={b.btn} onClick={onUntagHere}>Untag in this scene</button>
         )}
-        <button type="button" className={b.btn} style={{ color: readable('#f87171') }} onClick={remove}><Trash2 size={11} aria-hidden /> Delete element</button>
+        <button type="button" className={b.btn} style={{ color: readable('var(--danger)') }} onClick={remove}><Trash2 size={11} aria-hidden /> Delete element</button>
       </div>
     </section>
   );

@@ -13,7 +13,7 @@ interface Photo {
 export default function PhotoGallery({ photos = [] }: { photos?: Photo[] }) {
   if (photos.length === 0) {
     return (
-      <div style={{ width: '100%', height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, background: 'rgba(255,255,255,0.01)' }}>
+      <div style={{ width: '100%', height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 12, background: 'rgba(var(--ink-rgb), 0.01)' }}>
         <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)' }}>
           Nothing featured yet.<br />
           <span style={{ fontSize: 9, color: 'var(--fg-dim)' }}>Make a project Public in Studio → Share and its published references appear here.</span>
@@ -27,7 +27,7 @@ export default function PhotoGallery({ photos = [] }: { photos?: Photo[] }) {
       {photos.map((photo) => {
         const figure = (
           <figure
-            style={{ margin: 0, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', height: '100%' }}
+            style={{ margin: 0, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(var(--ink-rgb), 0.06)', background: 'rgba(var(--ink-rgb), 0.02)', height: '100%' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- remote storage URLs of unknown dimensions */}
             <img

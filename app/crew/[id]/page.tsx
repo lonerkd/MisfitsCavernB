@@ -109,8 +109,8 @@ export default function CrewMemberPage() {
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
         <header style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-          background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          background: 'var(--surface)', backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
           padding: '0 24px', display: 'flex', alignItems: 'center', zIndex: 100,
           boxSizing: 'border-box'
         }}>
@@ -123,7 +123,7 @@ export default function CrewMemberPage() {
           <User size={40} style={{ opacity: 0.2 }} />
           <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg-dim)' }}>PROFILE NOT FOUND</div>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 4, color: 'var(--fg-dim)' }}>This crew member doesn&apos;t exist or has been removed.</div>
-          <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
+          <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
             BACK TO CREW
           </Link>
         </div>
@@ -143,8 +143,8 @@ export default function CrewMemberPage() {
       {/* ── Fixed Header ───────────────────────────────────────────────────────── */}
       <header style={{
         position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'rgba(8,8,8,0.95)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
+        background: 'var(--surface)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
         padding: '0 24px', display: 'flex', justifyContent: 'space-between',
         alignItems: 'center', zIndex: 100, boxSizing: 'border-box'
       }}>
@@ -154,7 +154,7 @@ export default function CrewMemberPage() {
         </Link>
         <span style={{
           fontSize: 9, padding: '4px 10px',
-          border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(255,255,255,0.15)'}`,
+          border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(var(--ink-rgb), 0.15)'}`,
           color: profile.status === 'OPEN' ? '#00c850' : 'var(--fg-dim)',
           fontFamily: 'var(--mono)', letterSpacing: 2
         }}>
@@ -176,7 +176,7 @@ export default function CrewMemberPage() {
                 width: 80, height: 80, borderRadius: '50%',
                 background: 'var(--accent)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontFamily: 'var(--display)',
-                fontSize: '2.2rem', color: 'var(--bg)', userSelect: 'none'
+                fontSize: '2.2rem', color: 'var(--on-accent)', userSelect: 'none'
               }}>
                 {initial}
               </div>
@@ -203,14 +203,14 @@ export default function CrewMemberPage() {
               )}
               <span style={{
                 fontSize: 9, padding: '3px 9px',
-                border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.5)' : 'rgba(var(--ink-rgb), 0.12)'}`,
                 color: profile.status === 'OPEN' ? '#00c850' : 'var(--fg-dim)',
                 fontFamily: 'var(--mono)', letterSpacing: 2
               }}>
                 {profile.status}
               </span>
               {isOnline && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, color: '#10b981' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, fontFamily: 'var(--mono)', letterSpacing: 1, color: 'var(--ok)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
                   Online now
                 </span>
@@ -240,7 +240,7 @@ export default function CrewMemberPage() {
         </div>
 
         {/* ── Divider ──────────────────────────────────────────────────────────── */}
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', marginBottom: 40 }} />
+        <div style={{ height: 1, background: 'rgba(var(--ink-rgb), 0.05)', marginBottom: 40 }} />
 
         {/* ── Bio ──────────────────────────────────────────────────────────────── */}
         {profile.bio && (
@@ -250,7 +250,7 @@ export default function CrewMemberPage() {
             </div>
             <p style={{
               fontFamily: 'var(--serif)', fontSize: '1.2rem', lineHeight: 1.75,
-              color: 'rgba(224, 221, 174,0.82)', margin: 0, maxWidth: 620
+              color: 'rgba(var(--fg-rgb), 0.82)', margin: 0, maxWidth: 620
             }}>
               {profile.bio}
             </p>
@@ -265,7 +265,7 @@ export default function CrewMemberPage() {
             </h2>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {credits.map((c) => (
-                <li key={c.project_id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `3px solid ${c.accent_color || '#e8431a'}` }}>
+                <li key={c.project_id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${c.accent_color || '#e8431a'}` }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg)' }}>
                       {c.title}{c.year ? <span style={{ color: 'var(--fg-dim)', fontSize: 13 }}> ({c.year})</span> : null}
@@ -324,8 +324,8 @@ export default function CrewMemberPage() {
                   <div
                     style={{
                       padding: '20px 22px',
-                      background: '#0a0a0a',
-                      border: `1px solid ${hoveredCard === project.id ? 'rgba(232, 67, 26,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                      background: 'var(--bg-2)',
+                      border: `1px solid ${hoveredCard === project.id ? 'rgba(232, 67, 26,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
                       boxShadow: hoveredCard === project.id ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
                       transition: 'border-color 0.2s, box-shadow 0.2s',
                       cursor: 'pointer'
@@ -350,7 +350,7 @@ export default function CrewMemberPage() {
                             position: 'absolute', bottom: 6, right: 8,
                             fontFamily: 'var(--mono)', fontSize: 8,
                             background: 'rgba(0,0,0,0.75)', padding: '2px 6px',
-                            color: 'rgba(255,255,255,0.6)', letterSpacing: 1
+                            color: 'rgba(var(--ink-rgb), 0.6)', letterSpacing: 1
                           }}>
                             +{project.portfolio_media.length - 1}
                           </div>
@@ -361,7 +361,7 @@ export default function CrewMemberPage() {
                     {project.portfolio_media.length === 0 && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9',
-                        background: 'rgba(255,255,255,0.02)',
+                        background: 'rgba(var(--ink-rgb), 0.02)',
                         marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}>
                         <Film size={20} style={{ opacity: 0.15 }} />
