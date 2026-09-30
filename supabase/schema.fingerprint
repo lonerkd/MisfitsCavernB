@@ -1170,21 +1170,34 @@ index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree
 index CREATE INDEX breakdown_categories_project_idx ON public.breakdown_categories USING btree (project_id, "position")
 index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismissals USING btree (created_by)
 index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
+index CREATE INDEX breakdown_elements_category_fkey_idx ON public.breakdown_elements USING btree (category_id, project_id)
 index CREATE INDEX breakdown_elements_category_idx ON public.breakdown_elements USING btree (category_id)
 index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_elements USING btree (created_by)
 index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
+index CREATE INDEX call_sheet_acks_sheet_fkey_idx ON public.call_sheet_acks USING btree (call_sheet_id, project_id)
+index CREATE INDEX call_sheet_acks_user_id_fkey_idx ON public.call_sheet_acks USING btree (user_id)
 index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
+index CREATE INDEX call_sheet_calls_sheet_fkey_idx ON public.call_sheet_calls USING btree (call_sheet_id, project_id)
+index CREATE INDEX call_sheets_issued_by_fkey_idx ON public.call_sheets USING btree (issued_by)
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
+index CREATE INDEX character_castings_created_by_fkey_idx ON public.character_castings USING btree (created_by)
+index CREATE INDEX character_media_created_by_fkey_idx ON public.character_media USING btree (created_by)
+index CREATE INDEX character_media_media_fkey_idx ON public.character_media USING btree (media_id, project_id)
 index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
 index CREATE INDEX character_media_project_idx ON public.character_media USING btree (project_id)
 index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree (created_at DESC)
 index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
+index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
+index CREATE INDEX expenses_budget_item_fkey_idx ON public.expenses USING btree (budget_item_id, project_id)
 index CREATE INDEX expenses_budget_item_idx ON public.expenses USING btree (budget_item_id)
+index CREATE INDEX expenses_created_by_fkey_idx ON public.expenses USING btree (created_by)
 index CREATE INDEX expenses_project_idx ON public.expenses USING btree (project_id)
+index CREATE INDEX expenses_receipt_fkey_idx ON public.expenses USING btree (receipt_media_id)
+index CREATE INDEX expenses_vendor_fkey_idx ON public.expenses USING btree (vendor_id, project_id)
 index CREATE INDEX expenses_vendor_idx ON public.expenses USING btree (vendor_id)
 index CREATE INDEX guide_progress_project_idx ON public.guide_progress USING btree (project_id)
 index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
@@ -1237,59 +1250,93 @@ index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
+index CREATE INDEX lounge_reads_channel_id_fkey_idx ON public.lounge_reads USING btree (channel_id)
+index CREATE INDEX lounge_reads_partner_id_fkey_idx ON public.lounge_reads USING btree (partner_id)
 index CREATE INDEX media_created_by_idx ON public.media USING btree (created_by)
 index CREATE INDEX media_project_created_idx ON public.media USING btree (project_id, created_at DESC)
 index CREATE INDEX messages_channel_created_idx ON public.messages USING btree (channel_uuid, created_at)
 index CREATE INDEX messages_channel_uuid_idx ON public.messages USING btree (channel_uuid)
 index CREATE INDEX messages_content_search_idx ON public.messages USING gin (to_tsvector('simple'::regconfig, content))
 index CREATE INDEX messages_parent_idx ON public.messages USING btree (parent_message_id)
+index CREATE INDEX messages_pinned_by_fkey_idx ON public.messages USING btree (pinned_by)
 index CREATE INDEX messages_pinned_idx ON public.messages USING btree (channel_uuid) WHERE pinned
+index CREATE INDEX notifications_created_by_fkey_idx ON public.notifications USING btree (created_by)
 index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
 index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
 index CREATE INDEX portfolio_projects_category_idx ON public.portfolio_projects USING btree (category)
 index CREATE INDEX post_cuts_created_by_idx ON public.post_cuts USING btree (created_by)
+index CREATE INDEX post_cuts_media_fkey_idx ON public.post_cuts USING btree (media_id, project_id)
 index CREATE INDEX post_cuts_media_idx ON public.post_cuts USING btree (media_id)
 index CREATE INDEX post_cuts_project_idx ON public.post_cuts USING btree (project_id, created_at)
 index CREATE INDEX post_items_assigned_to_idx ON public.post_items USING btree (assigned_to)
 index CREATE INDEX post_items_created_by_idx ON public.post_items USING btree (created_by)
 index CREATE INDEX post_items_project_idx ON public.post_items USING btree (project_id, kind, "position")
 index CREATE INDEX post_notes_created_by_idx ON public.post_notes USING btree (created_by)
+index CREATE INDEX post_notes_cut_fkey_idx ON public.post_notes USING btree (cut_id, project_id)
 index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, at_seconds)
 index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
+index CREATE INDEX post_notes_scene_fkey_idx ON public.post_notes USING btree (scene_id, project_id)
 index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX profiles_sample_idx ON public.profiles USING btree (id) WHERE is_sample
+index CREATE INDEX project_audio_references_added_by_fkey_idx ON public.project_audio_references USING btree (added_by)
+index CREATE INDEX project_audio_references_project_id_fkey_idx ON public.project_audio_references USING btree (project_id)
+index CREATE INDEX project_audio_references_script_id_fkey_idx ON public.project_audio_references USING btree (script_id)
+index CREATE INDEX project_brief_answered_by_fkey_idx ON public.project_brief USING btree (answered_by)
 index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
+index CREATE INDEX project_documents_created_by_fkey_idx ON public.project_documents USING btree (created_by)
+index CREATE INDEX project_documents_location_fkey_idx ON public.project_documents USING btree (location_id, project_id)
 index CREATE INDEX project_documents_location_idx ON public.project_documents USING btree (location_id)
 index CREATE INDEX project_documents_person_idx ON public.project_documents USING btree (person_id)
 index CREATE INDEX project_documents_project_idx ON public.project_documents USING btree (project_id)
+index CREATE INDEX project_documents_vendor_fkey_idx ON public.project_documents USING btree (vendor_id, project_id)
+index CREATE INDEX project_locations_created_by_fkey_idx ON public.project_locations USING btree (created_by)
 index CREATE INDEX project_locations_project_idx ON public.project_locations USING btree (project_id)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
+index CREATE INDEX scene_elements_element_fkey_idx ON public.scene_elements USING btree (element_id, project_id)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
 index CREATE INDEX scene_elements_project_idx ON public.scene_elements USING btree (project_id)
+index CREATE INDEX scene_elements_scene_fkey_idx ON public.scene_elements USING btree (scene_id, project_id)
+index CREATE INDEX scene_media_created_by_fkey_idx ON public.scene_media USING btree (created_by)
+index CREATE INDEX scene_media_media_fkey_idx ON public.scene_media USING btree (media_id, project_id)
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
+index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree (scene_id, project_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
+index CREATE INDEX script_annotations_created_by_fkey_idx ON public.script_annotations USING btree (created_by)
+index CREATE INDEX script_annotations_project_id_fkey_idx ON public.script_annotations USING btree (project_id)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
 index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
 index CREATE INDEX scripts_content_search_idx ON public.scripts USING gin (to_tsvector('simple'::regconfig, COALESCE(content, ''::text)))
 index CREATE INDEX set_log_created_by_idx ON public.set_log USING btree (created_by)
+index CREATE INDEX set_log_day_fkey_idx ON public.set_log USING btree (call_sheet_id, project_id)
 index CREATE INDEX set_log_day_idx ON public.set_log USING btree (call_sheet_id)
+index CREATE INDEX set_log_media_fkey_idx ON public.set_log USING btree (media_id, project_id)
 index CREATE INDEX set_log_media_idx ON public.set_log USING btree (media_id)
 index CREATE INDEX set_log_project_idx ON public.set_log USING btree (project_id, at)
+index CREATE INDEX set_log_scene_fkey_idx ON public.set_log USING btree (scene_id, project_id)
 index CREATE INDEX set_log_scene_idx ON public.set_log USING btree (scene_id)
+index CREATE INDEX set_log_shot_fkey_idx ON public.set_log USING btree (shot_id, project_id)
 index CREATE INDEX set_log_shot_idx ON public.set_log USING btree (shot_id)
+index CREATE INDEX sfx_assets_project_id_fkey_idx ON public.sfx_assets USING btree (project_id)
+index CREATE INDEX sfx_assets_user_id_fkey_idx ON public.sfx_assets USING btree (user_id)
+index CREATE INDEX shots_created_by_fkey_idx ON public.shots USING btree (created_by)
+index CREATE INDEX shots_frame_fkey_idx ON public.shots USING btree (frame_media_id, project_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
+index CREATE INDEX shots_scene_fkey_idx ON public.shots USING btree (scene_id, project_id)
+index CREATE INDEX timesheets_decided_by_fkey_idx ON public.timesheets USING btree (decided_by)
 index CREATE INDEX timesheets_project_idx ON public.timesheets USING btree (project_id)
 index CREATE INDEX timesheets_user_idx ON public.timesheets USING btree (user_id)
 index CREATE INDEX transcript_lines_created_by_idx ON public.transcript_lines USING btree (created_by)
+index CREATE INDEX transcript_lines_media_fkey_idx ON public.transcript_lines USING btree (media_id, project_id)
 index CREATE INDEX transcript_lines_media_idx ON public.transcript_lines USING btree (media_id, "position")
 index CREATE INDEX transcript_lines_paper_idx ON public.transcript_lines USING btree (project_id, paper_order) WHERE (paper_order IS NOT NULL)
 index CREATE INDEX unavailability_user_idx ON public.unavailability USING btree (user_id, starts_on)
+index CREATE INDEX vendors_created_by_fkey_idx ON public.vendors USING btree (created_by)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX breakdown_categories_id_project_key ON public.breakdown_categories USING btree (id, project_id)
@@ -1393,32 +1440,42 @@ policy public.breakdown_categories "breakdown_categories update" PERMISSIVE UPDA
 policy public.breakdown_categories "breakdown_categories view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.breakdown_dismissals "breakdown_dismissals access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.breakdown_elements "breakdown_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.brief_questions "brief_questions admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.brief_questions "brief_questions admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.brief_questions "brief_questions admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.brief_questions "brief_questions admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.brief_questions "brief_questions read" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.channel_members "channel_members manage" PERMISSIVE ALL to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
+policy public.channel_members "channel_members delete" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
+policy public.channel_members "channel_members insert" PERMISSIVE INSERT to authenticated using - check can_manage_channel(channel_id)
+policy public.channel_members "channel_members update" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check -
 policy public.channel_members "channel_members viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(channel_id) check -
-policy public.channel_presets "channel_presets admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.channel_presets "channel_presets admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.channel_presets "channel_presets admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.channel_presets "channel_presets admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.channel_presets "channel_presets read" PERMISSIVE SELECT to authenticated using true check -
 policy public.channels "channels create" PERMISSIVE INSERT to authenticated using - check (((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))) OR ((project_id IS NULL) AND internal.caller_is_admin()))
 policy public.channels "channels delete" PERMISSIVE DELETE to authenticated using can_manage_channel(id) check -
 policy public.channels "channels update" PERMISSIVE UPDATE to authenticated using can_manage_channel(id) check -
 policy public.channels "channels viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(id) check -
 policy public.character_castings "Castings viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.character_castings "Castings writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.character_castings "castings delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.character_castings "castings insert" PERMISSIVE INSERT to authenticated using - check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.character_castings "castings update" PERMISSIVE UPDATE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.character_media "character_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.character_media "character_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (script_characters c JOIN scripts s ON ((s.id = c.script_id))) WHERE ((c.id = character_media.character_id) AND (s.project_id = character_media.project_id)))))
 policy public.character_media "character_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.client_errors "client_errors: admins clear" PERMISSIVE DELETE to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
 policy public.client_errors "client_errors: admins read" PERMISSIVE SELECT to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
-policy public.crafts "crafts admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.crafts "crafts admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.crafts "crafts admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.crafts "crafts admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
-policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = auth.uid()))
+policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
 policy public.expenses "expenses shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.guide_progress "guide_progress delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
@@ -1426,9 +1483,8 @@ policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to au
 policy public.guide_progress "guide_progress own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.job_applications "Job owners can update application status" PERMISSIVE UPDATE to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))
-policy public.job_applications "Job owners can view applications" PERMISSIVE SELECT to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check -
 policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
-policy public.job_applications "Users can view their own applications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = applicant_id) check -
+policy public.job_applications "job_applications read" PERMISSIVE SELECT to authenticated using ((applicant_id = ( SELECT auth.uid() AS uid)) OR (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))) check -
 policy public.jobs "Applicants view jobs they applied to" PERMISSIVE SELECT to authenticated using internal.applied_to(id) check -
 policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
@@ -1445,13 +1501,18 @@ policy public.notifications "Users can delete their own notifications" PERMISSIV
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "notifications insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_notify(user_id))
-policy public.portfolio_blocks "Portfolio blocks owner write" PERMISSIVE ALL to public using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = auth.uid()))) check -
 policy public.portfolio_blocks "Portfolio blocks readable" PERMISSIVE SELECT to public using true check -
-policy public.portfolio_media "Portfolio media owner write" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_blocks "portfolio_blocks delete own" PERMISSIVE DELETE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_blocks "portfolio_blocks insert own" PERMISSIVE INSERT to authenticated using - check (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
+policy public.portfolio_blocks "portfolio_blocks update own" PERMISSIVE UPDATE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_media "Portfolio media readable" PERMISSIVE SELECT to public using true check -
-policy public.portfolio_media "Portfolio owner can manage media" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
-policy public.portfolio_projects "Portfolio owner only write" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_media "portfolio_media delete own" PERMISSIVE DELETE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_media "portfolio_media insert own" PERMISSIVE INSERT to authenticated using - check (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
+policy public.portfolio_media "portfolio_media update own" PERMISSIVE UPDATE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_projects "Portfolio publicly readable" PERMISSIVE SELECT to public using true check -
+policy public.portfolio_projects "portfolio_projects delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_projects "portfolio_projects insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.portfolio_projects "portfolio_projects update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.post_cuts "post_cuts delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.post_cuts "post_cuts insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.post_cuts "post_cuts update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1476,9 +1537,13 @@ policy public.project_crew "Project creators can manage crew" PERMISSIVE INSERT 
 policy public.project_crew "Project creators can remove crew" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR (user_id = ( SELECT auth.uid() AS uid))) check -
 policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check -
 policy public.project_crew "project_crew view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
-policy public.project_documents "project_documents keep" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
+policy public.project_documents "project_documents delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
+policy public.project_documents "project_documents insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
 policy public.project_documents "project_documents read" PERMISSIVE SELECT to authenticated using (internal.can_shape_project(project_id) OR (person_id = ( SELECT auth.uid() AS uid))) check -
-policy public.project_formats "project formats admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.project_documents "project_documents update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check -
+policy public.project_formats "project formats admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.project_formats "project formats admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.project_formats "project formats admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.project_formats "project formats view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.project_locations "project_locations access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.project_tasks "project_tasks access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1496,11 +1561,13 @@ policy public.scenes "scenes insert" PERMISSIVE INSERT to authenticated using - 
 policy public.scenes "scenes update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scenes "scenes view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.script_annotations "script_annotations delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = auth.uid()))
+policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.script_annotations "script_annotations view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.script_characters "script_characters access" PERMISSIVE ALL to authenticated using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_metadata "metadata delete by script members" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
+policy public.script_metadata "metadata insert by script members" PERMISSIVE INSERT to authenticated using - check internal.can_access_script(script_id)
 policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
-policy public.script_metadata "metadata writable by script members" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_metadata "metadata update by script members" PERMISSIVE UPDATE to authenticated using internal.can_access_script(script_id) check -
 policy public.script_revisions "Script members can manage revisions" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
 policy public.script_stash "script_stash delete" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
 policy public.script_stash "script_stash insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_script(script_id))
@@ -1514,15 +1581,15 @@ policy public.set_log "set_log delete" PERMISSIVE DELETE to authenticated using 
 policy public.set_log "set_log insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.set_log "set_log update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check internal.can_access_project(project_id)
 policy public.set_log "set_log view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
-policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to public using (user_id = auth.uid()) check -
-policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
-policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
+policy public.sfx_assets "sfx_assets delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.sfx_assets "sfx_assets insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
+policy public.sfx_assets "sfx_assets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
+policy public.sfx_assets "sfx_assets update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.shots "shots access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.spotify_connections "Users can delete own spotify connection" PERMISSIVE DELETE to public using (auth.uid() = user_id) check -
-policy public.spotify_connections "Users can insert own spotify connection" PERMISSIVE INSERT to public using - check (auth.uid() = user_id)
-policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
-policy public.spotify_connections "Users can view own spotify connection" PERMISSIVE SELECT to public using (auth.uid() = user_id) check -
+policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check (((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id)) OR internal.can_shape_project(project_id))
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))

@@ -1,6 +1,35 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Leaving the suite (and handing a project over)
+## Latest Session — What the database advisors found
+
+Migration `20260930010000_advisor_fixes.sql`. Supabase's security and
+performance advisors, run against production:
+
+- **Sound effects leaked across projects**: `sfx_assets` was readable by
+  anyone, signed in or not (`USING (true)`), though every sound belongs to a
+  project — Soundtrack › SFX listed everyone's. Now the uploader and anyone who
+  can open the project; only the uploader renames or removes. (No rows existed
+  in production, so nothing was exposed.) Test shown to fail on the old rule.
+- **auth.uid() once per query** in the 9 policies that still called it per row
+  (Spotify connections, portfolio blocks, script annotations, Discord
+  webhooks, sound effects).
+- **Writes split from reads**: 12 tables had a `FOR ALL` write policy beside a
+  `SELECT` policy, so every read ran both; the writes are now INSERT / UPDATE /
+  DELETE policies (same people, same rules). Portfolio media had the same
+  owner policy twice — one set now. Job applications: one read policy.
+- **47 foreign keys got covering indexes** — joins, and the `ON DELETE`
+  actions behind account deletion, no longer scan whole tables.
+- Left as they are, on purpose: the advisors' "SECURITY DEFINER callable"
+  warnings (those are the app's RPCs, each checking the caller itself),
+  "unused index" notes (little traffic yet), and the two `jobs` read policies
+  (`internal.applied_to` isn't granted to anon).
+- **Yours to switch on**: leaked-password protection (Supabase dashboard ›
+  Auth › Passwords).
+- Tests: `tests/integration/advisor-fixes.test.ts` (sound effects as owner,
+  crew, outsider, signed out; portfolio owner-only writes); the whole
+  integration suite (43 files) passes on the rewritten policies.
+
+## Earlier — Leaving the suite (and handing a project over)
 
 Migration `20260929090000_account_deletion.sql` (`transfer_project`,
 `account_deletion_plan`, `delete_my_account`; 22 author links now clear

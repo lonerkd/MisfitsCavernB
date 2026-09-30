@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T22:07:43.650Z",
+  "last_synchronized": "2026-09-30T00:50:41.430Z",
   "stats": {
-    "totalFiles": 513,
-    "totalSize": 3953977,
+    "totalFiles": 515,
+    "totalSize": 3972198,
     "byExtension": {
       ".json": 9,
       ".md": 8,
       ".tsx": 160,
-      ".ts": 288,
+      ".ts": 289,
       ".js": 7,
-      ".sql": 41
+      ".sql": 42
     }
   },
   "modules": {
@@ -305,7 +305,8 @@
         "supabase/migrations/20260929060000_transcripts.sql",
         "supabase/migrations/20260929070000_pocket.sql",
         "supabase/migrations/20260929080000_client_errors.sql",
-        "supabase/migrations/20260929090000_account_deletion.sql"
+        "supabase/migrations/20260929090000_account_deletion.sql",
+        "supabase/migrations/20260930010000_advisor_fixes.sql"
       ]
     }
   },
@@ -2213,7 +2214,7 @@
     {
       "path": "lib/supabase/database.types.ts",
       "size": 117832,
-      "last_modified": "2026-09-29T22:04:01.594Z"
+      "last_modified": "2026-09-30T00:50:28.572Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2611,6 +2612,11 @@
       "last_modified": "2026-09-29T22:04:01.600Z"
     },
     {
+      "path": "supabase/migrations/20260930010000_advisor_fixes.sql",
+      "size": 14879,
+      "last_modified": "2026-09-30T00:46:52.312Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2634,6 +2640,11 @@
       "path": "tests/integration/admin-rights.test.ts",
       "size": 3187,
       "last_modified": "2026-09-26T19:15:24.839Z"
+    },
+    {
+      "path": "tests/integration/advisor-fixes.test.ts",
+      "size": 3342,
+      "last_modified": "2026-09-30T00:50:08.878Z"
     },
     {
       "path": "tests/integration/auth-signup.test.ts",
