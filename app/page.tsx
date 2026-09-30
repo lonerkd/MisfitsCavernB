@@ -861,12 +861,17 @@ export default function Home() {
 
       <footer style={{
         textAlign: 'center',
-        padding: '20px 0 44px',
+        // Clear of the dock (it reports its own height; 0 where it's hidden).
+        padding: '20px 0 calc(var(--taskbar-height, 0px) + 44px)',
         fontSize: 'max(7.5px, var(--mc-min-font, 0px))',
         letterSpacing: 4,
         textTransform: 'uppercase',
         fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
         © 2026 Peter Olowude · Misfits Cavern Productions
+        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
+          <Link href="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
+          <Link href="/terms" style={{ color: 'inherit' }}>Terms</Link>
+        </div>
       </footer>
     </div>
   );

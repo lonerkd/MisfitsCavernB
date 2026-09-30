@@ -317,6 +317,13 @@ export default function AuthPage() {
             >
               {mode === 'signin' ? 'Sign In' : 'Create Account'}
             </Button>
+            {mode === 'signup' && (
+              <p style={{ margin: '14px 0 0', fontSize: 11, lineHeight: 1.5, color: 'var(--fg-dim)', textAlign: 'center' }}>
+                By creating an account you agree to the{' '}
+                <Link href="/terms" style={{ color: 'var(--fg-muted)' }}>Terms</Link> and{' '}
+                <Link href="/privacy" style={{ color: 'var(--fg-muted)' }}>Privacy Policy</Link>.
+              </p>
+            )}
           </form>
 
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>

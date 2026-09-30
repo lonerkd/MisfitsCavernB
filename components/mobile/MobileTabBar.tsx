@@ -36,7 +36,7 @@ const TOOLS = [
 ] as const;
 
 /** Pages that are the whole screen, or for people outside the suite. */
-const hiddenOn = (path: string) => path === '/auth' || path === '/login' || path === '/split' || path.startsWith('/editor') || /^\/(shared|p|s|call)\//.test(path);
+const hiddenOn = (path: string) => path === '/auth' || path === '/login' || path === '/privacy' || path === '/terms' || path === '/split' || path.startsWith('/editor') || /^\/(shared|p|s|call)\//.test(path);
 
 function useKeyboardOpen() {
   const [open, setOpen] = useState(false);

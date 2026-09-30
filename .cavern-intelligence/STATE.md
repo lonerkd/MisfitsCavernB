@@ -1,6 +1,29 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Leaving the suite (and handing a project over)
+## Latest Session — Privacy Policy and Terms
+
+No migration.
+
+- **`/privacy` and `/terms`**, public, for Peter Olowude (an individual, not
+  yet a registered business) in Alberta, Canada; contact
+  peterolowude@icloud.com — all in `lib/legal.ts` (change there, and move
+  `effective` forward whenever the wording changes).
+- Written to match what the app does: what's collected (account, profile,
+  work, preferences, error reports kept 30 days, cookieless Vercel
+  analytics), who handles it (Supabase, Vercel, Discord, Spotify, Have I Been
+  Pwned's k-anonymity check, Openverse, embeds), PIPEDA rights mapped to real
+  controls (export, edit, Settings › Delete account), what account deletion
+  keeps ("Deleted account" in others' projects). Terms: users own their work
+  (a licence only to run the service), collaboration and hand-over rules,
+  acceptable use, Canadian notice-and-notice, "as is", CAD $100 liability cap,
+  Alberta law. **Not legal advice** — worth a lawyer's read before launch.
+- Linked from the landing footer, the sign-up form ("By creating an account
+  you agree to…") and the foot of Settings. The landing footer now clears the
+  dock (`--taskbar-height`) — its links were underneath it.
+- Test: `e2e/legal.spec.ts` (public, names the operator and contact, no
+  sideways scroll at 390px, reachable from the landing page and sign-up).
+
+## Earlier — Leaving the suite (and handing a project over)
 
 Migration `20260929090000_account_deletion.sql` (`transfer_project`,
 `account_deletion_plan`, `delete_my_account`; 22 author links now clear
