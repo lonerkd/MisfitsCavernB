@@ -22,7 +22,7 @@ jobs:
     env:
       DRIFT_TARGET_DB_URL: ${{ secrets.PRODUCTION_DB_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
