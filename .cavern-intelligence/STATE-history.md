@@ -2,6 +2,59 @@
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
 
+## Earlier — Faster to open (phones first)
+
+
+No migration.
+
+- **Studio opens with only the tab you're on**: each tab, and each Production
+  view (stripboard, money, On Set…), loads when opened — first load 376 kB →
+  272 kB.
+- **The editor opens without the PDF engine**: jsPDF loads when you export a
+  PDF, the revision diff when you open it — first load 478 kB → 347 kB. PDF
+  export verified end to end (a real `%PDF` download).
+
+## Earlier — Pocket: the suite on the go
+
+Migration `20260929070000_pocket.sql` (a `note` kind of library item; `ui_prefs.places`).
+
+- **Capture** — the centre tab on a phone. A photo or clip from the camera, a
+  **voice memo** (written down as you talk where the browser can: each
+  sentence becomes a transcript line stamped at its moment in the recording,
+  so it's findable and ready for the paper edit), a **note**, a **link**, or
+  anything from files — into the project you pick, two taps. It's in Studio ›
+  Library on every device at once.
+- **Nothing is lost without signal**: every capture is kept on the phone first
+  (IndexedDB outbox, `lib/pocket/outbox.ts`) and sent from there — at once when
+  online, otherwise when the connection is back or the app comes to the front.
+  What's waiting shows in Capture (retry / discard) and as a badge on the tab.
+- **Share into the suite**: installed as an app, Misfits Cavern is in the
+  phone's share menu — a link shared from any app lands as a link, text as a
+  note (manifest `share_target`). The home-screen icon opens Today, and a long
+  press offers Capture, Today and the Lounge.
+- **Notes are library items** (`media.kind = 'note'`): words only, never in a
+  share link (enforced in the database). Desktop Library has "Note" beside
+  "Add link"; notes read as cards, filter as Notes, and are found by search.
+- **Continue on the other device**: the suite remembers the last place worth
+  coming back to on a phone and on a desk (a script, a Studio tab or view, a
+  project page, a conversation) in the account (`ui_prefs.places`). Today —
+  and the first page of a visit on the desk — offers "Continue from your
+  desktop · 20 min ago: Night Shift — script", switching to the right project
+  first. Waved off per device.
+- Search moved into More on the phone ("Search everything"), with a search
+  button on Today.
+- **Small print is readable on a phone**: every size under 10px suite-wide is
+  now `max(Npx, var(--mc-min-font))` — unchanged on a desk, 11px at phone
+  width (the 390px audit's sub-10px text went from dozens per page to ~0, with
+  no new sideways scroll). `.mc-hit` gives small controls (the project page's
+  module switches, inline links, "Show all") a thumb-sized touch area on touch
+  screens without changing their look.
+- Tests: `lib/pocket/places.test.ts`, `lib/pocket/capture.test.ts`,
+  `tests/integration/pocket.test.ts` (notes by persona, never shared, words
+  only; places validated and private), `e2e/mobile.spec.ts` (Continue from the
+  desk, capture a note, share a link in, the phone's place saved).
+
+
 ## Earlier — The suite on a phone
 
 No migration — PR #93 merged.

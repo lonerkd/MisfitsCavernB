@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T21:36:59.307Z",
+  "last_synchronized": "2026-09-30T01:08:40.788Z",
   "stats": {
-    "totalFiles": 512,
-    "totalSize": 4012630,
+    "totalFiles": 520,
+    "totalSize": 4044835,
     "byExtension": {
       ".json": 16,
       ".md": 13,
-      ".tsx": 156,
-      ".ts": 281,
+      ".tsx": 159,
+      ".ts": 285,
       ".js": 7,
-      ".sql": 39
+      ".sql": 40
     }
   },
   "modules": {
@@ -89,6 +89,7 @@
         "app/admin/analytics/page.tsx",
         "app/admin/audit-logs/page.tsx",
         "app/admin/error.tsx",
+        "app/admin/errors/page.tsx",
         "app/admin/page.tsx",
         "app/admin/users/page.tsx",
         "app/api/discord/notify/route.ts",
@@ -107,6 +108,7 @@
         "app/editor/loading.tsx",
         "app/editor/page.tsx",
         "app/error.tsx",
+        "app/global-error.tsx",
         "app/jobs/loading.tsx",
         "app/jobs/page.tsx",
         "app/jobs/[id]/page.tsx",
@@ -184,6 +186,7 @@
         "components/editor/WriteView.tsx",
         "components/editor/WritingLoop.tsx",
         "components/EmptyState.tsx",
+        "components/ErrorReporter.tsx",
         "components/formats/FormatPicker.tsx",
         "components/GlobalAudioWidget.tsx",
         "components/GrainOverlay.tsx",
@@ -299,7 +302,8 @@
         "supabase/migrations/20260929040000_search.sql",
         "supabase/migrations/20260929050000_themes.sql",
         "supabase/migrations/20260929060000_transcripts.sql",
-        "supabase/migrations/20260929070000_pocket.sql"
+        "supabase/migrations/20260929070000_pocket.sql",
+        "supabase/migrations/20260929080000_client_errors.sql"
       ]
     }
   },
@@ -386,13 +390,18 @@
     },
     {
       "path": "app/admin/error.tsx",
-      "size": 2506,
-      "last_modified": "2026-09-29T21:35:35.976Z"
+      "size": 2613,
+      "last_modified": "2026-09-30T00:32:34.700Z"
+    },
+    {
+      "path": "app/admin/errors/page.tsx",
+      "size": 8783,
+      "last_modified": "2026-09-30T00:32:34.701Z"
     },
     {
       "path": "app/admin/page.tsx",
-      "size": 8000,
-      "last_modified": "2026-09-29T21:35:35.977Z"
+      "size": 8349,
+      "last_modified": "2026-09-30T00:32:34.702Z"
     },
     {
       "path": "app/admin/users/page.tsx",
@@ -476,8 +485,13 @@
     },
     {
       "path": "app/error.tsx",
-      "size": 2481,
-      "last_modified": "2026-09-29T21:35:35.982Z"
+      "size": 2588,
+      "last_modified": "2026-09-30T00:32:34.703Z"
+    },
+    {
+      "path": "app/global-error.tsx",
+      "size": 1959,
+      "last_modified": "2026-09-30T00:32:34.703Z"
     },
     {
       "path": "app/jobs/loading.tsx",
@@ -486,8 +500,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 42047,
-      "last_modified": "2026-09-29T21:35:36.568Z"
+      "size": 42076,
+      "last_modified": "2026-09-29T22:00:23.555Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
@@ -496,8 +510,8 @@
     },
     {
       "path": "app/layout.tsx",
-      "size": 4642,
-      "last_modified": "2026-09-29T21:35:21.858Z"
+      "size": 5010,
+      "last_modified": "2026-09-30T00:32:34.704Z"
     },
     {
       "path": "app/loading.tsx",
@@ -642,7 +656,7 @@
     {
       "path": "app/studio/page.tsx",
       "size": 11971,
-      "last_modified": "2026-09-29T21:33:47.977Z"
+      "last_modified": "2026-09-30T00:32:33.124Z"
     },
     {
       "path": "app/today/page.tsx",
@@ -696,8 +710,8 @@
     },
     {
       "path": "components/ClientShell.tsx",
-      "size": 1705,
-      "last_modified": "2026-09-29T21:33:47.986Z"
+      "size": 1822,
+      "last_modified": "2026-09-30T00:32:34.704Z"
     },
     {
       "path": "components/CommandPalette.tsx",
@@ -838,6 +852,11 @@
       "path": "components/EmptyState.tsx",
       "size": 1418,
       "last_modified": "2026-09-29T21:35:36.008Z"
+    },
+    {
+      "path": "components/ErrorReporter.tsx",
+      "size": 778,
+      "last_modified": "2026-09-30T00:32:34.705Z"
     },
     {
       "path": "components/formats/FormatPicker.tsx",
@@ -1280,6 +1299,11 @@
       "last_modified": "2026-09-29T21:33:48.094Z"
     },
     {
+      "path": "e2e/errors.spec.ts",
+      "size": 3034,
+      "last_modified": "2026-09-30T00:32:34.705Z"
+    },
+    {
       "path": "e2e/guides.spec.ts",
       "size": 7501,
       "last_modified": "2026-09-29T21:33:48.095Z"
@@ -1291,8 +1315,8 @@
     },
     {
       "path": "e2e/hiring.spec.ts",
-      "size": 5355,
-      "last_modified": "2026-09-29T21:33:48.095Z"
+      "size": 5227,
+      "last_modified": "2026-09-29T22:00:23.664Z"
     },
     {
       "path": "e2e/home-page-crash.spec.ts",
@@ -1543,6 +1567,16 @@
       "path": "lib/credits/index.ts",
       "size": 1051,
       "last_modified": "2026-09-28T03:45:24.114Z"
+    },
+    {
+      "path": "lib/errors/report.test.ts",
+      "size": 1837,
+      "last_modified": "2026-09-30T00:32:34.706Z"
+    },
+    {
+      "path": "lib/errors/report.ts",
+      "size": 3300,
+      "last_modified": "2026-09-30T00:32:34.707Z"
     },
     {
       "path": "lib/formats-core.ts",
@@ -2211,8 +2245,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 119757,
-      "last_modified": "2026-09-29T21:33:48.163Z"
+      "size": 121414,
+      "last_modified": "2026-09-30T00:32:34.708Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2351,18 +2385,18 @@
     },
     {
       "path": "package-lock.json",
-      "size": 326499,
-      "last_modified": "2026-09-29T21:33:48.173Z"
+      "size": 328774,
+      "last_modified": "2026-09-30T00:32:34.710Z"
     },
     {
       "path": "package.json",
-      "size": 2230,
-      "last_modified": "2026-09-29T21:33:48.174Z"
+      "size": 2307,
+      "last_modified": "2026-09-30T00:32:34.711Z"
     },
     {
       "path": "performance-budget.json",
-      "size": 882,
-      "last_modified": "2026-09-29T21:33:48.174Z"
+      "size": 909,
+      "last_modified": "2026-09-30T00:32:34.712Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2605,6 +2639,11 @@
       "last_modified": "2026-09-29T21:33:48.187Z"
     },
     {
+      "path": "supabase/migrations/20260929080000_client_errors.sql",
+      "size": 3664,
+      "last_modified": "2026-09-30T00:32:34.713Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1705,
       "last_modified": "2026-04-29T08:02:41.253Z"
@@ -2663,6 +2702,11 @@
       "path": "tests/integration/campaigns.test.ts",
       "size": 2571,
       "last_modified": "2026-09-28T03:45:24.173Z"
+    },
+    {
+      "path": "tests/integration/client-errors.test.ts",
+      "size": 3865,
+      "last_modified": "2026-09-30T00:32:34.715Z"
     },
     {
       "path": "tests/integration/community.test.ts",

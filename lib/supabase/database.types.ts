@@ -822,6 +822,53 @@ export type Database = {
           },
         ];
       };
+      client_errors: {
+        Row: {
+          created_at: string;
+          digest: string | null;
+          id: number;
+          kind: string;
+          message: string;
+          path: string | null;
+          release: string | null;
+          stack: string | null;
+          user_agent: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          digest?: string | null;
+          id?: never;
+          kind: string;
+          message: string;
+          path?: string | null;
+          release?: string | null;
+          stack?: string | null;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          digest?: string | null;
+          id?: never;
+          kind?: string;
+          message?: string;
+          path?: string | null;
+          release?: string | null;
+          stack?: string | null;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_errors_user_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       crafts: {
         Row: {
           above_the_line: boolean;
@@ -3688,6 +3735,18 @@ export type Database = {
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      report_client_error: {
+        Args: {
+          p_digest: string;
+          p_kind: string;
+          p_message: string;
+          p_path: string;
+          p_release: string;
+          p_stack: string;
+          p_user_agent: string;
+        };
+        Returns: undefined;
+      };
       respond_to_application: {
         Args: { p_application: string; p_close?: boolean; p_status: string };
         Returns: Json;

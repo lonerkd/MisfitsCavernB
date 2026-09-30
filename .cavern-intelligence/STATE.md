@@ -15,6 +15,61 @@
 
 Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Checked in a browser** (local Supabase, production build, 1280px): breakdown and stripboard show no wrapping or overflow and pass axe; stripboard strip headings and cast lines ellipsize by design in the 256px day column. Checked at 1024 and 768 too: fixed the empty-state icon (invalid margin, not centred) and hid the editor beat-rail labels below 1100px, where they overlapped the script.
 
+## Latest Session — Leaving the suite (and handing a project over)
+
+Migration `20260929090000_account_deletion.sql` (`transfer_project`,
+`account_deletion_plan`, `delete_my_account`; 22 author links now clear
+instead of blocking or cascading).
+
+- **Settings › Delete account**: anyone can delete their account. Projects
+  other people are crew on never go with it — the panel lists them, each with a
+  **Hand over** to someone confirmed on its crew (or open it and delete it
+  yourself); the delete button stays off until none are left. Then the
+  username, typed, and a final confirm.
+- **What goes**: the account, profile, the projects only they work on (every
+  script, file and note in them — files removed through the Storage API first,
+  as SQL can't), portfolio, job posts, applications, notifications and direct
+  messages. **What stays**: what they wrote in other people's projects —
+  script edits, shots, notes, channel messages, timesheets, audit entries —
+  with the author cleared and shown as "Deleted account". A job they posted on
+  someone else's project passes to that project's owner.
+- **Handing a project over** (`transfer_project`): owner only, to a confirmed
+  crew member; the new owner leaves the crew list, the old owner stays on as a
+  lead, and the project's job posts move with it.
+- The last admin can't delete their account (make someone else admin first).
+- Tests: `tests/integration/account-deletion.test.ts` (who may hand over; what
+  goes and what stays, row by row; refused while owning a shared project, with
+  the wrong username, or signed out), `e2e/account-deletion.spec.ts` (hand
+  over, then delete, from Settings). Checked at 390px and 1440px.
+- The `profiles.is_admin` "open finding" below was already fixed by
+  `20260926030000_privacy_and_integrity.sql` (column grants; `get_my_account`)
+  — confirmed in production: neither anon nor authenticated can read
+  `is_admin` or `notification_prefs`.
+
+## Earlier — Hearing about problems in production
+
+Migration `20260929080000_client_errors.sql` (`client_errors`, `report_client_error`).
+
+- **The suite reports its own errors**: every crash screen (`app/error.tsx`,
+  the admin one, and the new `app/global-error.tsx` for the root layout) and
+  every uncaught error / unhandled rejection in the browser
+  (`components/ErrorReporter.tsx`) goes to `client_errors` via
+  `lib/errors/report.ts` — message, stack, page (no query string), build,
+  browser, and who (if signed in). Browser noise is ignored; each error is
+  sent once per visit, at most 10 per visit.
+- **Admin › Errors** (`/admin/errors`): grouped by message and page, with
+  count, people affected, last seen, build and a stack; cleared once fixed.
+- The log is safe to expose: anyone can report (signed-out pages count), but
+  only through the function, which trims fields and rate-limits (20/min per
+  person, 60/min signed out); only admins read or clear; 30 days kept.
+- **Vercel Analytics + Speed Insights** (cookieless) on Vercel builds only —
+  enable Web Analytics / Speed Insights in the Vercel project to see data.
+- Tests: `lib/errors/report.test.ts`, `tests/integration/client-errors.test.ts`
+  (personas, trimming, junk, rate limit, no direct writes, admin-only read and
+  clear), `e2e/errors.spec.ts` (an uncaught error is logged once and cleared
+  from Admin › Errors).
+
+
 ## Latest Session — The workflow that guards the suite
 
 No migration.
@@ -65,56 +120,4 @@ No migration.
   field with the filters stretched into tall boxes beside it.
 - Verified in screenshots at 1440×900; lounge, mobile, accessibility, Studio
   journey and themes e2e pass.
-
-## Earlier — Faster to open (phones first)
-
-
-No migration.
-
-- **Studio opens with only the tab you're on**: each tab, and each Production
-  view (stripboard, money, On Set…), loads when opened — first load 376 kB →
-  272 kB.
-- **The editor opens without the PDF engine**: jsPDF loads when you export a
-  PDF, the revision diff when you open it — first load 478 kB → 347 kB. PDF
-  export verified end to end (a real `%PDF` download).
-
-## Earlier — Pocket: the suite on the go
-
-Migration `20260929070000_pocket.sql` (a `note` kind of library item; `ui_prefs.places`).
-
-- **Capture** — the centre tab on a phone. A photo or clip from the camera, a
-  **voice memo** (written down as you talk where the browser can: each
-  sentence becomes a transcript line stamped at its moment in the recording,
-  so it's findable and ready for the paper edit), a **note**, a **link**, or
-  anything from files — into the project you pick, two taps. It's in Studio ›
-  Library on every device at once.
-- **Nothing is lost without signal**: every capture is kept on the phone first
-  (IndexedDB outbox, `lib/pocket/outbox.ts`) and sent from there — at once when
-  online, otherwise when the connection is back or the app comes to the front.
-  What's waiting shows in Capture (retry / discard) and as a badge on the tab.
-- **Share into the suite**: installed as an app, Misfits Cavern is in the
-  phone's share menu — a link shared from any app lands as a link, text as a
-  note (manifest `share_target`). The home-screen icon opens Today, and a long
-  press offers Capture, Today and the Lounge.
-- **Notes are library items** (`media.kind = 'note'`): words only, never in a
-  share link (enforced in the database). Desktop Library has "Note" beside
-  "Add link"; notes read as cards, filter as Notes, and are found by search.
-- **Continue on the other device**: the suite remembers the last place worth
-  coming back to on a phone and on a desk (a script, a Studio tab or view, a
-  project page, a conversation) in the account (`ui_prefs.places`). Today —
-  and the first page of a visit on the desk — offers "Continue from your
-  desktop · 20 min ago: Night Shift — script", switching to the right project
-  first. Waved off per device.
-- Search moved into More on the phone ("Search everything"), with a search
-  button on Today.
-- **Small print is readable on a phone**: every size under 10px suite-wide is
-  now `max(Npx, var(--mc-min-font))` — unchanged on a desk, 11px at phone
-  width (the 390px audit's sub-10px text went from dozens per page to ~0, with
-  no new sideways scroll). `.mc-hit` gives small controls (the project page's
-  module switches, inline links, "Show all") a thumb-sized touch area on touch
-  screens without changing their look.
-- Tests: `lib/pocket/places.test.ts`, `lib/pocket/capture.test.ts`,
-  `tests/integration/pocket.test.ts` (notes by persona, never shared, words
-  only; places validated and private), `e2e/mobile.spec.ts` (Continue from the
-  desk, capture a note, share a link in, the phone's place saved).
 

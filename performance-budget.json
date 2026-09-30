@@ -23,6 +23,7 @@
     "/jobs/[id]": 263,
     "/p/[token]": 263,
     "/crew/[id]": 263,
+    "/admin/errors": 262,
     "/showcase": 261,
     "/admin/audit-logs": 261,
     "/auth/spotify-callback": 260,
