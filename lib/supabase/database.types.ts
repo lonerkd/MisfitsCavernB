@@ -1315,7 +1315,7 @@ export type Database = {
           pinned_by: string | null;
           reactions: Json | null;
           receiver_id: string | null;
-          sender_id: string;
+          sender_id: string | null;
         };
         Insert: {
           channel_id?: string | null;
@@ -1330,7 +1330,7 @@ export type Database = {
           pinned_by?: string | null;
           reactions?: Json | null;
           receiver_id?: string | null;
-          sender_id: string;
+          sender_id?: string | null;
         };
         Update: {
           channel_id?: string | null;
@@ -1345,7 +1345,7 @@ export type Database = {
           pinned_by?: string | null;
           reactions?: Json | null;
           receiver_id?: string | null;
-          sender_id?: string;
+          sender_id?: string | null;
         };
         Relationships: [
           {
@@ -3230,7 +3230,7 @@ export type Database = {
           project_id: string;
           rate: number | null;
           status: string;
-          user_id: string;
+          user_id: string | null;
           work_date: string;
         };
         Insert: {
@@ -3243,7 +3243,7 @@ export type Database = {
           project_id: string;
           rate?: number | null;
           status?: string;
-          user_id?: string;
+          user_id?: string | null;
           work_date: string;
         };
         Update: {
@@ -3256,7 +3256,7 @@ export type Database = {
           project_id?: string;
           rate?: number | null;
           status?: string;
-          user_id?: string;
+          user_id?: string | null;
           work_date?: string;
         };
         Relationships: [
@@ -3473,6 +3473,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      account_deletion_plan: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       ack_call_sheet: { Args: { p_sheet: string }; Returns: number };
       add_script_annotation: {
         Args: {
@@ -3532,6 +3536,7 @@ export type Database = {
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
       can_post_channel: { Args: { cid: string }; Returns: boolean };
+      delete_my_account: { Args: { p_confirm: string }; Returns: undefined };
       edit_message: {
         Args: { p_content: string; p_message: string };
         Returns: {
@@ -3547,7 +3552,7 @@ export type Database = {
           pinned_by: string | null;
           reactions: Json | null;
           receiver_id: string | null;
-          sender_id: string;
+          sender_id: string | null;
         };
         SetofOptions: {
           from: "*";
@@ -3715,7 +3720,7 @@ export type Database = {
           pinned_by: string | null;
           reactions: Json | null;
           receiver_id: string | null;
-          sender_id: string;
+          sender_id: string | null;
         };
         SetofOptions: {
           from: "*";
@@ -3801,6 +3806,10 @@ export type Database = {
       toggle_message_reaction: {
         Args: { p_emoji: string; p_message: string };
         Returns: Json;
+      };
+      transfer_project: {
+        Args: { p_project: string; p_to: string };
+        Returns: undefined;
       };
     };
     Enums: {

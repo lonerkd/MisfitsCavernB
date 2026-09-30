@@ -3,7 +3,7 @@
 
 export interface BudgetLine { id: string; category: string; description?: string | null; amount: number | string | null }
 export interface SpendLine { id: string; budget_item_id: string | null; amount: number | string; status: string }
-export interface HoursLine { user_id: string; hours: number | string; rate: number | string | null; status: string }
+export interface HoursLine { user_id: string | null; hours: number | string; rate: number | string | null; status: string }
 
 export interface LineMoney {
   id: string;

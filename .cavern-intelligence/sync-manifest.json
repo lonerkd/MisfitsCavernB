@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-29T20:54:24.843Z",
+  "last_synchronized": "2026-09-29T22:07:43.650Z",
   "stats": {
-    "totalFiles": 507,
-    "totalSize": 3919300,
+    "totalFiles": 513,
+    "totalSize": 3953977,
     "byExtension": {
-      ".json": 8,
+      ".json": 9,
       ".md": 8,
-      ".tsx": 159,
-      ".ts": 285,
+      ".tsx": 160,
+      ".ts": 288,
       ".js": 7,
-      ".sql": 40
+      ".sql": 41
     }
   },
   "modules": {
@@ -213,6 +213,7 @@
         "components/progress/PhasePanel.tsx",
         "components/progress/ToolIntro.tsx",
         "components/progress/UnlockReveal.tsx",
+        "components/settings/DeleteAccount.tsx",
         "components/split/PaneShell.tsx",
         "components/studio/CastingBoard.tsx",
         "components/studio/CharacterBible.tsx",
@@ -303,7 +304,8 @@
         "supabase/migrations/20260929050000_themes.sql",
         "supabase/migrations/20260929060000_transcripts.sql",
         "supabase/migrations/20260929070000_pocket.sql",
-        "supabase/migrations/20260929080000_client_errors.sql"
+        "supabase/migrations/20260929080000_client_errors.sql",
+        "supabase/migrations/20260929090000_account_deletion.sql"
       ]
     }
   },
@@ -350,23 +352,23 @@
     },
     {
       "path": "app/admin/audit-logs/page.tsx",
-      "size": 16734,
-      "last_modified": "2026-09-29T14:43:54.467Z"
+      "size": 16750,
+      "last_modified": "2026-09-29T22:04:01.590Z"
     },
     {
       "path": "app/admin/error.tsx",
       "size": 2510,
-      "last_modified": "2026-09-29T20:49:03.237Z"
+      "last_modified": "2026-09-29T21:19:19.914Z"
     },
     {
       "path": "app/admin/errors/page.tsx",
       "size": 8648,
-      "last_modified": "2026-09-29T20:49:47.946Z"
+      "last_modified": "2026-09-29T21:19:19.929Z"
     },
     {
       "path": "app/admin/page.tsx",
       "size": 8108,
-      "last_modified": "2026-09-29T20:50:00.986Z"
+      "last_modified": "2026-09-29T21:19:19.914Z"
     },
     {
       "path": "app/admin/users/page.tsx",
@@ -451,12 +453,12 @@
     {
       "path": "app/error.tsx",
       "size": 2522,
-      "last_modified": "2026-09-29T20:49:03.236Z"
+      "last_modified": "2026-09-29T21:19:19.914Z"
     },
     {
       "path": "app/global-error.tsx",
       "size": 1924,
-      "last_modified": "2026-09-29T20:49:12.438Z"
+      "last_modified": "2026-09-29T21:19:19.929Z"
     },
     {
       "path": "app/jobs/[id]/page.tsx",
@@ -476,7 +478,7 @@
     {
       "path": "app/layout.tsx",
       "size": 4400,
-      "last_modified": "2026-09-29T20:50:32.142Z"
+      "last_modified": "2026-09-29T21:19:19.914Z"
     },
     {
       "path": "app/loading.tsx",
@@ -495,8 +497,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 96191,
-      "last_modified": "2026-09-29T20:42:29.288Z"
+      "size": 96207,
+      "last_modified": "2026-09-29T22:04:01.593Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -580,8 +582,8 @@
     },
     {
       "path": "app/settings/page.tsx",
-      "size": 18259,
-      "last_modified": "2026-09-29T14:43:54.475Z"
+      "size": 18465,
+      "last_modified": "2026-09-29T22:04:01.593Z"
     },
     {
       "path": "app/shared/[token]/page.tsx",
@@ -646,7 +648,7 @@
     {
       "path": "components/ClientShell.tsx",
       "size": 1783,
-      "last_modified": "2026-09-29T20:49:03.224Z"
+      "last_modified": "2026-09-29T21:19:19.916Z"
     },
     {
       "path": "components/CommandPalette.tsx",
@@ -676,7 +678,7 @@
     {
       "path": "components/ErrorReporter.tsx",
       "size": 760,
-      "last_modified": "2026-09-29T20:49:03.210Z"
+      "last_modified": "2026-09-29T21:19:19.932Z"
     },
     {
       "path": "components/GlobalAudioWidget.tsx",
@@ -900,8 +902,8 @@
     },
     {
       "path": "components/lounge/LoungePanels.tsx",
-      "size": 10678,
-      "last_modified": "2026-09-29T14:43:54.483Z"
+      "size": 10694,
+      "last_modified": "2026-09-29T22:04:01.594Z"
     },
     {
       "path": "components/mobile/Capture.tsx",
@@ -947,6 +949,11 @@
       "path": "components/progress/UnlockReveal.tsx",
       "size": 3367,
       "last_modified": "2026-09-27T03:13:15.778Z"
+    },
+    {
+      "path": "components/settings/DeleteAccount.tsx",
+      "size": 7842,
+      "last_modified": "2026-09-29T22:06:26.023Z"
     },
     {
       "path": "components/split/PaneShell.tsx",
@@ -1060,8 +1067,8 @@
     },
     {
       "path": "components/studio/production/MoneyView.tsx",
-      "size": 17994,
-      "last_modified": "2026-09-29T04:53:09.304Z"
+      "size": 18028,
+      "last_modified": "2026-09-29T22:04:01.594Z"
     },
     {
       "path": "components/studio/production/OnSetView.tsx",
@@ -1199,6 +1206,11 @@
       "last_modified": "2026-09-28T07:51:38.227Z"
     },
     {
+      "path": "e2e/account-deletion.spec.ts",
+      "size": 3649,
+      "last_modified": "2026-09-29T22:04:18.770Z"
+    },
+    {
       "path": "e2e/auth-journey.spec.ts",
       "size": 5562,
       "last_modified": "2026-09-29T20:37:16.002Z"
@@ -1251,7 +1263,7 @@
     {
       "path": "e2e/errors.spec.ts",
       "size": 2976,
-      "last_modified": "2026-09-29T20:51:38.686Z"
+      "last_modified": "2026-09-29T21:19:19.932Z"
     },
     {
       "path": "e2e/guides.spec.ts",
@@ -1305,8 +1317,8 @@
     },
     {
       "path": "e2e/on-set.spec.ts",
-      "size": 6512,
-      "last_modified": "2026-09-27T20:06:25.638Z"
+      "size": 6641,
+      "last_modified": "2026-09-29T20:54:46.105Z"
     },
     {
       "path": "e2e/onboarding.spec.ts",
@@ -1382,6 +1394,11 @@
       "path": "hooks/useColorExtractor.ts",
       "size": 634,
       "last_modified": "2026-09-24T20:05:03.636Z"
+    },
+    {
+      "path": "lib/account/deletion.ts",
+      "size": 2947,
+      "last_modified": "2026-09-29T22:04:01.600Z"
     },
     {
       "path": "lib/api-rate-limit.ts",
@@ -1521,12 +1538,12 @@
     {
       "path": "lib/errors/report.test.ts",
       "size": 1794,
-      "last_modified": "2026-09-29T20:48:29.134Z"
+      "last_modified": "2026-09-29T21:19:19.932Z"
     },
     {
       "path": "lib/errors/report.ts",
       "size": 3219,
-      "last_modified": "2026-09-29T20:48:22.945Z"
+      "last_modified": "2026-09-29T21:19:19.932Z"
     },
     {
       "path": "lib/formats-core.ts",
@@ -2065,8 +2082,8 @@
     },
     {
       "path": "lib/studio/money.ts",
-      "size": 3163,
-      "last_modified": "2026-09-28T09:14:16.217Z"
+      "size": 3170,
+      "last_modified": "2026-09-29T22:04:01.594Z"
     },
     {
       "path": "lib/studio/onset-offline.test.ts",
@@ -2170,8 +2187,8 @@
     },
     {
       "path": "lib/supabase/audit.ts",
-      "size": 5241,
-      "last_modified": "2026-09-24T20:05:03.644Z"
+      "size": 5257,
+      "last_modified": "2026-09-29T22:04:01.594Z"
     },
     {
       "path": "lib/supabase/casting.ts",
@@ -2195,8 +2212,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 117478,
-      "last_modified": "2026-09-29T20:54:13.838Z"
+      "size": 117832,
+      "last_modified": "2026-09-29T22:04:01.594Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2336,17 +2353,17 @@
     {
       "path": "package-lock.json",
       "size": 319617,
-      "last_modified": "2026-09-29T20:50:23.674Z"
+      "last_modified": "2026-09-29T21:19:19.916Z"
     },
     {
       "path": "package.json",
       "size": 2239,
-      "last_modified": "2026-09-29T20:50:23.574Z"
+      "last_modified": "2026-09-29T21:19:19.917Z"
     },
     {
       "path": "performance-budget.json",
       "size": 871,
-      "last_modified": "2026-09-29T20:53:12.538Z"
+      "last_modified": "2026-09-29T21:19:19.917Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2586,7 +2603,12 @@
     {
       "path": "supabase/migrations/20260929080000_client_errors.sql",
       "size": 3594,
-      "last_modified": "2026-09-29T20:48:01.262Z"
+      "last_modified": "2026-09-29T21:19:19.933Z"
+    },
+    {
+      "path": "supabase/migrations/20260929090000_account_deletion.sql",
+      "size": 11791,
+      "last_modified": "2026-09-29T22:04:01.600Z"
     },
     {
       "path": "tailwind.config.js",
@@ -2596,7 +2618,12 @@
     {
       "path": "test-results/.last-run.json",
       "size": 45,
-      "last_modified": "2026-09-29T20:52:52.606Z"
+      "last_modified": "2026-09-29T22:07:21.066Z"
+    },
+    {
+      "path": "tests/integration/account-deletion.test.ts",
+      "size": 7418,
+      "last_modified": "2026-09-29T22:04:01.600Z"
     },
     {
       "path": "tests/integration/activity-feed.test.ts",
@@ -2646,7 +2673,7 @@
     {
       "path": "tests/integration/client-errors.test.ts",
       "size": 3792,
-      "last_modified": "2026-09-29T20:51:19.430Z"
+      "last_modified": "2026-09-29T21:19:19.933Z"
     },
     {
       "path": "tests/integration/community.test.ts",
@@ -2822,6 +2849,11 @@
       "path": "tests/integration/writing-loop.test.ts",
       "size": 3105,
       "last_modified": "2026-09-28T01:06:37.205Z"
+    },
+    {
+      "path": "tsconfig.check.json",
+      "size": 236,
+      "last_modified": "2026-09-29T20:57:00.469Z"
     },
     {
       "path": "tsconfig.json",

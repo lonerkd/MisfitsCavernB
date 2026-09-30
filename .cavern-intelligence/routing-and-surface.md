@@ -48,7 +48,7 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/crew`, `/crew/[id]` | protected | Crew directory | `lib/supabase/crew-management.ts`, `CrewManagementModal` |
 | `/portfolio`, `/portfolio/manage` | protected | Portfolio | `lib/supabase/portfolio.ts` |
 | `/profile` | protected | Profile | `lib/supabase/profiles.ts`, `stats.ts` |
-| `/settings` | protected | Settings | `profiles.notification_prefs`, leaked-password toggle |
+| `/settings` | protected | Settings | `profiles.notification_prefs`, leaked-password toggle, data export, **Delete account** (`components/settings/DeleteAccount.tsx`, `lib/account/deletion.ts`: hand shared projects over, then delete) |
 | `/showcase` | public | Showcase | public filmmaker directory |
 | `/p/[token]` | **public** | Portfolio share | logged-out; RLS-gated on `is_public`/token |
 | `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` |

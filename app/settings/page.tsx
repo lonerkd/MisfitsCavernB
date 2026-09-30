@@ -13,6 +13,7 @@ import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { ThemePicker } from '@/components/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
+import DeleteAccount from '@/components/settings/DeleteAccount';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -335,6 +336,10 @@ export default function SettingsPage() {
               {busy === 'global' ? '…' : 'SIGN OUT ALL'}
             </button>
           } />
+        </Section>
+
+        <Section icon={<AlertTriangle size={15} />} title="Delete account">
+          <DeleteAccount userId={user.id} />
         </Section>
 
         <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>

@@ -86,7 +86,7 @@ export default function AuditLogsPage() {
       ['Timestamp', 'User', 'Action', 'Resource Type', 'Resource ID', 'Details'],
       ...logs.map(log => [
         new Date(log.created_at).toLocaleString(),
-        log.username || 'Unknown',
+        log.username || 'Deleted account',
         log.action,
         log.resource_type,
         log.resource_id || '-',
@@ -334,7 +334,7 @@ export default function AuditLogsPage() {
                             color: '#0099ff',
                           }}
                         >
-                          {log.username || 'Unknown'}
+                          {log.username || 'Deleted account'}
                         </span>
                       </td>
                       <td style={{ padding: 12 }}>

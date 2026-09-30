@@ -1,6 +1,37 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Hearing about problems in production
+## Latest Session — Leaving the suite (and handing a project over)
+
+Migration `20260929090000_account_deletion.sql` (`transfer_project`,
+`account_deletion_plan`, `delete_my_account`; 22 author links now clear
+instead of blocking or cascading).
+
+- **Settings › Delete account**: anyone can delete their account. Projects
+  other people are crew on never go with it — the panel lists them, each with a
+  **Hand over** to someone confirmed on its crew (or open it and delete it
+  yourself); the delete button stays off until none are left. Then the
+  username, typed, and a final confirm.
+- **What goes**: the account, profile, the projects only they work on (every
+  script, file and note in them — files removed through the Storage API first,
+  as SQL can't), portfolio, job posts, applications, notifications and direct
+  messages. **What stays**: what they wrote in other people's projects —
+  script edits, shots, notes, channel messages, timesheets, audit entries —
+  with the author cleared and shown as "Deleted account". A job they posted on
+  someone else's project passes to that project's owner.
+- **Handing a project over** (`transfer_project`): owner only, to a confirmed
+  crew member; the new owner leaves the crew list, the old owner stays on as a
+  lead, and the project's job posts move with it.
+- The last admin can't delete their account (make someone else admin first).
+- Tests: `tests/integration/account-deletion.test.ts` (who may hand over; what
+  goes and what stays, row by row; refused while owning a shared project, with
+  the wrong username, or signed out), `e2e/account-deletion.spec.ts` (hand
+  over, then delete, from Settings). Checked at 390px and 1440px.
+- The `profiles.is_admin` "open finding" below was already fixed by
+  `20260926030000_privacy_and_integrity.sql` (column grants; `get_my_account`)
+  — confirmed in production: neither anon nor authenticated can read
+  `is_admin` or `notification_prefs`.
+
+## Earlier — Hearing about problems in production
 
 Migration `20260929080000_client_errors.sql` (`client_errors`, `report_client_error`).
 
@@ -1332,7 +1363,7 @@ Fixes:
 - Signup with confirmation enabled now keeps the user on `/auth` and tells them
   to confirm, rather than bouncing into a gated page.
 
-### Open finding — `profiles.is_admin` is world-readable (needs a decision)
+### Resolved finding — `profiles.is_admin` was world-readable (fixed in `20260926030000_privacy_and_integrity.sql`)
 
 Reading `profiles` as a brand-new account returned **every** profile row,
 including accounts with `is_admin: true`. `profiles` has
