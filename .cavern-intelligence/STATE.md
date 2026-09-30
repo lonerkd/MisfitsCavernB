@@ -1,6 +1,24 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Privacy Policy and Terms
+## Latest Session — Dependency updates (1/3): patches, and what the new checker found
+
+No migration.
+
+- Minor/patch updates (Dependabot #108's set): `@supabase/ssr` 0.12.7,
+  `fast-average-color`, `zustand`, `@playwright/test` 1.63, `autoprefixer`,
+  `axe-core` 4.13, `pg`, `postcss`; `actions/setup-node` v7 (#101).
+  Already merged from Dependabot: `actions/checkout` v7, `actions/upload-artifact`
+  v7, `framer-motion` 13.
+- **axe-core 4.13 found real low-contrast text**: the project page's
+  department labels (Script, Studio, Jobs…) in theme colours at 7.5px were
+  3.7–4.4:1 (need 4.5:1) — `readable()` can't measure `var(--…)` colours, and
+  an `opacity: 0.85` made it worse. Theme colours are now mixed toward the
+  text colour; the accessibility and themes e2e pass under the new checker.
+- Next: Vitest 5, then Next 16 + React 19 (trialled: builds and lints with
+  `middleware.ts` → `proxy.ts`, dead webpack externals removed, two ref types,
+  ESLint 9 flat config, the budget script reading Turbopack's manifests).
+
+## Earlier — Privacy Policy and Terms
 
 No migration.
 
