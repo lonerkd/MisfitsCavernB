@@ -33,6 +33,8 @@
     "/split": 258,
     "/shared/[token]": 257,
     "/auth/callback": 254,
-    "/_not-found": 252
+    "/_not-found": 252,
+    "/privacy": 258,
+    "/terms": 258
   }
 }

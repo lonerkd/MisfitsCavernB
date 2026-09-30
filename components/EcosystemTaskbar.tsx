@@ -589,7 +589,7 @@ export default function EcosystemTaskbar() {
   // scrolling pages leave space for it. 0 where the dock is hidden (phones use
   // the tab bar); it follows the dock as it grows or collapses.
   const dockRef = useRef<HTMLElement>(null);
-  const noDock = pathname === '/login' || pathname === '/auth' || pathname === '/split' || /^\/(shared|p|s)\//.test(pathname);
+  const noDock = pathname === '/login' || pathname === '/auth' || pathname === '/privacy' || pathname === '/terms' || pathname === '/split' || /^\/(shared|p|s)\//.test(pathname);
   useEffect(() => {
     const el = dockRef.current;
     const root = document.documentElement;
@@ -694,7 +694,7 @@ export default function EcosystemTaskbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
 
-  if (pathname === '/login' || pathname === '/auth') return null;
+  if (pathname === '/login' || pathname === '/auth' || pathname === '/privacy' || pathname === '/terms') return null;
   // The split screen has its own bar; each pane is a full page without chrome.
   if (pathname === '/split') return null;
   // Public share surfaces (lookbooks, public portfolios, shared scripts) are

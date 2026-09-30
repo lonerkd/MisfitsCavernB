@@ -344,6 +344,10 @@ export default function SettingsPage() {
 
         <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
           MISFITS CAVERN · {user.email}
+          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
+            <Link href="/privacy" style={{ color: 'inherit' }}>PRIVACY</Link>
+            <Link href="/terms" style={{ color: 'inherit' }}>TERMS</Link>
+          </div>
         </div>
       </div>
     </div>
