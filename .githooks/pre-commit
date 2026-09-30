@@ -2,6 +2,4 @@
 # Lint what's being committed (fast). Skip with --no-verify when you must.
 files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -v '^\.next/' | tr '\n' ' ')
 [ -z "$files" ] && exit 0
-args=""
-for f in $files; do args="$args --file $f"; done
-npx --no-install next lint --quiet $args || { echo "pre-commit: lint failed (fix it, or commit with --no-verify)"; exit 1; }
+npx --no-install eslint --quiet $files || { echo "pre-commit: lint failed (fix it, or commit with --no-verify)"; exit 1; }

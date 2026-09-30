@@ -48,7 +48,7 @@ export interface EditorRightPanelsProps {
   setShowWatermark: (v: boolean) => void;
   lintIssues: { type: string; message: string; rule?: string; line?: number }[];
   stash: LiveRows<StashItem>;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   currentScript: { title?: string, id?: string } | null;
   projectAudioRefs?: any[];
   playAudioRef?: (ref: any) => void;

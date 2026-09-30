@@ -13,7 +13,7 @@ export interface EditorLeftNavProps {
   setCurrentScript: (s: StoredScript) => void;
   setContent: (v: string) => void;
   toast: (msg: string, kind?: any) => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleImportFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
   showTitleEditor: boolean;
   setShowTitleEditor: (v: boolean) => void;

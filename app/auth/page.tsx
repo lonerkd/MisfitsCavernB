@@ -12,7 +12,6 @@ import { useToast } from '@/components/Toast';
 import { osSignIn as signIn, osSignUp as signUp, useSession } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
-import { signInSchema, signUpSchema, firstIssue } from '@/lib/validation';
 import { supabase } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
@@ -66,6 +65,9 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // The validator (zod) loads on submit, not with the page — it is most of
+    // the sign-in page's weight otherwise.
+    const { signInSchema, signUpSchema, firstIssue } = await import('@/lib/validation');
 
     if (mode === 'signup') {
       const parsed = signUpSchema.safeParse({
