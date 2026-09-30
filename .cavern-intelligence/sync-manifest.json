@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-30T02:22:20.855Z",
+  "last_synchronized": "2026-10-01T05:07:27.880Z",
   "stats": {
-    "totalFiles": 517,
-    "totalSize": 3979578,
+    "totalFiles": 519,
+    "totalSize": 3997945,
     "byExtension": {
       ".json": 8,
       ".md": 8,
       ".tsx": 163,
-      ".ts": 290,
+      ".ts": 291,
       ".js": 7,
-      ".sql": 41
+      ".sql": 42
     }
   },
   "modules": {
@@ -308,7 +308,8 @@
         "supabase/migrations/20260929060000_transcripts.sql",
         "supabase/migrations/20260929070000_pocket.sql",
         "supabase/migrations/20260929080000_client_errors.sql",
-        "supabase/migrations/20260929090000_account_deletion.sql"
+        "supabase/migrations/20260929090000_account_deletion.sql",
+        "supabase/migrations/20260930010000_advisor_fixes.sql"
       ]
     }
   },
@@ -320,8 +321,8 @@
     },
     {
       "path": ".claude/settings.local.json",
-      "size": 368,
-      "last_modified": "2026-09-28T07:03:10.159Z"
+      "size": 472,
+      "last_modified": "2026-10-01T05:07:27.593Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -495,8 +496,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 96207,
-      "last_modified": "2026-09-29T22:04:01.593Z"
+      "size": 96249,
+      "last_modified": "2026-10-01T01:33:30.317Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -2634,6 +2635,11 @@
       "last_modified": "2026-09-29T22:04:01.600Z"
     },
     {
+      "path": "supabase/migrations/20260930010000_advisor_fixes.sql",
+      "size": 14879,
+      "last_modified": "2026-10-01T05:06:18.953Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2652,6 +2658,11 @@
       "path": "tests/integration/admin-rights.test.ts",
       "size": 3187,
       "last_modified": "2026-09-26T19:15:24.839Z"
+    },
+    {
+      "path": "tests/integration/advisor-fixes.test.ts",
+      "size": 3342,
+      "last_modified": "2026-10-01T05:06:18.953Z"
     },
     {
       "path": "tests/integration/auth-signup.test.ts",
