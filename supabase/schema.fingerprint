@@ -243,7 +243,7 @@ column messages.pinned_at timestamp with time zone
 column messages.pinned_by uuid
 column messages.reactions jsonb default '{}'::jsonb
 column messages.receiver_id uuid
-column messages.sender_id uuid not null
+column messages.sender_id uuid
 column notifications.body text
 column notifications.created_at timestamp with time zone default now()
 column notifications.created_by uuid default auth.uid()
@@ -582,7 +582,7 @@ column timesheets.note text
 column timesheets.project_id uuid not null
 column timesheets.rate numeric(10,2)
 column timesheets.status text default 'submitted'::text not null
-column timesheets.user_id uuid default auth.uid() not null
+column timesheets.user_id uuid default auth.uid()
 column timesheets.work_date date not null
 column transcript_lines.created_at timestamp with time zone default now() not null
 column transcript_lines.created_by uuid default auth.uid()
@@ -651,7 +651,7 @@ constraint brief_questions.brief_questions_options_check CHECK ((jsonb_typeof(op
 constraint brief_questions.brief_questions_phase_check CHECK ((phase = ANY (ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text])))
 constraint brief_questions.brief_questions_pkey PRIMARY KEY (key)
 constraint brief_questions.brief_questions_shape_check CHECK ((((kind = 'number'::text) AND (min_value IS NOT NULL) AND (max_value IS NOT NULL) AND (min_value <= max_value)) OR ((kind <> 'number'::text) AND (jsonb_array_length(options) > 0))))
-constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint budget_items.budget_items_id_project_key UNIQUE (id, project_id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
@@ -673,8 +673,8 @@ constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
 constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
-constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
-constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint campaigns.campaigns_money_check CHECK (((COALESCE(budget, (0)::numeric) >= (0)::numeric) AND (COALESCE(spend, (0)::numeric) >= (0)::numeric)))
 constraint campaigns.campaigns_pkey PRIMARY KEY (id)
 constraint campaigns.campaigns_platform_len CHECK (((char_length(btrim(platform)) >= 1) AND (char_length(btrim(platform)) <= 60)))
@@ -693,12 +693,12 @@ constraint channel_presets.channel_presets_pkey PRIMARY KEY (key)
 constraint channel_presets.channel_presets_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
 constraint channel_presets.channel_presets_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text, 'guide'::text])))
 constraint channels.channels_audience_check CHECK ((((project_id IS NULL) AND (audience = ANY (ARRAY['users'::text, 'admins'::text]))) OR ((project_id IS NOT NULL) AND (audience = ANY (ARRAY['team'::text, 'owners'::text, 'above'::text, 'below'::text, 'guests'::text, 'public'::text])))))
-constraint channels.channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint channels.channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint channels.channels_pkey PRIMARY KEY (id)
 constraint channels.channels_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
 constraint channels.channels_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint channels.channels_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text, 'guide'::text])))
-constraint character_castings.character_castings_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint character_castings.character_castings_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_castings.character_castings_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint character_castings.character_castings_pkey PRIMARY KEY (id)
 constraint character_castings.character_castings_project_id_character_name_key UNIQUE (project_id, character_name)
@@ -721,7 +721,7 @@ constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) 
 constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
 constraint crafts.crafts_pkey PRIMARY KEY (name)
 constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
-constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
 constraint expenses.expenses_amount_check CHECK (((amount >= (0)::numeric) AND (amount < (100000000)::numeric)))
 constraint expenses.expenses_budget_item_fkey FOREIGN KEY (budget_item_id, project_id) REFERENCES budget_items(id, project_id) ON DELETE SET NULL (budget_item_id)
@@ -778,7 +778,7 @@ constraint messages.messages_pin_shape CHECK ((pinned = (pinned_at IS NOT NULL))
 constraint messages.messages_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint messages.messages_pkey PRIMARY KEY (id)
 constraint messages.messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES profiles(id) ON DELETE CASCADE
-constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_body_len CHECK ((char_length(body) <= 1000))
 constraint notifications.notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_link_internal CHECK (((link IS NULL) OR (link ~ '^/[^/\\]'::text)))
@@ -834,12 +834,12 @@ constraint profiles.profiles_sprint_minutes_check CHECK (((sprint_minutes >= 5) 
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
 constraint profiles.profiles_ui_prefs_check CHECK (((jsonb_typeof(ui_prefs) = 'object'::text) AND (pg_column_size(ui_prefs) < 16384)))
 constraint profiles.profiles_username_key UNIQUE (username)
-constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id)
+constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint project_audio_references.project_audio_references_pkey PRIMARY KEY (id)
 constraint project_audio_references.project_audio_references_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_audio_references.project_audio_references_reference_type_check CHECK ((reference_type = ANY (ARRAY['spotify'::text, 'youtube'::text, 'custom_upload'::text])))
 constraint project_audio_references.project_audio_references_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
-constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_beats.project_beats_pkey PRIMARY KEY (id)
 constraint project_beats.project_beats_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_beats.project_beats_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
@@ -848,7 +848,7 @@ constraint project_brief.project_brief_pkey PRIMARY KEY (project_id, question)
 constraint project_brief.project_brief_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_brief.project_brief_question_fkey FOREIGN KEY (question) REFERENCES brief_questions(key) ON UPDATE CASCADE ON DELETE CASCADE
 constraint project_crew.project_crew_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
-constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id)
+constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_crew.project_crew_pkey PRIMARY KEY (id)
 constraint project_crew.project_crew_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_crew.project_crew_project_id_user_id_key UNIQUE (project_id, user_id)
@@ -884,7 +884,7 @@ constraint project_locations.project_locations_pkey PRIMARY KEY (id)
 constraint project_locations.project_locations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_locations.project_locations_status_check CHECK ((status = ANY (ARRAY['scouting'::text, 'option'::text, 'confirmed'::text])))
 constraint project_locations.project_locations_text_len CHECK (((char_length(address) <= 500) AND (char_length(contact) <= 300) AND (char_length(notes) <= 5000)))
-constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
+constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_tasks.project_tasks_pkey PRIMARY KEY (id)
 constraint project_tasks.project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint projects.projects_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -910,7 +910,7 @@ constraint scenes.scenes_project_id_fkey FOREIGN KEY (project_id) REFERENCES pro
 constraint scenes.scenes_read_seconds_check CHECK (((read_seconds IS NULL) OR ((read_seconds > (0)::numeric) AND (read_seconds <= (36000)::numeric))))
 constraint scenes.scenes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 1) AND (char_length(time_of_day) <= 40)))
-constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
 constraint script_annotations.script_annotations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint script_annotations.script_annotations_routed_check CHECK ((((routed_table IS NULL) AND (routed_id IS NULL)) OR ((routed_table = ANY (ARRAY['shots'::text, 'project_beats'::text, 'project_tasks'::text])) AND (routed_id IS NOT NULL))))
@@ -920,20 +920,20 @@ constraint script_annotations.script_annotations_type_check CHECK ((type = ANY (
 constraint script_characters.script_characters_pkey PRIMARY KEY (id)
 constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_characters.script_characters_script_id_name_key UNIQUE (script_id, name)
-constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
+constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_metadata.script_metadata_pkey PRIMARY KEY (script_id)
 constraint script_metadata.script_metadata_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
-constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
-constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_revisions.script_revisions_pkey PRIMARY KEY (id)
 constraint script_revisions.script_revisions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_stash.script_stash_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_stash.script_stash_pkey PRIMARY KEY (id)
 constraint script_stash.script_stash_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_stash.script_stash_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 20000)))
-constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
-constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id)
+constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scripts.scripts_pkey PRIMARY KEY (id)
 constraint scripts.scripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint scripts.scripts_share_token_key UNIQUE (share_token)
@@ -952,7 +952,7 @@ constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint shots.shots_camera_len CHECK (((char_length(COALESCE(shot_size, ''::text)) <= 12) AND (char_length(COALESCE(angle, ''::text)) <= 40) AND (char_length(COALESCE(movement, ''::text)) <= 40) AND (char_length(COALESCE(lens, ''::text)) <= 40)))
-constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint shots.shots_description_len CHECK ((char_length(description) <= 2000))
 constraint shots.shots_frame_fkey FOREIGN KEY (frame_media_id, project_id) REFERENCES media(id, project_id) ON DELETE SET NULL (frame_media_id)
 constraint shots.shots_number_len CHECK (((char_length(shot_number) >= 1) AND (char_length(shot_number) <= 12)))
@@ -962,8 +962,8 @@ constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES 
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
-constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
+constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
 constraint timeline_items.timeline_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint timeline_items.timeline_items_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'in-progress'::text, 'completed'::text, 'cancelled'::text])))
@@ -976,7 +976,7 @@ constraint timesheets.timesheets_pkey PRIMARY KEY (id)
 constraint timesheets.timesheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint timesheets.timesheets_rate_check CHECK (((rate IS NULL) OR (rate >= (0)::numeric)))
 constraint timesheets.timesheets_status_check CHECK ((status = ANY (ARRAY['submitted'::text, 'approved'::text, 'rejected'::text])))
-constraint timesheets.timesheets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint timesheets.timesheets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint transcript_lines.transcript_lines_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint transcript_lines.transcript_lines_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint transcript_lines.transcript_lines_paper_order_check CHECK (((paper_order IS NULL) OR (paper_order >= 0)))
@@ -1037,6 +1037,7 @@ function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=94eebb05bb53f6f692a20c77ad4d51a1
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
+function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
@@ -1044,6 +1045,7 @@ function public.admin_platform_analytics(p_since timestamp with time zone) body=
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
+function public.delete_my_account(p_confirm text) body=8ef9379ae7b3335ec94b05c3aa743bbb
 function public.edit_message(p_message uuid, p_content text) body=4b7f1df44a8b0a61b7b960fa0d34f8e6
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
@@ -1079,6 +1081,7 @@ function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc271
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160ef64976bfa777db1932a6756003
+function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba786d52dc7715f088f3
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
@@ -1116,6 +1119,7 @@ grant function internal.seed_breakdown_categories(p_project uuid) postgres,servi
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
+grant function public.account_deletion_plan() authenticated,postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
@@ -1123,6 +1127,7 @@ grant function public.admin_platform_analytics(p_since timestamp with time zone)
 grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
+grant function public.delete_my_account(p_confirm text) authenticated,postgres,service_role
 grant function public.edit_message(p_message uuid, p_content text) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
 grant function public.get_my_ui_prefs() authenticated,postgres,service_role
@@ -1158,6 +1163,7 @@ grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
 grant function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) authenticated,postgres,service_role
 grant function public.toggle_message_reaction(p_message uuid, p_emoji text) authenticated,postgres,service_role
+grant function public.transfer_project(p_project uuid, p_to uuid) authenticated,postgres,service_role
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
