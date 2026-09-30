@@ -37,7 +37,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "diff": "^9.0.0",
     "fast-average-color": "^9.5.2",
-    "framer-motion": "^12.35.2",
+    "framer-motion": "^13.4.4",
     "idb-keyval": "^6.3.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.562.0",

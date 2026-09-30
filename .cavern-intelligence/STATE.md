@@ -15,6 +15,29 @@
 
 Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Checked in a browser** (local Supabase, production build, 1280px): breakdown and stripboard show no wrapping or overflow and pass axe; stripboard strip headings and cast lines ellipsize by design in the 256px day column. Checked at 1024 and 768 too: fixed the empty-state icon (invalid margin, not centred) and hid the editor beat-rail labels below 1100px, where they overlapped the script.
 
+## Latest Session — Privacy Policy and Terms
+
+No migration.
+
+- **`/privacy` and `/terms`**, public, for Peter Olowude (an individual, not
+  yet a registered business) in Alberta, Canada; contact
+  peterolowude@icloud.com — all in `lib/legal.ts` (change there, and move
+  `effective` forward whenever the wording changes).
+- Written to match what the app does: what's collected (account, profile,
+  work, preferences, error reports kept 30 days, cookieless Vercel
+  analytics), who handles it (Supabase, Vercel, Discord, Spotify, Have I Been
+  Pwned's k-anonymity check, Openverse, embeds), PIPEDA rights mapped to real
+  controls (export, edit, Settings › Delete account), what account deletion
+  keeps ("Deleted account" in others' projects). Terms: users own their work
+  (a licence only to run the service), collaboration and hand-over rules,
+  acceptable use, Canadian notice-and-notice, "as is", CAD $100 liability cap,
+  Alberta law. **Not legal advice** — worth a lawyer's read before launch.
+- Linked from the landing footer, the sign-up form ("By creating an account
+  you agree to…") and the foot of Settings. The landing footer now clears the
+  dock (`--taskbar-height`) — its links were underneath it.
+- Test: `e2e/legal.spec.ts` (public, names the operator and contact, no
+  sideways scroll at 390px, reachable from the landing page and sign-up).
+
 ## Latest Session — Leaving the suite (and handing a project over)
 
 Migration `20260929090000_account_deletion.sql` (`transfer_project`,
@@ -93,31 +116,4 @@ No migration.
 - Dependabot, a PR template, CODEOWNERS, git hooks (lint on commit; types +
   tests on push), Node pinned (`.nvmrc`), `npm run stack:up` for the local
   stack, a wider command allowlist. See tools-and-access.md §7.
-
-## Earlier — Polish: nothing hidden behind the dock
-
-
-No migration.
-
-- **The dock shows every app**: its strip snapped icons to the centre, which
-  with an even number of apps cut one off at each end at desk sizes. It now
-  snaps from the start, in the same whole-icon steps as its own drag/fling.
-- **The dock says how much room it takes**: it publishes `--taskbar-height`
-  (its real height + gap; 0 where it's hidden — phones, sign-in, split,
-  shared pages). The Lounge is exactly one screen tall and ends above it, so a
-  long channel list no longer pushes the composer (and Send) under the dock;
-  the editor's footer sits above it too. Every page already using
-  `var(--taskbar-height, 94px)` now gets the true value.
-- **Editor**: the beat timeline (Setup, Break into Two, Midpoint…) no longer
-  draws over the story map — it shows only when that sidebar is closed. The
-  right panel's six tabs keep their labels inside their own tab.
-- **Today on a desk**: the Lounge card sits beside "Yours to do" and
-  "Updates", as tall as both — no hole under it.
-- Projects search placeholder fits ("Search projects, people…").
-- **Crew directory**: the search is one compact row like the Projects board
-  (icon inside, 40px tall), with matching All / Open / Busy buttons (a
-  labelled group, pressed state announced) — it was a tall floating-label
-  field with the filters stretched into tall boxes beside it.
-- Verified in screenshots at 1440×900; lounge, mobile, accessibility, Studio
-  journey and themes e2e pass.
 
