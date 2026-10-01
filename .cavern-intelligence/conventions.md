@@ -43,7 +43,7 @@ Rules:
 - Browser client: `lib/supabase/client.ts` → `createBrowserClient<Database>`.
   Cookie-backed, so the session is readable in middleware.
 - Server (route handlers / middleware): `createServerClient` with the cookie
-  adapter (see `middleware.ts`).
+  adapter (see `proxy.ts`).
 - **Service-role** client: server-only, lazily constructed, guarded against a
   missing key. Never import it into anything that ships to the browser. Only
   `NEXT_PUBLIC_*` vars are safe client-side.

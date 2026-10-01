@@ -1,12 +1,12 @@
 # Routing & Surface Map — Misfits Cavern
 
 Every route in the app, how it's gated, which module owns it, and the key
-libs/components behind it. Auth gating is enforced in `middleware.ts` (real
+libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 `getUser()` JWT validation, **not** cookie presence).
 
 ---
 
-## 1. Gating tiers (`middleware.ts`)
+## 1. Gating tiers (`proxy.ts`)
 
 - **PUBLIC** — no auth: `/`, `/auth`, `/api/discord/*`, `/api/public/*`, plus
   everything not listed as protected/admin (this is how `/p/[token]`,

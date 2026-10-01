@@ -1,15 +1,15 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-01T04:31:48.433Z",
+  "last_synchronized": "2026-10-01T08:12:54.796Z",
   "stats": {
-    "totalFiles": 635,
-    "totalSize": 6392875,
+    "totalFiles": 533,
+    "totalSize": 4107464,
     "byExtension": {
-      ".json": 52,
+      ".json": 15,
       ".md": 12,
       ".tsx": 163,
-      ".ts": 294,
-      ".js": 73,
+      ".ts": 295,
+      ".js": 7,
       ".sql": 41
     }
   },
@@ -329,11 +329,6 @@
       "last_modified": "2026-09-28T02:28:08.056Z"
     },
     {
-      "path": ".eslintrc.json",
-      "size": 665,
-      "last_modified": "2026-09-29T15:29:04.610Z"
-    },
-    {
       "path": ".github/pull_request_template.md",
       "size": 655,
       "last_modified": "2026-09-29T21:33:47.917Z"
@@ -380,8 +375,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 3333,
-      "last_modified": "2026-09-29T21:33:47.921Z"
+      "size": 3364,
+      "last_modified": "2026-10-01T07:47:33.108Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -445,8 +440,8 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 16480,
-      "last_modified": "2026-09-30T01:38:46.747Z"
+      "size": 17173,
+      "last_modified": "2026-10-01T07:47:33.109Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -536,7 +531,7 @@
     {
       "path": "app/lounge/page.tsx",
       "size": 98331,
-      "last_modified": "2026-10-01T04:14:30.279Z"
+      "last_modified": "2026-10-01T07:48:17.673Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -605,8 +600,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 69714,
-      "last_modified": "2026-09-29T21:35:36.756Z"
+      "size": 70226,
+      "last_modified": "2026-10-01T07:47:33.111Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -625,8 +620,8 @@
     },
     {
       "path": "app/settings/page.tsx",
-      "size": 19088,
-      "last_modified": "2026-09-30T01:38:46.752Z"
+      "size": 19079,
+      "last_modified": "2026-10-01T04:52:23.960Z"
     },
     {
       "path": "app/shared/[token]/page.tsx",
@@ -720,8 +715,8 @@
     },
     {
       "path": "components/brief/BriefPanel.tsx",
-      "size": 10300,
-      "last_modified": "2026-09-29T21:35:35.998Z"
+      "size": 10314,
+      "last_modified": "2026-10-01T04:52:12.533Z"
     },
     {
       "path": "components/ClientShell.tsx",
@@ -750,8 +745,8 @@
     },
     {
       "path": "components/EcosystemTaskbar.tsx",
-      "size": 27878,
-      "last_modified": "2026-10-01T04:27:41.945Z"
+      "size": 28589,
+      "last_modified": "2026-10-01T05:13:13.795Z"
     },
     {
       "path": "components/editor/breakdown/BreakdownPanel.tsx",
@@ -805,8 +800,8 @@
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
-      "size": 14788,
-      "last_modified": "2026-09-29T21:35:36.185Z"
+      "size": 15038,
+      "last_modified": "2026-10-01T07:47:33.112Z"
     },
     {
       "path": "components/editor/EditorModals.tsx",
@@ -820,8 +815,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 32450,
-      "last_modified": "2026-09-29T21:35:36.006Z"
+      "size": 32457,
+      "last_modified": "2026-10-01T07:47:33.112Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -950,8 +945,8 @@
     },
     {
       "path": "components/progress/Bricks.tsx",
-      "size": 3225,
-      "last_modified": "2026-09-29T21:33:48.041Z"
+      "size": 3647,
+      "last_modified": "2026-10-01T05:01:15.440Z"
     },
     {
       "path": "components/progress/LockedTool.tsx",
@@ -965,8 +960,8 @@
     },
     {
       "path": "components/progress/PhasePanel.tsx",
-      "size": 14907,
-      "last_modified": "2026-09-29T21:33:48.042Z"
+      "size": 14921,
+      "last_modified": "2026-10-01T04:52:12.534Z"
     },
     {
       "path": "components/progress/ToolIntro.tsx",
@@ -975,8 +970,8 @@
     },
     {
       "path": "components/progress/UnlockReveal.tsx",
-      "size": 3621,
-      "last_modified": "2026-10-01T03:41:03.801Z"
+      "size": 3664,
+      "last_modified": "2026-10-01T04:52:53.514Z"
     },
     {
       "path": "components/SectionLabel.tsx",
@@ -1085,8 +1080,8 @@
     },
     {
       "path": "components/studio/production/BreakdownView.tsx",
-      "size": 21072,
-      "last_modified": "2026-09-29T21:33:48.065Z"
+      "size": 21086,
+      "last_modified": "2026-10-01T04:52:12.534Z"
     },
     {
       "path": "components/studio/production/CallSheetsPanel.tsx",
@@ -1355,13 +1350,13 @@
     },
     {
       "path": "e2e/island.spec.ts",
-      "size": 8832,
-      "last_modified": "2026-10-01T04:28:14.699Z"
+      "size": 11110,
+      "last_modified": "2026-10-01T04:53:55.639Z"
     },
     {
       "path": "e2e/layout.spec.ts",
-      "size": 6798,
-      "last_modified": "2026-10-01T04:02:52.556Z"
+      "size": 6990,
+      "last_modified": "2026-10-01T05:12:55.438Z"
     },
     {
       "path": "e2e/legal.spec.ts",
@@ -1385,8 +1380,8 @@
     },
     {
       "path": "e2e/mobile.spec.ts",
-      "size": 11676,
-      "last_modified": "2026-09-29T21:33:48.097Z"
+      "size": 11702,
+      "last_modified": "2026-10-01T04:52:12.535Z"
     },
     {
       "path": "e2e/money.spec.ts",
@@ -1705,8 +1700,8 @@
     },
     {
       "path": "lib/island/island.test.ts",
-      "size": 4170,
-      "last_modified": "2026-10-01T03:58:00.267Z"
+      "size": 5014,
+      "last_modified": "2026-10-01T04:53:55.639Z"
     },
     {
       "path": "lib/island/mode.ts",
@@ -1717,6 +1712,11 @@
       "path": "lib/island/routes.ts",
       "size": 4226,
       "last_modified": "2026-10-01T03:57:26.315Z"
+    },
+    {
+      "path": "lib/island/scale.ts",
+      "size": 1674,
+      "last_modified": "2026-10-01T04:49:14.698Z"
     },
     {
       "path": "lib/legal.ts",
@@ -2434,34 +2434,29 @@
       "last_modified": "2026-09-28T03:45:24.152Z"
     },
     {
-      "path": "middleware.ts",
-      "size": 3101,
-      "last_modified": "2026-09-29T21:33:48.171Z"
-    },
-    {
       "path": "next-env.d.ts",
-      "size": 268,
-      "last_modified": "2026-09-15T00:00:10.255Z"
+      "size": 295,
+      "last_modified": "2026-10-01T07:47:33.113Z"
     },
     {
       "path": "next.config.js",
-      "size": 1523,
-      "last_modified": "2026-09-28T03:45:24.154Z"
+      "size": 1392,
+      "last_modified": "2026-10-01T07:47:33.114Z"
     },
     {
       "path": "package-lock.json",
-      "size": 328147,
-      "last_modified": "2026-09-30T01:38:46.760Z"
+      "size": 335830,
+      "last_modified": "2026-10-01T07:49:02.001Z"
     },
     {
       "path": "package.json",
-      "size": 2306,
-      "last_modified": "2026-09-30T01:38:46.761Z"
+      "size": 2322,
+      "last_modified": "2026-10-01T07:47:33.118Z"
     },
     {
       "path": "performance-budget.json",
-      "size": 951,
-      "last_modified": "2026-09-30T01:38:46.762Z"
+      "size": 979,
+      "last_modified": "2026-10-01T07:47:33.119Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2472,6 +2467,11 @@
       "path": "postcss.config.js",
       "size": 89,
       "last_modified": "2026-04-29T08:02:41.252Z"
+    },
+    {
+      "path": "proxy.ts",
+      "size": 3096,
+      "last_modified": "2026-10-01T07:47:33.119Z"
     },
     {
       "path": "public/sw.js",
@@ -2500,8 +2500,8 @@
     },
     {
       "path": "scripts/sync-intel.js",
-      "size": 4277,
-      "last_modified": "2026-09-28T03:45:24.158Z"
+      "size": 4314,
+      "last_modified": "2026-10-01T07:47:33.121Z"
     },
     {
       "path": "scripts/test-anon-rls.js",
@@ -2717,521 +2717,6 @@
       "path": "tailwind.config.js",
       "size": 1705,
       "last_modified": "2026-04-29T08:02:41.253Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/0023f1a1799b98c521b091f47b3b48e17075325a.js",
-      "size": 14747,
-      "last_modified": "2026-10-01T04:31:08.265Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/04e02dd22923c0f1d226d2a8ffa81dc5705b7d94.js",
-      "size": 33734,
-      "last_modified": "2026-10-01T04:31:41.346Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/0557fab6f0d09c360ea679d04d43aa11e8005e5f.json",
-      "size": 131,
-      "last_modified": "2026-10-01T04:31:41.844Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/0953a4f6917702c33bf62ef9f3c43c2b262653b8.js",
-      "size": 16646,
-      "last_modified": "2026-10-01T04:31:31.982Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/097233ce64f2a0cf16ca179234a135c36389f1b0.js",
-      "size": 3136,
-      "last_modified": "2026-10-01T04:31:06.982Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/09cb49f19bac09bf2b315bb3316caed323ba1a31.js",
-      "size": 1635,
-      "last_modified": "2026-10-01T04:31:23.475Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/0cbf3756ba54236d15fbdcab194d74c7b0668521.js",
-      "size": 6834,
-      "last_modified": "2026-10-01T04:31:05.602Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/0e838c4cff95649f94040a1d51ae3643a52d3e3c.json",
-      "size": 675,
-      "last_modified": "2026-10-01T04:31:45.192Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/12585f504477d25d70c20df505e3e51078439311.json",
-      "size": 13,
-      "last_modified": "2026-10-01T04:31:02.609Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/164e3b0b72b95e4bc561e3c85927e00a4c3da86c.js",
-      "size": 19332,
-      "last_modified": "2026-10-01T04:31:24.191Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/186b31fa29d07d1268ebefe4bbabe821a23588e9.js",
-      "size": 16700,
-      "last_modified": "2026-10-01T04:31:07.196Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/1c1156ad1f3bdcee6a01ab7e2933f777d674f4af.js",
-      "size": 5019,
-      "last_modified": "2026-10-01T04:31:06.179Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/1c222a58a109e6370cbb384263e534a89bfe412f.json",
-      "size": 52,
-      "last_modified": "2026-10-01T04:31:25.201Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/1c89ce9419a6f6a60c2fe7581f805da18ddee220.js",
-      "size": 191,
-      "last_modified": "2026-10-01T04:31:06.708Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/2039e46ae093cc01ca0bd8f8cffba449452292b8.js",
-      "size": 38689,
-      "last_modified": "2026-10-01T04:31:31.794Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/238c6e8e576edc42a6deaff2d0f1f5c1555139a8.js",
-      "size": 11472,
-      "last_modified": "2026-10-01T04:31:25.170Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/2568a021b0edce7a931cf653125f04508924e277.js",
-      "size": 19807,
-      "last_modified": "2026-10-01T04:31:26.179Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/27d84e433ee790e4afe5b89bdd1e0c0ec0de7bde.js",
-      "size": 1626,
-      "last_modified": "2026-10-01T04:31:06.715Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/27f1170104f1004399fda02f1eedf9f265e36698.js",
-      "size": 15874,
-      "last_modified": "2026-10-01T04:31:23.509Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/2a2eb31a134c861393af99c48d092d1cd400dc0d.js",
-      "size": 10258,
-      "last_modified": "2026-10-01T04:31:24.185Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/38e8b12cb65a563d361c2c50cdfb6f0b78c0db1b.json",
-      "size": 4261,
-      "last_modified": "2026-10-01T04:31:33.837Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/399e634e01664f60bdb6889b4e58ee6ceffa3329.js",
-      "size": 5512,
-      "last_modified": "2026-10-01T04:31:07.153Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3a649252890b117a4fec60c422cbf85a9418eb96.js",
-      "size": 21577,
-      "last_modified": "2026-10-01T04:31:06.646Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3ac1d64d56b8b8af04f16d9ddf8c7d399b652ff3.js",
-      "size": 1661,
-      "last_modified": "2026-10-01T04:31:24.180Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3bace6fef026dd8cc05643c9361f2a2a5f944752.json",
-      "size": 14,
-      "last_modified": "2026-10-01T04:31:09.103Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3db97c39bab9c612982d8d3fcc0cf9c390d7fde5.json",
-      "size": 124,
-      "last_modified": "2026-10-01T04:31:39.650Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3dfe0201b47be5c3925c7e6713872dcb990bb6f2.js",
-      "size": 38631,
-      "last_modified": "2026-10-01T04:31:06.540Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3e6254df03bbe328412114ffc697c1167a6badbb.js",
-      "size": 57481,
-      "last_modified": "2026-10-01T04:31:23.520Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/3f7322a4b1357b2b75621d9e7ca9f4f9fa63f018.json",
-      "size": 102,
-      "last_modified": "2026-10-01T04:31:26.599Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/43c991fe0eea94251b309277440a3648d8530fac.js",
-      "size": 1642,
-      "last_modified": "2026-10-01T04:31:26.704Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/4cc9f682ec130d0288623925099935c8ac0cc03b.json",
-      "size": 36,
-      "last_modified": "2026-10-01T04:31:03.524Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/4eecfbc3013a9dabeee62f5de1429fe8212d3335.js",
-      "size": 16211,
-      "last_modified": "2026-10-01T04:31:25.065Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/4f681015c2a0d740c3bbff99fc6240763861f1b5.json",
-      "size": 117,
-      "last_modified": "2026-10-01T04:31:25.304Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/515110efce6ce888263ad01ef17231af65e7b13f.json",
-      "size": 61,
-      "last_modified": "2026-10-01T04:31:23.427Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/51f1c90c3f1e1d32d0c81e836ded7ed5ba0601d6.js",
-      "size": 173025,
-      "last_modified": "2026-10-01T04:31:05.706Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/52a37f2c11359bc1fb0a32938dc70ddd7aef27f1.js",
-      "size": 13745,
-      "last_modified": "2026-10-01T04:31:09.356Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5669a8e8db6a984b475d27c234d1c8b70d5c6899.js",
-      "size": 6987,
-      "last_modified": "2026-10-01T04:31:07.622Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/593e4dca42232864955254059d1ed2a13ab9f93a.json",
-      "size": 675,
-      "last_modified": "2026-10-01T04:31:25.320Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5989f73e87eae9a9e4566565b82d1bf90202c98b.js",
-      "size": 16593,
-      "last_modified": "2026-10-01T04:31:09.282Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/598bee94ef9f4f6d0557b08addd39587f79cb948.json",
-      "size": 119,
-      "last_modified": "2026-10-01T04:31:22.816Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5d08430a19226fcad956f2c79072a6959415ffe0.js",
-      "size": 51208,
-      "last_modified": "2026-10-01T04:31:26.710Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5dc9f92bc85a49b660fd887b63e24c49db0a2672.js",
-      "size": 23400,
-      "last_modified": "2026-10-01T04:31:14.065Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5e7a5561cd1cd6d6b1021a8350f2340d39f629d3.json",
-      "size": 1026,
-      "last_modified": "2026-10-01T04:31:24.843Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5ecfe1f97090e4f7e805fef8aa6c96954e982880.js",
-      "size": 131615,
-      "last_modified": "2026-10-01T04:31:06.161Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5f6f023667c2f8128dd6510f2f6368cd6a1f4dd0.js",
-      "size": 145252,
-      "last_modified": "2026-10-01T04:31:09.275Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/5fb9ef93873acdb5a8f82239aeafc1d406be12a3.js",
-      "size": 186486,
-      "last_modified": "2026-10-01T04:31:06.138Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/62232a52fab4733e3675a119bfc5268644eb7f6c.js",
-      "size": 17557,
-      "last_modified": "2026-10-01T04:31:07.758Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/682eca3b3d4ed87f8095ddc636971a0af82a5f8f.json",
-      "size": 294,
-      "last_modified": "2026-10-01T04:31:23.337Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/6bc6c666bce019467aa6e2b9b986604c873feb49.js",
-      "size": 38720,
-      "last_modified": "2026-10-01T04:31:38.060Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/6cb43d2a403b758edce562a4115e499be80227ed.json",
-      "size": 212,
-      "last_modified": "2026-10-01T04:31:41.331Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/6f2bc2d36beb044f41d06398a428ae2f977afb2f.json",
-      "size": 60,
-      "last_modified": "2026-10-01T04:31:03.469Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/7007a54e9746b308acd5825c92da89656f964aa7.js",
-      "size": 231214,
-      "last_modified": "2026-10-01T04:31:26.204Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/74514e1ee059f773a2387ab4003eeb55556cfed6.json",
-      "size": 314,
-      "last_modified": "2026-10-01T04:31:23.241Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/78b44c2ffa43c21ed85469214e76babb68d33bce.json",
-      "size": 2636,
-      "last_modified": "2026-10-01T04:31:35.337Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/7978daf5ddae89efa796709a288d1bf020b09b25.json",
-      "size": 99,
-      "last_modified": "2026-10-01T04:31:03.505Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/7acdf263fce21456fe5399f71382382c16ca06b9.js",
-      "size": 90026,
-      "last_modified": "2026-10-01T04:31:06.736Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/7c19bf6f9c7f714ee57eb77c09dde4f3c3445636.json",
-      "size": 14539,
-      "last_modified": "2026-10-01T04:31:33.828Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/7cffe1236d8c11bd71544351f2aacd8bc76f9984.json",
-      "size": 717,
-      "last_modified": "2026-10-01T04:31:35.279Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/7e2cbe7f5d7b1ab2d35209e4238fffaa75e25b66.js",
-      "size": 2791,
-      "last_modified": "2026-10-01T04:31:08.186Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/819edad3328a208bc9d5650bba05aada74cf9706.json",
-      "size": 193,
-      "last_modified": "2026-10-01T04:31:47.195Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/83846975eb7617ad355628cca40b245444e130ef.js",
-      "size": 1900,
-      "last_modified": "2026-10-01T04:31:11.398Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/8384862ba1ad2d9f3d87577412df8fbb0a211a57.js",
-      "size": 527,
-      "last_modified": "2026-10-01T04:31:06.060Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/854f96d22ae6ca8066fd79bb6e19652478f44fdb.js",
-      "size": 45757,
-      "last_modified": "2026-10-01T04:31:08.277Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/85526b24c5f2873544d469e13d48ef2bc2d4f7cd.json",
-      "size": 47,
-      "last_modified": "2026-10-01T04:31:37.316Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/89071abdb45f196eb8976a0f40b6b1f30cfd35f5.js",
-      "size": 21604,
-      "last_modified": "2026-10-01T04:31:09.286Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/8d790ac461b9cfb354a35e224ce664aa92b7e366.js",
-      "size": 18783,
-      "last_modified": "2026-10-01T04:31:24.249Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/920c46adfeeefb53491083e8f0167ff485bb5c0e.js",
-      "size": 8564,
-      "last_modified": "2026-10-01T04:31:06.702Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/945ba222bda7818a87169de52937f475a2edaf9d.js",
-      "size": 13822,
-      "last_modified": "2026-10-01T04:31:08.984Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/964f5f9fffd0cdc94d6d867bcd55b368b7e5b7e3.js",
-      "size": 11854,
-      "last_modified": "2026-10-01T04:31:07.899Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/96b08fceb2ccc994074984a571c7a34c3d9c3dc7.json",
-      "size": 211,
-      "last_modified": "2026-10-01T04:31:43.100Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/97d170e1550eee4afc0af065b78cda302a97674c.json",
-      "size": 2,
-      "last_modified": "2026-10-01T04:31:09.242Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/9d1fea7f37b9a3be1e172ade22b7567db5a74ea4.json",
-      "size": 55,
-      "last_modified": "2026-10-01T04:31:34.610Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/9f2c0e859c04f0291cb172f19596d77f6e49e35d.json",
-      "size": 1995,
-      "last_modified": "2026-10-01T04:31:23.259Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/9f644f5237740b6b2ac379760823e4e1d4a6295e.js",
-      "size": 20276,
-      "last_modified": "2026-10-01T04:31:06.973Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/a1d21e819140a1bbd36eb9fe53838a129ad4cfde.js",
-      "size": 173607,
-      "last_modified": "2026-10-01T04:31:05.842Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/a4ecfa7cdee48b12b38ad238a105c012cb9358f3.js",
-      "size": 103833,
-      "last_modified": "2026-10-01T04:31:26.696Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/a7a66ba6b81b55db4322edd937deca2bdaf5bd67.js",
-      "size": 4664,
-      "last_modified": "2026-10-01T04:31:07.227Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/a7ac6c039bd79246fd202f0a0b06e55127dbae25.json",
-      "size": 73,
-      "last_modified": "2026-10-01T04:31:35.110Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/a836e759865ee2584675c83965ec053d099d0093.json",
-      "size": 32,
-      "last_modified": "2026-10-01T04:31:39.585Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/acccdd4e26a5a510292f83da17acf63fe98782e3.js",
-      "size": 765,
-      "last_modified": "2026-10-01T04:31:07.375Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/aea75ff000142559df15c149a7ee87b52e5504db.json",
-      "size": 152,
-      "last_modified": "2026-10-01T04:31:41.502Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b0273622d3610a640435e69ef60e944da2e49822.js",
-      "size": 107975,
-      "last_modified": "2026-10-01T04:31:37.208Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b19cd718777661d033d973605410950b4a7bf5ab.json",
-      "size": 193,
-      "last_modified": "2026-10-01T04:31:25.478Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b2741a7af9af4fa6d099fdd4946401ba645bd7ea.js",
-      "size": 18327,
-      "last_modified": "2026-10-01T04:31:26.152Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b41a9417df8fec88b495331ea1c70998885a3ca6.js",
-      "size": 28244,
-      "last_modified": "2026-10-01T04:31:26.694Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b6302723924d9881398535952601e0371f90731d.js",
-      "size": 5861,
-      "last_modified": "2026-10-01T04:31:08.110Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b8837cea976315c55278c1060c919d36cf0a7651.js",
-      "size": 12373,
-      "last_modified": "2026-10-01T04:31:06.329Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/b98c0e841866cd3de0543f028c2a24014cc7c6e3.js",
-      "size": 7557,
-      "last_modified": "2026-10-01T04:31:26.712Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/beafc0a8b3709c1ac5cab257fb2c7610a60d2167.json",
-      "size": 196,
-      "last_modified": "2026-10-01T04:31:41.619Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/bf21a9e8fbc5a3846fb05b4fa0859e0917b2202f.json",
-      "size": 2,
-      "last_modified": "2026-10-01T04:31:02.570Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/ccc20cb9c8601d5d910ac8244fe0f99b3533414a.js",
-      "size": 2018,
-      "last_modified": "2026-10-01T04:31:07.125Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/cff2f4e424c1517972878e51eb944e27fd737871.js",
-      "size": 3808,
-      "last_modified": "2026-10-01T04:31:06.689Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/d585a154372e50aa677e00a3ad6ce614b0daba03.js",
-      "size": 29998,
-      "last_modified": "2026-10-01T04:31:07.440Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/d7208ce26213f54f6e5030b132c9c73761b08b0c.js",
-      "size": 8920,
-      "last_modified": "2026-10-01T04:31:26.170Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/df7139b4f75533ac347f7d8bb7fd42d6ca38366f.json",
-      "size": 80,
-      "last_modified": "2026-10-01T04:31:42.167Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/e942c61a2e91342b9b4e772ab3105b6809e6a942.js",
-      "size": 927,
-      "last_modified": "2026-10-01T04:31:09.278Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/f25c8ec620014556205bea262b024058dcc86513.js",
-      "size": 10861,
-      "last_modified": "2026-10-01T04:31:07.275Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/f3ee7f2c9a23ab5d66131e58b873a539913be061.js",
-      "size": 45736,
-      "last_modified": "2026-10-01T04:31:07.661Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/f51ab90c41af4665d70c55b0b4f2eb576d8b3f24.js",
-      "size": 1698,
-      "last_modified": "2026-10-01T04:31:26.169Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/f77099330f477b950577152d6c547a91371b69d4.js",
-      "size": 9403,
-      "last_modified": "2026-10-01T04:31:31.026Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/f79f55d7c4ffc0df1a4882dcbdc5e7352ee15975.json",
-      "size": 779,
-      "last_modified": "2026-10-01T04:31:23.460Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/fdbf3d944d713aa3331ceb3bf415b0833b67b143.js",
-      "size": 62515,
-      "last_modified": "2026-10-01T04:31:06.085Z"
-    },
-    {
-      "path": "test-results/.playwright-artifacts-0/traces/resources/ffd056942090b030a93b3c87fb143a5aa6eebebc.json",
-      "size": 748,
-      "last_modified": "2026-10-01T04:31:39.339Z"
     },
     {
       "path": "tests/integration/account-deletion.test.ts",
@@ -3470,13 +2955,18 @@
     },
     {
       "path": "tsconfig.json",
-      "size": 1245,
-      "last_modified": "2026-09-15T00:00:10.273Z"
+      "size": 1278,
+      "last_modified": "2026-10-01T07:47:33.121Z"
     },
     {
       "path": "types/screenplay.ts",
       "size": 2273,
       "last_modified": "2026-09-17T03:01:36.537Z"
+    },
+    {
+      "path": "vercel.json",
+      "size": 96,
+      "last_modified": "2026-10-01T07:47:33.122Z"
     },
     {
       "path": "vitest.config.ts",

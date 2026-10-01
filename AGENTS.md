@@ -4,7 +4,7 @@
 
 ## Stack
 
-Next.js 14 App Router · TypeScript · Tailwind CSS · framer-motion · Supabase (Postgres + RLS + Auth + Realtime + Storage) · WebRTC · Vercel
+Next.js 16 App Router (React 19, built with webpack) · TypeScript · Tailwind CSS · framer-motion · Supabase (Postgres + RLS + Auth + Realtime + Storage) · WebRTC · Vercel
 
 ## Core Rules
 

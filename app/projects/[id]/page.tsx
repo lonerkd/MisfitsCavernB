@@ -78,7 +78,10 @@ interface DeptWindowProps {
 function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay = 0, span = 'single' }: DeptWindowProps) {
   const [hovered, setHovered] = useState(false);
   const color = rawColor;
-  const ink = readable(rawColor);
+  // Hex colours are corrected by readable(); theme colours (var(--accent)…)
+  // can't be measured here, so they're mixed toward the text colour — enough
+  // contrast for small labels in every theme.
+  const ink = rawColor.startsWith('var(') ? `color-mix(in srgb, ${rawColor} 55%, var(--fg))` : readable(rawColor);
 
   return (
     <motion.div
@@ -118,7 +121,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: ink, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: ink, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6 }}>{tag}</span>
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
