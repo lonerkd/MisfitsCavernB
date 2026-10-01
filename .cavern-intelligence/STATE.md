@@ -10,6 +10,27 @@
 4. `npm audit`: 5 vulnerabilities (1 moderate, 4 high) reported at install — triage pending
 5. Security advisor WARNs: public buckets (`sfx-library`, `studio-assets`) allow listing; `has_discord_webhook` executable by anon — review intent
 
+## Open work — start here
+
+What is unfinished, so any session (local or cloud) can pick it up.
+
+1. **`e2e/onset-offline.spec.ts` fails on Windows with the older local
+   Chromium (1228)** — after an offline reload the day stays on "Loading the
+   schedule…". Same on plain `main`; passes in CI. Check on a second machine
+   (see the island session below).
+2. **For the owner, outside the code:**
+   - have a lawyer read `/privacy` and `/terms`;
+   - switch on leaked-password protection (Supabase dashboard › Auth ›
+     Passwords).
+3. **React Compiler lint warnings (~146).** The react-hooks v7 rules are
+   `warn` in `eslint.config.mjs`. Rework that code a module at a time, then
+   turn each rule back to `error`.
+4. **Open PRs**: #111 (Studio tab scroll), #115 (lucide-react). Two stashes
+   from June–July (`stash@{1}`, `stash@{2}`) predate the rewrites and were
+   never reconciled — look before dropping.
+
+Done since this list was written: the advisor-fixes migration is in production
+(below), and dialogs open above the dock — which is now the island (below).
 
 ## Latest Session — The island, and dialogs above it
 
@@ -61,6 +82,39 @@ No migration.
 ## Earlier — Type, layout and imagery tokens
 
 Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Checked in a browser** (local Supabase, production build, 1280px): breakdown and stripboard show no wrapping or overflow and pass axe; stripboard strip headings and cast lines ellipsize by design in the 256px day column. Checked at 1024 and 768 too: fixed the empty-state icon (invalid margin, not centred) and hid the editor beat-rail labels below 1100px, where they overlapped the script.
+
+## Earlier — What the database advisors found
+
+Migration `20260930010000_advisor_fixes.sql`, **applied to production on
+2026-10-01** (PR #116). Production was at main's fingerprint before (1671
+lines) and matches `supabase/schema.fingerprint` after (1738 lines, md5
+`e2b521d7788f2796b7b3d0c9dc42600f`); the advisors, re-run, no longer flag
+`sfx_assets`, per-row `auth.uid()` or unindexed foreign keys. What Supabase's
+security and performance advisors had found:
+
+- **Sound effects leaked across projects**: `sfx_assets` was readable by
+  anyone, signed in or not (`USING (true)`), though every sound belongs to a
+  project — Soundtrack › SFX listed everyone's. Now the uploader and anyone who
+  can open the project; only the uploader renames or removes. (No rows existed
+  in production, so nothing was exposed.) Test shown to fail on the old rule.
+- **auth.uid() once per query** in the 9 policies that still called it per row
+  (Spotify connections, portfolio blocks, script annotations, Discord
+  webhooks, sound effects).
+- **Writes split from reads**: 12 tables had a `FOR ALL` write policy beside a
+  `SELECT` policy, so every read ran both; the writes are now INSERT / UPDATE /
+  DELETE policies (same people, same rules). Portfolio media had the same
+  owner policy twice — one set now. Job applications: one read policy.
+- **47 foreign keys got covering indexes** — joins, and the `ON DELETE`
+  actions behind account deletion, no longer scan whole tables.
+- Left as they are, on purpose: the advisors' "SECURITY DEFINER callable"
+  warnings (those are the app's RPCs, each checking the caller itself),
+  "unused index" notes (little traffic yet), and the two `jobs` read policies
+  (`internal.applied_to` isn't granted to anon).
+- **Yours to switch on**: leaked-password protection (Supabase dashboard ›
+  Auth › Passwords).
+- Tests: `tests/integration/advisor-fixes.test.ts` (sound effects as owner,
+  crew, outsider, signed out; portfolio owner-only writes); the whole
+  integration suite (43 files) passes on the rewritten policies.
 
 ## Earlier — Next 16 and React 19
 
