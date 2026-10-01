@@ -332,9 +332,9 @@ function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
   const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 99990, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
-        style={{ width: 440, maxWidth: '100%', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, padding: 26 }}>
+        style={{ width: 440, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, padding: 26 }}>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 6 }}>{projectTitle}</div>
         <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, margin: '0 0 20px' }}>New channel</h2>
 
@@ -502,7 +502,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 99990, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
         style={{ width: 460, maxWidth: '100%', maxHeight: '86vh', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, padding: 26 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
