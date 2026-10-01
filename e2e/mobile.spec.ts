@@ -28,6 +28,9 @@ const overflow = (page: Page) => page.evaluate(() => {
   return [...document.body.querySelectorAll('*')].filter((el) => {
     const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
     if (!r.width || cs.display === 'none' || cs.visibility === 'hidden' || r.right <= vw + 1 || r.left >= vw) return false;
+    // Decoration fixed to the screen (the film grain jitters a few px either
+    // way) never makes the page scroll and holds nothing to read.
+    if (cs.position === 'fixed' && cs.pointerEvents === 'none' && el.getAttribute('aria-hidden') === 'true') return false;
     for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
       const o = getComputedStyle(p).overflowX;
       if (['auto', 'scroll', 'hidden', 'clip'].includes(o) && p.getBoundingClientRect().right <= vw + 1) return false;
