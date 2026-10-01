@@ -169,7 +169,7 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         style={{
-          position: 'fixed', inset: 0, zIndex: 9000,
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
           background: 'var(--surface)',
           backdropFilter: 'blur(40px)',
           overflowY: 'auto',

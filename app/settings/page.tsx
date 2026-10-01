@@ -14,6 +14,7 @@ import { ThemePicker } from '@/components/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 import DeleteAccount from '@/components/settings/DeleteAccount';
+import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -101,7 +102,7 @@ export default function SettingsPage() {
 
   const [cursor, setCursor] = useState(true);
   const [motion, setMotion] = useState(false);
-  const [taskbarScale, setTaskbarScale] = useState(1);
+  const [islandScale, setIslandScale] = useState(1);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
@@ -130,7 +131,7 @@ export default function SettingsPage() {
     setCursor(getPref(PREF_KEYS.cursor, true));
     setMotion(getPref(PREF_KEYS.motion, false));
     try {
-      setTaskbarScale(parseFloat(localStorage.getItem('mc_taskbar_scale') || '1'));
+      setIslandScale(readIslandScale());
     } catch {}
   }, [router]);
 
@@ -156,13 +157,7 @@ export default function SettingsPage() {
     setMotion(v); savePref(PREF_KEYS.motion, v);
     window.dispatchEvent(new Event(MOTION_PREF_EVENT));
   };
-  const setTaskbarScalePref = (v: number) => {
-    setTaskbarScale(v);
-    try {
-      localStorage.setItem('mc_taskbar_scale', String(v));
-      window.dispatchEvent(new Event('mc-taskbar-scale-change'));
-    } catch {}
-  };
+  const setIslandScalePref = (v: number) => setIslandScale(writeIslandScale(v));
 
   const changeEmail = async () => {
     if (!newEmail || newEmail === user?.email) return;
@@ -295,19 +290,19 @@ export default function SettingsPage() {
             </div>
             <ThemePicker signedIn={!!user} />
           </div>
-          <Row label="Taskbar Scale" hint={`Adjust taskbar sizing. Current: ${taskbarScale.toFixed(2)}x`} control={
+          <Row label="Island size" hint="How big the island at the foot of the screen is, on this device. It resizes as you drag." control={
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input
                 type="range"
-                aria-label="Taskbar scale"
-                min="0.8"
-                max="1.3"
-                step="0.05"
-                value={taskbarScale}
-                onChange={e => setTaskbarScalePref(parseFloat(e.target.value))}
+                aria-label="Island size"
+                min={ISLAND_SCALE_MIN}
+                max={ISLAND_SCALE_MAX}
+                step={ISLAND_SCALE_STEP}
+                value={islandScale}
+                onChange={e => setIslandScalePref(parseFloat(e.target.value))}
                 style={{ width: 120, accentColor: 'var(--accent)' }}
               />
-              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{taskbarScale.toFixed(2)}x</span>
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{islandScale.toFixed(2)}x</span>
             </div>
           } />
         </Section>

@@ -11,7 +11,43 @@
 5. Security advisor WARNs: public buckets (`sfx-library`, `studio-assets`) allow listing; `has_discord_webhook` executable by anon — review intent
 
 
-## Latest Session — Type, layout and imagery tokens
+## Latest Session — The island, and dialogs above it
+
+No migration.
+
+- **The dock is now an island** (`components/EcosystemTaskbar.tsx`,
+  `components/island/`, `lib/island/`): one surface that rests as a small pill
+  (where you are + the page's lead number), shows a hovered zone's controls,
+  opens to the whole suite when reached for or pressed, holds a keyboard deck
+  open under Caps Lock (1–6 apps, Q–I the page's controls, / search,  split,
+  P project, Esc), and shrinks to a dot while you type. Shapes and why:
+  `lib/island/mode.ts`; every route's fallback name and next places:
+  `lib/island/routes.ts`. Pressing the pill keeps it open (it never presses
+  the control that slides in under the pointer). See routing-and-surface.md.
+- **It no longer costs pages their bottom edge**: `--taskbar-height` is the
+  resting footprint (64px) and doesn't change as it opens; Lounge and editor pad
+  only their centre column, so channel lists and side panels reach the foot of
+  the screen.
+- **Dialogs sit above it**: `--z-modal: 99990` (layer order in `globals.css`).
+  Every full-screen dialog uses it and fits a phone screen. Four that lived
+  inside a page's own layer (pitch presenter, Recruit, phase-unlock reveal,
+  the editor's panel-error screen) are portalled to `<body>` — z-index alone
+  could not lift them over the Studio header or the island.
+- Lounge and editor now offer real island actions (search messages, pinned,
+  find & replace); the shortcuts panel (`?`) lists the Caps Lock keys.
+- Tests: `lib/island/island.test.ts`, `e2e/island.spec.ts`, `e2e/layout.spec.ts`
+  (rewritten for the island), `e2e/search.spec.ts` (opens search from the
+  island). Checked at 390×844, 820, 1280 and a short 1280×560 desk.
+- **Settings › Island size** (was "Taskbar Scale", which saved a number nothing
+  read): `lib/island/scale.ts`. The island resizes as the slider moves, its
+  text never drops under 11px, and `--taskbar-height` follows (64px at 1×).
+- **Sign-in keeps what you typed before the page was interactive** (`app/auth`):
+  the controlled fields used to blank on the first re-render — it lost fast
+  typing and autofill, and was why e2e sign-ins flaked under load.
+- Labelled loading skeletons (brief, phase panel, breakdown) now have
+  `role="status"` — axe flagged the bare `aria-label` when it caught one.
+
+## Earlier — Type, layout and imagery tokens
 
 Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Checked in a browser** (local Supabase, production build, 1280px): breakdown and stripboard show no wrapping or overflow and pass axe; stripboard strip headings and cast lines ellipsize by design in the 256px day column. Checked at 1024 and 768 too: fixed the empty-state icon (invalid margin, not centred) and hid the editor beat-rail labels below 1100px, where they overlapped the script.
 

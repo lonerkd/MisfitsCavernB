@@ -233,6 +233,7 @@ export default function GlobalAudioWidget() {
     <div style={{ position: 'relative' }}>
       <button
         onClick={() => setExpanded(o => !o)}
+        aria-expanded={expanded}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '7px 14px',

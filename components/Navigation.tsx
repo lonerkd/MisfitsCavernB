@@ -54,7 +54,8 @@ export default function Navigation() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 1000,
+          // The bar holds the menu's close button, so it rides above the open drawer.
+          zIndex: open ? 'calc(var(--z-modal) + 2)' : 1000,
           background: scrolled ? 'var(--surface)' : 'transparent',
           backdropFilter: scrolled ? 'blur(24px) saturate(1.4)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(1.4)' : 'none',
@@ -240,7 +241,7 @@ export default function Navigation() {
               background: 'var(--surface)',
               backdropFilter: 'blur(24px)',
               borderLeft: '1px solid rgba(var(--ink-rgb), 0.06)',
-              zIndex: 999,
+              zIndex: 'calc(var(--z-modal) + 1)',
               padding: '72px 28px 36px',
               display: 'flex',
               flexDirection: 'column',
@@ -342,7 +343,7 @@ export default function Navigation() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 998, backdropFilter: 'blur(4px)' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 'var(--z-modal)', backdropFilter: 'blur(4px)' }}
           />
         )}
       </AnimatePresence>

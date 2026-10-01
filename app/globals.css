@@ -93,6 +93,12 @@
   --r-xl:   28px;
   --r-full: 9999px;
 
+  /* Layers — full-screen dialogs sit above the suite chrome, so the dock never
+     covers their buttons. Bottom to top:
+     dock 9999 / phone tab bar 10000 < modal 99990 < toast 99997
+     < confirm 99998 < cursor 99999 < command palette / diff 100000. */
+  --z-modal: 99990;
+
   /* Legacy aliases */
   --radius-sm:   var(--r-xs);
   --radius-md:   var(--r-sm);

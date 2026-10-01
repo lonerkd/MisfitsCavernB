@@ -319,8 +319,8 @@
 
 /* ── Modal ────────────────────────────────────────────── */
 .backdrop {
-  /* Above the Studio header and the suite taskbar (9999); below confirms and toasts. */
-  position: fixed; inset: 0; z-index: 99990;
+  /* Above the Studio header and the suite dock; below confirms and toasts (see --z-modal). */
+  position: fixed; inset: 0; z-index: var(--z-modal);
   background: var(--glass);
   backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;

@@ -34,7 +34,16 @@ export default function AuthPage() {
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    // Keep what was typed (or autofilled) before the page became interactive:
+    // the fields are controlled, so the first re-render would blank them.
+    const field = (name: string) => (formRef.current?.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
+    const email = field('email');
+    const password = field('password');
+    if (email || password) setForm((prev) => ({ ...prev, email: email || prev.email, password: password || prev.password }));
+    setHydrated(true);
+  }, []);
 
   // ── Where to land after auth ─────────────────────────────────────
   // middleware.ts sends gated visitors here as /auth?redirect=<path>. Honour it
@@ -246,7 +255,7 @@ export default function AuthPage() {
           {/* method="post" + a submit button disabled until hydration: before the
               JS loads, a native submit would otherwise GET /auth?email=…&password=…,
               putting the password in the URL and browser history. */}
-          <form method="post" onSubmit={handleSubmit}>
+          <form ref={formRef} method="post" onSubmit={handleSubmit}>
             <Input
               name="email"
               label="Email"

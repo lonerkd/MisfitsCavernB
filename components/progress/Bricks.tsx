@@ -16,10 +16,17 @@ export const TOOL_ICON: Record<ToolId, LucideIcon> = {
   onset: Timer, post: Film, promos: Megaphone, festivals: Trophy, portfolio: UserSquare,
 };
 
-/** The project accent as CSS variables, legible on the dark panels. */
+/**
+ * The project accent as CSS variables, legible on the panels, with the ink for
+ * text on a fill of it. Pass the accent as chosen (a hex colour). Anything
+ * else — the theme's `var(--accent)`, an already-adjusted colour — can't be
+ * measured here, so it takes the theme's own ink for its accent rather than a
+ * guess (white on the suite's orange is 4:1, under AA).
+ */
 export function accentVars(accent: string | null | undefined): React.CSSProperties {
   const raw = accent || '#e8431a';
-  return { ['--pa' as string]: readable(raw), ['--pa-ink' as string]: textOnReadable(raw) };
+  const measurable = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw.trim());
+  return { ['--pa' as string]: readable(raw), ['--pa-ink' as string]: measurable ? textOnReadable(raw) : 'var(--on-accent)' };
 }
 
 /** Goes to a place: in-page when the host handles it (the Studio switching tabs), else a link. */

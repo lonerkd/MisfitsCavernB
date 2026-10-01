@@ -123,8 +123,14 @@ What guards `main`, and the commands behind each guard:
 
 - `e2e-local` runs the whole `e2e/` folder; each spec skips itself unless its
   stack is there, so a new spec is in CI the moment it's added.
-- `e2e/layout.spec.ts` guards the desk layout (every dock app visible; the
-  Lounge composer and the editor footer above the dock; no sideways scroll).
+- `e2e/layout.spec.ts` guards the desk layout (every app on the opened island
+  visible; the Lounge composer and the editor footer above the island while the
+  lists either side reach the foot of the screen; no sideways scroll).
+  `e2e/island.spec.ts` walks the island's shapes (rest, open, pinned, a held
+  menu, the dot while typing, the Caps Lock keys).
+- `scripts/dev-stack.sh` assumes a Unix shell with a real `/tmp`; under Git Bash
+  on Windows run its steps by hand (`npx supabase status -o json`, build with
+  `NEXT_PUBLIC_SUPABASE_URL`/`_ANON_KEY` from it, `npx next start -p 3000`).
 - Git hooks (`.githooks/`, enabled by `npm install` via `prepare`): pre-commit
   lints staged files; pre-push runs types and unit tests.
 - Node is pinned in `.nvmrc` (22) for CI and local; `engines` allows ≥20.

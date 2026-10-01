@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   children: React.ReactNode;
@@ -26,9 +27,10 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
+      // Portalled: a boundary inside a sliding sidebar would otherwise only cover that sidebar.
+      return createPortal(
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', padding: 16,
           justifyContent: 'center', background: 'rgba(0,0,0,0.85)',
         }}>
           <div style={{
@@ -44,7 +46,8 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
               Dismiss
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       );
     }
     return this.props.children;

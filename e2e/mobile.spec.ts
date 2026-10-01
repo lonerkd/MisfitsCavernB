@@ -115,7 +115,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await page.goto(`/lounge?channel=${channelId}`);
     await expect(page.getByPlaceholder(`Message #harbour-${TAG}...`)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: 'Back to channels and people' }).click();
-    await expect(page.getByRole('button', { name: `harbour-${TAG}` }).or(page.getByText(`harbour-${TAG}`)).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: `harbour-${TAG}` }).or(page.getByText(`harbour-${TAG}`)).filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByPlaceholder(`Message #harbour-${TAG}...`)).toBeHidden();
     await ctx.close();
   });

@@ -1,0 +1,174 @@
+/* The island: one floating surface at the foot of the screen that changes
+   shape with what you're doing (lib/island/mode). It overlays the page —
+   only its resting footprint is reserved (--taskbar-height), and only by the
+   column it sits over. Hidden on phones, where the tab bar takes over.
+   --island-scale (Settings › Island size, 0.8–1.3) sizes its controls; its
+   text grows with it but never drops under the 11px floor. */
+
+.dock {
+  --island-scale: 1;
+  --island-text: max(var(--text-2xs), calc(var(--text-2xs) * var(--island-scale)));
+  --island-title: max(var(--text-2xs), calc(var(--text-sm) * var(--island-scale)));
+  position: fixed; left: 0; right: 0; bottom: 14px; z-index: 9999;
+  display: flex; justify-content: center; padding: 0 12px;
+  pointer-events: none;
+}
+
+.island {
+  --island-accent: var(--accent);
+  position: relative; pointer-events: auto;
+  display: flex; flex-direction: column; align-items: stretch;
+  max-width: 100%;
+  color: var(--fg);
+  background: var(--surface);
+  backdrop-filter: blur(28px) saturate(1.6); -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid rgba(var(--ink-rgb), 0.09);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(var(--ink-rgb), 0.04);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.island[data-near='true'], .island[data-mode='context'], .island[data-mode='live'] {
+  border-color: color-mix(in srgb, var(--island-accent) 42%, transparent);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 24px color-mix(in srgb, var(--island-accent) 16%, transparent), inset 0 1px 0 rgba(var(--ink-rgb), 0.04);
+}
+.island[data-mode='caps'] {
+  border-color: color-mix(in srgb, var(--island-accent) 60%, transparent);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 0 3px color-mix(in srgb, var(--island-accent) 14%, transparent), inset 0 1px 0 rgba(var(--ink-rgb), 0.04);
+}
+
+/* ── Rows ─────────────────────────────────────────────── */
+/* Top to bottom on the deck: the suite, then what the dot is about, then (Caps Lock) the keys. */
+.main { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; min-width: 0; }
+.island[data-deck='true'] .main { padding: calc(3px * var(--island-scale)) 12px calc(4px * var(--island-scale)); }
+.hints {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 14px;
+  padding: 7px 16px 9px; border-top: 1px solid rgba(var(--ink-rgb), 0.07);
+  font-family: var(--mono); font-size: var(--island-text); letter-spacing: 1px; text-transform: uppercase; color: var(--fg-muted);
+}
+.hints span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+/* ── The dot: what the island is about, and its handle ── */
+.handle {
+  display: inline-flex; align-items: center; gap: 9px; min-width: 0;
+  height: calc(40px * var(--island-scale)); padding: 0 calc(16px * var(--island-scale)) 0 calc(14px * var(--island-scale));
+  background: none; border: 0; border-radius: 9999px; color: inherit; cursor: pointer;
+  font: inherit; -webkit-tap-highlight-color: transparent;
+  transition: height 0.2s, padding 0.2s;
+}
+.island[data-near='true'] .handle { height: calc(44px * var(--island-scale)); padding: 0 calc(20px * var(--island-scale)) 0 calc(17px * var(--island-scale)); }
+.island[data-mode='context'] .handle, .island[data-mode='live'] .handle { height: calc(46px * var(--island-scale)); }
+.island[data-mode='dot'] .handle { height: calc(26px * var(--island-scale)); padding: 0 calc(8px * var(--island-scale)); }
+.island[data-deck='true'] .handle { height: calc(46px * var(--island-scale)); padding: 0 10px 0 8px; }
+.handle:focus-visible, .btn:focus-visible, .chip:focus-visible, .toggle:focus-visible { outline: 2px solid var(--island-accent); outline-offset: 2px; }
+
+.dot {
+  position: relative; flex-shrink: 0; width: calc(9px * var(--island-scale)); height: calc(9px * var(--island-scale)); border-radius: 50%;
+  background: var(--island-accent); box-shadow: 0 0 10px var(--island-accent);
+  transition: transform 0.25s var(--ease-spring), background 0.25s;
+}
+.island[data-near='true'] .dot, .handle:hover .dot { transform: scale(1.35); }
+/* Pinned open: a ring, so the dot reads as "held". */
+.dot[data-pinned='true']::after, .island[data-mode='caps'] .dot::after {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px solid var(--island-accent); opacity: 0.7;
+}
+.island[data-mode='live'] .dot { animation: islandPulse 1.2s ease-in-out infinite; }
+@keyframes islandPulse { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.5); opacity: 1; } }
+
+.glyph { display: inline-flex; flex-shrink: 0; color: var(--island-accent); }
+.glyph svg { width: calc(15px * var(--island-scale)); height: calc(15px * var(--island-scale)); }
+.title {
+  font-family: var(--display); font-size: var(--island-title); letter-spacing: 1px; color: var(--fg);
+  max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lead, .label {
+  font-family: var(--mono); font-size: var(--island-text); letter-spacing: 1px; text-transform: uppercase; white-space: nowrap;
+}
+.lead { display: inline-flex; gap: 6px; color: var(--island-accent); }
+.lead small { font-size: inherit; color: var(--fg-muted); }
+.lead::before { content: '·'; margin-right: 3px; color: var(--fg-muted); }
+.label { color: var(--fg); letter-spacing: 1.5px; }
+
+.crumbs { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-family: var(--mono); font-size: var(--island-text); letter-spacing: 0.8px; color: var(--fg-muted); white-space: nowrap; }
+.crumbs b { font-weight: 400; color: var(--island-accent); max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── The page's own controls ─────────────────────────── */
+.inline { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 6px 14px; padding: 0 16px 0 2px; min-width: 0; }
+.field { display: inline-flex; flex-direction: column; line-height: 1.15; white-space: nowrap; font-family: var(--mono); font-size: var(--island-text); }
+.field small { font-size: inherit; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted); }
+.field span { letter-spacing: 0.5px; color: var(--fg); }
+.rule { width: 1px; height: calc(22px * var(--island-scale)); flex-shrink: 0; margin: 0 4px; background: rgba(var(--ink-rgb), 0.09); }
+
+.toggle, .chip {
+  display: inline-flex; align-items: center; gap: 7px; min-height: calc(28px * var(--island-scale));
+  font-family: var(--mono); font-size: var(--island-text); letter-spacing: 1.2px; text-transform: uppercase; white-space: nowrap;
+  cursor: pointer; text-decoration: none; border-radius: 9999px; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s var(--ease-spring);
+}
+.toggle { padding: 2px 8px 2px 4px; background: none; border: 1px solid transparent; color: var(--fg-muted); }
+.toggle[aria-pressed='true'] { color: var(--fg); }
+.toggle:hover { background: rgba(var(--ink-rgb), 0.06); }
+.check {
+  width: calc(15px * var(--island-scale)); height: calc(15px * var(--island-scale)); border-radius: 4px; flex-shrink: 0; display: grid; place-items: center;
+  border: 1px solid rgba(var(--ink-rgb), 0.22); color: var(--on-accent); transition: background 0.2s, border-color 0.2s;
+}
+.toggle[aria-pressed='true'] .check { background: var(--island-accent); border-color: var(--island-accent); }
+.chip {
+  padding: calc(5px * var(--island-scale)) calc(12px * var(--island-scale)); color: var(--island-accent);
+  background: color-mix(in srgb, var(--island-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--island-accent) 28%, transparent);
+}
+.chip:hover { background: color-mix(in srgb, var(--island-accent) 20%, transparent); transform: translateY(-1px); }
+.chip:active, .toggle:active { transform: scale(0.96); }
+.chipQuiet { color: var(--fg-muted); background: rgba(var(--ink-rgb), 0.04); border-color: rgba(var(--ink-rgb), 0.1); }
+.chipQuiet:hover { color: var(--fg); background: rgba(var(--ink-rgb), 0.09); }
+.chip[data-kb='true'], .toggle[data-kb='true'] { outline: 2px solid var(--island-accent); outline-offset: 2px; }
+
+.key {
+  display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 4px;
+  font-family: var(--mono); font-size: var(--island-text); line-height: 1; letter-spacing: 0; text-transform: uppercase;
+  color: var(--fg); background: rgba(var(--ink-rgb), 0.08); border: 1px solid rgba(var(--ink-rgb), 0.18);
+}
+
+/* ── Everything else in the suite ────────────────────── */
+/* Always mounted (the audio player lives here and must keep playing); only shown on the deck. */
+.nav { display: none; align-items: center; justify-content: center; flex-wrap: wrap; gap: 2px; padding: calc(7px * var(--island-scale)) 10px; border-bottom: 1px solid rgba(var(--ink-rgb), 0.07); }
+.island[data-deck='true'] .nav { display: flex; }
+.strip { display: flex; align-items: center; gap: 2px; }
+.slot { position: relative; display: inline-flex; }
+
+.btn {
+  position: relative; width: calc(46px * var(--island-scale)); height: calc(46px * var(--island-scale)); flex-shrink: 0; display: grid; place-items: center;
+  border: 0; border-radius: 14px; background: none; cursor: pointer; text-decoration: none;
+  color: rgba(var(--fg-rgb), 0.45);
+  transition: transform 0.22s var(--ease-spring), background 0.2s, color 0.2s;
+}
+/* The strip swells under the pointer, and a little either side of it. */
+.btn:hover { color: var(--fg); background: rgba(var(--ink-rgb), 0.07); transform: translateY(-5px) scale(1.16); }
+.slot:has(+ .slot .btn:hover) .btn, .slot:has(.btn:hover) + .slot .btn { transform: translateY(-2px) scale(1.06); }
+.btn:active { transform: scale(0.94); }
+.btn[aria-current='page'], .btn[aria-expanded='true'] {
+  color: var(--btn-accent, var(--island-accent));
+  background: color-mix(in srgb, var(--btn-accent, var(--island-accent)) 12%, transparent);
+}
+.btn[aria-current='page']::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 6px currentColor;
+}
+.btn svg { width: calc(19px * var(--island-scale)); height: calc(19px * var(--island-scale)); }
+.btn .key { position: absolute; top: 1px; right: 1px; }
+/* The bell sizes itself inline; bring it along with the rest of the strip. */
+.bell { display: inline-flex; }
+.bell button { width: calc(46px * var(--island-scale)) !important; height: calc(46px * var(--island-scale)) !important; }
+.bell button > svg { width: calc(19px * var(--island-scale)); height: calc(19px * var(--island-scale)); }
+.pip { position: absolute; top: 9px; right: 9px; width: 5px; height: 5px; border-radius: 50%; }
+
+/* Names, on hover or keyboard focus. */
+.slot[data-tip]::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translate(-50%, 4px);
+  padding: 5px 10px; border-radius: 8px; white-space: nowrap; pointer-events: none; opacity: 0;
+  font-family: var(--mono); font-size: var(--island-text); letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--fg); background: var(--surface); border: 1px solid rgba(var(--ink-rgb), 0.12);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.slot[data-tip]:hover::after, .slot[data-tip]:focus-within::after { opacity: 1; transform: translate(-50%, 0); }
+.slot[data-open='true']::after { display: none; }
+
+@media (max-width: 760px) { .dock { display: none; } }
