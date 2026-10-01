@@ -4,53 +4,41 @@
 
 What is unfinished, so any session (local or cloud) can pick it up.
 
-1. **Database advisor fixes — written and tested, NOT yet in production.**
-   Migration `supabase/migrations/20260930010000_advisor_fixes.sql` (see the
-   next section). Merging the PR does not apply a migration, so do it in this
-   order:
-   1. Check the migration file is unchanged: `md5sum` gives
-      `776ec8128095177e3891a62f96887985`.
-   2. Apply it verbatim to production (project `fxsryglwpwcqkfjljbrm`), via
-      Supabase MCP `apply_migration` or `npx supabase db push`.
-   3. Verify production matches `supabase/schema.fingerprint`. Run the
-      queries in `supabase/fingerprint.sql` against prod, with the final
-      select replaced by
-      `select count(*), md5(string_agg(line, E'\n' order by line collate "C"))`.
-      Expect **1738 lines, md5 `e2b521d7788f2796b7b3d0c9dc42600f`**. Locally,
-      `printf '%s' "$(cat supabase/schema.fingerprint)" | md5sum` gives the
-      same md5.
-   4. Re-run the Supabase security and performance advisors: the
-      `sfx_assets` "always true" policy warning should be gone.
-   5. Merge the PR.
-2. **Modals under the dock.** The dock (`nav.mc-dock`, z-index 9999) and the
-   phone tab bar (10000) cover the bottom of dialogs that sit below them. The
-   Lounge dialogs are fixed: they use 99990, Studio's modal layer. Still
-   below the dock:
-   - `app/editor/page.tsx` (1000)
-   - `app/projects/page.tsx` (1000)
-   - `app/jobs/page.tsx` (2000)
-   - `app/portfolio/page.tsx` (9000)
-   - `components/editor/EditorModals.tsx` (1000)
-   - EditorErrorBoundary (1001)
-   - CrewBoards (1100)
-   - PitchDeck (3000)
-   - Navigation (998)
-
-   Fix: add one `--z-modal: 99990` token in `globals.css` and move
-   full-screen overlays onto it. Give tall dialogs `maxHeight` plus
-   `overflowY: auto`, and check at 390×844 that each primary button is
-   clickable.
-3. **For the owner, outside the code:**
+1. **For the owner, outside the code:**
    - have a lawyer read `/privacy` and `/terms`;
    - switch on leaked-password protection (Supabase dashboard › Auth ›
      Passwords).
-4. **React Compiler lint warnings (~140).** The react-hooks v7 rules are
+2. **React Compiler lint warnings (~140).** The react-hooks v7 rules are
    `warn` in `eslint.config.mjs`. Rework that code a module at a time, then
    turn each rule back to `error`.
 
-## Pending — What the database advisors found (not yet applied to production)
+## Latest Session — Dialogs open above the dock
 
-Migration `20260930010000_advisor_fixes.sql`. Supabase's security and
+No migration.
+
+- **One layer for dialogs: `--z-modal` (99990)** in `globals.css`, with the
+  stacking order written beside it: dock 9999, phone tab bar 10000, dialogs
+  99990, toasts 99997, Confirm 99998. On a short screen the dock had covered
+  the bottom of dialogs below it — their Create/Save buttons.
+- Moved onto it: Start a project, the job dialog, the portfolio Project
+  Bible, the editor's title, Character Bible and shortcuts dialogs and its
+  error screen, Recruit Talent (crew boards), the pitch deck presenter, the
+  phase-unlock reveal, and (already above the dock, now on the token) the
+  Lounge and Studio dialogs. Every new full-screen dialog uses
+  `zIndex: 'var(--z-modal)'` (or `z-index: var(--z-modal)` in CSS).
+- Dialogs that are wider or taller than a phone now fit it and scroll inside
+  (`maxWidth`/`maxHeight: 100%`, `overflowY: auto`, 20px gutter).
+- Left as they are: the landing page's header menu (`Navigation`, a top
+  header, not a dialog) and the Studio drop hint (it ignores the pointer).
+- Test: `e2e/layout.spec.ts` opens Start a project on a 640px-tall desk
+  screen, scrolls it to the end and checks the Create button is what is drawn
+  there; on the old code the dock was.
+
+## Earlier — What the database advisors found
+
+Migration `20260930010000_advisor_fixes.sql`, applied to production and
+verified (fingerprint 1738 lines, md5 `e2b521d7…`; the `sfx_assets`, initplan
+and unindexed-FK advisor warnings are gone). Supabase's security and
 performance advisors, run against production:
 
 - **Sound effects leaked across projects**: `sfx_assets` was readable by
@@ -77,7 +65,7 @@ performance advisors, run against production:
   crew, outsider, signed out; portfolio owner-only writes); the whole
   integration suite (43 files) passes on the rewritten policies.
 
-## Latest Session — Next 16 and React 19
+## Earlier — Next 16 and React 19
 
 No migration.
 

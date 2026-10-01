@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-01T05:07:27.880Z",
+  "last_synchronized": "2026-10-01T17:25:40.879Z",
   "stats": {
     "totalFiles": 519,
-    "totalSize": 3997945,
+    "totalSize": 3999703,
     "byExtension": {
       ".json": 8,
       ".md": 8,
@@ -446,8 +446,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 80934,
-      "last_modified": "2026-09-29T19:42:05.415Z"
+      "size": 81020,
+      "last_modified": "2026-10-01T17:23:05.813Z"
     },
     {
       "path": "app/error.tsx",
@@ -471,8 +471,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 42024,
-      "last_modified": "2026-09-29T14:43:54.471Z"
+      "size": 42074,
+      "last_modified": "2026-10-01T17:23:05.813Z"
     },
     {
       "path": "app/layout.tsx",
@@ -496,8 +496,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 96249,
-      "last_modified": "2026-10-01T01:33:30.317Z"
+      "size": 96271,
+      "last_modified": "2026-10-01T17:23:05.813Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -531,8 +531,8 @@
     },
     {
       "path": "app/portfolio/page.tsx",
-      "size": 24638,
-      "last_modified": "2026-09-29T14:43:54.475Z"
+      "size": 24650,
+      "last_modified": "2026-10-01T17:23:05.813Z"
     },
     {
       "path": "app/privacy/page.tsx",
@@ -571,8 +571,8 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 35311,
-      "last_modified": "2026-09-29T19:39:35.165Z"
+      "size": 35323,
+      "last_modified": "2026-10-01T17:23:05.816Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -801,8 +801,8 @@
     },
     {
       "path": "components/editor/EditorErrorBoundary.tsx",
-      "size": 1609,
-      "last_modified": "2026-09-29T04:52:00.981Z"
+      "size": 1621,
+      "last_modified": "2026-10-01T17:23:05.816Z"
     },
     {
       "path": "components/editor/EditorHeader.tsx",
@@ -816,8 +816,8 @@
     },
     {
       "path": "components/editor/EditorModals.tsx",
-      "size": 6745,
-      "last_modified": "2026-09-29T04:53:09.292Z"
+      "size": 6826,
+      "last_modified": "2026-10-01T17:23:05.816Z"
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
@@ -986,13 +986,13 @@
     },
     {
       "path": "components/studio/CrewBoards.tsx",
-      "size": 12508,
-      "last_modified": "2026-09-29T14:43:54.483Z"
+      "size": 12589,
+      "last_modified": "2026-10-01T17:23:05.816Z"
     },
     {
       "path": "components/studio/PitchDeck.tsx",
-      "size": 10522,
-      "last_modified": "2026-09-29T13:30:02.863Z"
+      "size": 10534,
+      "last_modified": "2026-10-01T17:23:05.816Z"
     },
     {
       "path": "components/studio/StudioContext.tsx",
@@ -1301,8 +1301,8 @@
     },
     {
       "path": "e2e/layout.spec.ts",
-      "size": 5862,
-      "last_modified": "2026-09-29T20:42:11.283Z"
+      "size": 7252,
+      "last_modified": "2026-10-01T17:24:48.269Z"
     },
     {
       "path": "e2e/legal.spec.ts",

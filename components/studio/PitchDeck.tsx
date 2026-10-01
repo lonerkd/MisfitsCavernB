@@ -114,7 +114,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
 
       <AnimatePresence>
         {present && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
             <div style={{ width: '80vw', maxWidth: 1100, aspectRatio: '16/9', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}

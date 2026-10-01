@@ -163,7 +163,7 @@
 .lockedActions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Unlock reveal ────────────────────────────────────── */
-.backdrop { position: fixed; inset: 0; z-index: 400; background: var(--glass); backdrop-filter: blur(10px); display: grid; place-items: center; padding: 20px; }
+.backdrop { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--glass); backdrop-filter: blur(10px); display: grid; place-items: center; padding: 20px; }
 .reveal {
   width: min(560px, 100%); border-radius: 22px; padding: 30px 26px 24px; text-align: center; position: relative; overflow: hidden;
   background: linear-gradient(180deg, #0b1122, #060a15); border: 1px solid var(--pa-line, rgba(232, 67, 26, 0.4));
