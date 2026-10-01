@@ -1,5 +1,82 @@
 # Misfits Cavern — Project State
 
+## Open work — start here
+
+What is unfinished, so any session (local or cloud) can pick it up.
+
+1. **Database advisor fixes — written and tested, NOT yet in production.**
+   Migration `supabase/migrations/20260930010000_advisor_fixes.sql` (see the
+   next section). Merging the PR does not apply a migration, so do it in this
+   order:
+   1. Check the migration file is unchanged: `md5sum` gives
+      `776ec8128095177e3891a62f96887985`.
+   2. Apply it verbatim to production (project `fxsryglwpwcqkfjljbrm`), via
+      Supabase MCP `apply_migration` or `npx supabase db push`.
+   3. Verify production matches `supabase/schema.fingerprint`. Run the
+      queries in `supabase/fingerprint.sql` against prod, with the final
+      select replaced by
+      `select count(*), md5(string_agg(line, E'\n' order by line collate "C"))`.
+      Expect **1738 lines, md5 `e2b521d7788f2796b7b3d0c9dc42600f`**. Locally,
+      `printf '%s' "$(cat supabase/schema.fingerprint)" | md5sum` gives the
+      same md5.
+   4. Re-run the Supabase security and performance advisors: the
+      `sfx_assets` "always true" policy warning should be gone.
+   5. Merge the PR.
+2. **Modals under the dock.** The dock (`nav.mc-dock`, z-index 9999) and the
+   phone tab bar (10000) cover the bottom of dialogs that sit below them. The
+   Lounge dialogs are fixed: they use 99990, Studio's modal layer. Still
+   below the dock:
+   - `app/editor/page.tsx` (1000)
+   - `app/projects/page.tsx` (1000)
+   - `app/jobs/page.tsx` (2000)
+   - `app/portfolio/page.tsx` (9000)
+   - `components/editor/EditorModals.tsx` (1000)
+   - EditorErrorBoundary (1001)
+   - CrewBoards (1100)
+   - PitchDeck (3000)
+   - Navigation (998)
+
+   Fix: add one `--z-modal: 99990` token in `globals.css` and move
+   full-screen overlays onto it. Give tall dialogs `maxHeight` plus
+   `overflowY: auto`, and check at 390×844 that each primary button is
+   clickable.
+3. **For the owner, outside the code:**
+   - have a lawyer read `/privacy` and `/terms`;
+   - switch on leaked-password protection (Supabase dashboard › Auth ›
+     Passwords).
+4. **React Compiler lint warnings (~140).** The react-hooks v7 rules are
+   `warn` in `eslint.config.mjs`. Rework that code a module at a time, then
+   turn each rule back to `error`.
+
+## Pending — What the database advisors found (not yet applied to production)
+
+Migration `20260930010000_advisor_fixes.sql`. Supabase's security and
+performance advisors, run against production:
+
+- **Sound effects leaked across projects**: `sfx_assets` was readable by
+  anyone, signed in or not (`USING (true)`), though every sound belongs to a
+  project — Soundtrack › SFX listed everyone's. Now the uploader and anyone who
+  can open the project; only the uploader renames or removes. (No rows existed
+  in production, so nothing was exposed.) Test shown to fail on the old rule.
+- **auth.uid() once per query** in the 9 policies that still called it per row
+  (Spotify connections, portfolio blocks, script annotations, Discord
+  webhooks, sound effects).
+- **Writes split from reads**: 12 tables had a `FOR ALL` write policy beside a
+  `SELECT` policy, so every read ran both; the writes are now INSERT / UPDATE /
+  DELETE policies (same people, same rules). Portfolio media had the same
+  owner policy twice — one set now. Job applications: one read policy.
+- **47 foreign keys got covering indexes** — joins, and the `ON DELETE`
+  actions behind account deletion, no longer scan whole tables.
+- Left as they are, on purpose: the advisors' "SECURITY DEFINER callable"
+  warnings (those are the app's RPCs, each checking the caller itself),
+  "unused index" notes (little traffic yet), and the two `jobs` read policies
+  (`internal.applied_to` isn't granted to anon).
+- **Yours to switch on**: leaked-password protection (Supabase dashboard ›
+  Auth › Passwords).
+- Tests: `tests/integration/advisor-fixes.test.ts` (sound effects as owner,
+  crew, outsider, signed out; portfolio owner-only writes); the whole
+  integration suite (43 files) passes on the rewritten policies.
+
 ## Latest Session — Next 16 and React 19
 
 No migration.
