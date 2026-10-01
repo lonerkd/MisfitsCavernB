@@ -1,11 +1,11 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-09-30T01:45:16.645Z",
+  "last_synchronized": "2026-09-30T02:22:20.855Z",
   "stats": {
-    "totalFiles": 518,
-    "totalSize": 3966620,
+    "totalFiles": 517,
+    "totalSize": 3979578,
     "byExtension": {
-      ".json": 9,
+      ".json": 8,
       ".md": 8,
       ".tsx": 163,
       ".ts": 290,
@@ -324,19 +324,14 @@
       "last_modified": "2026-09-28T07:03:10.159Z"
     },
     {
-      "path": ".eslintrc.json",
-      "size": 40,
-      "last_modified": "2026-09-24T20:05:03.615Z"
-    },
-    {
       "path": ".github/pull_request_template.md",
       "size": 635,
       "last_modified": "2026-09-29T20:45:30.101Z"
     },
     {
       "path": "AGENTS.md",
-      "size": 3269,
-      "last_modified": "2026-09-28T03:41:06.126Z"
+      "size": 3300,
+      "last_modified": "2026-09-30T02:20:59.670Z"
     },
     {
       "path": "CLAUDE.md",
@@ -410,8 +405,8 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 16097,
-      "last_modified": "2026-09-30T01:20:37.759Z"
+      "size": 16235,
+      "last_modified": "2026-09-30T02:09:37.901Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -815,8 +810,8 @@
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
-      "size": 14795,
-      "last_modified": "2026-09-29T14:43:54.479Z"
+      "size": 14802,
+      "last_modified": "2026-09-30T02:09:37.901Z"
     },
     {
       "path": "components/editor/EditorModals.tsx",
@@ -825,8 +820,8 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 31995,
-      "last_modified": "2026-09-29T19:42:26.419Z"
+      "size": 32002,
+      "last_modified": "2026-09-30T02:09:37.901Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
@@ -2364,34 +2359,29 @@
       "last_modified": "2026-09-28T01:05:51.825Z"
     },
     {
-      "path": "middleware.ts",
-      "size": 3001,
-      "last_modified": "2026-09-29T13:28:18.408Z"
-    },
-    {
       "path": "next-env.d.ts",
-      "size": 262,
-      "last_modified": "2026-09-24T20:05:03.648Z"
+      "size": 288,
+      "last_modified": "2026-09-30T02:12:35.257Z"
     },
     {
       "path": "next.config.js",
-      "size": 1480,
-      "last_modified": "2026-09-27T08:02:25.794Z"
+      "size": 1353,
+      "last_modified": "2026-09-30T02:09:37.901Z"
     },
     {
       "path": "package-lock.json",
-      "size": 313667,
-      "last_modified": "2026-09-30T01:44:30.371Z"
+      "size": 326433,
+      "last_modified": "2026-09-30T02:10:32.045Z"
     },
     {
       "path": "package.json",
-      "size": 2242,
-      "last_modified": "2026-09-30T01:44:30.271Z"
+      "size": 2254,
+      "last_modified": "2026-09-30T02:19:31.997Z"
     },
     {
       "path": "performance-budget.json",
-      "size": 911,
-      "last_modified": "2026-09-30T01:21:30.238Z"
+      "size": 938,
+      "last_modified": "2026-09-30T02:20:36.409Z"
     },
     {
       "path": "playwright.config.ts",
@@ -2402,6 +2392,11 @@
       "path": "postcss.config.js",
       "size": 83,
       "last_modified": "2026-09-24T20:05:03.657Z"
+    },
+    {
+      "path": "proxy.ts",
+      "size": 2996,
+      "last_modified": "2026-09-30T02:09:37.901Z"
     },
     {
       "path": "public/sw.js",
@@ -2425,8 +2420,8 @@
     },
     {
       "path": "scripts/sync-intel.js",
-      "size": 4146,
-      "last_modified": "2026-09-26T18:02:48.923Z"
+      "size": 4183,
+      "last_modified": "2026-09-30T02:22:20.506Z"
     },
     {
       "path": "scripts/test-anon-rls.js",
@@ -2642,11 +2637,6 @@
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
-    },
-    {
-      "path": "test-results/.last-run.json",
-      "size": 45,
-      "last_modified": "2026-09-30T01:40:42.251Z"
     },
     {
       "path": "tests/integration/account-deletion.test.ts",
@@ -2885,13 +2875,18 @@
     },
     {
       "path": "tsconfig.json",
-      "size": 1178,
-      "last_modified": "2026-09-24T20:05:03.659Z"
+      "size": 1210,
+      "last_modified": "2026-09-30T02:12:35.253Z"
     },
     {
       "path": "types/screenplay.ts",
       "size": 2152,
       "last_modified": "2026-09-24T20:05:03.659Z"
+    },
+    {
+      "path": "vercel.json",
+      "size": 92,
+      "last_modified": "2026-09-30T02:19:31.998Z"
     },
     {
       "path": "vitest.config.ts",

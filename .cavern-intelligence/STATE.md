@@ -1,6 +1,37 @@
 # Misfits Cavern — Project State
 
-## Latest Session — Dependency updates (1/2): patches, Vitest 5, and what the new checker found
+## Latest Session — Next 16 and React 19
+
+No migration.
+
+- **Next 16.3 + React 19.3** (Dependabot #103), ESLint 9, `eslint-config-next`
+  16. What it took:
+  - `middleware.ts` → **`proxy.ts`** (`export async function proxy`) — Next 16
+    renamed the convention; the gating is unchanged.
+  - Dead webpack externals (`pino-pretty`, `lokijs`, `encoding` — nothing uses
+    them) removed from `next.config.js`.
+  - Two ref props typed `RefObject<… | null>` (React 19 types).
+  - **Lint on the ESLint CLI** (`next lint` is gone): `eslint.config.mjs`
+    (flat config, Next's core-web-vitals rules), `npm run lint` = `eslint .`,
+    the pre-commit hook lints staged files with `eslint`. The React Compiler
+    rules that came with it (react-hooks v7: set-state-in-effect, refs,
+    immutability, purity…) flag ~140 existing patterns; they are **warnings**
+    until that code is reworked — `npm run lint` shows them.
+- **Built with webpack, not Turbopack** (`next build --webpack`; `vercel.json`
+  pins Vercel to `npm run build`). Measured in a browser, gzipped JS a first
+  visit loads: Next 15 / Next 16 webpack / Next 16 Turbopack — `/` 367 / 360 /
+  391 kB, `/auth` 348 / 341 / 374 kB, `/showcase` 378 / 397 / 427 kB. React 19
+  costs ~nothing; Turbopack's chunking costs 25–50 kB a page, so it waits.
+  `next dev` uses Turbopack (fast, no bundle cost).
+- **Sign-in page**: the validator (zod) loads on submit, not with the page.
+- **Page-weight budget** reads Next 16's per-page manifests (webpack or
+  Turbopack); `performance-budget.json` re-baselined on this build (the new
+  count includes every client module a page's tree references, so the numbers
+  are higher than before for the same code — compare only against themselves).
+- **Dependabot no longer opens major-version PRs** (`ignore` semver-major for
+  npm and Actions): those are migrations, done on purpose like this one.
+
+## Earlier — Dependency updates (1/2): patches, Vitest 5, and what the new checker found
 
 No migration.
 
@@ -15,9 +46,6 @@ No migration.
   an `opacity: 0.85` made it worse. Theme colours are now mixed toward the
   text colour; the accessibility and themes e2e pass under the new checker.
 - **Vitest 5** (Dependabot #104) with `@types/node` 22: all unit and integration tests pass unchanged.
-- Next: Next 16 + React 19 (trialled: builds and lints with
-  `middleware.ts` → `proxy.ts`, dead webpack externals removed, two ref types,
-  ESLint 9 flat config, the budget script reading Turbopack's manifests).
 
 ## Earlier — Privacy Policy and Terms
 

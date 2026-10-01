@@ -5,7 +5,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const INTEL_DIR = path.join(ROOT_DIR, '.cavern-intelligence');
 const MANIFEST_PATH = path.join(INTEL_DIR, 'sync-manifest.json');
 
-const EXCLUDE_DIRS = new Set(['node_modules', '.next', '.git', '.cavern-intelligence', 'dist', 'out']);
+const EXCLUDE_DIRS = new Set(['node_modules', '.next', '.git', '.cavern-intelligence', 'dist', 'out', 'test-results', 'playwright-report']);
 const INCLUDE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.json', '.sql', '.md']);
 
 function walk(dir, fileList = []) {
