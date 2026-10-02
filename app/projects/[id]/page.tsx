@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNow } from '@/lib/hooks/useNow';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -239,7 +240,8 @@ interface MilestoneRow { id: string; title: string; end_date: string | null; sta
 
 function TimelinePreview({ deadline, milestones }: { deadline: string; milestones: MilestoneRow[] }) {
   const dl = deadline ? new Date(deadline).getTime() : NaN;
-  const daysLeft = isNaN(dl) ? null : Math.ceil((dl - Date.now()) / 86400000);
+  const now = useNow();
+  const daysLeft = isNaN(dl) ? null : Math.ceil((dl - now) / 86400000);
   const upcoming = [...milestones].sort((a, b) => String(a.end_date ?? '9999').localeCompare(String(b.end_date ?? '9999'))).slice(0, 5);
 
   return (

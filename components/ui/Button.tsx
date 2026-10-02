@@ -18,6 +18,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
 }
 
+// Made once: created inside Button it would be a new component every render,
+// remounting the link (and losing its hover state) each time.
+const MotionLink = motion.create(Link);
+
 export function Button({
   children,
   variant = 'solid',
@@ -135,7 +139,6 @@ export function Button({
     </>
   );
 
-  const MotionLink = motion.create(Link);
 
   if (href) {
     if (external) {

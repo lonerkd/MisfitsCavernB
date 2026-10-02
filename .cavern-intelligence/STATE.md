@@ -8,11 +8,36 @@ What is unfinished, so any session (local or cloud) can pick it up.
    - have a lawyer read `/privacy` and `/terms`;
    - switch on leaked-password protection (Supabase dashboard › Auth ›
      Passwords).
-2. **React Compiler lint warnings (~140).** The react-hooks v7 rules are
-   `warn` in `eslint.config.mjs`. Rework that code a module at a time, then
-   turn each rule back to `error`.
+2. **React Compiler lint warnings (122 left).** Still `warn` in
+   `eslint.config.mjs`: `set-state-in-effect` (94), `refs` (21),
+   `preserve-manual-memoization` (7). Rework that code a module at a time
+   (`npx eslint <file>` lists them), then turn each rule back to `error`.
 
-## Latest Session — Dialogs open above the dock
+## Latest Session — Lint pass 1: what the React Compiler rules caught
+
+No migration.
+
+- **148 → 122 warnings; `immutability`, `purity` and `static-components` are
+  errors again** (each reached zero). What they found:
+  - **Effects calling functions declared below them** (admin, admin users,
+    crew, jobs, portfolio manage, the dock's cleanup; the editor's key
+    handler and Split listener): moved below, unchanged. Worked at runtime,
+    but the compiler couldn't prove it. (`set-state-in-effect` rose 90 → 94:
+    it can now see into those functions.)
+  - **Time read while rendering** (job "days ago", Lounge activity, project
+    timeline): `useNow()` (`lib/hooks/useNow.ts`) reads it once per mount.
+    The Lounge loading skeleton's random bar widths, which differed between
+    server and browser, are fixed.
+  - **Button's `MotionLink` was created inside the component**, so every
+    render made a new component type and remounted the link (losing its
+    hover/tap state). Made once, at module level.
+- Error pages' "Go home" / "Back to projects" are `<Link>`s, not buttons that
+  set `window.location`; jobs' "sign in to apply" and profile sign-out use the
+  router (profile now matches Settings and ⌘K).
+- Unused `eslint-disable` comments removed; `eslint.config.mjs` exports a named
+  config.
+
+## Earlier — Dialogs open above the dock
 
 No migration.
 

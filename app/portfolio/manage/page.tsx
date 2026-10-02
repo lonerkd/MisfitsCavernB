@@ -44,6 +44,11 @@ export default function ManagePortfolioPage() {
   const [newProject, setNewProject] = useState({ title: '', category: '', year: '', role: '', description: '' });
   const [mediaForm, setMediaForm] = useState<Record<string, { title: string; url: string; media_type: string }>>({});
 
+  const load = async (userId: string) => {
+    const data = await getPortfolioProjects(userId);
+    setProjects((data as PortfolioProject[]) || []);
+  };
+
   useEffect(() => {
     awaitOSUser().then(async (user) => {
       setUser(user);
@@ -51,11 +56,6 @@ export default function ManagePortfolioPage() {
       setLoading(false);
     });
   }, []);
-
-  const load = async (userId: string) => {
-    const data = await getPortfolioProjects(userId);
-    setProjects((data as PortfolioProject[]) || []);
-  };
 
   const createProject = async () => {
     if (!user || !newProject.title.trim()) return;

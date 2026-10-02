@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useNow } from '@/lib/hooks/useNow';
 import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2, Pin, PinOff, Pencil, Search, ChevronLeft } from 'lucide-react';
 import { audienceLabel, audienceOptions, defaultPostPolicy, groupChannels, type ChannelAudience } from '@/lib/lounge/audience';
 import Link from 'next/link';
@@ -69,7 +70,8 @@ function ProductionFeed({ projectId }: { projectId: string }) {
     return () => { on = false; };
   }, [projectId]);
 
-  const ago = (iso: string) => { const d = (Date.now() - new Date(iso).getTime()) / 3600000; return d < 1 ? `${Math.max(1, Math.floor(d * 60))}m` : d < 24 ? `${Math.floor(d)}h` : `${Math.floor(d / 24)}d`; };
+  const now = useNow();
+  const ago = (iso: string) => { const d = (now - new Date(iso).getTime()) / 3600000; return d < 1 ? `${Math.max(1, Math.floor(d * 60))}m` : d < 24 ? `${Math.floor(d)}h` : `${Math.floor(d / 24)}d`; };
 
   if (items.length === 0) return null;
   return (
@@ -661,7 +663,7 @@ export default function LoungePage() {
       supabase.from('profiles').select('id, username').eq('id', dm).maybeSingle()
         .then(({ data }) => { if (data) openDM({ id: data.id, name: data.username || 'someone' }); });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const reloadChannels = useCallback(async () => {
     const list = await listChannels(activeProject?.id);

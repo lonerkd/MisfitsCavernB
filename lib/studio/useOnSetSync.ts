@@ -73,7 +73,7 @@ export function useOnSetSync(projectId: string, opts: { reload: () => Promise<un
       setSyncing(false);
     }
     if (again) await flush();
-  }, [store]); // eslint-disable-line react-hooks/exhaustive-deps -- flush calls itself
+  }, [store]);
 
   useEffect(() => {
     store(loadQueue(projectId));

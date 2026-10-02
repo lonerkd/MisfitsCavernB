@@ -424,8 +424,6 @@ function AppIconCarousel({ apps, pathname, shrunk }: {
     if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
   }, [setWidth]);
 
-  useEffect(() => () => stopMomentum(), []);
-
   const normalize = () => {
     const el = scrollRef.current;
     if (!el || setWidth === 0) return;
@@ -452,6 +450,8 @@ function AppIconCarousel({ apps, pathname, shrunk }: {
       momentumRaf.current = null;
     }
   };
+
+  useEffect(() => () => stopMomentum(), []);
 
   // Snaps to the nearest icon's center with an eased tween — the
   // "magnetic" feel — instead of leaving the carousel wherever a drag or

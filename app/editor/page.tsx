@@ -153,7 +153,6 @@ export default function EditorPage() {
     try { await deleteAnnotation(id); } catch (e: any) { toast(e?.message || 'Could not remove that note', 'error'); reloadAnnotations(currentScript.id); }
   }, [annotations, confirm, currentScript?.id, reloadAnnotations, toast]);
 
-
   const [scripts, setScripts] = useState<StoredScript[]>([]);
 
   const [showSidebar, setShowSidebar] = useState(true);
@@ -750,6 +749,43 @@ export default function EditorPage() {
     });
   }, [currentScript]);
 
+  const insertElement = (type: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+
+    const snippets: Record<string, string> = {
+      'scene': '\n\nINT. LOCATION - DAY\n\n',
+      'action': '\n\nAction description here.\n\n',
+      'character': '\n\nCHARACTER NAME\n',
+      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
+      'transition': '\n\nCUT TO:\n\n',
+      'note': '\n\n[[Note: ]]'
+    };
+
+    const snippet = snippets[type] || '';
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const before = content.substring(0, start);
+    const after = content.substring(end);
+
+    setContent(before + snippet + after);
+    setTimeout(() => {
+      editor.focus();
+      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
+    }, 0);
+  };
+
+  const acceptAutocomplete = (item: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const { start, end } = completionRange;
+    const next = content.substring(0, start) + item + content.substring(end);
+    setContent(next);
+    setShowAutocomplete(false);
+    const caret = start + item.length;
+    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+  };
+
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 
     if (showAutocomplete && autocompleteItems.length > 0) {
@@ -824,32 +860,6 @@ export default function EditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- acceptAutocomplete/insertElement are stable imperative helpers
   }, [content, lines, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
-  const insertElement = (type: string) => {
-    const editor = textareaRef.current;
-    if (!editor) return;
-
-    const snippets: Record<string, string> = {
-      'scene': '\n\nINT. LOCATION - DAY\n\n',
-      'action': '\n\nAction description here.\n\n',
-      'character': '\n\nCHARACTER NAME\n',
-      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
-      'transition': '\n\nCUT TO:\n\n',
-      'note': '\n\n[[Note: ]]'
-    };
-
-    const snippet = snippets[type] || '';
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const before = content.substring(0, start);
-    const after = content.substring(end);
-
-    setContent(before + snippet + after);
-    setTimeout(() => {
-      editor.focus();
-      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
-    }, 0);
-  };
-
   const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
     const rect = ta.getBoundingClientRect();
     const style = window.getComputedStyle(ta);
@@ -878,17 +888,6 @@ export default function EditorPage() {
     setCompletionRange({ start, end });
     setCursorPos(caretCoords(ta, end));
     setShowAutocomplete(true);
-  };
-
-  const acceptAutocomplete = (item: string) => {
-    const editor = textareaRef.current;
-    if (!editor) return;
-    const { start, end } = completionRange;
-    const next = content.substring(0, start) + item + content.substring(end);
-    setContent(next);
-    setShowAutocomplete(false);
-    const caret = start + item.length;
-    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1063,6 +1062,8 @@ export default function EditorPage() {
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
   jumpRef.current = jumpToScene;
+  // A cut note to open once its line is placed (?note=, or from the Studio pane).
+  const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useSplitMessages((msg) => {
     if (msg.type !== 'open-scene' || msg.scriptId !== currentScript?.id) return;
     const idx = sceneIds.indexOf(msg.sceneId);
@@ -1093,7 +1094,6 @@ export default function EditorPage() {
     catch (e) { toastRef.current(e instanceof Error ? e.message : 'Could not update the note', 'error'); }
   }, [sessionUser?.id, setCutNoteResolved]);
   // "In script" on a cut note (?note=, or from the Studio pane): go to its line and open it.
-  const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useEffect(() => {
     if (!pendingNote) return;
     const hit = [...cutNotesByLine.entries()].find(([, placed]) => placed.some((p) => p.note.id === pendingNote));
@@ -1112,7 +1112,7 @@ export default function EditorPage() {
       ta.scrollTop = Math.max(0, (line - 3) * lh);
       setCutNoteLine(line);
     }, 120);
-  }, [pendingNote, cutNotesByLine, content]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingNote, cutNotesByLine, content]);
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 

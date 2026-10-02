@@ -89,7 +89,6 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
         supabase.removeChannel(room);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProject?.id]);
 
   const updateScenePresence = async (sceneIdx: number | null) => {
