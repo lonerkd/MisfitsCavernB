@@ -73,7 +73,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       exit={{ opacity: 0 }}
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 2000,
+        position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
         background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 20,
@@ -86,7 +86,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 520,
+          width: '100%', maxWidth: 520, maxHeight: '100%', overflowY: 'auto',
           background: 'var(--surface)',
           border: '1px solid rgba(var(--ink-rgb), 0.08)',
           borderRadius: 20,

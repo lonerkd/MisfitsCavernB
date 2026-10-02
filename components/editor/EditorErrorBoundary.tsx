@@ -28,7 +28,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 1001, display: 'flex', alignItems: 'center',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center',
           justifyContent: 'center', background: 'rgba(0,0,0,0.85)',
         }}>
           <div style={{
