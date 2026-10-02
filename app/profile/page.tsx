@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { withTimeout } from '@/lib/supabase/withTimeout';
@@ -26,6 +27,7 @@ const fieldStyle: React.CSSProperties = {
 
 export default function ProfilePage() {
   const confirm = useConfirm();
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>({});
   const [saving, setSaving] = useState(false);
@@ -91,7 +93,7 @@ export default function ProfilePage() {
   const handleSignOut = async () => {
     if (!await confirm({ message: 'Sign out of Misfits Cavern?', confirmLabel: 'SIGN OUT', danger: false })) return;
     await supabase.auth.signOut();
-    window.location.href = '/auth';
+    router.replace('/auth');
   };
 
   if (loading) {

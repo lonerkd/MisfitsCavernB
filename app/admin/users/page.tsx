@@ -24,10 +24,6 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
   const loadUsers = async () => {
     try {
       setLoading(true);
@@ -42,6 +38,10 @@ export default function AdminUsersPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   // Admin rights change only through set_user_admin (admins only; enforced in
   // the database), and the list reflects the result only once it succeeded.

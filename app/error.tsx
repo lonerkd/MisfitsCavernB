@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useEffect } from 'react';
 import { reportError } from '@/lib/errors/report';
 
@@ -38,16 +40,16 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         >
           Try Again
         </button>
-        <button
-          onClick={() => { window.location.href = '/'; }}
+        <Link
+          href="/"
           style={{
             padding: '10px 22px', borderRadius: 9999, background: 'transparent', color: 'var(--fg)',
             border: '1px solid rgba(var(--fg-rgb), 0.15)', fontFamily: 'var(--mono)', fontSize: 10,
-            letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+            letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer', textDecoration: 'none',
           }}
         >
           Go Home
-        </button>
+        </Link>
       </div>
     </div>
   );
