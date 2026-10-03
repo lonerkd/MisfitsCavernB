@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -414,7 +415,7 @@ export default function JobsPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const { crafts, byName: craftByName } = useCrafts();
-  const [showPost, setShowPost] = useState(false);
+  const [showPost, setShowPost] = useState(() => !!(searchParams.get('title') || searchParams.get('role')));
   const [user, setUser] = useState<any>(null);
   const [tab, setTab] = useState<'open' | 'mine'>('open');
 
@@ -425,27 +426,30 @@ export default function JobsPage() {
   // job id → my application's status
   const [applied, setApplied] = useState<Record<string, string>>({});
   const [myApps, setMyApps] = useState<{ status: string; applied_at: string | null; jobs: { id: string; title: string; role: string; status: string | null; projects: { title: string } | null } | null }[]>([]);
-  useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
+  // Arriving with a role to post (from casting or a project) opens the form.
+  useOnChange(prefillTitle || prefillRole ? `${prefillTitle}\u0000${prefillRole}` : '', (k) => { if (k) setShowPost(true); });
 
-  const loadJobs = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      let query = supabase
-        .from('jobs')
-        .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
-      const { data, error } = await query;
-      if (error) throw error;
-      setJobs((data as unknown as Job[]) || []);
-    } catch (error: any) {
+  const fetchJobs = async () => {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data as unknown as Job[]) || [];
+  };
+  const showJobs = (rows: Promise<Job[]>) => rows
+    .then((r) => setJobs(r))
+    .catch((error: any) => {
       console.error(error);
       setLoadError(error?.message || 'Failed to load job listings');
       setJobs([]);
-    } finally {
-      setLoading(false);
-    }
+    })
+    .finally(() => setLoading(false));
+  const loadJobs = () => {
+    setLoading(true);
+    setLoadError(null);
+    return showJobs(fetchJobs());
   };
 
   const loadMyJobs = async (userId: string) => {
@@ -476,7 +480,7 @@ export default function JobsPage() {
       setUser(user);
       if (user) { loadMyJobs(user.id); void loadMyApplications(user.id); }
     });
-    loadJobs();
+    void showJobs(fetchJobs());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on mount
 
   /** Applies with an optional note and tells the poster. */

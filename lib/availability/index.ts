@@ -22,9 +22,10 @@ export function useMyUnavailability(userId: string | null | undefined) {
 
   const load = useCallback(async () => {
     if (!userId) return;
-    const { data, error: e } = await supabase.from('unavailability').select('id, starts_on, ends_on, note').order('starts_on');
-    if (e) setError(e.message); else { setRows(data ?? []); setError(null); }
-    setLoaded(true);
+    await supabase.from('unavailability').select('id, starts_on, ends_on, note').order('starts_on').then(({ data, error: e }) => {
+      if (e) setError(e.message); else { setRows(data ?? []); setError(null); }
+      setLoaded(true);
+    });
   }, [userId]);
 
   useEffect(() => { void load(); }, [load]);
@@ -44,15 +45,18 @@ export function useMyUnavailability(userId: string | null | undefined) {
   return { rows, loaded, error, add, remove };
 }
 
+const NO_AWAY: Away[] = [];
+
 /** Who on a production is away (from today on). Empty unless the caller plans the production. */
 export function useProjectAvailability(projectId: string | null | undefined, enabled = true) {
-  const [rows, setRows] = useState<Away[]>([]);
+  const key = projectId && enabled ? projectId : null;
+  const [got, setGot] = useState<{ projectId: string; rows: Away[] } | null>(null);
   useEffect(() => {
+    if (!key) return;
     let alive = true;
-    if (!projectId || !enabled) { setRows([]); return; }
-    supabase.rpc('project_availability', { p_project: projectId })
-      .then(({ data }) => { if (alive) setRows((data ?? []) as Away[]); });
+    supabase.rpc('project_availability', { p_project: key })
+      .then(({ data }) => { if (alive) setGot({ projectId: key, rows: (data ?? []) as Away[] }); });
     return () => { alive = false; };
-  }, [projectId, enabled]);
-  return rows;
+  }, [key]);
+  return key && got?.projectId === key ? got.rows : NO_AWAY;
 }

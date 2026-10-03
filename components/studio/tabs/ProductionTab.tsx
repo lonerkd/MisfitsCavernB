@@ -51,9 +51,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   const lock = lockOf(view);
   const [crew, setCrew] = useState<CrewRow[]>([]);
 
-  const loadCrew = useCallback(async () => {
-    setCrew((await getProjectCrew(project.id)) as unknown as CrewRow[]);
-  }, [project.id]);
+  const loadCrew = useCallback(() => getProjectCrew(project.id).then((rows) => setCrew(rows as unknown as CrewRow[])), [project.id]);
   // The OS store's crew changes live (Realtime); refetch the joined rows then.
   const crewSignature = (project.crew ?? []).map((c) => `${c.id}:${c.role}`).join(',');
   useEffect(() => { void loadCrew(); }, [loadCrew, crewSignature]);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { getValidToken, logoutSpotify } from '../spotify/auth';
 
 interface SpotifyContextValue {
@@ -26,9 +26,16 @@ interface SpotifyContextValue {
 
 const Ctx = createContext<SpotifyContextValue | null>(null);
 
+// Whether Spotify's Web Playback SDK has loaded: the SDK announces it once,
+// through a global callback, and then stays loaded for the page's life.
+const sdkListeners = new Set<() => void>();
+const sdkReady = () => typeof window !== 'undefined' && !!window.Spotify;
+const subscribeSdk = (onChange: () => void) => { sdkListeners.add(onChange); return () => { sdkListeners.delete(onChange); }; };
+const announceSdkReady = () => sdkListeners.forEach((l) => l());
+
 export function SpotifyProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSDKReady, setIsSDKReady] = useState(false);
+  const isSDKReady = useSyncExternalStore(subscribeSdk, sdkReady, () => false);
   const [player, setPlayer] = useState<any | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
 
@@ -65,15 +72,8 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
       document.body.appendChild(script);
     };
 
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      setIsSDKReady(true);
-    };
-
-    if (!window.Spotify) {
-      loadSdk();
-    } else {
-      setIsSDKReady(true);
-    }
+    window.onSpotifyWebPlaybackSDKReady = announceSdkReady;
+    loadSdk();
   }, [isAuthenticated, useIframeFallback]);
 
   useEffect(() => {

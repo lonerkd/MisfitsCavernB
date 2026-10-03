@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -61,10 +61,12 @@ export default function JobDetailPage() {
 
   const [job, setJob] = useState<Job | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Which job the page (and its applications) last finished loading for.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loading = loadedFor !== jobId;
 
   const [applications, setApplications] = useState<Application[]>([]);
-  const [appsLoading, setAppsLoading] = useState(false);
+  const [appsFor, setAppsFor] = useState<string | null>(null);
 
   const [coverNote, setCoverNote] = useState('');
   const [applying, setApplying] = useState(false);
@@ -74,63 +76,65 @@ export default function JobDetailPage() {
 
   const isCreator = user && job && user.id === job.created_by;
 
-  const loadJob = useCallback(async () => {
-    if (!jobId) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*, profiles!jobs_created_by_fkey(username, role), projects(title)')
-        .eq('id', jobId)
-        .single();
-      if (error) throw error;
-      setJob(data as unknown as Job);
-    } catch (err) {
-      console.error('Error loading job:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [jobId]);
-
-  const loadApplications = useCallback(async () => {
-    if (!jobId) return;
-    setAppsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('job_applications')
-        .select('*, profiles(username, role, avatar_url)')
-        .eq('job_id', jobId)
-        .order('applied_at', { ascending: false });
-      if (error) throw error;
-      setApplications((data as unknown as Application[]) || []);
-    } catch (err) {
-      console.error('Error loading applications:', err);
-    } finally {
-      setAppsLoading(false);
-    }
-  }, [jobId]);
-
-  const checkAlreadyApplied = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('job_applications')
-      .select('id')
-      .eq('job_id', jobId)
-      .eq('applicant_id', userId)
-      .maybeSingle();
-    setAlreadyApplied(!!data);
-  }, [jobId]);
+  const appsLoading = !!isCreator && appsFor !== jobId;
 
   useEffect(() => {
-    loadJob();
-    awaitOSUser().then((u) => {
+    if (!jobId) return;
+    let alive = true;
+    const loadJob = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('*, profiles!jobs_created_by_fkey(username, role), projects(title)')
+          .eq('id', jobId)
+          .single();
+        if (error) throw error;
+        if (alive) setJob(data as unknown as Job);
+      } catch (err) {
+        console.error('Error loading job:', err);
+      } finally {
+        if (alive) setLoadedFor(jobId);
+      }
+    };
+    const checkAlreadyApplied = async () => {
+      const u = await awaitOSUser();
+      if (!alive) return;
       setUser(u);
-      if (u) checkAlreadyApplied(u.id);
-    });
-  }, [loadJob, checkAlreadyApplied]);
+      if (!u) return;
+      const { data } = await supabase
+        .from('job_applications')
+        .select('id')
+        .eq('job_id', jobId)
+        .eq('applicant_id', u.id)
+        .maybeSingle();
+      if (alive) setAlreadyApplied(!!data);
+    };
+    void loadJob();
+    void checkAlreadyApplied();
+    return () => { alive = false; };
+  }, [jobId]);
 
   useEffect(() => {
-    if (isCreator) loadApplications();
-  }, [isCreator, loadApplications]);
+    if (!isCreator || !jobId) return;
+    let alive = true;
+    const loadApplications = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('job_applications')
+          .select('*, profiles(username, role, avatar_url)')
+          .eq('job_id', jobId)
+          .order('applied_at', { ascending: false });
+        if (error) throw error;
+        if (alive) setApplications((data as unknown as Application[]) || []);
+      } catch (err) {
+        console.error('Error loading applications:', err);
+      } finally {
+        if (alive) setAppsFor(jobId);
+      }
+    };
+    void loadApplications();
+    return () => { alive = false; };
+  }, [isCreator, jobId]);
 
   const handleApply = async () => {
     if (!user || !job) return;

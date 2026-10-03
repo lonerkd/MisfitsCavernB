@@ -138,8 +138,9 @@ Always test with two browsers/sessions simultaneously for realtime features
 
 ## CURRENT STATE
 
-The live, authoritative iteration state — last changes, known issues, and
-follow-ups — is **`STATE.md`** in this directory. Read it at session start; do
+The live, authoritative iteration state — open work, known issues and the
+latest session — is **`STATE.md`** in this directory; every open task and
+planned pass, scoped, is in **`BACKLOG.md`**. Read both at session start; do
 not trust any state snapshot hard-coded here. For the full map of tools,
 routing, and conventions, start at `INDEX.md`.
 

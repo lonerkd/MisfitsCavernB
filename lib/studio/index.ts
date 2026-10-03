@@ -311,25 +311,28 @@ export function mediaSrc(m: Pick<Media, 'storage_path' | 'external_url'>, signed
 // reloaded on focus instead.
 
 export interface ProjectScript { id: string; title: string; updated_at: string | null }
+const NO_SCRIPTS: ProjectScript[] = [];
 
 export function useProjectScripts(projectId: string | null) {
-  const [scripts, setScripts] = useState<ProjectScript[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  // The list, tagged with its project; a project without one yet is loading.
+  const [got, setGot] = useState<{ projectId: string; scripts: ProjectScript[]; ok: boolean } | null>(null);
+  const mine = projectId && got?.projectId === projectId ? got : null;
+  const scripts = mine?.scripts ?? NO_SCRIPTS;
+  const status: 'loading' | 'ready' | 'error' = !projectId ? 'ready' : !mine ? 'loading' : mine.ok ? 'ready' : 'error';
 
   const reload = useCallback(async () => {
-    if (!projectId) { setScripts([]); setStatus('ready'); return; }
-    const { data, error } = await supabase
+    if (!projectId) return;
+    await supabase
       .from('scripts')
       .select('id, title, updated_at')
       .eq('project_id', projectId)
-      .order('updated_at', { ascending: false });
-    if (error) { setStatus('error'); return; }
-    setScripts(data);
-    setStatus('ready');
+      .order('updated_at', { ascending: false })
+      .then(({ data, error }) => setGot((g) => (error
+        ? { projectId, scripts: g?.projectId === projectId ? g.scripts : [], ok: false }
+        : { projectId, scripts: data, ok: true })));
   }, [projectId]);
 
   useEffect(() => {
-    setStatus('loading');
     void reload();
     const onVisible = () => { if (document.visibilityState === 'visible') void reload(); };
     document.addEventListener('visibilitychange', onVisible);

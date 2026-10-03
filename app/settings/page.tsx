@@ -100,9 +100,11 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
 
-  const [cursor, setCursor] = useState(true);
-  const [motion, setMotion] = useState(false);
-  const [islandScale, setIslandScale] = useState(1);
+  // Device-level prefs (this browser's storage). The page shows them only once
+  // the account has loaded, after hydration, so reading them up front is safe.
+  const [cursor, setCursor] = useState(() => getPref(PREF_KEYS.cursor, true));
+  const [motion, setMotion] = useState(() => getPref(PREF_KEYS.motion, false));
+  const [islandScale, setIslandScale] = useState(readIslandScale);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
@@ -128,11 +130,6 @@ export default function SettingsPage() {
       setNotifyProduct(prefs.product);
       setLeakCheck(prefs.leak_check);
     });
-    setCursor(getPref(PREF_KEYS.cursor, true));
-    setMotion(getPref(PREF_KEYS.motion, false));
-    try {
-      setIslandScale(readIslandScale());
-    } catch {}
   }, [router]);
 
   const flash = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };

@@ -6,9 +6,17 @@
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)" || true
 
-lead="Session bootstrap — Misfits Cavern. You are the lead engineer + QA for this suite. Before non-trivial work read .cavern-intelligence/CLAW.md and .cavern-intelligence/playbook.md, and verify with \`npx tsc --noEmit && npm run build && npm run lint\`. Project rules + current iteration state follow:"
+lead="Session bootstrap — Misfits Cavern. You are the lead engineer + QA for this suite. Before non-trivial work read .cavern-intelligence/CLAW.md and .cavern-intelligence/playbook.md (every open task, scoped: .cavern-intelligence/BACKLOG.md), and verify with \`npx tsc --noEmit && npm run build && npm run lint\`. Project rules + current iteration state follow:"
 
-ctx="$(cat AGENTS.md .cavern-intelligence/STATE.md 2>/dev/null | head -c 9000)"
+# STATE.md is kept short (open work + the latest session) so the whole of it
+# fits; if it ever outgrows the cap, say so rather than cutting it silently.
+limit=12000
+ctx="$(cat AGENTS.md .cavern-intelligence/STATE.md 2>/dev/null)"
+if [ "${#ctx}" -gt "$limit" ]; then
+  ctx="${ctx:0:$limit}
+
+[… truncated at ${limit} characters: STATE.md has grown — move older sessions to STATE-history.md. Read .cavern-intelligence/STATE.md and BACKLOG.md in full.]"
+fi
 
 jq -n --arg lead "$lead" --arg ctx "$ctx" \
   '{hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:($lead + "\n\n" + $ctx)}}' \

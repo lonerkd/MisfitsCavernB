@@ -11,6 +11,7 @@ import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
 import r from './readiness.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 type Filter = 'all' | 'blocked' | 'ready' | 'done';
 
@@ -44,13 +45,12 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
   const sheets = useCallSheets(project.id);
   const locations = useProjectLocations(project.id);
   const [filter, setFilter] = useState<Filter>('all');
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(() => followScene?.sceneId ?? null);
 
   // Linked split screen: open the scene the script's caret is in.
+  useOnChange(followScene, (f) => { if (f) { setFilter('all'); setOpen(f.sceneId); } });
   useEffect(() => {
     if (!followScene) return;
-    setFilter('all');
-    setOpen(followScene.sceneId);
     requestAnimationFrame(() => document.getElementById(`rd-row-${followScene.sceneId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
   }, [followScene]);
 

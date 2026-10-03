@@ -8,22 +8,29 @@
 // on this device — and move into the index automatically once the script
 // joins a project.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { alignSceneIds, normalizeHeading, type ParsedSceneInput } from '@/lib/studio/scene-sync';
 import { studio, useSceneIndexSync, useScriptScenes, type SceneRow } from '@/lib/studio';
+import { readDeviceValue, useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
 
 const notesKey = (scriptId: string) => `mc_scene_notes_${scriptId}`;
 const colorsKey = (scriptId: string) => `mc_scene_colors_${scriptId}`;
 const readsKey = (scriptId: string) => `mc_scene_reads_${scriptId}`;
 
+const NONE: Record<string, string> = {};
+function parse(raw: string | null): Record<string, string> {
+  try { return JSON.parse(raw || '{}') || NONE; } catch { return NONE; }
+}
 function readLocal(key: string): Record<string, string> {
-  try { return JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch { return {}; }
+  return parse(readDeviceValue(key));
 }
 function writeLocal(key: string, value: Record<string, string>) {
-  try {
-    if (Object.keys(value).length) localStorage.setItem(key, JSON.stringify(value));
-    else localStorage.removeItem(key);
-  } catch { /* storage full or blocked */ }
+  writeDeviceValue(key, Object.keys(value).length ? JSON.stringify(value) : null);
+}
+/** A per-scene map saved on this device for a personal script. */
+function useLocalMap(key: string | null): Record<string, string> {
+  const raw = useDeviceValue(key);
+  return useMemo(() => parse(raw), [raw]);
 }
 
 export function useEditorScenes(
@@ -45,18 +52,16 @@ export function useEditorScenes(
   }, [indexedId, scenes.rows, parsed]);
 
   // Device-only notes/colours for personal scripts (keyed by heading).
-  const [local, setLocal] = useState<{ notes: Record<string, string>; colors: Record<string, string> }>({ notes: {}, colors: {} });
-  useEffect(() => {
-    if (!scriptId) { setLocal({ notes: {}, colors: {} }); return; }
-    setLocal({ notes: readLocal(notesKey(scriptId)), colors: readLocal(colorsKey(scriptId)) });
-  }, [scriptId]);
+  const local = {
+    notes: useLocalMap(scriptId && notesKey(scriptId)),
+    colors: useLocalMap(scriptId && colorsKey(scriptId)),
+  };
   const keyAt = useCallback((i: number) => normalizeHeading(parsed[i]?.heading), [parsed]);
 
   const notes = parsed.map((_, i) => (indexedId ? rows[i]?.note ?? '' : local.notes[keyAt(i)] ?? ''));
 
   // Table-read time per scene: shared on project scripts, this device's otherwise.
-  const [localReads, setLocalReads] = useState<Record<string, string>>({});
-  useEffect(() => { setLocalReads(scriptId ? readLocal(readsKey(scriptId)) : {}); }, [scriptId]);
+  const localReads = useLocalMap(scriptId && readsKey(scriptId));
   const reads = parsed.map((_, i) => {
     const v = indexedId ? rows[i]?.read_seconds : Number(localReads[keyAt(i)]);
     return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null;
@@ -83,12 +88,9 @@ export function useEditorScenes(
       return;
     }
     if (!scriptId) return;
-    setLocal((prev) => {
-      const next = { ...prev.notes };
-      if (value) next[keyAt(i)] = value; else delete next[keyAt(i)];
-      writeLocal(notesKey(scriptId), next);
-      return { ...prev, notes: next };
-    });
+    const next = { ...readLocal(notesKey(scriptId)) };
+    if (value) next[keyAt(i)] = value; else delete next[keyAt(i)];
+    writeLocal(notesKey(scriptId), next);
   }, [indexedId, scriptId, rows, update, keyAt]);
 
   /** Record how long scene i ran at a table read. */
@@ -96,11 +98,7 @@ export function useEditorScenes(
     const value = Math.round(Math.min(36000, Math.max(0.1, seconds)) * 10) / 10;
     if (indexedId) { void update(i, { read_seconds: value, read_at: new Date().toISOString() }); return; }
     if (!scriptId) return;
-    setLocalReads((prev) => {
-      const next = { ...prev, [keyAt(i)]: String(value) };
-      writeLocal(readsKey(scriptId), next);
-      return next;
-    });
+    writeLocal(readsKey(scriptId), { ...readLocal(readsKey(scriptId)), [keyAt(i)]: String(value) });
   }, [indexedId, scriptId, update, keyAt]);
 
   /** Toggle a colour tag: the same colour again clears it. */
@@ -110,12 +108,9 @@ export function useEditorScenes(
       return;
     }
     if (!scriptId) return;
-    setLocal((prev) => {
-      const next = { ...prev.colors };
-      if (next[keyAt(i)] === color) delete next[keyAt(i)]; else next[keyAt(i)] = color;
-      writeLocal(colorsKey(scriptId), next);
-      return { ...prev, colors: next };
-    });
+    const next = { ...readLocal(colorsKey(scriptId)) };
+    if (next[keyAt(i)] === color) delete next[keyAt(i)]; else next[keyAt(i)] = color;
+    writeLocal(colorsKey(scriptId), next);
   }, [indexedId, scriptId, rows, update, keyAt]);
 
   // Once per script: move notes/colours saved on this device into the shared

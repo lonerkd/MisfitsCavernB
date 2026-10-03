@@ -42,39 +42,44 @@ export default function TodayPage() {
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
 
-  const load = useCallback(async () => {
-    if (!user) return;
-    const [sh, calls, tk, un, notes] = await Promise.all([
-      projectIds.length
-        ? supabase.from('call_sheets').select('id, project_id, shoot_date, shoot_day, general_call, location_address, weather, issued_at').in('project_id', projectIds).gte('shoot_date', today).order('shoot_date').limit(12)
-        : Promise.resolve({ data: [] as Sheet[] }),
-      supabase.from('call_sheet_calls').select('call_sheet_id, call_time').eq('crew_user_id', user.id),
-      projectIds.length
-        ? supabase.from('project_tasks').select('id, project_id, title, completed, due_date').eq('assigned_to', user.id).eq('completed', false).in('project_id', projectIds).limit(40)
-        : Promise.resolve({ data: [] as Task[] }),
-      getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
-      fetchNotifications(user.id, 8).catch(() => [] as Notification[]),
-    ]);
-    setSheets((sh.data ?? []) as Sheet[]);
-    setMyCalls(Object.fromEntries(((calls.data ?? []) as Array<{ call_sheet_id: string; call_time: string | null }>).map((c) => [c.call_sheet_id, c.call_time])));
-    setTasks((tk.data ?? []) as Task[]);
-    setUpdates(notes);
+  // Gathers the day, then shows it in one go.
+  const load = useCallback(() => {
+    if (!user) return Promise.resolve();
+    return (async () => {
+      const [sh, calls, tk, un, notes] = await Promise.all([
+        projectIds.length
+          ? supabase.from('call_sheets').select('id, project_id, shoot_date, shoot_day, general_call, location_address, weather, issued_at').in('project_id', projectIds).gte('shoot_date', today).order('shoot_date').limit(12)
+          : Promise.resolve({ data: [] as Sheet[] }),
+        supabase.from('call_sheet_calls').select('call_sheet_id, call_time').eq('crew_user_id', user.id),
+        projectIds.length
+          ? supabase.from('project_tasks').select('id, project_id, title, completed, due_date').eq('assigned_to', user.id).eq('completed', false).in('project_id', projectIds).limit(40)
+          : Promise.resolve({ data: [] as Task[] }),
+        getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
+        fetchNotifications(user.id, 8).catch(() => [] as Notification[]),
+      ]);
 
-    // Name what's unread: channels by name (and project), people by username.
-    const channelIds = Object.keys(un.channels), peopleIds = Object.keys(un.people);
-    const [ch, ppl] = await Promise.all([
-      channelIds.length ? supabase.from('channels').select('id, name, project_id').in('id', channelIds) : Promise.resolve({ data: [] }),
-      peopleIds.length ? supabase.from('profiles').select('id, username').in('id', peopleIds) : Promise.resolve({ data: [] }),
-    ]);
-    const rows: Unread[] = [
-      ...((ch.data ?? []) as Array<{ id: string; name: string; project_id: string | null }>).map((c) => ({
-        key: c.id, count: un.channels[c.id], href: `/lounge?channel=${c.id}`,
-        label: `#${c.name}${c.project_id && projectById.get(c.project_id) ? ` · ${projectById.get(c.project_id)!.title}` : ''}`,
-      })),
-      ...((ppl.data ?? []) as Array<{ id: string; username: string }>).map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
-    ].sort((a, b) => b.count - a.count);
-    setUnread(rows);
-    setLoaded(true);
+      // Name what's unread: channels by name (and project), people by username.
+      const channelIds = Object.keys(un.channels), peopleIds = Object.keys(un.people);
+      const [ch, ppl] = await Promise.all([
+        channelIds.length ? supabase.from('channels').select('id, name, project_id').in('id', channelIds) : Promise.resolve({ data: [] }),
+        peopleIds.length ? supabase.from('profiles').select('id, username').in('id', peopleIds) : Promise.resolve({ data: [] }),
+      ]);
+      const rows: Unread[] = [
+        ...((ch.data ?? []) as Array<{ id: string; name: string; project_id: string | null }>).map((c) => ({
+          key: c.id, count: un.channels[c.id], href: `/lounge?channel=${c.id}`,
+          label: `#${c.name}${c.project_id && projectById.get(c.project_id) ? ` · ${projectById.get(c.project_id)!.title}` : ''}`,
+        })),
+        ...((ppl.data ?? []) as Array<{ id: string; username: string }>).map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
+      ].sort((a, b) => b.count - a.count);
+      return { sh, calls, tk, notes, rows };
+    })().then(({ sh, calls, tk, notes, rows }) => {
+      setSheets((sh.data ?? []) as Sheet[]);
+      setMyCalls(Object.fromEntries(((calls.data ?? []) as Array<{ call_sheet_id: string; call_time: string | null }>).map((c) => [c.call_sheet_id, c.call_time])));
+      setTasks((tk.data ?? []) as Task[]);
+      setUpdates(notes);
+      setUnread(rows);
+      setLoaded(true);
+    });
   }, [user, projectIds, today, projectById]);
 
   useEffect(() => { void load(); }, [load]);

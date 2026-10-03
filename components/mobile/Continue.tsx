@@ -14,6 +14,9 @@ import { supabase } from '@/lib/supabase/client';
 import { useProject, useSession } from '@/lib/os';
 import { loadUiPrefs, saveUiPrefs, useUiPrefs } from '@/lib/os/uiPrefs';
 import { ago, placeFor, resumeOffer, worthSaving, type Device, type Place } from '@/lib/pocket/places';
+import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { useHydrated } from '@/lib/hooks/useSearchParam';
 import m from './mobile.module.css';
 
 const PHONE_QUERY = '(max-width: 760px)';
@@ -70,22 +73,16 @@ export function PlaceTracker() {
   return null;
 }
 
-function readDismissed(): string | null {
-  try { return localStorage.getItem(DISMISSED); } catch { return null; }
-}
-
 /** The other device's place, if there's one to pick up. */
 export function useContinueOffer() {
   const { prefs, loaded } = useUiPrefs();
   const pathname = usePathname();
-  const [dismissed, setDismissed] = useState<string | null>(null);
-  const [device, setDevice] = useState<Device>('desktop');
-  useEffect(() => { setDismissed(readDismissed()); setDevice(thisDevice()); }, []);
+  const dismissed = useDeviceValue(DISMISSED);
+  const device: Device = useMediaQuery(PHONE_QUERY) ? 'phone' : 'desktop';
   const here = typeof window !== 'undefined' ? location.pathname + location.search : pathname;
   const offer = loaded ? resumeOffer(prefs.places, device, new Date(), here) : null;
   const dismiss = useCallback((p: Place) => {
-    try { localStorage.setItem(DISMISSED, p.at); } catch { /* device-only nicety */ }
-    setDismissed(p.at);
+    writeDeviceValue(DISMISSED, p.at); // device-only nicety
   }, []);
   return { offer: offer && offer.place.at !== dismissed ? offer : null, dismiss };
 }
@@ -101,6 +98,19 @@ export function useGoToPlace() {
   }, [projects, setActiveProject, router]);
 }
 
+// The page this tab's visit started on ('' when the tab had already been
+// here — a reload). Decided once per page load, so it is the same however
+// often (or twice, in development) it's asked.
+let visitFirstPath: string | undefined;
+function firstPathOfVisit(pathname: string): string {
+  if (visitFirstPath === undefined) {
+    let fresh = true;
+    try { fresh = !sessionStorage.getItem('mc-continue-seen'); sessionStorage.setItem('mc-continue-seen', '1'); } catch { /* ignore */ }
+    visitFirstPath = fresh ? pathname : '';
+  }
+  return visitFirstPath;
+}
+
 /** The offer as a card (Today) or a small floating note (anywhere else, once per visit). */
 export function ContinueOffer({ inline = false, className = '' }: { inline?: boolean; className?: string }) {
   const { isAuthenticated } = useSession();
@@ -109,13 +119,8 @@ export function ContinueOffer({ inline = false, className = '' }: { inline?: boo
   const go = useGoToPlace();
   // The floating note belongs to the first page of a visit: moving on, or
   // reloading in the same tab, puts it away. Today has its own card.
-  const [firstPath, setFirstPath] = useState<string | null>(null);
-  useEffect(() => {
-    if (inline) return;
-    let fresh = true;
-    try { fresh = !sessionStorage.getItem('mc-continue-seen'); sessionStorage.setItem('mc-continue-seen', '1'); } catch { /* ignore */ }
-    setFirstPath(fresh ? pathname : '');
-  }, [inline]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hydrated = useHydrated();
+  const firstPath = !inline && hydrated ? firstPathOfVisit(pathname) : null;
 
   if (!isAuthenticated || !offer) return null;
   if (!inline && (pathname !== firstPath || pathname === '/today' || pathname.startsWith('/editor') || pathname === '/split' || /^\/(auth|login|shared|p|s|call)(\/|$)/.test(pathname))) return null;

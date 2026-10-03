@@ -13,6 +13,7 @@ import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Brick, PlaceLink, accentVars } from './Bricks';
 import { UnlockReveal } from './UnlockReveal';
 import p from './progress.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const SEEN_KEY = (projectId: string) => `mc_seen_phase:${projectId}`;
 
@@ -61,6 +62,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   // Celebrate phases reached since this device last saw the project
   // (the first visit only records where it is).
   const currentIndex = progress?.currentIndex;
+  useOnChange(`${projectId}:${currentIndex}`, () => setSelected(null));
   useEffect(() => {
     if (!progress || currentIndex == null) return;
     let seen: number | null = null;
@@ -68,9 +70,11 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
     try { localStorage.setItem(SEEN_KEY(projectId), String(currentIndex)); } catch {}
     if (seen != null && Number.isFinite(seen) && seen < currentIndex) {
       const tools = progress.phases.slice(seen + 1, currentIndex + 1).flatMap((ph) => toolsOpenedAt(progress, ph.index));
+      // Reading and recording what this device last saw is a write, so it
+      // happens once per phase change, after commit — not while rendering.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- follows device storage
       setReveal({ label: progress.current.label, tools });
     }
-    setSelected(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only a phase change should trigger this
   }, [projectId, currentIndex]);
 

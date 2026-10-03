@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
+import { useLoad } from '@/lib/hooks/useLoad';
 import { ProtectedPage } from '@/lib/os';
 import { useCurrentUser } from '@/lib/os';
 import { BarChart3, Users, Settings, Activity } from 'lucide-react';
@@ -10,34 +11,14 @@ import Link from 'next/link';
 
 export default function AdminDashboard() {
   const { isAdmin } = useCurrentUser();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalProjects: 0,
-    totalScripts: 0,
-    totalJobs: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  const loadStats = async () => {
-    try {
-      const platformStats = await getPlatformStats();
-
-      setStats({
-        totalUsers: platformStats.users,
-        totalProjects: platformStats.projects,
-        totalScripts: platformStats.scripts,
-        totalJobs: platformStats.jobs,
-      });
-    } catch (error) {
-      console.error('Failed to load stats:', error);
-    } finally {
-      setLoading(false);
-    }
+  const { data, loading, error } = useLoad('stats', getPlatformStats);
+  useEffect(() => { if (error) console.error('Failed to load stats:', error); }, [error]);
+  const stats = {
+    totalUsers: data?.users ?? 0,
+    totalProjects: data?.projects ?? 0,
+    totalScripts: data?.scripts ?? 0,
+    totalJobs: data?.jobs ?? 0,
   };
-
-  useEffect(() => {
-    loadStats();
-  }, []);
 
   return (
     <ProtectedPage requiredPermission="manage_users">

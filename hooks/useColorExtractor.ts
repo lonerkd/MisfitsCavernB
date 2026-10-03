@@ -2,22 +2,20 @@ import { useState, useEffect } from 'react';
 import { FastAverageColor } from 'fast-average-color';
 
 export function useColorExtractor(imageUrl: string | null) {
-  const [color, setColor] = useState<string | null>(null);
+  // The colour found, tagged with the image it was found in.
+  const [found, setFound] = useState<{ url: string; color: string | null } | null>(null);
 
   useEffect(() => {
-    if (!imageUrl) {
-      setColor(null);
-      return;
-    }
+    if (!imageUrl) return;
 
     const fac = new FastAverageColor();
     fac.getColorAsync(imageUrl)
       .then(result => {
-        setColor(result.hex);
+        setFound({ url: imageUrl, color: result.hex });
       })
       .catch(e => {
         console.error('Failed to extract color:', e);
-        setColor(null);
+        setFound({ url: imageUrl, color: null });
       });
 
     return () => {
@@ -25,5 +23,5 @@ export function useColorExtractor(imageUrl: string | null) {
     };
   }, [imageUrl]);
 
-  return color;
+  return imageUrl && found?.url === imageUrl ? found.color : null;
 }

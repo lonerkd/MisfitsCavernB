@@ -5,7 +5,7 @@
 // the top and "Got it" to confirm they've seen this version. Read through
 // RLS: members of the production only.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Check, MapPin, Printer } from 'lucide-react';
@@ -40,35 +40,42 @@ export default function CallSheetPage() {
   const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading');
   const [confirming, setConfirming] = useState(false);
 
-  const load = useCallback(async (uid: string) => {
-    const { data: s } = await supabase.from('call_sheets').select('*').eq('id', id).maybeSingle();
-    if (!s) { setState('missing'); return; }
-    const [p, cl, sc, crew, cast, ack] = await Promise.all([
-      supabase.from('projects').select('id, title, creator_id').eq('id', s.project_id).single(),
-      supabase.from('call_sheet_calls').select('*').eq('call_sheet_id', s.id),
-      supabase.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
-        .eq('project_id', s.project_id).eq('shoot_day', s.shoot_day).is('removed_at', null).order('scene_number'),
-      supabase.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', s.project_id),
-      supabase.from('character_castings').select('character_name').eq('project_id', s.project_id).eq('crew_user_id', uid),
-      supabase.from('call_sheet_acks').select('version').eq('call_sheet_id', s.id).eq('user_id', uid).maybeSingle(),
-    ]);
-    const map = new Map<string, Person>();
-    for (const m of crew.data ?? []) map.set(m.user_id, { id: m.user_id, username: m.profiles?.username ?? 'Crew', craft: m.craft });
-    if (p.data && !map.has(p.data.creator_id)) {
-      const { data: owner } = await supabase.from('profiles').select('id, username').eq('id', p.data.creator_id).maybeSingle();
-      if (owner) map.set(owner.id, { id: owner.id, username: owner.username, craft: 'Producer' });
-    }
-    setSheet(s);
-    setCalls(cl.data ?? []);
-    setProject(p.data ?? null);
-    setScenes((sc.data ?? []) as SceneLite[]);
-    setPeople(map);
-    setCastAs((cast.data ?? []).map((r) => r.character_name));
-    setAcked(ack.data?.version ?? null);
-    setState('ready');
-  }, [id]);
-
-  useEffect(() => { if (user?.id) void load(user.id); }, [user?.id, load]);
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let alive = true;
+    const load = async () => {
+      const { data: s } = await supabase.from('call_sheets').select('*').eq('id', id).maybeSingle();
+      if (!alive) return;
+      if (!s) { setState('missing'); return; }
+      const [p, cl, sc, crew, cast, ack] = await Promise.all([
+        supabase.from('projects').select('id, title, creator_id').eq('id', s.project_id).single(),
+        supabase.from('call_sheet_calls').select('*').eq('call_sheet_id', s.id),
+        supabase.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
+          .eq('project_id', s.project_id).eq('shoot_day', s.shoot_day).is('removed_at', null).order('scene_number'),
+        supabase.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', s.project_id),
+        supabase.from('character_castings').select('character_name').eq('project_id', s.project_id).eq('crew_user_id', uid),
+        supabase.from('call_sheet_acks').select('version').eq('call_sheet_id', s.id).eq('user_id', uid).maybeSingle(),
+      ]);
+      const map = new Map<string, Person>();
+      for (const m of crew.data ?? []) map.set(m.user_id, { id: m.user_id, username: m.profiles?.username ?? 'Crew', craft: m.craft });
+      if (p.data && !map.has(p.data.creator_id)) {
+        const { data: owner } = await supabase.from('profiles').select('id, username').eq('id', p.data.creator_id).maybeSingle();
+        if (owner) map.set(owner.id, { id: owner.id, username: owner.username, craft: 'Producer' });
+      }
+      if (!alive) return;
+      setSheet(s);
+      setCalls(cl.data ?? []);
+      setProject(p.data ?? null);
+      setScenes((sc.data ?? []) as SceneLite[]);
+      setPeople(map);
+      setCastAs((cast.data ?? []).map((r) => r.character_name));
+      setAcked(ack.data?.version ?? null);
+      setState('ready');
+    };
+    void load();
+    return () => { alive = false; };
+  }, [id, user?.id]);
 
   const isOwner = !!project && project.creator_id === user?.id;
   const canIssue = useCanShape(project?.id, isOwner);

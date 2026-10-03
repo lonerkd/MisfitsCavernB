@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLoad } from '@/lib/hooks/useLoad';
 import Link from 'next/link';
 import { ArrowLeft, Filter, Download, Search, Clock, User, Zap } from 'lucide-react';
 import { ProtectedPage } from '@/lib/os';
@@ -28,58 +29,35 @@ const ACTIONS: AuditAction[] = [
   'admin_action',
 ];
 
+const NO_ACTIVITY = { loginsLastHour: 0, actionsLast24h: 0, projectsCreated24h: 0 };
+
 export default function AuditLogsPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState<AuditAction | ''>('');
-  const [activitySummary, setActivitySummary] = useState({ loginsLastHour: 0, actionsLast24h: 0, projectsCreated24h: 0 });
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [page, setPage] = useState(0);
-  const [totalLogs, setTotalLogs] = useState(0);
 
   const pageSize = 50;
 
-  const loadLogs = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { logs: auditLogs, count } = await getAuditLogs(pageSize, page * pageSize, {
-        action: actionFilter || undefined,
-      });
+  const fetched = useLoad(`${page}:${actionFilter}`, () => getAuditLogs(pageSize, page * pageSize, { action: actionFilter || undefined }));
+  const loading = fetched.loading;
+  const totalLogs = fetched.data?.count ?? 0;
+  // The search narrows the page already loaded.
+  const logs = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return (fetched.data?.logs ?? []).filter(
+      log =>
+        !term ||
+        log.username?.toLowerCase().includes(term) ||
+        log.resource_id?.toLowerCase().includes(term) ||
+        log.action.toLowerCase().includes(term),
+    );
+  }, [fetched.data, searchTerm]);
 
-      setLogs(
-        auditLogs.filter(
-          log =>
-            !searchTerm ||
-            log.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.resource_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.action.toLowerCase().includes(searchTerm.toLowerCase()),
-        ),
-      );
-      setTotalLogs(count);
-    } catch (error) {
-      console.error('Failed to load audit logs:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchTerm, actionFilter, page, pageSize]);
-
-  const loadActivitySummary = useCallback(async () => {
-    try {
-      const summary = await getActivitySummary();
-      setActivitySummary(summary);
-
-      const users = await getMostActiveUsers(5);
-      setActiveUsers(users);
-    } catch (error) {
-      console.error('Failed to load activity summary:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadLogs();
-    loadActivitySummary();
-  }, [loadLogs, loadActivitySummary]);
+  const summary = useLoad('summary', async () => ({ activity: await getActivitySummary(), users: await getMostActiveUsers(5) }));
+  const activitySummary = summary.data?.activity ?? NO_ACTIVITY;
+  const activeUsers: any[] = summary.data?.users ?? [];
+  useEffect(() => { if (fetched.error) console.error('Failed to load audit logs:', fetched.error); }, [fetched.error]);
+  useEffect(() => { if (summary.error) console.error('Failed to load activity summary:', summary.error); }, [summary.error]);
 
   const exportLogs = () => {
     const csv = [
