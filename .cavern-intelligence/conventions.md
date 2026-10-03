@@ -147,3 +147,9 @@ errors. They reject state copied around by effects; use these instead
 A justified exception (state that follows the rendered DOM, e.g. the Lounge
 lighting a message once it's scrolled to) gets
 `// eslint-disable-next-line react-hooks/set-state-in-effect -- <reason>`.
+
+**Testing a hook**: `renderHook` from `@testing-library/react` in a
+`*.test.tsx` file that starts with `// @vitest-environment jsdom` and calls
+`afterEach(cleanup)` (Vitest runs without globals here). Examples:
+`lib/hooks/useLoad.test.tsx` (deferred promises for stale answers),
+`lib/studio/live.test.tsx` (a mocked Realtime channel).

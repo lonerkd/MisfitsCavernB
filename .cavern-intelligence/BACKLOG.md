@@ -57,14 +57,6 @@ call sheet, soundtrack, …), with the page's loading done the §10 way
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
 
-### 3.3 Hook tests — S/M
-Vitest runs in `node` with no React test environment, so the shared hooks
-(`lib/hooks/useLoad`, `useOnChange`, `useDeviceValue`, `useSearchParam`,
-`useMediaQuery`, `lib/studio/live.ts` `useLiveRows`, `useOnSetSync`) are
-covered only through e2e. Add `@testing-library/react` + a `jsdom` test
-project for `lib/hooks/**` and `lib/studio/live*`. Done when each hook has a
-test for its key-switch / stale-answer behaviour.
-
 ### 3.4 Lint pass 3 — M
 The React Compiler rules are all errors now. What's left suppressed:
 20 `react-hooks/exhaustive-deps` disables (each one hides a dependency that

@@ -1,13 +1,13 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-03T14:57:11.105Z",
+  "last_synchronized": "2026-10-03T15:13:19.169Z",
   "stats": {
-    "totalFiles": 536,
-    "totalSize": 4041472,
+    "totalFiles": 543,
+    "totalSize": 4083306,
     "byExtension": {
       ".json": 13,
       ".md": 11,
-      ".tsx": 163,
+      ".tsx": 170,
       ".ts": 300,
       ".js": 7,
       ".sql": 42
@@ -1663,14 +1663,29 @@
       "last_modified": "2026-09-27T19:31:47.121Z"
     },
     {
+      "path": "lib/hooks/useDeviceValue.test.tsx",
+      "size": 2067,
+      "last_modified": "2026-10-03T15:10:37.508Z"
+    },
+    {
       "path": "lib/hooks/useDeviceValue.ts",
       "size": 1319,
       "last_modified": "2026-10-03T11:42:35.304Z"
     },
     {
+      "path": "lib/hooks/useLoad.test.tsx",
+      "size": 3404,
+      "last_modified": "2026-10-03T15:10:37.529Z"
+    },
+    {
       "path": "lib/hooks/useLoad.ts",
       "size": 1601,
       "last_modified": "2026-10-03T11:32:44.008Z"
+    },
+    {
+      "path": "lib/hooks/useMediaQuery.test.tsx",
+      "size": 1552,
+      "last_modified": "2026-10-03T15:10:37.554Z"
     },
     {
       "path": "lib/hooks/useMediaQuery.ts",
@@ -1681,6 +1696,11 @@
       "path": "lib/hooks/useNow.ts",
       "size": 380,
       "last_modified": "2026-10-03T08:45:01.885Z"
+    },
+    {
+      "path": "lib/hooks/useOnChange.test.tsx",
+      "size": 1627,
+      "last_modified": "2026-10-03T15:10:37.574Z"
     },
     {
       "path": "lib/hooks/useOnChange.ts",
@@ -1696,6 +1716,11 @@
       "path": "lib/hooks/useProjectProgress.ts",
       "size": 2787,
       "last_modified": "2026-10-03T11:49:23.849Z"
+    },
+    {
+      "path": "lib/hooks/useSearchParam.test.tsx",
+      "size": 1475,
+      "last_modified": "2026-10-03T15:10:37.597Z"
     },
     {
       "path": "lib/hooks/useSearchParam.ts",
@@ -2158,6 +2183,11 @@
       "last_modified": "2026-10-03T11:49:39.412Z"
     },
     {
+      "path": "lib/studio/live.test.tsx",
+      "size": 4851,
+      "last_modified": "2026-10-03T15:10:37.619Z"
+    },
+    {
       "path": "lib/studio/live.ts",
       "size": 6611,
       "last_modified": "2026-10-03T11:50:58.794Z"
@@ -2276,6 +2306,11 @@
       "path": "lib/studio/transcript.ts",
       "size": 8248,
       "last_modified": "2026-09-29T05:33:01.622Z"
+    },
+    {
+      "path": "lib/studio/useOnSetSync.test.tsx",
+      "size": 2747,
+      "last_modified": "2026-10-03T15:10:37.642Z"
     },
     {
       "path": "lib/studio/useOnSetSync.ts",
@@ -2454,13 +2489,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 326433,
-      "last_modified": "2026-10-03T14:55:02.879Z"
+      "size": 350458,
+      "last_modified": "2026-10-03T15:09:00.911Z"
     },
     {
       "path": "package.json",
-      "size": 2254,
-      "last_modified": "2026-10-03T08:45:01.890Z"
+      "size": 2319,
+      "last_modified": "2026-10-03T15:09:00.791Z"
     },
     {
       "path": "performance-budget.json",
@@ -2984,8 +3019,8 @@
     },
     {
       "path": "vitest.config.ts",
-      "size": 282,
-      "last_modified": "2026-09-24T20:05:03.659Z"
+      "size": 303,
+      "last_modified": "2026-10-03T15:09:54.339Z"
     },
     {
       "path": "vitest.integration.config.ts",

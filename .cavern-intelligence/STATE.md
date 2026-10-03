@@ -13,7 +13,7 @@ Full scope for each in `BACKLOG.md`. In order:
    stashes on the Windows machine; four stale remote branches to delete.
 2. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium (passes in CI and the cloud container).
-3. **Upgrades**: data access through `lib/` (L) · hook tests (S/M) · lint
+3. **Upgrades**: data access through `lib/` (L) · lint
    pass 3 — the remaining suppressions (M) · activity feed completeness (M,
    product call) · emphasis in the writing surface (M) · story beat → script
    (M/L) · definer-function allowlist (S) · README refresh (S) · dev-toolchain
@@ -30,7 +30,27 @@ No PRs are open.
 - Security advisor: `SECURITY DEFINER` RPCs callable by anon (9) and signed-in
   users (33) — intended API, each gated inside; allowlist to write (3.9).
 
-## Latest Session — Dependency fixes; one scheduler
+## Latest Session — Hook tests
+
+No migration.
+
+- **The shared hooks have unit tests** (28, in a jsdom environment):
+  `useOnChange`, `useLoad`, `useDeviceValue`, `useSearchParam` /
+  `useHydrated`, `useMediaQuery` (`lib/hooks/*.test.tsx`), `useLiveRows`
+  (`lib/studio/live.test.tsx`) and `useOnSetSync`
+  (`lib/studio/useOnSetSync.test.tsx`). They pin down what the lint-pass-2
+  rework relies on: a key switch never shows the previous key's data, a late
+  answer for an old key is dropped, a reload can't erase a local write,
+  newer `updated_at` wins, the offline queue is counted per project and sent
+  in order when the connection is back.
+- How: `@testing-library/react` + `jsdom` (dev deps); a test file opts in
+  with `// @vitest-environment jsdom` and is named `*.test.tsx`
+  (`vitest.config.ts` includes them). Vitest runs without globals, so each
+  file calls `afterEach(cleanup)` — without it, hooks from earlier tests stay
+  mounted and react to later events.
+- 472 unit tests in all.
+
+## Earlier — Dependency fixes; one scheduler
 
 No migration.
 
@@ -46,4 +66,3 @@ No migration.
   synced themselves into the scene index. Auto-schedule is
   `packShootDays` (`lib/studio/shoot-days.ts`, tested); the stripboard
   header, Locations and Scenes show the totals the card did.
-- Previous session (lint pass 2, the knowledge-hub audit): `STATE-history.md`.
