@@ -22,12 +22,33 @@ the advisors that day).
   and were never reconciled. Look at each (`git stash show -p stash@{n}`);
   anything not on `main` goes into a branch, then drop them. (The cloud
   container's only stash, "legal", is fully on `main` — checked line by line.)
-- **Stale remote branches** — all merged or closed; safe to delete on GitHub:
-  `claude/design-scales` (#96, merged), `claude/studio-tab-scroll` (#111,
-  merged), `claude/repo-technical-audit-rj40tm` (#39, merged),
-  `claude/repo-reacquaintance-q2bm6w` (#41, closed unmerged: a dev
-  quick-login + middleware auth-bypass cookie; deliberately not taken — the
-  local-stack e2e signs in for real instead).
+- **Delete 18 stale remote branches** (approved 2026-10-03; the session's
+  GitHub proxy can't delete branches, so it's a one-liner from your machine:
+  `git push origin --delete <names…>`, or GitHub › Branches). Audited: 14
+  are ancestors of `main` (merged with merge commits), 3 were squash-merged
+  with identical content (#96 `design-scales`, #111 `studio-tab-scroll`,
+  #39 `repo-technical-audit`), and #41 `repo-reacquaintance` was closed on
+  purpose (a dev quick-login + auth-bypass cookie — the local-stack e2e signs
+  in for real instead). `staging` is an old July snapshot nothing in the repo
+  refers to. Tips, to restore any (`git push origin <sha>:refs/heads/<name>`):
+  - `chore/analyze-engine` `46b120c47485`
+  - `chore/auth-journey-fix` `a4d30c6e078a`
+  - `chore/fountain-conformance` `9afcc91c7dfc`
+  - `chore/fountain-serializer` `0d610ed6fde7`
+  - `chore/offline-foundation` `caa49daf8642`
+  - `chore/production-hardening` `7d271728a063`
+  - `chore/scheduler-and-deps` `01a7ba64894e`
+  - `chore/scriptos-normalize` `cbef576b8cec`
+  - `chore/suite-bridge` `8ba95ac8a4cc`
+  - `chore/suite-completeness` `460b4379663e`
+  - `chore/visibility-activity-consolidate` `f6da2b2bfe1e`
+  - `claude/charming-galileo-fewe3n` `c2e71a8dc718`
+  - `claude/design-scales` `21ffd98c81b2`
+  - `claude/expand-access-autonomy-3ajtsg` `bab2c7f6a7cd`
+  - `claude/repo-reacquaintance-q2bm6w` `9a61d35f911a`
+  - `claude/repo-technical-audit-rj40tm` `717889d89184`
+  - `claude/studio-tab-scroll` `f4c08f20425b`
+  - `staging` `d42fb7b225d7`
 
 ## 2. To verify
 

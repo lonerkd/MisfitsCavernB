@@ -10,7 +10,8 @@ Full scope for each in `BACKLOG.md`. In order:
 
 1. **Owner, outside the code**: lawyer review of `/privacy` and `/terms`;
    leaked-password protection (Supabase › Auth › Passwords); the two old
-   stashes on the Windows machine; four stale remote branches to delete.
+   stashes on the Windows machine; 18 stale remote branches to delete
+   (audited — all merged or closed on purpose; tips recorded).
 2. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium (passes in CI and the cloud container).
 3. **Upgrades**: data access through `lib/` (L) · lint
