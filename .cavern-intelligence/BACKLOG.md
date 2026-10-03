@@ -38,14 +38,15 @@ the advisors that day).
 
 ## 3. Upgrades (scoped — in suggested order)
 
-### 3.1 Dependency security — S
-`npm audit` (2026-10-03): production deps have 2 moderate (`dompurify`
-≤3.4.12, `fflate` 0.8.0–0.8.2), both fixable with plain `npm audit fix`.
-With dev deps, 11 in all (8 high: `brace-expansion`, `braces`,
-`postcss-selector-parser` via the lint/CSS toolchain). Run `npm audit fix`
-(never `--force` without reading what it bumps), rebuild, full e2e. Done when
-production deps report 0 and the dev highs are fixed or noted as
-toolchain-only.
+### 3.1 Dev-toolchain advisories — watch, S when upstream moves
+Production dependencies: **0** vulnerabilities (`npm audit --omit=dev`,
+2026-10-03, after `npm audit fix` bumped `dompurify`, `fflate`,
+`brace-expansion`, `postcss-selector-parser` and the Next ESLint config).
+Left: 7 high, all `braces` (every version flagged) reached only through dev
+tools — `tailwindcss` → `chokidar`, and `eslint-config-next` → `fast-glob`.
+Nothing ships to the browser or server; the only offered fix is
+`--force` (breaking). Re-run `npm audit` when Tailwind or `eslint-config-next`
+release; take the plain fix then. Done when `npm audit` reports 0.
 
 ### 3.2 Data access through `lib/` — L (incremental)
 `conventions.md` §1 says components never call `supabase.from()` directly;
@@ -79,12 +80,6 @@ projects, scenes and wraps; not for media uploads, crew invites/role
 changes, script revisions, call sheets issued or documents. Decide what the
 feed should show (and to whom), then add the calls. Done when each chosen
 event appears in the feed for the right audience (persona-tested).
-
-### 3.6 One scheduler — S
-`lib/scriptos/schedule.ts` (`generateShootingSchedule`) is used only by its
-own test; the Auto-schedule button lives in
-`components/studio/production/StripboardView.tsx`. Wire the lib in or delete
-it (and its test). Done when there is one implementation.
 
 ### 3.7 Emphasis in the writing surface — M
 Fountain emphasis (`*italic*`, `**bold**`, `_underline_`) is honoured in
