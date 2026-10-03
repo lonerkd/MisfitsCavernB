@@ -22,6 +22,7 @@ import { getLoungeUnread } from '@/lib/supabase/messages';
 import { readable } from '@/lib/color';
 import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture';
 import m from './mobile.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -149,7 +150,7 @@ export default function MobileTabBar() {
   const [unread, setUnread] = useState(0);
   const authed = status === 'authed';
 
-  useEffect(() => { setMore(false); setCapturing(false); }, [pathname]);
+  useOnChange(pathname, () => { setMore(false); setCapturing(false); });
   // The home-screen shortcut and the share menu land on Today with what to
   // capture: open Capture with it, then tidy the address.
   useEffect(() => {

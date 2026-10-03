@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useToast } from '@/components/Toast';
 import { setProjectLogline } from '@/lib/supabase/progress';
 import p from './progress.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const MAX = 300;
 
@@ -17,7 +18,7 @@ export function LoglineEditor({ projectId, value, isOwner, onSaved }: {
   const { toast } = useToast();
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
-  useEffect(() => setDraft(value), [value]);
+  useOnChange(value, (v) => setDraft(v));
 
   if (!isOwner) {
     return value ? <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', color: 'var(--fg-dim)', marginTop: 10, maxWidth: 560 }}>{value}</p> : null;

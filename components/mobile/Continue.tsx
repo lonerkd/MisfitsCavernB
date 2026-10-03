@@ -7,7 +7,7 @@
 // Shift — script, 20 min ago". The offer is waved off per device, and taking
 // it switches to the right project first (Studio follows the active project).
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ArrowRight, Laptop, Smartphone, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
@@ -27,7 +27,7 @@ export function PlaceTracker() {
   const { isAuthenticated } = useSession();
   const { activeProject } = useProject();
   const project = useRef(activeProject);
-  project.current = activeProject;
+  useLayoutEffect(() => { project.current = activeProject; });
 
   useEffect(() => {
     if (!isAuthenticated) return;

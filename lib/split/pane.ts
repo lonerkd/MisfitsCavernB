@@ -7,7 +7,7 @@
 // script's caret can bring the Studio to the same scene, and the Studio can
 // send the script to a scene.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DEFAULT_LAYOUT, companionOf, isSplitMessage, layoutToSearch, SPLIT_KEY, type SplitMessage } from './core';
 
 export * from './core';
@@ -48,7 +48,7 @@ export function postToSplit(msg: SplitMessage): boolean {
 /** Messages relayed from the other pane. */
 export function useSplitMessages(handler: (msg: SplitMessage) => void) {
   const ref = useRef(handler);
-  ref.current = handler;
+  useLayoutEffect(() => { ref.current = handler; });
   useEffect(() => {
     if (!inPane()) return;
     const onMessage = (e: MessageEvent) => {

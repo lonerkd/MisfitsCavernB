@@ -7,7 +7,7 @@
 // idempotently (newer updated_at wins), and every (re)connect reloads, so a
 // dropped socket can't leave the list silently stale.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 
@@ -49,7 +49,7 @@ export function useLiveRows<T extends Row>(opts: LiveRowsOptions<T>): LiveRows<T
   const [status, setStatus] = useState<LiveStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const optsRef = useRef(opts);
-  optsRef.current = opts;
+  useLayoutEffect(() => { optsRef.current = opts; });
   const generation = useRef(0);
   // Writes applied locally, so a reload that started before them can't erase
   // them (its snapshot may predate the write).

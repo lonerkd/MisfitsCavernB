@@ -40,6 +40,8 @@ export function EditorLeftNav({
   sceneCharMap, actStructure,
   jumpToScene, reorderScenes, dragSceneIdx, setDragSceneIdx, dropSceneIdx, setDropSceneIdx,
 }: EditorLeftNavProps) {
+  const openImport = () => fileInputRef.current?.click();
+  const toggleTitleEditor = () => setShowTitleEditor(!showTitleEditor);
   return (
     <>
               <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
@@ -68,10 +70,10 @@ export function EditorLeftNav({
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 7 }}>
                   {[
-                    { icon: FileUp, label: 'Import', onClick: () => fileInputRef.current?.click() },
-                    { icon: Book,   label: 'Title',  onClick: () => setShowTitleEditor(!showTitleEditor) },
-                  ].map(({ icon: Icon, label, onClick }) => (
-                    <button key={label} onClick={onClick} style={{
+                    { icon: FileUp, label: 'Import' },
+                    { icon: Book,   label: 'Title' },
+                  ].map(({ icon: Icon, label }) => (
+                    <button key={label} onClick={label === 'Import' ? openImport : toggleTitleEditor} style={{
                       flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                       background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.06)',
                       padding: '6px', borderRadius: 8,

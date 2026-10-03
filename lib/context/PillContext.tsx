@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -171,7 +171,7 @@ export function usePillZone(descriptor: PillDescriptor | null, depth = 1) {
   const idRef = useRef<string>(`zone-${++zoneSeq}`);
   const hovered = useRef(false);
   const latest = useRef(descriptor);
-  latest.current = descriptor;
+  useLayoutEffect(() => { latest.current = descriptor; });
 
   useEffect(() => {
     if (hovered.current && descriptor) updateZone(idRef.current, descriptor);

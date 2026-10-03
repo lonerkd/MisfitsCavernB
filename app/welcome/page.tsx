@@ -27,6 +27,7 @@ import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import type { GuideProfile } from '@/lib/guides/profile';
 import w from './welcome.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 type Step = 'craft' | 'guide' | 'why' | 'project';
 
@@ -70,7 +71,7 @@ export default function WelcomePage() {
   const [stage, setStage] = useState('idea');
   const { prefs, save: savePrefs } = useUiPrefs();
 
-  useEffect(() => { if (me?.role) setCraft((c) => c ?? me.role ?? null); }, [me?.role]);
+  useOnChange(me?.role, (role) => { if (role) setCraft((c) => c ?? role); });
   useEffect(() => { loadQuestions().then(setCatalogue).catch(() => setCatalogue([])); }, []);
 
   // The format's first development questions, in the catalogue's order.

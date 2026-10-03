@@ -20,6 +20,7 @@ import { ToolIntro } from '@/components/progress/ToolIntro';
 import { cx } from '@/components/studio/ui';
 import s from '@/components/studio/studio.module.css';
 import page from './studio-page.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 // Each tab's code loads when it's opened, so the Studio opens fast on a phone
 // (it used to ship every tab — the stripboard, money, post — up front).
@@ -99,7 +100,9 @@ export default function StudioPage() {
     const p = projects.find((x) => x.id === linked.project);
     if (p) setActiveProject(p);
   }, [linked, projects, activeProject?.id, setActiveProject]);
-  useEffect(() => { setPeeked(new Set(linked?.tab ? [linked.tab] : [])); }, [activeProject?.id, linked]);
+  const resetPeeked = () => setPeeked(new Set(linked?.tab ? [linked.tab] : []));
+  useOnChange(activeProject?.id, resetPeeked);
+  useOnChange(linked, resetPeeked);
   const setTab = useCallback((t: TabId, v?: ProductionView) => {
     setTabRaw(t, v);
     void reloadProgress();

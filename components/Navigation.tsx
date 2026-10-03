@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,7 +38,7 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useOnChange(pathname, () => setOpen(false));
 
   return (
     <>

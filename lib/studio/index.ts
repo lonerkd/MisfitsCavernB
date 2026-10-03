@@ -3,7 +3,7 @@
 // The app's Studio data layer: lib/studio/api.ts bound to the browser client,
 // plus live hooks. Import from '@/lib/studio' in UI code.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
@@ -225,7 +225,7 @@ export function useSceneIndexSync(scriptId: string | null, scenes: ParsedSceneIn
   const run = useRef(0);
   const signature = useMemo(() => (scenes ? JSON.stringify(scenes.map((s) => [s.heading, s.location, s.timeOfDay, s.characters, s.eighths])) : null), [scenes]);
   const latest = useRef(scenes);
-  latest.current = scenes;
+  useLayoutEffect(() => { latest.current = scenes; });
 
   const syncNow = useCallback(async () => {
     if (!scriptId || !latest.current) return;

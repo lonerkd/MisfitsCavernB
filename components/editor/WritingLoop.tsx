@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { Award, Check, Flame, Minus, Pause, Pencil, Play, Plus, RotateCcw, Target, X } from 'lucide-react';
 import type { WritingLoop } from '@/lib/writing';
 
@@ -9,38 +9,43 @@ type Toast = (msg: string, kind?: 'success' | 'error' | 'info') => void;
 /** A timed sprint that counts the words typed during it and logs itself when it ends. */
 export function useSprint(loop: WritingLoop, toast: Toast) {
   const [active, setActive] = useState(false);
+  // A sprint is under way: started and not yet finished or reset (it may be paused).
+  const [running, setRunning] = useState(false);
   const [left, setLeft] = useState(loop.sprintMinutes * 60);
   const [words, setWords] = useState(0);
-  const started = useRef(false);
 
   // A new length applies when no sprint is under way.
-  useEffect(() => { if (!started.current) setLeft(loop.sprintMinutes * 60); }, [loop.sprintMinutes]);
+  const [length, setLength] = useState(loop.sprintMinutes);
+  if (length !== loop.sprintMinutes) {
+    setLength(loop.sprintMinutes);
+    if (!running) setLeft(loop.sprintMinutes * 60);
+  }
 
+  // When the clock reaches zero: stop, say how it went, log the day.
+  const finish = useEffectEvent(() => {
+    setActive(false);
+    setRunning(false);
+    toast(`Sprint done — ${words} word${words === 1 ? '' : 's'}`, 'success');
+    void loop.flush(true);
+  });
+  const tick = useEffectEvent(() => {
+    if (left <= 1) { setLeft(0); finish(); } else setLeft(left - 1);
+  });
   useEffect(() => {
     if (!active) return;
-    const id = window.setInterval(() => setLeft((t) => Math.max(0, t - 1)), 1000);
+    const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [active]);
 
-  const finished = useRef(false);
-  useEffect(() => {
-    if (!active || left > 0 || finished.current) return;
-    finished.current = true;
-    setActive(false);
-    started.current = false;
-    toast(`Sprint done — ${words} word${words === 1 ? '' : 's'}`, 'success');
-    void loop.flush(true);
-  }, [active, left, words, loop, toast]);
-
   const start = useCallback(() => {
-    if (!started.current) { setWords(0); setLeft(loop.sprintMinutes * 60); finished.current = false; started.current = true; }
+    if (!running) { setWords(0); setLeft(loop.sprintMinutes * 60); setRunning(true); }
     setActive(true);
-  }, [loop.sprintMinutes]);
+  }, [running, loop.sprintMinutes]);
   const pause = useCallback(() => setActive(false), []);
-  const reset = useCallback(() => { setActive(false); started.current = false; setWords(0); setLeft(loop.sprintMinutes * 60); }, [loop.sprintMinutes]);
+  const reset = useCallback(() => { setActive(false); setRunning(false); setWords(0); setLeft(loop.sprintMinutes * 60); }, [loop.sprintMinutes]);
   const onType = useCallback((n: number) => { if (active) setWords((w) => w + n); }, [active]);
 
-  return { active, left, words, running: started.current, start, pause, reset, onType };
+  return { active, left, words, running, start, pause, reset, onType };
 }
 export type Sprint = ReturnType<typeof useSprint>;
 

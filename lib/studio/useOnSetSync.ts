@@ -4,7 +4,7 @@
 // straight through when they can, wait in this device's queue when they
 // can't, and the queue is sent in order as soon as the connection is back.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { studio } from './index';
 import { enqueue, isNetworkError, loadQueue, replay, saveQueue, type OnSetOp } from './onset-offline';
 
@@ -43,7 +43,7 @@ export function useOnSetSync(projectId: string, opts: { reload: () => Promise<un
   const queue = useRef<OnSetOp[]>([]);
   const busy = useRef(false);
   const optsRef = useRef(opts);
-  optsRef.current = opts;
+  useLayoutEffect(() => { optsRef.current = opts; });
 
   const store = useCallback((q: OnSetOp[]) => {
     queue.current = q;
