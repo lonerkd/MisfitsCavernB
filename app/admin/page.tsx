@@ -18,10 +18,6 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
   const loadStats = async () => {
     try {
       const platformStats = await getPlatformStats();
@@ -38,6 +34,10 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
 
   return (
     <ProtectedPage requiredPermission="manage_users">
@@ -119,6 +119,18 @@ export default function AdminDashboard() {
               }}
             >
               AUDIT LOGS
+            </Link>
+            <Link
+              href="/admin/errors"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 2,
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              ERRORS
             </Link>
           </div>
 

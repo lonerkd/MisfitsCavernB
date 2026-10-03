@@ -10,10 +10,299 @@
 4. `npm audit`: 5 vulnerabilities (1 moderate, 4 high) reported at install — triage pending
 5. Security advisor WARNs: public buckets (`sfx-library`, `studio-assets`) allow listing; `has_discord_webhook` executable by anon — review intent
 
+## Open work — start here
 
-## Latest Session — Type, layout and imagery tokens
+What is unfinished, so any session (local or cloud) can pick it up.
+
+1. **`e2e/onset-offline.spec.ts` fails on Windows with the older local
+   Chromium (1228)** — after an offline reload the day stays on "Loading the
+   schedule…". Same on plain `main`; passes in CI. Check on a second machine
+   (see the island session below).
+2. **For the owner, outside the code:**
+   - have a lawyer read `/privacy` and `/terms`;
+   - switch on leaked-password protection (Supabase dashboard › Auth ›
+     Passwords).
+3. **React Compiler lint warnings.** Still `warn` in `eslint.config.mjs`:
+   `set-state-in-effect`, `refs`, `preserve-manual-memoization` (counts in the
+   latest session below). Rework that code a module at a time
+   (`npx eslint <file>` lists them), then turn each rule back to `error`.
+4. **Open PRs**: #111 (Studio tab scroll, stacked on this branch). Two stashes
+   from June–July (`stash@{1}`, `stash@{2}`) predate the rewrites and were
+   never reconciled — look before dropping.
+
+Done since this list was written: the advisor-fixes migration is in production
+(below), dialogs open above the dock — which is now the island (below), lint
+pass 1 (below), and #115 is merged.
+
+## Latest Session — Main merged into the design scales (lint pass 1, dialog layer, icons)
+
+No migration.
+
+- `main` merged into this branch (PR #96): #115 (lucide-react), #117 (dialogs
+  above the dock) and #118 (lint pass 1). Where both sides touched a line, the
+  design scales' values won (11px text floor, radius scale, width tokens,
+  16px dialog gutter) and main's structure stayed: error pages link home with
+  `<Link>`, `purity` / `static-components` / `immutability` are errors, the
+  layout guard checks a dialog's button isn't covered. The island dock kept
+  its rewrite (main's only dock change was in the carousel the island removed).
+- On the merged tree: types, lint (0 errors, 121 warnings: `set-state-in-effect` 93,
+  `refs` 21, `preserve-manual-memoization` 7), 452 unit tests, build and the
+  page-weight budget pass.
+
+## Earlier — Lint pass 1 (on main): what the React Compiler rules caught
+
+No migration.
+
+- **148 → 122 warnings; `immutability`, `purity` and `static-components` are
+  errors again** (each reached zero). What they found:
+  - **Effects calling functions declared below them** (admin, admin users,
+    crew, jobs, portfolio manage, the dock's cleanup; the editor's key
+    handler and Split listener): moved below, unchanged. Worked at runtime,
+    but the compiler couldn't prove it. (`set-state-in-effect` rose 90 → 94:
+    it can now see into those functions.)
+  - **Time read while rendering** (job "days ago", Lounge activity, project
+    timeline): `useNow()` (`lib/hooks/useNow.ts`) reads it once per mount.
+    The Lounge loading skeleton's random bar widths, which differed between
+    server and browser, are fixed.
+  - **Button's `MotionLink` was created inside the component**, so every
+    render made a new component type and remounted the link (losing its
+    hover/tap state). Made once, at module level.
+- Error pages' "Go home" / "Back to projects" are `<Link>`s, not buttons that
+  set `window.location`; jobs' "sign in to apply" and profile sign-out use the
+  router (profile now matches Settings and ⌘K).
+- Unused `eslint-disable` comments removed; `eslint.config.mjs` exports a named
+  config.
+
+## Earlier — Dialogs open above the dock (on main; the island carries the same layer)
+
+No migration.
+
+- **One layer for dialogs: `--z-modal` (99990)** in `globals.css`, with the
+  stacking order written beside it: dock 9999, phone tab bar 10000, dialogs
+  99990, toasts 99997, Confirm 99998. On a short screen the dock had covered
+  the bottom of dialogs below it — their Create/Save buttons.
+- Moved onto it: Start a project, the job dialog, the portfolio Project
+  Bible, the editor's title, Character Bible and shortcuts dialogs and its
+  error screen, Recruit Talent (crew boards), the pitch deck presenter, the
+  phase-unlock reveal, and (already above the dock, now on the token) the
+  Lounge and Studio dialogs. Every new full-screen dialog uses
+  `zIndex: 'var(--z-modal)'` (or `z-index: var(--z-modal)` in CSS).
+- Dialogs that are wider or taller than a phone now fit it and scroll inside
+  (`maxWidth`/`maxHeight: 100%`, `overflowY: auto`, 20px gutter).
+- Left as they are: the landing page's header menu (`Navigation`, a top
+  header, not a dialog) and the Studio drop hint (it ignores the pointer).
+- Test: `e2e/layout.spec.ts` opens Start a project on a 640px-tall desk
+  screen, scrolls it to the end and checks the Create button is what is drawn
+  there; on the old code the dock was.
+
+## Earlier — The island, and dialogs above it
+
+No migration.
+
+- **The dock is now an island** (`components/EcosystemTaskbar.tsx`,
+  `components/island/`, `lib/island/`): one surface that rests as a small pill
+  (where you are + the page's lead number), shows a hovered zone's controls,
+  opens to the whole suite when reached for or pressed, holds a keyboard deck
+  open under Caps Lock (1–6 apps, Q–I the page's controls, / search,  split,
+  P project, Esc), and shrinks to a dot while you type. Shapes and why:
+  `lib/island/mode.ts`; every route's fallback name and next places:
+  `lib/island/routes.ts`. Pressing the pill keeps it open (it never presses
+  the control that slides in under the pointer). See routing-and-surface.md.
+- **It no longer costs pages their bottom edge**: `--taskbar-height` is the
+  resting footprint (64px) and doesn't change as it opens; Lounge and editor pad
+  only their centre column, so channel lists and side panels reach the foot of
+  the screen.
+- **Dialogs sit above it**: `--z-modal: 99990` (layer order in `globals.css`).
+  Every full-screen dialog uses it and fits a phone screen. Four that lived
+  inside a page's own layer (pitch presenter, Recruit, phase-unlock reveal,
+  the editor's panel-error screen) are portalled to `<body>` — z-index alone
+  could not lift them over the Studio header or the island.
+- Lounge and editor now offer real island actions (search messages, pinned,
+  find & replace); the shortcuts panel (`?`) lists the Caps Lock keys.
+- Tests: `lib/island/island.test.ts`, `e2e/island.spec.ts`, `e2e/layout.spec.ts`
+  (rewritten for the island), `e2e/search.spec.ts` (opens search from the
+  island). Checked at 390×844, 820, 1280 and a short 1280×560 desk.
+- **Settings › Island size** (was "Taskbar Scale", which saved a number nothing
+  read): `lib/island/scale.ts`. The island resizes as the slider moves, its
+  text never drops under 11px, and `--taskbar-height` follows (64px at 1×).
+- **Sign-in keeps what you typed before the page was interactive** (`app/auth`):
+  the controlled fields used to blank on the first re-render — it lost fast
+  typing and autofill, and was why e2e sign-ins flaked under load.
+- Labelled loading skeletons (brief, phase panel, breakdown) now have
+  `role="status"` — axe flagged the bare `aria-label` when it caught one.
+
+- **Merged with main (Next 16 / React 19)**: the two design lint rules (11px
+  text floor, radius scale) moved from the deleted `.eslintrc.json` into
+  `eslint.config.mjs`. On the merged tree: types, lint (0 errors), unit tests,
+  build and budget pass; e2e 69 of 70. The one failure, `onset-offline.spec.ts`
+  (the day doesn't reopen from the device's copy after an offline reload —
+  stuck on "Loading the schedule…"), fails the same way on plain `main` on
+  this Windows machine with the older local Chromium (1228), and passes in
+  main's CI. Worth a look on a second machine before trusting either result.
+  Locally, Playwright 1.63 wants a newer browser: run with
+  `MC_LOCAL_CHROMIUM=<path to an installed chrome.exe>` or `npx playwright install`.
+
+## Earlier — Type, layout and imagery tokens
 
 Direction in `docs/DESIGN_DIRECTION_2026-09.md`. Text floor 11px, radii and container widths snapped to the scales in `globals.css`, Courier Prime loaded as `--script`, lint enforces text size and radius. **Checked in a browser** (local Supabase, production build, 1280px): breakdown and stripboard show no wrapping or overflow and pass axe; stripboard strip headings and cast lines ellipsize by design in the 256px day column. Checked at 1024 and 768 too: fixed the empty-state icon (invalid margin, not centred) and hid the editor beat-rail labels below 1100px, where they overlapped the script.
+
+## Earlier — What the database advisors found
+
+Migration `20260930010000_advisor_fixes.sql`, **applied to production on
+2026-10-01** (PR #116). Production was at main's fingerprint before (1671
+lines) and matches `supabase/schema.fingerprint` after (1738 lines, md5
+`e2b521d7788f2796b7b3d0c9dc42600f`); the advisors, re-run, no longer flag
+`sfx_assets`, per-row `auth.uid()` or unindexed foreign keys. What Supabase's
+security and performance advisors had found:
+
+- **Sound effects leaked across projects**: `sfx_assets` was readable by
+  anyone, signed in or not (`USING (true)`), though every sound belongs to a
+  project — Soundtrack › SFX listed everyone's. Now the uploader and anyone who
+  can open the project; only the uploader renames or removes. (No rows existed
+  in production, so nothing was exposed.) Test shown to fail on the old rule.
+- **auth.uid() once per query** in the 9 policies that still called it per row
+  (Spotify connections, portfolio blocks, script annotations, Discord
+  webhooks, sound effects).
+- **Writes split from reads**: 12 tables had a `FOR ALL` write policy beside a
+  `SELECT` policy, so every read ran both; the writes are now INSERT / UPDATE /
+  DELETE policies (same people, same rules). Portfolio media had the same
+  owner policy twice — one set now. Job applications: one read policy.
+- **47 foreign keys got covering indexes** — joins, and the `ON DELETE`
+  actions behind account deletion, no longer scan whole tables.
+- Left as they are, on purpose: the advisors' "SECURITY DEFINER callable"
+  warnings (those are the app's RPCs, each checking the caller itself),
+  "unused index" notes (little traffic yet), and the two `jobs` read policies
+  (`internal.applied_to` isn't granted to anon).
+- **Yours to switch on**: leaked-password protection (Supabase dashboard ›
+  Auth › Passwords).
+- Tests: `tests/integration/advisor-fixes.test.ts` (sound effects as owner,
+  crew, outsider, signed out; portfolio owner-only writes); the whole
+  integration suite (43 files) passes on the rewritten policies.
+
+## Earlier — Next 16 and React 19
+
+No migration.
+
+- **Next 16.3 + React 19.3** (Dependabot #103), ESLint 9, `eslint-config-next`
+  16. What it took:
+  - `middleware.ts` → **`proxy.ts`** (`export async function proxy`) — Next 16
+    renamed the convention; the gating is unchanged.
+  - Dead webpack externals (`pino-pretty`, `lokijs`, `encoding` — nothing uses
+    them) removed from `next.config.js`.
+  - Two ref props typed `RefObject<… | null>` (React 19 types).
+  - **Lint on the ESLint CLI** (`next lint` is gone): `eslint.config.mjs`
+    (flat config, Next's core-web-vitals rules), `npm run lint` = `eslint .`,
+    the pre-commit hook lints staged files with `eslint`. The React Compiler
+    rules that came with it (react-hooks v7: set-state-in-effect, refs,
+    immutability, purity…) flag ~140 existing patterns; they are **warnings**
+    until that code is reworked — `npm run lint` shows them.
+- **Built with webpack, not Turbopack** (`next build --webpack`; `vercel.json`
+  pins Vercel to `npm run build`). Measured in a browser, gzipped JS a first
+  visit loads: Next 15 / Next 16 webpack / Next 16 Turbopack — `/` 367 / 360 /
+  391 kB, `/auth` 348 / 341 / 374 kB, `/showcase` 378 / 397 / 427 kB. React 19
+  costs ~nothing; Turbopack's chunking costs 25–50 kB a page, so it waits.
+  `next dev` uses Turbopack (fast, no bundle cost).
+- **Sign-in page**: the validator (zod) loads on submit, not with the page.
+- **Page-weight budget** reads Next 16's per-page manifests (webpack or
+  Turbopack); `performance-budget.json` re-baselined on this build (the new
+  count includes every client module a page's tree references, so the numbers
+  are higher than before for the same code — compare only against themselves).
+- **Dependabot no longer opens major-version PRs** (`ignore` semver-major for
+  npm and Actions): those are migrations, done on purpose like this one.
+
+## Earlier — Dependency updates (1/2): patches, Vitest 5, and what the new checker found
+
+No migration.
+
+- Minor/patch updates (Dependabot #108's set): `@supabase/ssr` 0.12.7,
+  `fast-average-color`, `zustand`, `@playwright/test` 1.63, `autoprefixer`,
+  `axe-core` 4.13, `pg`, `postcss`; `actions/setup-node` v7 (#101).
+  Already merged from Dependabot: `actions/checkout` v7, `actions/upload-artifact`
+  v7, `framer-motion` 13.
+- **axe-core 4.13 found real low-contrast text**: the project page's
+  department labels (Script, Studio, Jobs…) in theme colours at 7.5px were
+  3.7–4.4:1 (need 4.5:1) — `readable()` can't measure `var(--…)` colours, and
+  an `opacity: 0.85` made it worse. Theme colours are now mixed toward the
+  text colour; the accessibility and themes e2e pass under the new checker.
+- **Vitest 5** (Dependabot #104) with `@types/node` 22: all unit and integration tests pass unchanged.
+
+## Earlier — Privacy Policy and Terms
+
+No migration.
+
+- **`/privacy` and `/terms`**, public, for Peter Olowude (an individual, not
+  yet a registered business) in Alberta, Canada; contact
+  peterolowude@icloud.com — all in `lib/legal.ts` (change there, and move
+  `effective` forward whenever the wording changes).
+- Written to match what the app does: what's collected (account, profile,
+  work, preferences, error reports kept 30 days, cookieless Vercel
+  analytics), who handles it (Supabase, Vercel, Discord, Spotify, Have I Been
+  Pwned's k-anonymity check, Openverse, embeds), PIPEDA rights mapped to real
+  controls (export, edit, Settings › Delete account), what account deletion
+  keeps ("Deleted account" in others' projects). Terms: users own their work
+  (a licence only to run the service), collaboration and hand-over rules,
+  acceptable use, Canadian notice-and-notice, "as is", CAD $100 liability cap,
+  Alberta law. **Not legal advice** — worth a lawyer's read before launch.
+- Linked from the landing footer, the sign-up form ("By creating an account
+  you agree to…") and the foot of Settings. The landing footer now clears the
+  dock (`--taskbar-height`) — its links were underneath it.
+- Test: `e2e/legal.spec.ts` (public, names the operator and contact, no
+  sideways scroll at 390px, reachable from the landing page and sign-up).
+
+## Latest Session — Leaving the suite (and handing a project over)
+
+Migration `20260929090000_account_deletion.sql` (`transfer_project`,
+`account_deletion_plan`, `delete_my_account`; 22 author links now clear
+instead of blocking or cascading).
+
+- **Settings › Delete account**: anyone can delete their account. Projects
+  other people are crew on never go with it — the panel lists them, each with a
+  **Hand over** to someone confirmed on its crew (or open it and delete it
+  yourself); the delete button stays off until none are left. Then the
+  username, typed, and a final confirm.
+- **What goes**: the account, profile, the projects only they work on (every
+  script, file and note in them — files removed through the Storage API first,
+  as SQL can't), portfolio, job posts, applications, notifications and direct
+  messages. **What stays**: what they wrote in other people's projects —
+  script edits, shots, notes, channel messages, timesheets, audit entries —
+  with the author cleared and shown as "Deleted account". A job they posted on
+  someone else's project passes to that project's owner.
+- **Handing a project over** (`transfer_project`): owner only, to a confirmed
+  crew member; the new owner leaves the crew list, the old owner stays on as a
+  lead, and the project's job posts move with it.
+- The last admin can't delete their account (make someone else admin first).
+- Tests: `tests/integration/account-deletion.test.ts` (who may hand over; what
+  goes and what stays, row by row; refused while owning a shared project, with
+  the wrong username, or signed out), `e2e/account-deletion.spec.ts` (hand
+  over, then delete, from Settings). Checked at 390px and 1440px.
+- The `profiles.is_admin` "open finding" below was already fixed by
+  `20260926030000_privacy_and_integrity.sql` (column grants; `get_my_account`)
+  — confirmed in production: neither anon nor authenticated can read
+  `is_admin` or `notification_prefs`.
+
+## Earlier — Hearing about problems in production
+
+Migration `20260929080000_client_errors.sql` (`client_errors`, `report_client_error`).
+
+- **The suite reports its own errors**: every crash screen (`app/error.tsx`,
+  the admin one, and the new `app/global-error.tsx` for the root layout) and
+  every uncaught error / unhandled rejection in the browser
+  (`components/ErrorReporter.tsx`) goes to `client_errors` via
+  `lib/errors/report.ts` — message, stack, page (no query string), build,
+  browser, and who (if signed in). Browser noise is ignored; each error is
+  sent once per visit, at most 10 per visit.
+- **Admin › Errors** (`/admin/errors`): grouped by message and page, with
+  count, people affected, last seen, build and a stack; cleared once fixed.
+- The log is safe to expose: anyone can report (signed-out pages count), but
+  only through the function, which trims fields and rate-limits (20/min per
+  person, 60/min signed out); only admins read or clear; 30 days kept.
+- **Vercel Analytics + Speed Insights** (cookieless) on Vercel builds only —
+  enable Web Analytics / Speed Insights in the Vercel project to see data.
+- Tests: `lib/errors/report.test.ts`, `tests/integration/client-errors.test.ts`
+  (personas, trimming, junk, rate limit, no direct writes, admin-only read and
+  clear), `e2e/errors.spec.ts` (an uncaught error is logged once and cleared
+  from Admin › Errors).
+
 
 ## Latest Session — The workflow that guards the suite
 
@@ -38,83 +327,4 @@ No migration.
 - Dependabot, a PR template, CODEOWNERS, git hooks (lint on commit; types +
   tests on push), Node pinned (`.nvmrc`), `npm run stack:up` for the local
   stack, a wider command allowlist. See tools-and-access.md §7.
-
-## Earlier — Polish: nothing hidden behind the dock
-
-
-No migration.
-
-- **The dock shows every app**: its strip snapped icons to the centre, which
-  with an even number of apps cut one off at each end at desk sizes. It now
-  snaps from the start, in the same whole-icon steps as its own drag/fling.
-- **The dock says how much room it takes**: it publishes `--taskbar-height`
-  (its real height + gap; 0 where it's hidden — phones, sign-in, split,
-  shared pages). The Lounge is exactly one screen tall and ends above it, so a
-  long channel list no longer pushes the composer (and Send) under the dock;
-  the editor's footer sits above it too. Every page already using
-  `var(--taskbar-height, 94px)` now gets the true value.
-- **Editor**: the beat timeline (Setup, Break into Two, Midpoint…) no longer
-  draws over the story map — it shows only when that sidebar is closed. The
-  right panel's six tabs keep their labels inside their own tab.
-- **Today on a desk**: the Lounge card sits beside "Yours to do" and
-  "Updates", as tall as both — no hole under it.
-- Projects search placeholder fits ("Search projects, people…").
-- **Crew directory**: the search is one compact row like the Projects board
-  (icon inside, 40px tall), with matching All / Open / Busy buttons (a
-  labelled group, pressed state announced) — it was a tall floating-label
-  field with the filters stretched into tall boxes beside it.
-- Verified in screenshots at 1440×900; lounge, mobile, accessibility, Studio
-  journey and themes e2e pass.
-
-## Earlier — Faster to open (phones first)
-
-
-No migration.
-
-- **Studio opens with only the tab you're on**: each tab, and each Production
-  view (stripboard, money, On Set…), loads when opened — first load 376 kB →
-  272 kB.
-- **The editor opens without the PDF engine**: jsPDF loads when you export a
-  PDF, the revision diff when you open it — first load 478 kB → 347 kB. PDF
-  export verified end to end (a real `%PDF` download).
-
-## Earlier — Pocket: the suite on the go
-
-Migration `20260929070000_pocket.sql` (a `note` kind of library item; `ui_prefs.places`).
-
-- **Capture** — the centre tab on a phone. A photo or clip from the camera, a
-  **voice memo** (written down as you talk where the browser can: each
-  sentence becomes a transcript line stamped at its moment in the recording,
-  so it's findable and ready for the paper edit), a **note**, a **link**, or
-  anything from files — into the project you pick, two taps. It's in Studio ›
-  Library on every device at once.
-- **Nothing is lost without signal**: every capture is kept on the phone first
-  (IndexedDB outbox, `lib/pocket/outbox.ts`) and sent from there — at once when
-  online, otherwise when the connection is back or the app comes to the front.
-  What's waiting shows in Capture (retry / discard) and as a badge on the tab.
-- **Share into the suite**: installed as an app, Misfits Cavern is in the
-  phone's share menu — a link shared from any app lands as a link, text as a
-  note (manifest `share_target`). The home-screen icon opens Today, and a long
-  press offers Capture, Today and the Lounge.
-- **Notes are library items** (`media.kind = 'note'`): words only, never in a
-  share link (enforced in the database). Desktop Library has "Note" beside
-  "Add link"; notes read as cards, filter as Notes, and are found by search.
-- **Continue on the other device**: the suite remembers the last place worth
-  coming back to on a phone and on a desk (a script, a Studio tab or view, a
-  project page, a conversation) in the account (`ui_prefs.places`). Today —
-  and the first page of a visit on the desk — offers "Continue from your
-  desktop · 20 min ago: Night Shift — script", switching to the right project
-  first. Waved off per device.
-- Search moved into More on the phone ("Search everything"), with a search
-  button on Today.
-- **Small print is readable on a phone**: every size under 10px suite-wide is
-  now `max(Npx, var(--mc-min-font))` — unchanged on a desk, 11px at phone
-  width (the 390px audit's sub-10px text went from dozens per page to ~0, with
-  no new sideways scroll). `.mc-hit` gives small controls (the project page's
-  module switches, inline links, "Show all") a thumb-sized touch area on touch
-  screens without changing their look.
-- Tests: `lib/pocket/places.test.ts`, `lib/pocket/capture.test.ts`,
-  `tests/integration/pocket.test.ts` (notes by persona, never shared, words
-  only; places validated and private), `e2e/mobile.spec.ts` (Continue from the
-  desk, capture a note, share a link in, the phone's place saved).
 

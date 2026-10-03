@@ -7,33 +7,77 @@
 //
 //   npm run budget            check against the budget
 //   npm run budget -- --update rewrite the budget from this build (+10% headroom)
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+//
+// Reads the per-page client manifests (Next 16, webpack or Turbopack), or
+// webpack's app-build-manifest.json from older builds.
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const manifestPath = path.join(root, '.next', 'app-build-manifest.json');
+const next = path.join(root, '.next');
 const budgetPath = path.join(root, 'performance-budget.json');
-if (!existsSync(manifestPath)) {
-  console.error('No build found (.next/app-build-manifest.json) — run `npm run build` first.');
+
+/** route → the JS files a first visit loads (relative to .next). */
+function pageChunks() {
+  const webpack = path.join(next, 'app-build-manifest.json');
+  if (existsSync(webpack)) {
+    const pages = JSON.parse(readFileSync(webpack, 'utf8')).pages;
+    const layout = pages['/layout'] ?? [];
+    return Object.entries(pages)
+      .filter(([key]) => key.endsWith('/page'))
+      .map(([key, chunks]) => [key.slice(0, -'/page'.length) || '/', [...layout, ...chunks]]);
+  }
+
+  const appDir = path.join(next, 'server', 'app');
+  const buildManifest = path.join(next, 'build-manifest.json');
+  if (!existsSync(appDir) || !existsSync(buildManifest)) return null;
+  const rootMain = JSON.parse(readFileSync(buildManifest, 'utf8')).rootMainFiles ?? [];
+  const out = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) { walk(full); continue; }
+      if (name !== 'page_client-reference-manifest.js') continue;
+      const sandbox = { globalThis: {} };
+      sandbox.globalThis = sandbox;
+      vm.runInNewContext(readFileSync(full, 'utf8'), sandbox);
+      for (const [key, manifest] of Object.entries(sandbox.__RSC_MANIFEST ?? {})) {
+        if (!key.endsWith('/page')) continue;
+        const route = key.slice(0, -'/page'.length).replace(/\/\([^)]+\)/g, '') || '/';
+        // Turbopack lists a page's chunks under entryJSFiles; webpack (Next 16)
+        // under each client module's chunks, as [id, file, id, file…].
+        const entry = Object.values(manifest.entryJSFiles ?? {}).flat();
+        const modules = Object.values(manifest.clientModules ?? {})
+          .flatMap((m) => m.chunks ?? [])
+          .filter((c) => typeof c === 'string' && c.endsWith('.js'))
+          .map((c) => decodeURIComponent(c.replace(/^\/_next\//, '')));
+        out.push([route, [...rootMain, ...entry, ...modules]]);
+      }
+    }
+  };
+  walk(appDir);
+  return out;
+}
+
+const pages = pageChunks();
+if (!pages?.length) {
+  console.error('No build found in .next — run `npm run build` first.');
   process.exit(1);
 }
 
-const pages = JSON.parse(readFileSync(manifestPath, 'utf8')).pages;
 const gz = new Map();
 const size = (chunk) => {
-  if (!gz.has(chunk)) gz.set(chunk, gzipSync(readFileSync(path.join(root, '.next', chunk))).length);
+  if (!gz.has(chunk)) gz.set(chunk, gzipSync(readFileSync(path.join(next, chunk))).length);
   return gz.get(chunk);
 };
-const layout = pages['/layout'] ?? [];
 const kb = (bytes) => Math.round(bytes / 102.4) / 10;
 
-const measured = Object.entries(pages)
-  .filter(([key]) => key.endsWith('/page'))
-  .map(([key, chunks]) => {
-    const route = key.slice(0, -'/page'.length) || '/';
-    const files = [...new Set([...layout, ...chunks])].filter((c) => c.endsWith('.js'));
+const measured = pages
+  .map(([route, chunks]) => {
+    const files = [...new Set(chunks)].filter((c) => c.endsWith('.js'));
     return { route, kb: kb(files.reduce((sum, c) => sum + size(c), 0)) };
   })
   .sort((a, b) => b.kb - a.kb);

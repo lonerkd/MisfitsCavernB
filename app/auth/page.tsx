@@ -12,7 +12,6 @@ import { useToast } from '@/components/Toast';
 import { osSignIn as signIn, osSignUp as signUp, useSession } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
-import { signInSchema, signUpSchema, firstIssue } from '@/lib/validation';
 import { supabase } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
@@ -34,7 +33,16 @@ export default function AuthPage() {
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    // Keep what was typed (or autofilled) before the page became interactive:
+    // the fields are controlled, so the first re-render would blank them.
+    const field = (name: string) => (formRef.current?.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
+    const email = field('email');
+    const password = field('password');
+    if (email || password) setForm((prev) => ({ ...prev, email: email || prev.email, password: password || prev.password }));
+    setHydrated(true);
+  }, []);
 
   // ── Where to land after auth ─────────────────────────────────────
   // middleware.ts sends gated visitors here as /auth?redirect=<path>. Honour it
@@ -66,6 +74,9 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // The validator (zod) loads on submit, not with the page — it is most of
+    // the sign-in page's weight otherwise.
+    const { signInSchema, signUpSchema, firstIssue } = await import('@/lib/validation');
 
     if (mode === 'signup') {
       const parsed = signUpSchema.safeParse({
@@ -246,7 +257,7 @@ export default function AuthPage() {
           {/* method="post" + a submit button disabled until hydration: before the
               JS loads, a native submit would otherwise GET /auth?email=…&password=…,
               putting the password in the URL and browser history. */}
-          <form method="post" onSubmit={handleSubmit}>
+          <form ref={formRef} method="post" onSubmit={handleSubmit}>
             <Input
               name="email"
               label="Email"
@@ -317,6 +328,13 @@ export default function AuthPage() {
             >
               {mode === 'signin' ? 'Sign In' : 'Create Account'}
             </Button>
+            {mode === 'signup' && (
+              <p style={{ margin: '14px 0 0', fontSize: 11, lineHeight: 1.5, color: 'var(--fg-dim)', textAlign: 'center' }}>
+                By creating an account you agree to the{' '}
+                <Link href="/terms" style={{ color: 'var(--fg-muted)' }}>Terms</Link> and{' '}
+                <Link href="/privacy" style={{ color: 'var(--fg-muted)' }}>Privacy Policy</Link>.
+              </p>
+            )}
           </form>
 
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>

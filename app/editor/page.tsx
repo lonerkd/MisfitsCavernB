@@ -153,7 +153,6 @@ export default function EditorPage() {
     try { await deleteAnnotation(id); } catch (e: any) { toast(e?.message || 'Could not remove that note', 'error'); reloadAnnotations(currentScript.id); }
   }, [annotations, confirm, currentScript?.id, reloadAnnotations, toast]);
 
-
   const [scripts, setScripts] = useState<StoredScript[]>([]);
 
   const [showSidebar, setShowSidebar] = useState(true);
@@ -750,6 +749,43 @@ export default function EditorPage() {
     });
   }, [currentScript]);
 
+  const insertElement = (type: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+
+    const snippets: Record<string, string> = {
+      'scene': '\n\nINT. LOCATION - DAY\n\n',
+      'action': '\n\nAction description here.\n\n',
+      'character': '\n\nCHARACTER NAME\n',
+      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
+      'transition': '\n\nCUT TO:\n\n',
+      'note': '\n\n[[Note: ]]'
+    };
+
+    const snippet = snippets[type] || '';
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const before = content.substring(0, start);
+    const after = content.substring(end);
+
+    setContent(before + snippet + after);
+    setTimeout(() => {
+      editor.focus();
+      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
+    }, 0);
+  };
+
+  const acceptAutocomplete = (item: string) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const { start, end } = completionRange;
+    const next = content.substring(0, start) + item + content.substring(end);
+    setContent(next);
+    setShowAutocomplete(false);
+    const caret = start + item.length;
+    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+  };
+
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 
     if (showAutocomplete && autocompleteItems.length > 0) {
@@ -824,32 +860,6 @@ export default function EditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- acceptAutocomplete/insertElement are stable imperative helpers
   }, [content, lines, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
 
-  const insertElement = (type: string) => {
-    const editor = textareaRef.current;
-    if (!editor) return;
-
-    const snippets: Record<string, string> = {
-      'scene': '\n\nINT. LOCATION - DAY\n\n',
-      'action': '\n\nAction description here.\n\n',
-      'character': '\n\nCHARACTER NAME\n',
-      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
-      'transition': '\n\nCUT TO:\n\n',
-      'note': '\n\n[[Note: ]]'
-    };
-
-    const snippet = snippets[type] || '';
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const before = content.substring(0, start);
-    const after = content.substring(end);
-
-    setContent(before + snippet + after);
-    setTimeout(() => {
-      editor.focus();
-      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
-    }, 0);
-  };
-
   const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
     const rect = ta.getBoundingClientRect();
     const style = window.getComputedStyle(ta);
@@ -878,17 +888,6 @@ export default function EditorPage() {
     setCompletionRange({ start, end });
     setCursorPos(caretCoords(ta, end));
     setShowAutocomplete(true);
-  };
-
-  const acceptAutocomplete = (item: string) => {
-    const editor = textareaRef.current;
-    if (!editor) return;
-    const { start, end } = completionRange;
-    const next = content.substring(0, start) + item + content.substring(end);
-    setContent(next);
-    setShowAutocomplete(false);
-    const caret = start + item.length;
-    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1063,6 +1062,8 @@ export default function EditorPage() {
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
   jumpRef.current = jumpToScene;
+  // A cut note to open once its line is placed (?note=, or from the Studio pane).
+  const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useSplitMessages((msg) => {
     if (msg.type !== 'open-scene' || msg.scriptId !== currentScript?.id) return;
     const idx = sceneIds.indexOf(msg.sceneId);
@@ -1093,7 +1094,6 @@ export default function EditorPage() {
     catch (e) { toastRef.current(e instanceof Error ? e.message : 'Could not update the note', 'error'); }
   }, [sessionUser?.id, setCutNoteResolved]);
   // "In script" on a cut note (?note=, or from the Studio pane): go to its line and open it.
-  const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useEffect(() => {
     if (!pendingNote) return;
     const hit = [...cutNotesByLine.entries()].find(([, placed]) => placed.some((p) => p.note.id === pendingNote));
@@ -1112,7 +1112,7 @@ export default function EditorPage() {
       ta.scrollTop = Math.max(0, (line - 3) * lh);
       setCutNoteLine(line);
     }, 120);
-  }, [pendingNote, cutNotesByLine, content]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingNote, cutNotesByLine, content]);
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 
@@ -1128,6 +1128,9 @@ export default function EditorPage() {
       ],
       toggles: [
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
+      ],
+      actions: [
+        { id: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
       ],
     },
     [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, syncPending, focusMode],
@@ -1170,7 +1173,7 @@ export default function EditorPage() {
   const editorCtx: EditorCtx = { tools, cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
-    <div style={{ height: '100dvh', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && (
@@ -1228,7 +1231,8 @@ export default function EditorPage() {
           )}
         </AnimatePresence>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
+        {/* The island floats over the page column alone, so only it makes room; the panels either side run to the foot of the screen. */}
+        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
 
           {focusMode && (
             <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{
@@ -1379,8 +1383,8 @@ export default function EditorPage() {
 
       <AnimatePresence>
         {showTitleEditor && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowTitleEditor(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 480, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowTitleEditor(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Title Page</h2>
                 <button aria-label="Close" onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
@@ -1400,8 +1404,8 @@ export default function EditorPage() {
 
       <AnimatePresence>
         {showCharBible && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCharBible(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCharBible(false)}>
+            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
                 <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>

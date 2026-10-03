@@ -1,12 +1,12 @@
 # Routing & Surface Map — Misfits Cavern
 
 Every route in the app, how it's gated, which module owns it, and the key
-libs/components behind it. Auth gating is enforced in `middleware.ts` (real
+libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 `getUser()` JWT validation, **not** cookie presence).
 
 ---
 
-## 1. Gating tiers (`middleware.ts`)
+## 1. Gating tiers (`proxy.ts`)
 
 - **PUBLIC** — no auth: `/`, `/auth`, `/api/discord/*`, `/api/public/*`, plus
   everything not listed as protected/admin (this is how `/p/[token]`,
@@ -48,14 +48,16 @@ libs/components behind it. Auth gating is enforced in `middleware.ts` (real
 | `/crew`, `/crew/[id]` | protected | Crew directory | `lib/supabase/crew-management.ts`, `CrewManagementModal` |
 | `/portfolio`, `/portfolio/manage` | protected | Portfolio | `lib/supabase/portfolio.ts` |
 | `/profile` | protected | Profile | `lib/supabase/profiles.ts`, `stats.ts` |
-| `/settings` | protected | Settings | `profiles.notification_prefs`, leaked-password toggle |
+| `/settings` | protected | Settings | `profiles.notification_prefs`, leaked-password toggle, data export, **Delete account** (`components/settings/DeleteAccount.tsx`, `lib/account/deletion.ts`: hand shared projects over, then delete) |
 | `/showcase` | public | Showcase | public filmmaker directory |
+| `/privacy`, `/terms` | public | Legal | `app/privacy`, `app/terms`, `components/legal/LegalPage`, `lib/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
 | `/p/[token]` | **public** | Portfolio share | logged-out; RLS-gated on `is_public`/token |
 | `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` |
 | `/admin` | admin | Admin | dashboard |
 | `/admin/users` | admin | Admin | user management |
 | `/admin/analytics` | admin | Admin | `lib/supabase/stats.ts` |
 | `/admin/audit-logs` | admin | Admin | `lib/supabase/audit.ts` |
+| `/admin/errors` | admin | Admin | errors people hit, grouped (`client_errors`, reported by `lib/errors/report.ts`) |
 
 \* `/auth/spotify-callback` isn't in the protected list but is only reached
 mid-OAuth from an authed session.
@@ -96,13 +98,39 @@ Mounted for the whole app, in order (`app/layout.tsx`):
 Chrome lives in two places, and nothing else mounts itself globally:
 - `components/ClientShell.tsx` (root layout) renders `CustomCursor`,
   `CommandPalette` (⌘K), `ShortcutsOverlay`, `ThemeInitializer`,
-  `EcosystemTaskbar` (the desktop dock; embeds `NotificationBell`) and
-  `MobileTabBar`. CSS decides which navigation shows: at ≤760px the dock
+  `EcosystemTaskbar` (the island — see below; embeds `NotificationBell`) and
+  `MobileTabBar`. CSS decides which navigation shows: at ≤760px the island
   (`.mc-dock`) is hidden and the tab bar shows — Today · Projects · Capture ·
   Lounge (unread badge) · More (a sheet with Search, every tool, the active
-  project, and the page's dock context actions as "On this page"). The tab bar
+  project, and the page's island actions as "On this page"). The tab bar
   hides on the editor (full-screen writing), split, auth and public pages, and
   slides away while a field has focus (the keyboard needs the room).
+- **The island** (`components/EcosystemTaskbar.tsx`, `components/island/island.module.css`,
+  `lib/island/*`): one floating surface at the foot of the screen whose shape
+  follows what the person is doing (`lib/island/mode.ts`, unit-tested) —
+  `rest` (a pill: where you are + the page's lead number), `context` (the
+  controls of the page zone under the pointer, `usePillZone`), `live` (an
+  `emit()` event), `open` (pointer/focus on it, a menu of its open, or pinned by
+  pressing it: the suite strip above, the page's numbers and controls beside the
+  dot), `caps` (Caps Lock: the same deck held open with a key on every control —
+  1–6 apps, Q–I controls, / search,  split, P project, Esc puts it away) and
+  `dot` (typing in a field). The mode is on `nav[data-island]`. A page describes
+  itself with `usePillStage` (title, fields, toggles, actions); a page that
+  doesn't still gets a name and next places from `lib/island/routes.ts` — add a
+  route there when adding a page. Its size is a per-device
+  setting (Settings › Island size, `lib/island/scale.ts`, CSS `--island-scale`).
+  It overlays: `--taskbar-height` is its resting
+  footprint only (64px at 1×, 0 on phones and chrome-less routes) and never changes as
+  it opens. Scrolling pages pad their end by it; full-height pages (Lounge,
+  editor) pad only the centre column it floats over, so side panels reach the
+  foot of the screen.
+- **Layers** (`--z-modal` in `app/globals.css`): island 9999 / phone tab bar
+  10000 < full-screen dialogs `var(--z-modal)` 99990 < toast 99997 < confirm
+  99998 < cursor 99999 < command palette / diff 100000. A full-screen dialog
+  uses `zIndex: 'var(--z-modal)'`, fits the screen (`maxHeight: '100%'`,
+  `overflowY: 'auto'`, padded scrim) and, if it is rendered inside a page layer
+  with its own stacking context (Studio's content, a project's body, a sliding
+  sidebar), is portalled to `document.body`.
 - Pocket (`components/mobile/Capture.tsx`, `Continue.tsx`, `lib/pocket/*`),
   also from `ClientShell`: `OutboxFlusher` sends captures kept on the device
   (IndexedDB) when online / back in front; `PlaceTracker` saves the last

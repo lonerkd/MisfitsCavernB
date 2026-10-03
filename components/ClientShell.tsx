@@ -6,6 +6,7 @@ const CustomCursor = dynamic(() => import('@/components/CustomCursor'), { ssr: f
 const EcosystemTaskbar = dynamic(() => import('@/components/EcosystemTaskbar'), { ssr: false });
 const CommandPalette = dynamic(() => import('@/components/CommandPalette'), { ssr: false });
 const ShortcutsOverlay = dynamic(() => import('@/components/ShortcutsOverlay'), { ssr: false });
+const ErrorReporter = dynamic(() => import('@/components/ErrorReporter'), { ssr: false });
 const ThemeInitializer = dynamic(() => import('@/components/ThemeInitializer'), { ssr: false });
 const MobileTabBar = dynamic(() => import('@/components/mobile/MobileTabBar'), { ssr: false });
 const PlaceTracker = dynamic(() => import('@/components/mobile/Continue').then((x) => x.PlaceTracker), { ssr: false });
@@ -21,6 +22,7 @@ export default function ClientShell() {
   if (useInPane()) return <PaneReporter />;
   return (
     <>
+      <ErrorReporter />
       <SplitShortcut />
       <ServiceWorkerRegister />
       <CustomCursor />

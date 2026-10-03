@@ -3,10 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Layout guard at desk size: the floating dock never hides anything. Every app
-// in its strip is fully visible, and the controls at the bottom of full-height
-// screens (the Lounge composer and Send, the editor's footer) sit above it.
-// These broke silently once; this keeps them from breaking again.
+// Layout guard at desk size: the island never hides anything, and never costs
+// the page its bottom edge. Opened, every app in its strip is fully visible; at
+// rest, the controls at the foot of full-height screens (the Lounge composer
+// and Send, the editor's footer) sit above it while the lists and panels either
+// side run to the foot of the screen. These broke silently once; this keeps
+// them from breaking again.
 // Opt-in: E2E_LOCAL_STACK=1.
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
@@ -54,18 +56,22 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
-    // Every app icon in the dock's strip is whole — none cut off at the ends.
+    // Opened, every app in the island's strip is whole and on screen.
     await page.goto('/today');
     await expect(page.locator('[data-taskbar]')).toBeVisible({ timeout: 30_000 });
-    await page.waitForTimeout(1500); // the dock animates in
+    await page.waitForTimeout(1500); // the island animates in
+    await page.locator('[data-taskbar] .mc-taskbar').hover();
+    await expect(page.locator('.mc-app-strip a').first()).toBeVisible();
+    await page.waitForTimeout(600); // and opens
     const clipped = await page.evaluate(() => {
-      const strip = document.querySelector('.mc-app-carousel')!.getBoundingClientRect();
-      return [...document.querySelectorAll('.mc-app-carousel a')]
-        .map((a) => a.getBoundingClientRect())
-        .filter((r) => r.right > strip.left + 1 && r.left < strip.right - 1) // at least partly in view
-        .filter((r) => r.left < strip.left - 1 || r.right > strip.right + 1).length;
+      const island = document.querySelector('[data-taskbar] .mc-taskbar')!.getBoundingClientRect();
+      const apps = [...document.querySelectorAll('.mc-app-strip a')].map((a) => a.getBoundingClientRect());
+      if (apps.length < 2 || island.left < 0 || island.right > innerWidth || island.bottom > innerHeight) return -1;
+      return apps.filter((r) => r.width < 40 || r.left < island.left - 1 || r.right > island.right + 1).length;
     });
-    expect(clipped, 'apps cut off at the edge of the dock').toBe(0);
+    expect(clipped, 'apps cut off at the edge of the island').toBe(0);
+    await page.mouse.move(10, 10);
+    await expect(page.locator('[data-taskbar]')).toHaveAttribute('data-island', 'rest');
 
     // The dock tells pages how much room it takes.
     const reserved = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-height')));
@@ -76,17 +82,42 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
     await page.goto('/lounge');
     await expect(page.locator('.mc-lounge-composer')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(`dept-17-${TAG}`)).toBeAttached({ timeout: 20_000 });
+    await expect(page.locator('[data-taskbar] .mc-taskbar')).toBeVisible({ timeout: 30_000 });
     expect(await belowDockTop(page, '.mc-lounge-composer'), 'Lounge composer under the dock').toBe(0);
+    // …and the island costs the page nothing else: the channel list runs to the foot of the screen.
+    const listGap = await page.evaluate(() => Math.round(innerHeight - document.querySelector('.mc-lounge-channels')!.getBoundingClientRect().bottom));
+    expect(listGap, 'Lounge channel list stops short of the foot of the screen').toBeLessThanOrEqual(1);
 
     // Editor: its footer (the line-type hint) is above the dock.
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByText('Night', { exact: false }).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-taskbar] .mc-taskbar')).toBeVisible({ timeout: 30_000 });
     const footerCovered = await page.evaluate(() => {
       const dock = document.querySelector('[data-taskbar] .mc-taskbar')!.getBoundingClientRect();
-      const root = document.querySelector('#main-content > div') as HTMLElement | null;
+      const root = document.querySelector('.mc-editor-center') as HTMLElement | null;
       return root ? Math.round(Math.max(0, root.getBoundingClientRect().bottom - parseFloat(getComputedStyle(root).paddingBottom) - dock.top)) : -1;
     });
     expect(footerCovered, 'editor content runs under the dock').toBe(0);
+
+    // Dialogs open above the dock. On a short screen, "Start a project"
+    // scrolled to its end puts the Create button where the dock sits; whatever
+    // is drawn at that spot must be the button, not the dock.
+    await page.setViewportSize({ width: 1440, height: 640 });
+    await page.goto('/projects');
+    await page.getByRole('button', { name: 'New Project', exact: true }).click({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Start a project' })).toBeVisible();
+    await page.getByRole('textbox', { name: 'Title' }).fill(`Dock check ${TAG}`); // Create is disabled until then
+    await page.waitForTimeout(600); // the dialog animates in
+    const covered = await page.evaluate(() => {
+      const button = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Create project')!;
+      for (let el = button.parentElement; el; el = el.parentElement) el.scrollTop = el.scrollHeight;
+      const r = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, Math.min(r.bottom, window.innerHeight) - 4);
+      return hit && !button.contains(hit) ? (hit.closest('[data-taskbar]') ? 'the dock' : hit.tagName) : null;
+    });
+    expect(covered, 'the Create button of a dialog is covered').toBeNull();
+    await page.keyboard.press('Escape');
+    await page.setViewportSize(DESK.viewport);
 
     // Nothing scrolls sideways at desk size.
     for (const path of ['/today', '/projects', `/projects/${projectId}`, '/studio', '/lounge', '/jobs', '/crew']) {

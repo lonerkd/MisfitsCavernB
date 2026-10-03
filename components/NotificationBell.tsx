@@ -90,6 +90,8 @@ export default function NotificationBell() {
         whileTap={{ scale: 0.93 }}
         transition={{ type: 'spring', stiffness: 500, damping: 26 }}
         title="Notifications"
+        aria-label="Notifications"
+        aria-expanded={open}
         style={{
           width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: open ? 'rgba(232, 67, 26,0.10)' : hovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',

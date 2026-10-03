@@ -23,8 +23,8 @@ jobs:
       # build` doesn't require this — set here for parity with runtime.
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -46,8 +46,8 @@ jobs:
   database:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -69,8 +69,8 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -83,7 +83,7 @@ jobs:
           export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
           export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
           E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 npx playwright test --shard=${{ matrix.shard }}/3
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: e2e-report-${{ matrix.shard }}
@@ -103,8 +103,8 @@ jobs:
       # Real secret (server-only), set here for parity with runtime.
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -115,7 +115,7 @@ jobs:
       # own code — not the deployed production site.
       # Unauthenticated smoke specs only; authed journeys need a seeded test user.
       - run: npx playwright test e2e/home-page-crash.spec.ts e2e/auth-validation.spec.ts e2e/route-smoke.spec.ts
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report

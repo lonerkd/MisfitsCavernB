@@ -28,6 +28,9 @@ const overflow = (page: Page) => page.evaluate(() => {
   return [...document.body.querySelectorAll('*')].filter((el) => {
     const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
     if (!r.width || cs.display === 'none' || cs.visibility === 'hidden' || r.right <= vw + 1 || r.left >= vw) return false;
+    // Decoration fixed to the screen (the film grain jitters a few px either
+    // way) never makes the page scroll and holds nothing to read.
+    if (cs.position === 'fixed' && cs.pointerEvents === 'none' && el.getAttribute('aria-hidden') === 'true') return false;
     for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
       const o = getComputedStyle(p).overflowX;
       if (['auto', 'scroll', 'hidden', 'clip'].includes(o) && p.getBoundingClientRect().right <= vw + 1) return false;
@@ -115,7 +118,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await page.goto(`/lounge?channel=${channelId}`);
     await expect(page.getByPlaceholder(`Message #harbour-${TAG}...`)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: 'Back to channels and people' }).click();
-    await expect(page.getByRole('button', { name: `harbour-${TAG}` }).or(page.getByText(`harbour-${TAG}`)).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: `harbour-${TAG}` }).or(page.getByText(`harbour-${TAG}`)).filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByPlaceholder(`Message #harbour-${TAG}...`)).toBeHidden();
     await ctx.close();
   });

@@ -60,15 +60,6 @@ export default function CrewPage() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  useEffect(() => {
-    if (mode === 'project') {
-      loadProjectCrew();
-    } else {
-      loadCrew(debouncedSearch);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, activeProject?.id, roleFilter, availFilter, debouncedSearch]);
-
   const loadCrew = async (searchTerm = debouncedSearch) => {
     setLoading(true);
     setLoadError(null);
@@ -115,6 +106,15 @@ export default function CrewPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (mode === 'project') {
+      loadProjectCrew();
+    } else {
+      loadCrew(debouncedSearch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, activeProject?.id, roleFilter, availFilter, debouncedSearch]);
 
   const retry = () => (mode === 'project' ? loadProjectCrew() : loadCrew());
 

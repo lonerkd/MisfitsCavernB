@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNow } from '@/lib/hooks/useNow';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,6 +50,8 @@ interface ProjectHubViewModel {
   team: { name: string; role: string; online?: boolean }[];
   description: string;
   color: string;
+  /** The accent as the owner chose it (null: the theme's), for panels that derive their own shades from it. */
+  accent?: string | null;
   scriptPages?: number;
   scriptDraft?: number;
   assetCount?: number;
@@ -76,7 +79,10 @@ interface DeptWindowProps {
 function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay = 0, span = 'single' }: DeptWindowProps) {
   const [hovered, setHovered] = useState(false);
   const color = rawColor;
-  const ink = readable(rawColor);
+  // Hex colours are corrected by readable(); theme colours (var(--accent)…)
+  // can't be measured here, so they're mixed toward the text colour — enough
+  // contrast for small labels in every theme.
+  const ink = rawColor.startsWith('var(') ? `color-mix(in srgb, ${rawColor} 55%, var(--fg))` : readable(rawColor);
 
   return (
     <motion.div
@@ -116,7 +122,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: ink, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6, opacity: 0.85 }}>{tag}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: ink, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6 }}>{tag}</span>
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -236,7 +242,8 @@ interface MilestoneRow { id: string; title: string; end_date: string | null; sta
 
 function TimelinePreview({ deadline, milestones }: { deadline: string; milestones: MilestoneRow[] }) {
   const dl = deadline ? new Date(deadline).getTime() : NaN;
-  const daysLeft = isNaN(dl) ? null : Math.ceil((dl - Date.now()) / 86400000);
+  const now = useNow();
+  const daysLeft = isNaN(dl) ? null : Math.ceil((dl - now) / 86400000);
   const upcoming = [...milestones].sort((a, b) => String(a.end_date ?? '9999').localeCompare(String(b.end_date ?? '9999'))).slice(0, 5);
 
   return (
@@ -316,6 +323,7 @@ export default function ProjectHubPage() {
           deadline: row.end_date || '',
           description: row.description || '',
           color: readable(row.accent_color || 'var(--accent)'),
+          accent: row.accent_color,
           team: [],
           settings: row.settings as unknown as ProjectSettings,
           visibility: (row.visibility as ProjectHubViewModel['visibility']) || 'team',
@@ -566,14 +574,14 @@ export default function ProjectHubPage() {
           transition={{ delay: 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.color}
+          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.accent || 'var(--accent)'}
             onFormatChanged={(type) => { setRealProject(p => p ? { ...p, type } : p); refreshProject(id); }} />
         </motion.div>
 
         {isRealProject && progressState.progress && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
             <BriefPanel brief={brief} projectTitle={project.title} format={briefFormat} phase={progressState.progress.current.id}
-              canEdit={canShape} accent={project.color} />
+              canEdit={canShape} accent={project.accent || 'var(--accent)'} />
           </motion.div>
         )}
 
@@ -581,7 +589,7 @@ export default function ProjectHubPage() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
             <GuidePanel projectId={id} signals={progressState.signals} isOwner={project.isOwner} format={briefFormat}
               structure={typeof brief.answers.structure === 'string' ? brief.answers.structure : null}
-              accent={project.color} userId={me?.id ?? null} role={me?.role ?? null} />
+              accent={project.accent || 'var(--accent)'} userId={me?.id ?? null} role={me?.role ?? null} />
           </motion.div>
         )}
 

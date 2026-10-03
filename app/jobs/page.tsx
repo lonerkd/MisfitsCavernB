@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useNow } from '@/lib/hooks/useNow';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { Input } from '@/components/ui/Input';
@@ -73,7 +74,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       exit={{ opacity: 0 }}
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 2000,
+        position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
         background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(16px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 20,
@@ -86,7 +87,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 'var(--w-form)',
+          width: '100%', maxWidth: 'var(--w-form)', maxHeight: '100%', overflowY: 'auto',
           background: 'var(--surface)',
           border: '1px solid rgba(var(--ink-rgb), 0.08)',
           borderRadius: 20,
@@ -199,7 +200,8 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
     if (ok) { setComposing(false); setNote(''); }
   };
   const color = craftColor(byName, job.role);
-  const daysAgo = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 86400000);
+  const now = useNow();
+  const daysAgo = Math.floor((now - new Date(job.created_at).getTime()) / 86400000);
 
   return (
     <motion.div
@@ -401,6 +403,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
 
 export default function JobsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const confirm = useConfirm();
   const { activeProject } = useProject();
   const searchParams = useSearchParams();
@@ -423,14 +426,6 @@ export default function JobsPage() {
   const [applied, setApplied] = useState<Record<string, string>>({});
   const [myApps, setMyApps] = useState<{ status: string; applied_at: string | null; jobs: { id: string; title: string; role: string; status: string | null; projects: { title: string } | null } | null }[]>([]);
   useEffect(() => { if (prefillTitle || prefillRole) setShowPost(true); }, [prefillTitle, prefillRole]);
-
-  useEffect(() => {
-    awaitOSUser().then((user) => {
-      setUser(user);
-      if (user) { loadMyJobs(user.id); void loadMyApplications(user.id); }
-    });
-    loadJobs();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on mount
 
   const loadJobs = async () => {
     setLoading(true);
@@ -476,9 +471,17 @@ export default function JobsPage() {
     setApplied(Object.fromEntries(rows.filter((r) => r.jobs).map((r) => [r.jobs!.id, r.status])));
   };
 
+  useEffect(() => {
+    awaitOSUser().then((user) => {
+      setUser(user);
+      if (user) { loadMyJobs(user.id); void loadMyApplications(user.id); }
+    });
+    loadJobs();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on mount
+
   /** Applies with an optional note and tells the poster. */
   const handleApply = async (jobId: string, note: string): Promise<boolean> => {
-    if (!user) { window.location.href = '/auth'; return false; }
+    if (!user) { router.push('/auth'); return false; }
     const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id, cover_note: note.trim() || null });
     if (error && error.code !== '23505') { toast('Failed to submit application.', 'error'); return false; }
     if (error) toast('You already applied to this job.', 'info');

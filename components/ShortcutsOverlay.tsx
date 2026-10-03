@@ -16,6 +16,17 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
     ],
   },
   {
+    title: 'The island (Caps Lock on)',
+    items: [
+      ['Caps Lock', 'Hold the island open, with a key on every control'],
+      ['1 – 6', 'Go to that app'],
+      ['Q W E R …', 'Run that control of the page you’re on'],
+      ['← →  ·  Enter', 'Move between the page’s controls and run one'],
+      ['/  ·  \  ·  P', 'Search · split screen · switch project'],
+      ['Esc', 'Put the island away until Caps Lock is next turned on'],
+    ],
+  },
+  {
     title: 'ScriptOS editor',
     items: [
       ['Tab', 'Smart element insert (scene / dialogue)'],

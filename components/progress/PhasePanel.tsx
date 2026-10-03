@@ -74,7 +74,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only a phase change should trigger this
   }, [projectId, currentIndex]);
 
-  if (loading && !progress) return <div className={`skeleton ${p.skeleton}`} aria-busy="true" aria-label="Loading project progress" />;
+  if (loading && !progress) return <div className={`skeleton ${p.skeleton}`} role="status" aria-busy="true" aria-label="Loading project progress" />;
   if (!progress || !signals) {
     return error ? <div className={p.panel} style={style}><p className={p.error} role="alert">{error}</p></div> : null;
   }

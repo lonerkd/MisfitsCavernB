@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -156,18 +157,20 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  // Portalled above the Studio header and the suite dock.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 500, background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 32 }}
+            style={{ width: 500, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
@@ -243,6 +246,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

@@ -43,7 +43,7 @@ Rules:
 - Browser client: `lib/supabase/client.ts` → `createBrowserClient<Database>`.
   Cookie-backed, so the session is readable in middleware.
 - Server (route handlers / middleware): `createServerClient` with the cookie
-  adapter (see `middleware.ts`).
+  adapter (see `proxy.ts`).
 - **Service-role** client: server-only, lazily constructed, guarded against a
   missing key. Never import it into anything that ships to the browser. Only
   `NEXT_PUBLIC_*` vars are safe client-side.
@@ -63,7 +63,7 @@ Rules:
 
 - **Account-level** prefs (notification toggles, leak-check, etc.) →
   Postgres `profiles.notification_prefs` (JSONB).
-- **Device-level** only (cursor style, reduce-motion, dock collapse, offline
+- **Device-level** only (cursor style, reduce-motion, offline
   script cache) → `localStorage` / IndexedDB. Namespace per project where it
   matters (e.g. ScriptOS active-script pointer) so state can't cross projects.
 

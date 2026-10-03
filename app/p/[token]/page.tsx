@@ -414,7 +414,7 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 9000,
+            zIndex: 'var(--z-modal)',
           }}
           onClick={closeModal}
         >

@@ -154,6 +154,7 @@ Defined in `app/globals.css`. See `docs/DESIGN_DIRECTION_2026-09.md`.
 - Section padding: 90px 18px
 - `.mc-page`: min-height 100vh, bg `--bg`, fg `--fg`
 - `.grain-overlay`: fixed inset, z-index 9998, pointer-events none, opacity 0.022
+- Layers: island 9999 / phone tab bar 10000 < `--z-modal` 99990 (every full-screen dialog) < toast 99997 < confirm 99998 < cursor 99999 < command palette / diff 100000. A full-screen dialog uses `zIndex: 'var(--z-modal)'`, never its own number: anything lower hides under the island.
 - `.film-chrome`: 18px corner brackets, 1.5px fg border, opacity 0.35 → 0.7 on hover
 - `.pipeline-track`: 1px height, flex-1, accent gradient traveling line
 - `.marquee-wrap`: overflow hidden, masked gradient edges

@@ -46,7 +46,7 @@ One interconnected suite, not bolted-together tools:
 
 ## STACK & ENVIRONMENT
 
-- Next.js 14 App Router + TypeScript + framer-motion, self-hosted fonts.
+- Next.js 16 App Router (React 19; `next build --webpack` — see STATE) + TypeScript + framer-motion, self-hosted fonts. Auth gating lives in `proxy.ts` (Next 16 renamed middleware).
 
 - Supabase (project id: fxsryglwpwcqkfjljbrm): Postgres + RLS, Auth, Realtime
 

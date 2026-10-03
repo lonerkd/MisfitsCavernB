@@ -150,6 +150,16 @@ column character_media.created_by uuid default auth.uid()
 column character_media.media_id uuid not null
 column character_media.position integer default 0 not null
 column character_media.project_id uuid not null
+column client_errors.created_at timestamp with time zone default now() not null
+column client_errors.digest text
+column client_errors.id bigint not null
+column client_errors.kind text not null
+column client_errors.message text not null
+column client_errors.path text
+column client_errors.release text
+column client_errors.stack text
+column client_errors.user_agent text
+column client_errors.user_id uuid
 column crafts.above_the_line boolean default false not null
 column crafts.color text not null
 column crafts.created_at timestamp with time zone default now() not null
@@ -233,7 +243,7 @@ column messages.pinned_at timestamp with time zone
 column messages.pinned_by uuid
 column messages.reactions jsonb default '{}'::jsonb
 column messages.receiver_id uuid
-column messages.sender_id uuid not null
+column messages.sender_id uuid
 column notifications.body text
 column notifications.created_at timestamp with time zone default now()
 column notifications.created_by uuid default auth.uid()
@@ -572,7 +582,7 @@ column timesheets.note text
 column timesheets.project_id uuid not null
 column timesheets.rate numeric(10,2)
 column timesheets.status text default 'submitted'::text not null
-column timesheets.user_id uuid default auth.uid() not null
+column timesheets.user_id uuid default auth.uid()
 column timesheets.work_date date not null
 column transcript_lines.created_at timestamp with time zone default now() not null
 column transcript_lines.created_by uuid default auth.uid()
@@ -641,7 +651,7 @@ constraint brief_questions.brief_questions_options_check CHECK ((jsonb_typeof(op
 constraint brief_questions.brief_questions_phase_check CHECK ((phase = ANY (ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text])))
 constraint brief_questions.brief_questions_pkey PRIMARY KEY (key)
 constraint brief_questions.brief_questions_shape_check CHECK ((((kind = 'number'::text) AND (min_value IS NOT NULL) AND (max_value IS NOT NULL) AND (min_value <= max_value)) OR ((kind <> 'number'::text) AND (jsonb_array_length(options) > 0))))
-constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint budget_items.budget_items_id_project_key UNIQUE (id, project_id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
@@ -663,8 +673,8 @@ constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
 constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
-constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
-constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint campaigns.campaigns_money_check CHECK (((COALESCE(budget, (0)::numeric) >= (0)::numeric) AND (COALESCE(spend, (0)::numeric) >= (0)::numeric)))
 constraint campaigns.campaigns_pkey PRIMARY KEY (id)
 constraint campaigns.campaigns_platform_len CHECK (((char_length(btrim(platform)) >= 1) AND (char_length(btrim(platform)) <= 60)))
@@ -683,12 +693,12 @@ constraint channel_presets.channel_presets_pkey PRIMARY KEY (key)
 constraint channel_presets.channel_presets_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
 constraint channel_presets.channel_presets_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text, 'guide'::text])))
 constraint channels.channels_audience_check CHECK ((((project_id IS NULL) AND (audience = ANY (ARRAY['users'::text, 'admins'::text]))) OR ((project_id IS NOT NULL) AND (audience = ANY (ARRAY['team'::text, 'owners'::text, 'above'::text, 'below'::text, 'guests'::text, 'public'::text])))))
-constraint channels.channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint channels.channels_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint channels.channels_pkey PRIMARY KEY (id)
 constraint channels.channels_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
 constraint channels.channels_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint channels.channels_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text, 'guide'::text])))
-constraint character_castings.character_castings_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint character_castings.character_castings_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_castings.character_castings_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint character_castings.character_castings_pkey PRIMARY KEY (id)
 constraint character_castings.character_castings_project_id_character_name_key UNIQUE (project_id, character_name)
@@ -697,12 +707,21 @@ constraint character_media.character_media_character_fkey FOREIGN KEY (character
 constraint character_media.character_media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_media.character_media_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint character_media.character_media_pkey PRIMARY KEY (character_id, media_id)
+constraint client_errors.client_errors_digest_check CHECK ((char_length(digest) <= 100))
+constraint client_errors.client_errors_kind_check CHECK ((kind = ANY (ARRAY['render'::text, 'window'::text, 'promise'::text])))
+constraint client_errors.client_errors_message_check CHECK (((char_length(message) >= 1) AND (char_length(message) <= 1000)))
+constraint client_errors.client_errors_path_check CHECK ((char_length(path) <= 300))
+constraint client_errors.client_errors_pkey PRIMARY KEY (id)
+constraint client_errors.client_errors_release_check CHECK ((char_length(release) <= 60))
+constraint client_errors.client_errors_stack_check CHECK ((char_length(stack) <= 8000))
+constraint client_errors.client_errors_ua_check CHECK ((char_length(user_agent) <= 300))
+constraint client_errors.client_errors_user_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint crafts.crafts_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) >= 1) AND (char_length(btrim(department)) <= 40)))
 constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
 constraint crafts.crafts_pkey PRIMARY KEY (name)
 constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
-constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
 constraint expenses.expenses_amount_check CHECK (((amount >= (0)::numeric) AND (amount < (100000000)::numeric)))
 constraint expenses.expenses_budget_item_fkey FOREIGN KEY (budget_item_id, project_id) REFERENCES budget_items(id, project_id) ON DELETE SET NULL (budget_item_id)
@@ -759,7 +778,7 @@ constraint messages.messages_pin_shape CHECK ((pinned = (pinned_at IS NOT NULL))
 constraint messages.messages_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint messages.messages_pkey PRIMARY KEY (id)
 constraint messages.messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES profiles(id) ON DELETE CASCADE
-constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_body_len CHECK ((char_length(body) <= 1000))
 constraint notifications.notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_link_internal CHECK (((link IS NULL) OR (link ~ '^/[^/\\]'::text)))
@@ -815,12 +834,12 @@ constraint profiles.profiles_sprint_minutes_check CHECK (((sprint_minutes >= 5) 
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
 constraint profiles.profiles_ui_prefs_check CHECK (((jsonb_typeof(ui_prefs) = 'object'::text) AND (pg_column_size(ui_prefs) < 16384)))
 constraint profiles.profiles_username_key UNIQUE (username)
-constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id)
+constraint project_audio_references.project_audio_references_added_by_fkey FOREIGN KEY (added_by) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint project_audio_references.project_audio_references_pkey PRIMARY KEY (id)
 constraint project_audio_references.project_audio_references_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_audio_references.project_audio_references_reference_type_check CHECK ((reference_type = ANY (ARRAY['spotify'::text, 'youtube'::text, 'custom_upload'::text])))
 constraint project_audio_references.project_audio_references_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
-constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint project_beats.project_beats_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_beats.project_beats_pkey PRIMARY KEY (id)
 constraint project_beats.project_beats_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_beats.project_beats_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE SET NULL
@@ -829,7 +848,7 @@ constraint project_brief.project_brief_pkey PRIMARY KEY (project_id, question)
 constraint project_brief.project_brief_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_brief.project_brief_question_fkey FOREIGN KEY (question) REFERENCES brief_questions(key) ON UPDATE CASCADE ON DELETE CASCADE
 constraint project_crew.project_crew_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
-constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id)
+constraint project_crew.project_crew_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_crew.project_crew_pkey PRIMARY KEY (id)
 constraint project_crew.project_crew_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_crew.project_crew_project_id_user_id_key UNIQUE (project_id, user_id)
@@ -865,7 +884,7 @@ constraint project_locations.project_locations_pkey PRIMARY KEY (id)
 constraint project_locations.project_locations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_locations.project_locations_status_check CHECK ((status = ANY (ARRAY['scouting'::text, 'option'::text, 'confirmed'::text])))
 constraint project_locations.project_locations_text_len CHECK (((char_length(address) <= 500) AND (char_length(contact) <= 300) AND (char_length(notes) <= 5000)))
-constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
+constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_tasks.project_tasks_pkey PRIMARY KEY (id)
 constraint project_tasks.project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint projects.projects_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -891,7 +910,7 @@ constraint scenes.scenes_project_id_fkey FOREIGN KEY (project_id) REFERENCES pro
 constraint scenes.scenes_read_seconds_check CHECK (((read_seconds IS NULL) OR ((read_seconds > (0)::numeric) AND (read_seconds <= (36000)::numeric))))
 constraint scenes.scenes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 1) AND (char_length(time_of_day) <= 40)))
-constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
 constraint script_annotations.script_annotations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint script_annotations.script_annotations_routed_check CHECK ((((routed_table IS NULL) AND (routed_id IS NULL)) OR ((routed_table = ANY (ARRAY['shots'::text, 'project_beats'::text, 'project_tasks'::text])) AND (routed_id IS NOT NULL))))
@@ -901,20 +920,20 @@ constraint script_annotations.script_annotations_type_check CHECK ((type = ANY (
 constraint script_characters.script_characters_pkey PRIMARY KEY (id)
 constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_characters.script_characters_script_id_name_key UNIQUE (script_id, name)
-constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id)
+constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_metadata.script_metadata_pkey PRIMARY KEY (script_id)
 constraint script_metadata.script_metadata_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
-constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
-constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint script_revisions.script_revisions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_revisions.script_revisions_pkey PRIMARY KEY (id)
 constraint script_revisions.script_revisions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_stash.script_stash_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_stash.script_stash_pkey PRIMARY KEY (id)
 constraint script_stash.script_stash_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_stash.script_stash_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 20000)))
-constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
-constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id)
+constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scripts.scripts_pkey PRIMARY KEY (id)
 constraint scripts.scripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint scripts.scripts_share_token_key UNIQUE (share_token)
@@ -933,7 +952,7 @@ constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint shots.shots_camera_len CHECK (((char_length(COALESCE(shot_size, ''::text)) <= 12) AND (char_length(COALESCE(angle, ''::text)) <= 40) AND (char_length(COALESCE(movement, ''::text)) <= 40) AND (char_length(COALESCE(lens, ''::text)) <= 40)))
-constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint shots.shots_description_len CHECK ((char_length(description) <= 2000))
 constraint shots.shots_frame_fkey FOREIGN KEY (frame_media_id, project_id) REFERENCES media(id, project_id) ON DELETE SET NULL (frame_media_id)
 constraint shots.shots_number_len CHECK (((char_length(shot_number) >= 1) AND (char_length(shot_number) <= 12)))
@@ -943,8 +962,8 @@ constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES 
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id)
-constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id)
+constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
+constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
 constraint timeline_items.timeline_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint timeline_items.timeline_items_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'in-progress'::text, 'completed'::text, 'cancelled'::text])))
@@ -957,7 +976,7 @@ constraint timesheets.timesheets_pkey PRIMARY KEY (id)
 constraint timesheets.timesheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint timesheets.timesheets_rate_check CHECK (((rate IS NULL) OR (rate >= (0)::numeric)))
 constraint timesheets.timesheets_status_check CHECK ((status = ANY (ARRAY['submitted'::text, 'approved'::text, 'rejected'::text])))
-constraint timesheets.timesheets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint timesheets.timesheets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint transcript_lines.transcript_lines_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint transcript_lines.transcript_lines_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint transcript_lines.transcript_lines_paper_order_check CHECK (((paper_order IS NULL) OR (paper_order >= 0)))
@@ -1018,6 +1037,7 @@ function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=94eebb05bb53f6f692a20c77ad4d51a1
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
+function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
@@ -1025,6 +1045,7 @@ function public.admin_platform_analytics(p_since timestamp with time zone) body=
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
+function public.delete_my_account(p_confirm text) body=8ef9379ae7b3335ec94b05c3aa743bbb
 function public.edit_message(p_message uuid, p_content text) body=4b7f1df44a8b0a61b7b960fa0d34f8e6
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
@@ -1048,6 +1069,7 @@ function public.project_availability(p_project uuid, p_from date, p_to date) bod
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
+function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=34e87ff37f99ce2f1cf4b6a3e71071d4
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=1dab5a7c14578a22e95dbcbbd3255d64
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.search_lounge(p_query text, p_channel uuid, p_limit integer) body=eb06476586cc9c7ecf2d318c02705a9a
@@ -1059,6 +1081,7 @@ function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc271
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160ef64976bfa777db1932a6756003
+function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba786d52dc7715f088f3
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
@@ -1096,6 +1119,7 @@ grant function internal.seed_breakdown_categories(p_project uuid) postgres,servi
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
+grant function public.account_deletion_plan() authenticated,postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
@@ -1103,6 +1127,7 @@ grant function public.admin_platform_analytics(p_since timestamp with time zone)
 grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
+grant function public.delete_my_account(p_confirm text) authenticated,postgres,service_role
 grant function public.edit_message(p_message uuid, p_content text) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
 grant function public.get_my_ui_prefs() authenticated,postgres,service_role
@@ -1126,6 +1151,7 @@ grant function public.project_availability(p_project uuid, p_from date, p_to dat
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
+grant function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) anon,authenticated,postgres,service_role
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.search_lounge(p_query text, p_channel uuid, p_limit integer) authenticated,postgres,service_role
@@ -1137,25 +1163,41 @@ grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
 grant function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) authenticated,postgres,service_role
 grant function public.toggle_message_reaction(p_message uuid, p_emoji text) authenticated,postgres,service_role
+grant function public.transfer_project(p_project uuid, p_to uuid) authenticated,postgres,service_role
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
 index CREATE INDEX breakdown_categories_project_idx ON public.breakdown_categories USING btree (project_id, "position")
 index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismissals USING btree (created_by)
 index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
+index CREATE INDEX breakdown_elements_category_fkey_idx ON public.breakdown_elements USING btree (category_id, project_id)
 index CREATE INDEX breakdown_elements_category_idx ON public.breakdown_elements USING btree (category_id)
 index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_elements USING btree (created_by)
 index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
+index CREATE INDEX call_sheet_acks_sheet_fkey_idx ON public.call_sheet_acks USING btree (call_sheet_id, project_id)
+index CREATE INDEX call_sheet_acks_user_id_fkey_idx ON public.call_sheet_acks USING btree (user_id)
 index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
+index CREATE INDEX call_sheet_calls_sheet_fkey_idx ON public.call_sheet_calls USING btree (call_sheet_id, project_id)
+index CREATE INDEX call_sheets_issued_by_fkey_idx ON public.call_sheets USING btree (issued_by)
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
+index CREATE INDEX character_castings_created_by_fkey_idx ON public.character_castings USING btree (created_by)
+index CREATE INDEX character_media_created_by_fkey_idx ON public.character_media USING btree (created_by)
+index CREATE INDEX character_media_media_fkey_idx ON public.character_media USING btree (media_id, project_id)
 index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
 index CREATE INDEX character_media_project_idx ON public.character_media USING btree (project_id)
+index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree (created_at DESC)
+index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
+index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
+index CREATE INDEX expenses_budget_item_fkey_idx ON public.expenses USING btree (budget_item_id, project_id)
 index CREATE INDEX expenses_budget_item_idx ON public.expenses USING btree (budget_item_id)
+index CREATE INDEX expenses_created_by_fkey_idx ON public.expenses USING btree (created_by)
 index CREATE INDEX expenses_project_idx ON public.expenses USING btree (project_id)
+index CREATE INDEX expenses_receipt_fkey_idx ON public.expenses USING btree (receipt_media_id)
+index CREATE INDEX expenses_vendor_fkey_idx ON public.expenses USING btree (vendor_id, project_id)
 index CREATE INDEX expenses_vendor_idx ON public.expenses USING btree (vendor_id)
 index CREATE INDEX guide_progress_project_idx ON public.guide_progress USING btree (project_id)
 index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
@@ -1208,59 +1250,93 @@ index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
+index CREATE INDEX lounge_reads_channel_id_fkey_idx ON public.lounge_reads USING btree (channel_id)
+index CREATE INDEX lounge_reads_partner_id_fkey_idx ON public.lounge_reads USING btree (partner_id)
 index CREATE INDEX media_created_by_idx ON public.media USING btree (created_by)
 index CREATE INDEX media_project_created_idx ON public.media USING btree (project_id, created_at DESC)
 index CREATE INDEX messages_channel_created_idx ON public.messages USING btree (channel_uuid, created_at)
 index CREATE INDEX messages_channel_uuid_idx ON public.messages USING btree (channel_uuid)
 index CREATE INDEX messages_content_search_idx ON public.messages USING gin (to_tsvector('simple'::regconfig, content))
 index CREATE INDEX messages_parent_idx ON public.messages USING btree (parent_message_id)
+index CREATE INDEX messages_pinned_by_fkey_idx ON public.messages USING btree (pinned_by)
 index CREATE INDEX messages_pinned_idx ON public.messages USING btree (channel_uuid) WHERE pinned
+index CREATE INDEX notifications_created_by_fkey_idx ON public.notifications USING btree (created_by)
 index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
 index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
 index CREATE INDEX portfolio_projects_category_idx ON public.portfolio_projects USING btree (category)
 index CREATE INDEX post_cuts_created_by_idx ON public.post_cuts USING btree (created_by)
+index CREATE INDEX post_cuts_media_fkey_idx ON public.post_cuts USING btree (media_id, project_id)
 index CREATE INDEX post_cuts_media_idx ON public.post_cuts USING btree (media_id)
 index CREATE INDEX post_cuts_project_idx ON public.post_cuts USING btree (project_id, created_at)
 index CREATE INDEX post_items_assigned_to_idx ON public.post_items USING btree (assigned_to)
 index CREATE INDEX post_items_created_by_idx ON public.post_items USING btree (created_by)
 index CREATE INDEX post_items_project_idx ON public.post_items USING btree (project_id, kind, "position")
 index CREATE INDEX post_notes_created_by_idx ON public.post_notes USING btree (created_by)
+index CREATE INDEX post_notes_cut_fkey_idx ON public.post_notes USING btree (cut_id, project_id)
 index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, at_seconds)
 index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
+index CREATE INDEX post_notes_scene_fkey_idx ON public.post_notes USING btree (scene_id, project_id)
 index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX profiles_sample_idx ON public.profiles USING btree (id) WHERE is_sample
+index CREATE INDEX project_audio_references_added_by_fkey_idx ON public.project_audio_references USING btree (added_by)
+index CREATE INDEX project_audio_references_project_id_fkey_idx ON public.project_audio_references USING btree (project_id)
+index CREATE INDEX project_audio_references_script_id_fkey_idx ON public.project_audio_references USING btree (script_id)
+index CREATE INDEX project_brief_answered_by_fkey_idx ON public.project_brief USING btree (answered_by)
 index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
+index CREATE INDEX project_documents_created_by_fkey_idx ON public.project_documents USING btree (created_by)
+index CREATE INDEX project_documents_location_fkey_idx ON public.project_documents USING btree (location_id, project_id)
 index CREATE INDEX project_documents_location_idx ON public.project_documents USING btree (location_id)
 index CREATE INDEX project_documents_person_idx ON public.project_documents USING btree (person_id)
 index CREATE INDEX project_documents_project_idx ON public.project_documents USING btree (project_id)
+index CREATE INDEX project_documents_vendor_fkey_idx ON public.project_documents USING btree (vendor_id, project_id)
+index CREATE INDEX project_locations_created_by_fkey_idx ON public.project_locations USING btree (created_by)
 index CREATE INDEX project_locations_project_idx ON public.project_locations USING btree (project_id)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
+index CREATE INDEX scene_elements_element_fkey_idx ON public.scene_elements USING btree (element_id, project_id)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
 index CREATE INDEX scene_elements_project_idx ON public.scene_elements USING btree (project_id)
+index CREATE INDEX scene_elements_scene_fkey_idx ON public.scene_elements USING btree (scene_id, project_id)
+index CREATE INDEX scene_media_created_by_fkey_idx ON public.scene_media USING btree (created_by)
+index CREATE INDEX scene_media_media_fkey_idx ON public.scene_media USING btree (media_id, project_id)
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
+index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree (scene_id, project_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
+index CREATE INDEX script_annotations_created_by_fkey_idx ON public.script_annotations USING btree (created_by)
+index CREATE INDEX script_annotations_project_id_fkey_idx ON public.script_annotations USING btree (project_id)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
 index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (script_id, created_at)
 index CREATE INDEX scripts_content_search_idx ON public.scripts USING gin (to_tsvector('simple'::regconfig, COALESCE(content, ''::text)))
 index CREATE INDEX set_log_created_by_idx ON public.set_log USING btree (created_by)
+index CREATE INDEX set_log_day_fkey_idx ON public.set_log USING btree (call_sheet_id, project_id)
 index CREATE INDEX set_log_day_idx ON public.set_log USING btree (call_sheet_id)
+index CREATE INDEX set_log_media_fkey_idx ON public.set_log USING btree (media_id, project_id)
 index CREATE INDEX set_log_media_idx ON public.set_log USING btree (media_id)
 index CREATE INDEX set_log_project_idx ON public.set_log USING btree (project_id, at)
+index CREATE INDEX set_log_scene_fkey_idx ON public.set_log USING btree (scene_id, project_id)
 index CREATE INDEX set_log_scene_idx ON public.set_log USING btree (scene_id)
+index CREATE INDEX set_log_shot_fkey_idx ON public.set_log USING btree (shot_id, project_id)
 index CREATE INDEX set_log_shot_idx ON public.set_log USING btree (shot_id)
+index CREATE INDEX sfx_assets_project_id_fkey_idx ON public.sfx_assets USING btree (project_id)
+index CREATE INDEX sfx_assets_user_id_fkey_idx ON public.sfx_assets USING btree (user_id)
+index CREATE INDEX shots_created_by_fkey_idx ON public.shots USING btree (created_by)
+index CREATE INDEX shots_frame_fkey_idx ON public.shots USING btree (frame_media_id, project_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
+index CREATE INDEX shots_scene_fkey_idx ON public.shots USING btree (scene_id, project_id)
+index CREATE INDEX timesheets_decided_by_fkey_idx ON public.timesheets USING btree (decided_by)
 index CREATE INDEX timesheets_project_idx ON public.timesheets USING btree (project_id)
 index CREATE INDEX timesheets_user_idx ON public.timesheets USING btree (user_id)
 index CREATE INDEX transcript_lines_created_by_idx ON public.transcript_lines USING btree (created_by)
+index CREATE INDEX transcript_lines_media_fkey_idx ON public.transcript_lines USING btree (media_id, project_id)
 index CREATE INDEX transcript_lines_media_idx ON public.transcript_lines USING btree (media_id, "position")
 index CREATE INDEX transcript_lines_paper_idx ON public.transcript_lines USING btree (project_id, paper_order) WHERE (paper_order IS NOT NULL)
 index CREATE INDEX unavailability_user_idx ON public.unavailability USING btree (user_id, starts_on)
+index CREATE INDEX vendors_created_by_fkey_idx ON public.vendors USING btree (created_by)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
 index CREATE UNIQUE INDEX breakdown_categories_id_project_key ON public.breakdown_categories USING btree (id, project_id)
@@ -1288,6 +1364,7 @@ index CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (id)
 index CREATE UNIQUE INDEX character_castings_pkey ON public.character_castings USING btree (id)
 index CREATE UNIQUE INDEX character_castings_project_id_character_name_key ON public.character_castings USING btree (project_id, character_name)
 index CREATE UNIQUE INDEX character_media_pkey ON public.character_media USING btree (character_id, media_id)
+index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
 index CREATE UNIQUE INDEX expenses_pkey ON public.expenses USING btree (id)
@@ -1363,30 +1440,42 @@ policy public.breakdown_categories "breakdown_categories update" PERMISSIVE UPDA
 policy public.breakdown_categories "breakdown_categories view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.breakdown_dismissals "breakdown_dismissals access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.breakdown_elements "breakdown_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.brief_questions "brief_questions admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.brief_questions "brief_questions admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.brief_questions "brief_questions admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.brief_questions "brief_questions admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.brief_questions "brief_questions read" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.channel_members "channel_members manage" PERMISSIVE ALL to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
+policy public.channel_members "channel_members delete" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
+policy public.channel_members "channel_members insert" PERMISSIVE INSERT to authenticated using - check can_manage_channel(channel_id)
+policy public.channel_members "channel_members update" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check -
 policy public.channel_members "channel_members viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(channel_id) check -
-policy public.channel_presets "channel_presets admin" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.channel_presets "channel_presets admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.channel_presets "channel_presets admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.channel_presets "channel_presets admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.channel_presets "channel_presets read" PERMISSIVE SELECT to authenticated using true check -
 policy public.channels "channels create" PERMISSIVE INSERT to authenticated using - check (((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))) OR ((project_id IS NULL) AND internal.caller_is_admin()))
 policy public.channels "channels delete" PERMISSIVE DELETE to authenticated using can_manage_channel(id) check -
 policy public.channels "channels update" PERMISSIVE UPDATE to authenticated using can_manage_channel(id) check -
 policy public.channels "channels viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(id) check -
 policy public.character_castings "Castings viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.character_castings "Castings writable by project creator or crew" PERMISSIVE ALL to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.character_castings "castings delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.character_castings "castings insert" PERMISSIVE INSERT to authenticated using - check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
+policy public.character_castings "castings update" PERMISSIVE UPDATE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.character_media "character_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.character_media "character_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (script_characters c JOIN scripts s ON ((s.id = c.script_id))) WHERE ((c.id = character_media.character_id) AND (s.project_id = character_media.project_id)))))
 policy public.character_media "character_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
-policy public.crafts "crafts admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.client_errors "client_errors: admins clear" PERMISSIVE DELETE to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
+policy public.client_errors "client_errors: admins read" PERMISSIVE SELECT to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
+policy public.crafts "crafts admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.crafts "crafts admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.crafts "crafts admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
-policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = auth.uid()))
+policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
 policy public.expenses "expenses shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.guide_progress "guide_progress delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
@@ -1394,9 +1483,8 @@ policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to au
 policy public.guide_progress "guide_progress own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.job_applications "Job owners can update application status" PERMISSIVE UPDATE to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))
-policy public.job_applications "Job owners can view applications" PERMISSIVE SELECT to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check -
 policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
-policy public.job_applications "Users can view their own applications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = applicant_id) check -
+policy public.job_applications "job_applications read" PERMISSIVE SELECT to authenticated using ((applicant_id = ( SELECT auth.uid() AS uid)) OR (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))) check -
 policy public.jobs "Applicants view jobs they applied to" PERMISSIVE SELECT to authenticated using internal.applied_to(id) check -
 policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
@@ -1413,13 +1501,18 @@ policy public.notifications "Users can delete their own notifications" PERMISSIV
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "notifications insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_notify(user_id))
-policy public.portfolio_blocks "Portfolio blocks owner write" PERMISSIVE ALL to public using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = auth.uid()))) check -
 policy public.portfolio_blocks "Portfolio blocks readable" PERMISSIVE SELECT to public using true check -
-policy public.portfolio_media "Portfolio media owner write" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_blocks "portfolio_blocks delete own" PERMISSIVE DELETE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_blocks "portfolio_blocks insert own" PERMISSIVE INSERT to authenticated using - check (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
+policy public.portfolio_blocks "portfolio_blocks update own" PERMISSIVE UPDATE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_media "Portfolio media readable" PERMISSIVE SELECT to public using true check -
-policy public.portfolio_media "Portfolio owner can manage media" PERMISSIVE ALL to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
-policy public.portfolio_projects "Portfolio owner only write" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_media "portfolio_media delete own" PERMISSIVE DELETE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
+policy public.portfolio_media "portfolio_media insert own" PERMISSIVE INSERT to authenticated using - check (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
+policy public.portfolio_media "portfolio_media update own" PERMISSIVE UPDATE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_projects "Portfolio publicly readable" PERMISSIVE SELECT to public using true check -
+policy public.portfolio_projects "portfolio_projects delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_projects "portfolio_projects insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.portfolio_projects "portfolio_projects update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.post_cuts "post_cuts delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.post_cuts "post_cuts insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.post_cuts "post_cuts update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1444,9 +1537,13 @@ policy public.project_crew "Project creators can manage crew" PERMISSIVE INSERT 
 policy public.project_crew "Project creators can remove crew" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR (user_id = ( SELECT auth.uid() AS uid))) check -
 policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check -
 policy public.project_crew "project_crew view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
-policy public.project_documents "project_documents keep" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
+policy public.project_documents "project_documents delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
+policy public.project_documents "project_documents insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
 policy public.project_documents "project_documents read" PERMISSIVE SELECT to authenticated using (internal.can_shape_project(project_id) OR (person_id = ( SELECT auth.uid() AS uid))) check -
-policy public.project_formats "project formats admin write" PERMISSIVE ALL to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.project_documents "project_documents update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check -
+policy public.project_formats "project formats admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.project_formats "project formats admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.project_formats "project formats admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.project_formats "project formats view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.project_locations "project_locations access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.project_tasks "project_tasks access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1464,11 +1561,13 @@ policy public.scenes "scenes insert" PERMISSIVE INSERT to authenticated using - 
 policy public.scenes "scenes update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scenes "scenes view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.script_annotations "script_annotations delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = auth.uid()))
+policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.script_annotations "script_annotations view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.script_characters "script_characters access" PERMISSIVE ALL to authenticated using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_metadata "metadata delete by script members" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
+policy public.script_metadata "metadata insert by script members" PERMISSIVE INSERT to authenticated using - check internal.can_access_script(script_id)
 policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
-policy public.script_metadata "metadata writable by script members" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_metadata "metadata update by script members" PERMISSIVE UPDATE to authenticated using internal.can_access_script(script_id) check -
 policy public.script_revisions "Script members can manage revisions" PERMISSIVE ALL to public using internal.can_access_script(script_id) check internal.can_access_script(script_id)
 policy public.script_stash "script_stash delete" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
 policy public.script_stash "script_stash insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_script(script_id))
@@ -1482,15 +1581,15 @@ policy public.set_log "set_log delete" PERMISSIVE DELETE to authenticated using 
 policy public.set_log "set_log insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.set_log "set_log update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check internal.can_access_project(project_id)
 policy public.set_log "set_log view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
-policy public.sfx_assets "SFX assets owner only delete" PERMISSIVE DELETE to public using (user_id = auth.uid()) check -
-policy public.sfx_assets "SFX assets owner only update" PERMISSIVE UPDATE to public using (user_id = auth.uid()) check -
-policy public.sfx_assets "SFX assets viewable by everyone" PERMISSIVE SELECT to public using true check -
+policy public.sfx_assets "sfx_assets delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.sfx_assets "sfx_assets insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
+policy public.sfx_assets "sfx_assets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
+policy public.sfx_assets "sfx_assets update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.shots "shots access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.spotify_connections "Users can delete own spotify connection" PERMISSIVE DELETE to public using (auth.uid() = user_id) check -
-policy public.spotify_connections "Users can insert own spotify connection" PERMISSIVE INSERT to public using - check (auth.uid() = user_id)
-policy public.spotify_connections "Users can update own spotify connection" PERMISSIVE UPDATE to public using (auth.uid() = user_id) check -
-policy public.spotify_connections "Users can view own spotify connection" PERMISSIVE SELECT to public using (auth.uid() = user_id) check -
+policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check (((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id)) OR internal.can_shape_project(project_id))
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
@@ -1564,6 +1663,7 @@ rls channel_presets enabled=true forced=false
 rls channels enabled=true forced=false
 rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
+rls client_errors enabled=true forced=false
 rls crafts enabled=true forced=false
 rls discord_integrations enabled=true forced=false
 rls expenses enabled=true forced=false

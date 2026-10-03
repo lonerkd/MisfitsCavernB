@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { ConfirmProvider } from '@/components/Confirm';
@@ -98,6 +100,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </ConfirmProvider>
         </ToastProvider>
         </MotionPreference>
+        {/* Which pages people use and how fast they load — cookieless, and only
+            on Vercel builds (local and CI builds have no /_vercel endpoints). */}
+        {process.env.NEXT_PUBLIC_VERCEL_ENV && <><Analytics /><SpeedInsights /></>}
       </body>
     </html>
   );

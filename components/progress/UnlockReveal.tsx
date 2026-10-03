@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import type { Place, ToolState } from '@/lib/os/progress';
 import { Brick } from './Bricks';
@@ -40,8 +41,10 @@ export function UnlockReveal({ phaseLabel, tools, projectId, style, onClose, onN
     return () => { document.removeEventListener('keydown', onKey); previous?.focus?.(); };
   }, [onClose]);
 
-  return (
-    <motion.div className={p.backdrop} style={style} initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
+  // Portalled: the pages that show it keep their content in a layer of its own, under the dock.
+  return createPortal(
+    <div className={p.scope} style={style}>
+    <motion.div className={p.backdrop} initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
       <motion.div
         ref={dialogRef}
         role="dialog"
@@ -76,5 +79,7 @@ export function UnlockReveal({ phaseLabel, tools, projectId, style, onClose, onN
         <button ref={closeRef} type="button" className={p.primary} onClick={onClose}>Let’s build</button>
       </motion.div>
     </motion.div>
+    </div>,
+    document.body,
   );
 }
