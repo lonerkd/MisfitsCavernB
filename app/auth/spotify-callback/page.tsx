@@ -6,41 +6,39 @@ import { getAccessToken } from '@/lib/spotify/auth';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { useHydrated, useLocationSearch } from '@/lib/hooks/useSearchParam';
 
 export default function SpotifyCallback() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  // What Spotify sent back, read from the address once the page is hydrated.
+  const search = useLocationSearch();
+  const params = new URLSearchParams(search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const denied = params.get('error');
+  const hydrated = useHydrated();
+  const urlError = !hydrated ? null
+    : denied ? (denied === 'access_denied' ? 'Spotify access was declined.' : `Spotify returned an error: ${denied}`)
+    : !code ? 'No authorization code found in URL.'
+    : null;
+  const [exchangeError, setError] = useState<string | null>(null);
+  const error = urlError ?? exchangeError;
   // The one-time code and state are consumed on first use; don't run twice.
   const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
+    if (!code || denied || started.current) return;
     started.current = true;
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const denied = params.get('error');
-
-    if (denied) {
-      setError(denied === 'access_denied' ? 'Spotify access was declined.' : `Spotify returned an error: ${denied}`);
-      return;
-    }
-    if (!code) {
-      setError('No authorization code found in URL.');
-      return;
-    }
-
-    withTimeout(getAccessToken(code, params.get('state')), 15000, 'Spotify token exchange timed out.')
+    withTimeout(getAccessToken(code, state), 15000, 'Spotify token exchange timed out.')
       .then(() => {
-
         window.dispatchEvent(new Event('spotify-auth-changed'));
-
         router.push('/soundtrack');
       })
       .catch((err) => {
         console.error('Spotify Auth Error:', err);
         setError(err.message || 'Failed to authenticate with Spotify');
       });
-  }, [router]);
+  }, [code, state, denied, router]);
 
   return (
     <div style={{

@@ -24,23 +24,15 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.rpc('admin_list_users');
-
-      if (!error && data) {
-        setUsers(data as UserRow[]);
-      }
-    } catch (error) {
-      console.error('Failed to load users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadUsers();
+    let alive = true;
+    supabase.rpc('admin_list_users').then(({ data, error }) => {
+      if (!alive) return;
+      if (error) console.error('Failed to load users:', error);
+      else if (data) setUsers(data as UserRow[]);
+      setLoading(false);
+    });
+    return () => { alive = false; };
   }, []);
 
   // Admin rights change only through set_user_admin (admins only; enforced in

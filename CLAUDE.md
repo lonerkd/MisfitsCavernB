@@ -29,6 +29,6 @@ Locked skills for PostgreSQL + Supabase best practices (`skills-lock.json`):
 ## Session Start
 
 1. Read `AGENTS.md` for project rules
-2. Read `.cavern-intelligence/STATE.md` for current iteration
+2. Read `.cavern-intelligence/STATE.md` for current iteration and `BACKLOG.md` for every open task
 3. Run `npm run sync-intel` if manifest is stale
 4. Read relevant source files for the task

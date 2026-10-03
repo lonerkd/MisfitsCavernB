@@ -57,14 +57,14 @@ export function useBreakdown(projectId: string | null) {
  * only informs suggestions, so a failure just means none from memory.
  */
 export function useBreakdownMemory(projectId: string | null): BreakdownMemory {
-  const [memory, setMemory] = useState<BreakdownMemory>(EMPTY_MEMORY);
+  const [memory, setMemory] = useState<{ projectId: string; memory: BreakdownMemory } | null>(null);
   useEffect(() => {
-    if (!projectId) { setMemory(EMPTY_MEMORY); return; }
+    if (!projectId) return;
     let alive = true;
-    breakdown.memory(projectId).then((rows) => { if (alive) setMemory(indexMemory(rows)); }).catch(() => {});
+    breakdown.memory(projectId).then((rows) => { if (alive) setMemory({ projectId, memory: indexMemory(rows) }); }).catch(() => {});
     return () => { alive = false; };
   }, [projectId]);
-  return memory;
+  return projectId && memory?.projectId === projectId ? memory.memory : EMPTY_MEMORY;
 }
 
 export type BreakdownState = ReturnType<typeof useBreakdown>;

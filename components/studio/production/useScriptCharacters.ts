@@ -20,17 +20,21 @@ export interface ScriptCharacter {
  * The characters of one script: everyone who speaks in it (parsed) plus anyone
  * with a saved bible entry, merged by name.
  */
-export function useScriptCharacters(scriptId: string | null, userId: string) {
-  const [chars, setChars] = useState<ScriptCharacter[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+const NO_CHARS: ScriptCharacter[] = [];
 
-  const load = useCallback(async () => {
-    if (!scriptId) { setChars([]); setStatus('ready'); return; }
-    try {
-      const [text, saved] = await Promise.all([
-        fetchScriptContent(scriptId),
-        supabase.from('script_characters').select('*').eq('script_id', scriptId),
-      ]);
+export function useScriptCharacters(scriptId: string | null, userId: string) {
+  const [loadedChars, setChars] = useState<ScriptCharacter[]>([]);
+  // How the last load for a script went; a script without one is loading.
+  const [loaded, setLoaded] = useState<{ scriptId: string; ok: boolean } | null>(null);
+  const status: 'loading' | 'ready' | 'error' = !scriptId ? 'ready' : loaded?.scriptId !== scriptId ? 'loading' : loaded.ok ? 'ready' : 'error';
+  const chars = scriptId ? loadedChars : NO_CHARS;
+
+  const load = useCallback(() => {
+    if (!scriptId) return Promise.resolve();
+    return Promise.all([
+      fetchScriptContent(scriptId),
+      supabase.from('script_characters').select('*').eq('script_id', scriptId),
+    ]).then(([text, saved]) => {
       if (saved.error) throw saved.error;
       const byName = new Map(saved.data.map((r) => [r.name, r]));
       const parsed = parseScript(text).characters.map((c) => c.name).filter(Boolean);
@@ -39,13 +43,11 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
         const row = byName.get(name) ?? null;
         return { name, row, color: row?.color || CHARACTER_PALETTE[i % CHARACTER_PALETTE.length] };
       }));
-      setStatus('ready');
-    } catch {
-      setStatus('error');
-    }
+      setLoaded({ scriptId, ok: true });
+    }).catch(() => setLoaded({ scriptId, ok: false }));
   }, [scriptId]);
 
-  useEffect(() => { setStatus('loading'); void load(); }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   /** The saved row for a character, created on first use. */
   const ensureRow = useCallback(async (c: ScriptCharacter): Promise<SavedCharacter> => {

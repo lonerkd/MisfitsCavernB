@@ -31,13 +31,15 @@ export function CutScript({ scenes, sceneLines, notes, player, live, picked, onP
   /** The scene shown (the note composer ties new notes to it). */
   onShown: (sceneId: string | null) => void;
 }) {
-  const [t, setT] = useState<number | null>(null);
+  // Where the playhead is, polled while the cut plays.
+  const [playhead, setT] = useState<number | null>(null);
+  const t = live ? playhead : null;
   useEffect(() => {
-    if (!live) { setT(null); return; }
+    if (!live) return;
     const tick = () => setT(player.current?.time() ?? null);
-    tick();
+    const first = window.setTimeout(tick, 0);
     const id = window.setInterval(tick, 500);
-    return () => window.clearInterval(id);
+    return () => { window.clearTimeout(first); window.clearInterval(id); };
   }, [live, player]);
 
   const seconds = useMemo(() => scenes.map(sceneSeconds), [scenes]);

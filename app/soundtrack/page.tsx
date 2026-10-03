@@ -30,35 +30,38 @@ export default function SoundtrackPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Moods come from the project's script (lib/spotify/moods), scene by scene.
-  const [moods, setMoods] = useState<{ status: 'idle' | 'loading' | 'ready'; title: string | null; groups: MoodGroup[] }>({ status: 'idle', title: null, groups: [] });
+  const [moodsFor, setMoods] = useState<{ projectId: string; title: string | null; groups: MoodGroup[] } | null>(null);
+  const moods = moodsFor && moodsFor.projectId === activeProject?.id
+    ? { status: 'ready' as const, title: moodsFor.title, groups: moodsFor.groups }
+    : { status: 'loading' as const, title: null, groups: [] as MoodGroup[] };
   useEffect(() => {
     if (activeTab !== 'moods' || !activeProject?.id) return;
+    const projectId = activeProject.id;
     let on = true;
-    setMoods((m) => ({ ...m, status: 'loading' }));
     supabase.from('scripts').select('title, content').eq('project_id', activeProject.id).order('updated_at', { ascending: false }).limit(1)
       .then(({ data }) => {
         if (!on) return;
         const script = data?.[0];
-        setMoods({ status: 'ready', title: script?.title ?? null, groups: script?.content ? scriptMoods(script.content) : [] });
+        setMoods({ projectId, title: script?.title ?? null, groups: script?.content ? scriptMoods(script.content) : [] });
       });
     return () => { on = false; };
   }, [activeTab, activeProject?.id]);
 
   const [projectRefs, setProjectRefs] = useState<any[]>([]);
-  const [loadingRefs, setLoadingRefs] = useState(false);
+  const [refsFor, setRefsFor] = useState<string | null>(null);
 
-  const fetchSfxAssets = useCallback(async () => {
-    const { data, error } = await supabase.from('sfx_assets').select('*').order('created_at', { ascending: false });
-    if (data && !error) setSfxAssets(data);
-  }, []);
+  const fetchSfxAssets = useCallback(() => supabase.from('sfx_assets').select('*').order('created_at', { ascending: false })
+    .then(({ data, error }) => { if (data && !error) setSfxAssets(data); }), []);
 
   const refsProjectId = activeProject?.id;
-  const fetchProjectRefs = useCallback(async () => {
-    if (!refsProjectId) return;
-    setLoadingRefs(true);
-    const { data, error } = await supabase.from('project_audio_references').select('*').eq('project_id', refsProjectId).order('created_at', { ascending: false });
-    if (data && !error) setProjectRefs(data);
-    setLoadingRefs(false);
+  const loadingRefs = !!refsProjectId && refsFor !== refsProjectId;
+  const fetchProjectRefs = useCallback(() => {
+    if (!refsProjectId) return Promise.resolve();
+    return supabase.from('project_audio_references').select('*').eq('project_id', refsProjectId).order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (data && !error) setProjectRefs(data);
+        setRefsFor(refsProjectId);
+      });
   }, [refsProjectId]);
 
   useEffect(() => {

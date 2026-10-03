@@ -6,6 +6,8 @@ import {
   DEFAULT_LAYOUT, SURFACES, clampRatio, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
   type SplitLayout, type Surface,
 } from '@/lib/split/core';
+import { useHydrated } from '@/lib/hooks/useSearchParam';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import s from './split.module.css';
 
 type Side = 'a' | 'b';
@@ -19,30 +21,30 @@ const NARROW = '(max-width: 760px)';
  * Studio to that scene, and "Open in script" in the Studio moves the script).
  */
 export default function SplitPage() {
-  const [layout, setLayout] = useState<SplitLayout | null>(null);
+  // The layout comes from the address or this device's memory, so the split
+  // itself only renders in the browser.
+  return useHydrated() ? <Split /> : <div className={s.page} aria-busy="true" />;
+}
+
+/** First load: the URL wins; else the last split on this device. */
+function initialLayout(): SplitLayout {
+  let stored: SplitLayout = DEFAULT_LAYOUT;
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) stored = layoutFromSearch(raw); } catch { /* blocked */ }
+  return window.location.search ? layoutFromSearch(window.location.search, stored) : stored;
+}
+
+function Split() {
+  const [first] = useState(initialLayout);
+  const [layout, setLayout] = useState<SplitLayout | null>(first);
   // What each frame was pointed at (changing it navigates the frame) and where it is now.
-  const [src, setSrc] = useState<Record<Side, string>>({ a: DEFAULT_LAYOUT.a, b: DEFAULT_LAYOUT.b });
-  const [here, setHere] = useState<Record<Side, { href: string; title: string }>>({ a: { href: DEFAULT_LAYOUT.a, title: '' }, b: { href: DEFAULT_LAYOUT.b, title: '' } });
+  const [src, setSrc] = useState<Record<Side, string>>({ a: first.a, b: first.b });
+  const [here, setHere] = useState<Record<Side, { href: string; title: string }>>({ a: { href: first.a, title: '' }, b: { href: first.b, title: '' } });
   const [dragging, setDragging] = useState(false);
-  const [narrow, setNarrow] = useState(false);
+  const narrow = useMediaQuery(NARROW);
   const [pulse, setPulse] = useState<Side | null>(null);
   const frames = { a: useRef<HTMLIFrameElement>(null), b: useRef<HTMLIFrameElement>(null) };
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // First load: the URL wins; else the last split on this device.
-  useEffect(() => {
-    let stored: SplitLayout = DEFAULT_LAYOUT;
-    try { const raw = localStorage.getItem(STORE_KEY); if (raw) stored = layoutFromSearch(raw); } catch { /* blocked */ }
-    const l = window.location.search ? layoutFromSearch(window.location.search, stored) : stored;
-    setLayout(l);
-    setSrc({ a: l.a, b: l.b });
-    setHere({ a: { href: l.a, title: '' }, b: { href: l.b, title: '' } });
-    const mq = window.matchMedia(NARROW);
-    const onMq = () => setNarrow(mq.matches);
-    onMq();
-    mq.addEventListener('change', onMq);
-    return () => mq.removeEventListener('change', onMq);
-  }, []);
 
   // Keep the URL and this device's memory in step with the panes.
   useEffect(() => {

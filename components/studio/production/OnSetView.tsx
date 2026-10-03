@@ -14,6 +14,7 @@ import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
 import o from './onset.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 function localToday(): string {
   const d = new Date();
@@ -58,6 +59,8 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
   });
   // The last copy of the day seen here, so the view can open without signal.
   const [fromCopy, setFromCopy] = useState<string | null>(null);
+  // Once the real day has loaded, the copy is no longer what's shown.
+  useOnChange(sheets.status === 'ready', (ready) => { if (ready) setFromCopy(null); });
   // Saved on every change, not debounced: on set the tab may close (or the
   // battery die) a moment after the last tap.
   useEffect(() => {
@@ -67,7 +70,7 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
     });
   }, [project.id, sheets.rows, calls.rows, log.rows, scenes.rows, shots.rows]);
   useEffect(() => {
-    if (sheets.status === 'ready') { setFromCopy(null); return; }
+    if (sheets.status === 'ready') return;
     // With no signal there's nothing to wait for; otherwise only once the load has failed.
     if ((sheets.status !== 'error' && sync.online) || sheets.rows.length) return;
     const snap = loadSnapshot<CallSheet, CallSheetCall, SetLogRow, SceneRow, Shot>(project.id);

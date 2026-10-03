@@ -9,9 +9,10 @@ duplicated across them.
 ## Read order at session start
 
 1. `../AGENTS.md` — universal rules (stack, core rules, workflow, personas)
-2. `STATE.md` — current iteration, last changes, known issues (**living doc**)
-3. This `INDEX.md` — route to the file you need
-4. `sync-manifest.json` — machine-readable file map (regen: `npm run sync-intel`)
+2. `STATE.md` — open work, known issues, the latest session (**living doc**, injected every session)
+3. `BACKLOG.md` — every open task and planned pass, scoped (**the one list**)
+4. This `INDEX.md` — route to the file you need
+5. `sync-manifest.json` — machine-readable file map (regen: `npm run sync-intel`)
 
 ## Files
 
@@ -30,7 +31,8 @@ duplicated across them.
 | `lounge-and-audio.md` | Lounge chat + channels + WebRTC voice |
 | `studio-and-preproduction.md` | The Studio — boards, breakdown, casting, scheduling |
 | `sync-protocol.md` | Multi-agent / multi-tool cooperation & keeping this hub in sync |
-| `STATE.md` | Current iteration state (update every session) |
+| `STATE.md` | Open work, known issues, latest session (update every session; keep it short) |
+| `BACKLOG.md` | Every open task and planned pass, scoped — add what you find, delete what you finish |
 | `STATE-history.md` | Archived past sessions (read on demand; rotate old sessions here from STATE.md) |
 | `sync-manifest.json` | Generated file registry (do not hand-edit) |
 
@@ -41,6 +43,7 @@ every AI has the full operating picture, not just product docs.
 
 - Treat this directory as **Source of Truth** and codebase memory.
 - Any change to files, architecture, or access **must** update the relevant doc
-  here in the same PR, then run `npm run sync-intel` and update `STATE.md`.
+  here in the same PR, then run `npm run sync-intel` and update `STATE.md`
+  and `BACKLOG.md`.
 - Adapters stay thin: if a rule belongs to all tools, it goes in `AGENTS.md` or
   here — never copied into `CLAUDE.md`/`copilot-instructions.md`.

@@ -18,6 +18,8 @@ function formatBytes(n: number | null) {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
+type Field = 'title' | 'board' | 'notes';
+
 /** Everything about one library item: preview, details, scene links, publishing. */
 export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: () => void }) {
   const { project, userId, isOwner, media, links, scenes, mediaById, scenesByMedia } = useStudio();
@@ -26,17 +28,22 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
   const item = mediaById.get(mediaId);
   const signed = useSignedUrls([item?.storage_path]);
 
-  const [title, setTitle] = useState(item?.title ?? '');
-  const [board, setBoard] = useState(item?.board ?? '');
-  const [notes, setNotes] = useState(item?.notes ?? '');
+  // A field shows the live item (teammates' edits arrive as they happen)
+  // except while it's being edited here, when it shows the draft.
+  const [drafts, setDrafts] = useState<Partial<Record<Field, string>>>({});
+  const title = drafts.title ?? item?.title ?? '';
+  const board = drafts.board ?? item?.board ?? '';
+  const notes = drafts.notes ?? item?.notes ?? '';
+  const edit = (field: Field, value: string) => setDrafts((d) => ({ ...d, [field]: value }));
+  /** Drops a field's draft once its save is done — unless it's being edited again. */
+  const settle = (field: Field) => {
+    if (document.activeElement?.getAttribute('name') === field) return;
+    setDrafts(({ [field]: _done, ...rest }) => rest);
+  };
   const [saving, setSaving] = useState(false);
   const [linkTo, setLinkTo] = useState('');
   const [player, setPlayer] = useState<HTMLMediaElement | null>(null);
 
-  // Follow live edits from teammates unless this field is being edited here.
-  useEffect(() => { if (item && document.activeElement?.getAttribute('name') !== 'title') setTitle(item.title); }, [item?.title]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (item && document.activeElement?.getAttribute('name') !== 'board') setBoard(item.board ?? ''); }, [item?.board]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (item && document.activeElement?.getAttribute('name') !== 'notes') setNotes(item.notes ?? ''); }, [item?.notes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const boards = useMemo(() => Array.from(new Set(media.rows.map((m) => m.board).filter(Boolean) as string[])).sort(), [media.rows]);
   const linkedSceneIds = scenesByMedia.get(mediaId) ?? [];
@@ -57,7 +64,7 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
       media.upsertLocal(await studio.updateMedia(item.id, patch));
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save', 'error');
-      setTitle(item.title); setBoard(item.board ?? ''); setNotes(item.notes ?? '');
+      setDrafts({});
     } finally {
       setSaving(false);
     }
@@ -130,16 +137,16 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
         <div className={s.stack}>
           <label className={s.field}>
             <span className={s.label}>Title</span>
-            <input name="title" className={s.input} value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} onBlur={() => { if (title.trim() !== item.title) void save({ title }); }} />
+            <input name="title" className={s.input} value={title} maxLength={200} onChange={(e) => edit('title', e.target.value)} onBlur={() => { if (title.trim() !== item.title) void save({ title }).then(() => settle('title')); else settle('title'); }} />
           </label>
           <label className={s.field}>
             <span className={s.label}>Board</span>
-            <input name="board" className={s.input} value={board} maxLength={60} placeholder="e.g. Lighting, Wardrobe, Locations" list="studio-boards" onChange={(e) => setBoard(e.target.value)} onBlur={() => { if ((board.trim() || null) !== item.board) void save({ board }); }} />
+            <input name="board" className={s.input} value={board} maxLength={60} placeholder="e.g. Lighting, Wardrobe, Locations" list="studio-boards" onChange={(e) => edit('board', e.target.value)} onBlur={() => { if ((board.trim() || null) !== item.board) void save({ board }).then(() => settle('board')); else settle('board'); }} />
             <datalist id="studio-boards">{boards.map((b) => <option key={b} value={b} />)}</datalist>
           </label>
           <label className={s.field}>
             <span className={s.label}>{item.kind === 'note' ? 'The note · team only' : 'Notes · team only'}</span>
-            <textarea name="notes" className={s.textarea} value={notes} maxLength={5000} rows={item.kind === 'note' ? 8 : undefined} placeholder={item.kind === 'note' ? 'A line, an idea, what someone said' : 'Why this reference — what to take from it'} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if ((notes || null) !== (item.notes || null)) void save({ notes: notes || null }); }} />
+            <textarea name="notes" className={s.textarea} value={notes} maxLength={5000} rows={item.kind === 'note' ? 8 : undefined} placeholder={item.kind === 'note' ? 'A line, an idea, what someone said' : 'Why this reference — what to take from it'} onChange={(e) => edit('notes', e.target.value)} onBlur={() => { if ((notes || null) !== (item.notes || null)) void save({ notes: notes || null }).then(() => settle('notes')); else settle('notes'); }} />
           </label>
 
           <div className={s.divider} />

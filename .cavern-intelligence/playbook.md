@@ -11,7 +11,7 @@ This is the step-by-step workflow for any AI agent making changes to the codebas
 
 ### 2. Check State
 - Read `.cavern-intelligence/STATE.md` — understand what iteration is active, known issues, recent changes
-- If STATE.md doesn't exist for a new task, initialize it
+- Read `.cavern-intelligence/BACKLOG.md` — every open task, scoped; pick from it rather than rediscovering work
 
 ### 3. Plan
 - Identify exact files to modify
@@ -53,11 +53,12 @@ Test three directions: owner (pass), crew member scoped (pass), outsider (block)
 npm run sync-intel
 ```
 This updates `.cavern-intelligence/sync-manifest.json` with current file listing.
-Then update `.cavern-intelligence/STATE.md` with:
-- What was changed
-- Verification results
-- Any known issues or follow-up tasks
-- Update the iteration counter
+Then update `.cavern-intelligence/STATE.md` — a new "Latest Session" (what
+changed, verification results); move the previous one to `STATE-history.md`
+so STATE stays short (it's injected into every session) — and
+`.cavern-intelligence/BACKLOG.md`: add anything found and not done (scoped:
+what, where, size, done-when), delete what this session finished, and keep
+STATE's "Open work" summary in step with it.
 
 ### 7. Commit
 - Create a branch: `git checkout -b <feature-or-fix>-<short-description>`

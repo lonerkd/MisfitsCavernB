@@ -738,6 +738,25 @@ const MINI_INPUT: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.04
 
 // Crew work tasks, budget and milestones with the owner; the crew list, festivals
 // and project settings live on the project row, which only its owner can change.
+/** Everything the project page shows, in one round (lib/supabase calls in parallel). */
+async function fetchProjectPage(projectId: string) {
+  const [t, b, tl, c, pf, proj] = await Promise.all([
+    supabase.from('project_tasks').select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at'),
+    supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
+    supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
+    supabase.from('project_crew').select('id,user_id,role,craft,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
+    supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
+    supabase.from('projects').select('settings,festival_submissions,creator_id').eq('id', projectId).single(),
+  ]);
+  const posted = await getBudgetItemIdsWithJobs(projectId);
+  let owner: { id: string; username: string } | null | undefined;
+  if (proj.data?.creator_id) {
+    const { data } = await supabase.from('profiles').select('id,username').eq('id', proj.data.creator_id).maybeSingle();
+    owner = data ? { id: data.id, username: data.username } : null;
+  }
+  return { t, b, tl, c, pf, proj, posted, owner };
+}
+
 function ProductionManager({ projectId, projectTitle, accent, isOwner }: { projectId: string; projectTitle: string; accent: string; isOwner: boolean }) {
   const { toast } = useToast();
   const [userId, setUserId] = useState<string | null>(null);
@@ -757,32 +776,17 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
   const [festivals, setFestivals] = useState<FestivalRow[]>([]);
 
-  const load = React.useCallback(async () => {
-    try {
-      const [t, b, tl, c, pf, proj] = await Promise.all([
-        supabase.from('project_tasks').select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at'),
-        supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
-        supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
-        supabase.from('project_crew').select('id,user_id,role,craft,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
-        supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
-        supabase.from('projects').select('settings,festival_submissions,creator_id').eq('id', projectId).single(),
-      ]);
-      setTasks((t.data as TaskRow[]) || []);
-      setBudget((b.data as BudgetRow[]) || []);
-      setTimeline((tl.data as TimelineRow[]) || []);
-      setCrew((c.data as unknown as CrewRow[]) || []);
-      setPortfolio((pf.data as PortfolioRow[]) || []);
-      setPostedBudgetIds(await getBudgetItemIdsWithJobs(projectId));
-      if (proj.data?.settings) setSettings(proj.data.settings as unknown as ProjectSettings);
-      setFestivals((proj.data?.festival_submissions as unknown as FestivalRow[]) || []);
-      if (proj.data?.creator_id) {
-        const { data: owner } = await supabase.from('profiles').select('id,username').eq('id', proj.data.creator_id).maybeSingle();
-        setOwner(owner ? { id: owner.id, username: owner.username } : null);
-      }
-    } catch (e: any) {
-      setErr(e.message);
-    }
-  }, [projectId]);
+  const load = React.useCallback(() => fetchProjectPage(projectId).then(({ t, b, tl, c, pf, proj, posted, owner }) => {
+    setTasks((t.data as TaskRow[]) || []);
+    setBudget((b.data as BudgetRow[]) || []);
+    setTimeline((tl.data as TimelineRow[]) || []);
+    setCrew((c.data as unknown as CrewRow[]) || []);
+    setPortfolio((pf.data as PortfolioRow[]) || []);
+    setPostedBudgetIds(posted);
+    if (proj.data?.settings) setSettings(proj.data.settings as unknown as ProjectSettings);
+    setFestivals((proj.data?.festival_submissions as unknown as FestivalRow[]) || []);
+    if (owner !== undefined) setOwner(owner);
+  }, (e: any) => setErr(e.message)), [projectId]);
 
   useEffect(() => {
     awaitOSUser().then((user) => setUserId(user?.id ?? null));

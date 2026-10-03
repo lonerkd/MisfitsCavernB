@@ -44,12 +44,25 @@ function newer(a: Row | undefined, b: Row): boolean {
   return !ta || !tb || tb >= ta;
 }
 
+const EMPTY: Row[] = [];
+
 export function useLiveRows<T extends Row>(opts: LiveRowsOptions<T>): LiveRows<T> {
-  const [rows, setRows] = useState<T[]>([]);
-  const [status, setStatus] = useState<LiveStatus>('loading');
-  const [error, setError] = useState<string | null>(null);
+  // The rows, tagged with the scope they're for: a new scope starts empty and
+  // loading without a reset (its subscription and first load set it).
+  const [data, setData] = useState<{ scope: string | null; rows: T[]; status: LiveStatus; error: string | null } | null>(null);
+  const mine = data && data.scope === opts.scope ? data : null;
+  const rows = mine?.rows ?? (EMPTY as T[]);
+  const status: LiveStatus = mine?.status ?? (opts.scope ? 'loading' : 'ready');
+  const error = mine?.error ?? null;
   const optsRef = useRef(opts);
   useLayoutEffect(() => { optsRef.current = opts; });
+  /** Changes this scope's rows (starting from none if they were another scope's). */
+  const setRows = useCallback((change: (prev: T[]) => T[]) => setData((d) => {
+    const scope = optsRef.current.scope;
+    const prev = d && d.scope === scope ? d : { scope, rows: [] as T[], status: (scope ? 'loading' : 'ready') as LiveStatus, error: null };
+    const next = change(prev.rows);
+    return next === prev.rows && d === prev ? d : { ...prev, rows: next };
+  }), []);
   const generation = useRef(0);
   // Writes applied locally, so a reload that started before them can't erase
   // them (its snapshot may predate the write).
@@ -74,13 +87,12 @@ export function useLiveRows<T extends Row>(opts: LiveRowsOptions<T>): LiveRows<T
         if (w.row) merged.set(key, w.row);
         else merged.delete(key);
       });
-      setRows(finish(Array.from(merged.values())));
-      setStatus('ready');
-      setError(null);
+      setData({ scope: optsRef.current.scope, rows: finish(Array.from(merged.values())), status: 'ready', error: null });
     } catch (e) {
       if (gen !== generation.current) return;
-      setStatus('error');
-      setError(e instanceof Error ? e.message : 'Could not load');
+      const scope = optsRef.current.scope;
+      const message = e instanceof Error ? e.message : 'Could not load';
+      setData((d) => ({ scope, rows: d && d.scope === scope ? d.rows : [], status: 'error', error: message }));
     }
   }, [finish]);
 
@@ -95,21 +107,18 @@ export function useLiveRows<T extends Row>(opts: LiveRowsOptions<T>): LiveRows<T
       next[i] = { ...prev[i], ...row };
       return finish(next);
     });
-  }, [finish]);
+  }, [finish, setRows]);
 
   const removeLocal = useCallback((key: string) => {
     localWrites.current.set(key, { at: Date.now(), row: null });
     setRows((prev) => prev.filter((r) => optsRef.current.keyOf(r) !== key));
-  }, []);
+  }, [setRows]);
 
   const { scope, table, filter } = opts;
   useEffect(() => {
     generation.current++;
     localWrites.current.clear();
-    setRows([]);
-    setError(null);
-    if (!scope) { setStatus('ready'); return; }
-    setStatus('loading');
+    if (!scope) return;
 
     const onChange = (payload: RealtimePostgresChangesPayload<T>) => {
       if (payload.eventType === 'DELETE') {

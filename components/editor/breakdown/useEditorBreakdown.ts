@@ -5,10 +5,11 @@
 // selection, accept, dismiss, untag). Only project scripts have a breakdown —
 // scenes must be in the scene index to be tagged.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { breakdown, useBreakdown, useBreakdownMemory, nameKey, type Suggestion } from '@/lib/breakdown';
 import { buildBreakdownView, sceneRanges, type EditorLine, type Mark } from '@/lib/breakdown/marks';
 import { announceProgressChange } from '@/lib/supabase/progress';
+import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
 
 const MODE_KEY = 'mc_breakdown_mode';
 
@@ -34,12 +35,8 @@ export function useEditorBreakdown(opts: {
   const memory = useBreakdownMemory(projectId);
 
   // A writing preference, per device.
-  const [mode, setModeState] = useState(false);
-  useEffect(() => { try { setModeState(localStorage.getItem(MODE_KEY) === 'on'); } catch { /* blocked */ } }, []);
-  const setMode = useCallback((on: boolean) => {
-    setModeState(on);
-    try { localStorage.setItem(MODE_KEY, on ? 'on' : 'off'); } catch { /* blocked */ }
-  }, []);
+  const mode = useDeviceValue(MODE_KEY) === 'on';
+  const setMode = useCallback((on: boolean) => writeDeviceValue(MODE_KEY, on ? 'on' : 'off'), []);
 
   const ranges = useMemo(() => sceneRanges(lines, sceneIds, characters), [lines, sceneIds, characters]);
   const view = useMemo(() => {

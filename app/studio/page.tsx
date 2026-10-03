@@ -4,7 +4,8 @@
 // its library, the screenplay's scenes and their references, production
 // planning, and what gets shared. Data lives in <StudioProvider> and stays live.
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Archive, Clapperboard, Film, Globe, LayoutGrid, Lock, Maximize2, Megaphone, Video } from 'lucide-react';
@@ -50,24 +51,19 @@ const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations',
 
 /** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
 function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
-  const [tab, setTabState] = useState<TabId>('overview');
-  const [view, setView] = useState<ProductionView | null>(null);
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const t = params.get('tab') as TabId | null;
-    const v = params.get('view') as ProductionView | null;
-    if (t && valid.includes(t)) setTabState(t);
-    if (v && VIEWS.includes(v)) setView(v);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const setTab = useCallback((t: TabId, v?: ProductionView) => {
-    setTabState(t);
-    setView(v ?? null);
+  // The address is the source of truth; choosing a tab rewrites it and re-renders.
+  const params = new URLSearchParams(useLocationSearch());
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
+  const t = params.get('tab') as TabId | null;
+  const v = params.get('view') as ProductionView | null;
+  const setTab = useCallback((next: TabId, nextView?: ProductionView) => {
     const url = new URL(window.location.href);
-    url.searchParams.set('tab', t);
-    if (v) url.searchParams.set('view', v); else url.searchParams.delete('view');
+    url.searchParams.set('tab', next);
+    if (nextView) url.searchParams.set('view', nextView); else url.searchParams.delete('view');
     window.history.replaceState(null, '', url);
+    rerender();
   }, []);
-  return [valid.includes(tab) ? tab : 'overview', view, setTab];
+  return [t && valid.includes(t) ? t : 'overview', v && VIEWS.includes(v) ? v : null, setTab];
 }
 
 export default function StudioPage() {

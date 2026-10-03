@@ -4,12 +4,13 @@
 // page, from the suite's own log (public.client_errors — the app reports every
 // crash screen and uncaught error itself). Kept 30 days.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, RotateCw, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { ProtectedPage } from '@/lib/os';
 import { useToast } from '@/components/Toast';
+import { useLoad } from '@/lib/hooks/useLoad';
 import { useConfirm } from '@/components/Confirm';
 import type { Tables } from '@/lib/supabase/database.types';
 
@@ -30,17 +31,14 @@ export default function AdminErrorsPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const [range, setRange] = useState<Range>(7);
-  const [rows, setRows] = useState<Row[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
+  const { data, error: loadError, reload: load } = useLoad(String(range), async () => {
     const since = new Date(Date.now() - range * 86_400_000).toISOString();
-    const { data, error: e } = await supabase.from('client_errors').select('*').gte('created_at', since).order('created_at', { ascending: false }).limit(1000);
-    if (e) { setError(e.message); return; }
-    setError(null);
-    setRows(data);
-  }, [range]);
-  useEffect(() => { void load(); }, [load]);
+    const { data: found, error: e } = await supabase.from('client_errors').select('*').gte('created_at', since).order('created_at', { ascending: false }).limit(1000);
+    if (e) throw e;
+    return found as Row[];
+  });
+  const rows = data ?? null;
+  const error = loadError ? (loadError as { message?: string }).message ?? 'Could not load errors' : null;
 
   const groups = useMemo(() => {
     const map = new Map<string, Group>();
@@ -59,7 +57,7 @@ export default function AdminErrorsPage() {
     const { error: e } = await supabase.from('client_errors').delete().in('id', g.ids);
     if (e) { toast(e.message, 'error'); return; }
     toast('Cleared', 'success');
-    void load();
+    load();
   };
 
   return (
@@ -83,7 +81,7 @@ export default function AdminErrorsPage() {
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => void load()} style={{ ...mono, minHeight: 36, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <button type="button" onClick={load} style={{ ...mono, minHeight: 36, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <RotateCw size={12} aria-hidden /> Refresh
             </button>
             {rows && <span style={{ ...mono, color: 'var(--fg-dim)', marginLeft: 'auto' }}>{rows.length} report{rows.length === 1 ? '' : 's'} · {groups.length} distinct</span>}

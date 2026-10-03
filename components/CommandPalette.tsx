@@ -31,6 +31,8 @@ interface Command {
   group: string;
 }
 
+const NO_HITS: SearchHit[] = [];
+
 function fuzzy(query: string, text: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();
@@ -53,21 +55,22 @@ export default function CommandPalette() {
   const [scripts, setScripts] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
   // Everything else you can open, found by the database as you type.
-  const [hits, setHits] = useState<SearchHit[]>([]);
-  const [searching, setSearching] = useState(false);
+  // Results carry the query they answer: "searching" is any query without them yet.
+  const [found, setFound] = useState<{ query: string; hits: SearchHit[] } | null>(null);
+  const live = open && searchable(query);
+  const hits = live && found ? found.hits : NO_HITS;
+  const searching = live && found?.query !== query;
 
   useEffect(() => {
-    if (!open || !searchable(query)) { setHits([]); setSearching(false); return; }
+    if (!live) return;
     let alive = true;
-    setSearching(true);
     const t = setTimeout(() => {
       searchSuite(query)
-        .then((h) => { if (alive) setHits(h); })
-        .catch(() => { if (alive) setHits([]); })
-        .finally(() => { if (alive) setSearching(false); });
+        .then((h) => { if (alive) setFound({ query, hits: h }); })
+        .catch(() => { if (alive) setFound({ query, hits: [] }); });
     }, 180);
     return () => { alive = false; clearTimeout(t); };
-  }, [open, query]);
+  }, [live, query]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -85,10 +88,10 @@ export default function CommandPalette() {
 
   useOnChange(pathname, () => setOpen(false));
 
+  useOnChange(open, (o) => { if (o) { setQuery(''); setSel(0); } });
+
   useEffect(() => {
     if (open) {
-      setQuery('');
-      setSel(0);
       setTimeout(() => inputRef.current?.focus(), 30);
 
       const fetchData = async () => {
@@ -208,18 +211,19 @@ export default function CommandPalette() {
     return m;
   }, [filtered]);
 
-  useEffect(() => { if (sel >= filtered.length) setSel(Math.max(0, filtered.length - 1)); }, [filtered, sel]);
+  // The selection never points past the list (it shrinks as you type).
+  const cur = Math.min(sel, Math.max(0, filtered.length - 1));
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(filtered.length - 1, s + 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(s => Math.max(0, s - 1)); }
-    else if (e.key === 'Enter') { e.preventDefault(); filtered[sel]?.run(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSel(Math.min(filtered.length - 1, cur + 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(Math.max(0, cur - 1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); filtered[cur]?.run(); }
   };
 
   useEffect(() => {
-    const el = listRef.current?.querySelector(`[data-idx="${sel}"]`) as HTMLElement | null;
+    const el = listRef.current?.querySelector(`[data-idx="${cur}"]`) as HTMLElement | null;
     el?.scrollIntoView({ block: 'nearest' });
-  }, [sel]);
+  }, [cur]);
 
   if (pathname === '/auth' || pathname === '/login') return null;
 
@@ -262,7 +266,7 @@ export default function CommandPalette() {
                   {g.items.map(c => {
                     flatIdx++;
                     const idx = flatIdx;
-                    const active = idx === sel;
+                    const active = idx === cur;
                     return (
                       <button
                         key={c.id}

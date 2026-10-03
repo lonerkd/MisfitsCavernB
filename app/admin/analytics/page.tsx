@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
+import { useLoad } from '@/lib/hooks/useLoad';
 import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, TrendingUp, Users, Zap, Clock } from 'lucide-react';
 
@@ -17,57 +18,42 @@ interface Analytics {
   avgProjectDuration: number | null;
 }
 
+const EMPTY: Analytics = {
+  totalUsers: 0,
+  activeUsers: 0,
+  totalProjects: 0,
+  completedProjects: 0,
+  totalScripts: 0,
+  totalJobs: 0,
+  avgProjectDuration: null,
+};
+
 export default function AdminAnalyticsPage() {
-  const [analytics, setAnalytics] = useState<Analytics>({
-    totalUsers: 0,
-    activeUsers: 0,
-    totalProjects: 0,
-    completedProjects: 0,
-    totalScripts: 0,
-    totalJobs: 0,
-    avgProjectDuration: null,
-  });
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
 
-  const loadAnalytics = useCallback(async () => {
-    try {
-      setLoading(true);
-      const platformStats = await getPlatformStats();
+  const { data, loading, error } = useLoad(timeRange, async (): Promise<Analytics> => {
+    const platformStats = await getPlatformStats();
 
-      const rangeStart = new Date();
-      if (timeRange === 'week') rangeStart.setDate(rangeStart.getDate() - 7);
-      else if (timeRange === 'month') rangeStart.setMonth(rangeStart.getMonth() - 1);
-      else rangeStart.setFullYear(rangeStart.getFullYear() - 1);
+    const rangeStart = new Date();
+    if (timeRange === 'week') rangeStart.setDate(rangeStart.getDate() - 7);
+    else if (timeRange === 'month') rangeStart.setMonth(rangeStart.getMonth() - 1);
+    else rangeStart.setFullYear(rangeStart.getFullYear() - 1);
 
-      const { data: rows, error } = await supabase.rpc('admin_platform_analytics', { p_since: rangeStart.toISOString() });
-      if (error) throw error;
-      const row = rows?.[0];
-      const activeUsers = Number(row?.active_users ?? 0);
-      const completedProjects = Number(row?.completed_projects ?? 0);
-      const avgProjectDuration = row?.avg_project_days ?? null;
-
-      setAnalytics({
-        totalUsers: platformStats.users,
-        activeUsers,
-        totalProjects: platformStats.projects,
-        completedProjects,
-        totalScripts: platformStats.scripts,
-        totalJobs: platformStats.jobs,
-        avgProjectDuration,
-      });
-      setLoadError(null);
-    } catch (error: any) {
-      setLoadError(error?.message || 'Could not load analytics');
-    } finally {
-      setLoading(false);
-    }
-  }, [timeRange]);
-
-  useEffect(() => {
-    loadAnalytics();
-  }, [loadAnalytics]);
+    const { data: rows, error: e } = await supabase.rpc('admin_platform_analytics', { p_since: rangeStart.toISOString() });
+    if (e) throw e;
+    const row = rows?.[0];
+    return {
+      totalUsers: platformStats.users,
+      activeUsers: Number(row?.active_users ?? 0),
+      totalProjects: platformStats.projects,
+      completedProjects: Number(row?.completed_projects ?? 0),
+      totalScripts: platformStats.scripts,
+      totalJobs: platformStats.jobs,
+      avgProjectDuration: row?.avg_project_days ?? null,
+    };
+  });
+  const analytics = data ?? EMPTY;
+  const loadError = error ? (error as { message?: string }).message || 'Could not load analytics' : null;
 
   return (
     <ProtectedPage requiredPermission="manage_users">

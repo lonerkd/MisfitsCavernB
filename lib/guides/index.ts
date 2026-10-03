@@ -35,34 +35,39 @@ export async function saveGuideProgress(userId: string, projectId: string, next:
 
 /** This person's guide state on a project, saved as it changes (optimistically). */
 export function useGuideProgress(projectId: string | null | undefined, userId: string | null | undefined) {
-  const [progress, setState] = useState<GuideProgress>(EMPTY_GUIDE_PROGRESS);
-  const [loaded, setLoaded] = useState(false);
-  const current = useRef(progress);
-  const setProgress = useCallback((p: GuideProgress) => { current.current = p; setState(p); }, []);
+  // Tagged with the project and person it belongs to; anything else is empty until loaded.
+  const key = projectId && userId ? `${projectId}|${userId}` : null;
+  const [state, setState] = useState<{ key: string; progress: GuideProgress; loaded: boolean } | null>(null);
+  const mine = key && state?.key === key ? state : null;
+  const progress = mine?.progress ?? EMPTY_GUIDE_PROGRESS;
+  const loaded = mine?.loaded ?? false;
+  const latest = useRef<{ key: string; progress: GuideProgress } | null>(null);
+  const setProgress = useCallback((k: string, p: GuideProgress, isLoaded?: boolean) => {
+    latest.current = { key: k, progress: p };
+    setState((st) => ({ key: k, progress: p, loaded: isLoaded ?? (st?.key === k && st.loaded) }));
+  }, []);
 
   useEffect(() => {
+    if (!projectId || !key) return;
     let alive = true;
-    setLoaded(false);
-    setProgress(EMPTY_GUIDE_PROGRESS);
-    if (!projectId || !userId) return;
     loadGuideProgress(projectId)
-      .then((p) => { if (alive) { setProgress(p); setLoaded(true); } })
-      .catch(() => { if (alive) setLoaded(true); });
+      .then((p) => { if (alive) setProgress(key, p, true); })
+      .catch(() => { if (alive) setState((st) => ({ key, progress: st?.key === key ? st.progress : EMPTY_GUIDE_PROGRESS, loaded: true })); });
     return () => { alive = false; };
-  }, [projectId, userId, setProgress]);
+  }, [projectId, key, setProgress]);
 
   const update = useCallback(async (patch: Partial<GuideProgress>) => {
-    if (!projectId || !userId) return;
-    const before = current.current;
+    if (!projectId || !userId || !key) return;
+    const before = latest.current?.key === key ? latest.current.progress : EMPTY_GUIDE_PROGRESS;
     const next = { ...before, ...patch };
-    setProgress(next);
+    setProgress(key, next);
     try {
       await saveGuideProgress(userId, projectId, next);
     } catch (e) {
-      setProgress(before);
+      setProgress(key, before);
       throw e;
     }
-  }, [projectId, userId, setProgress]);
+  }, [projectId, userId, key, setProgress]);
 
   return { progress, loaded, update };
 }

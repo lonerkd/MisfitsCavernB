@@ -8,7 +8,7 @@
 // on desktop is out of reach here. Shown only at phone widths (CSS); the bar
 // slides away while typing so the keyboard gets the room.
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,6 +23,7 @@ import { readable } from '@/lib/color';
 import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture';
 import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -153,14 +154,19 @@ export default function MobileTabBar() {
   useOnChange(pathname, () => { setMore(false); setCapturing(false); });
   // The home-screen shortcut and the share menu land on Today with what to
   // capture: open Capture with it, then tidy the address.
-  useEffect(() => {
-    if (!authed || pathname !== '/today') return;
-    const shared = fromShare(new URLSearchParams(location.search));
-    if (!shared) return;
+  const search = useLocationSearch();
+  const shared = useMemo(() => (authed && pathname === '/today' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
+  const sharedKey = shared ? search : '';
+  // Open each share once — including one already in the address when this mounts.
+  const [handledShare, setHandledShare] = useState('');
+  if (sharedKey && shared && sharedKey !== handledShare) {
+    setHandledShare(sharedKey);
     setStart(shared);
     setCapturing(true);
-    history.replaceState(history.state, '', '/today');
-  }, [authed, pathname]);
+  } else if (!sharedKey && handledShare) {
+    setHandledShare(''); // the address is tidied: the same share can come again
+  }
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/today'); }, [sharedKey]);
   useEffect(() => {
     if (!authed) return;
     let live = true;

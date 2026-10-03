@@ -16,11 +16,11 @@ Next.js 16 App Router (React 19, built with webpack) · TypeScript · Tailwind C
 ## Change Workflow
 
 1. **Explore** — Read `.cavern-intelligence/sync-manifest.json` for file map. Read relevant source files.
-2. **Check State** — Read `.cavern-intelligence/STATE.md` for current iteration context.
+2. **Check State** — Read `.cavern-intelligence/STATE.md` for current iteration context and `BACKLOG.md` for every open task.
 3. **Plan** — Identify files affected, understand RLS implications for DB changes.
 4. **Implement** — Write code following conventions in `.cavern-intelligence/CLAW.md` and `.cavern-intelligence/playbook.md`.
 5. **Verify** — `npx tsc --noEmit && npm run build && npm run lint`
-6. **Sync** — `npm run sync-intel` to update manifest. Update `.cavern-intelligence/STATE.md`.
+6. **Sync** — `npm run sync-intel` to update manifest. Update `.cavern-intelligence/STATE.md` and `BACKLOG.md`.
 7. **Commit** — Clear message, branch → PR.
 
 ## Verification Commands
@@ -56,6 +56,7 @@ conventions.
 | `studio-and-preproduction.md` | Studio module work |
 | `sync-protocol.md` | Multi-agent sync rules |
 | `STATE.md` | Current iteration state |
+| `BACKLOG.md` | Every open task and planned pass, scoped |
 
 ## Testing Personas
 

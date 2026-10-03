@@ -19,25 +19,26 @@ export interface ProjectProgressState {
  * anything on the page announces a change (announceProgressChange).
  */
 export function useProjectProgress(projectId: string | null | undefined): ProjectProgressState {
-  const [signals, setSignals] = useState<ProjectSignals | null>(null);
-  const [loading, setLoading] = useState(!!projectId);
+  // The signals, tagged with their project: another project's are never shown,
+  // and a project without an answer yet is loading.
+  const [got, setGot] = useState<{ projectId: string; signals: ProjectSignals | null } | null>(null);
+  const mine = projectId && got?.projectId === projectId ? got : null;
+  const signals = mine?.signals ?? null;
+  const loading = !!projectId && !mine;
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!projectId) { setSignals(null); setLoading(false); return; }
-    try {
-      setSignals(await fetchProjectSignals(projectId));
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load project progress');
-    } finally {
-      setLoading(false);
-    }
+    if (!projectId) return;
+    await fetchProjectSignals(projectId).then(
+      (next) => { setGot({ projectId, signals: next }); setError(null); },
+      (e) => {
+        setGot((g) => ({ projectId, signals: g?.projectId === projectId ? g.signals : null }));
+        setError(e instanceof Error ? e.message : 'Could not load project progress');
+      },
+    );
   }, [projectId]);
 
   useEffect(() => {
-    setSignals(null);
-    setLoading(!!projectId);
     void reload();
     if (!projectId) return;
     const onFocus = () => { if (document.visibilityState === 'visible') void reload(); };

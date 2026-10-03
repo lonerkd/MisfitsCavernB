@@ -3,7 +3,7 @@
 // The Lounge's side panels: search across everything you can read, and a
 // channel's pinned messages. Both hand a message back to the page to jump to.
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pin, PinOff, Search, X } from 'lucide-react';
 import { getPinnedMessages, searchLounge, type LoungeHit } from '@/lib/supabase/messages';
@@ -34,6 +34,8 @@ function Marked({ text, query }: { text: string; query: string }) {
   return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i} style={{ background: 'rgba(16,185,129,0.25)', color: 'var(--fg-strong)', borderRadius: 4 }}>{part}</mark> : part))}</>;
 }
 
+const NO_HITS: LoungeHit[] = [];
+
 export function LoungeSearch({ channel, meId, onClose, onJump }: {
   channel: { id: string; name: string } | null;
   meId?: string;
@@ -42,22 +44,25 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
 }) {
   const [query, setQuery] = useState('');
   const [here, setHere] = useState(!!channel);
-  const [hits, setHits] = useState<LoungeHit[]>([]);
-  const [state, setState] = useState<'idle' | 'searching' | 'done' | 'error'>('idle');
-  const seq = useRef(0);
+  // Each answer carries the search it answers; the panel's state follows from that.
+  const scope = here && channel ? channel.id : null;
+  const q = query.trim();
+  const key = `${scope ?? '*'}\u0000${q}`;
+  const [answer, setAnswer] = useState<{ key: string; hits: LoungeHit[]; error: boolean } | null>(null);
+  const live = q.replace(/[^\p{L}\p{N}]+/gu, '').length >= 2;
+  const hits = live && answer && !answer.error ? answer.hits : NO_HITS;
+  const state: 'idle' | 'searching' | 'done' | 'error' = !live ? 'idle' : answer?.key !== key ? 'searching' : answer.error ? 'error' : 'done';
 
   useEffect(() => {
-    const q = query.trim();
-    if (q.replace(/[^\p{L}\p{N}]+/gu, '').length < 2) { setHits([]); setState('idle'); return; }
-    const mine = ++seq.current;
-    setState('searching');
+    if (!live) return;
+    let alive = true;
     const t = setTimeout(() => {
-      searchLounge(q, here && channel ? channel.id : null)
-        .then((r) => { if (seq.current === mine) { setHits(r); setState('done'); } })
-        .catch(() => { if (seq.current === mine) setState('error'); });
+      searchLounge(q, scope)
+        .then((r) => { if (alive) setAnswer({ key, hits: r, error: false }); })
+        .catch(() => { if (alive) setAnswer({ key, hits: [], error: true }); });
     }, 250);
-    return () => clearTimeout(t);
-  }, [query, here, channel]);
+    return () => { alive = false; clearTimeout(t); };
+  }, [live, q, scope, key]);
 
   return (
     <motion.aside role="dialog" aria-label="Search the Lounge" initial={{ x: 400 }} animate={{ x: 0 }} exit={{ x: 400 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={panelStyle}

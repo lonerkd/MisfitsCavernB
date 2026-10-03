@@ -27,6 +27,7 @@ import { awaitOSUser } from '@/lib/os';
 import { useProjectBrief, loadChannelPresets, suggestChannels, type ChannelPreset } from '@/lib/brief';
 import { mapStatusToPhase } from '@/lib/os/phases';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { useSearchParam } from '@/lib/hooks/useSearchParam';
 
 interface Message {
   id: string;
@@ -408,8 +409,8 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const [members, setMembers] = useState<ChannelMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<{ id: string; username: string }[]>([]);
-  const [searching, setSearching] = useState(false);
+  // People found for a query, tagged with it: "searching" is a query without its answer yet.
+  const [found, setFound] = useState<{ q: string; users: { id: string; username: string }[] } | null>(null);
   const [postPolicy, setPostPolicy] = useState(channel.post_policy);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -418,25 +419,32 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   const [discordBusy, setDiscordBusy] = useState(false);
   const confirm = useConfirm();
 
-  const refresh = useCallback(async () => { setLoading(true); setMembers(await listChannelMembers(channel.id)); setLoading(false); }, [channel.id]);
-  useEffect(() => { refresh(); }, [refresh]);
+  const refresh = useCallback(async () => { setMembers(await listChannelMembers(channel.id)); setLoading(false); }, [channel.id]);
+  useEffect(() => {
+    let alive = true;
+    listChannelMembers(channel.id).then((m) => { if (alive) { setMembers(m); setLoading(false); } });
+    return () => { alive = false; };
+  }, [channel.id]);
   useEffect(() => { hasDiscordWebhook(channel.id).then(setDiscordConnected); }, [channel.id]);
   useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
 
+  const q = query.trim();
+  const results = q && found ? found.users.filter(u => !members.some(m => m.user_id === u.id)) : [];
+  const searching = !!q && found?.q !== q;
   useEffect(() => {
-    if (!query.trim()) { setResults([]); return; }
-    let live = true; setSearching(true);
+    if (!q) return;
+    let live = true;
     const t = setTimeout(async () => {
-      const { data } = await supabase.from('profiles').select('id, username').ilike('username', `%${query.trim()}%`).eq('is_sample', false).limit(8);
-      if (live) { setResults((data as any[] || []).filter(u => !members.some(m => m.user_id === u.id))); setSearching(false); }
+      const { data } = await supabase.from('profiles').select('id, username').ilike('username', `%${q}%`).eq('is_sample', false).limit(8);
+      if (live) setFound({ q, users: (data as { id: string; username: string }[] | null) || [] });
     }, 220);
     return () => { live = false; clearTimeout(t); };
-  }, [query, members]);
+  }, [q]);
 
   const doAdd = async (u: { id: string; username: string }) => {
     setBusy(true); setErr(null);
     const e = await addChannelMember(channel.id, u.id, { can_post: true, can_manage: false });
-    setBusy(false); setQuery(''); setResults([]);
+    setBusy(false); setQuery('');
     if (e) { setErr(e); return; }
     await refresh(); onChanged();
   };
@@ -611,6 +619,9 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   );
 }
 
+const NO_CREW: any[] = [];
+const NO_REPLIES: Message[] = [];
+
 export default function LoungePage() {
   const { isLoading } = useOSGate();
   const { toast } = useToast();
@@ -618,8 +629,8 @@ export default function LoungePage() {
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
-  const [canPost, setCanPost] = useState(true);
-  const [canManageActive, setCanManageActive] = useState(false);
+  // What I may do in the open channel, tagged with the channel it answers for.
+  const [perms, setPerms] = useState<{ id: string; post: boolean; manage: boolean } | null>(null);
   // Where a new channel goes: the active project, or (admins) the community.
   const [showNewChannel, setShowNewChannel] = useState<false | 'project' | 'community'>(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -628,13 +639,15 @@ export default function LoungePage() {
   const [dmTarget, setDmTarget] = useState<{ id: string; name: string } | null>(null);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [threadParent, setThreadParent] = useState<Message | null>(null);
-  const [threadReplies, setThreadReplies] = useState<Message[]>([]);
+  const [thread, setThread] = useState<{ parentId: string; replies: Message[] } | null>(null);
   const [threadInput, setThreadInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [myProfile, setMyProfile] = useState<any>(null);
-  const [crewList, setCrewList] = useState<any[]>([]);
+  // The active project's people, tagged with the project they belong to.
+  const [crew, setCrew] = useState<{ projectId: string; team: any[] } | null>(null);
+  const crewList = crew && crew.projectId === activeProject?.id ? crew.team : NO_CREW;
   const [showEmoji, setShowEmoji] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const onlineIds = useOnlinePresence(currentUser?.id);
@@ -651,7 +664,12 @@ export default function LoungePage() {
   const pendingChannel = useRef<string | null>(null);
   // On a phone the Lounge is one pane at a time: the list (channels and
   // people) or the conversation. Desktop shows both; CSS decides.
-  const [pane, setPane] = useState<'list' | 'chat'>('list');
+  // A link straight into a conversation (/lounge?channel=<id> or ?dm=<person>)
+  // opens on the conversation until a choice is made.
+  const linkedChannel = useSearchParam('channel');
+  const linkedDm = useSearchParam('dm');
+  const [paneChoice, setPane] = useState<'list' | 'chat' | null>(null);
+  const pane = paneChoice ?? (linkedChannel || linkedDm ? 'chat' : 'list');
   const openChannel = (ch: Channel) => { setActiveChannel(ch); setDmTarget(null); setPane('chat'); };
   const openDM = (t: { id: string; name: string }) => { setDmTarget(t); setPane('chat'); };
 
@@ -659,15 +677,14 @@ export default function LoungePage() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const channel = q.get('channel'), dm = q.get('dm');
-    if (channel) { pendingChannel.current = channel; setPane('chat'); }
+    if (channel) pendingChannel.current = channel;
     if (dm) {
       supabase.from('profiles').select('id, username').eq('id', dm).maybeSingle()
         .then(({ data }) => { if (data) openDM({ id: data.id, name: data.username || 'someone' }); });
     }
   }, []);
 
-  const reloadChannels = useCallback(async () => {
-    const list = await listChannels(activeProject?.id);
+  const showChannels = useCallback((list: Channel[]) => {
     setChannels(list);
     setActiveChannel(prev => {
       const pending = pendingChannel.current && list.find(c => c.id === pendingChannel.current);
@@ -675,9 +692,14 @@ export default function LoungePage() {
       if (prev && list.some(c => c.id === prev.id)) return prev;
       return list.find(c => c.type === 'text') || list[0] || null;
     });
-  }, [activeProject?.id]);
+  }, []);
+  const reloadChannels = useCallback(async () => showChannels(await listChannels(activeProject?.id)), [activeProject?.id, showChannels]);
 
-  useEffect(() => { reloadChannels(); }, [reloadChannels]);
+  useEffect(() => {
+    let alive = true;
+    listChannels(activeProject?.id).then((list) => { if (alive) showChannels(list); });
+    return () => { alive = false; };
+  }, [activeProject?.id, showChannels]);
 
   // Channels a production tends to want, offered to its owner when they fit
   // the phase, the brief and the crew (public.channel_presets, lib/brief).
@@ -704,7 +726,7 @@ export default function LoungePage() {
   useEffect(() => {
     let alive = true;
     const project = activeProject;
-    if (!project?.id) { setCrewList([]); return; }
+    if (!project?.id) return;
     (async () => {
       const [{ data: crew }, { data: owner }] = await Promise.all([
         supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
@@ -719,7 +741,7 @@ export default function LoungePage() {
           .filter((c) => c.user_id !== owner?.id)
           .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
       ];
-      setCrewList(team);
+      setCrew({ projectId: project.id, team });
     })();
     return () => { alive = false; };
   }, [activeProject?.id, activeProject?.creator_id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -748,14 +770,18 @@ export default function LoungePage() {
     [activeChannel?.name, activeChannel?.type, !!dmTarget, onlineCrew, crewList.length, messages.length, unreadTotal],
   );
 
+  const textChannelId = activeChannel && activeChannel.type !== 'voice' ? activeChannel.id : null;
+  const knownPerms = textChannelId && perms?.id === textChannelId ? perms : null;
+  const canPost = textChannelId ? knownPerms?.post ?? true : false;
+  const canManageActive = knownPerms?.manage ?? false;
   useEffect(() => {
-    if (!activeChannel || activeChannel.type === 'voice') { setCanPost(false); setCanManageActive(false); return; }
+    if (!textChannelId) return;
     let active = true;
-    Promise.all([canPostChannel(activeChannel.id), canManageChannel(activeChannel.id)]).then(([p, m]) => {
-      if (active) { setCanPost(p); setCanManageActive(m); }
+    Promise.all([canPostChannel(textChannelId), canManageChannel(textChannelId)]).then(([post, manage]) => {
+      if (active) setPerms({ id: textChannelId, post, manage });
     });
     return () => { active = false; };
-  }, [activeChannel]);
+  }, [textChannelId]);
 
   // Who's signed in, once. (awaitOSUser returns a fresh object each call, so
   // this can't live in an effect that depends on currentUser — it would loop.)
@@ -832,6 +858,8 @@ export default function LoungePage() {
       const el = document.getElementById(`msg-${focusId}`);
       if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Only once the message is in the DOM can it be scrolled to and lit.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the rendered DOM
       setHighlightId(focusId);
       setFocusId(null);
       const t = setTimeout(() => setHighlightId(null), 2600);
@@ -886,12 +914,12 @@ export default function LoungePage() {
   }, [activeChannel, myProfile?.username]);
 
   useEffect(() => {
-    if (!threadParent) { setThreadReplies([]); return; }
+    if (!threadParent) return;
     let mounted = true;
     const load = async () => {
       const data = await getThreadReplies(threadParent.id);
       if (!mounted) return;
-      setThreadReplies(data.map((m: any) => ({ id: m.id, user: m.profiles?.username || 'Deleted account', text: m.content, timestamp: new Date(m.created_at), sender_id: m.sender_id, reactions: m.reactions || {} })));
+      setThread({ parentId: threadParent.id, replies: data.map((m: any) => ({ id: m.id, user: m.profiles?.username || 'Deleted account', text: m.content, timestamp: new Date(m.created_at), sender_id: m.sender_id, reactions: m.reactions || {} })) });
     };
     load();
     const ch = supabase.channel(`thread:${threadParent.id}`)
@@ -899,6 +927,8 @@ export default function LoungePage() {
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [threadParent]);
+
+  const threadReplies = thread && thread.parentId === threadParent?.id ? thread.replies : NO_REPLIES;
 
   if (isLoading) return null;
   const isGuide = !dmTarget && activeChannel?.type === 'guide';
@@ -1486,7 +1516,7 @@ export default function LoungePage() {
             onClose={() => setShowManage(false)}
             onChanged={async () => {
               await reloadChannels();
-              if (activeChannel) canManageChannel(activeChannel.id).then(setCanManageActive);
+              if (activeChannel) { const id = activeChannel.id; canManageChannel(id).then((manage) => setPerms((p) => (p?.id === id ? { ...p, manage } : p))); }
             }}
           />
         )}

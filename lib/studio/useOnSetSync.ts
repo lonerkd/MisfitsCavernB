@@ -4,7 +4,7 @@
 // straight through when they can, wait in this device's queue when they
 // can't, and the queue is sent in order as soon as the connection is back.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { studio } from './index';
 import { enqueue, isNetworkError, loadQueue, replay, saveQueue, type OnSetOp } from './onset-offline';
 
@@ -37,7 +37,11 @@ export interface OnSetSync {
 
 export function useOnSetSync(projectId: string, opts: { reload: () => Promise<unknown>; onRefused: (messages: string[]) => void }): OnSetSync {
   const [online, setOnline] = useState(isOnline);
-  const [pending, setPending] = useState(0);
+  // Changes waiting to be sent: what this device saved for the project until
+  // the queue is next stored here.
+  const savedCount = useMemo(() => loadQueue(projectId).length, [projectId]);
+  const [counted, setCounted] = useState<{ projectId: string; n: number } | null>(null);
+  const pending = counted?.projectId === projectId ? counted.n : savedCount;
   const [syncing, setSyncing] = useState(false);
   const [justSent, setJustSent] = useState(0);
   const queue = useRef<OnSetOp[]>([]);
@@ -48,7 +52,7 @@ export function useOnSetSync(projectId: string, opts: { reload: () => Promise<un
   const store = useCallback((q: OnSetOp[]) => {
     queue.current = q;
     saveQueue(projectId, q);
-    setPending(q.length);
+    setCounted({ projectId, n: q.length });
   }, [projectId]);
 
   const flush = useCallback(async (): Promise<void> => {
@@ -76,7 +80,7 @@ export function useOnSetSync(projectId: string, opts: { reload: () => Promise<un
   }, [store]);
 
   useEffect(() => {
-    store(loadQueue(projectId));
+    queue.current = loadQueue(projectId);
     const up = () => { setOnline(true); void flush(); };
     const down = () => setOnline(false);
     window.addEventListener('online', up);

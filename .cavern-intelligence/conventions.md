@@ -8,8 +8,9 @@ in the same module first.
 
 ## 1. Data access — always through `lib/supabase/*.ts`
 
-Components and pages **never** call `supabase.from(...)` directly. Every table
-has a typed access module:
+New code: components and pages don't call `supabase.from(...)` directly — add
+the query to the table's typed access module. (Older pages still do, ~110
+calls; moving them is BACKLOG 3.2.) The modules:
 
 ```
 lib/supabase/
@@ -121,3 +122,28 @@ The `verify` skill can drive this end-to-end.
 - Commit code **and** its `.cavern-intelligence/` doc updates together.
 - Run `npm run sync-intel` and update `STATE.md` before finishing.
 - Don't merge until CI (Vercel build) is green.
+
+---
+
+## 10. State and effects (the React Compiler lint rules)
+
+`eslint.config.mjs` runs the React Compiler rules (`react-hooks` v7) as
+errors. They reject state copied around by effects; use these instead
+(each has many examples in the code — `grep` the helper's name):
+
+| You want… | Use |
+|---|---|
+| State to reset or follow when a value changes (a draft following its saved value, a menu closing on navigation, a selection reset on a project switch) | `useOnChange(value, fn)` (`lib/hooks/useOnChange.ts`) — adjusts state while rendering. It fires on *changes*, not on mount: start the state from the value (`useState(() => …)`), or, for something to act on once even if already there at mount (a share in the address), keep a `handled` key in state and compare. Only this component's state; another component's state, the DOM or storage writes stay in an effect. |
+| A value worked out from other state or props | Derive it while rendering (`useMemo` if costly; `useDeferredValue` for heavy work on typed text, as the editor's parse does). Don't mirror it in state. |
+| Data loaded for a key (project, script, filter) | `useLoad(key, load)` (`lib/hooks/useLoad.ts`): `{ data, loading, error, reload }`, stale answers dropped. Or tag the state with what it answers — `{ projectId, rows }` — and show it only when it matches; "loading" is "no answer for this key yet". |
+| A loader shared by an effect and event handlers | Set state only in a promise callback (`fetchX().then(apply)`, `await query.then((r) => setRows(r))`) — never directly in the async body, which the rule reads as synchronous. |
+| A value saved on this device (localStorage) | `useDeviceValue(key)` / `writeDeviceValue(key, v)` (`lib/hooks/useDeviceValue.ts`): read while rendering, every reader updates on a write. |
+| The address's query string | `useSearchParam(name)` / `useLocationSearch()` (`lib/hooks/useSearchParam.ts`) — no Suspense boundary needed; null while hydrating. `useHydrated()` for "after hydration". |
+| A media query | `useMediaQuery(query)` (`lib/hooks/useMediaQuery.ts`). |
+| A ref holding the latest props/callback | Write it in `useLayoutEffect(() => { ref.current = value; })`, never while rendering. |
+| A timer or subscription callback that reads current state | `useEffectEvent` (React 19.2+), so the effect doesn't restart on every change. |
+| A per-item handler in a list | One handler that reads a `data-*` attribute, not handlers built while rendering. |
+
+A justified exception (state that follows the rendered DOM, e.g. the Lounge
+lighting a message once it's scrolled to) gets
+`// eslint-disable-next-line react-hooks/set-state-in-effect -- <reason>`.

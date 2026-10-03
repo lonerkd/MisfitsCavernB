@@ -107,25 +107,25 @@ export function useProjectBrief(projectId: string | null | undefined, format: st
   const [answers, setAnswers] = useState<Answers>({});
   const [context, setContext] = useState<ProjectContext>(EMPTY_CONTEXT);
   const [script, setScript] = useState<ScriptFacts | null>(null);
-  const [loading, setLoading] = useState(!!projectId);
+  // Which load (project, format, script or not) the brief last finished; until then it's loading.
+  const key = projectId ? `${projectId}|${format}|${wantScript}` : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = !!key && loadedKey !== key;
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!projectId) return;
-    try {
-      const [q, a, c, s] = await Promise.all([
-        loadQuestions(), loadAnswers(projectId), loadContext(projectId),
-        wantScript ? loadScriptFacts(projectId, format).catch(() => null) : Promise.resolve(null),
-      ]);
-      setQuestions(q); setAnswers(a); setContext(c); setScript(s); setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load the brief');
-    } finally {
-      setLoading(false);
-    }
+    const loadingKey = `${projectId}|${format}|${wantScript}`;
+    await Promise.all([
+      loadQuestions(), loadAnswers(projectId), loadContext(projectId),
+      wantScript ? loadScriptFacts(projectId, format).catch(() => null) : Promise.resolve(null),
+    ]).then(
+      ([q, a, c, s]) => { setQuestions(q); setAnswers(a); setContext(c); setScript(s); setError(null); },
+      (e) => setError(e instanceof Error ? e.message : 'Could not load the brief'),
+    ).finally(() => setLoadedKey(loadingKey));
   }, [projectId, format, wantScript]);
 
-  useEffect(() => { setLoading(!!projectId); void reload(); }, [reload, projectId]);
+  useEffect(() => { void reload(); }, [reload]);
   useEffect(() => {
     const on = (e: Event) => { if ((e as CustomEvent).detail?.projectId === projectId) void reload(); };
     const focus = () => void reload();
@@ -156,36 +156,38 @@ export function useProjectBrief(projectId: string | null | undefined, format: st
 
 /** Whether the signed-in user may change the brief: the owner, or a lead or contributor. */
 export function useCanShape(projectId: string | null | undefined, isOwner: boolean): boolean {
-  const [ok, setOk] = useState(isOwner);
+  // For crew: the answer, tagged with the project it's for.
+  const [crew, setCrew] = useState<{ projectId: string; ok: boolean } | null>(null);
   useEffect(() => {
-    if (isOwner || !projectId) { setOk(isOwner); return; }
+    if (isOwner || !projectId) return;
     let alive = true;
     (async () => {
       const me = await awaitOSUser();
       if (!me) return;
       const { data } = await supabase.from('project_crew').select('role').eq('project_id', projectId).eq('user_id', me.id).maybeSingle();
-      if (alive) setOk(data?.role === 'lead' || data?.role === 'contributor');
+      if (alive) setCrew({ projectId, ok: data?.role === 'lead' || data?.role === 'contributor' });
     })();
     return () => { alive = false; };
   }, [projectId, isOwner]);
-  return ok;
+  return isOwner || (!!projectId && crew?.projectId === projectId && crew.ok);
 }
 
 /** One answer of a project's brief, kept current (e.g. the target length in the editor). */
 export function useBriefAnswer(projectId: string | null | undefined, question: string): BriefValue | null {
-  const [value, setValue] = useState<BriefValue | null>(null);
+  const key = projectId ? `${projectId}|${question}` : null;
+  const [got, setGot] = useState<{ key: string; value: BriefValue | null } | null>(null);
   useEffect(() => {
-    if (!projectId) { setValue(null); return; }
+    if (!projectId || !key) return;
     let alive = true;
     const load = async () => {
       const { data } = await supabase.from('project_brief').select('value').eq('project_id', projectId).eq('question', question).maybeSingle();
-      if (alive) setValue((data?.value as BriefValue | undefined) ?? null);
+      if (alive) setGot({ key, value: (data?.value as BriefValue | undefined) ?? null });
     };
     void load();
     const on = (e: Event) => { if ((e as CustomEvent).detail?.projectId === projectId) void load(); };
     window.addEventListener(BRIEF_EVENT, on);
     window.addEventListener('focus', load);
     return () => { alive = false; window.removeEventListener(BRIEF_EVENT, on); window.removeEventListener('focus', load); };
-  }, [projectId, question]);
-  return value;
+  }, [projectId, question, key]);
+  return key && got?.key === key ? got.value : null;
 }

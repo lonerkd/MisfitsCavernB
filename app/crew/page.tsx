@@ -13,6 +13,7 @@ import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management'
 import type { Profile } from '@/lib/supabase/profiles';
 import { awaitOSUser } from '@/lib/os';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { useLoad } from '@/lib/hooks/useLoad';
 
 const NEXT_BTN: React.CSSProperties = { display: 'inline-block', padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600, textDecoration: 'none' };
 
@@ -31,15 +32,14 @@ type DisplayMember = {
   discord?: string | null;
 };
 
+const NO_PROFILES: Profile[] = [];
+const NO_MEMBERS: CrewMember[] = [];
+
 export default function CrewPage() {
   const { activeProject } = useProject();
 
   const [modeChoice, setMode] = useState<'all' | 'project'>('all');
 
-  const [crew, setCrew] = useState<Profile[]>([]);
-  const [projectCrew, setProjectCrew] = useState<CrewMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
@@ -59,63 +59,41 @@ export default function CrewPage() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  const loadCrew = async (searchTerm = debouncedSearch) => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('is_sample', false).order('created_at', { ascending: false });
+  const loadCrew = async (): Promise<Profile[]> => {
+    let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('is_sample', false).order('created_at', { ascending: false });
 
-      if (searchTerm) {
-        const clean = searchTerm.replace(/[(),.:\\]/g, ' ').trim();
-        if (clean) query = query.or(`username.ilike.%${clean}%,bio.ilike.%${clean}%`);
-      }
-
-      if (roleFilter && roleFilter !== 'All') {
-        query = query.eq('role', roleFilter);
-      }
-
-      if (availFilter !== 'all') {
-        query = query.eq('status', availFilter);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setCrew((data as unknown as Profile[]) || []);
-    } catch (error: any) {
-      console.error(error);
-      setLoadError(error?.message || 'Failed to load crew directory');
-      setCrew([]);
-    } finally {
-      setLoading(false);
+    if (debouncedSearch) {
+      const clean = debouncedSearch.replace(/[(),.:\\]/g, ' ').trim();
+      if (clean) query = query.or(`username.ilike.%${clean}%,bio.ilike.%${clean}%`);
     }
+
+    if (roleFilter && roleFilter !== 'All') {
+      query = query.eq('role', roleFilter);
+    }
+
+    if (availFilter !== 'all') {
+      query = query.eq('status', availFilter);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data as unknown as Profile[]) || [];
   };
 
-  const loadProjectCrew = async () => {
-    if (!activeProject?.id) { setProjectCrew([]); setLoading(false); return; }
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const rows = await getProjectCrew(activeProject.id);
-      setProjectCrew(rows);
-    } catch (error: any) {
-      console.error(error);
-      setLoadError(error?.message || 'Failed to load project crew');
-      setProjectCrew([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (mode === 'project') {
-      loadProjectCrew();
-    } else {
-      loadCrew(debouncedSearch);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, activeProject?.id, roleFilter, availFilter, debouncedSearch]);
-
-  const retry = () => (mode === 'project' ? loadProjectCrew() : loadCrew());
+  // The directory, or the active project's crew — whichever is showing.
+  const projectId = mode === 'project' ? activeProject?.id ?? null : null;
+  const listed = useLoad(
+    projectId ? `project:${projectId}` : `directory:${roleFilter}:${availFilter}:${debouncedSearch}`,
+    async () => (projectId ? { projectCrew: await getProjectCrew(projectId) } : { crew: await loadCrew() }),
+  );
+  const crew = listed.data?.crew ?? NO_PROFILES;
+  const projectCrew = listed.data?.projectCrew ?? NO_MEMBERS;
+  const loading = listed.loading;
+  const loadError = listed.error
+    ? (listed.error as { message?: string }).message || (projectId ? 'Failed to load project crew' : 'Failed to load crew directory')
+    : null;
+  useEffect(() => { if (listed.error) console.error(listed.error); }, [listed.error]);
+  const retry = listed.reload;
 
   const displayList: DisplayMember[] = mode === 'project'
     ? projectCrew.map(m => ({

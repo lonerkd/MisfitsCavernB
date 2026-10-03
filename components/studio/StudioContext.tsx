@@ -11,6 +11,7 @@ import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
+import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
 import {
   fetchScriptContent,
   studio,
@@ -86,17 +87,13 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
 
   // Which script's scenes the Studio shows: the last one chosen on this device,
   // else the most recently edited. (A per-device UI preference.)
-  const [chosen, setChosen] = useState<string | null>(null);
-  useEffect(() => {
-    try { setChosen(localStorage.getItem(scriptPrefKey(projectId))); } catch { setChosen(null); }
-  }, [projectId]);
+  const chosen = useDeviceValue(scriptPrefKey(projectId));
   const scriptId = useMemo(() => {
     if (chosen && scripts.some((sc) => sc.id === chosen)) return chosen;
     return scripts[0]?.id ?? null;
   }, [chosen, scripts]);
   const setScriptId = useCallback((id: string) => {
-    setChosen(id);
-    try { localStorage.setItem(scriptPrefKey(projectId), id); } catch { /* private mode */ }
+    writeDeviceValue(scriptPrefKey(projectId), id);
   }, [projectId]);
 
   const scenes = useScriptScenes(scriptId);
@@ -104,33 +101,34 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   // Bring the scene index up to date with the script's saved text whenever a
   // script is opened here — the editor syncs as you write, this covers edits
   // made elsewhere or before this feature existed.
-  const [syncState, setSyncState] = useState<SyncState>('idle');
-  const [syncError, setSyncError] = useState<string | null>(null);
+  // The sync's outcome, tagged with the script it was for: a script without
+  // one yet is syncing (it starts as soon as the script is chosen).
+  const [sync, setSync] = useState<{ scriptId: string; state: SyncState; error: string | null } | null>(null);
+  const syncState: SyncState = !scriptId ? 'idle' : sync?.scriptId === scriptId ? sync.state : 'syncing';
+  const syncError = sync?.scriptId === scriptId ? sync.error : null;
   const [parsedScenes, setParsedScenes] = useState<{ scriptId: string; scenes: ScriptLineLite[][] } | null>(null);
-  const run = useCallback(async () => {
-    if (!scriptId) return;
-    setSyncState('syncing');
-    try {
-      const text = await fetchScriptContent(scriptId);
+  const reloadScenes = scenes.reload; // changes with the script, whose scenes it reloads
+  const syncScenes = useCallback((id: string) => fetchScriptContent(id)
+    .then(async (text) => {
       const parsed = parseScript(text);
       setParsedScenes({
-        scriptId,
+        scriptId: id,
         scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text }))),
       });
-      await studio.syncScriptScenes(scriptId, parsed.scenes);
-      await scenes.reload();
+      await studio.syncScriptScenes(id, parsed.scenes);
+      await reloadScenes();
       // Scenes count toward the phase milestones and open the Scenes tab.
       announceProgressChange(projectId);
-      setSyncState('synced');
-      setSyncError(null);
-    } catch (e) {
-      setSyncState('error');
-      setSyncError(e instanceof Error ? e.message : 'Could not read the script');
-    }
-    // scenes.reload is stable per scriptId
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptId, projectId]);
-  useEffect(() => { void run(); }, [run]);
+      setSync({ scriptId: id, state: 'synced', error: null });
+    })
+    .catch((e) => setSync({ scriptId: id, state: 'error', error: e instanceof Error ? e.message : 'Could not read the script' })),
+  [projectId, reloadScenes]);
+  const run = useCallback(async () => {
+    if (!scriptId) return;
+    setSync({ scriptId, state: 'syncing', error: null });
+    await syncScenes(scriptId);
+  }, [scriptId, syncScenes]);
+  useEffect(() => { if (scriptId) void syncScenes(scriptId); }, [scriptId, syncScenes]);
 
   const { scenesByMedia, mediaByScene } = useMemo(() => {
     const byMedia = new Map<string, string[]>();

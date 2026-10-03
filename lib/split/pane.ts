@@ -7,7 +7,7 @@
 // script's caret can bring the Studio to the same scene, and the Studio can
 // send the script to a scene.
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { DEFAULT_LAYOUT, companionOf, isSplitMessage, layoutToSearch, SPLIT_KEY, type SplitMessage } from './core';
 
 export * from './core';
@@ -28,10 +28,10 @@ export function inPane(): boolean {
  * chrome that is client-only anyway.
  */
 export function useInPane(): boolean {
-  const [pane, setPane] = useState(inPane);
-  useEffect(() => { setPane(inPane()); }, []);
-  return pane;
+  // Fixed for the page's life, so there's nothing to subscribe to.
+  return useSyncExternalStore(noSubscribe, inPane, inPane);
 }
+const noSubscribe = () => () => {};
 
 /** Open a split screen with `href` in the first pane and its natural companion beside it. */
 export function splitHref(href: string): string {

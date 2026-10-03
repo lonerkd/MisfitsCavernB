@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParam } from '@/lib/hooks/useSearchParam';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,12 +50,8 @@ export default function AuthPage() {
   // (same-origin absolute paths only — never a protocol-relative or /auth-loop
   // target), instead of dumping everyone on /projects.
   const { status } = useSession();
-  const [redirectTo, setRedirectTo] = useState('/projects');
-  useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get('redirect') || '';
-    const safe = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth');
-    if (safe) setRedirectTo(raw);
-  }, []);
+  const raw = useSearchParam('redirect') || '';
+  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/projects';
 
   // Navigate when the session is actually established in the OS store — not on a
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the

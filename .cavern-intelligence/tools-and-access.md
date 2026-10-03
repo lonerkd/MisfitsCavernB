@@ -85,7 +85,10 @@ Claude Code also ships bundled skills usable here: `code-review`, `verify`,
 
 `.claude/hooks/session-bootstrap.sh` (wired as a `SessionStart` hook) injects
 `AGENTS.md` + `STATE.md` into context at the start of **every** Claude Code
-session, so continuity survives ephemeral/remote containers. Fails soft.
+session, so continuity survives ephemeral/remote containers. Fails soft. It
+caps the injection at 12,000 characters and says so if STATE.md outgrows it
+(it shouldn't: STATE holds only open work and the latest session; older
+sessions go to `STATE-history.md`, open tasks to `BACKLOG.md`).
 
 ---
 
