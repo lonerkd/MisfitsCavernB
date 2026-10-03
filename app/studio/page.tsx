@@ -4,7 +4,7 @@
 // its library, the screenplay's scenes and their references, production
 // planning, and what gets shared. Data lives in <StudioProvider> and stays live.
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Archive, Clapperboard, Film, Globe, LayoutGrid, Lock, Maximize2, Megaphone, Video } from 'lucide-react';
@@ -75,6 +75,11 @@ export default function StudioPage() {
   const modules = getProjectModules(activeProject?.settings);
   const tabs = ALL_TABS.filter((t) => t.id !== 'promos' || modules.distribution);
   const [tab, view, setTabRaw] = useTab(tabs.map((t) => t.id));
+  const tabListRef = useRef<HTMLDivElement>(null);
+  // On a narrow screen the tab bar scrolls sideways; keep the open tab in view.
+  useEffect(() => {
+    tabListRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [tab, activeProject?.id]);
   const progressState = useProjectProgress(activeProject?.id);
   const { progress, reload: reloadProgress } = progressState;
   // Tabs looked at before their phase, this visit ("Open it now").
@@ -151,7 +156,7 @@ export default function StudioPage() {
 
       {activeProject && (
         <nav className={page.tabs} aria-label="Studio sections">
-          <div className={page.tabList} role="tablist">
+          <div ref={tabListRef} className={page.tabList} role="tablist">
             {tabs.map((t) => (
               <button
                 key={t.id}
