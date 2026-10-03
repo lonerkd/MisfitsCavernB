@@ -31,6 +31,7 @@ duplicated across them.
 | `studio-and-preproduction.md` | The Studio — boards, breakdown, casting, scheduling |
 | `sync-protocol.md` | Multi-agent / multi-tool cooperation & keeping this hub in sync |
 | `STATE.md` | Current iteration state (update every session) |
+| `STATE-history.md` | Archived past sessions (read on demand; rotate old sessions here from STATE.md) |
 | `sync-manifest.json` | Generated file registry (do not hand-edit) |
 
 **Bold** = tools / routing / conventions ("the stuff usually inline"), added so

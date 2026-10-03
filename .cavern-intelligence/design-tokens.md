@@ -74,6 +74,17 @@ h2 { font-size: clamp(2rem, 6vw, 3.5rem); }
 h3 { font-size: clamp(1.2rem, 3vw, 2rem); }
 ```
 
+## Scales (enforced by lint)
+
+Defined in `app/globals.css`. See `docs/DESIGN_DIRECTION_2026-09.md`.
+
+- **Type:** `--text-2xs` 11 (floor, uppercase labels) · `xs` 12 · `sm` 13 · `base` 14 · `md` 16 · `lg` 20 · `xl` 24 · `2xl` 32. Literal `fontSize` under 11 fails lint.
+- **Script face:** `--script` (Courier Prime) for screenplay surfaces only.
+- **Radii:** 4 · 8 · 14 · 20 · 28 · 9999. Others fail lint.
+- **Containers:** `--w-form` 480 · `--w-reading` 720 · `--w-content` 1160.
+- **Space:** `--s-1`..`--s-8` (4px base). **Imagery:** `--ar-scope` 2.39:1, `--ar-film` 16:9, `--ar-still` 3:2, `--ar-poster` 2:3; text over stills goes on `--scrim`.
+- `--secondary` (#336467) is 3.0:1 on `--bg`: fills and borders only, never text.
+
 ## Component Classes
 
 ### Buttons
@@ -143,11 +154,7 @@ h3 { font-size: clamp(1.2rem, 3vw, 2rem); }
 - Section padding: 90px 18px
 - `.mc-page`: min-height 100vh, bg `--bg`, fg `--fg`
 - `.grain-overlay`: fixed inset, z-index 9998, pointer-events none, opacity 0.022
-- **Layers** (bottom to top): dock 9999 · phone tab bar 10000 · **dialogs
-  `--z-modal` (99990)** · toasts 99997 · Confirm 99998 · cursor 99999 ·
-  command palette / diff 100000. A full-screen dialog uses
-  `zIndex: 'var(--z-modal)'`, never its own number — anything lower hides
-  under the dock.
+- Layers: island 9999 / phone tab bar 10000 < `--z-modal` 99990 (every full-screen dialog) < toast 99997 < confirm 99998 < cursor 99999 < command palette / diff 100000. A full-screen dialog uses `zIndex: 'var(--z-modal)'`, never its own number: anything lower hides under the island.
 - `.film-chrome`: 18px corner brackets, 1.5px fg border, opacity 0.35 → 0.7 on hover
 - `.pipeline-track`: 1px height, flex-1, accent gradient traveling line
 - `.marquee-wrap`: overflow hidden, masked gradient edges

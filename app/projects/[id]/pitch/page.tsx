@@ -266,7 +266,7 @@ export default function PitchBoardPage() {
         <Link href={`/projects/${projectId}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg)', textDecoration: 'none' }}>
           <ArrowLeft size={18} />
           <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 3 }}>PITCH BOARD</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', letterSpacing: 1 }}>· {project?.title}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>· {project?.title}</span>
         </Link>
         {shareToken && (
           <div style={{ display: 'flex', gap: 8 }}>
@@ -289,7 +289,7 @@ export default function PitchBoardPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
             {TAB_META.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
-                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 7, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 8, cursor: 'pointer',
                 fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                 background: tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.04)',
                 color: tab === t.id ? textOn(accent) : 'var(--fg-muted)',
@@ -305,7 +305,7 @@ export default function PitchBoardPage() {
               {concepts.map(c => (
                 <Chip key={c.id} accent={accent} onAdd={() => addBlock(addConcept(c))} onDragStart={() => onLibDragStart(addConcept(c))} onDragEnd={onLibDragEnd}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
-                  {c.image_url && <img src={c.image_url} alt="" width={26} height={26} referrerPolicy="no-referrer" style={{ borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />}
+                  {c.image_url && <img src={c.image_url} alt="" width={26} height={26} referrerPolicy="no-referrer" style={{ borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />}
                   <span style={chipLabel}>{c.title || 'Untitled concept'}</span>
                 </Chip>
               ))}
@@ -409,7 +409,7 @@ export default function PitchBoardPage() {
               Drag assets from the library, or click one, to start building your pitch.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 720 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 'var(--w-reading)' }}>
               {blocks.map((b, i) => (
                 <BlockCard
                   key={b.id}
@@ -459,7 +459,7 @@ function BlockCard({ block, accent, isDragging, isDropTarget, onDragStart, onDra
       onDragEnd={onDragEnd}
       onDrop={e => { e.preventDefault(); onDrop(); }}
       style={{
-        display: 'flex', alignItems: 'flex-start', gap: 10, padding: 14, borderRadius: 12,
+        display: 'flex', alignItems: 'flex-start', gap: 10, padding: 14, borderRadius: 14,
         background: 'var(--glass)',
         border: `1px solid ${isDropTarget ? accent : 'rgba(var(--ink-rgb), 0.07)'}`,
         borderLeft: `3px solid ${accent}`,
@@ -506,7 +506,7 @@ function BlockPreview({ block }: { block: PortfolioBlock }) {
       return (
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- any host */}
-          {block.image_url && <img src={block.image_url} alt="" width={56} height={40} referrerPolicy="no-referrer" style={{ borderRadius: 6, objectFit: 'cover' }} />}
+          {block.image_url && <img src={block.image_url} alt="" width={56} height={40} referrerPolicy="no-referrer" style={{ borderRadius: 8, objectFit: 'cover' }} />}
           <div style={{ minWidth: 0 }}>
             {block.title && <div style={previewTitle}>{block.title}</div>}
             {block.meta?.url && <div style={{ ...previewBody, wordBreak: 'break-all' }}>{block.meta.url}</div>}
@@ -595,9 +595,9 @@ function Chip({ children, accent, onAdd, onDragStart, onDragEnd }: { children: R
 }
 
 const chipLabel: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 };
-const previewTitle: React.CSSProperties = { fontFamily: 'var(--sans, var(--serif))', fontSize: 12.5, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
-const previewBody: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', marginTop: 3 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 6 };
+const previewTitle: React.CSSProperties = { fontFamily: 'var(--sans, var(--serif))', fontSize: 13, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
+const previewBody: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', marginTop: 3 };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '7px 9px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, boxSizing: 'border-box', outline: 'none', borderRadius: 8 };
 const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', padding: 3, opacity: 0.8, minWidth: 24, minHeight: 24, justifyContent: 'center' };
 
 function btnStyle(accent: string, filled: boolean): React.CSSProperties {
@@ -610,5 +610,5 @@ function btnStyle(accent: string, filled: boolean): React.CSSProperties {
   };
 }
 function addAllStyle(accent: string): React.CSSProperties {
-  return { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 10px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 1, background: `${accent}22`, color: accent, border: `1px solid ${accent}55` };
+  return { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 1, background: `${accent}22`, color: accent, border: `1px solid ${accent}55` };
 }

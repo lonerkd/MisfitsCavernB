@@ -90,15 +90,17 @@ export default function NotificationBell() {
         whileTap={{ scale: 0.93 }}
         transition={{ type: 'spring', stiffness: 500, damping: 26 }}
         title="Notifications"
+        aria-label="Notifications"
+        aria-expanded={open}
         style={{
-          width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: open ? 'rgba(232, 67, 26,0.10)' : hovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
           color: open ? 'var(--accent)' : hovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s', position: 'relative',
         }}
       >
         <Bell size={19} strokeWidth={1.5} />
         {unread > 0 && (
-          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 999, background: '#e8431a', color: '#fff', fontSize: 8.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(232, 67, 26,0.6)' }}>
+          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 9999, background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(232, 67, 26,0.6)' }}>
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -109,14 +111,14 @@ export default function NotificationBell() {
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}
+            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
                 Notifications{unread > 0 ? ` · ${unread} new` : ''}
               </span>
               {unread > 0 && (
-                <button onClick={allRead} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1, cursor: 'pointer' }}>
+                <button onClick={allRead} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer' }}>
                   <Check size={11} /> MARK ALL
                 </button>
               )}
@@ -124,7 +126,7 @@ export default function NotificationBell() {
 
             <div style={{ maxHeight: 380, overflowY: 'auto' }}>
               {items.length === 0 ? (
-                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 11.5, fontFamily: 'var(--mono)' }}>
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>
                   <Bell size={22} style={{ opacity: 0.3, marginBottom: 8 }} /><br />You&apos;re all caught up.
                 </div>
               ) : items.map(n => (
@@ -133,11 +135,11 @@ export default function NotificationBell() {
                   onClick={() => openItem(n)}
                   style={{ display: 'flex', gap: 10, padding: '11px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', cursor: n.link ? 'pointer' : 'default', background: n.read ? 'transparent' : 'rgba(232, 67, 26,0.05)', position: 'relative' }}
                 >
-                  {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: '#e8431a' }} />}
+                  {!n.read && <span style={{ position: 'absolute', left: 5, top: 17, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)' }} />}
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
                     <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
                     {n.body && <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}
-                    <div style={{ fontSize: 8.5, color: 'var(--fg-dim)', marginTop: 4, fontFamily: 'var(--mono)', letterSpacing: 1 }}>{timeAgo(n.created_at)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 4, fontFamily: 'var(--mono)', letterSpacing: 1 }}>{timeAgo(n.created_at)}</div>
                   </div>
                   <button aria-label="Dismiss" onClick={(e) => clearOne(e, n.id)} title="Dismiss" style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', flexShrink: 0, height: 'fit-content' }}>
                     <X size={13} />

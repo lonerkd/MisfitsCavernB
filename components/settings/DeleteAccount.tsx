@@ -8,18 +8,18 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { getDeletionPlan, transferProject, deleteMyAccount, type DeletionPlan, type SharedProject } from '@/lib/account/deletion';
 
-const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1 };
+const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 };
 const dangerBtn: React.CSSProperties = {
-  ...mono, padding: '8px 14px', background: 'transparent', color: 'var(--danger)', borderRadius: 6, cursor: 'pointer',
+  ...mono, padding: '8px 14px', background: 'transparent', color: 'var(--danger)', borderRadius: 8, cursor: 'pointer',
   border: '1px solid color-mix(in srgb, var(--danger) 35%, transparent)', display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const ghostBtn: React.CSSProperties = {
-  ...mono, padding: '7px 12px', background: 'transparent', color: 'var(--fg-muted)', borderRadius: 6, cursor: 'pointer',
+  ...mono, padding: '7px 12px', background: 'transparent', color: 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer',
   border: '1px solid rgba(var(--ink-rgb), 0.12)', display: 'inline-flex', alignItems: 'center', gap: 6,
 };
 const field: React.CSSProperties = {
   padding: '8px 10px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none',
+  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 8, outline: 'none',
   boxSizing: 'border-box', minWidth: 0, maxWidth: '100%',
 };
 const hint: React.CSSProperties = { fontSize: 11, color: 'var(--fg-dim)', lineHeight: 1.5, margin: 0 };
@@ -53,7 +53,7 @@ function Handover({ project, onDone }: { project: SharedProject; onDone: () => v
 
   return (
     <li style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 0', borderTop: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
-      <Link href={`/projects/${project.id}`} style={{ flex: '1 1 140px', minWidth: 0, color: 'var(--fg)', fontSize: 12.5, textDecoration: 'none' }}>{project.title}</Link>
+      <Link href={`/projects/${project.id}`} style={{ flex: '1 1 140px', minWidth: 0, color: 'var(--fg)', fontSize: 13, textDecoration: 'none' }}>{project.title}</Link>
       <label style={{ display: 'contents' }}>
         <span className="sr-only">New owner of {project.title}</span>
         <select value={to} onChange={(e) => setTo(e.target.value)} style={{ ...field, flex: '1 1 160px' }}>
@@ -109,7 +109,7 @@ export default function DeleteAccount({ userId }: { userId: string }) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0, flex: '1 1 220px' }}>
-          <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>Delete account</div>
+          <div style={{ fontSize: 13, color: 'var(--fg)' }}>Delete account</div>
           <p style={{ ...hint, marginTop: 3 }}>Remove your account and the projects only you work on. Projects other people work on are handed over first.</p>
         </div>
         <button type="button" style={dangerBtn} onClick={load} disabled={loading}>
@@ -126,7 +126,7 @@ export default function DeleteAccount({ userId }: { userId: string }) {
     <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
       {blocked && (
         <div>
-          <div style={{ fontSize: 12.5, color: 'var(--fg)', marginBottom: 4 }}>First, hand these over</div>
+          <div style={{ fontSize: 13, color: 'var(--fg)', marginBottom: 4 }}>First, hand these over</div>
           <p style={hint}>Other people work on {plan.shared.length === 1 ? 'this project' : 'these projects'}, so {plan.shared.length === 1 ? 'it doesn\'t' : 'they don\'t'} go with your account. Give each to someone on its crew — or open it and delete it yourself.</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0' }}>
             {plan.shared.map((p) => <Handover key={p.id} project={p} onDone={load} />)}
@@ -135,7 +135,7 @@ export default function DeleteAccount({ userId }: { userId: string }) {
       )}
 
       <div>
-        <div style={{ fontSize: 12.5, color: 'var(--fg)', marginBottom: 4 }}>What happens</div>
+        <div style={{ fontSize: 13, color: 'var(--fg)', marginBottom: 4 }}>What happens</div>
         <p style={hint}>
           {plan.solo.length
             ? <>Deleted with your account: <strong style={{ color: 'var(--fg-muted)' }}>{plan.solo.map((p) => p.title).join(', ')}</strong>, with every script, file and note in {plan.solo.length === 1 ? 'it' : 'them'}. </>

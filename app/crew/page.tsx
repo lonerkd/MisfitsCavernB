@@ -158,9 +158,9 @@ export default function CrewPage() {
         </Link>
       </header>
 
-      <div style={{ marginTop: 60, padding: 24, maxWidth: 1100, margin: '60px auto 0' }}>
+      <div style={{ marginTop: 60, padding: 24, maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
         {activeProject && (
-          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             {([
               { id: 'all' as const, label: 'ALL TALENT' },
               { id: 'project' as const, label: `${activeProject.title.toUpperCase()} CREW` },
@@ -169,7 +169,7 @@ export default function CrewPage() {
                 key={t.id}
                 onClick={() => setMode(t.id)}
                 style={{
-                  padding: '7px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
+                  padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                   fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',
@@ -194,13 +194,13 @@ export default function CrewPage() {
                   placeholder="Search by name, skill, bio…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  style={{ width: '100%', minHeight: 40, padding: '9px 12px 9px 34px', borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12 }}
+                  style={{ width: '100%', minHeight: 40, padding: '9px 12px 9px 34px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 12 }}
                 />
               </div>
               <div role="group" aria-label="Availability" style={{ display: 'flex', gap: 6 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
                   <button key={a} type="button" aria-pressed={availFilter === a} onClick={() => setAvailFilter(a)}
-                    style={{ minHeight: 40, borderRadius: 10, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ minHeight: 40, borderRadius: 8, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
@@ -283,7 +283,7 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <Avatar src={member.avatarUrl} name={member.username} size={44} />
             {online && (
-              <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #050a14', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+              <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: 'var(--success)', border: '2px solid #050a14', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
             )}
           </div>
           <div>

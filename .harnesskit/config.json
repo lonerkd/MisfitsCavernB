@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "2.1",
+  "preset": "advanced",
+  "detectedAt": "2026-09-28T08:55:57Z",
+  "installedPlugins": [
+    "typescript-lsp@claude-plugins-official",
+    "code-simplifier@claude-plugins-official",
+    "security-guidance@claude-plugins-official"
+  ],
+  "overrides": {
+    "mergeMode": true,
+    "existingClaudeMd": "preserved",
+    "note": "Repo already has AGENTS.md + .cavern-intelligence/ knowledge hub; HarnessKit augments, does not replace CLAUDE.md or .claude/settings.json content."
+  },
+  "uncoveredAreas": [],
+  "reviewInternalization": {
+    "stage": "marketplace_only",
+    "supplementSince": null,
+    "coveragePercent": null
+  },
+  "customHooks": [],
+  "customSkills": [],
+  "customAgents": [],
+  "removedPlugins": [],
+  "bibleInstalled": true
+}

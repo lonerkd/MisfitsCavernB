@@ -56,7 +56,7 @@ export function EditorLeftNav({
                 }} style={{
                   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
-                  padding: '8px 12px', borderRadius: 9, color: 'var(--fg-muted)',
+                  padding: '8px 12px', borderRadius: 8, color: 'var(--fg-muted)',
                   fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
                   cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
                 }}
@@ -74,7 +74,7 @@ export function EditorLeftNav({
                     <button key={label} onClick={onClick} style={{
                       flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                       background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.06)',
-                      padding: '6px', borderRadius: 7,
+                      padding: '6px', borderRadius: 8,
                       color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
                       letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
                       transition: 'border-color 0.2s, color 0.2s',
@@ -106,7 +106,7 @@ export function EditorLeftNav({
                       fontSize: 'max(8px, var(--mc-min-font, 0px))', padding: '4px 9px',
                       background: 'transparent',
                       border: '1px solid rgba(var(--ink-rgb), 0.07)',
-                      borderRadius: 6, color: 'var(--fg-dim)',
+                      borderRadius: 8, color: 'var(--fg-dim)',
                       cursor: 'pointer', textTransform: 'capitalize',
                       fontFamily: 'var(--mono)', letterSpacing: 1,
                       transition: 'border-color 0.2s, color 0.2s',
@@ -177,7 +177,7 @@ export function EditorLeftNav({
                             background: isActive ? 'rgba(var(--ink-rgb), 0.04)' : dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i ? 'rgba(var(--ink-rgb), 0.05)' : 'transparent',
                             border: '1px solid',
                             borderColor: isActive ? 'rgba(var(--ink-rgb), 0.1)' : 'transparent',
-                            borderRadius: 10, cursor: 'grab',
+                            borderRadius: 8, cursor: 'grab',
                             borderLeft: `3px solid ${isActive ? color : dropSceneIdx === i && dragSceneIdx !== i ? color : 'transparent'}`,
                             boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
                             opacity: dragSceneIdx === i ? 0.4 : 1,
@@ -192,7 +192,7 @@ export function EditorLeftNav({
                               flexShrink: 0, fontWeight: 600
                             }}>{typeLabel}</span>
                             <span style={{
-                              fontFamily: 'var(--mono)', fontSize: 10.5,
+                              fontFamily: 'var(--mono)', fontSize: 11,
                               color: isActive ? 'var(--fg)' : 'rgba(var(--fg-rgb), 0.7)',
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                               textTransform: 'uppercase', flex: 1, letterSpacing: 0.5
@@ -204,11 +204,11 @@ export function EditorLeftNav({
                             </span>
                           </div>
 
-                          <div style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.06)', borderRadius: 1.5, marginBottom: 8, overflow: 'hidden' }}>
+                          <div style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.06)', borderRadius: 4, marginBottom: 8, overflow: 'hidden' }}>
                             <div style={{
                               height: '100%', width: `${barPct}%`,
                               background: isActive ? color : `${color}88`,
-                              borderRadius: 1.5, transition: 'width 0.4s',
+                              borderRadius: 4, transition: 'width 0.4s',
                               boxShadow: isActive ? `0 0 6px ${color}` : 'none'
                             }} />
                           </div>

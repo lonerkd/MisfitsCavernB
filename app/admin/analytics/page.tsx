@@ -100,7 +100,7 @@ export default function AdminAnalyticsPage() {
           </Link>
         </header>
 
-        <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1200, margin: '60px auto 0' }}>
+        <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
           {loadError && <div role="alert" style={{ color: 'var(--danger)', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 16 }}>⚠ {loadError}</div>}
           <div style={{ display: 'flex', gap: 24, marginBottom: 40, borderBottom: '1px solid rgba(var(--ink-rgb), 0.1)', paddingBottom: 16 }}>
             <Link
@@ -163,7 +163,7 @@ export default function AdminAnalyticsPage() {
                   border: timeRange === range ? 'none' : '1px solid rgba(var(--ink-rgb), 0.1)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
-                  fontSize: 10,
+                  fontSize: 11,
                   letterSpacing: 1,
                   cursor: 'pointer',
                   textTransform: 'uppercase',
@@ -192,7 +192,7 @@ export default function AdminAnalyticsPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <stat.icon size={16} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                     {stat.label}
                   </span>
                 </div>

@@ -14,7 +14,7 @@ const panelStyle: React.CSSProperties = {
   flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
 };
 const headStyle: React.CSSProperties = { padding: '14px 18px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const titleStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--ok)', display: 'inline-flex', alignItems: 'center', gap: 6 };
+const titleStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--ok)', display: 'inline-flex', alignItems: 'center', gap: 6 };
 const closeStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' };
 const rowStyle: React.CSSProperties = { display: 'block', width: '100%', textAlign: 'left', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', color: 'var(--fg)' };
 const metaStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', display: 'flex', gap: 6, marginBottom: 4 };
@@ -31,7 +31,7 @@ function Marked({ text, query }: { text: string; query: string }) {
   const words = query.toLowerCase().split(/\s+/).map((w) => w.replace(/[^\p{L}\p{N}]+/gu, '')).filter(Boolean);
   if (!words.length) return <>{text}</>;
   const re = new RegExp(`(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
-  return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i} style={{ background: 'rgba(16,185,129,0.25)', color: 'var(--fg-strong)', borderRadius: 2 }}>{part}</mark> : part))}</>;
+  return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i} style={{ background: 'rgba(16,185,129,0.25)', color: 'var(--fg-strong)', borderRadius: 4 }}>{part}</mark> : part))}</>;
 }
 
 export function LoungeSearch({ channel, meId, onClose, onJump }: {
@@ -73,7 +73,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
           <div role="radiogroup" aria-label="Where to search" style={{ display: 'flex', gap: 6 }}>
             {[{ v: true, l: `#${channel.name}` }, { v: false, l: 'Everywhere' }].map((o) => (
               <button key={o.l} type="button" role="radio" aria-checked={here === o.v} onClick={() => setHere(o.v)}
-                style={{ padding: '4px 10px', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', cursor: 'pointer', border: `1px solid ${here === o.v ? 'rgba(16,185,129,0.5)' : 'rgba(var(--ink-rgb), 0.1)'}`, background: here === o.v ? 'rgba(16,185,129,0.12)' : 'transparent', color: here === o.v ? 'var(--ok)' : 'var(--fg-muted)' }}>
+                style={{ padding: '4px 10px', borderRadius: 9999, fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', cursor: 'pointer', border: `1px solid ${here === o.v ? 'rgba(16,185,129,0.5)' : 'rgba(var(--ink-rgb), 0.1)'}`, background: here === o.v ? 'rgba(16,185,129,0.12)' : 'transparent', color: here === o.v ? 'var(--ok)' : 'var(--fg-muted)' }}>
                 {o.l}
               </button>
             ))}
@@ -81,10 +81,10 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
         )}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }} aria-live="polite">
-        {state === 'idle' && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0 }}>Type a word or two. The start of a word is enough.</p>}
-        {state === 'searching' && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0 }}>Searching…</p>}
-        {state === 'error' && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--danger)', margin: 0 }}>Search failed — try again.</p>}
-        {state === 'done' && hits.length === 0 && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0 }}>Nothing matches{here && channel ? ` in #${channel.name}` : ''}.</p>}
+        {state === 'idle' && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', margin: 0 }}>Type a word or two. The start of a word is enough.</p>}
+        {state === 'searching' && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', margin: 0 }}>Searching…</p>}
+        {state === 'error' && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--danger)', margin: 0 }}>Search failed — try again.</p>}
+        {state === 'done' && hits.length === 0 && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', margin: 0 }}>Nothing matches{here && channel ? ` in #${channel.name}` : ''}.</p>}
         {state === 'done' && hits.length > 0 && <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', margin: 0 }}>{hits.length === 40 ? 'The 40 newest matches' : `${hits.length} match${hits.length === 1 ? '' : 'es'}`}</p>}
         {hits.map((h) => (
           <button key={h.id} type="button" onClick={() => onJump(h)} style={rowStyle}>
@@ -94,7 +94,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
               <span>· {when(h.created_at)}</span>
               {h.parent_message_id && <span>· in a thread</span>}
             </span>
-            <span style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.55, color: 'rgba(var(--fg-rgb), 0.85)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <span style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.55, color: 'rgba(var(--fg-rgb), 0.85)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               <Marked text={h.content} query={query} />
             </span>
           </button>
@@ -130,9 +130,9 @@ export function PinnedPanel({ channel, refreshKey, canUnpin, onUnpin, onClose, o
         <button type="button" onClick={onClose} aria-label="Close pinned messages" style={closeStyle}><X size={16} /></button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {rows === null && <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0 }}>Loading…</p>}
+        {rows === null && <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', margin: 0 }}>Loading…</p>}
         {rows?.length === 0 && (
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)', margin: 0, lineHeight: 1.7 }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', margin: 0, lineHeight: 1.7 }}>
             Nothing pinned yet. {canUnpin ? 'Pin a message (the pin by it) to keep call times, addresses and decisions here.' : 'Whoever runs the channel pins what matters.'}
           </p>
         )}
@@ -140,11 +140,11 @@ export function PinnedPanel({ channel, refreshKey, canUnpin, onUnpin, onClose, o
           <div key={r.id} style={{ ...rowStyle, cursor: 'default', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <button type="button" onClick={() => onJump(r.parent_message_id ?? r.id)} style={{ flex: 1, background: 'none', border: 'none', textAlign: 'left', padding: 0, cursor: 'pointer', color: 'inherit' }}>
               <span style={metaStyle}><span style={{ color: 'var(--warn)' }}>{r.profiles?.username ?? 'Deleted account'}</span><span>· {when(r.created_at)}</span></span>
-              <span style={{ fontFamily: 'var(--serif)', fontSize: 13.5, lineHeight: 1.55, color: 'rgba(var(--fg-rgb), 0.85)', whiteSpace: 'pre-wrap' }}>{r.content}</span>
+              <span style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.55, color: 'rgba(var(--fg-rgb), 0.85)', whiteSpace: 'pre-wrap' }}>{r.content}</span>
             </button>
             {canUnpin && (
               <button type="button" onClick={() => { onUnpin(r.id); setRows((prev) => prev?.filter((x) => x.id !== r.id) ?? null); }} aria-label="Unpin" title="Unpin"
-                style={{ background: 'none', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 6, color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'inline-flex' }}>
+                style={{ background: 'none', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'inline-flex' }}>
                 <PinOff size={11} />
               </button>
             )}

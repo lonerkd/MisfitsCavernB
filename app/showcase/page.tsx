@@ -98,7 +98,7 @@ export default function ShowcasePage() {
 
       <section style={{ padding: '90px 18px', position: 'relative' }}>
         <AnimatedSection>
-          <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ maxWidth: 'var(--w-content)', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
               <div style={{ width: 32, height: 1, background: 'var(--accent)' }} />
               <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 6, textTransform: 'uppercase', color: 'var(--accent)' }}>

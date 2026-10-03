@@ -177,8 +177,8 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
         }}
         onClick={onClose}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
-          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>
+        <div style={{ maxWidth: 'var(--w-content)', margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+          <button onClick={onClose} style={{ position: 'fixed', top: 32, right: 32, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, textTransform: 'uppercase', letterSpacing: 2 }}>
             <X size={18} /> Close Bible
           </button>
 
@@ -371,16 +371,16 @@ export default function PortfolioPage() {
            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(232, 67, 26,0.08), transparent 55%), #060606' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
         </div>
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--w-content)', margin: '0 auto', width: '100%' }}>
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
              <SectionLabel text="Featured Work" />
              <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(4rem, 8vw, 6rem)', letterSpacing: 4, lineHeight: 1, marginBottom: 20 }}>THE CAVERN<br/>COLLECTION</h1>
-             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 500, lineHeight: 1.6 }}>A curated selection of cinematic projects, from conceptual ideation to final delivery. Built with precision, driven by story.</p>
+             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 'var(--w-form)', lineHeight: 1.6 }}>A curated selection of cinematic projects, from conceptual ideation to final delivery. Built with precision, driven by story.</p>
            </motion.div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 4, borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+      <div style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '0 20px', display: 'flex', gap: 4, borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
         {([['showcase', 'Showcase'], ['distribution', 'Distribution']] as const).map(([key, label]) => {
           const active = view === key;
           return (
@@ -398,7 +398,7 @@ export default function PortfolioPage() {
       </div>
 
       {view === 'distribution' && (
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 20px 80px' }}>
+        <section style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '60px 20px 80px' }}>
           <AnimatedSection>
             <SectionLabel text="Festival Circuit" />
             <p style={{ fontFamily: 'var(--serif)', fontSize: 15, color: 'var(--fg-muted)', maxWidth: 560, lineHeight: 1.6, marginBottom: 28 }}>
@@ -412,12 +412,12 @@ export default function PortfolioPage() {
               {festivals.map(f => {
                 const col = FEST_COLOR[f.status] || '#6b7280';
                 return (
-                  <div key={f.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${col}`, borderRadius: 10, padding: 16 }}>
+                  <div key={f.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${col}`, borderRadius: 8, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                       <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{f.name}</span>
-                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 99, padding: '3px 9px' }}>{f.status}</span>
+                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, textTransform: 'uppercase', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 9999, padding: '3px 9px' }}>{f.status}</span>
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{f.projectTitle}{f.deadline ? ` · ${f.deadline}` : ''}</div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{f.projectTitle}{f.deadline ? ` · ${f.deadline}` : ''}</div>
                   </div>
                 );
               })}
@@ -432,12 +432,12 @@ export default function PortfolioPage() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
               {campaigns.map(c => (
-                <div key={c.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 10, padding: 16 }}>
+                <div key={c.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                     <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 1 }}>{c.title}</span>
-                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 99, padding: '3px 9px' }}>{c.platform}</span>}
+                    {c.platform && <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.14)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 9999, padding: '3px 9px' }}>{c.platform}</span>}
                   </div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>{c.projectTitle}{c.budget ? ` · $${Number(c.budget).toLocaleString()}` : ''}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{c.projectTitle}{c.budget ? ` · $${Number(c.budget).toLocaleString()}` : ''}</div>
                 </div>
               ))}
             </div>
@@ -446,13 +446,13 @@ export default function PortfolioPage() {
       )}
 
       {view === 'showcase' && (<>
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 20px 80px' }}>
+      <section style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '80px 20px 80px' }}>
         <AnimatedSection>
           <SectionLabel text={`The Work — ${videosList.length} Projects`} />
         </AnimatedSection>
 
         {videosList.length === 0 ? (
-          <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(var(--ink-rgb), 0.1)', borderRadius: 16 }}>
+          <div style={{ padding: '80px 0', textAlign: 'center', border: '1px dashed rgba(var(--ink-rgb), 0.1)', borderRadius: 14 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 10 }}>
               {loading ? 'LOADING…' : loadError ? `⚠ ${loadError}` : 'NO PUBLISHED WORK YET'}
             </div>

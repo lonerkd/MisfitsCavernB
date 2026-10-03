@@ -72,7 +72,7 @@ export function CharacterBible() {
           const isEditing = editing === c.name && draft;
           const charLooks = c.row ? looksByChar.get(c.row.id) ?? [] : [];
           return (
-            <div key={c.name} style={{ background: 'var(--sunken)', border: `1px solid ${c.color}33`, borderLeft: `3px solid ${c.color}`, borderRadius: 10, padding: 14 }}>
+            <div key={c.name} style={{ background: 'var(--sunken)', border: `1px solid ${c.color}33`, borderLeft: `3px solid ${c.color}`, borderRadius: 8, padding: 14 }}>
               <div className={s.row} style={{ justifyContent: 'space-between' }}>
                 <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 1, color: c.color }}>{c.name}</span>
                 {!isEditing && <button type="button" className={s.iconBtn} onClick={() => startEdit(c)} aria-label={`Edit ${c.name}`}><Pencil size={12} /></button>}
@@ -89,7 +89,7 @@ export function CharacterBible() {
                   </div>
                 </div>
               ) : (
-                <div className={s.mono} style={{ marginTop: 6, fontSize: 10, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
+                <div className={s.mono} style={{ marginTop: 6, fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.7 }}>
                   {c.row?.full_name && <div><span className={s.dim}>Name:</span> {c.row.full_name}</div>}
                   {c.row?.age && <div><span className={s.dim}>Age:</span> {c.row.age}</div>}
                   {c.row?.arc && <div><span className={s.dim}>Arc:</span> {c.row.arc}</div>}

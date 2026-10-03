@@ -50,6 +50,8 @@ interface ProjectHubViewModel {
   team: { name: string; role: string; online?: boolean }[];
   description: string;
   color: string;
+  /** The accent as the owner chose it (null: the theme's), for panels that derive their own shades from it. */
+  accent?: string | null;
   scriptPages?: number;
   scriptDraft?: number;
   assetCount?: number;
@@ -93,7 +95,7 @@ function DeptWindow({ title, tag, color: rawColor, href, stats, preview, delay =
         gridColumn: span === 'double' ? 'span 2' : 'span 1',
         background: 'var(--glass)',
         border: `1px solid ${hovered ? color + '30' : 'rgba(var(--ink-rgb), 0.06)'}`,
-        borderRadius: 16,
+        borderRadius: 14,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -173,7 +175,7 @@ function ScriptPreview({ pages, scripts, scenes }: { pages: number; scripts: num
       {bars > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {Array.from({ length: bars }).map((_, i) => (
-            <div key={i} style={{ height: 3, borderRadius: 2, background: 'rgba(var(--ink-rgb), 0.08)', width: `${40 + ((i * 53) % 60)}%` }} />
+            <div key={i} style={{ height: 3, borderRadius: 4, background: 'rgba(var(--ink-rgb), 0.08)', width: `${40 + ((i * 53) % 60)}%` }} />
           ))}
         </div>
       ) : (
@@ -222,11 +224,11 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
             {member.name.charAt(0)}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
           </div>
           {member.online && (
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />
           )}
         </div>
       ))}
@@ -282,7 +284,7 @@ function PortfolioPreview({ pieces }: { pieces: { id: string; title: string }[] 
       {pieces.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>Not in your portfolio yet.</span>}
       {pieces.slice(0, 4).map((p) => (
         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</span>
         </div>
       ))}
@@ -321,6 +323,7 @@ export default function ProjectHubPage() {
           deadline: row.end_date || '',
           description: row.description || '',
           color: readable(row.accent_color || 'var(--accent)'),
+          accent: row.accent_color,
           team: [],
           settings: row.settings as unknown as ProjectSettings,
           visibility: (row.visibility as ProjectHubViewModel['visibility']) || 'team',
@@ -502,14 +505,14 @@ export default function ProjectHubPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {onlineCount > 0 && (
             <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 1.5 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
               {onlineCount} online
             </div>
           )}
           {counts.tasks > 0 && (
           <div title="Tasks completed" className="mc-hide-phone" style={{
             fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1.5,
-            padding: '5px 10px', borderRadius: 6, background: 'rgba(var(--ink-rgb), 0.04)',
+            padding: '5px 10px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.04)',
           }}>
             {counts.tasksDone}/{counts.tasks} tasks done
           </div>
@@ -524,7 +527,7 @@ export default function ProjectHubPage() {
                 style={{
                   fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.2, color: 'var(--fg-muted)',
                   background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-                  borderRadius: 6, padding: '5px 8px', cursor: 'pointer', outline: 'none',
+                  borderRadius: 8, padding: '5px 8px', cursor: 'pointer', outline: 'none',
                 }}
               >
                 {PROJECT_VISIBILITY.map(v => (
@@ -538,7 +541,7 @@ export default function ProjectHubPage() {
                   style={{
                     fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.2, color: 'var(--jobs-text)',
                     background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
-                    borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
                   }}
                 >Copy link</button>
               )}
@@ -571,14 +574,14 @@ export default function ProjectHubPage() {
           transition={{ delay: 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.color}
+          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.accent || 'var(--accent)'}
             onFormatChanged={(type) => { setRealProject(p => p ? { ...p, type } : p); refreshProject(id); }} />
         </motion.div>
 
         {isRealProject && progressState.progress && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
             <BriefPanel brief={brief} projectTitle={project.title} format={briefFormat} phase={progressState.progress.current.id}
-              canEdit={canShape} accent={project.color} />
+              canEdit={canShape} accent={project.accent || 'var(--accent)'} />
           </motion.div>
         )}
 
@@ -586,7 +589,7 @@ export default function ProjectHubPage() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
             <GuidePanel projectId={id} signals={progressState.signals} isOwner={project.isOwner} format={briefFormat}
               structure={typeof brief.answers.structure === 'string' ? brief.answers.structure : null}
-              accent={project.color} userId={me?.id ?? null} role={me?.role ?? null} />
+              accent={project.accent || 'var(--accent)'} userId={me?.id ?? null} role={me?.role ?? null} />
           </motion.div>
         )}
 
@@ -948,7 +951,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   return (
     <div style={{ marginTop: 40 }}>
       <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
-      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}>⚠ {err}</div>}
+      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
         <Panel title="Tasks" accent={accent}>
@@ -956,7 +959,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {tasks.map(t => (
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
-              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 10, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
+              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
               <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
@@ -1000,14 +1003,14 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
             />
           ))}
           {hasActuals && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', fontFamily: 'var(--mono)', fontSize: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', fontFamily: 'var(--mono)', fontSize: 11 }}>
               <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
               <span style={{ color: totalActual > totalBudget ? 'var(--danger)' : 'var(--ok)' }}>{totalActual > totalBudget ? '+' : ''}{(totalActual - totalBudget).toLocaleString()}</span>
             </div>
           )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
-          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--violet)', borderRadius: 6, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
             {analyzing ? 'READING THE BREAKDOWN…' : '✦ UPDATE FROM THE BREAKDOWN'}
           </button>
           <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', lineHeight: 1.5 }}>
@@ -1044,7 +1047,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
           {portfolio.length === 0 ? (
             <>
               <Empty>No pitch board yet</Empty>
-              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: 'var(--violet)', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
                 ✦ BUILD PITCH BOARD
               </Link>
             </>
@@ -1086,7 +1089,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
             value={settings.defaultScriptFormat || ''}
             onChange={e => setDefaultFormat(e.target.value as ScriptFormat | '')}
             aria-label="Default script format"
-            style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 12 }}
+            style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}
           >
             <option value="">Use the format’s default</option>
             {SCRIPT_FORMATS.map(f => <option key={f} value={f}>{SCRIPT_FORMAT_LABELS[f]}</option>)}
@@ -1172,13 +1175,13 @@ function BudgetRowItem({
     <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave} onClick={zoneHandlers.onClick}>
       <Row>
         <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
         <input
           type="number"
           defaultValue={item.actual_cost ?? ''}
           placeholder="actual"
           onBlur={(e) => { const v = e.target.value.trim(); onSetActual(v === '' ? null : Number(v)); }}
-          style={{ width: 64, background: 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? 'var(--danger)' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, textAlign: 'right', outline: 'none' }}
+          style={{ width: 64, background: 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? 'var(--danger)' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textAlign: 'right', outline: 'none' }}
         />
         <button
           onClick={onPostJob}
@@ -1206,7 +1209,7 @@ function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: 
   const [vals, setVals] = useState<string[]>(fields.map(() => ''));
   const set = (i: number, v: string) => setVals(p => p.map((x, idx) => idx === i ? v : x));
   const submit = () => { onSubmit(vals); setVals(fields.map(() => '')); };
-  const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 6, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, outline: 'none' };
+  const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
   return (
     <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
       {fields.map((f, i) => (
@@ -1220,7 +1223,7 @@ function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: 
           style={{ ...inputStyle, flex: f === 'date' ? '0 0 110px' : f === 'number' ? '0 0 90px' : 1 }}
         />
       ))}
-      <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
+      <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
     </div>
   );
 }
@@ -1238,9 +1241,9 @@ function AddCrewForm({ accent, onAdd }: { accent: string; onAdd: (username: stri
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
       <label className="sr-only" htmlFor="add-crew-username">Username</label>
-      <input id="add-crew-username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void submit(); }} placeholder="Username" style={{ ...MINI_INPUT, padding: '6px 8px', fontSize: 10 }} />
+      <input id="add-crew-username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void submit(); }} placeholder="Username" style={{ ...MINI_INPUT, padding: '6px 8px', fontSize: 11 }} />
       <CraftPicker label="Their craft" value={craft} onChange={setCraft} placeholder="Their craft (optional)" noneLabel="No craft" />
-      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 6, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>ADD TO CREW</button>
+      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>ADD TO CREW</button>
     </div>
   );
 }

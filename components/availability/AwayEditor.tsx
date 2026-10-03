@@ -12,11 +12,11 @@ import { describeRange, localToday, rangeProblem, useMyUnavailability } from '@/
 const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 6, color: 'var(--fg-dim)' };
 const field: React.CSSProperties = {
   width: '100%', padding: '10px 12px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-  color: 'var(--fg)', fontSize: 13, borderRadius: 6, colorScheme: 'dark',
+  color: 'var(--fg)', fontSize: 13, borderRadius: 8, colorScheme: 'dark',
 };
 const btn: React.CSSProperties = {
   padding: '10px 14px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
-  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', borderRadius: 6,
+  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', borderRadius: 8,
 };
 
 export function AwayEditor({ userId }: { userId: string | null }) {
@@ -54,7 +54,7 @@ export function AwayEditor({ userId }: { userId: string | null }) {
   return (
     <section aria-labelledby="away-title">
       <h2 id="away-title" style={{ ...label, fontSize: 'max(9px, var(--mc-min-font, 0px))', margin: '0 0 4px' }}>DATES YOU’RE AWAY</h2>
-      <p style={{ fontSize: 11.5, color: 'var(--fg-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: 12, color: 'var(--fg-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
         Productions you’re on see these dates when they plan shoot days — never your note.
       </p>
       {error && <p role="alert" style={{ fontSize: 12, color: 'var(--danger)' }}>{error}</p>}
@@ -63,9 +63,9 @@ export function AwayEditor({ userId }: { userId: string | null }) {
           {current.map((r) => {
             const text = describeRange(r.starts_on, r.ends_on);
             return (
-              <li key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 6 }}>
+              <li key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8 }}>
                 <span style={{ fontSize: 13, color: 'var(--fg)' }}>{text}</span>
-                {r.note && <span style={{ fontSize: 11.5, color: 'var(--fg-muted)', flex: 1 }}>{r.note}</span>}
+                {r.note && <span style={{ fontSize: 12, color: 'var(--fg-muted)', flex: 1 }}>{r.note}</span>}
                 <button type="button" onClick={() => drop(r.id, text)} aria-label={`Remove ${text}`}
                   style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'flex' }}>
                   <X size={14} aria-hidden />

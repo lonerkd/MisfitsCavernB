@@ -22,7 +22,7 @@
 .actions { display: flex; align-items: center; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
 .skip {
   display: inline-flex; align-items: center; gap: 5px; background: none; border: none; padding: 6px 0; cursor: pointer;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted);
 }
 .skip:hover { color: var(--fg); }
 .skip:focus-visible, .path:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }
@@ -36,7 +36,7 @@
 }
 .path:hover { border-color: var(--pa-line); background: var(--pa-dim); }
 .pathIcon {
-  width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
   background: var(--pa-dim); color: var(--pa); border: 1px solid var(--pa-line);
 }
 .pathText { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -46,7 +46,7 @@
 
 .form { display: flex; flex-direction: column; gap: 16px; }
 .brief { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 4px; }
-.briefTitle { font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 14px; font-weight: 400; }
+.briefTitle { font-family: var(--mono); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 14px; font-weight: 400; }
 .optional { letter-spacing: 1px; text-transform: none; }
 .questions { display: flex; flex-direction: column; gap: 16px; }
 

@@ -12,7 +12,7 @@ import { MediaViewer } from '@/components/studio/media/MediaViewer';
 import { Modal } from '@/components/studio/ui';
 
 const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 };
-const hint: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 10.5, lineHeight: 1.6, color: 'var(--fg-muted)' };
+const hint: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6, color: 'var(--fg-muted)' };
 
 /**
  * The current scene's visual references, note and colour — the same data the

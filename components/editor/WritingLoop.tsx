@@ -47,7 +47,7 @@ export type Sprint = ReturnType<typeof useSprint>;
 const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 const card: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 12, borderRadius: 8 };
 const title: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 };
-const iconBtn: React.CSSProperties = { width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'none', color: 'var(--fg)', cursor: 'pointer' };
+const iconBtn: React.CSSProperties = { width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'none', color: 'var(--fg)', cursor: 'pointer' };
 
 /**
  * Today's words against the goal, the streak and the last four weeks, the
@@ -83,7 +83,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
           <form onSubmit={(e) => { e.preventDefault(); void saveGoal(); }} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <label htmlFor="daily-goal" style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Daily goal</label>
             <input id="daily-goal" type="number" min={50} max={20000} step={50} value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus
-              style={{ width: 90, background: 'var(--sunken)', border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 6, color: 'var(--fg)', padding: '4px 6px', fontFamily: 'var(--mono)' }} />
+              style={{ width: 90, background: 'var(--sunken)', border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 8, color: 'var(--fg)', padding: '4px 6px', fontFamily: 'var(--mono)' }} />
             <button type="submit" style={iconBtn} aria-label="Save the goal"><Check size={12} /></button>
             <button type="button" style={iconBtn} aria-label="Cancel" onClick={() => setEditing(false)}><X size={12} /></button>
           </form>
@@ -94,7 +94,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
           </p>
         )}
         <div role="progressbar" aria-label="Progress toward today’s goal" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
-          style={{ height: 4, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 2, overflow: 'hidden', marginTop: 8 }}>
+          style={{ height: 4, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, overflow: 'hidden', marginTop: 8 }}>
           <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#34c77b' : '#0099ff', transition: 'width 0.5s' }} />
         </div>
       </div>
@@ -111,7 +111,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
           {s.recent.map((d, i) => (
             <div key={d.day} title={`${d.day}: ${d.words} words`}
               style={{
-                aspectRatio: '1', borderRadius: 3,
+                aspectRatio: '1', borderRadius: 4,
                 background: d.met ? '#34c77b' : d.words > 0 ? 'rgba(52,199,123,0.3)' : 'rgba(var(--ink-rgb), 0.05)',
                 outline: i === s.recent.length - 1 ? '1px solid rgba(var(--ink-rgb), 0.5)' : undefined,
               }} />
@@ -145,7 +145,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {loop.badges.map((b) => (
             <li key={b.id} title={b.hint}
-              style={{ fontSize: 10.5, fontFamily: 'var(--mono)', padding: '3px 8px', borderRadius: 99, border: `1px solid ${b.earned ? 'rgba(52,199,123,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, color: b.earned ? '#5fd99a' : 'var(--fg-muted)' }}>
+              style={{ fontSize: 11, fontFamily: 'var(--mono)', padding: '3px 8px', borderRadius: 9999, border: `1px solid ${b.earned ? 'rgba(52,199,123,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, color: b.earned ? '#5fd99a' : 'var(--fg-muted)' }}>
               {b.earned ? '✓ ' : ''}{b.label}<span className="sr-only">{b.earned ? ' — earned' : ` — ${b.hint}`}</span>
             </li>
           ))}

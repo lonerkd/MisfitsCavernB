@@ -15,6 +15,37 @@
   --display: var(--font-display), 'Bebas Neue', sans-serif;
   --mono: var(--font-mono), 'DM Mono', monospace;
   --serif: var(--font-serif), 'Cormorant Garamond', serif;
+  /* Screenplay face — the industry-standard 12pt Courier, for script surfaces only */
+  --script: var(--font-script), 'Courier Prime', 'Courier New', monospace;
+  --sans: var(--mono);
+
+  /* Type scale (1.2 ratio, 14px UI base). 11px is the floor for text, for
+     uppercase tracked labels only. Nothing smaller than --text-2xs. */
+  --text-2xs: 11px;
+  --text-xs:  12px;
+  --text-sm:  13px;
+  --text-base: 14px;
+  --text-md:  16px;
+  --text-lg:  20px;
+  --text-xl:  24px;
+  --text-2xl: 32px;
+
+  /* Layout — three container widths, nothing in between */
+  --w-form:    480px;
+  --w-reading: 720px;
+  --w-content: 1160px;
+  --gutter:    18px;
+
+  /* Space (4px base) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* Imagery — film aspect ratios, and the scrim that keeps text legible on stills */
+  --ar-scope: 2.39 / 1;
+  --ar-film:  16 / 9;
+  --ar-still: 3 / 2;
+  --ar-poster: 2 / 3;
+  --scrim: linear-gradient(to top, rgba(4, 7, 16, 0.92), rgba(4, 7, 16, 0.35) 55%, transparent);
 
   /* Surface hierarchy — deep ink-blue base */
   --bg:    #040710;
@@ -51,6 +82,9 @@
   --portfolio-color: #f59e0b;
   --jobs-color:      #8b5cf6;
 
+  /* Status — theme-independent. Green means online, done or success. */
+  --success: #10b981;
+
   /* Motion */
   --ease-expo:   cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -63,6 +97,12 @@
   --r-lg:   20px;
   --r-xl:   28px;
   --r-full: 9999px;
+
+  /* Layers — full-screen dialogs sit above the suite chrome, so the dock never
+     covers their buttons. Bottom to top:
+     dock 9999 / phone tab bar 10000 < modal 99990 < toast 99997
+     < confirm 99998 < cursor 99999 < command palette / diff 100000. */
+  --z-modal: 99990;
 
   /* Legacy aliases */
   --radius-sm:   var(--r-xs);
@@ -194,7 +234,7 @@ body.custom-cursor-active * {
   .mc-lounge-channels button, .mc-lounge-crew > div[title] { min-height: 44px; font-size: 14px !important; }
   .mc-lounge-chathead { padding: 8px 10px !important; gap: 8px; }
   .mc-lounge-chathead button { min-height: 40px; min-width: 40px; justify-content: center; }
-  .mc-lounge-back { align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: rgba(var(--ink-rgb), 0.06); color: var(--fg); flex-shrink: 0; }
+  .mc-lounge-back { align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 8px; background: rgba(var(--ink-rgb), 0.06); color: var(--fg); flex-shrink: 0; }
   .mc-lounge-thread { padding: 16px 12px !important; }
   .mc-lounge-composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important; }
 }
@@ -206,7 +246,7 @@ body.custom-cursor-active * {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid var(--accent);
@@ -219,6 +259,9 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
 }
 
 .mc-masonry { column-count: 4; column-gap: 16px; }
+/* The structure rail is fixed at the left edge; its labels would run into the script column. */
+@media (max-width: 1100px) { .beat-label { display: none; } }
+
 @media (max-width: 1100px) { .mc-masonry { column-count: 3; } }
 @media (max-width: 760px)  { .mc-masonry { column-count: 2; } }
 @media (max-width: 460px)  { .mc-masonry { column-count: 1; } }
@@ -248,7 +291,7 @@ body.reduce-motion *::after {
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #282828; }
 
 /* ═══════════════════════════════
@@ -389,7 +432,7 @@ p {
   background: var(--accent);
   color: var(--on-accent);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-decoration: none;
@@ -414,7 +457,7 @@ p {
   background: rgba(224, 221, 174, 0.02);
   color: var(--fg);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-decoration: none;
@@ -453,7 +496,7 @@ p {
 }
 
 .cta-btn {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--mono);
   letter-spacing: 4px;
   text-transform: uppercase;
@@ -714,14 +757,14 @@ section { padding: 90px 18px; }
   height: 2px;
   background: #1a1a1a;
   overflow: hidden;
-  border-radius: 1px;
+  border-radius: 4px;
 }
 
 .progress-bar__fill {
   height: 100%;
   background: var(--accent);
   transition: width 1s var(--ease-expo);
-  border-radius: 1px;
+  border-radius: 4px;
 }
 
 /* magnetic-btn (legacy) */
@@ -732,7 +775,7 @@ section { padding: 90px 18px; }
   padding: 13px 28px;
   border-radius: var(--r-full);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-decoration: none;

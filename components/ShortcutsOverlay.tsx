@@ -16,6 +16,17 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
     ],
   },
   {
+    title: 'The island (Caps Lock on)',
+    items: [
+      ['Caps Lock', 'Hold the island open, with a key on every control'],
+      ['1 – 6', 'Go to that app'],
+      ['Q W E R …', 'Run that control of the page you’re on'],
+      ['← →  ·  Enter', 'Move between the page’s controls and run one'],
+      ['/  ·  \  ·  P', 'Search · split screen · switch project'],
+      ['Esc', 'Put the island away until Caps Lock is next turned on'],
+    ],
+  },
+  {
     title: 'ScriptOS editor',
     items: [
       ['Tab', 'Smart element insert (scene / dialogue)'],
@@ -70,7 +81,7 @@ export default function ShortcutsOverlay() {
             initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={e => e.stopPropagation()}
-            style={{ width: 'min(94vw, 520px)', maxHeight: '84vh', overflowY: 'auto', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', padding: 24 }}
+            style={{ width: 'min(94vw, 520px)', maxHeight: '84vh', overflowY: 'auto', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', padding: 24 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--accent)' }}>
@@ -83,12 +94,12 @@ export default function ShortcutsOverlay() {
             <div style={{ display: 'grid', gap: 20 }}>
               {GROUPS.map(g => (
                 <div key={g.title}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
                   <div style={{ display: 'grid', gap: 4 }}>
                     {g.items.map(([keys, desc]) => (
                       <div key={desc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '6px 0' }}>
-                        <span style={{ fontSize: 12.5, color: 'rgba(var(--ink-rgb), 0.75)' }}>{desc}</span>
-                        <kbd style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg)', background: 'rgba(var(--ink-rgb), 0.06)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 5, padding: '3px 8px', whiteSpace: 'nowrap' }}>{keys}</kbd>
+                        <span style={{ fontSize: 13, color: 'rgba(var(--ink-rgb), 0.75)' }}>{desc}</span>
+                        <kbd style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', background: 'rgba(var(--ink-rgb), 0.06)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '3px 8px', whiteSpace: 'nowrap' }}>{keys}</kbd>
                       </div>
                     ))}
                   </div>
@@ -96,8 +107,8 @@ export default function ShortcutsOverlay() {
               ))}
             </div>
 
-            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: 1, color: 'var(--fg-dim)' }}>
-              Press <kbd style={{ fontSize: 9, border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 3, padding: '1px 5px' }}>?</kbd> anytime to reopen
+            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+              Press <kbd style={{ fontSize: 11, border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 4, padding: '1px 5px' }}>?</kbd> anytime to reopen
             </div>
           </motion.div>
         </motion.div>

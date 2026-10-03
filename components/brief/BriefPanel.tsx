@@ -143,7 +143,7 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
     requestAnimationFrame(() => document.getElementById(`brief-q-${key}`)?.querySelector<HTMLElement>('button, input')?.focus());
   };
 
-  if (brief.loading && !brief.questions.length) return <div className="skeleton" style={{ height: 220, borderRadius: 18 }} aria-busy="true" aria-label="Loading the brief" />;
+  if (brief.loading && !brief.questions.length) return <div className="skeleton" style={{ height: 220, borderRadius: 20 }} role="status" aria-busy="true" aria-label="Loading the brief" />;
   if (brief.error) return <div className={b.panel} style={accentVars(accent)}><p className={b.empty} role="alert">{brief.error}</p></div>;
 
   return (

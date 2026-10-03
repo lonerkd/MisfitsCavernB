@@ -54,7 +54,8 @@ export default function Navigation() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 1000,
+          // The bar holds the menu's close button, so it rides above the open drawer.
+          zIndex: open ? 'calc(var(--z-modal) + 2)' : 1000,
           background: scrolled ? 'var(--surface)' : 'transparent',
           backdropFilter: scrolled ? 'blur(24px) saturate(1.4)' : 'none',
           WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(1.4)' : 'none',
@@ -103,7 +104,7 @@ export default function Navigation() {
                     padding: '7px 14px',
                     borderRadius: 9999,
                     fontFamily: 'var(--mono)',
-                    fontSize: 8.5,
+                    fontSize: 11,
                     letterSpacing: 2.5,
                     textTransform: 'uppercase',
                     textDecoration: 'none',
@@ -152,7 +153,7 @@ export default function Navigation() {
               href="/profile"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
                   textTransform: 'uppercase', padding: '7px 12px',
                   background: 'rgba(var(--ink-rgb), 0.05)',
                   border: '1px solid rgba(var(--ink-rgb), 0.08)',
@@ -163,7 +164,7 @@ export default function Navigation() {
                   width: 20, height: 20, borderRadius: '50%',
                   background: 'var(--accent)', color: 'var(--on-accent)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 9, fontWeight: 700,
+                  fontSize: 11, fontWeight: 700,
                 }}>
                   {displayName.charAt(0).toUpperCase()}
                 </span>
@@ -172,7 +173,7 @@ export default function Navigation() {
               <button
                 onClick={handleSignOut}
                 style={{
-                  fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
                   textTransform: 'uppercase', padding: '8px 14px',
                   background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.10)',
                   color: 'var(--fg-dim)', borderRadius: 9999, cursor: 'pointer',
@@ -188,7 +189,7 @@ export default function Navigation() {
               style={{
                 marginLeft: 10,
                 fontFamily: 'var(--mono)',
-                fontSize: 8.5,
+                fontSize: 11,
                 letterSpacing: 2.5,
                 textTransform: 'uppercase',
                 padding: '9px 18px',
@@ -240,7 +241,7 @@ export default function Navigation() {
               background: 'var(--surface)',
               backdropFilter: 'blur(24px)',
               borderLeft: '1px solid rgba(var(--ink-rgb), 0.06)',
-              zIndex: 999,
+              zIndex: 'calc(var(--z-modal) + 1)',
               padding: '72px 28px 36px',
               display: 'flex',
               flexDirection: 'column',
@@ -288,7 +289,7 @@ export default function Navigation() {
                       display: 'block', textAlign: 'center', padding: '14px',
                       background: 'rgba(var(--ink-rgb), 0.06)',
                       border: '1px solid rgba(var(--ink-rgb), 0.10)',
-                      color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10,
+                      color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11,
                       letterSpacing: 3, textTransform: 'uppercase',
                       textDecoration: 'none', fontWeight: 600, borderRadius: 9999,
                     }}
@@ -300,7 +301,7 @@ export default function Navigation() {
                     style={{
                       padding: '14px', background: 'transparent',
                       border: '1px solid rgba(var(--ink-rgb), 0.10)', color: 'var(--fg-dim)',
-                      fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
+                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3,
                       textTransform: 'uppercase', fontWeight: 600, borderRadius: 9999,
                       cursor: 'pointer',
                     }}
@@ -319,7 +320,7 @@ export default function Navigation() {
                     background: 'var(--accent)',
                     color: 'var(--on-accent)',
                     fontFamily: 'var(--mono)',
-                    fontSize: 10,
+                    fontSize: 11,
                     letterSpacing: 3,
                     textTransform: 'uppercase',
                     textDecoration: 'none',
@@ -342,7 +343,7 @@ export default function Navigation() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 998, backdropFilter: 'blur(4px)' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 'var(--z-modal)', backdropFilter: 'blur(4px)' }}
           />
         )}
       </AnimatePresence>

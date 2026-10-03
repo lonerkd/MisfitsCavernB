@@ -43,7 +43,7 @@ export function MediaViewer({ media, src, playerRef }: { media: Pick<Media, 'kin
       <div className={s.viewer}>
         <div className={s.viewerFallback} style={{ width: '100%' }}>
           <KindIcon kind="audio" size={28} />
-          <audio ref={playerRef as React.Ref<HTMLAudioElement>} src={src} controls preload="metadata" style={{ width: '100%', maxWidth: 480 }} />
+          <audio ref={playerRef as React.Ref<HTMLAudioElement>} src={src} controls preload="metadata" style={{ width: '100%', maxWidth: 'var(--w-form)' }} />
         </div>
       </div>
     );

@@ -46,6 +46,17 @@ const cormorant = localFont({
   variable: '--font-serif',
 });
 
+const courierPrime = localFont({
+  src: [
+    { path: './fonts/courier-prime-latin-400-normal.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/courier-prime-latin-400-italic.woff2', weight: '400', style: 'italic' },
+    { path: './fonts/courier-prime-latin-700-normal.woff2', weight: '700', style: 'normal' },
+    { path: './fonts/courier-prime-latin-700-italic.woff2', weight: '700', style: 'italic' },
+  ],
+  display: 'swap',
+  variable: '--font-script',
+});
+
 export const metadata: Metadata = {
   title: 'Misfits Cavern — Creative Collaboration Platform',
   description: 'The ultimate creative platform for screenwriting, portfolio showcase, and immersive digital collaboration.',
@@ -67,7 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // data-theme is set before paint by the script below (the chosen theme on
     // this device), so the attribute differs from the server's on purpose.
-    <html lang="en" data-theme="default" suppressHydrationWarning className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable}`}>
+    <html lang="en" data-theme="default" suppressHydrationWarning className={`${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable} ${courierPrime.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: EARLY_THEME_SCRIPT }} />
       </head>

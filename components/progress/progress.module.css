@@ -2,14 +2,19 @@
    reveal. Self-contained (used on the project page and in the Studio);
    --pa is the project accent, already contrast-checked by readable(). */
 
-.panel {
+/* The accent and what's derived from it. .scope carries them to the unlock reveal, which is
+   portalled out of the panel (to sit above the island) and would otherwise lose them. */
+.panel, .scope {
   --pa: #e8431a;
   --pa-dim: color-mix(in srgb, var(--pa) 14%, transparent);
   --pa-line: color-mix(in srgb, var(--pa) 38%, transparent);
+}
+.scope { display: contents; }
+.panel {
   --line: rgba(var(--fg-rgb), 0.08);
   background: linear-gradient(180deg, var(--surface), var(--surface-2));
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 22px;
   position: relative;
   overflow: hidden;
@@ -24,7 +29,7 @@
 .head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; position: relative; }
 .eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); }
 .phaseName { font-family: var(--display); font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: 2px; line-height: 1; color: var(--fg); margin: 4px 0 0; font-weight: 400; }
-.summary { font-family: var(--mono); font-size: 10px; color: var(--fg-muted); margin-top: 6px; }
+.summary { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); margin-top: 6px; }
 .headText { flex: 1; min-width: 180px; }
 
 .ring { width: 64px; height: 64px; flex-shrink: 0; position: relative; }
@@ -61,7 +66,7 @@
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .milestone {
   display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; align-items: start;
-  padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(var(--fg-rgb), 0.02);
+  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(var(--fg-rgb), 0.02);
 }
 .milestoneDone { background: transparent; border-color: transparent; }
 .check {
@@ -72,8 +77,8 @@
 .mLabel { font-family: var(--mono); font-size: 11px; color: var(--fg); }
 .milestoneDone .mLabel { color: var(--fg-muted); text-decoration: line-through; text-decoration-color: rgba(var(--fg-rgb), 0.35); }
 .mHint { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); margin-top: 3px; line-height: 1.45; }
-.bar { height: 3px; border-radius: 2px; background: rgba(var(--fg-rgb), 0.08); margin-top: 7px; overflow: hidden; }
-.barFill { height: 100%; background: var(--pa); border-radius: 2px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.bar { height: 3px; border-radius: 4px; background: rgba(var(--fg-rgb), 0.08); margin-top: 7px; overflow: hidden; }
+.barFill { height: 100%; background: var(--pa); border-radius: 4px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 .go {
   font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--pa); background: transparent; border: 1px solid var(--pa-line); border-radius: 9999px;
@@ -86,7 +91,7 @@
 .primary {
   display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 18px; border-radius: 9999px;
   border: 1px solid var(--pa); background: var(--pa); color: var(--pa-ink, #fff); cursor: pointer;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 .primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--pa-dim); }
@@ -98,14 +103,14 @@
   font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase;
 }
 .ghost:hover { color: var(--fg); border-color: rgba(var(--fg-rgb), 0.25); }
-.note { font-family: var(--mono); font-size: 10px; color: var(--fg-dim); }
+.note { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
 .ready { color: var(--ok); }
 
 /* ── Toolkit (the bricks) ─────────────────────────────── */
 .bricks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .brick {
   position: relative; display: flex; flex-direction: column; gap: 4px; min-height: 76px;
-  padding: 14px 12px 10px; border-radius: 10px; text-align: left; text-decoration: none;
+  padding: 14px 12px 10px; border-radius: 8px; text-align: left; text-decoration: none;
   border: 1px solid var(--line); background: rgba(var(--fg-rgb), 0.025); color: var(--fg);
   font: inherit; cursor: pointer; transition: transform 0.2s, border-color 0.2s, background 0.2s;
 }
@@ -120,7 +125,7 @@
 .brick:hover { transform: translateY(-2px); border-color: var(--pa-line); background: var(--pa-dim); }
 .brick:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }
 .brickIcon { color: var(--pa); display: flex; }
-.brickLabel { font-family: var(--mono); font-size: 10.5px; color: var(--fg); }
+.brickLabel { font-family: var(--mono); font-size: 11px; color: var(--fg); }
 .brickBlurb { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); line-height: 1.4; }
 .brickTag { position: absolute; top: 8px; right: 8px; font-family: var(--mono); font-size: max(7.5px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; color: var(--ok); }
 .brickLocked { cursor: default; border-style: dashed; background: transparent; }
@@ -139,14 +144,14 @@
 .switchOn .switchTrack { background: var(--pa-dim); border-color: var(--pa); }
 .switchOn .switchTrack::after { left: 14px; background: var(--pa); }
 
-.error { font-family: var(--mono); font-size: 10px; color: var(--danger); }
-.skeleton { height: 180px; border-radius: 18px; }
+.error { font-family: var(--mono); font-size: 11px; color: var(--danger); }
+.skeleton { height: 180px; border-radius: 20px; }
 
 /* ── Logline ──────────────────────────────────────────── */
 .logline { max-width: 640px; margin-top: 10px; }
 .loglineInput {
   width: 100%; resize: vertical; min-height: 44px; background: rgba(var(--fg-rgb), 0.03);
-  border: 1px solid rgba(var(--fg-rgb), 0.14); border-radius: 10px; padding: 10px 12px;
+  border: 1px solid rgba(var(--fg-rgb), 0.14); border-radius: 8px; padding: 10px 12px;
   font-family: var(--serif); font-size: 1rem; color: var(--fg); line-height: 1.4;
 }
 .loglineInput:focus { outline: none; border-color: var(--pa, #e8431a); box-shadow: 0 0 0 3px rgba(232, 67, 26, 0.15); }
@@ -155,23 +160,23 @@
 /* ── Locked tool (a Studio tab before its phase) ─────── */
 .locked {
   max-width: 560px; margin: 48px auto; text-align: center; padding: 36px 28px;
-  border: 1px dashed rgba(var(--fg-rgb), 0.18); border-radius: 18px; background: rgba(var(--fg-rgb), 0.02);
+  border: 1px dashed rgba(var(--fg-rgb), 0.18); border-radius: 20px; background: rgba(var(--fg-rgb), 0.02);
 }
 .lockedIcon { width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 14px; display: grid; place-items: center; background: rgba(var(--fg-rgb), 0.05); color: var(--fg-muted); }
 .lockedTitle { font-family: var(--display); font-size: 1.8rem; letter-spacing: 2px; margin: 0; font-weight: 400; color: var(--fg); }
-.lockedText { font-family: var(--mono); font-size: 10.5px; color: var(--fg-dim); line-height: 1.6; margin: 10px 0 18px; }
+.lockedText { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); line-height: 1.6; margin: 10px 0 18px; }
 .lockedActions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ── Unlock reveal ────────────────────────────────────── */
 .backdrop { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--glass); backdrop-filter: blur(10px); display: grid; place-items: center; padding: 20px; }
 .reveal {
-  width: min(560px, 100%); border-radius: 22px; padding: 30px 26px 24px; text-align: center; position: relative; overflow: hidden;
+  width: min(560px, 100%); border-radius: 20px; padding: 30px 26px 24px; text-align: center; position: relative; overflow: hidden;
   background: linear-gradient(180deg, #0b1122, #060a15); border: 1px solid var(--pa-line, rgba(232, 67, 26, 0.4));
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 80px var(--pa-dim, rgba(232, 67, 26, 0.15));
 }
 .revealEyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 4px; text-transform: uppercase; color: var(--pa); }
 .revealTitle { font-family: var(--display); font-size: clamp(2.2rem, 7vw, 3.2rem); letter-spacing: 3px; line-height: 1; margin: 8px 0 6px; font-weight: 400; color: var(--fg); }
-.revealText { font-family: var(--mono); font-size: 10.5px; color: var(--fg-muted); margin: 0 0 20px; }
+.revealText { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); margin: 0 0 20px; }
 .revealBricks { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 22px; text-align: left; }
 
 /* The project's format, changed from the panel (owner). */
@@ -183,14 +188,14 @@
 .inlineBtn:hover { color: var(--fg); }
 .inlineBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .formatBox {
-  display: flex; flex-direction: column; gap: 10px; margin: 14px 0 4px; padding: 14px; border-radius: 12px;
+  display: flex; flex-direction: column; gap: 10px; margin: 14px 0 4px; padding: 14px; border-radius: 14px;
   border: 1px solid rgba(var(--fg-rgb), 0.1); background: rgba(var(--fg-rgb), 0.02);
 }
 
 /* ── The phase the project's data says it has reached ─────── */
 .suggest {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: relative;
-  margin: 16px 0 0; padding: 12px 14px; border-radius: 12px;
+  margin: 16px 0 0; padding: 12px 14px; border-radius: 14px;
   border: 1px solid var(--pa-line); background: var(--pa-dim);
 }
 .suggestIcon { color: var(--pa); flex-shrink: 0; }
@@ -201,12 +206,12 @@
 .intro {
   --pa: #e8431a;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 10px 12px; margin: 0 0 16px; border-radius: 10px;
+  padding: 10px 12px; margin: 0 0 16px; border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--pa) 40%, transparent);
   background: color-mix(in srgb, var(--pa) 9%, transparent);
 }
 .introIcon { color: var(--pa); flex-shrink: 0; }
-.introText { flex: 1; min-width: 200px; margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--fg); }
+.introText { flex: 1; min-width: 200px; margin: 0; font-size: 13px; line-height: 1.5; color: var(--fg); }
 .introWhy { color: var(--fg-muted); }
 .introClose {
   display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;

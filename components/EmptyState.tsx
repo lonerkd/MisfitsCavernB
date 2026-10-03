@@ -18,17 +18,25 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
       style={{
         textAlign: 'center',
         padding: '56px 24px',
-        borderRadius: 16,
+        borderRadius: 14,
         background: 'rgba(var(--ink-rgb), 0.015)',
         border: '1px solid rgba(var(--ink-rgb), 0.05)',
       }}
     >
-      <div style={{ opacity: 0.25, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{icon}</div>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+      <div
+        aria-hidden="true"
+        style={{
+          width: 64, height: 64, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--fg-dim)', border: '1px solid var(--border-2)', borderRadius: 14, background: 'var(--bg-2)',
+        }}
+      >
+        {icon}
+      </div>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
         {title}
       </p>
       {subtitle && (
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', marginTop: 8 }}>
+        <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', marginTop: 8 }}>
           {subtitle}
         </p>
       )}

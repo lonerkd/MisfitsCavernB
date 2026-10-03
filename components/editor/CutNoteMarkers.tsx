@@ -80,9 +80,9 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
               aria-label={`Cut notes on line ${line + 1}: ${placed.length}${open.length < placed.length ? ` (${open.length} open)` : ''}`}
               style={{
                 position: 'absolute', right: 10, top: top + 2, pointerEvents: 'auto',
-                display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 999,
+                display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 9999,
                 border: `1px solid ${color}66`, background: open.length ? `${color}1f` : 'rgba(var(--ink-rgb), 0.03)',
-                color: open.length ? color : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer',
+                color: open.length ? color : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer',
               }}
             >
               <Scissors size={10} aria-hidden /> {formatTimecode(Number(lead.at_seconds))}{placed.length > 1 ? ` +${placed.length - 1}` : ''}
@@ -91,7 +91,7 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
               <div role="dialog" aria-label={`Cut notes on line ${line + 1}`}
                 style={{
                   position: 'absolute', right: 10, top: top + 28, width: 300, maxWidth: 'calc(100% - 20px)', pointerEvents: 'auto',
-                  background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 10, padding: 10,
+                  background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: 10,
                   boxShadow: '0 16px 40px rgba(0,0,0,0.55)', fontFamily: 'var(--sans, inherit)', zIndex: 2,
                 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -106,11 +106,11 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
                     <li key={n.id} style={{ opacity: n.resolved_at ? 0.55 : 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <a href={cutNoteHref(n)} title="Watch this moment in Studio › Post"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 6, background: 'rgba(129,140,248,0.14)', color: '#c7c9ff', fontFamily: 'var(--mono)', fontSize: 10.5, textDecoration: 'none' }}>
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 8, background: 'rgba(129,140,248,0.14)', color: '#c7c9ff', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'none' }}>
                           <Play size={9} aria-hidden /> {formatTimecode(Number(n.at_seconds))}
                         </a>
-                        <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: POST_DEPT_COLOR[n.department as PostDepartment] ?? '#9ca3af' }}>{POST_DEPT_LABEL[n.department as PostDepartment] ?? n.department}</span>
-                        <span style={{ fontSize: 10.5, color: 'var(--fg-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{n.cut_title}</span>
+                        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: POST_DEPT_COLOR[n.department as PostDepartment] ?? '#9ca3af' }}>{POST_DEPT_LABEL[n.department as PostDepartment] ?? n.department}</span>
+                        <span style={{ fontSize: 11, color: 'var(--fg-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{n.cut_title}</span>
                         {canResolve && (
                           <button type="button" onClick={() => onResolve(n, !n.resolved_at)} aria-label={n.resolved_at ? 'Reopen note' : 'Resolve note'} title={n.resolved_at ? 'Reopen' : 'Resolve'}
                             style={{ width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: n.resolved_at ? 'var(--ok)' : 'var(--fg-muted)', cursor: 'pointer' }}>
@@ -118,7 +118,7 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
                           </button>
                         )}
                       </div>
-                      <p style={{ margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{n.body}</p>
+                      <p style={{ margin: '4px 0 0', fontSize: 13, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{n.body}</p>
                       {lost && <p style={{ margin: '3px 0 0', fontSize: 11, color: 'var(--fg-muted)' }}>Its line was rewritten — it was on “{n.line_text}”.</p>}
                     </li>
                   ))}

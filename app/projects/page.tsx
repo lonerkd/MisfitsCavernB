@@ -39,7 +39,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
           style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
-            style={{ width: 560, maxWidth: '100%', maxHeight: '92dvh', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, padding: 28 }}>
+            style={{ width: 560, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 28 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -147,7 +147,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
         style={{
           background: 'var(--glass)',
           border: `1px solid ${hovered ? phase + '44' : 'rgba(var(--ink-rgb), 0.06)'}`,
-          borderRadius: 16,
+          borderRadius: 14,
           padding: 18,
           position: 'relative',
           overflow: 'hidden',
@@ -218,13 +218,13 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
             <span>{r.done === r.total ? 'Ready for the next phase' : `${r.done} of ${r.total} done`}</span>
           </div>
           <div role="progressbar" aria-label={`${r.phaseLabel} progress`} aria-valuemin={0} aria-valuemax={r.total} aria-valuenow={r.done}
-            style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.06)', borderRadius: 2, overflow: 'hidden' }}>
+            style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.06)', borderRadius: 4, overflow: 'hidden' }}>
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: `${pct}%` }}
               viewport={{ once: true }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              style={{ height: '100%', background: `linear-gradient(90deg, ${phase}88, ${phase})`, borderRadius: 2 }}
+              style={{ height: '100%', background: `linear-gradient(90deg, ${phase}88, ${phase})`, borderRadius: 4 }}
             />
           </div>
           {r.next && (
@@ -309,7 +309,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           color: 'var(--fg-dim)',
           background: 'rgba(var(--ink-rgb), 0.04)',
           border: '1px solid rgba(var(--ink-rgb), 0.06)',
-          borderRadius: 6,
+          borderRadius: 8,
           padding: '2px 7px',
         }}>
           {projects.length}
@@ -329,7 +329,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           display: 'flex', flexDirection: 'column', gap: 10, minHeight: '60vh',
           background: dragOver ? 'rgba(var(--ink-rgb), 0.015)' : 'transparent',
           border: dragOver ? `1px dashed ${color}33` : '1px solid transparent',
-          borderRadius: 16,
+          borderRadius: 14,
           padding: 8,
           transition: 'background 0.25s, border-color 0.25s'
         }}
@@ -350,7 +350,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
 
         {projects.length === 0 && (
           <div style={{
-            height: 80, borderRadius: 16,
+            height: 80, borderRadius: 14,
             border: '1px dashed rgba(var(--ink-rgb), 0.05)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
@@ -651,7 +651,7 @@ export default function ProjectsPage() {
             {[0, 1, 2, 3].map(c => (
               <div key={c} style={{ width: 260, flexShrink: 0 }}>
                 <div className="skeleton" style={{ height: 14, width: '50%', borderRadius: 4, marginBottom: 16 }} />
-                {[0, 1].map(r => <div key={r} className="skeleton" style={{ height: 96, borderRadius: 12, marginBottom: 12 }} />)}
+                {[0, 1].map(r => <div key={r} className="skeleton" style={{ height: 96, borderRadius: 14, marginBottom: 12 }} />)}
               </div>
             ))}
           </div>
@@ -667,7 +667,7 @@ export default function ProjectsPage() {
               <Button onClick={() => setShowNew(true)} variant="solid" size="lg">Start Project</Button>
               <Button href="/welcome" variant="outline" size="lg">Guided start</Button>
             </div>
-            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', margin: 0 }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', margin: 0 }}>
               Here to join a crew instead? <Link href="/jobs" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Browse jobs</Link> or <Link href="/crew" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>the crew directory</Link>.
             </p>
           </motion.div>
@@ -682,7 +682,7 @@ export default function ProjectsPage() {
               placeholder="Search projects, people…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 9, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}
+              style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}
             />
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
@@ -694,7 +694,7 @@ export default function ProjectsPage() {
           </label>
           <button type="button" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 99, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 9999, cursor: 'pointer',
               border: `1px solid ${showArchived ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.1)'}`,
               background: showArchived ? 'rgba(232,67,26,0.12)' : 'transparent', color: showArchived ? 'var(--fg)' : 'var(--fg-muted)',
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase',
@@ -708,19 +708,19 @@ export default function ProjectsPage() {
 
         {showArchived ? (
           shown.length === 0 ? (
-            <div style={{ maxWidth: 520 }}>
+            <div style={{ maxWidth: 'var(--w-form)' }}>
               <EmptyState icon={<Archive size={26} />}
                 title={query.trim() ? 'No archived project matches' : 'Nothing archived'}
                 subtitle={query.trim() ? 'Try other words, or clear the search.' : 'Archive a project from its card when it’s wrapped or on hold — it leaves the board and pickers, and nothing in it changes.'}
                 action={<Button variant="outline" size="sm" onClick={() => { setShowArchived(false); setQuery(''); }}>Back to the board</Button>} />
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, maxWidth: 1200 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, maxWidth: 'var(--w-content)' }}>
               {shown.map((p) => <ProjectCard key={p.id} project={p} canArchive={canArchive(p)} onArchive={toggleArchived} />)}
             </div>
           )
         ) : query.trim() && shown.length === 0 ? (
-          <div style={{ maxWidth: 520 }}>
+          <div style={{ maxWidth: 'var(--w-form)' }}>
             <EmptyState icon={<Search size={26} />} title={`No project matches “${query.trim()}”`}
               subtitle={archived.some((p) => matches(p, query.trim())) ? 'An archived project does — look under Archived.' : 'Search looks at titles, loglines, formats and people.'}
               action={<Button variant="outline" size="sm" onClick={() => setQuery('')}>Clear search</Button>} />

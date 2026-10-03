@@ -70,7 +70,7 @@ export default function AdminErrorsPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>ERRORS</h1>
         </header>
 
-        <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px' }}>
+        <main style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '28px 24px' }}>
           <p style={{ ...mono, color: 'var(--fg-muted)', margin: '0 0 18px', lineHeight: 1.6, letterSpacing: 0.5 }}>
             Crashes and uncaught errors people hit, reported by the app itself. Grouped by message and page; kept 30 days.
           </p>
@@ -78,12 +78,12 @@ export default function AdminErrorsPage() {
             <div role="group" aria-label="Period" style={{ display: 'flex', gap: 6 }}>
               {([1, 7, 30] as Range[]).map((d) => (
                 <button key={d} type="button" aria-pressed={range === d} onClick={() => setRange(d)}
-                  style={{ ...mono, minHeight: 36, padding: '6px 14px', borderRadius: 10, cursor: 'pointer', border: `1px solid ${range === d ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.12)'}`, background: range === d ? 'var(--accent-dim)' : 'transparent', color: range === d ? 'var(--fg)' : 'var(--fg-muted)' }}>
+                  style={{ ...mono, minHeight: 36, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', border: `1px solid ${range === d ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.12)'}`, background: range === d ? 'var(--accent-dim)' : 'transparent', color: range === d ? 'var(--fg)' : 'var(--fg-muted)' }}>
                   {d === 1 ? 'Last day' : `Last ${d} days`}
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => void load()} style={{ ...mono, minHeight: 36, padding: '6px 12px', borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <button type="button" onClick={() => void load()} style={{ ...mono, minHeight: 36, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <RotateCw size={12} aria-hidden /> Refresh
             </button>
             {rows && <span style={{ ...mono, color: 'var(--fg-dim)', marginLeft: 'auto' }}>{rows.length} report{rows.length === 1 ? '' : 's'} · {groups.length} distinct</span>}
@@ -116,12 +116,12 @@ export default function AdminErrorsPage() {
                         <summary style={{ ...mono, color: 'var(--fg-muted)', cursor: 'pointer' }}>Details</summary>
                         {g.sample.digest && <div style={{ ...mono, marginTop: 6 }}>Digest: {g.sample.digest}</div>}
                         {g.sample.user_agent && <div style={{ ...mono, marginTop: 6, color: 'var(--fg-dim)' }}>{g.sample.user_agent}</div>}
-                        {g.sample.stack && <pre style={{ marginTop: 8, padding: 12, borderRadius: 10, background: 'var(--bg)', fontSize: 11, lineHeight: 1.5, overflowX: 'auto', whiteSpace: 'pre', color: 'var(--fg-muted)' }}>{g.sample.stack}</pre>}
+                        {g.sample.stack && <pre style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'var(--bg)', fontSize: 11, lineHeight: 1.5, overflowX: 'auto', whiteSpace: 'pre', color: 'var(--fg-muted)' }}>{g.sample.stack}</pre>}
                       </details>
                     )}
                   </div>
                   <button type="button" onClick={() => void clear(g)} aria-label={`Clear: ${g.message.slice(0, 60)}`} title="Clear once fixed"
-                    style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                    style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
                     <Trash2 size={14} aria-hidden />
                   </button>
                 </div>

@@ -146,12 +146,12 @@ export default function ManagePortfolioPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>MANAGE PORTFOLIO</h1>
         </Link>
         <button onClick={() => setShowNew(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer' }}>
           <Plus size={12} /> NEW PROJECT
         </button>
       </header>
 
-      <div style={{ marginTop: 60, maxWidth: 720, margin: '60px auto 0', padding: '40px 24px 80px' }}>
+      <div style={{ marginTop: 60, maxWidth: 'var(--w-reading)', margin: '60px auto 0', padding: '40px 24px 80px' }}>
         {showNew && (
           <div style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
             <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
@@ -171,7 +171,7 @@ export default function ManagePortfolioPage() {
         {loading ? (
           <div style={{ display: 'grid', gap: 20 }}>
             {[0, 1].map(i => (
-              <div key={i} style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 12 }}>
+              <div key={i} style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div className="skeleton" style={{ width: 150, height: 14, borderRadius: 4 }} />
                   <div className="skeleton" style={{ width: 60, height: 14, borderRadius: 4 }} />

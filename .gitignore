@@ -16,3 +16,8 @@ test-results/
 
 *.tsbuildinfo
 scripts/demo/world.sql
+
+# Local review / scratch artifacts
+.review-*.md
+.review-state.json
+screenshot.mjs

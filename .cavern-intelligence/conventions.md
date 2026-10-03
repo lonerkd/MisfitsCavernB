@@ -63,7 +63,7 @@ Rules:
 
 - **Account-level** prefs (notification toggles, leak-check, etc.) →
   Postgres `profiles.notification_prefs` (JSONB).
-- **Device-level** only (cursor style, reduce-motion, dock collapse, offline
+- **Device-level** only (cursor style, reduce-motion, offline
   script cache) → `localStorage` / IndexedDB. Namespace per project where it
   matters (e.g. ScriptOS active-script pointer) so state can't cross projects.
 

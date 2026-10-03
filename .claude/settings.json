@@ -28,7 +28,6 @@
       "Write",
       "WebFetch",
       "WebSearch",
-
       "Bash(npm run *)",
       "Bash(npm ci)",
       "Bash(npm install*)",
@@ -57,7 +56,6 @@
       "Bash(du*)",
       "Bash(comm*)",
       "Bash(tee*)",
-
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
@@ -79,7 +77,6 @@
       "Bash(git push -u origin claude/*)",
       "Bash(git push origin claude/*)",
       "Bash(git push --force-with-lease origin claude/*)",
-
       "Bash(ls*)",
       "Bash(cat*)",
       "Bash(head*)",
@@ -101,7 +98,6 @@
       "Bash(diff*)",
       "Bash(jq*)",
       "Bash(true)",
-
       "mcp__Supabase__list_projects",
       "mcp__Supabase__list_organizations",
       "mcp__Supabase__list_tables",
@@ -121,7 +117,6 @@
       "mcp__Supabase__search_docs",
       "mcp__Supabase__execute_sql",
       "mcp__Supabase__apply_migration",
-
       "mcp__Vercel__list_projects",
       "mcp__Vercel__list_deployments",
       "mcp__Vercel__list_teams",
@@ -138,7 +133,6 @@
       "mcp__Vercel__web_fetch_vercel_url",
       "mcp__Vercel__get_access_to_vercel_url",
       "mcp__Vercel__deploy_to_vercel",
-
       "mcp__github__get_me",
       "mcp__github__get_file_contents",
       "mcp__github__get_commit",
@@ -177,14 +171,12 @@
       "mcp__github__request_copilot_review",
       "mcp__github__subscribe_pr_activity",
       "mcp__github__unsubscribe_pr_activity",
-
       "mcp__Google_Drive__search_files",
       "mcp__Google_Drive__read_file_content",
       "mcp__Google_Drive__download_file_content",
       "mcp__Google_Drive__get_file_metadata",
       "mcp__Google_Drive__get_file_permissions",
       "mcp__Google_Drive__list_recent_files",
-
       "mcp__Indeed__search_jobs",
       "mcp__Indeed__get_job_details",
       "mcp__Indeed__get_company_data",

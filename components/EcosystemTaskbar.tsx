@@ -1,59 +1,85 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+// The island: the suite's one piece of chrome at desk size. A single floating
+// surface at the foot of the screen that takes the shape of what you're doing —
+// a quiet pill saying where you are; the controls of whatever the pointer is on;
+// the whole suite when you reach for it; a keyboard deck under Caps Lock; a dot
+// while you type. Which shape, and why: lib/island/mode.
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, ChevronUp, ChevronDown, FolderOpen, User, Settings, Search, Check, Columns2 } from 'lucide-react';
+import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
-import { usePill, type PillDescriptor } from '@/lib/context/PillContext';
+import { usePill } from '@/lib/context/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
+import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
+import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
+import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
+import { readable } from '@/lib/color';
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
+import s from './island/island.module.css';
 
 const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
 
-const APPS = [
+const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: 'var(--accent)' },
   { id: 'today',     name: 'Today',     icon: Sun,           path: '/today',     color: 'var(--warn)' },
-  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' as const },
-  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' as const },
-  { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' as const },
-  { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: 'var(--warn)', module: 'portfolio' as const },
+  { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' },
+  { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' },
+  { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' },
+  { id: 'portfolio', name: 'Portfolio', icon: Briefcase,     path: '/portfolio', color: 'var(--warn)', module: 'portfolio' },
 ];
 
-const SPRING = { type: 'spring', stiffness: 380, damping: 30 } as const;
-const MORPH = { duration: 0.4, ease: [0.16, 1, 0.3, 1] } as const;
+const MORPH = { type: 'spring', stiffness: 420, damping: 34, mass: 0.9 } as const;
+/** How close the pointer gets before the island leans in. */
+const NEAR = 90;
+const LEAVE_MS = 260;
+/** After the pill opens under the pointer, a click where the pill was still means "open", not whatever slid in there. */
+const ARRIVE_MS = 700;
+const TYPING_MS = 2500;
+
+interface Control {
+  id: string;
+  kind: 'toggle' | 'action' | 'link';
+  label: string;
+  active?: boolean;
+  href?: string;
+  run: () => void;
+}
 
 function ProjectSwitcher({ onClose }: { onClose: () => void }) {
   const { projects, activeProject, setActiveProject } = useProject();
   const router = useRouter();
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      // x centres it over its button (a CSS transform here would be overwritten by the animation).
+      initial={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, x: '-50%', y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: 'absolute',
         bottom: '100%',
         left: '50%',
-        transform: 'translateX(-50%)',
-        marginBottom: 10,
+        marginBottom: 14,
         background: 'var(--surface)',
         backdropFilter: 'blur(28px)',
         border: '1px solid rgba(var(--ink-rgb), 0.08)',
-        borderRadius: 16,
+        borderRadius: 14,
         padding: 10,
         width: 220,
+        maxHeight: 'min(60vh, 420px)',
+        overflowY: 'auto',
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
         zIndex: 10,
       }}
     >
       <div style={{
-        fontFamily: 'var(--mono)', fontSize: 7.5, letterSpacing: 2.5,
+        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5,
         textTransform: 'uppercase', color: 'var(--fg-dim)',
         padding: '4px 8px 8px',
         borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
@@ -62,7 +88,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
       }}>
         Projects
         <Link href="/projects" prefetch={false} onClick={onClose} style={{
-          color: 'rgba(232, 67, 26,0.7)', textDecoration: 'none', fontSize: 7,
+          color: 'rgba(232, 67, 26,0.7)', textDecoration: 'none', fontSize: 11,
           letterSpacing: 1.5,
           transition: 'color 0.2s',
         }}
@@ -74,7 +100,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
       </div>
 
       {projects.length === 0 && (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 8, color: 'var(--fg-dim)', padding: '10px 8px', letterSpacing: 1 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', padding: '10px 8px', letterSpacing: 1 }}>
           No projects yet.
         </div>
       )}
@@ -90,7 +116,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
             onClick={() => { setActiveProject(proj); onClose(); }}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 8px', borderRadius: 10, cursor: 'pointer',
+              padding: '8px 8px', borderRadius: 8, cursor: 'pointer',
               background: isActive ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
               transition: 'background 0.2s',
             }}
@@ -101,11 +127,11 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
               <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: 1, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {proj.title}
               </div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 7, letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
                 {proj.status || 'project'}
               </div>
             </div>
-            {isActive && <div style={{ fontFamily: 'var(--mono)', fontSize: 6.5, letterSpacing: 1, color: color, flexShrink: 0 }}>ACTIVE</div>}
+            {isActive && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: color, flexShrink: 0 }}>ACTIVE</div>}
             <button
               onClick={(e) => { e.stopPropagation(); setActiveProject(proj); onClose(); router.push(`/projects/${proj.id}`); }}
               aria-label="open hub"
@@ -118,928 +144,421 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Transient activity (Dynamic-Island live event) ────────────────────────
-function TransientView({ label, tone }: { label: string; tone: 'default' | 'success' | 'accent' }) {
-  const color = tone === 'success' ? 'var(--ok)' : tone === 'accent' ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.8)';
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={SPRING}
-      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px', whiteSpace: 'nowrap' }}
-    >
-      <motion.span
-        animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}` }}
-      />
-      <span style={{
-        fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1.5,
-        textTransform: 'uppercase', color: 'var(--fg)',
-      }}>
-        {label}
-      </span>
-    </motion.div>
-  );
-}
-
-function ContextCapsule({
-  descriptor, accent, expanded, zoneChain, kbActive, focusedId,
-}: {
-  descriptor: PillDescriptor;
-  accent: string;
-  expanded: boolean;
-  zoneChain: { depth: number; title: string }[];
-  kbActive: boolean;
-  focusedId: string | null;
-}) {
-  const { title, fields = [], toggles = [], actions = [] } = descriptor;
-  const lead = fields[0];
-  const hasStrip = fields.length > 0 || toggles.length > 0 || actions.length > 0;
-  const showBreadcrumb = expanded && zoneChain.length > 1;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, pointerEvents: 'auto' }}>
-      <AnimatePresence>
-        {showBreadcrumb && (
-          <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.18 }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5, paddingLeft: 14,
-              fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 0.8,
-              color: 'var(--fg-dim)', whiteSpace: 'nowrap', pointerEvents: 'none',
-            }}
-          >
-            {zoneChain.map((z, i) => {
-              const isLast = i === zoneChain.length - 1;
-              return (
-                <React.Fragment key={`${z.depth}-${z.title}`}>
-                  <span style={{ color: isLast ? accent : 'var(--fg-dim)' }}>{z.title}</span>
-                  {!isLast && <span style={{ color: 'var(--fg-dim)' }}>›</span>}
-                </React.Fragment>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.85, x: -10 }}
-        animate={{ opacity: 1, scale: 1, x: 0 }}
-        exit={{ opacity: 0, scale: 0.85, x: -10 }}
-        transition={MORPH}
-        style={{
-          display: 'flex', alignItems: 'center', gap: expanded ? 12 : 8,
-          height: 52, padding: expanded ? '0 16px 0 13px' : '0 14px',
-          borderRadius: 26, position: 'relative', overflow: 'hidden', whiteSpace: 'nowrap',
-          background: 'var(--surface)',
-          backdropFilter: 'blur(28px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-          border: `1px solid ${accent}40`,
-          boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 22px ${accent}20, inset 0 1px 0 rgba(var(--ink-rgb), 0.04)`,
-        }}
-      >
-        <motion.span
-          layout
-          animate={{ scale: [1, 1.3, 1], opacity: [0.65, 1, 0.65] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            width: 8, height: 8, borderRadius: '50%', background: accent,
-            boxShadow: `0 0 10px ${accent}`, flexShrink: 0,
-          }}
-        />
-
-        {!expanded && lead && (
-          <motion.span layout style={{
-            fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
-            color: lead.color || accent, textTransform: 'uppercase',
-          }}>
-            {lead.value}
-          </motion.span>
-        )}
-
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: 'auto' }}
-              exit={{ opacity: 0, width: 0 }}
-              transition={MORPH}
-              style={{ display: 'flex', alignItems: 'center', gap: 14, overflow: 'hidden' }}
-            >
-              {title && (
-                <span style={{
-                  fontFamily: 'var(--display)', fontSize: '0.8rem', letterSpacing: 1,
-                  color: 'var(--fg)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  {title}
-                </span>
-              )}
-
-              {title && hasStrip && (
-                <div style={{ width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.1)', flexShrink: 0 }} />
-              )}
-
-              {fields.map((f, i) => (
-                <motion.div
-                  key={f.label}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.04 * i, duration: 0.2 }}
-                  style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, whiteSpace: 'nowrap' }}
-                >
-                  <span style={{
-                    fontFamily: 'var(--mono)', fontSize: 6.5, letterSpacing: 1.5,
-                    textTransform: 'uppercase', color: 'var(--fg-dim)',
-                  }}>
-                    {f.label}
-                  </span>
-                  <span style={{
-                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
-                    color: f.color || 'var(--fg)',
-                  }}>
-                    {f.value}
-                  </span>
-                </motion.div>
-              ))}
-
-              {toggles.map((t, i) => (
-                <motion.button
-                  key={t.id}
-                  onClick={t.onToggle}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.04 * (fields.length + i), duration: 0.2 }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-                    background: 'transparent', border: 'none', padding: 2, whiteSpace: 'nowrap',
-                    borderRadius: 6,
-                    outline: kbActive && focusedId === t.id ? `1.5px solid ${accent}` : 'none',
-                    outlineOffset: 2,
-                  }}
-                >
-                  <span style={{
-                    width: 15, height: 15, borderRadius: 5,
-                    border: `1px solid ${t.active ? accent : 'rgba(var(--ink-rgb), 0.18)'}`,
-                    background: t.active ? accent : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background 0.2s, border-color 0.2s', flexShrink: 0,
-                  }}>
-                    {t.active && <Check size={10} strokeWidth={3} color="#050a14" />}
-                  </span>
-                  <span style={{
-                    fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1,
-                    textTransform: 'uppercase', color: t.active ? 'var(--fg)' : 'var(--fg-dim)',
-                  }}>
-                    {t.label}
-                  </span>
-                </motion.button>
-              ))}
-
-              {actions.map((a, i) => (
-                <motion.button
-                  key={a.id}
-                  onClick={a.onClick}
-                  whileTap={{ scale: 0.94 }}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.04 * (fields.length + toggles.length + i), duration: 0.2 }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5,
-                    textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap',
-                    color: accent, background: `${accent}1a`, border: `1px solid ${accent}40`,
-                    borderRadius: 9999, padding: '6px 12px',
-                    outline: kbActive && focusedId === a.id ? `1.5px solid ${accent}` : 'none',
-                    outlineOffset: 2,
-                  }}
-                >
-                  {a.label}
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  );
-}
-
-// ── App icon carousel ───────────────────────────────────────────────────────
-
-const APP_ICON = 46;
-const APP_GAP = 2;
-
-function AppIcon({ app, isActive, isHovered, onHoverStart }: {
-  app: typeof APPS[number];
-  isActive: boolean;
-  isHovered: boolean;
-  onHoverStart: () => void;
-}) {
-  const Icon = app.icon;
-  const iconRef = useRef<HTMLAnchorElement>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ left: number; bottom: number } | null>(null);
-
-  useEffect(() => {
-    if (!isHovered || !iconRef.current) { setTooltipPos(null); return; }
-    const rect = iconRef.current.getBoundingClientRect();
-    setTooltipPos({ left: rect.left + rect.width / 2, bottom: window.innerHeight - rect.top });
-  }, [isHovered]);
-
-  return (
-    <Link ref={iconRef} href={app.path} prefetch={false} aria-label={app.name} title={app.name} style={{ textDecoration: 'none', position: 'relative', flexShrink: 0 }}>
-      <motion.div
-        onHoverStart={onHoverStart}
-        whileHover={{ scale: 1.18, y: -6 }}
-        whileTap={{ scale: 0.93 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 26 }}
-        style={{
-          width: APP_ICON, height: APP_ICON, borderRadius: 16,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: isActive ? `${app.color}18` : isHovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
-          color: isActive ? app.color : isHovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)',
-          position: 'relative', transition: 'background 0.25s, color 0.25s',
-          boxShadow: isActive ? `0 0 18px ${app.color}22` : 'none',
-        }}
-      >
-        <Icon size={19} strokeWidth={1.5} />
-        <AnimatePresence>
-          {isActive && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0 }}
-              style={{ position: 'absolute', bottom: 3, width: 4, height: 4, borderRadius: '50%', background: app.color, boxShadow: `0 0 6px ${app.color}` }}
-            />
-          )}
-        </AnimatePresence>
-      </motion.div>
-      {typeof document !== 'undefined' && tooltipPos && createPortal(
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }}
-              transition={{ duration: 0.18 }}
-              style={{
-                position: 'fixed', left: tooltipPos.left, bottom: tooltipPos.bottom, transform: 'translateX(-50%)',
-                background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)',
-                fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-                padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
-                zIndex: 100000,
-              }}
-            >
-              {app.name}
-              <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-    </Link>
-  );
-}
-
-function AppIconCarousel({ apps, pathname, shrunk }: {
-  apps: typeof APPS;
-  pathname: string;
-  shrunk: boolean;
-}) {
-  // Local, per-copy hover state — the carousel triples every app for its
-  // infinite-scroll loop, so keying hover off app.id (shared across all
-  // three copies) lit up and tooltip'd all three at once whenever any one
-  // was hovered. Keyed by loop index instead: only the physical icon under
-  // the cursor reacts.
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startX: number; startScroll: number; moved: boolean; vx: number; lastX: number; lastT: number } | null>(null);
-  const momentumRaf = useRef<number | null>(null);
-  const setWidth = apps.length * (APP_ICON + APP_GAP);
-  const loopApps = apps.length > 0 ? [...apps, ...apps, ...apps] : [];
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollLeft = setWidth;
-  }, [setWidth]);
-
-  const normalize = () => {
-    const el = scrollRef.current;
-    if (!el || setWidth === 0) return;
-    if (el.scrollLeft < setWidth * 0.5) el.scrollLeft += setWidth;
-    else if (el.scrollLeft > setWidth * 1.5) el.scrollLeft -= setWidth;
-  };
-
-  const onWheel = (e: React.WheelEvent) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (delta === 0) return;
-    e.preventDefault();
-    el.scrollLeft += delta;
-    normalize();
-  };
-
-  const DRAG_THRESHOLD = 6;
-  const STEP = APP_ICON + APP_GAP;
-
-  const stopMomentum = () => {
-    if (momentumRaf.current !== null) {
-      cancelAnimationFrame(momentumRaf.current);
-      momentumRaf.current = null;
-    }
-  };
-
-  useEffect(() => () => stopMomentum(), []);
-
-  // Snaps to the nearest icon's center with an eased tween — the
-  // "magnetic" feel — instead of leaving the carousel wherever a drag or
-  // fling happened to stop.
-  const snapToNearest = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const target = Math.round(el.scrollLeft / STEP) * STEP;
-    const start = el.scrollLeft;
-    const delta = target - start;
-    if (Math.abs(delta) < 0.5) { normalize(); return; }
-    const duration = 260;
-    const startTime = performance.now();
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - startTime) / duration);
-      el.scrollLeft = start + delta * ease(t);
-      if (t < 1) {
-        momentumRaf.current = requestAnimationFrame(tick);
-      } else {
-        momentumRaf.current = null;
-        normalize();
-      }
-    };
-    momentumRaf.current = requestAnimationFrame(tick);
-  };
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    stopMomentum();
-    const now = performance.now();
-    dragRef.current = { startX: e.clientX, startScroll: scrollRef.current?.scrollLeft || 0, moved: false, vx: 0, lastX: e.clientX, lastT: now };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current || !scrollRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    // Only commit to a drag (and move the carousel) once the pointer has
-    // travelled past the threshold — otherwise a stationary click on an
-    // icon visibly nudges every icon under the cursor before the click
-    // even registers, and then gets suppressed as a "drag".
-    if (!dragRef.current.moved) {
-      if (Math.abs(dx) <= DRAG_THRESHOLD) return;
-      dragRef.current.moved = true;
-    }
-    const now = performance.now();
-    const dt = Math.max(1, now - dragRef.current.lastT);
-    // Instantaneous velocity (px/ms), smoothed against the last sample so
-    // a single jittery frame doesn't dominate the momentum on release.
-    const instVx = (e.clientX - dragRef.current.lastX) / dt;
-    dragRef.current.vx = dragRef.current.vx * 0.7 + instVx * 0.3;
-    dragRef.current.lastX = e.clientX;
-    dragRef.current.lastT = now;
-    scrollRef.current.scrollLeft = dragRef.current.startScroll - dx;
-  };
-  const onPointerUp = () => {
-    const drag = dragRef.current;
-    const el = scrollRef.current;
-    if (drag) drag.moved = false;
-    if (drag && el && Math.abs(drag.vx) > 0.05) {
-      // Fling: keep coasting in the release direction with exponential
-      // friction, then hand off to snapToNearest for the magnetic settle.
-      let velocity = -drag.vx * 16; // px per frame at ~60fps
-      const friction = 0.94;
-      const tick = () => {
-        el.scrollLeft += velocity;
-        velocity *= friction;
-        if (Math.abs(velocity) > 0.3) {
-          momentumRaf.current = requestAnimationFrame(tick);
-        } else {
-          momentumRaf.current = null;
-          snapToNearest();
-        }
-      };
-      momentumRaf.current = requestAnimationFrame(tick);
-    } else {
-      snapToNearest();
-    }
-  };
-
-  return (
-    <motion.div
-      layout
-      animate={{ width: shrunk ? APP_ICON * 2 + APP_GAP : setWidth }}
-      transition={MORPH}
-      style={{ position: 'relative', height: 52, overflow: 'hidden', flexShrink: 0 }}
-    >
-      <div
-        ref={scrollRef}
-        onScroll={normalize}
-        onWheel={onWheel}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
-        className="mc-app-carousel"
-        style={{
-          display: 'flex', alignItems: 'center', gap: APP_GAP, height: '100%',
-          overflowX: 'auto', overflowY: 'hidden', cursor: 'grab', touchAction: 'pan-x',
-          scrollbarWidth: 'none', msOverflowStyle: 'none' as any,
-          scrollSnapType: 'x proximity',
-        }}
-      >
-        {loopApps.map((app, i) => {
-          const isActive = pathname === app.path || (app.path !== '/' && pathname.startsWith(app.path));
-          return (
-            // Snap icon starts to the strip's start, in whole-icon steps like
-            // snapToNearest — centre-snapping an even set of icons shifted
-            // the row half an icon and cut an app off at each end.
-            <div key={`${app.id}-${i}`} style={{ scrollSnapAlign: 'start' }} onClickCapture={(e) => { if (dragRef.current?.moved) { e.preventDefault(); e.stopPropagation(); } }}>
-              <AppIcon app={app} isActive={isActive} isHovered={hoveredIndex === i} onHoverStart={() => setHoveredIndex(i)} />
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 14, background: 'linear-gradient(to right, var(--surface), transparent)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 14, background: 'linear-gradient(to left, var(--surface), transparent)', pointerEvents: 'none' }} />
-
-      <style>{`.mc-app-carousel::-webkit-scrollbar { display: none; }`}</style>
-    </motion.div>
-  );
-}
-
-const DOCK_BOTTOM = 28;
+const Key = ({ children }: { children: React.ReactNode }) => <kbd className={s.key} aria-hidden>{children}</kbd>;
 
 export default function EcosystemTaskbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { activeProject } = useProject();
-  const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin } = usePill();
-  const activeColor = activeProject?.accent_color || '#e8431a';
+  const { activeDescriptor, zoneActive, zoneChain, transient, kbActive, clearPin, emit } = usePill();
 
-  // Publish the room the dock takes at the bottom of the screen as
-  // --taskbar-height, so full-height pages (Lounge, editor) end above it and
-  // scrolling pages leave space for it. 0 where the dock is hidden (phones use
-  // the tab bar); it follows the dock as it grows or collapses.
+  const noDock = pathname === '/login' || pathname === '/auth' || pathname === '/privacy' || pathname === '/terms'
+    // The split screen has its own bar; each pane is a full page without chrome.
+    || pathname === '/split'
+    // Public share surfaces (lookbooks, public portfolios, shared scripts) are
+    // for people outside the app — no app chrome over them.
+    || /^\/(shared|p|s)\//.test(pathname);
+
+  // Publish the room the island takes at rest as --taskbar-height. Pages no
+  // longer end above a full-width band: scrolling pages pad their end by it,
+  // and full-height ones (Lounge, editor) lift only the column it sits over.
+  // It stays put while the island opens — that overlays, it doesn't reflow.
+  // 0 where there is no island (phones use the tab bar).
   const dockRef = useRef<HTMLElement>(null);
-  const noDock = pathname === '/login' || pathname === '/auth' || pathname === '/privacy' || pathname === '/terms' || pathname === '/split' || /^\/(shared|p|s)\//.test(pathname);
+  // Its size is this device's choice (Settings › Island size); it follows the slider as it moves.
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const read = () => setScale(readIslandScale());
+    read();
+    window.addEventListener(ISLAND_SCALE_EVENT, read);
+    window.addEventListener('storage', read);
+    return () => { window.removeEventListener(ISLAND_SCALE_EVENT, read); window.removeEventListener('storage', read); };
+  }, []);
   useEffect(() => {
     const el = dockRef.current;
     const root = document.documentElement;
     if (noDock || !el) { root.style.setProperty('--taskbar-height', '0px'); return; }
-    const publish = () => root.style.setProperty('--taskbar-height', `${el.offsetHeight ? el.offsetHeight + DOCK_BOTTOM : 0}px`);
+    const publish = () => root.style.setProperty('--taskbar-height', `${el.offsetHeight ? islandReserve(scale) : 0}px`);
     publish();
-    const ro = new ResizeObserver(publish);
-    ro.observe(el);
     window.addEventListener('resize', publish);
-    return () => { ro.disconnect(); window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
-  }, [noDock]);
+    return () => { window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
+  }, [noDock, scale]);
 
   const modules = getProjectModules(activeProject?.settings);
-  const visibleApps = APPS.filter(app => !('module' in app) || modules[(app as { module: keyof EcosystemModules }).module]);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const visibleApps = APPS.filter(app => !app.module || modules[app.module]);
+
+  // ── What the person is doing ─────────────────────────────────────────────
+  const islandRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const arrival = useRef<{ at: number; pill: DOMRect } | null>(null);
+  const swallowClick = useRef(false);
+  const [hover, setHover] = useState(false);
+  const [held, setHeld] = useState(false);       // a menu of the island's is open
+  const [kbFocus, setKbFocus] = useState(false); // keyboard focus is inside
+  const [pinned, setPinned] = useState(false);   // opened with the dot
+  const [near, setNear] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [capsDismissed, setCapsDismissed] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
-  const [contextExpanded, setContextExpanded] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
-  const [dockCollapsed, setDockCollapsed] = useState(false);
+  const mode = islandMode({
+    caps: kbActive, capsDismissed, typing,
+    engaged: hover || held || kbFocus || pinned || projectsOpen,
+    zone: zoneActive, live: !!transient,
+  });
+  const deck = isDeck(mode);
+  /** Every control on the deck answers to a key while Caps Lock is on. */
+  const keys = deck && kbActive && !capsDismissed;
+
+  useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current); }, []);
+  useEffect(() => { if (!kbActive) setCapsDismissed(false); }, [kbActive]);
+
+  // A new page: put the island away.
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('mc_taskbar_collapsed') === '1') setDockCollapsed(true);
-  }, []);
-  const toggleDock = () => {
-    setDockCollapsed(prev => {
-      const next = !prev;
-      if (typeof window !== 'undefined') localStorage.setItem('mc_taskbar_collapsed', next ? '1' : '0');
-      return next;
-    });
-  };
+    setProjectsOpen(false); setPinned(false); setHeld(false); setKbFocus(false); clearPin();
+    const active = document.activeElement as HTMLElement | null;
+    if (active && islandRef.current?.contains(active)) active.blur();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hotkeyItems = React.useMemo(() => {
-    const toggles = activeDescriptor?.toggles ?? [];
-    const actions = activeDescriptor?.actions ?? [];
-    return [
-      ...toggles.map(t => ({ id: t.id, run: t.onToggle })),
-      ...actions.map(a => ({ id: a.id, run: a.onClick })),
-    ];
-  }, [activeDescriptor]);
-
-  useEffect(() => { if (!kbActive) setKbFocusIndex(-1); }, [kbActive]);
-  useEffect(() => { setKbFocusIndex(-1); }, [hotkeyItems.length]);
-
-  useEffect(() => { setProjectsOpen(false); clearPin(); }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Clicking away closes whatever the island had open.
   useEffect(() => {
-    if (!projectsOpen) return;
+    if (!projectsOpen && !held && !pinned) return;
     const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('[data-taskbar]')) setProjectsOpen(false);
+      if ((e.target as HTMLElement).closest('[data-taskbar]')) return;
+      setProjectsOpen(false); setHeld(false); setPinned(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [projectsOpen]);
+  }, [projectsOpen, held, pinned]);
 
+  // Typing shrinks it to a dot; it comes back when the keys stop.
   useEffect(() => {
-    if (!kbActive) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onKey = (e: KeyboardEvent) => {
+      if (!isTypingKey(e)) return;
+      setTyping(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setTyping(false), TYPING_MS);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => { window.removeEventListener('keydown', onKey, true); if (timer) clearTimeout(timer); };
+  }, []);
+
+  // It leans in as the pointer comes close.
+  useEffect(() => {
+    if (noDock) return;
+    let frame = 0;
+    const onMove = (e: PointerEvent) => {
+      if (frame || e.pointerType === 'touch') return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const r = islandRef.current?.getBoundingClientRect();
+        if (!r) return;
+        const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+        const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+        setNear(Math.hypot(dx, dy) < NEAR);
+      });
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => { window.removeEventListener('pointermove', onMove); if (frame) cancelAnimationFrame(frame); };
+  }, [noDock]);
+
+  // Switching project is worth a word.
+  const lastProject = useRef<string | null>(null);
+  useEffect(() => {
+    const id = activeProject?.id ?? null;
+    // From one project to another — not the first one arriving as the page loads.
+    if (lastProject.current && id && lastProject.current !== id && activeProject) emit(`Now in ${activeProject.title}`, 'accent');
+    lastProject.current = id;
+  }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── What it has to offer here ────────────────────────────────────────────
+  const route = useMemo(() => islandRoute(pathname, !!activeProject), [pathname, activeProject]);
+  const pathApp = APPS.find(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
+  const app = pathApp ?? APPS.find(a => a.id === route.app);
+  const Glyph = app?.icon ?? Compass;
+  // The accent is text here (chips, the lead number), so a project's own colour is nudged until it reads.
+  const accent = readable(activeDescriptor?.accent ?? app?.color ?? 'var(--accent)');
+  const title = activeDescriptor?.title || route.title;
+  const fields = activeDescriptor?.fields ?? [];
+  const lead = fields[0];
+
+  const controls = useMemo<Control[]>(() => {
+    const inReach = new Set([...visibleApps.map(a => a.path), '/profile', '/settings']);
+    return [
+      ...(activeDescriptor?.toggles ?? []).map((t): Control => ({ id: t.id, kind: 'toggle', label: t.label, active: t.active, run: t.onToggle })),
+      ...(activeDescriptor?.actions ?? []).map((a): Control => ({ id: a.id, kind: 'action', label: a.label, run: a.onClick })),
+      // Places the strip below doesn't already reach.
+      ...route.links.filter(l => !inReach.has(l.href)).map((l): Control => ({ id: l.id, kind: 'link', label: l.label, href: l.href, run: () => router.push(l.href) })),
+    ].slice(0, CONTROL_KEYS.length);
+  }, [activeDescriptor, route, visibleApps.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { if (!keys) setKbFocusIndex(-1); }, [keys]);
+  useEffect(() => { setKbFocusIndex(-1); }, [controls.length]);
+  const focusedId = kbFocusIndex >= 0 ? controls[kbFocusIndex]?.id ?? null : null;
+
+  const openSearch = () => window.dispatchEvent(new Event('mc-open-command-palette'));
+  const openSplit = () => router.push(splitHref(window.location.pathname + window.location.search));
+
+  // ── The Caps Lock layer: the deck, on keys ───────────────────────────────
+  useEffect(() => {
+    if (noDock || !kbActive || capsDismissed) return;
     const handler = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return;
+      const key = e.key.toLowerCase();
+      const done = () => { e.preventDefault(); };
 
-      if (e.key >= '1' && e.key <= '5') {
-        e.preventDefault();
-        const idx = parseInt(e.key, 10) - 1;
-        if (visibleApps[idx]) router.push(visibleApps[idx].path);
+      if (key === 'escape') { done(); setCapsDismissed(true); setProjectsOpen(false); return; }
+      if (key >= '1' && key <= '9') {
+        const target = visibleApps[parseInt(key, 10) - 1];
+        if (target) { done(); router.push(target.path); }
         return;
       }
+      if (key === '/') { done(); openSearch(); return; }
+      if (key === '\\') { done(); openSplit(); return; }
+      if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
 
-      if (e.key === 'ArrowUp') { e.preventDefault(); setContextExpanded(true); return; }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setContextExpanded(false); return; }
+      const byKey = controls[CONTROL_KEYS.indexOf(key as typeof CONTROL_KEYS[number])];
+      if (byKey) { done(); byKey.run(); return; }
 
-      if (e.key === 'Tab' || e.key === ']' || e.key === 'ArrowRight') {
-        if (!hotkeyItems.length) return;
-        e.preventDefault();
-        setKbFocusIndex(i => {
-          const n = hotkeyItems.length;
-          return e.shiftKey ? (i - 1 + n) % n : (i + 1) % n;
-        });
-        return;
-      }
-
-      if (e.key === '[' || e.key === 'ArrowLeft') {
-        if (!hotkeyItems.length) return;
-        e.preventDefault();
-        setKbFocusIndex(i => {
-          const n = hotkeyItems.length;
-          return (i - 1 + n) % n;
-        });
-        return;
-      }
-
-      if (e.key === 'Enter' || e.key === 'Control') {
-        if (kbFocusIndex >= 0 && hotkeyItems[kbFocusIndex]) {
-          e.preventDefault();
-          hotkeyItems[kbFocusIndex].run();
-        }
-        return;
-      }
+      if (!controls.length) return;
+      if (key === 'arrowright' || key === ']') { done(); setKbFocusIndex(i => (i + 1) % controls.length); return; }
+      if (key === 'arrowleft' || key === '[') { done(); setKbFocusIndex(i => (i - 1 + controls.length) % controls.length); return; }
+      if (key === 'enter' && kbFocusIndex >= 0 && controls[kbFocusIndex]) { done(); controls[kbFocusIndex].run(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kbActive, hotkeyItems, kbFocusIndex, pathname]);
+  }, [noDock, kbActive, capsDismissed, controls, kbFocusIndex, visibleApps.length]);
 
-  if (pathname === '/login' || pathname === '/auth' || pathname === '/privacy' || pathname === '/terms') return null;
-  // The split screen has its own bar; each pane is a full page without chrome.
-  if (pathname === '/split') return null;
-  // Public share surfaces (lookbooks, public portfolios, shared scripts) are
-  // for people outside the app — no app chrome over them.
-  if (/^\/(shared|p|s)\//.test(pathname)) return null;
+  if (noDock) return null;
 
-  const activeApp = APPS.find(a => a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/');
-  const moduleColor = activeDescriptor?.accent ?? activeApp?.color ?? '#e8431a';
+  const onEnter = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    if (!deck && islandRef.current) arrival.current = { at: performance.now(), pill: islandRef.current.getBoundingClientRect() };
+    setHover(true);
+    setTyping(false);
+  };
+  // The pill opens as the pointer arrives, and its controls land where the pill was. A press
+  // aimed at the pill must not land on one of them: it keeps the island open instead. (On
+  // pointer-down, because the pill re-renders under the pointer and the browser then drops the click.)
+  const arriving = (e: { clientX: number; clientY: number }) => {
+    const a = arrival.current;
+    if (!a) return false;
+    const { pill } = a;
+    const inside = e.clientX >= pill.left && e.clientX <= pill.right && e.clientY >= pill.top && e.clientY <= pill.bottom;
+    if (!inside || performance.now() - a.at > ARRIVE_MS) { arrival.current = null; return false; }
+    return true;
+  };
+  const onPress = (e: React.PointerEvent) => {
+    swallowClick.current = false;
+    if (e.pointerType === 'touch' || e.button !== 0 || !arriving(e)) return;
+    arrival.current = null;
+    swallowClick.current = true;
+    setPinned(true);
+  };
+  const onPressedClick = (e: React.MouseEvent) => {
+    if (!swallowClick.current) return;
+    swallowClick.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const onLeave = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    leaveTimer.current = setTimeout(() => {
+      // A menu left open (notifications, audio) keeps the island open until you click away.
+      if (navRef.current?.querySelector('[aria-expanded="true"]')) setHeld(true);
+      setHover(false);
+    }, LEAVE_MS);
+  };
+  const close = () => {
+    setPinned(false); setHeld(false); setProjectsOpen(false); setKbFocus(false);
+    const active = document.activeElement as HTMLElement | null;
+    if (active && islandRef.current?.contains(active)) active.blur();
+  };
 
-  const showContext = !!activeDescriptor || !!transient;
-  const contextOpen = contextExpanded || zoneActive || kbActive;
-  const focusedId = kbFocusIndex >= 0 ? hotkeyItems[kbFocusIndex]?.id ?? null : null;
+  const renderControl = (c: Control, i: number) => {
+    const hint = keys ? <Key>{CONTROL_KEYS[i]}</Key> : null;
+    const kb = focusedId === c.id ? 'true' : undefined;
+    if (c.kind === 'toggle') {
+      return (
+        <button key={c.id} type="button" className={s.toggle} aria-pressed={!!c.active} data-kb={kb} onClick={c.run}>
+          <span className={s.check}>{c.active && <Check size={10} strokeWidth={3} aria-hidden />}</span>
+          {c.label}{hint}
+        </button>
+      );
+    }
+    if (c.kind === 'link') {
+      return <Link key={c.id} href={c.href!} prefetch={false} className={`${s.chip} ${s.chipQuiet}`} data-kb={kb}>{c.label}{hint}</Link>;
+    }
+    return <button key={c.id} type="button" className={s.chip} data-kb={kb} onClick={c.run}>{c.label}{hint}</button>;
+  };
+
+  const renderFields = (max: number) => fields.slice(0, max).map(f => (
+    <span key={f.label} className={s.field}>
+      <small>{f.label}</small>
+      <span style={f.color ? { color: readable(f.color) } : undefined}>{f.value}</span>
+    </span>
+  ));
+
+  const crumbs = zoneChain.length > 1 ? (
+    <span className={s.crumbs}>
+      {zoneChain.map((z, i) => (
+        <React.Fragment key={`${z.depth}-${z.title}`}>
+          {i === zoneChain.length - 1 ? <b>{z.title}</b> : <><span>{z.title}</span><span aria-hidden>›</span></>}
+        </React.Fragment>
+      ))}
+    </span>
+  ) : null;
+
+  // On the deck, everything; over a page zone, just what acts on it (the links are a pointer-trip away anyway).
+  const shown = deck ? controls : controls.filter(c => c.kind !== 'link');
+  const hasControls = (deck || mode === 'context') && (fields.length > 0 || shown.length > 0);
 
   return (
-    <nav
-      ref={dockRef}
-      aria-label="Suite"
-      className="mc-dock"
-      data-taskbar
-      style={{
-        position: 'fixed',
-        bottom: DOCK_BOTTOM,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-        pointerEvents: 'none',
-      }}
-    >
+    <nav ref={dockRef} aria-label="Suite" className={`mc-dock ${s.dock}`} data-taskbar data-island={mode} style={{ '--island-scale': scale } as React.CSSProperties}>
       <motion.div
-        layout
-        initial={{ y: 100, opacity: 0 }}
+        layoutRoot
+        initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ layout: MORPH, default: { delay: 0.4, duration: 0.9, ease: [0.16, 1, 0.3, 1] } }}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'none' }}
+        transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ display: 'flex', justifyContent: 'center', maxWidth: '100%' }}
       >
         <motion.div
+          ref={islandRef}
           layout
-          className="mc-taskbar"
-          style={{
-            background: 'var(--surface)',
-            backdropFilter: 'blur(28px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-            border: '1px solid rgba(var(--ink-rgb), 0.07)',
-            borderRadius: 24,
-            padding: '8px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            pointerEvents: 'auto',
-            boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--ink-rgb), 0.02) inset, 0 -1px 0 ${moduleColor}22 inset`,
-            position: 'relative',
-          }}
-          onMouseLeave={() => setHoveredId(null)}
+          transition={MORPH}
+          className={`mc-taskbar ${s.island}`}
+          data-mode={mode}
+          data-deck={deck}
+          data-near={near && !deck && mode !== 'dot'}
+          style={{ borderRadius: 28, '--island-accent': accent } as React.CSSProperties}
+          onPointerEnter={onEnter}
+          onPointerLeave={onLeave}
+          onPointerDownCapture={onPress}
+          onPointerMove={(e) => { if (arrival.current) arriving(e); }}
+          onClickCapture={onPressedClick}
+          // A click on the island itself (between its controls, or as it morphs under the pointer) keeps it open.
+          onClick={(e) => { if (!(e.target as HTMLElement).closest('a, button, input')) setPinned(true); }}
+          onFocusCapture={(e) => { if ((e.target as HTMLElement).matches(':focus-visible')) setKbFocus(true); }}
+          onBlurCapture={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setKbFocus(false); }}
+          onKeyDown={(e) => { if (e.key === 'Escape' && deck) { e.stopPropagation(); close(); } }}
         >
-          <motion.button
-            onClick={toggleDock}
-            aria-label={dockCollapsed ? 'Expand taskbar' : 'Collapse taskbar'}
-            title={dockCollapsed ? 'Expand taskbar' : 'Collapse taskbar'}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.9 }}
-            style={{
-              width: 22, height: 40, borderRadius: 12, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0,
-              background: 'transparent', border: 'none', cursor: 'pointer',
-            }}
-          >
-            {dockCollapsed ? <ChevronUp size={14} color="rgba(var(--fg-rgb), 0.4)" /> : <ChevronDown size={14} color="rgba(var(--fg-rgb), 0.4)" />}
-            {dockCollapsed && (
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: moduleColor, boxShadow: `0 0 6px ${moduleColor}` }} />
-            )}
-          </motion.button>
+          {/* The suite. Always mounted — the audio player lives here and must keep playing — and shown on the deck. */}
+          <motion.div ref={navRef} layout="position" className={s.nav}>
+            <span className={s.slot} data-tip="Search · ⌘K">
+              <button type="button" className={s.btn} aria-label="Search (Command-K)" onClick={openSearch}>
+                <Search size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>/</Key>}
+              </button>
+            </span>
+            <span className={s.slot} data-tip="Split screen · Ctrl \">
+              <button type="button" className={s.btn} aria-label="Split screen (Control-Backslash)" onClick={openSplit}>
+                <Columns2 size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>\</Key>}
+              </button>
+            </span>
 
-          <AnimatePresence initial={false}>
-          {!dockCollapsed && (
-          <motion.div
-            key="dock-content"
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: 'auto' }}
-            exit={{ opacity: 0, width: 0 }}
-            transition={MORPH}
-            style={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}
-          >
-          <div style={{ position: 'relative' }}>
-            <motion.button
-              onClick={() => window.dispatchEvent(new Event('mc-open-command-palette'))}
-              aria-label="Search (Command-K)"
-              onHoverStart={() => setHoveredId('search')}
-              whileHover={{ scale: 1.18, y: -6 }}
-              whileTap={{ scale: 0.93 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 26 }}
-              style={{
-                width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: hoveredId === 'search' ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-                color: hoveredId === 'search' ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s',
-              }}
-            >
-              <Search size={18} strokeWidth={1.5} />
-            </motion.button>
-            <AnimatePresence>
-              {hoveredId === 'search' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
-                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
-                >
-                  Search <kbd style={{ fontSize: 7.5, border: '1px solid rgba(var(--ink-rgb), 0.2)', borderRadius: 3, padding: '1px 4px' }}>⌘K</kbd>
-                  <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+            <span className={s.rule} aria-hidden />
 
-          <div style={{ position: 'relative' }}>
-            <motion.button
-              onClick={() => router.push(splitHref(window.location.pathname + window.location.search))}
-              aria-label="Split screen (Control-Backslash)"
-              onHoverStart={() => setHoveredId('split')}
-              onHoverEnd={() => setHoveredId(null)}
-              whileHover={{ scale: 1.18, y: -6 }}
-              whileTap={{ scale: 0.93 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 26 }}
-              style={{
-                width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: hoveredId === 'split' ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent', border: 'none', cursor: 'pointer',
-                color: hoveredId === 'split' ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)', transition: 'background 0.25s, color 0.25s',
-              }}
-            >
-              <Columns2 size={18} strokeWidth={1.5} />
-            </motion.button>
-            <AnimatePresence>
-              {hoveredId === 'split' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.92 }} animate={{ opacity: 1, y: -10, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.92 }} transition={{ duration: 0.18 }}
-                  style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)', fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase', padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)', display: 'flex', gap: 6, alignItems: 'center' }}
-                >
-                  Split screen <kbd style={{ fontSize: 7.5, border: '1px solid rgba(var(--ink-rgb), 0.2)', borderRadius: 3, padding: '1px 4px' }}>Ctrl {'\\'}</kbd>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+            <div className={`mc-app-strip ${s.strip}`}>
+              {visibleApps.map((a, i) => {
+                const Icon = a.icon;
+                const isActive = pathApp?.id === a.id;
+                return (
+                  <span key={a.id} className={s.slot} data-tip={a.name}>
+                    <Link href={a.path} prefetch={false} className={s.btn} aria-label={a.name} aria-current={isActive ? 'page' : undefined} style={{ '--btn-accent': a.color } as React.CSSProperties}>
+                      <Icon size={19} strokeWidth={1.5} aria-hidden />{keys && <Key>{i + 1}</Key>}
+                    </Link>
+                  </span>
+                );
+              })}
+            </div>
 
-          <div style={{ width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.07)', margin: '0 4px', flexShrink: 0 }} />
+            <span className={s.rule} aria-hidden />
 
-          <AppIconCarousel apps={visibleApps} pathname={pathname} shrunk={contextOpen} />
-
-          <div style={{
-            width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.07)',
-            margin: '0 4px', flexShrink: 0,
-          }} />
-
-          <div style={{ position: 'relative' }}>
-            <motion.button
-              onClick={() => setProjectsOpen(v => !v)}
-              aria-label="Switch project"
-              onHoverStart={() => setHoveredId('projects')}
-              onHoverEnd={() => setHoveredId(null)}
-              whileHover={{ scale: 1.08, y: -3 }}
-              whileTap={{ scale: 0.93 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 26 }}
-              style={{
-                width: 46, height: 46, borderRadius: 16,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 2,
-                background: projectsOpen
-                  ? `${activeColor}18`
-                  : hoveredId === 'projects'
-                  ? 'rgba(var(--ink-rgb), 0.06)'
-                  : 'transparent',
-                border: 'none', cursor: 'pointer',
-                position: 'relative',
-                transition: 'background 0.25s',
-              }}
-            >
-              {activeProject && (
-                <div style={{
-                  position: 'absolute',
-                  top: 8, right: 8,
-                  width: 5, height: 5, borderRadius: '50%',
-                  background: activeColor,
-                  boxShadow: `0 0 6px ${activeColor}`,
-                }} />
-              )}
-              <FolderOpen
-                size={18}
-                strokeWidth={1.5}
-                color={projectsOpen
-                  ? (activeColor)
-                  : hoveredId === 'projects'
-                  ? 'rgba(var(--fg-rgb), 0.7)'
-                  : 'rgba(var(--fg-rgb), 0.3)'}
-              />
-              <motion.div
-                animate={{ rotate: projectsOpen ? 0 : 180 }}
-                transition={{ duration: 0.2 }}
-                style={{ lineHeight: 0 }}
+            <span className={s.slot} data-tip={activeProject ? activeProject.title : 'Projects'} data-open={projectsOpen}>
+              <button
+                type="button"
+                className={s.btn}
+                aria-label="Switch project"
+                aria-haspopup="true"
+                aria-expanded={projectsOpen}
+                onClick={() => setProjectsOpen(v => !v)}
+                style={{ '--btn-accent': activeProject?.accent_color || 'var(--accent)' } as React.CSSProperties}
               >
-                <ChevronUp
-                  size={8}
-                  color={projectsOpen ? (activeColor) : 'rgba(var(--fg-rgb), 0.25)'}
-                />
-              </motion.div>
-            </motion.button>
+                <FolderOpen size={18} strokeWidth={1.5} aria-hidden />
+                {activeProject && !keys && <span className={s.pip} style={{ background: activeProject.accent_color || 'var(--accent)' }} aria-hidden />}
+                {keys && <Key>P</Key>}
+              </button>
+              <AnimatePresence>
+                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} />}
+              </AnimatePresence>
+            </span>
 
-            <AnimatePresence>
-              {hoveredId === 'projects' && !projectsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.92 }}
-                  animate={{ opacity: 1, y: -10, scale: 1 }}
-                  exit={{ opacity: 0, y: 6, scale: 0.92 }}
-                  transition={{ duration: 0.18 }}
-                  style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'var(--surface)',
-                    border: '1px solid rgba(var(--ink-rgb), 0.1)',
-                    color: 'rgba(var(--fg-rgb), 0.85)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 8.5,
-                    letterSpacing: 1.5,
-                    textTransform: 'uppercase',
-                    padding: '5px 10px',
-                    borderRadius: 8,
-                    whiteSpace: 'nowrap',
-                    pointerEvents: 'none',
-                    backdropFilter: 'blur(10px)',
-                  }}
-                >
-                  {activeProject ? activeProject.title : 'Projects'}
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%', left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: 0, height: 0,
-                    borderLeft: '4px solid transparent',
-                    borderRight: '4px solid transparent',
-                    borderTop: '4px solid rgba(var(--ink-rgb), 0.1)',
-                  }} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <span className={s.rule} aria-hidden />
 
-            <AnimatePresence>
-              {projectsOpen && (
-                <ProjectSwitcher onClose={() => setProjectsOpen(false)} />
-              )}
-            </AnimatePresence>
-          </div>
+            <span className={s.bell}><NotificationBell /></span>
+            <div style={{ display: 'flex', alignItems: 'center', margin: '0 4px' }}>
+              <GlobalAudioWidget />
+            </div>
 
-          <div style={{ width: 1, height: 22, background: 'rgba(var(--ink-rgb), 0.07)', margin: '0 4px', flexShrink: 0 }} />
-
-          <NotificationBell />
-
-          <div style={{ display: 'flex', alignItems: 'center', marginLeft: 4 }}>
-            <GlobalAudioWidget />
-          </div>
-
-          {([
-            { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
-            { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
-          ] as const).map(item => {
-            const isActive = pathname.startsWith(item.path);
-            const isHovered = hoveredId === item.id;
-            const Icon = item.icon;
-            return (
-              <Link key={item.id} href={item.path} prefetch={false} aria-label={item.name} title={item.name} style={{ textDecoration: 'none', position: 'relative' }}>
-                <motion.div
-                  onHoverStart={() => setHoveredId(item.id)}
-                  whileHover={{ scale: 1.18, y: -6 }}
-                  whileTap={{ scale: 0.93 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 26 }}
-                  style={{
-                    width: 46, height: 46, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isActive ? 'rgba(232, 67, 26,0.10)' : isHovered ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
-                    color: isActive ? 'var(--accent)' : isHovered ? 'rgba(var(--fg-rgb), 0.7)' : 'rgba(var(--fg-rgb), 0.3)',
-                    transition: 'background 0.25s, color 0.25s',
-                  }}
-                >
-                  <Icon size={19} strokeWidth={1.5} />
-                </motion.div>
-                <AnimatePresence>
-                  {isHovered && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6, scale: 0.92 }}
-                      animate={{ opacity: 1, y: -10, scale: 1 }}
-                      exit={{ opacity: 0, y: 6, scale: 0.92 }}
-                      transition={{ duration: 0.18 }}
-                      style={{
-                        position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                        background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)',
-                        fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: 1.5, textTransform: 'uppercase',
-                        padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      {item.name}
-                      <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '4px solid rgba(var(--ink-rgb), 0.1)' }} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Link>
-            );
-          })}
+            {([
+              { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
+              { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
+            ] as const).map(item => {
+              const Icon = item.icon;
+              return (
+                <span key={item.id} className={s.slot} data-tip={item.name}>
+                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={pathname.startsWith(item.path) ? 'page' : undefined}>
+                    <Icon size={19} strokeWidth={1.5} aria-hidden />
+                  </Link>
+                </span>
+              );
+            })}
           </motion.div>
-          )}
-          </AnimatePresence>
-        </motion.div>
 
-        <AnimatePresence>
-          {showContext && (
-            <motion.div
-              key="context"
-              layout
-              initial={{ opacity: 0, scale: 0.85, x: -10 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.85, x: -10 }}
-              transition={MORPH}
-              onMouseEnter={() => setContextExpanded(true)}
-              onMouseLeave={() => setContextExpanded(false)}
-              style={{ pointerEvents: 'auto' }}
+          <motion.div layout="position" className={s.main}>
+            <button
+              type="button"
+              className={s.handle}
+              aria-label={pinned ? 'Close the island' : deck ? 'Keep the island open' : `Open the island — ${title}`}
+              aria-pressed={pinned}
+              title={deck ? (pinned ? 'Close' : 'Keep open') : 'Everything in the suite · Caps Lock for keys'}
+              onClick={() => (pinned ? close() : setPinned(true))}
             >
-              {transient ? (
-                <div style={{
-                  display: 'flex', alignItems: 'center', height: 52, padding: '0 16px',
-                  borderRadius: 26,
-                  background: 'var(--surface)',
-                  backdropFilter: 'blur(28px) saturate(1.6)',
-                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-                  border: `1px solid ${moduleColor}40`,
-                  boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 22px ${moduleColor}20`,
-                }}>
-                  <TransientView label={transient.label} tone={transient.tone} />
-                </div>
-              ) : activeDescriptor ? (
-                <ContextCapsule
-                  descriptor={activeDescriptor}
-                  accent={moduleColor}
-                  expanded={contextOpen}
-                  zoneChain={zoneChain}
-                  kbActive={kbActive}
-                  focusedId={focusedId}
-                />
-              ) : null}
+              <span className={s.dot} data-pinned={pinned} aria-hidden />
+              {mode === 'live' && transient && <span className={s.label} role="status">{transient.label}</span>}
+              {/* One slot each, so what's under the pointer survives the change of shape. */}
+              {mode === 'rest' && <span className={s.glyph}><Glyph size={15} strokeWidth={1.6} aria-hidden /></span>}
+              {(mode === 'rest' || mode === 'context' || deck) && ((mode !== 'rest' && crumbs) || <span className={s.title}>{title}</span>)}
+              {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small><span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
+            </button>
+
+            {/* What the dot is about: the page's (or the hovered thing's) numbers and controls. */}
+            {hasControls && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: 0.05 }} className={s.inline} role="group" aria-label={`${title} controls`}>
+                {renderFields(deck ? 4 : 3)}
+                {fields.length > 0 && shown.length > 0 && <span className={s.rule} aria-hidden />}
+                {shown.map(c => renderControl(c, controls.indexOf(c)))}
+              </motion.div>
+            )}
+
+          </motion.div>
+
+          {mode === 'caps' && (
+            <motion.div layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: 0.05 }} className={s.hints}>
+              <span><Key>1</Key>–<Key>{visibleApps.length}</Key> apps</span>
+              {controls.length > 0 && <span><Key>Q</Key>{controls.length > 1 && <>–<Key>{CONTROL_KEYS[controls.length - 1]}</Key></>} or <Key>←</Key><Key>→</Key><Key>↵</Key> controls</span>}
+              <span><Key>/</Key> search</span>
+              <span><Key>\</Key> split</span>
+              <span><Key>P</Key> project</span>
+              <span><Key>Esc</Key> put away</span>
             </motion.div>
           )}
-        </AnimatePresence>
+        </motion.div>
       </motion.div>
     </nav>
   );

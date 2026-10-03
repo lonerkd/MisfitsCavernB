@@ -236,7 +236,7 @@ export default function CommandPalette() {
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             onMouseDown={e => e.stopPropagation()}
             role="dialog" aria-modal="true" aria-label="Search the suite"
-            style={{ width: 'min(92vw, 560px)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
+            style={{ width: 'min(92vw, 560px)', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 32px 90px rgba(0,0,0,0.7)', overflow: 'hidden' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
               <Search size={16} color="rgba(var(--ink-rgb), 0.4)" />
@@ -249,7 +249,7 @@ export default function CommandPalette() {
                 aria-label="Search the suite"
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--mono)' }}
               />
-              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--fg-dim)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
+              <kbd style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '2px 6px' }}>ESC</kbd>
             </div>
 
             <div ref={listRef} style={{ maxHeight: '52vh', overflowY: 'auto', padding: 8 }}>
@@ -257,7 +257,7 @@ export default function CommandPalette() {
                 <div role="status" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>{searching ? 'Searching…' : `No matches for “${query}”`}</div>
               ) : groups.map(g => (
                 <div key={g.group} style={{ marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
                   {g.items.map(c => {
                     flatIdx++;
                     const idx = flatIdx;
@@ -279,7 +279,7 @@ export default function CommandPalette() {
                           <span style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.label}</span>
                           {c.detail && <span style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.detail}</span>}
                         </span>
-                        {c.hint && <span style={{ fontSize: 10, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
+                        {c.hint && <span style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>{c.hint}</span>}
                         {active && <CornerDownLeft size={13} color="rgba(var(--ink-rgb), 0.4)" />}
                       </button>
                     );

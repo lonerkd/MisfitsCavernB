@@ -196,7 +196,7 @@ export default function JobDetailPage() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <span style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4 }}>JOB NOT FOUND</span>
-        <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO JOBS</Link>
+        <Link href="/jobs" style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO JOBS</Link>
       </div>
     );
   }
@@ -239,7 +239,7 @@ export default function JobDetailPage() {
         <span style={statusBadgeStyle(job.status)}>{job.status}</span>
       </header>
 
-      <div style={{ maxWidth: 720, margin: '58px auto 0', padding: '48px 24px 100px' }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '58px auto 0', padding: '48px 24px 100px' }}>
 
         <div style={{ marginBottom: 40 }}>
           <div style={{ marginBottom: 14 }}>
@@ -313,32 +313,32 @@ export default function JobDetailPage() {
                 APPLICATIONS
               </h2>
               <span style={{
-                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1,
+                fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
                 color: 'var(--accent)', border: '1px solid var(--accent)',
                 padding: '2px 8px',
               }}>
                 {applications.length}
               </span>
               {job.status === 'open' && (
-                <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={closeWhenFilled} onChange={(e) => setCloseWhenFilled(e.target.checked)} />
                   Close the posting when I accept someone
                 </label>
               )}
             </div>
             {job.project_id && (
-              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', margin: '-12px 0 20px', lineHeight: 1.6 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', margin: '-12px 0 20px', lineHeight: 1.6 }}>
                 Accepting adds them to {job.projects?.title ?? 'the project'}’s crew as {job.role}{job.character_name ? ` and casts them as ${job.character_name}` : ''}. Either way, they’re told.
               </p>
             )}
 
             {appsLoading ? (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</div>
             ) : applications.length === 0 ? (
               <div style={{
                 padding: 40, textAlign: 'center',
                 border: '1px dashed rgba(var(--ink-rgb), 0.08)',
-                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'var(--fg-dim)' }}>
+                fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>
                 NO APPLICATIONS YET
               </div>
             ) : (
@@ -505,7 +505,7 @@ export default function JobDetailPage() {
                 <Link href="/auth" style={{
                   display: 'inline-block', padding: '10px 28px',
                   background: 'var(--accent)', color: 'var(--on-accent)',
-                  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none',
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none',
                 }}>
                   SIGN IN
                 </Link>
@@ -541,7 +541,7 @@ export default function JobDetailPage() {
                 />
 
                 {applyError && (
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)', opacity: 0.8 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', opacity: 0.8 }}>
                     {applyError}
                   </div>
                 )}
@@ -554,7 +554,7 @@ export default function JobDetailPage() {
                     padding: '12px 36px',
                     background: applying ? 'var(--accent-dim)' : 'var(--accent)',
                     color: applying ? 'var(--fg)' : 'var(--on-accent)', border: 'none',
-                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3,
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3,
                     cursor: applying ? 'not-allowed' : 'pointer',
                     transition: 'background 0.15s, opacity 0.15s',
                     opacity: applying ? 0.7 : 1,

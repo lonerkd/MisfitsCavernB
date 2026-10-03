@@ -99,7 +99,7 @@ export default function CallSheetPage() {
   };
 
   if (state === 'loading') {
-    return <main className={c.page}><div className={c.frame}><div className="skeleton" style={{ height: 180, borderRadius: 16 }} /></div></main>;
+    return <main className={c.page}><div className={c.frame}><div className="skeleton" style={{ height: 180, borderRadius: 14 }} /></div></main>;
   }
   if (state === 'missing' || !sheet || !snap) {
     return (

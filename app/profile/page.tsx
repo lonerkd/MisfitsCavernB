@@ -129,30 +129,30 @@ export default function ProfilePage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>PROFILE</h1>
         </Link>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {message && <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accent)' }}>{message}</span>}
+          {message && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>{message}</span>}
           <button onClick={handleSave} disabled={saving}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
               background: 'var(--accent)', color: 'var(--on-accent)', border: 'none',
-              fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: saving ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? 0.6 : 1 }}>
             <Save size={12} /> {saving ? 'SAVING...' : 'SAVE'}
           </button>
           <Link href="/settings" title="Settings" aria-label="Settings"
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
               background: 'transparent', color: 'var(--fg-dim)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
-              fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer', textDecoration: 'none' }}>
+              fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer', textDecoration: 'none' }}>
             <Settings size={12} />
           </Link>
           <button onClick={handleSignOut} aria-label="Sign out" title="Sign out"
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
               background: 'transparent', color: 'var(--fg-dim)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
-              fontFamily: 'var(--mono)', fontSize: 10, cursor: 'pointer' }}>
+              fontFamily: 'var(--mono)', fontSize: 11, cursor: 'pointer' }}>
             <LogOut size={12} />
           </button>
         </div>
       </header>
 
-      <div style={{ marginTop: 60, maxWidth: 640, margin: '60px auto 0', padding: '40px 24px 80px' }}>
+      <div style={{ marginTop: 60, maxWidth: 'var(--w-reading)', margin: '60px auto 0', padding: '40px 24px 80px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 4vw, 24px)', marginBottom: 40 }}>
           <div style={{ flexShrink: 0 }}>
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.04)',
-                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                        borderRadius: 8, textDecoration: 'none', transition: 'background 0.2s'
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.04)',
-                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                        borderRadius: 8, textDecoration: 'none', transition: 'background 0.2s'
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
@@ -292,7 +292,7 @@ export default function ProfilePage() {
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 14px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.04)',
-                        borderRadius: 6, textDecoration: 'none', transition: 'background 0.2s'
+                        borderRadius: 8, textDecoration: 'none', transition: 'background 0.2s'
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.04)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
@@ -361,7 +361,7 @@ export default function ProfilePage() {
                     background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(232, 67, 26,0.08)') : 'transparent',
                     border: `1px solid ${profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(var(--ink-rgb), 0.1)'}`,
                     color: profile.status === s ? (s === 'OPEN' ? 'var(--ok)' : 'var(--accent)') : 'var(--fg-dim)',
-                    fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer',
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer',
                   }}>
                   {s === 'OPEN' ? '● OPEN TO WORK' : '○ BUSY'}
                 </button>

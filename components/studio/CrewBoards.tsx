@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -60,7 +61,7 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
       </div>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--fg-muted)' }}>{beat.content}</div>
       </div>
@@ -98,7 +99,7 @@ export function CrewMemberCard({ member, index, isOnline, away }: { member: any;
         padding: 16,
         background: 'rgba(var(--ink-rgb), 0.02)',
         border: '1px solid rgba(var(--ink-rgb), 0.05)',
-        borderRadius: 12,
+        borderRadius: 14,
         transition: 'border-color 0.3s, box-shadow 0.3s',
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.25)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)'; zoneHandlers.onMouseEnter(); }}
@@ -108,12 +109,12 @@ export function CrewMemberCard({ member, index, isOnline, away }: { member: any;
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar src={member.avatar} name={member.name} size={44} />
         {isOnline && (
-          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#10b981', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
+          <span title="Online now" style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: 'var(--success)', border: '2px solid #0a0a0a', boxShadow: '0 0 6px rgba(16,185,129,0.8)' }} />
         )}
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)' }}>{member.name}</div>
-        <div style={{ fontSize: 10, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
         {away && <div style={{ fontSize: 11, color: 'var(--warn)', marginTop: 3 }}>Away {away}</div>}
       </div>
       <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'uppercase' }}>
@@ -156,18 +157,20 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  // Portalled above the Studio header and the suite dock.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             onClick={e => e.stopPropagation()}
-            style={{ width: 500, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 16, padding: 32 }}
+            style={{ width: 500, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
             <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
@@ -206,7 +209,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(var(--ink-rgb), 0.03)', borderRadius: 12 }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'rgba(var(--ink-rgb), 0.03)', borderRadius: 14 }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
                       {selectedUser.username.charAt(0).toUpperCase()}
                     </div>
@@ -243,6 +246,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

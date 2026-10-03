@@ -14,6 +14,7 @@ import { ThemePicker } from '@/components/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 import DeleteAccount from '@/components/settings/DeleteAccount';
+import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -37,7 +38,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       aria-label={label}
       onClick={() => onChange(!on)}
       style={{
-        width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+        width: 42, height: 24, borderRadius: 9999, border: 'none', cursor: 'pointer',
         background: on ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.12)', position: 'relative',
         transition: 'background 0.2s', flexShrink: 0, padding: 0,
       }}
@@ -55,9 +56,9 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
     <section style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, color: 'var(--accent)' }}>
         {icon}
-        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'var(--fg-muted)' }}>{title}</h2>
+        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'var(--fg-muted)' }}>{title}</h2>
       </div>
-      <div style={{ background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, overflow: 'hidden' }}>
         {children}
       </div>
     </section>
@@ -68,8 +69,8 @@ function Row({ label, hint, control }: { label: string; hint?: string; control: 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>{label}</div>
-        {hint && <div style={{ fontSize: 10.5, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
+        <div style={{ fontSize: 13, color: 'var(--fg)' }}>{label}</div>
+        {hint && <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>{hint}</div>}
       </div>
       <div style={{ flexShrink: 0 }}><RowLabel.Provider value={label}>{control}</RowLabel.Provider></div>
     </div>
@@ -78,15 +79,15 @@ function Row({ label, hint, control }: { label: string; hint?: string; control: 
 
 const inputStyle: React.CSSProperties = {
   padding: '8px 10px', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 6, outline: 'none', width: 200,
+  color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, borderRadius: 8, outline: 'none', width: 200,
 };
 const btnStyle: React.CSSProperties = {
-  padding: '8px 14px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 6,
-  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer', fontWeight: 600,
+  padding: '8px 14px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8,
+  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600,
 };
 const ghostBtn: React.CSSProperties = {
   padding: '8px 14px', background: 'transparent', color: 'var(--fg-muted)', border: '1px solid rgba(var(--ink-rgb), 0.12)',
-  borderRadius: 6, fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, cursor: 'pointer',
+  borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer',
 };
 
 export default function SettingsPage() {
@@ -101,7 +102,7 @@ export default function SettingsPage() {
 
   const [cursor, setCursor] = useState(true);
   const [motion, setMotion] = useState(false);
-  const [taskbarScale, setTaskbarScale] = useState(1);
+  const [islandScale, setIslandScale] = useState(1);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
@@ -130,7 +131,7 @@ export default function SettingsPage() {
     setCursor(getPref(PREF_KEYS.cursor, true));
     setMotion(getPref(PREF_KEYS.motion, false));
     try {
-      setTaskbarScale(parseFloat(localStorage.getItem('mc_taskbar_scale') || '1'));
+      setIslandScale(readIslandScale());
     } catch {}
   }, [router]);
 
@@ -156,13 +157,7 @@ export default function SettingsPage() {
     setMotion(v); savePref(PREF_KEYS.motion, v);
     window.dispatchEvent(new Event(MOTION_PREF_EVENT));
   };
-  const setTaskbarScalePref = (v: number) => {
-    setTaskbarScale(v);
-    try {
-      localStorage.setItem('mc_taskbar_scale', String(v));
-      window.dispatchEvent(new Event('mc-taskbar-scale-change'));
-    } catch {}
-  };
+  const setIslandScalePref = (v: number) => setIslandScale(writeIslandScale(v));
 
   const changeEmail = async () => {
     if (!newEmail || newEmail === user?.email) return;
@@ -241,13 +236,13 @@ export default function SettingsPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>SETTINGS</h1>
         </Link>
         {msg && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 10, color: msg.ok ? 'var(--ok)' : 'var(--danger)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: msg.ok ? 'var(--ok)' : 'var(--danger)' }}>
             {msg.ok && <Check size={12} />} {msg.text}
           </span>
         )}
       </header>
 
-      <div style={{ maxWidth: 520, margin: '60px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
+      <div style={{ maxWidth: 'var(--w-form)', margin: '60px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
 
         <Section icon={<User size={15} />} title="Account">
           <Row label="Email address" hint="Changing this sends a confirmation link to the new address." control={
@@ -290,24 +285,24 @@ export default function SettingsPage() {
           <Row label="Reduce motion" hint="Minimise animations and transitions across the app." control={<Toggle on={motion} onChange={setMotionPref} />} />
           <div style={{ borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)' }}>
             <div style={{ padding: '14px 16px 0' }}>
-              <div style={{ fontSize: 12.5, color: 'var(--fg)' }}>Theme</div>
-              <div style={{ fontSize: 10.5, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>The look of the whole suite, on every device you sign in on.</div>
+              <div style={{ fontSize: 13, color: 'var(--fg)' }}>Theme</div>
+              <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 3, lineHeight: 1.4 }}>The look of the whole suite, on every device you sign in on.</div>
             </div>
             <ThemePicker signedIn={!!user} />
           </div>
-          <Row label="Taskbar Scale" hint={`Adjust taskbar sizing. Current: ${taskbarScale.toFixed(2)}x`} control={
+          <Row label="Island size" hint="How big the island at the foot of the screen is, on this device. It resizes as you drag." control={
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <input
                 type="range"
-                aria-label="Taskbar scale"
-                min="0.8"
-                max="1.3"
-                step="0.05"
-                value={taskbarScale}
-                onChange={e => setTaskbarScalePref(parseFloat(e.target.value))}
+                aria-label="Island size"
+                min={ISLAND_SCALE_MIN}
+                max={ISLAND_SCALE_MAX}
+                step={ISLAND_SCALE_STEP}
+                value={islandScale}
+                onChange={e => setIslandScalePref(parseFloat(e.target.value))}
                 style={{ width: 120, accentColor: 'var(--accent)' }}
               />
-              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{taskbarScale.toFixed(2)}x</span>
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{islandScale.toFixed(2)}x</span>
             </div>
           } />
         </Section>

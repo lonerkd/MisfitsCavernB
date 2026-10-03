@@ -58,7 +58,7 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
           {timing.scenes.map((s) => (
             <div key={s.index} title={`${s.index + 1}. ${s.heading} · ${formatRuntime(s.runtime)}${s.read ? ' (read)' : ''}`}
               style={{
-                flex: `${Math.max(0.6, s.runtime)} 1 0`, minWidth: 3, borderRadius: 2,
+                flex: `${Math.max(0.6, s.runtime)} 1 0`, minWidth: 3, borderRadius: 4,
                 height: `${Math.max(12, (s.runtime / max) * 100)}%`,
                 background: s.read ? '#34c77b' : `rgba(129,140,248,${0.35 + 0.5 * s.dialogueShare})`,
                 outline: s.index === currentSceneIdx ? '1px solid rgba(var(--ink-rgb), 0.7)' : undefined,
@@ -97,7 +97,7 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
                   <td style={cell}>{formatRuntime(s.runtime)}</td>
                   <td style={cell}>
                     <button type="button" onClick={() => onRead(s.index)} aria-label={`Table read from scene ${s.index + 1}`} title="Table read from here"
-                      style={{ width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, border: '1px solid rgba(var(--fg-rgb), 0.14)', background: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>
+                      style={{ width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: '1px solid rgba(var(--fg-rgb), 0.14)', background: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>
                       <Play size={11} aria-hidden />
                     </button>
                   </td>

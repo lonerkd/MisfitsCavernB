@@ -15,31 +15,31 @@
 .frame { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 22px; }
 /* globals.css pads bare <section>s for the landing page; not here. */
 .frame > section:not(.mine) { padding: 0; }
-.eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0; }
 .title { font-family: var(--display); font-size: clamp(2.4rem, 8vw, 4rem); letter-spacing: 2px; line-height: 1; margin: -12px 0 0; font-weight: 400; }
 .lead { font-family: var(--serif); font-size: 1.05rem; color: var(--fg-muted); margin: -10px 0 0; }
 .lead a { color: var(--fg); text-decoration: underline; }
-.banner { margin: 0; padding: 10px 14px; border-radius: 10px; border: 1px dashed var(--pa-line); background: var(--pa-dim); font-size: 13px; line-height: 1.5; }
+.banner { margin: 0; padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--pa-line); background: var(--pa-dim); font-size: 13px; line-height: 1.5; }
 
-.mine { padding: 18px 20px; border-radius: 16px; border: 1px solid var(--pa-line); background: linear-gradient(180deg, var(--pa-dim), transparent); }
-.mineLabel { font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0; font-weight: 400; }
+.mine { padding: 18px 20px; border-radius: 14px; border: 1px solid var(--pa-line); background: linear-gradient(180deg, var(--pa-dim), transparent); }
+.mineLabel { font-family: var(--mono); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0; font-weight: 400; }
 .mineTime { font-family: var(--display); font-size: clamp(2.6rem, 10vw, 3.6rem); letter-spacing: 2px; line-height: 1.05; margin: 4px 0; }
 .mineHint { font-size: 13px; color: var(--fg-muted); margin: 0; }
 .confirmRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
 .confirm {
-  display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
   background: var(--accent); color: var(--on-accent); font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
 }
 .confirm:disabled { opacity: 0.6; cursor: default; }
 .confirmed { display: inline-flex; align-items: center; gap: 6px; margin: 14px 0 0; font-size: 13px; color: #6ee7b7; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-.fact { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; }
+.fact { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; }
 .factLabel { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; text-transform: uppercase; color: var(--fg-muted); }
 .factValue { font-size: 15px; }
 .map { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--fg); text-decoration: underline; margin-left: 6px; }
 
-.h2 { font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 10px; font-weight: 400; }
+.h2 { font-family: var(--mono); font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 10px; font-weight: 400; }
 .notes { white-space: pre-wrap; margin: 0; font-size: 14px; line-height: 1.6; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .num { font-family: var(--mono); color: var(--fg-muted); margin-right: 4px; }
@@ -52,8 +52,8 @@
 
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .secondary {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; cursor: pointer; text-decoration: none;
-  border: 1px solid rgba(var(--ink-rgb), 0.16); background: transparent; color: var(--fg); font-family: var(--mono); font-size: 10.5px; letter-spacing: 1px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; cursor: pointer; text-decoration: none;
+  border: 1px solid rgba(var(--ink-rgb), 0.16); background: transparent; color: var(--fg); font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
 }
 .confirm:focus-visible, .secondary:focus-visible, .map:focus-visible { outline: 2px solid var(--pa); outline-offset: 2px; }
 

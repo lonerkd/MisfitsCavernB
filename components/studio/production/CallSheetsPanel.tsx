@@ -159,7 +159,7 @@ function IssueBar({ sheet, state, crew, acks, onIssued }: {
   const dated = !!sheet?.shoot_date;
 
   return (
-    <div className={s.stack} style={{ gap: 8, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(var(--ink-rgb), 0.08)', background: 'rgba(var(--ink-rgb), 0.02)' }}>
+    <div className={s.stack} style={{ gap: 8, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.08)', background: 'rgba(var(--ink-rgb), 0.02)' }}>
       <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <span className={s.hint} role="status">
           {state.status === 'draft' && 'Draft — the crew haven’t been sent this yet.'}

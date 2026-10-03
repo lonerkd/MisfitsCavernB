@@ -87,7 +87,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 520, maxHeight: '100%', overflowY: 'auto',
+          width: '100%', maxWidth: 'var(--w-form)', maxHeight: '100%', overflowY: 'auto',
           background: 'var(--surface)',
           border: '1px solid rgba(var(--ink-rgb), 0.08)',
           borderRadius: 20,
@@ -156,7 +156,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
                   width: '100%', padding: '12px 14px 12px 32px',
                   background: 'rgba(var(--ink-rgb), 0.04)',
                   border: '1px solid rgba(var(--ink-rgb), 0.08)',
-                  borderRadius: 10, color: 'var(--fg)',
+                  borderRadius: 8, color: 'var(--fg)',
                   fontFamily: 'var(--mono)', fontSize: 12,
                   outline: 'none', boxSizing: 'border-box',
                 }}
@@ -171,7 +171,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
               marginTop: 6, padding: '14px',
               background: form.title ? '#8b5cf6' : 'rgba(var(--ink-rgb), 0.05)',
               color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
-              border: 'none', borderRadius: 12,
+              border: 'none', borderRadius: 14,
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5,
               textTransform: 'uppercase', fontWeight: 600,
               cursor: form.title ? 'pointer' : 'default',
@@ -205,6 +205,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
 
   return (
     <motion.div
+      data-testid="job-card"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
@@ -213,7 +214,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
       style={{
         background: 'var(--glass)',
         border: `1px solid ${hovered ? color + '33' : 'rgba(var(--ink-rgb), 0.06)'}`,
-        borderRadius: 16, padding: '22px 24px',
+        borderRadius: 14, padding: '22px 24px',
         position: 'relative', overflow: 'hidden',
         boxShadow: hovered ? `0 16px 48px rgba(0,0,0,0.6), 0 0 28px ${color}10` : '0 2px 8px rgba(0,0,0,0.3)',
         transition: 'border-color 0.3s, box-shadow 0.3s',
@@ -267,7 +268,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {job.rate && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 10, color }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, color }}>
                 <DollarSign size={10} /> {job.rate}/hr
               </div>
             )}
@@ -310,7 +311,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
             placeholder="Your experience, your reel, when you're free." rows={3} maxLength={2000} />
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button type="button" onClick={() => void send()} disabled={sending} style={{
-              padding: '9px 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', background: '#8b5cf6', color: '#fff',
+              padding: '9px 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', background: 'var(--jobs-color)', color: '#fff',
               fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
             }}>{sending ? 'Sending…' : 'Send application'}</button>
             <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase' }}>Cancel</button>
@@ -334,7 +335,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
       style={{
         background: 'var(--glass)',
         border: '1px solid rgba(var(--ink-rgb), 0.06)',
-        borderRadius: 16, padding: '20px 22px',
+        borderRadius: 14, padding: '20px 22px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -696,7 +697,7 @@ export default function JobsPage() {
                     width: '100%', padding: '12px 16px 12px 38px',
                     background: 'rgba(var(--ink-rgb), 0.03)',
                     border: '1px solid rgba(var(--ink-rgb), 0.07)',
-                    borderRadius: 12, color: 'var(--fg)',
+                    borderRadius: 14, color: 'var(--fg)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                     outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.2s',
@@ -769,7 +770,7 @@ export default function JobsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
               <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
               <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
             </div>
           )}
@@ -802,19 +803,19 @@ export default function JobsPage() {
                 Applied to · {myApps.length}
               </h2>
               {myApps.length === 0 ? (
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-muted)' }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
                   Nothing yet. <button type="button" onClick={() => setTab('open')} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--fg)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit' }}>Browse open roles</button>
                 </p>
               ) : (
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {myApps.filter((a) => a.jobs).map((a) => (
-                    <li key={a.jobs!.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(var(--ink-rgb), 0.06)', background: 'var(--glass)' }}>
+                    <li key={a.jobs!.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.06)', background: 'var(--glass)' }}>
                       <Link href={`/jobs/${a.jobs!.id}`} style={{ flex: 1, minWidth: 0, color: 'var(--fg)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 11 }}>
                         {a.jobs!.title}
                         <span style={{ color: 'var(--fg-muted)' }}> · {a.jobs!.role}{a.jobs!.projects?.title ? ` · ${a.jobs!.projects.title}` : ''}{a.jobs!.status === 'closed' ? ' · closed' : ''}</span>
                       </Link>
                       <span style={{
-                        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 99,
+                        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 9999,
                         color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
                         border: '1px solid rgba(var(--ink-rgb), 0.1)',
                       }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>

@@ -4,7 +4,7 @@
 .wrap { position: relative; display: inline-block; width: 100%; }
 .trigger {
   width: 100%; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px;
-  border-radius: 10px; border: 1px solid rgba(var(--fg-rgb), 0.16); background: rgba(var(--fg-rgb), 0.03);
+  border-radius: 8px; border: 1px solid rgba(var(--fg-rgb), 0.16); background: rgba(var(--fg-rgb), 0.03);
   color: var(--fg); font-family: var(--mono); font-size: 12px; cursor: pointer; text-align: left;
 }
 .trigger:hover { border-color: rgba(var(--fg-rgb), 0.3); }
@@ -37,5 +37,5 @@
 .chip:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .chipOn { border-color: var(--c); background: color-mix(in srgb, var(--c) 26%, transparent); }
 .chip .dot { background: var(--c); }
-.clear { align-self: flex-start; background: none; border: none; color: var(--fg-dim); font-family: var(--mono); font-size: 10.5px; cursor: pointer; text-decoration: underline; padding: 2px 0; }
+.clear { align-self: flex-start; background: none; border: none; color: var(--fg-dim); font-family: var(--mono); font-size: 11px; cursor: pointer; text-decoration: underline; padding: 2px 0; }
 .empty { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); padding: 4px 2px; }

@@ -154,7 +154,7 @@ export default function AuditLogsPage() {
               color: '#0099ff',
               borderRadius: 4,
               fontFamily: 'var(--mono)',
-              fontSize: 10,
+              fontSize: 11,
               cursor: 'pointer',
             }}
           >
@@ -274,7 +274,7 @@ export default function AuditLogsPage() {
                 border: '1px solid rgba(var(--ink-rgb), 0.1)',
                 borderRadius: 4,
                 fontFamily: 'var(--mono)',
-                fontSize: 10,
+                fontSize: 11,
                 color: 'var(--fg)',
                 outline: 'none',
               }}
@@ -330,7 +330,7 @@ export default function AuditLogsPage() {
                           style={{
                             background: 'rgba(0,153,255,0.1)',
                             padding: '2px 8px',
-                            borderRadius: 3,
+                            borderRadius: 4,
                             color: '#0099ff',
                           }}
                         >
@@ -342,7 +342,7 @@ export default function AuditLogsPage() {
                           style={{
                             background: `${actionHex(log.action)}20`,
                             padding: '2px 8px',
-                            borderRadius: 3,
+                            borderRadius: 4,
                             color: readable(actionHex(log.action)),
                           }}
                         >
@@ -377,14 +377,14 @@ export default function AuditLogsPage() {
                   color: page === 0 ? 'rgba(var(--ink-rgb), 0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
-                  fontSize: 10,
+                  fontSize: 11,
                   cursor: page === 0 ? 'not-allowed' : 'pointer',
                 }}
               >
                 ← PREV
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                   Page {page + 1} of {totalPages} ({totalLogs} total)
                 </span>
               </div>
@@ -398,7 +398,7 @@ export default function AuditLogsPage() {
                   color: page >= totalPages - 1 ? 'rgba(var(--ink-rgb), 0.3)' : 'var(--accent)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
-                  fontSize: 10,
+                  fontSize: 11,
                   cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer',
                 }}
               >
@@ -423,7 +423,7 @@ export default function AuditLogsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
                 {activeUsers.map(user => (
                   <div key={user.userId} style={{ padding: 12, background: 'rgba(0,153,255,0.05)', borderRadius: 4 }}>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 10, marginBottom: 4 }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 4 }}>
                       {user.username}
                     </div>
                     <div style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent)' }}>

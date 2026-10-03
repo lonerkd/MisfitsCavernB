@@ -47,7 +47,7 @@ const SHORTCUTS: [string, string][] = [
 
 export function ShortcutsModal({ onClose }: { onClose: () => void }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
       <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 420, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Keyboard Shortcuts</h2>
@@ -77,7 +77,7 @@ export function GoToSceneModal({
   onClose: () => void;
 }) {
   return (
-    <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--surface)', backdropFilter: 'blur(24px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 16, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+    <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--surface)', backdropFilter: 'blur(24px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 14, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-strong)', marginBottom: 8 }}>Go to Scene</div>
       <input autoFocus type="number" min={1} max={sceneCount} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => {
         if (e.key === 'Enter') {
@@ -85,8 +85,8 @@ export function GoToSceneModal({
           if (num >= 1 && num <= sceneCount) onJump(num);
         }
         if (e.key === 'Escape') onClose();
-      }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 6, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
-      <div style={{ fontSize: 10, color: 'var(--fg-muted)', marginTop: 6 }}>{sceneCount} scenes · Press Enter to jump</div>
+      }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
+      <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>{sceneCount} scenes · Press Enter to jump</div>
     </motion.div>
   );
 }

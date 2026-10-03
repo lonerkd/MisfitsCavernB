@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   children: React.ReactNode;
@@ -26,14 +27,15 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
+      // Portalled: a boundary inside a sliding sidebar would otherwise only cover that sidebar.
+      return createPortal(
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', padding: 16,
           justifyContent: 'center', background: 'rgba(0,0,0,0.85)',
         }}>
           <div style={{
             background: 'var(--surface)', border: '1px solid rgba(239,68,68,0.3)',
-            borderRadius: 16, padding: 28, maxWidth: 380, textAlign: 'center',
+            borderRadius: 14, padding: 28, maxWidth: 380, textAlign: 'center',
           }}>
             <p style={{ color: 'var(--fg-strong)', fontSize: 14, marginBottom: 8 }}>This panel hit an error and had to close.</p>
             <p style={{ color: 'var(--fg-muted)', fontSize: 12, marginBottom: 16 }}>Your script content was not affected. You can keep writing.</p>
@@ -44,7 +46,8 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
               Dismiss
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       );
     }
     return this.props.children;

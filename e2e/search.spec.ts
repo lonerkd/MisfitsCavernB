@@ -57,9 +57,12 @@ test.describe('Suite-wide search (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
     await page.goto('/projects');
 
-    // A word written in the script, found by its start. The dock's search
-    // button opens the same palette as ⌘K.
-    const openSearch = () => page.getByRole('button', { name: 'Search (Command-K)' }).click({ timeout: 30_000 });
+    // A word written in the script, found by its start. The island's search
+    // button opens the same palette as ⌘K: reach for the island, then click it.
+    const openSearch = async () => {
+      await page.locator('[data-taskbar] .mc-taskbar').hover({ timeout: 30_000 });
+      await page.getByRole('button', { name: 'Search (Command-K)' }).click({ timeout: 30_000 });
+    };
     await openSearch();
     const palette = page.getByRole('dialog', { name: 'Search the suite' });
     await palette.getByRole('textbox', { name: 'Search the suite' }).fill(WORD.slice(0, -2));

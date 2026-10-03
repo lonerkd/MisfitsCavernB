@@ -123,7 +123,7 @@ export default function CrewMemberPage() {
           <User size={40} style={{ opacity: 0.2 }} />
           <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg-dim)' }}>PROFILE NOT FOUND</div>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 4, color: 'var(--fg-dim)' }}>This crew member doesn&apos;t exist or has been removed.</div>
-          <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
+          <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
             BACK TO CREW
           </Link>
         </div>
@@ -195,7 +195,7 @@ export default function CrewMemberPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               {profile.role && (
                 <span style={{
-                  fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
                   color: 'var(--accent)', textTransform: 'uppercase'
                 }}>
                   {profile.role}
@@ -211,7 +211,7 @@ export default function CrewMemberPage() {
               </span>
               {isOnline && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', letterSpacing: 1, color: 'var(--ok)' }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
                   Online now
                 </span>
               )}
@@ -221,17 +221,17 @@ export default function CrewMemberPage() {
               {profile.location && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.45 }}>
                   <MapPin size={11} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10 }}>{profile.location}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{profile.location}</span>
                 </div>
               )}
               {profile.discord_username && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.45 }}>
                   <MessageSquare size={11} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 10 }}>{profile.discord_username}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11 }}>{profile.discord_username}</span>
                 </div>
               )}
               {joinYear && (
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--fg-dim)' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
                   member since {joinYear}
                 </div>
               )}
@@ -265,7 +265,7 @@ export default function CrewMemberPage() {
             </h2>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {credits.map((c) => (
-                <li key={c.project_id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${c.accent_color || '#e8431a'}` }}>
+                <li key={c.project_id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${c.accent_color || '#e8431a'}` }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg)' }}>
                       {c.title}{c.year ? <span style={{ color: 'var(--fg-dim)', fontSize: 13 }}> ({c.year})</span> : null}
@@ -275,7 +275,7 @@ export default function CrewMemberPage() {
                     </div>
                   </div>
                   {viewerId === profile.id && (c.portfolio_project_id ? (
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: '#5fd99a' }}>In your portfolio</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#5fd99a' }}>In your portfolio</span>
                   ) : (
                     <button type="button" disabled={adding === c.project_id}
                       aria-label={`Add ${c.title} to your portfolio`}
@@ -288,7 +288,7 @@ export default function CrewMemberPage() {
                         } catch (e) { toast(e instanceof Error ? e.message : 'Could not add it', 'error'); }
                         finally { setAdding(null); }
                       }}
-                      style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', padding: '8px 12px', minHeight: 32, borderRadius: 8, border: '1px solid rgba(232, 67, 26,0.4)', background: 'rgba(232, 67, 26,0.1)', color: 'var(--fg)', cursor: 'pointer' }}>
+                      style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', padding: '8px 12px', minHeight: 32, borderRadius: 8, border: '1px solid rgba(232, 67, 26,0.4)', background: 'rgba(232, 67, 26,0.1)', color: 'var(--fg)', cursor: 'pointer' }}>
                       {adding === c.project_id ? 'Adding…' : 'Add to portfolio'}
                     </button>
                   ))}

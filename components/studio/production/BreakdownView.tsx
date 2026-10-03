@@ -96,7 +96,7 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
   };
 
   if (bd.status === 'loading' && !categories.length) {
-    return <div className="skeleton" style={{ height: 240, borderRadius: 14 }} aria-busy="true" aria-label="Loading the breakdown" />;
+    return <div className="skeleton" style={{ height: 240, borderRadius: 14 }} role="status" aria-busy="true" aria-label="Loading the breakdown" />;
   }
 
   return (

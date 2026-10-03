@@ -170,7 +170,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           style={{
             background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
-            borderRadius: 16, width: '100%', maxWidth: 960, maxHeight: '90vh',
+            borderRadius: 14, width: '100%', maxWidth: 960, maxHeight: '90vh',
             display: 'flex', flexDirection: 'column',
             boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
           }}
@@ -185,10 +185,10 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--display)', color: 'var(--fg)', letterSpacing: 0.5 }}>
                 Diff — <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{label}</span>
               </h3>
-              <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: 'var(--ok)', padding: '2px 8px', borderRadius: 99, fontFamily: 'var(--mono)' }}>
+              <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: 'var(--ok)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
                 +{stats.added}
               </span>
-              <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: 99, fontFamily: 'var(--mono)' }}>
+              <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
                 −{stats.removed}
               </span>
             </div>
@@ -201,7 +201,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                     title={m === 'lines' ? 'Line diff' : 'Word diff'}
                     style={{
                       background: mode === m ? 'rgba(var(--ink-rgb), 0.1)' : 'transparent',
-                      border: 'none', borderRadius: 6, padding: '4px 10px',
+                      border: 'none', borderRadius: 8, padding: '4px 10px',
                       color: mode === m ? 'var(--fg-strong)' : 'var(--fg-dim)',
                       cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
                       transition: 'all 0.15s',
@@ -240,7 +240,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                           : 'transparent',
                       color: part.added ? 'var(--ok)' : part.removed ? 'var(--danger)' : 'rgba(var(--ink-rgb), 0.65)',
                       textDecoration: part.removed ? 'line-through' : 'none',
-                      borderRadius: 3,
+                      borderRadius: 4,
                       padding: part.added || part.removed ? '0 2px' : 0,
                     }}
                   >
@@ -250,7 +250,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               </div>
             ) : (
               /* ── Line diff with hunks ────────────────────────── */
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 12.5 }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>
                 {hunks.map((hunk, hi) => {
                   const collapsed = collapsedHunks.has(hi);
 
@@ -287,7 +287,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                           padding: '4px 20px', cursor: 'pointer',
                           background: 'rgba(139,92,246,0.08)',
                           borderTop: hi > 0 ? '1px solid rgba(var(--ink-rgb), 0.04)' : 'none',
-                          color: 'var(--jobs-text)', fontSize: 11.5, userSelect: 'none',
+                          color: 'var(--jobs-text)', fontSize: 12, userSelect: 'none',
                         }}
                       >
                         {collapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
@@ -329,20 +329,20 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                               flex: 1, padding: '2px 12px 2px 0',
                               whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                               color: part.type === 'unchanged' ? 'rgba(var(--ink-rgb), 0.38)' : fg,
-                              fontSize: 12.5, lineHeight: 1.65,
+                              fontSize: 13, lineHeight: 1.65,
                             }}>
                               {part.removedParts ? (
                                 part.removedParts.map((w, wi) => (
                                   <span key={wi} style={{
                                     background: w.highlight ? 'rgba(239,68,68,0.35)' : 'transparent',
-                                    borderRadius: 2, padding: w.highlight ? '0 1px' : 0,
+                                    borderRadius: 4, padding: w.highlight ? '0 1px' : 0,
                                   }}>{w.text}</span>
                                 ))
                               ) : part.addedParts ? (
                                 part.addedParts.map((w, wi) => (
                                   <span key={wi} style={{
                                     background: w.highlight ? 'rgba(16,185,129,0.35)' : 'transparent',
-                                    borderRadius: 2, padding: w.highlight ? '0 1px' : 0,
+                                    borderRadius: 4, padding: w.highlight ? '0 1px' : 0,
                                   }}>{w.text}</span>
                                 ))
                               ) : (
