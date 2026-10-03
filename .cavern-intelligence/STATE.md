@@ -22,17 +22,80 @@ What is unfinished, so any session (local or cloud) can pick it up.
    - have a lawyer read `/privacy` and `/terms`;
    - switch on leaked-password protection (Supabase dashboard › Auth ›
      Passwords).
-3. **React Compiler lint warnings (~146).** The react-hooks v7 rules are
-   `warn` in `eslint.config.mjs`. Rework that code a module at a time, then
-   turn each rule back to `error`.
-4. **Open PRs**: #111 (Studio tab scroll), #115 (lucide-react). Two stashes
+3. **React Compiler lint warnings.** Still `warn` in `eslint.config.mjs`:
+   `set-state-in-effect`, `refs`, `preserve-manual-memoization` (counts in the
+   latest session below). Rework that code a module at a time
+   (`npx eslint <file>` lists them), then turn each rule back to `error`.
+4. **Open PRs**: #111 (Studio tab scroll, stacked on this branch). Two stashes
    from June–July (`stash@{1}`, `stash@{2}`) predate the rewrites and were
    never reconciled — look before dropping.
 
 Done since this list was written: the advisor-fixes migration is in production
-(below), and dialogs open above the dock — which is now the island (below).
+(below), dialogs open above the dock — which is now the island (below), lint
+pass 1 (below), and #115 is merged.
 
-## Latest Session — The island, and dialogs above it
+## Latest Session — Main merged into the design scales (lint pass 1, dialog layer, icons)
+
+No migration.
+
+- `main` merged into this branch (PR #96): #115 (lucide-react), #117 (dialogs
+  above the dock) and #118 (lint pass 1). Where both sides touched a line, the
+  design scales' values won (11px text floor, radius scale, width tokens,
+  16px dialog gutter) and main's structure stayed: error pages link home with
+  `<Link>`, `purity` / `static-components` / `immutability` are errors, the
+  layout guard checks a dialog's button isn't covered. The island dock kept
+  its rewrite (main's only dock change was in the carousel the island removed).
+- On the merged tree: types, lint (0 errors, 121 warnings: `set-state-in-effect` 93,
+  `refs` 21, `preserve-manual-memoization` 7), 452 unit tests, build and the
+  page-weight budget pass.
+
+## Earlier — Lint pass 1 (on main): what the React Compiler rules caught
+
+No migration.
+
+- **148 → 122 warnings; `immutability`, `purity` and `static-components` are
+  errors again** (each reached zero). What they found:
+  - **Effects calling functions declared below them** (admin, admin users,
+    crew, jobs, portfolio manage, the dock's cleanup; the editor's key
+    handler and Split listener): moved below, unchanged. Worked at runtime,
+    but the compiler couldn't prove it. (`set-state-in-effect` rose 90 → 94:
+    it can now see into those functions.)
+  - **Time read while rendering** (job "days ago", Lounge activity, project
+    timeline): `useNow()` (`lib/hooks/useNow.ts`) reads it once per mount.
+    The Lounge loading skeleton's random bar widths, which differed between
+    server and browser, are fixed.
+  - **Button's `MotionLink` was created inside the component**, so every
+    render made a new component type and remounted the link (losing its
+    hover/tap state). Made once, at module level.
+- Error pages' "Go home" / "Back to projects" are `<Link>`s, not buttons that
+  set `window.location`; jobs' "sign in to apply" and profile sign-out use the
+  router (profile now matches Settings and ⌘K).
+- Unused `eslint-disable` comments removed; `eslint.config.mjs` exports a named
+  config.
+
+## Earlier — Dialogs open above the dock (on main; the island carries the same layer)
+
+No migration.
+
+- **One layer for dialogs: `--z-modal` (99990)** in `globals.css`, with the
+  stacking order written beside it: dock 9999, phone tab bar 10000, dialogs
+  99990, toasts 99997, Confirm 99998. On a short screen the dock had covered
+  the bottom of dialogs below it — their Create/Save buttons.
+- Moved onto it: Start a project, the job dialog, the portfolio Project
+  Bible, the editor's title, Character Bible and shortcuts dialogs and its
+  error screen, Recruit Talent (crew boards), the pitch deck presenter, the
+  phase-unlock reveal, and (already above the dock, now on the token) the
+  Lounge and Studio dialogs. Every new full-screen dialog uses
+  `zIndex: 'var(--z-modal)'` (or `z-index: var(--z-modal)` in CSS).
+- Dialogs that are wider or taller than a phone now fit it and scroll inside
+  (`maxWidth`/`maxHeight: 100%`, `overflowY: auto`, 20px gutter).
+- Left as they are: the landing page's header menu (`Navigation`, a top
+  header, not a dialog) and the Studio drop hint (it ignores the pointer).
+- Test: `e2e/layout.spec.ts` opens Start a project on a 640px-tall desk
+  screen, scrolls it to the end and checks the Create button is what is drawn
+  there; on the old code the dock was.
+
+## Earlier — The island, and dialogs above it
 
 No migration.
 

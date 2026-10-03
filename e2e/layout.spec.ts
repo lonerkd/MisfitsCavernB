@@ -99,6 +99,26 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
     });
     expect(footerCovered, 'editor content runs under the dock').toBe(0);
 
+    // Dialogs open above the dock. On a short screen, "Start a project"
+    // scrolled to its end puts the Create button where the dock sits; whatever
+    // is drawn at that spot must be the button, not the dock.
+    await page.setViewportSize({ width: 1440, height: 640 });
+    await page.goto('/projects');
+    await page.getByRole('button', { name: 'New Project', exact: true }).click({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Start a project' })).toBeVisible();
+    await page.getByRole('textbox', { name: 'Title' }).fill(`Dock check ${TAG}`); // Create is disabled until then
+    await page.waitForTimeout(600); // the dialog animates in
+    const covered = await page.evaluate(() => {
+      const button = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Create project')!;
+      for (let el = button.parentElement; el; el = el.parentElement) el.scrollTop = el.scrollHeight;
+      const r = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, Math.min(r.bottom, window.innerHeight) - 4);
+      return hit && !button.contains(hit) ? (hit.closest('[data-taskbar]') ? 'the dock' : hit.tagName) : null;
+    });
+    expect(covered, 'the Create button of a dialog is covered').toBeNull();
+    await page.keyboard.press('Escape');
+    await page.setViewportSize(DESK.viewport);
+
     // Nothing scrolls sideways at desk size.
     for (const path of ['/today', '/projects', `/projects/${projectId}`, '/studio', '/lounge', '/jobs', '/crew']) {
       await page.goto(path);

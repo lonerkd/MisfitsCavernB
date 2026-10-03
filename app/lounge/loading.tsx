@@ -52,7 +52,7 @@ export default function LoungeLoading() {
               key={i}
               style={{
                 height: 40,
-                width: `${40 + Math.random() * 50}%`,
+                width: `${40 + ((i * 37) % 50)}%`, // varied but the same on server and browser
                 background: 'rgba(var(--ink-rgb), 0.03)',
                 borderRadius: 8,
               }}

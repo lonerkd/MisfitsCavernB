@@ -6,6 +6,11 @@
    DESIGN TOKENS
 ═══════════════════════════════ */
 :root {
+  /* Layers. The dock (9999) and phone tab bar (10000) sit over the page;
+     full-screen dialogs go above them, toasts (99997) and Confirm (99998)
+     above those. Every dialog uses --z-modal so none hides under the dock. */
+  --z-modal: 99990;
+
   /* Typefaces — backed by next/font CSS variables (self-hosted) */
   --display: var(--font-display), 'Bebas Neue', sans-serif;
   --mono: var(--font-mono), 'DM Mono', monospace;

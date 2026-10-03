@@ -18,10 +18,6 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
   const loadStats = async () => {
     try {
       const platformStats = await getPlatformStats();
@@ -38,6 +34,10 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
 
   return (
     <ProtectedPage requiredPermission="manage_users">
