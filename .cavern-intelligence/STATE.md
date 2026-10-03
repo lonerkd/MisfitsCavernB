@@ -26,15 +26,16 @@ What is unfinished, so any session (local or cloud) can pick it up.
    `set-state-in-effect`, `refs`, `preserve-manual-memoization` (counts in the
    latest session below). Rework that code a module at a time
    (`npx eslint <file>` lists them), then turn each rule back to `error`.
-4. **Open PRs**: #111 (Studio tab scroll, stacked on this branch). Two stashes
-   from June–July (`stash@{1}`, `stash@{2}`) predate the rewrites and were
-   never reconciled — look before dropping.
+4. **Old stashes** (on the machine that made the island branch): two from
+   June–July (`stash@{1}`, `stash@{2}`) predate the rewrites and were never
+   reconciled — look before dropping.
 
 Done since this list was written: the advisor-fixes migration is in production
 (below), dialogs open above the dock — which is now the island (below), lint
-pass 1 (below), and #115 is merged.
+pass 1 (below), #115 is merged, and the design scales + island (#96) and the
+Studio tab scroll (#111) are merged into `main`. No PRs are open.
 
-## Latest Session — Main merged into the design scales (lint pass 1, dialog layer, icons)
+## Latest Session — Main merged into the design scales (lint pass 1, dialog layer, icons); #96 and #111 merged
 
 No migration.
 
