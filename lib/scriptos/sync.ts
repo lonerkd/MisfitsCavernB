@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
 
@@ -35,7 +35,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
   const lastRemoteRef = useRef<string>('');
   const lastLocalEditRef = useRef<number>(0);
   const lastCursorSentRef = useRef<number>(0);
-  localRef.current = localContent;
+  useLayoutEffect(() => { localRef.current = localContent; });
 
   const noteLocalEdit = useCallback(() => { lastLocalEditRef.current = Date.now(); }, []);
 

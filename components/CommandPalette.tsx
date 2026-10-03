@@ -9,6 +9,7 @@ import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
 import { HIT_KINDS, hitTarget, searchSuite, searchable, type HitKind, type SearchHit } from '@/lib/search';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const HIT_ICON: Record<HitKind, React.ReactNode> = {
   project: <Film size={15} />, script: <FileText size={15} />, scene: <Clapperboard size={15} />, character: <UserRound size={15} />,
@@ -82,7 +83,7 @@ export default function CommandPalette() {
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('mc-open-command-palette', onOpen); };
   }, []);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useOnChange(pathname, () => setOpen(false));
 
   useEffect(() => {
     if (open) {

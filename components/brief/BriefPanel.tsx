@@ -11,6 +11,7 @@ import {
   sceneList, type BriefQuestion, type BriefValue, type Evidence, type Move, type ProjectBrief,
 } from '@/lib/brief';
 import b from './brief.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const ICON = { warn: AlertTriangle, gap: CircleDashed, tip: Lightbulb, ask: HelpCircle } as const;
 
@@ -18,7 +19,7 @@ const ICON = { warn: AlertTriangle, gap: CircleDashed, tip: Lightbulb, ask: Help
 export function Question({ q, value, disabled, onAnswer, found = [] }: { q: BriefQuestion; value: BriefValue | undefined; disabled: boolean; onAnswer: (v: BriefValue | null) => void; found?: Evidence[] }) {
   const id = `brief-${q.key}`;
   const [draft, setDraft] = useState(typeof value === 'number' ? String(value) : '');
-  useEffect(() => { setDraft(typeof value === 'number' ? String(value) : ''); }, [value]);
+  useOnChange(value, (v) => setDraft(typeof v === 'number' ? String(v) : ''));
 
   if (q.kind === 'number') {
     const commit = () => {
@@ -115,7 +116,7 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
   const { toast } = useToast();
   const [tab, setTab] = useState<Phase>(phase);
   const [showAll, setShowAll] = useState(false);
-  useEffect(() => { setTab(phase); }, [phase]);
+  useOnChange(phase, (p) => setTab(p));
 
   const visible = useMemo(() => visibleQuestions(brief.questions, brief.answers, format), [brief.questions, brief.answers, format]);
   const phases = PHASES.filter((p) => visible.some((q) => q.phase === p.id));

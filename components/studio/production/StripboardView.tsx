@@ -119,16 +119,26 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
     w.document.close();
   };
 
-  const dropProps = (day: number) => ({
-    onDragOver: (e: React.DragEvent) => { if (dragId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dropDay !== day) setDropDay(day); } },
-    onDragLeave: (e: React.DragEvent) => { if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) setDropDay((d) => (d === day ? null : d)); },
-    onDrop: (e: React.DragEvent) => {
-      e.preventDefault();
-      const sc = list.find((x) => x.id === (e.dataTransfer.getData('text/plain') || dragId));
-      setDragId(null); setDropDay(null);
-      if (sc) void moveTo(sc, day);
-    },
-  });
+  // One set of drop handlers for every day; the day comes from the section's data-day.
+  const dayOf = (e: React.DragEvent) => Number((e.currentTarget as HTMLElement).dataset.day);
+  const onDayDragOver = (e: React.DragEvent) => {
+    if (!dragId) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    const day = dayOf(e);
+    if (dropDay !== day) setDropDay(day);
+  };
+  const onDayDragLeave = (e: React.DragEvent) => {
+    if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) return;
+    const day = dayOf(e);
+    setDropDay((d) => (d === day ? null : d));
+  };
+  const onDayDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const day = dayOf(e);
+    const sc = list.find((x) => x.id === (e.dataTransfer.getData('text/plain') || dragId));
+    setDragId(null); setDropDay(null);
+    if (sc) void moveTo(sc, day);
+  };
 
   return (
     <div className={s.panel}>
@@ -161,7 +171,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
               const date = dateOf.get(d.day);
               const fill = Math.min(100, Math.round((d.eighths / capacity) * 100));
               return (
-                <section key={d.day} aria-labelledby={`day-${d.day}`} className={cx(b.day, d.over && b.dayOver, dropDay === d.day && b.dayDrop)} {...dropProps(d.day)}>
+                <section key={d.day} aria-labelledby={`day-${d.day}`} className={cx(b.day, d.over && b.dayOver, dropDay === d.day && b.dayDrop)} data-day={d.day} onDragOver={onDayDragOver} onDragLeave={onDayDragLeave} onDrop={onDayDrop}>
                   <div className={b.dayHead}>
                     <h3 id={`day-${d.day}`} className={b.dayName}>Day {d.day}</h3>
                     <span className={b.dayDate}>{date ? new Date(`${date}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) : 'No date yet'}</span>
@@ -227,7 +237,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                 </section>
               );
             })}
-            <section aria-label="A new shoot day" className={cx(b.day, b.dayNew, dropDay === board.length + 1 && b.dayDrop)} {...dropProps(board.length + 1)}>
+            <section aria-label="A new shoot day" className={cx(b.day, b.dayNew, dropDay === board.length + 1 && b.dayDrop)} data-day={board.length + 1} onDragOver={onDayDragOver} onDragLeave={onDayDragLeave} onDrop={onDayDrop}>
               <div className={b.dayName} style={{ fontSize: '1.1rem' }}>Day {board.length + 1}</div>
               <p className={b.hint} style={{ margin: 0 }}>Drop a scene here to add a shoot day.</p>
             </section>

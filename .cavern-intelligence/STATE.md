@@ -22,10 +22,10 @@ What is unfinished, so any session (local or cloud) can pick it up.
    - have a lawyer read `/privacy` and `/terms`;
    - switch on leaked-password protection (Supabase dashboard › Auth ›
      Passwords).
-3. **React Compiler lint warnings.** Still `warn` in `eslint.config.mjs`:
-   `set-state-in-effect`, `refs`, `preserve-manual-memoization` (counts in the
-   latest session below). Rework that code a module at a time
-   (`npx eslint <file>` lists them), then turn each rule back to `error`.
+3. **React Compiler lint warnings.** `refs` and `preserve-manual-memoization`
+   are errors again (lint pass 2, below). Still `warn`: `set-state-in-effect`
+   (64). Rework that code a module at a time (`npx eslint <file>` lists
+   them; the patterns are in the session below), then make it an `error`.
 4. **Old stashes** (on the machine that made the island branch): two from
    June–July (`stash@{1}`, `stash@{2}`) predate the rewrites and were never
    reconciled — look before dropping.
@@ -35,7 +35,32 @@ Done since this list was written: the advisor-fixes migration is in production
 pass 1 (below), #115 is merged, and the design scales + island (#96) and the
 Studio tab scroll (#111) are merged into `main`. No PRs are open.
 
-## Latest Session — Main merged into the design scales (lint pass 1, dialog layer, icons); #96 and #111 merged
+## Latest Session — Lint pass 2 (part 1): refs and manual memoization are errors again
+
+No migration.
+
+- **121 → 64 warnings.** `refs` and `preserve-manual-memoization` reached zero
+  and are errors; `set-state-in-effect` went 93 → 64. The patterns, for the
+  rest of the pass:
+  - **A ref holding the latest value** is written in
+    `useLayoutEffect(() => { ref.current = value; })`, never while rendering.
+  - **State that follows a prop** (a draft following its value, a menu that
+    closes when the route changes, a reset when the project or script
+    switches) is adjusted while rendering with `useOnChange(value, fn)`
+    (`lib/hooks/useOnChange.ts`), not in an effect. Anything that changes
+    *another* component's state or the DOM stays in an effect.
+  - **State copied from other state by an effect** is derived instead: the
+    editor's parse results (`useDeferredValue` + `useMemo`), its find count,
+    the crew page's mode, the sprint length.
+  - **Callbacks a timer or effect calls** that read current state are
+    `useEffectEvent`s (the writing sprint's tick, the editor's jump to a cut
+    note), so the effect doesn't restart on every change.
+  - **Handlers aren't built while rendering**: one handler reads a `data-*`
+    attribute (stripboard drop targets) or is chosen by label (left nav).
+- Validated: types, lint, 452 unit tests, build, page-weight budget, and the
+  e2e suite on the local stack.
+
+## Earlier — Main merged into the design scales (lint pass 1, dialog layer, icons); #96 and #111 merged
 
 No migration.
 

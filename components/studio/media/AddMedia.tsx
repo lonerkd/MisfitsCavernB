@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertCircle, Link2, RotateCw, Upload, X } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { ACCEPTED_UPLOAD_TYPES, studio, type Media } from '@/lib/studio';
@@ -174,7 +174,7 @@ export function useFileDrop(onFiles: (files: File[]) => void, enabled = true) {
   const [over, setOver] = useState(false);
   const depth = useRef(0);
   const cb = useRef(onFiles);
-  cb.current = onFiles;
+  useLayoutEffect(() => { cb.current = onFiles; });
   useEffect(() => {
     if (!enabled) return;
     const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');

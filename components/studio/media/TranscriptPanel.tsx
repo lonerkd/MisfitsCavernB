@@ -6,7 +6,7 @@
 // is highlighted. Star a line to put it in the project's paper edit
 // (Studio › Post › Paper edit).
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ClipboardPaste, Copy, Mic, MicOff, Plus, Star, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
@@ -50,7 +50,7 @@ export function TranscriptPanel({ item, player }: { item: Media; player: HTMLMed
   // Where the next line goes: past every line here, including ones still on
   // their way (dictation adds a line per sentence, faster than the echo).
   const posRef = useRef(-1);
-  posRef.current = Math.max(posRef.current, lastPos);
+  useLayoutEffect(() => { posRef.current = Math.max(posRef.current, lastPos); });
 
   const [query, setQuery] = useState('');
   const [importing, setImporting] = useState(false);
@@ -59,7 +59,7 @@ export function TranscriptPanel({ item, player }: { item: Media; player: HTMLMed
   const [stamp, setStamp] = useState('');
   const [speaker, setSpeaker] = useState('');
   const speakerRef = useRef('');
-  speakerRef.current = speaker;
+  useLayoutEffect(() => { speakerRef.current = speaker; });
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState<number | null>(null);

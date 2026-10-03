@@ -19,6 +19,7 @@ import { CutScript, type LinePick } from '../post/CutScript';
 import { PaperEdit } from '../post/PaperEdit';
 import { SectionHeader, ErrorBar, cx } from '../ui';
 import s from '../studio.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 type View = 'review' | 'paper' | 'pipeline';
 const DEPT_LABEL = POST_DEPT_LABEL;
@@ -97,7 +98,7 @@ function ReviewView({ deepLink }: { deepLink: { cut: string; t: number | null } 
   const [picked, setPicked] = useState<LinePick | null>(null);
   const [shownScene, setShownScene] = useState<string | null>(null);
   const onShown = useCallback((id: string | null) => setShownScene(id), []);
-  useEffect(() => { setPicked(null); }, [cut?.id]);
+  useOnChange(cut?.id, () => setPicked(null));
 
   const videos = useMemo(() => media.rows.filter((m) => m.kind === 'video'), [media.rows]);
   const cutMedia = cut?.media_id ? mediaById.get(cut.media_id) : undefined;
@@ -193,7 +194,8 @@ function NoteComposer({ cutId, live, player, scenes, picked, shownScene, onAdded
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   // Untying applies to the scene it was untied from.
-  useEffect(() => { setLoose(false); }, [shownScene, picked]);
+  useOnChange(shownScene, () => setLoose(false));
+  useOnChange(picked, () => setLoose(false));
   const sceneId = picked?.sceneId ?? (loose ? null : shownScene);
   const scene = scenes.find((sc) => sc.id === sceneId);
 

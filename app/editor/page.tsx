@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
@@ -111,19 +111,35 @@ export default function EditorPage() {
   const confirm = useConfirm();
   // Latest toast for the run-once init effect, without re-running it.
   const toastRef = useRef(toast);
-  toastRef.current = toast;
+  useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
   const stash = useScriptStash(currentScript?.id ?? null);
+  // No script, no margin notes; a script's own load in the effect below.
+  const [annotationsFor, setAnnotationsFor] = useState(currentScript?.id);
+  if (annotationsFor !== currentScript?.id) {
+    setAnnotationsFor(currentScript?.id);
+    if (!currentScript?.id) setAnnotations([]);
+  }
   useEffect(() => {
     if (currentScript?.id) reloadAnnotations(currentScript.id);
-    else setAnnotations([]);
   }, [currentScript?.id, reloadAnnotations]);
 
-  const [lines, setLines] = useState<ScriptLine[]>([]);
-  const [parsedScenes, setParsedScenes] = useState<ParsedScene[]>([]);
+  // Everything the text implies — lines, scenes, character stats, lint — worked
+  // out from it. Deferred, so typing stays quick on a long script.
+  const parseSource = useDeferredValue(content);
+  const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
+    if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
+    const result = parseScript(parseSource);
+    return {
+      lines: result.lines,
+      parsedScenes: result.scenes,
+      charStats: analyzeCharacters(result.lines, result.scenes),
+      lintIssues: validateScript(result.lines, parseSource, result.scenes, result.characters),
+    };
+  }, [parseSource]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -132,26 +148,27 @@ export default function EditorPage() {
     return heading ? { ordinal, heading } : null;
   }, [lines, parsedScenes]);
 
+  const annotScriptId = currentScript?.id;
   const submitAnnotation = useCallback(async () => {
-    if (!annotationDraft || !currentScript?.id || !annotationDraft.text.trim()) return;
+    if (!annotationDraft || !annotScriptId || !annotationDraft.text.trim()) return;
     try {
-      const a = await addAnnotation({ scriptId: currentScript.id, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), scene: sceneAtLine(annotationDraft.line) });
-      reloadAnnotations(currentScript.id);
+      const a = await addAnnotation({ scriptId: annotScriptId, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), scene: sceneAtLine(annotationDraft.line) });
+      reloadAnnotations(annotScriptId);
       setAnnotationDraft(null);
       if (a.routed_table) toast(`${ANNOTATION_META[a.type].label} added to ${ANNOTATION_META[a.type].routesTo}`, 'success');
     } catch (e: any) {
       toast(e?.message || 'Could not add that note', 'error');
     }
-  }, [annotationDraft, currentScript?.id, reloadAnnotations, sceneAtLine, toast]);
+  }, [annotationDraft, annotScriptId, reloadAnnotations, sceneAtLine, toast]);
 
   const removeAnnotation = useCallback(async (id: string) => {
-    if (!currentScript?.id) return;
+    if (!annotScriptId) return;
     const a = annotations.find(x => x.id === id);
     const kept = a?.routed_table ? ` The ${ANNOTATION_META[a.type].label.toLowerCase()} it created stays.` : '';
     if (!await confirm(`Remove this margin note?${kept}`)) return;
     setAnnotations(prev => prev.filter(x => x.id !== id));
-    try { await deleteAnnotation(id); } catch (e: any) { toast(e?.message || 'Could not remove that note', 'error'); reloadAnnotations(currentScript.id); }
-  }, [annotations, confirm, currentScript?.id, reloadAnnotations, toast]);
+    try { await deleteAnnotation(id); } catch (e: any) { toast(e?.message || 'Could not remove that note', 'error'); reloadAnnotations(annotScriptId); }
+  }, [annotations, confirm, annotScriptId, reloadAnnotations, toast]);
 
   const [scripts, setScripts] = useState<StoredScript[]>([]);
 
@@ -187,13 +204,15 @@ export default function EditorPage() {
 
   const [showFindReplace, setShowFindReplace] = useState(false);
   const [findText, setFindText] = useState('');
+  const findCount = useMemo(() => {
+    if (!findText || !content) return 0;
+    const matches = content.match(new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'));
+    return matches ? matches.length : 0;
+  }, [findText, content]);
   const [replaceText, setReplaceText] = useState('');
-  const [findCount, setFindCount] = useState(0);
 
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
   const [revisions, setRevisions] = useState<Revision[]>([]);
-  const [charStats, setCharStats] = useState<CharacterStats[]>([]);
-  const [lintIssues, setLintIssues] = useState<LintIssue[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
 
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
@@ -240,31 +259,37 @@ export default function EditorPage() {
     loadCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
-  }, []);
+  }, [setActiveView]);
 
+  const [castingsFor, setCastingsFor] = useState(activeProject?.id);
+  if (castingsFor !== activeProject?.id) {
+    setCastingsFor(activeProject?.id);
+    if (!activeProject?.id) { setCastings({}); setProjectCrew([]); }
+  }
   useEffect(() => {
-    if (!activeProject?.id) { setCastings({}); setProjectCrew([]); return; }
+    if (!activeProject?.id) return;
     getCastingsForProject(activeProject.id).then(setCastings).catch(console.error);
     getProjectCrew(activeProject.id).then(setProjectCrew).catch(console.error);
   }, [activeProject?.id]);
 
+  const castProjectId = activeProject?.id;
   const handleCastCharacter = useCallback(async (characterName: string, crewUserId: string) => {
-    if (!activeProject?.id) return;
+    if (!castProjectId) return;
     try {
       const auth = { user: await awaitOSUser() };
       if (!auth.user) return;
       if (!crewUserId) {
-        await removeCasting(activeProject.id, characterName);
+        await removeCasting(castProjectId, characterName);
         setCastings(prev => { const next = { ...prev }; delete next[characterName.toUpperCase()]; return next; });
         return;
       }
-      await setCasting(activeProject.id, characterName, crewUserId, auth.user.id);
-      const updated = await getCastingsForProject(activeProject.id);
+      await setCasting(castProjectId, characterName, crewUserId, auth.user.id);
+      const updated = await getCastingsForProject(castProjectId);
       setCastings(updated);
     } catch (e: any) {
       toast(e.message || 'Could not update casting', 'error');
     }
-  }, [activeProject?.id, toast]);
+  }, [castProjectId, toast]);
 
   // Which script opens: ?script=<id> (links from the Studio) wins; otherwise
   // the active project's script (the effect below); otherwise the writer's
@@ -274,7 +299,7 @@ export default function EditorPage() {
   const linkedScriptId = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('script') : null);
   const projectAtLink = useRef<string | null>(null);
   const currentScriptRef = useRef<StoredScript | null>(null);
-  currentScriptRef.current = currentScript;
+  useLayoutEffect(() => { currentScriptRef.current = currentScript; });
 
   /** Open a project's most recent script (creating one if it has none). */
   const openProjectScript = useCallback(async (project: { id: string; title: string; type?: string; settings?: { defaultScriptFormat?: string } }, isCancelled: () => boolean = () => false) => {
@@ -428,7 +453,20 @@ export default function EditorPage() {
   }, []);
 
   useEffect(() => () => { tableReadEngineRef.current?.stop(); }, []);
-  useEffect(() => { stopTableRead(); }, [currentScript?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Switching scripts: no undo history or table read carries over. State resets
+  // as the new script renders; the reading engine and pending snapshot after.
+  const [scriptShown, setScriptShown] = useState(currentScript?.id);
+  if (scriptShown !== currentScript?.id) {
+    setScriptShown(currentScript?.id);
+    setTableReadPlaying(false);
+    setTableReadLineIdx(null);
+    setHistory({ past: [], future: [] });
+  }
+  useEffect(() => {
+    tableReadEngineRef.current?.stop();
+    readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
+    pendingSnapshotRef.current = null;
+  }, [currentScript?.id]);
 
   const noteHistoryEdit = useCallback((prevContent: string) => {
     if (pendingSnapshotRef.current == null) pendingSnapshotRef.current = prevContent;
@@ -463,10 +501,6 @@ export default function EditorPage() {
     });
   }, [content]);
 
-  useEffect(() => {
-    setHistory({ past: [], future: [] });
-    pendingSnapshotRef.current = null;
-  }, [currentScript?.id]);
 
   useEffect(() => {
     if (tableReadLineIdx == null || !textareaRef.current) return;
@@ -475,21 +509,6 @@ export default function EditorPage() {
     const targetScroll = (tableReadLineIdx * lineHeight) - (window.innerHeight * 0.3);
     textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
   }, [tableReadLineIdx]);
-
-  useEffect(() => {
-    if (content) {
-      const result = parseScript(content);
-      setLines(result.lines);
-      setParsedScenes(result.scenes);
-      setCharStats(analyzeCharacters(result.lines, result.scenes));
-      setLintIssues(validateScript(result.lines, content, result.scenes, result.characters));
-    } else {
-      setLines([]);
-      setParsedScenes([]);
-      setCharStats([]);
-      setLintIssues([]);
-    }
-  }, [content]);
 
   useEffect(() => {
     if (!currentScript) return;
@@ -518,15 +537,6 @@ export default function EditorPage() {
     }
   }, [content, typewriterMode, activeView]);
 
-  useEffect(() => {
-    if (findText && content) {
-      const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      const matches = content.match(regex);
-      setFindCount(matches ? matches.length : 0);
-    } else {
-      setFindCount(0);
-    }
-  }, [findText, content]);
 
   useEffect(() => {
     if (!currentScript) return;
@@ -936,7 +946,7 @@ export default function EditorPage() {
   // Scene index, notes and colours (public.scenes for project scripts; this
   // device for personal ones) — see components/editor/useEditorScenes.
   const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
-  saveReadRef.current = sceneIndex.saveRead;
+  useLayoutEffect(() => { saveReadRef.current = sceneIndex.saveRead; });
   const timing = useMemo(() => timeScript(lines, sceneIndex.reads), [lines, sceneIndex.reads]);
   const targetRuntime = useBriefAnswer(currentScript?.project_id, 'target_runtime');
   const editorProgress = useProjectProgress(currentScript?.project_id ?? null);
@@ -1061,7 +1071,7 @@ export default function EditorPage() {
     return () => clearTimeout(t);
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
-  jumpRef.current = jumpToScene;
+  useLayoutEffect(() => { jumpRef.current = jumpToScene; });
   // A cut note to open once its line is placed (?note=, or from the Studio pane).
   const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useSplitMessages((msg) => {
@@ -1088,31 +1098,41 @@ export default function EditorPage() {
   );
   const [cutNoteLine, setCutNoteLine] = useState<number | null>(null);
   const { setResolved: setCutNoteResolved } = lineCutNotes;
+  const cutNoteUserId = sessionUser?.id;
   const resolveCutNote = useCallback(async (note: LineCutNote, resolved: boolean) => {
-    if (!sessionUser?.id) return;
-    try { await setCutNoteResolved(note, sessionUser.id, resolved); }
+    if (!cutNoteUserId) return;
+    try { await setCutNoteResolved(note, cutNoteUserId, resolved); }
     catch (e) { toastRef.current(e instanceof Error ? e.message : 'Could not update the note', 'error'); }
-  }, [sessionUser?.id, setCutNoteResolved]);
+  }, [cutNoteUserId, setCutNoteResolved]);
   // "In script" on a cut note (?note=, or from the Studio pane): go to its line and open it.
-  useEffect(() => {
-    if (!pendingNote) return;
+  const pendingNoteLine = useMemo(() => {
+    if (!pendingNote) return null;
     const hit = [...cutNotesByLine.entries()].find(([, placed]) => placed.some((p) => p.note.id === pendingNote));
-    if (!hit) return;
-    const line = hit[0];
+    return hit ? hit[0] : null;
+  }, [pendingNote, cutNotesByLine]);
+  const [jumpLine, setJumpLine] = useState<number | null>(null);
+  if (pendingNoteLine != null) {
     setPendingNote(null);
     setActiveView('write');
-    window.setTimeout(() => {
-      const ta = textareaRef.current;
-      if (!ta) return;
-      const at = content.split('\n').slice(0, line).reduce((n, l) => n + l.length + 1, 0);
-      ta.focus();
-      ta.setSelectionRange(at, at);
-      setCursorLine(line);
-      const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
-      ta.scrollTop = Math.max(0, (line - 3) * lh);
-      setCutNoteLine(line);
-    }, 120);
-  }, [pendingNote, cutNotesByLine, content]);
+    setJumpLine(pendingNoteLine);
+  }
+  const jumpToNoteLine = useEffectEvent((line: number) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const at = content.split('\n').slice(0, line).reduce((n, l) => n + l.length + 1, 0);
+    ta.focus();
+    ta.setSelectionRange(at, at);
+    setCursorLine(line);
+    const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
+    ta.scrollTop = Math.max(0, (line - 3) * lh);
+    setCutNoteLine(line);
+  });
+  useEffect(() => {
+    if (jumpLine == null) return;
+    // Once the write view is on screen.
+    const t = window.setTimeout(() => { setJumpLine(null); jumpToNoteLine(jumpLine); }, 120);
+    return () => window.clearTimeout(t);
+  }, [jumpLine]);
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 

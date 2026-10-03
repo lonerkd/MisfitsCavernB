@@ -34,7 +34,7 @@ type DisplayMember = {
 export default function CrewPage() {
   const { activeProject } = useProject();
 
-  const [mode, setMode] = useState<'all' | 'project'>('all');
+  const [modeChoice, setMode] = useState<'all' | 'project'>('all');
 
   const [crew, setCrew] = useState<Profile[]>([]);
   const [projectCrew, setProjectCrew] = useState<CrewMember[]>([]);
@@ -51,9 +51,8 @@ export default function CrewPage() {
     awaitOSUser().then((user) => setViewerId(user?.id ?? null));
   }, []);
 
-  useEffect(() => {
-    if (mode === 'project' && !activeProject) setMode('all');
-  }, [mode, activeProject]);
+  // The project tab needs a project; without one it shows everyone.
+  const mode = modeChoice === 'project' && !activeProject ? 'all' : modeChoice;
 
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(search), 300);

@@ -8,6 +8,7 @@ import { breakdown, ELEMENT_STATUSES, type BreakdownElement, type BreakdownState
 import { readable } from '@/lib/color';
 import { CategoryChips, catStyle } from './CategoryChips';
 import b from './breakdown.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 export const STATUS_LABEL: Record<ElementStatus, string> = { needed: 'Needed', sourcing: 'Sourcing', ready: 'Ready' };
 export const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
@@ -34,7 +35,10 @@ export function ElementCard({ element, state, crew, scenes, scenesLabel, onJumpT
   const [name, setName] = useState(element.name);
   const [cost, setCost] = useState(element.cost == null ? '' : String(element.cost));
   const [notes, setNotes] = useState(element.notes ?? '');
-  useEffect(() => { setName(element.name); setCost(element.cost == null ? '' : String(element.cost)); setNotes(element.notes ?? ''); }, [element.name, element.cost, element.notes]);
+  // The saved values changed (here or elsewhere): show them.
+  useOnChange(`${element.name}\u0000${element.cost ?? ''}\u0000${element.notes ?? ''}`, () => {
+    setName(element.name); setCost(element.cost == null ? '' : String(element.cost)); setNotes(element.notes ?? '');
+  });
   const category = state.categoryById.get(element.category_id);
   const unitCost = category?.unit_cost ?? 0;
 

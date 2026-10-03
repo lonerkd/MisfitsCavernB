@@ -51,6 +51,7 @@ import type { CaretContext } from './breakdown/useEditorBreakdown';
 import { TagBar } from './breakdown/TagBar';
 import { readable } from '@/lib/color';
 import { CutNoteMarkers } from './CutNoteMarkers';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const EDITOR_CHAR_WIDTH = 9.6; // Courier Prime at 16px
 
@@ -65,7 +66,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
   const { bd, openBreakdown } = ctx;
   const [tagAt, setTagAt] = useState<{ ctx: CaretContext; top: number; left: number } | null>(null);
   const showMarks = bd.enabled && bd.mode;
-  useEffect(() => { if (!showMarks) setTagAt(null); }, [showMarks]);
+  useOnChange(showMarks, (on) => { if (!on) setTagAt(null); });
 
   /** Where the caret or selection is, for the tag bar (breakdown mode only). */
   const updateTagBar = (ta: HTMLTextAreaElement) => {

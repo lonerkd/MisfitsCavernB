@@ -106,7 +106,9 @@ export function PromosTab() {
       v.budget += Number(c.budget || 0); v.spend += Number(c.spend || 0); v.n += 1;
       m.set(c.platform, v);
     }
-    return [...m.entries()].sort((a, b) => b[1].budget - a[1].budget || b[1].n - a[1].n);
+    const rows = [...m.entries()];
+    rows.sort((a, b) => b[1].budget - a[1].budget || b[1].n - a[1].n);
+    return rows;
   }, [campaigns]);
   const maxBudget = Math.max(1, ...byPlatform.map(([, v]) => Math.max(v.budget, v.spend)));
 

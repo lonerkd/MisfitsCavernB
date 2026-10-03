@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { X, Keyboard } from 'lucide-react';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const GROUPS: { title: string; items: [string, string][] }[] = [
   {
@@ -65,7 +66,7 @@ export default function ShortcutsOverlay() {
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('mc-open-shortcuts', onOpen); };
   }, []);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useOnChange(pathname, () => setOpen(false));
 
   if (pathname === '/auth' || pathname === '/login') return null;
 

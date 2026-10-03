@@ -52,13 +52,14 @@ export default function SoundtrackPage() {
     if (data && !error) setSfxAssets(data);
   }, []);
 
+  const refsProjectId = activeProject?.id;
   const fetchProjectRefs = useCallback(async () => {
-    if (!activeProject?.id) return;
+    if (!refsProjectId) return;
     setLoadingRefs(true);
-    const { data, error } = await supabase.from('project_audio_references').select('*').eq('project_id', activeProject.id).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('project_audio_references').select('*').eq('project_id', refsProjectId).order('created_at', { ascending: false });
     if (data && !error) setProjectRefs(data);
     setLoadingRefs(false);
-  }, [activeProject?.id]);
+  }, [refsProjectId]);
 
   useEffect(() => {
     if (activeTab === 'sfx') fetchSfxAssets();

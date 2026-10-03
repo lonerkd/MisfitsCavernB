@@ -22,6 +22,7 @@ import { readable } from '@/lib/color';
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
 import s from './island/island.module.css';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
 
@@ -213,11 +214,12 @@ export default function EcosystemTaskbar() {
   const keys = deck && kbActive && !capsDismissed;
 
   useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current); }, []);
-  useEffect(() => { if (!kbActive) setCapsDismissed(false); }, [kbActive]);
+  useOnChange(kbActive, (on) => { if (!on) setCapsDismissed(false); });
 
   // A new page: put the island away.
+  useOnChange(pathname, () => { setProjectsOpen(false); setPinned(false); setHeld(false); setKbFocus(false); });
   useEffect(() => {
-    setProjectsOpen(false); setPinned(false); setHeld(false); setKbFocus(false); clearPin();
+    clearPin();
     const active = document.activeElement as HTMLElement | null;
     if (active && islandRef.current?.contains(active)) active.blur();
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -295,8 +297,8 @@ export default function EcosystemTaskbar() {
     ].slice(0, CONTROL_KEYS.length);
   }, [activeDescriptor, route, visibleApps.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { if (!keys) setKbFocusIndex(-1); }, [keys]);
-  useEffect(() => { setKbFocusIndex(-1); }, [controls.length]);
+  useOnChange(keys, (k) => { if (!k) setKbFocusIndex(-1); });
+  useOnChange(controls.length, () => setKbFocusIndex(-1));
   const focusedId = kbFocusIndex >= 0 ? controls[kbFocusIndex]?.id ?? null : null;
 
   const openSearch = () => window.dispatchEvent(new Event('mc-open-command-palette'));

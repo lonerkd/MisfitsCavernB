@@ -2,7 +2,7 @@
 // rules, as before. The React Compiler rules that arrived with it (react-hooks
 // v7) reported existing patterns across the app. Each is a warning only until
 // the code it flags is reworked; once a rule reaches zero it goes back to an
-// error so it stays there. Still warnings: the three below.
+// error so it stays there. Still a warning: `set-state-in-effect`.
 import coreWebVitals from 'eslint-config-next/core-web-vitals';
 
 const config = [
@@ -11,8 +11,6 @@ const config = [
   {
     rules: {
       'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/refs': 'warn',
-      'react-hooks/preserve-manual-memoization': 'warn',
       // The design scales (docs/DESIGN_DIRECTION_2026-09.md): the 11px text floor and the radius scale.
       'no-restricted-syntax': [
         "error",

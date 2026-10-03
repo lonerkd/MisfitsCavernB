@@ -7,6 +7,7 @@ import { Bell, Check, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Notification, fetchNotifications, markRead, markAllRead, deleteNotification, typeEnabled } from '@/lib/supabase/notifications';
 import { awaitOSUser } from '@/lib/os';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -52,7 +53,7 @@ export default function NotificationBell() {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
+  useOnChange(pathname, () => setOpen(false));
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => { if (!rootRef.current?.contains(e.target as Node)) setOpen(false); };

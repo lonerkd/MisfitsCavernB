@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { textOn } from '@/lib/color';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 export default function Avatar({ src, name, size = 40, radius, accent = 'var(--accent)', style }: {
   src?: string | null;
@@ -12,7 +13,7 @@ export default function Avatar({ src, name, size = 40, radius, accent = 'var(--a
   style?: React.CSSProperties;
 }) {
   const [broken, setBroken] = useState(false);
-  useEffect(() => { setBroken(false); }, [src]);
+  useOnChange(src, () => setBroken(false));
   const initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
   const br = radius ?? '50%';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import s from './studio.module.css';
@@ -61,7 +61,7 @@ export function ErrorBar({ message, onRetry }: { message: string; onRetry?: () =
 export function Modal({ title, onClose, children, actions, narrow }: { title: string; onClose: () => void; children: React.ReactNode; actions?: React.ReactNode; narrow?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useLayoutEffect(() => { closeRef.current = onClose; });
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;

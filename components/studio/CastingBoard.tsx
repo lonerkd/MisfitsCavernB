@@ -12,6 +12,7 @@ import { useStudio } from './StudioContext';
 import { useScriptCharacters } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { readable } from '@/lib/color';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
@@ -53,9 +54,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     try { setCastings(await getCastingsForProject(projectId)); } catch { /* shown as open roles */ }
   };
   useEffect(() => { void loadCastings(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setSelected((prev) => (prev && chars.some((c) => c.name === prev) ? prev : chars[0]?.name ?? null));
-  }, [scriptChars]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The script's characters changed: keep the selection if it's still one of them.
+  useOnChange(scriptChars, () => setSelected((prev) => (prev && chars.some((c) => c.name === prev) ? prev : chars[0]?.name ?? null)));
 
   const footprint = (name: string) => {
     const up = name.toUpperCase();

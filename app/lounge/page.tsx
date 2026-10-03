@@ -26,6 +26,7 @@ import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { awaitOSUser } from '@/lib/os';
 import { useProjectBrief, loadChannelPresets, suggestChannels, type ChannelPreset } from '@/lib/brief';
 import { mapStatusToPhase } from '@/lib/os/phases';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 
 interface Message {
   id: string;
@@ -276,7 +277,7 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
   const [joined, setJoined] = useState(false);
   const { peers, muted, toggleMute, micError, speaking } = useVoiceRoom(channel.id, me, joined);
 
-  useEffect(() => { setJoined(false); }, [channel.id]);
+  useOnChange(channel.id, () => setJoined(false));
 
   const everyone = joined && me ? [{ id: me.id, name: me.name, avatar: me.avatar, speaking, connected: true }, ...peers] : peers;
 
