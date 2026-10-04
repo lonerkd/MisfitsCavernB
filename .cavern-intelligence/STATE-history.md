@@ -2,6 +2,23 @@
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
 
+## Earlier — Dependency fixes; one scheduler
+
+No migration.
+
+- **`npm audit fix`** (patch bumps only: `dompurify`, `fflate`,
+  `brace-expansion`, `postcss-selector-parser`, the Next ESLint config):
+  production dependencies report **0** vulnerabilities. Left: 7 high in dev
+  tooling only (`braces`, via Tailwind's file watcher and
+  `eslint-config-next`), fixable only with breaking `--force` — watched in
+  BACKLOG 3.1.
+- **One scheduler**: deleted `lib/scriptos/schedule.ts`
+  (`generateShootingSchedule`) and its test. It worked from the parsed
+  screenplay text; its Studio card went with the Studio rebuild, once scenes
+  synced themselves into the scene index. Auto-schedule is
+  `packShootDays` (`lib/studio/shoot-days.ts`, tested); the stripboard
+  header, Locations and Scenes show the totals the card did.
+
 ## Earlier — Lint pass 2: every React Compiler rule is an error; the knowledge hub audited
 
 No migration.

@@ -1,5 +1,7 @@
 # Misfits Cavern — Final Audit: Core State Backbone (July 2026)
 
+> **Historical snapshot.** This describes the code as it was then; most of what it lists has since been fixed or replaced. What's open today is in [`.cavern-intelligence/BACKLOG.md`](../.cavern-intelligence/BACKLOG.md).
+
 This audit supersedes the narrative history that previously lived in this repo. Every finding below was verified by reading the code itself — not comments, not STATE files, not commit messages. It deliberately excludes findings already recorded in `docs/TECHNICAL_AUDIT_2026-07.md` and focuses on the structural question: **does this suite have a unified state backbone, and if not, what does the fragmentation actually look like in the code?**
 
 The answer: it does not. The suite has **four parallel identity systems, two parallel permission systems, and three parallel project-context resolutions**, and the most sophisticated of each is nearly unused. What follows is the evidence, then the target architecture ("the OS"), then the migration plan.
