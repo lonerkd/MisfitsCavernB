@@ -107,11 +107,3 @@ safe version appends a beat to the project's script with a server-side merge
 that can't clobber unsynced editor edits (`lib/scriptos/sync.ts` has the
 outbox). Done when a beat lands in the open script for a co-writer without
 losing either side's edits (two-session test).
-
-### 3.11 Gate `has_discord_webhook` — S (migration)
-The definer-function review (`database-and-security.md` §2.D) found one
-function without a gate: `has_discord_webhook(cid)` answers for any channel
-id to any signed-in user. Low risk (a boolean; ids are unguessable), but it
-should require `public.can_manage_channel(cid)` (the only caller is the
-channel-manage dialog). Migration + persona test (owner yes, crew/outsider
-false), apply to prod, check the fingerprint.

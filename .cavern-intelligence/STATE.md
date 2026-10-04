@@ -17,8 +17,7 @@ Full scope for each in `BACKLOG.md`. In order:
 3. **Upgrades**: data access through `lib/` (L) · lint
    pass 3 — the remaining suppressions (M) · activity feed completeness (M,
    product call) · emphasis in the writing surface (M) · story beat → script
-   (M/L) · gate `has_discord_webhook` (S, migration) · dev-toolchain
-   advisories (watch upstream).
+   (M/L) · dev-toolchain advisories (watch upstream).
 
 No PRs are open.
 
@@ -29,10 +28,25 @@ No PRs are open.
   via Tailwind's watcher and `eslint-config-next`; fix needs upstream) —
   BACKLOG 3.1.
 - Security advisor: `SECURITY DEFINER` RPCs callable by anon (9) and signed-in
-  users (23 more) — the intended API, reviewed in `database-and-security.md`
-  §2.D. One has no gate: `has_discord_webhook` (BACKLOG 3.11).
+  users (23 more) — the intended API, each gated, reviewed in
+  `database-and-security.md` §2.D.
 
-## Latest Session — Definer-function review; README
+## Latest Session — `has_discord_webhook` is gated
+
+Migration `20261004010000_discord_webhook_gate.sql` (applied to production;
+fingerprint checked).
+
+- The definer-function review found one function without a check:
+  `has_discord_webhook(cid)` told any signed-in user whether any channel had
+  a Discord webhook. It now answers only for someone who can manage the
+  channel (`can_manage_channel`) — the people who set or remove the webhook,
+  and the only caller (the channel-manage dialog). Same signature and
+  grants; only the body changed (one fingerprint line).
+- `tests/integration/discord-webhook.test.ts`: the owner sees true; crew who
+  can't manage the channel and an outsider see false. Full integration
+  suite: 289 pass.
+
+## Earlier — Definer-function review; README
 
 No migration.
 
@@ -45,24 +59,4 @@ No migration.
 - **README** rewritten for what the suite is now (Next 16 / React 19, the
   local stack, the real `lib/` map, the knowledge hub); the dated audits in
   `docs/` are marked as historical snapshots.
-
-## Earlier — Hook tests
-
-No migration.
-
-- **The shared hooks have unit tests** (28, in a jsdom environment):
-  `useOnChange`, `useLoad`, `useDeviceValue`, `useSearchParam` /
-  `useHydrated`, `useMediaQuery` (`lib/hooks/*.test.tsx`), `useLiveRows`
-  (`lib/studio/live.test.tsx`) and `useOnSetSync`
-  (`lib/studio/useOnSetSync.test.tsx`). They pin down what the lint-pass-2
-  rework relies on: a key switch never shows the previous key's data, a late
-  answer for an old key is dropped, a reload can't erase a local write,
-  newer `updated_at` wins, the offline queue is counted per project and sent
-  in order when the connection is back.
-- How: `@testing-library/react` + `jsdom` (dev deps); a test file opts in
-  with `// @vitest-environment jsdom` and is named `*.test.tsx`
-  (`vitest.config.ts` includes them). Vitest runs without globals, so each
-  file calls `afterEach(cleanup)` — without it, hooks from earlier tests stay
-  mounted and react to later events.
-- 472 unit tests in all.
 

@@ -133,7 +133,7 @@ Callable by **signed-in users**:
 | `project_availability(project, from, to)` | `internal.can_shape_project`; dates only, never notes |
 | `project_context(project)` | `internal.can_access_project`, else null |
 | `respond_to_application(app, status, close)` | the job's poster |
-| `has_discord_webhook(channel)` | **no gate** — any signed-in user can learn whether a channel (by id) has a Discord webhook. A yes/no and the id is unguessable, but it should check `can_manage_channel`: BACKLOG 3.11 |
+| `has_discord_webhook(channel)` | `can_manage_channel` — false for anyone else (gated in `20261004010000`; before, it answered any signed-in user) |
 
 ---
 
