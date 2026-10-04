@@ -1,5 +1,7 @@
 # State Assessment — September 2026
 
+> **Historical snapshot.** This describes the code as it was then; most of what it lists has since been fixed or replaced. What's open today is in [`.cavern-intelligence/BACKLOG.md`](../.cavern-intelligence/BACKLOG.md).
+
 Tested commit: `b39f241` (main, same SHA as the current Vercel production deploy
 of `misfits-cavern-b`). Method: static gates, a production build pointed at the
 live Supabase project, the existing Playwright suite, a crawler that visits

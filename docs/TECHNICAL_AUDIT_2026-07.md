@@ -1,5 +1,7 @@
 # Misfits Cavern — Technical Audit (July 2026)
 
+> **Historical snapshot.** This describes the code as it was then; most of what it lists has since been fixed or replaced. What's open today is in [`.cavern-intelligence/BACKLOG.md`](../.cavern-intelligence/BACKLOG.md).
+
 Analysis-only audit. No code was modified. Every claim cites a file (and line where useful); anything unverifiable is labeled as such.
 
 Context that shaped this audit: the repo already completed a prior hardening pass (documented in `.cavern-intelligence/STATE.md`) — CI pipeline, vitest harness, cookie-backed auth with validating middleware, Discord route auth, generated Supabase types. This audit therefore focuses on **what remains**, not on re-litigating fixed issues.
