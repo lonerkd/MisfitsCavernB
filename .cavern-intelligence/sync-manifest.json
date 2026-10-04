@@ -1,16 +1,16 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-04T01:25:15.337Z",
+  "last_synchronized": "2026-10-04T04:40:00.948Z",
   "stats": {
-    "totalFiles": 543,
-    "totalSize": 4085426,
+    "totalFiles": 545,
+    "totalSize": 4088089,
     "byExtension": {
       ".json": 13,
       ".md": 11,
       ".tsx": 170,
-      ".ts": 300,
+      ".ts": 301,
       ".js": 7,
-      ".sql": 42
+      ".sql": 43
     }
   },
   "modules": {
@@ -307,7 +307,8 @@
         "supabase/migrations/20260929070000_pocket.sql",
         "supabase/migrations/20260929080000_client_errors.sql",
         "supabase/migrations/20260929090000_account_deletion.sql",
-        "supabase/migrations/20260930010000_advisor_fixes.sql"
+        "supabase/migrations/20260930010000_advisor_fixes.sql",
+        "supabase/migrations/20261004010000_discord_webhook_gate.sql"
       ]
     }
   },
@@ -2758,6 +2759,11 @@
       "last_modified": "2026-10-03T08:45:01.892Z"
     },
     {
+      "path": "supabase/migrations/20261004010000_discord_webhook_gate.sql",
+      "size": 709,
+      "last_modified": "2026-10-04T01:27:12.429Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -2841,6 +2847,11 @@
       "path": "tests/integration/cut-note-lines.test.ts",
       "size": 3452,
       "last_modified": "2026-09-27T19:12:03.136Z"
+    },
+    {
+      "path": "tests/integration/discord-webhook.test.ts",
+      "size": 1954,
+      "last_modified": "2026-10-04T01:27:20.725Z"
     },
     {
       "path": "tests/integration/documents.test.ts",
