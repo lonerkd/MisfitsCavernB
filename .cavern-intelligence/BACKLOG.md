@@ -108,17 +108,10 @@ that can't clobber unsynced editor edits (`lib/scriptos/sync.ts` has the
 outbox). Done when a beat lands in the open script for a co-writer without
 losing either side's edits (two-session test).
 
-### 3.9 Definer-function review — S
-The security advisor lists 9 anon-callable and 33 signed-in-callable
-`SECURITY DEFINER` RPCs (WARN). They are the intended API (share tokens,
-showcase, error reporting, account, Lounge, call sheets…), each gated inside.
-Record the allowlist with each function's gate in
-`database-and-security.md`, so a new definer function is a reviewed
-addition. Done when the list matches the advisor's.
-
-### 3.10 README and public docs — S
-A partial branding pass was done; `README.md` and `docs/` still describe some
-older states (e.g. `docs/STATE_ASSESSMENT_2026-09.md` lists issues that are
-all fixed now — the bucket and `has_discord_webhook` advisor findings are
-gone). Refresh the README's feature list and setup (local stack:
-`bash scripts/dev-stack.sh`), and mark old assessments as historical.
+### 3.11 Gate `has_discord_webhook` — S (migration)
+The definer-function review (`database-and-security.md` §2.D) found one
+function without a gate: `has_discord_webhook(cid)` answers for any channel
+id to any signed-in user. Low risk (a boolean; ids are unguessable), but it
+should require `public.can_manage_channel(cid)` (the only caller is the
+channel-manage dialog). Migration + persona test (owner yes, crew/outsider
+false), apply to prod, check the fingerprint.

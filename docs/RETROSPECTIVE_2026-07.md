@@ -1,5 +1,7 @@
 # Retrospective: Original Audit Requirements vs. Delivered State (July 2026)
 
+> **Historical snapshot.** This describes the code as it was then; most of what it lists has since been fixed or replaced. What's open today is in [`.cavern-intelligence/BACKLOG.md`](../.cavern-intelligence/BACKLOG.md).
+
 This checks the branch (`claude/repo-technical-audit-rj40tm`, 13 commits) against the original audit prompt's deliverables and against `docs/TECHNICAL_AUDIT_2026-07.md` / `docs/FINAL_AUDIT_2026-07_CORE_STATE.md`'s own "definition of done." Where a claim from an earlier session turned out to be wrong or incomplete, that's stated plainly — this document does not repeat prior claims uncritically.
 
 ## 1. Original prompt: four-phase audit deliverable

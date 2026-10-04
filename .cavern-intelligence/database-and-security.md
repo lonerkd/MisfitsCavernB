@@ -96,6 +96,45 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 - **Policy shape**: a table's reads are decided by one `SELECT` policy; writes get their own `INSERT` / `UPDATE` / `DELETE` policies — never a `FOR ALL` beside a `SELECT` (both would run on every read). Every foreign key has a covering index (`<table>_<fkey>_idx`). Run the Supabase advisors (security + performance) after schema changes.
 - **Showcase** (`get_public_showcase`) lists published media of `public` projects only. **Platform totals** come from `get_platform_stats` (counts only) — counting through RLS shows each person their own numbers.
 
+
+### D. The definer-function allowlist (reviewed 2026-10-03)
+
+The security advisor warns about every `SECURITY DEFINER` function in
+`public` that `anon` or `authenticated` can call (lints 0028/0029). These are
+the app's intended RPC surface; each checks access itself, in its first
+lines. **A new definer function in `public` is added here, with its gate, in
+the PR that creates it** — anything the advisor lists that isn't here is
+unreviewed. (`internal.*` helpers aren't callable through the API.)
+
+Callable by **anyone** (anon + signed in) — public pages:
+
+| Function | Gate |
+|---|---|
+| `get_shared_project(token)` / `get_shared_lookbook(token)` / `get_press_kit(token)` | exact `share_token` and `visibility in ('link','public')`; lookbook returns only `shared` media |
+| `get_published_media(id)` | media `shared` on a `link`/`public` project |
+| `get_public_showcase(limit)` | `shared` image/video media of `public`, non-sample projects; limit 1–100 |
+| `get_recent_work(limit)` | portfolio pieces (already public), non-sample; limit 1–24 |
+| `get_platform_stats()` | aggregate counts only, samples excluded |
+| `get_person_credits(user)` | only projects that are `public` or that the caller can access (`internal.can_access_project`) |
+| `report_client_error(…)` | validated kind, message ≤1000 chars, rate-limited (20/min signed in, 60/min signed out) |
+
+Callable by **signed-in users**:
+
+| Function | Gate |
+|---|---|
+| `get_my_account()`, `get_my_ui_prefs()`, `set_my_ui_prefs(patch)`, `get_my_writing_prefs()`, `log_writing(…)` | the caller's own row (`auth.uid()`); writes validated |
+| `account_deletion_plan()`, `delete_my_account(username)` | the caller; deletion refused while they own a crewed project or are the last admin (§C) |
+| `transfer_project(project, to)` | caller owns the project; recipient is confirmed crew |
+| `admin_list_users()`, `admin_platform_analytics(since)`, `set_user_admin(user, admin)` | `internal.caller_is_admin()`; an admin can't remove their own rights |
+| `can_manage_channel(id)`, `can_post_channel(id)` | answer for the caller only (booleans) |
+| `edit_message`, `pin_message`, `toggle_message_reaction` | sender only / channel managers or either side of a DM / messages the caller can see |
+| `lounge_unread()`, `mark_lounge_read(channel, partner)` | channels filtered by `internal.can_view_channel`; DMs the caller is in |
+| `ack_call_sheet(sheet)`, `issue_call_sheet(sheet, note)` | `internal.can_access_project`; issuing also `can_shape_project` |
+| `project_availability(project, from, to)` | `internal.can_shape_project`; dates only, never notes |
+| `project_context(project)` | `internal.can_access_project`, else null |
+| `respond_to_application(app, status, close)` | the job's poster |
+| `has_discord_webhook(channel)` | **no gate** — any signed-in user can learn whether a channel (by id) has a Discord webhook. A yes/no and the id is unguessable, but it should check `can_manage_channel`: BACKLOG 3.11 |
+
 ---
 
 ## 3. Database Changes — the migration workflow (authoritative)

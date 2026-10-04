@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-03T22:37:56.603Z",
+  "last_synchronized": "2026-10-04T01:25:15.337Z",
   "stats": {
     "totalFiles": 543,
-    "totalSize": 4083306,
+    "totalSize": 4085426,
     "byExtension": {
       ".json": 13,
       ".md": 11,
@@ -369,8 +369,8 @@
     },
     {
       "path": "README.md",
-      "size": 1088,
-      "last_modified": "2026-09-26T07:01:21.939Z"
+      "size": 2324,
+      "last_modified": "2026-10-04T01:24:53.122Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -1229,23 +1229,23 @@
     },
     {
       "path": "docs/FINAL_AUDIT_2026-07_CORE_STATE.md",
-      "size": 19555,
-      "last_modified": "2026-09-24T20:05:03.635Z"
+      "size": 19776,
+      "last_modified": "2026-10-04T01:25:09.300Z"
     },
     {
       "path": "docs/RETROSPECTIVE_2026-07.md",
-      "size": 10240,
-      "last_modified": "2026-09-24T20:05:03.635Z"
+      "size": 10461,
+      "last_modified": "2026-10-04T01:25:09.300Z"
     },
     {
       "path": "docs/STATE_ASSESSMENT_2026-09.md",
-      "size": 7175,
-      "last_modified": "2026-09-25T02:12:23.667Z"
+      "size": 7396,
+      "last_modified": "2026-10-04T01:25:09.298Z"
     },
     {
       "path": "docs/TECHNICAL_AUDIT_2026-07.md",
-      "size": 26138,
-      "last_modified": "2026-09-24T20:05:03.635Z"
+      "size": 26359,
+      "last_modified": "2026-10-04T01:25:09.299Z"
     },
     {
       "path": "docs/feature_list.json",

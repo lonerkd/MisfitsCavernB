@@ -17,7 +17,7 @@ Full scope for each in `BACKLOG.md`. In order:
 3. **Upgrades**: data access through `lib/` (L) · lint
    pass 3 — the remaining suppressions (M) · activity feed completeness (M,
    product call) · emphasis in the writing surface (M) · story beat → script
-   (M/L) · definer-function allowlist (S) · README refresh (S) · dev-toolchain
+   (M/L) · gate `has_discord_webhook` (S, migration) · dev-toolchain
    advisories (watch upstream).
 
 No PRs are open.
@@ -29,9 +29,24 @@ No PRs are open.
   via Tailwind's watcher and `eslint-config-next`; fix needs upstream) —
   BACKLOG 3.1.
 - Security advisor: `SECURITY DEFINER` RPCs callable by anon (9) and signed-in
-  users (33) — intended API, each gated inside; allowlist to write (3.9).
+  users (23 more) — the intended API, reviewed in `database-and-security.md`
+  §2.D. One has no gate: `has_discord_webhook` (BACKLOG 3.11).
 
-## Latest Session — Hook tests
+## Latest Session — Definer-function review; README
+
+No migration.
+
+- **The definer-function allowlist** (`database-and-security.md` §2.D): all
+  32 `SECURITY DEFINER` functions in `public` that anon (9) or signed-in
+  users (23 more) can call, each with the check it makes, read from
+  production. New ones join the list in the PR that adds them. One has no
+  gate — `has_discord_webhook` answers for any channel to any signed-in user
+  (a yes/no; ids are unguessable) — BACKLOG 3.11.
+- **README** rewritten for what the suite is now (Next 16 / React 19, the
+  local stack, the real `lib/` map, the knowledge hub); the dated audits in
+  `docs/` are marked as historical snapshots.
+
+## Earlier — Hook tests
 
 No migration.
 
@@ -51,19 +66,3 @@ No migration.
   mounted and react to later events.
 - 472 unit tests in all.
 
-## Earlier — Dependency fixes; one scheduler
-
-No migration.
-
-- **`npm audit fix`** (patch bumps only: `dompurify`, `fflate`,
-  `brace-expansion`, `postcss-selector-parser`, the Next ESLint config):
-  production dependencies report **0** vulnerabilities. Left: 7 high in dev
-  tooling only (`braces`, via Tailwind's file watcher and
-  `eslint-config-next`), fixable only with breaking `--force` — watched in
-  BACKLOG 3.1.
-- **One scheduler**: deleted `lib/scriptos/schedule.ts`
-  (`generateShootingSchedule`) and its test. It worked from the parsed
-  screenplay text; its Studio card went with the Studio rebuild, once scenes
-  synced themselves into the scene index. Auto-schedule is
-  `packShootDays` (`lib/studio/shoot-days.ts`, tested); the stripboard
-  header, Locations and Scenes show the totals the card did.
