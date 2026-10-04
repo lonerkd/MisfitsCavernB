@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { localDay } from '@/lib/writing/core';
@@ -63,7 +63,9 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   // (the first visit only records where it is).
   const currentIndex = progress?.currentIndex;
   useOnChange(`${projectId}:${currentIndex}`, () => setSelected(null));
+  const latestProgress = useEffectEvent(() => progress);
   useEffect(() => {
+    const progress = latestProgress();
     if (!progress || currentIndex == null) return;
     let seen: number | null = null;
     try { const v = localStorage.getItem(SEEN_KEY(projectId)); seen = v == null ? null : Number(v); } catch {}
@@ -75,7 +77,6 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
       // eslint-disable-next-line react-hooks/set-state-in-effect -- follows device storage
       setReveal({ label: progress.current.label, tools });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a phase change should trigger this
   }, [projectId, currentIndex]);
 
   if (loading && !progress) return <div className={`skeleton ${p.skeleton}`} role="status" aria-busy="true" aria-label="Loading project progress" />;

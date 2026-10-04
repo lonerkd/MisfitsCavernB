@@ -723,15 +723,16 @@ export default function LoungePage() {
   };
 
   // The people on the active project: its owner and crew (not the whole platform).
+  const crewProjectId = activeProject?.id;
+  const crewCreatorId = activeProject?.creator_id;
   useEffect(() => {
     let alive = true;
-    const project = activeProject;
-    if (!project?.id) return;
+    if (!crewProjectId) return;
     (async () => {
       const [{ data: crew }, { data: owner }] = await Promise.all([
-        supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', project.id),
-        project.creator_id
-          ? supabase.from('profiles').select('id, username, avatar_url').eq('id', project.creator_id).maybeSingle()
+        supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', crewProjectId),
+        crewCreatorId
+          ? supabase.from('profiles').select('id, username, avatar_url').eq('id', crewCreatorId).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
       if (!alive) return;
@@ -741,10 +742,10 @@ export default function LoungePage() {
           .filter((c) => c.user_id !== owner?.id)
           .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
       ];
-      setCrew({ projectId: project.id, team });
+      setCrew({ projectId: crewProjectId, team });
     })();
     return () => { alive = false; };
-  }, [activeProject?.id, activeProject?.creator_id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [crewProjectId, crewCreatorId]);
 
   const onlineCrew = crewList.filter(m => onlineIds.has(m.id)).length;
   // What's open doesn't count as unread: it's being read.
@@ -766,8 +767,7 @@ export default function LoungePage() {
         { id: 'lounge-search', label: 'Search messages', onClick: () => { setShowPinned(false); setShowSearch(true); } },
         ...(!dmTarget && activeChannel && activeChannel.type !== 'voice' ? [{ id: 'lounge-pinned', label: 'Pinned', onClick: () => { setShowSearch(false); setShowPinned(true); } }] : []),
       ],
-    },
-    [activeChannel?.name, activeChannel?.type, !!dmTarget, onlineCrew, crewList.length, messages.length, unreadTotal],
+    }
   );
 
   const textChannelId = activeChannel && activeChannel.type !== 'voice' ? activeChannel.id : null;

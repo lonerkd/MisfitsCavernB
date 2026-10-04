@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
 import Avatar from '@/components/Avatar';
@@ -50,8 +50,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   }, [characterLooks.rows, mediaById]);
   const signed = useSignedUrls(characterLooks.rows.map((l) => mediaById.get(l.media_id)?.storage_path));
 
-  const loadCastings = () => getCastingsForProject(projectId).then(setCastings, () => { /* shown as open roles */ });
-  useEffect(() => { void loadCastings(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const loadCastings = useCallback(() => getCastingsForProject(projectId).then(setCastings, () => { /* shown as open roles */ }), [projectId]);
+  useEffect(() => { void loadCastings(); }, [loadCastings]);
   // The script's characters changed: keep the selection if it's still one of them.
   useOnChange(scriptChars, () => setSelected((prev) => (prev && chars.some((c) => c.name === prev) ? prev : chars[0]?.name ?? null)));
 

@@ -73,7 +73,7 @@ export function FindReferences({ projectId, userId, existingUrls, board, onAdded
             return (
               <div key={ref.id} className={s.card} style={{ cursor: 'default' }}>
                 <div className={s.thumb}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- search-result thumbnails from third-party hosts */}
                   <img src={ref.thumbnail} alt={ref.title} loading="lazy" referrerPolicy="no-referrer" />
                 </div>
                 <div className={s.cardBody}>

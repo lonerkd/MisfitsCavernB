@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -155,13 +155,18 @@ export function usePill(): PillContextValue {
   return c;
 }
 
-export function usePillStage(descriptor: PillDescriptor | null, deps: React.DependencyList) {
+/**
+ * Puts this page's descriptor on the island while the page is mounted. It is
+ * republished when anything it shows changes (the JSON of its data — titles,
+ * fields, toggle states, action labels); its callbacks are the ones from that
+ * render.
+ */
+export function usePillStage(descriptor: PillDescriptor | null) {
   const { setDescriptor } = usePill();
-  useEffect(() => {
-    setDescriptor(descriptor);
-    return () => setDescriptor(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  const shown = JSON.stringify(descriptor);
+  const latest = useEffectEvent(() => descriptor);
+  useEffect(() => { setDescriptor(latest()); }, [shown, setDescriptor]);
+  useEffect(() => () => setDescriptor(null), [setDescriptor]);
 }
 
 let zoneSeq = 0;

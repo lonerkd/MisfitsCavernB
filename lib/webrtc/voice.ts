@@ -1,6 +1,6 @@
 
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
 export interface VoicePeer {
@@ -106,9 +106,14 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
     return ps;
   }, [me?.id, attachSpeakingMeter, closePeer, syncPeerList]);
 
+  const meId = me?.id;
+  // What others see of me; read when joining, not a reason to rejoin.
+  const myPresence = useEffectEvent(() => ({ id: meId, name: me?.name, avatar: me?.avatar }));
+
   useEffect(() => {
-    if (!joined || !me || !channelId) return;
+    if (!joined || !meId || !channelId) return;
     let cancelled = false;
+    const peers = peersRef.current;
 
     (async () => {
 
@@ -122,22 +127,22 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         setMicError(err?.name === 'NotAllowedError' ? 'Microphone permission denied — you are in listen-only mode.' : 'No microphone found — you are in listen-only mode.');
       }
 
-      const ch = supabase.channel(`voice:${channelId}`, { config: { presence: { key: me.id }, broadcast: { self: false } } });
+      const ch = supabase.channel(`voice:${channelId}`, { config: { presence: { key: meId }, broadcast: { self: false } } });
       chanRef.current = ch;
 
       const handleOffer = async (payload: any) => {
-        if (payload.to !== me.id) return;
+        if (payload.to !== meId) return;
         const ps = createPeer(payload.from);
         await ps.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
         ps.hasRemoteDesc = true;
         for (const c of ps.pendingIce.splice(0)) await ps.pc.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
         const answer = await ps.pc.createAnswer();
         await ps.pc.setLocalDescription(answer);
-        ch.send({ type: 'broadcast', event: 'rtc_answer', payload: { from: me.id, to: payload.from, sdp: answer } });
+        ch.send({ type: 'broadcast', event: 'rtc_answer', payload: { from: meId, to: payload.from, sdp: answer } });
       };
 
       const handleAnswer = async (payload: any) => {
-        if (payload.to !== me.id) return;
+        if (payload.to !== meId) return;
         const ps = peersRef.current.get(payload.from);
         if (!ps) return;
         await ps.pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)).catch(() => {});
@@ -146,7 +151,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
       };
 
       const handleIce = async (payload: any) => {
-        if (payload.to !== me.id) return;
+        if (payload.to !== meId) return;
         const ps = peersRef.current.get(payload.from);
         if (!ps) return;
         if (!ps.hasRemoteDesc) { ps.pendingIce.push(payload.candidate); return; }
@@ -167,23 +172,21 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         .on('presence', { event: 'join' }, () => syncPeerList())
         .subscribe(async (status: string) => {
           if (status !== 'SUBSCRIBED') return;
-          await ch.track({ id: me.id, name: me.name, avatar: me.avatar });
+          await ch.track(myPresence());
 
           const state = ch.presenceState() as any;
           for (const peerId of Object.keys(state)) {
-            if (peerId === me.id) continue;
+            if (peerId === meId) continue;
             const ps = createPeer(peerId);
             const offer = await ps.pc.createOffer({ offerToReceiveAudio: true });
             await ps.pc.setLocalDescription(offer);
-            ch.send({ type: 'broadcast', event: 'rtc_offer', payload: { from: me.id, to: peerId, sdp: offer } });
+            ch.send({ type: 'broadcast', event: 'rtc_offer', payload: { from: meId, to: peerId, sdp: offer } });
           }
         });
     })();
 
     return () => {
       cancelled = true;
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- copied to local var intentionally for cleanup safety
-      const peers = peersRef.current;
       peers.forEach((_, id) => closePeer(id));
       peers.clear();
       rosterRef.current.clear();
@@ -193,7 +196,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
       if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
       setPeers([]); setSpeaking(false); setMicError(null); setMuted(false);
     };
-  }, [joined, channelId, me?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [joined, channelId, meId, attachSpeakingMeter, closePeer, createPeer, syncPeerList]);
 
   const toggleMute = useCallback(() => {
     setMuted(m => {

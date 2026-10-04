@@ -78,15 +78,6 @@ call sheet, soundtrack, …), with the page's loading done the §10 way
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
 
-### 3.4 Lint pass 3 — M
-The React Compiler rules are all errors now. What's left suppressed:
-20 `react-hooks/exhaustive-deps` disables (each one hides a dependency that
-should be an effect event or a derived key) and 22 `@next/next/no-img-element`
-(decide per image: `next/image`, or keep `<img>` with a reason for
-user-uploaded / signed URLs). 2 `set-state-in-effect` disables are justified
-(Lounge message highlight, phase reveal). Done when every remaining disable
-carries a `-- reason`.
-
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
 projects, scenes and wraps; not for media uploads, crew invites/role

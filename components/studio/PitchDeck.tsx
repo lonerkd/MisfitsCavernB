@@ -98,7 +98,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
         {slides.map((s, i) => (
           <div key={i} style={{ background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 14, padding: 32, aspectRatio: '4/3', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- a signed storage URL or a linked image on any host */}
             {s.bg && (<><img src={s.bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }} /><div style={{ position: 'absolute', inset: 0, background: 'var(--sunken)' }} /></>)}
             <div style={{ position: 'relative', zIndex: 1 }}>
               <SectionLabel text={`Slide 0${i + 1}`} />
@@ -120,7 +120,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
             <div style={{ width: '80vw', maxWidth: 'var(--w-content)', aspectRatio: '16/9', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* eslint-disable-next-line @next/next/no-img-element -- a signed storage URL or a linked image on any host */}
               {slides[idx].bg && (<><img src={slides[idx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
               <div style={{ position: 'relative', zIndex: 1 }}>{slides[idx].render(true)}</div>
             </div>

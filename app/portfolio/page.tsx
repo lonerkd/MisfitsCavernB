@@ -332,8 +332,7 @@ export default function PortfolioPage() {
       fields: [
         { label: 'Works', value: `${videosList.length}`, color: 'var(--warn)' },
       ],
-    },
-    [videosList.length],
+    }
   );
 
   return (

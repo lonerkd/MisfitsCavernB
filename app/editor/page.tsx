@@ -329,6 +329,9 @@ export default function EditorPage() {
     return true;
   }, [handleLoadScript]);
 
+  // Runs once: open the linked script, else the latest, else a fresh one.
+  const loadScript = useEffectEvent((s: StoredScript) => handleLoadScript(s));
+  const openScriptFor = useEffectEvent((p: Parameters<typeof openProjectScript>[0]) => openProjectScript(p));
   useEffect(() => {
     const init = async () => {
       const all = await getAllScripts();
@@ -336,11 +339,11 @@ export default function EditorPage() {
       const wanted = linkedScriptId.current;
       if (wanted) {
         const linked = await getScript(wanted);
-        if (linked) { handleLoadScript(linked); return; }
+        if (linked) { loadScript(linked); return; }
         linkedScriptId.current = null;
         toastRef.current('That script couldn’t be opened — it may have been deleted, or it isn’t shared with you.', 'error');
         const project = osState().project.active;
-        if (project && (await openProjectScript(project))) return;
+        if (project && (await openScriptFor(project))) return;
       }
       if (osState().project.active?.id) return; // the project effect below opens its script
       if (currentScriptRef.current) return;
@@ -365,13 +368,13 @@ export default function EditorPage() {
         }
       }
     };
-    init();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- run once on mount
+    void init();
+  }, []);
 
-  useEffect(() => {
+  // A script opened by link stays open while the session's project loads;
+  // switching to a different project afterwards opens that project's script.
+  const followProject = useEffectEvent(() => {
     if (!activeProject?.id) return;
-    // A script opened by link stays open while the session's project loads;
-    // switching to a different project afterwards opens that project's script.
     if (linkedScriptId.current) {
       if (projectAtLink.current === null || projectAtLink.current === activeProject.id) { projectAtLink.current = activeProject.id; return; }
       linkedScriptId.current = null;
@@ -382,7 +385,8 @@ export default function EditorPage() {
       .then((opened) => { if (opened) toast(`Editing “${activeProject.title}” screenplay`, 'info'); })
       .catch((e) => console.error('Failed to load project script:', e));
     return () => { cancelled = true; };
-  }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => followProject(), [activeProject?.id]);
 
   // The table read times each scene it reads in full (from its heading to the
   // next), pauses excluded; the times calibrate the runtime (lib/scriptos/timing).
@@ -796,7 +800,7 @@ export default function EditorPage() {
     setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
   };
 
-  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 
     if (showAutocomplete && autocompleteItems.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
@@ -867,8 +871,7 @@ export default function EditorPage() {
       const caret = lineStart + transformed.length;
       setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- acceptAutocomplete/insertElement are stable imperative helpers
-  }, [content, lines, showAutocomplete, autocompleteItems, autocompleteIdx, completionRange]);
+  };
 
   const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
     const rect = ta.getBoundingClientRect();
@@ -1152,8 +1155,7 @@ export default function EditorPage() {
       actions: [
         { id: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
       ],
-    },
-    [currentScript?.title, currentSceneIdx, scenesList.length, wordCount, pageEst, saving, syncPending, focusMode],
+    }
   );
 
   const actStructure = useMemo(() => {

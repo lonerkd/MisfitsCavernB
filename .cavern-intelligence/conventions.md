@@ -142,11 +142,22 @@ errors. They reject state copied around by effects; use these instead
 | A media query | `useMediaQuery(query)` (`lib/hooks/useMediaQuery.ts`). |
 | A ref holding the latest props/callback | Write it in `useLayoutEffect(() => { ref.current = value; })`, never while rendering. |
 | A timer or subscription callback that reads current state | `useEffectEvent` (React 19.2+), so the effect doesn't restart on every change. |
+| An effect that calls a page helper or a prop callback, but should only rerun for its key | Wrap the helper: `const open = useEffectEvent((s) => handleLoadScript(s))`, call it from the effect, list only the key. An effect event that sets state *synchronously* is still flagged by `set-state-in-effect` — keep the async body in the effect and route just the helpers through effect events (the editor's mount `init`). |
+| An effect keyed on part of an object (a project's id) | Pull the parts out first — `const projectId = activeProject?.id` — and use and list those, not the object. A list that is rebuilt every render (`APPS.filter(…)`) goes in `useMemo` so it can be a dependency. |
 | A per-item handler in a list | One handler that reads a `data-*` attribute, not handlers built while rendering. |
 
 A justified exception (state that follows the rendered DOM, e.g. the Lounge
 lighting a message once it's scrolled to) gets
 `// eslint-disable-next-line react-hooks/set-state-in-effect -- <reason>`.
+**Every disable carries a `-- reason`**; `react-hooks/exhaustive-deps` has
+none left — fix the dependency with the rows above instead.
+
+**Images**: a plain `<img>` is right for signed storage URLs (short-lived
+tokens; also shown offline on set), links people paste and third-party
+thumbnails — `next/image` serves only the hosts in `next.config` and would
+cache a copy per signature. Each one says which with
+`// eslint-disable-next-line @next/next/no-img-element -- <reason>`; a
+static or first-party image uses `next/image`.
 
 **Testing a hook**: `renderHook` from `@testing-library/react` in a
 `*.test.tsx` file that starts with `// @vitest-environment jsdom` and calls

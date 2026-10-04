@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { createRef, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeftRight, ChevronDown, Columns2, Link2, Link2Off, Maximize2, Rows2, X } from 'lucide-react';
 import {
   DEFAULT_LAYOUT, SURFACES, clampRatio, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
@@ -42,7 +42,7 @@ function Split() {
   const [dragging, setDragging] = useState(false);
   const narrow = useMediaQuery(NARROW);
   const [pulse, setPulse] = useState<Side | null>(null);
-  const frames = { a: useRef<HTMLIFrameElement>(null), b: useRef<HTMLIFrameElement>(null) };
+  const [frames] = useState(() => ({ a: createRef<HTMLIFrameElement>(), b: createRef<HTMLIFrameElement>() }));
   const wrapRef = useRef<HTMLDivElement>(null);
 
 
@@ -72,9 +72,7 @@ function Split() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-    // frames are refs; layout.linked is what matters
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout?.linked]);
+  }, [frames, layout?.linked]);
 
   useEffect(() => {
     if (!pulse) return;

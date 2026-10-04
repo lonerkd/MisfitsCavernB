@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useEffectEvent, useMemo } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -305,6 +305,9 @@ export default function ProjectHubPage() {
   const [realProject, setRealProject] = useState<ProjectHubViewModel | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // The session follows the project being viewed (once it has loaded).
+  const followProject = useEffectEvent((pid: string) => { if (activeProject?.id !== pid) refreshProject(pid); });
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -331,11 +334,10 @@ export default function ProjectHubPage() {
           isOwner: me?.id === row.creator_id,
         });
         setLoading(false);
-        if (activeProject?.id !== data.id) refreshProject(data.id);
+        followProject(data.id);
       });
     })();
     return () => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshProject is stable from context; activeProject?.id intentionally omitted to avoid re-fetch loop
   }, [id, router]);
 
   const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, festivalsSubmitted: 0, festivalsAccepted: 0, campaigns: 0 });

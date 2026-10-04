@@ -2,6 +2,20 @@
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
 
+## Earlier — Definer-function review; README
+
+No migration.
+
+- **The definer-function allowlist** (`database-and-security.md` §2.D): all
+  32 `SECURITY DEFINER` functions in `public` that anon (9) or signed-in
+  users (23 more) can call, each with the check it makes, read from
+  production. New ones join the list in the PR that adds them. One has no
+  gate — `has_discord_webhook` answers for any channel to any signed-in user
+  (a yes/no; ids are unguessable) — BACKLOG 3.11.
+- **README** rewritten for what the suite is now (Next 16 / React 19, the
+  local stack, the real `lib/` map, the knowledge hub); the dated audits in
+  `docs/` are marked as historical snapshots.
+
 ## Earlier — Hook tests
 
 No migration.

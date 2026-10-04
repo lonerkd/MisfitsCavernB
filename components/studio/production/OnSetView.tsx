@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type CallSheet, type CallSheetCall, type SceneRow, type SetLogEntry, type SetLogRow, type Shot } from '@/lib/studio';
-import { changes, draftLogRow, loadSnapshot, saveSnapshot } from '@/lib/studio/onset-offline';
+import { changes, draftLogRow, loadSnapshot, saveSnapshot, type DaySnapshot } from '@/lib/studio/onset-offline';
 import { useOnSetSync, type OnSetSync } from '@/lib/studio/useOnSetSync';
 import { CLOCK, dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, localDateTime, pickDay, type ClockKind } from '@/lib/studio/onset';
 import type { Place } from '@/lib/os/progress';
@@ -69,24 +69,26 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
       savedAt: new Date().toISOString(), sheets: sheets.rows, calls: calls.rows, log: log.rows, scenes: scenes.rows, shots: shots.rows,
     });
   }, [project.id, sheets.rows, calls.rows, log.rows, scenes.rows, shots.rows]);
+  const hasSheets = sheets.rows.length > 0;
+  const seedFromCopy = useEffectEvent((snap: DaySnapshot<CallSheet, CallSheetCall, SetLogRow, SceneRow, Shot>) => {
+    snap.sheets.forEach(sheets.upsertLocal);
+    snap.calls.forEach(calls.upsertLocal);
+    snap.log.forEach(log.upsertLocal);
+    snap.scenes.forEach(scenes.upsertLocal);
+    snap.shots.forEach(shots.upsertLocal);
+    setFromCopy(snap.savedAt);
+  });
   useEffect(() => {
     if (sheets.status === 'ready') return;
     // With no signal there's nothing to wait for; otherwise only once the load has failed.
-    if ((sheets.status !== 'error' && sync.online) || sheets.rows.length) return;
+    if ((sheets.status !== 'error' && sync.online) || hasSheets) return;
     const snap = loadSnapshot<CallSheet, CallSheetCall, SetLogRow, SceneRow, Shot>(project.id);
     if (!snap) return;
     // Next tick: the Studio's own lists (scenes, shots) reset when they mount,
     // and their effects run after this one.
-    const t = window.setTimeout(() => {
-      snap.sheets.forEach(sheets.upsertLocal);
-      snap.calls.forEach(calls.upsertLocal);
-      snap.log.forEach(log.upsertLocal);
-      snap.scenes.forEach(scenes.upsertLocal);
-      snap.shots.forEach(shots.upsertLocal);
-      setFromCopy(snap.savedAt);
-    }, 0);
+    const t = window.setTimeout(() => seedFromCopy(snap), 0);
     return () => window.clearTimeout(t);
-  }, [project.id, sheets.status, sync.online]); // eslint-disable-line react-hooks/exhaustive-deps -- seed once when there's no data to be had
+  }, [project.id, sheets.status, sync.online, hasSheets]);
 
   const days = useMemo(() => [...sheets.rows].sort((a, b) => a.shoot_day - b.shoot_day), [sheets.rows]);
   const picked = useMemo(() => pickDay(sheets.rows, today), [sheets.rows, today]);
@@ -348,7 +350,7 @@ function SceneOnSet({ sync, scene, shots, continuity, onLog, onUnlog, onOpenScri
                 return (
                   <li key={r.id} className={o.contItem}>
                     {path && photos[path] && (
-                      // eslint-disable-next-line @next/next/no-img-element
+                      // eslint-disable-next-line @next/next/no-img-element -- signed storage URL, also opened offline on set (the optimizer route needs the network)
                       <a href={photos[path]} target="_blank" rel="noopener noreferrer"><img src={photos[path]} alt={`Continuity photo${sh ? `, shot ${sh.shot_number}` : ''}`} className={o.contPhoto} /></a>
                     )}
                     <div style={{ minWidth: 0, flex: 1 }}>
