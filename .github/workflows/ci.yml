@@ -11,6 +11,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # What the PR touches. A docs-only change (Markdown, the knowledge hub,
+  # docs/) can't break the schema or a journey, so it skips those jobs; `checks`
+  # still runs. Pushes to main always run everything.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qvE '\.md$|^\.cavern-intelligence/|^docs/'; then CODE=true; else CODE=false; fi
+          echo "code=$CODE" | tee -a "$GITHUB_OUTPUT"
+
   checks:
     runs-on: ubuntu-latest
     env:
@@ -44,6 +63,8 @@ jobs:
   #   3. real persona tests (Sam / Jordan / Riley / anon) pass against it —
   #      real auth, real RLS, no mocks.
   database:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -59,15 +80,19 @@ jobs:
 
   # Every journey in a real browser against a fresh local stack: the Studio,
   # the editor, on set, the Lounge, the phone, accessibility (WCAG 2.2 A/AA,
-  # axe) and the rest. It runs every spec in e2e/ — each skips itself unless
-  # its stack is there — so a new spec can't be left out; split three ways to
-  # run in parallel.
+  # axe) and the rest. It runs every spec in e2e/ (the public smoke specs
+  # included), split five ways by how long each file takes
+  # (scripts/e2e-shard.mjs, e2e/timings.json) — a new spec lands on a shard
+  # without being listed. One worker per shard: the runner's 4 CPUs carry the
+  # app, Postgres and the browser, and more workers only time out.
   e2e-local:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -75,14 +100,21 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run db:start
-      - run: npx playwright install --with-deps chromium
-      - name: Journeys (real browser, local stack) — part ${{ matrix.shard }} of 3
+      # The browser installs while the stack starts (neither needs the other).
+      - name: Local stack + browser
+        run: |
+          npx playwright install --with-deps chromium > /tmp/pw-install.log 2>&1 &
+          PW=$!
+          npm run db:start
+          wait $PW || { cat /tmp/pw-install.log; exit 1; }
+      - name: Journeys (real browser, local stack) — part ${{ matrix.shard }} of 5
         run: |
           STATUS=$(npx supabase status -o json)
           export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
           export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
-          E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 npx playwright test --shard=${{ matrix.shard }}/3
+          FILES=$(node scripts/e2e-shard.mjs ${{ matrix.shard }} 5)
+          echo "$FILES" | tr ' ' '\n'
+          E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 npx playwright test $FILES
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -90,34 +122,4 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          retention-days: 7
-
-  e2e-smoke:
-    runs-on: ubuntu-latest
-    needs: checks
-    env:
-      # These are publishable (client-inlined) values, stored as repo *variables*
-      # (Settings -> Actions -> Variables), so read them from vars.*, not secrets.*.
-      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      # Real secret (server-only), set here for parity with runtime.
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      # No PLAYWRIGHT_BASE_URL set: playwright.config.ts's webServer builds
-      # and serves this checkout on localhost, so these specs test the PR's
-      # own code — not the deployed production site.
-      # Unauthenticated smoke specs only; authed journeys need a seeded test user.
-      - run: npx playwright test e2e/home-page-crash.spec.ts e2e/auth-validation.spec.ts e2e/route-smoke.spec.ts
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: playwright-report
-          path: playwright-report/
           retention-days: 7

@@ -15,6 +15,14 @@ the advisors that day).
 
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal.ts`; Peter Olowude,
   Alberta, Canada).
+- **`PRODUCTION_DB_URL` repo secret** (GitHub › Settings › Secrets and
+  variables › Actions; a read-only Postgres role is enough). Without it the
+  nightly *Production schema drift* check can't run and fails every night
+  (it has since at least 2026-09-30) — production is checked by hand at each
+  migration meanwhile.
+- **Optional — branch protection on `main`** with `checks`, `database` and
+  the `e2e-local` shards required. That turns on GitHub auto-merge, so a
+  green PR merges itself instead of waiting for a session to notice.
 - **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
   Still flagged by the security advisor (`auth_leaked_password_protection`).
 - **Old stashes on the Windows machine** (the one that made the island

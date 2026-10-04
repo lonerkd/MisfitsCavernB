@@ -8,10 +8,12 @@
 
 Full scope for each in `BACKLOG.md`. In order:
 
-1. **Owner, outside the code**: lawyer review of `/privacy` and `/terms`;
+1. **Owner, outside the code**: the `PRODUCTION_DB_URL` secret (the nightly
+   drift check fails without it); lawyer review of `/privacy` and `/terms`;
    leaked-password protection (Supabase › Auth › Passwords); the two old
    stashes on the Windows machine; 18 stale remote branches to delete
-   (audited — all merged or closed on purpose; tips recorded).
+   (audited — all merged or closed on purpose; tips recorded); optionally
+   branch protection on `main` (enables auto-merge).
 2. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium (passes in CI and the cloud container).
 3. **Upgrades**: data access through `lib/` (L) · activity feed
@@ -23,6 +25,8 @@ No PRs are open.
 ## Known issues
 
 - Leaked-password protection is off (owner toggle; security advisor WARN).
+- *Production schema drift* fails nightly: the `PRODUCTION_DB_URL` secret
+  isn't set (owner). Production is checked by hand at each migration.
 - `npm audit`: production deps clean; 7 high in dev tooling only (`braces`
   via Tailwind's watcher and `eslint-config-next`; fix needs upstream) —
   BACKLOG 3.1.

@@ -64,7 +64,9 @@ STATE's "Open work" summary in step with it.
 - Create a branch: `git checkout -b <feature-or-fix>-<short-description>`
 - Commit with clear message describing what was done and why
 - Push and create PR
-- Do not merge until CI (Vercel) is green
+- Do not merge until CI is green (GitHub `checks`, `database`, `e2e-local`; the
+  Vercel preview too). Local verification before the push is the fast set in
+  `tools-and-access.md` §7, not the whole e2e suite
 
 ## Change-Type Specific Guidance
 

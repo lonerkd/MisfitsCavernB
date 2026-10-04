@@ -1,11 +1,11 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-04T05:57:58.394Z",
+  "last_synchronized": "2026-10-04T16:44:54.882Z",
   "stats": {
-    "totalFiles": 545,
-    "totalSize": 4088611,
+    "totalFiles": 546,
+    "totalSize": 4089673,
     "byExtension": {
-      ".json": 13,
+      ".json": 14,
       ".md": 11,
       ".tsx": 170,
       ".ts": 301,
@@ -1442,6 +1442,11 @@
       "path": "e2e/themes.spec.ts",
       "size": 4800,
       "last_modified": "2026-09-29T05:13:40.263Z"
+    },
+    {
+      "path": "e2e/timings.json",
+      "size": 1062,
+      "last_modified": "2026-10-04T16:43:15.583Z"
     },
     {
       "path": "e2e/transcripts.spec.ts",
