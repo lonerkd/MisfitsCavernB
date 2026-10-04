@@ -126,7 +126,6 @@ export default function StudioPage() {
           actions: [{ id: 'next-tab', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) }],
         }
       : null,
-    [activeProject?.id, activeProject?.title, activeProject?.accent_color, tab, tabs.length],
   );
 
   return (

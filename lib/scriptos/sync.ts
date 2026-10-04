@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
 
@@ -39,6 +39,9 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
 
   const noteLocalEdit = useCallback(() => { lastLocalEditRef.current = Date.now(); }, []);
 
+  // The latest handler, without resubscribing when the caller re-renders.
+  const applyRemote = useEffectEvent((content: string) => onRemoteChange(content));
+
   useEffect(() => {
     if (!scriptId) return;
     let cancelled = false;
@@ -69,7 +72,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           }
 
           lastRemoteRef.current = remote;
-          if (remote !== local) onRemoteChange(remote);
+          if (remote !== local) applyRemote(remote);
         })
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
@@ -95,7 +98,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       setConflict(NO_CONFLICT);
       lastRemoteRef.current = '';
     };
-  }, [scriptId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scriptId]);
 
   useEffect(() => {
     if (!scriptId || !channelRef.current) return;

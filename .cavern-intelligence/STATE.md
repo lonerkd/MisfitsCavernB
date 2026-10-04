@@ -14,10 +14,9 @@ Full scope for each in `BACKLOG.md`. In order:
    (audited — all merged or closed on purpose; tips recorded).
 2. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium (passes in CI and the cloud container).
-3. **Upgrades**: data access through `lib/` (L) · lint
-   pass 3 — the remaining suppressions (M) · activity feed completeness (M,
-   product call) · emphasis in the writing surface (M) · story beat → script
-   (M/L) · dev-toolchain advisories (watch upstream).
+3. **Upgrades**: data access through `lib/` (L) · activity feed
+   completeness (M, product call) · emphasis in the writing surface (M) ·
+   story beat → script (M/L) · dev-toolchain advisories (watch upstream).
 
 No PRs are open.
 
@@ -31,7 +30,28 @@ No PRs are open.
   users (23 more) — the intended API, each gated, reviewed in
   `database-and-security.md` §2.D.
 
-## Latest Session — `has_discord_webhook` is gated
+## Latest Session — Lint pass 3: no hidden dependencies
+
+No migration.
+
+- **`react-hooks/exhaustive-deps` has no disables left** (was 20). Each hid a
+  dependency; now an effect event (`useEffectEvent`) wraps the helper or
+  callback the effect calls (editor mount + project follow, jobs, project
+  hub, script sync's remote handler, voice presence, on-set offline seed,
+  phase reveal, the island's Caps Lock keys), or the effect depends on
+  extracted keys (Lounge crew, island project switch) or memoised values
+  (island apps, CutPlayer embed, split-pane refs, CastingBoard loader).
+  The editor's keydown handler is a plain function (its `useCallback` hid
+  stale helpers and memoised nothing).
+- **`usePillStage(descriptor)`** no longer takes a hand-kept deps list: it
+  republishes when the JSON of what it shows changes (6 pages updated).
+- **Every remaining disable carries a `-- reason`**: 22
+  `@next/next/no-img-element` (signed storage URLs, pasted links,
+  third-party thumbnails — `next/image` doesn't fit) and 2 justified
+  `set-state-in-effect`. Patterns in `conventions.md` §10.
+- Lint, typecheck, unit tests (472), build: clean.
+
+## Earlier — `has_discord_webhook` is gated
 
 Migration `20261004010000_discord_webhook_gate.sql` (applied to production;
 fingerprint checked).
@@ -45,18 +65,3 @@ fingerprint checked).
 - `tests/integration/discord-webhook.test.ts`: the owner sees true; crew who
   can't manage the channel and an outsider see false. Full integration
   suite: 289 pass.
-
-## Earlier — Definer-function review; README
-
-No migration.
-
-- **The definer-function allowlist** (`database-and-security.md` §2.D): all
-  32 `SECURITY DEFINER` functions in `public` that anon (9) or signed-in
-  users (23 more) can call, each with the check it makes, read from
-  production. New ones join the list in the PR that adds them. One has no
-  gate — `has_discord_webhook` answers for any channel to any signed-in user
-  (a yes/no; ids are unguessable) — BACKLOG 3.11.
-- **README** rewritten for what the suite is now (Next 16 / React 19, the
-  local stack, the real `lib/` map, the knowledge hub); the dated audits in
-  `docs/` are marked as historical snapshots.
-

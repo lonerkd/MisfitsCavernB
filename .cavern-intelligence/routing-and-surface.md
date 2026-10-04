@@ -115,7 +115,8 @@ Chrome lives in two places, and nothing else mounts itself globally:
   dot), `caps` (Caps Lock: the same deck held open with a key on every control —
   1–6 apps, Q–I controls, / search,  split, P project, Esc puts it away) and
   `dot` (typing in a field). The mode is on `nav[data-island]`. A page describes
-  itself with `usePillStage` (title, fields, toggles, actions); a page that
+  itself with `usePillStage(descriptor)` (title, fields, toggles, actions;
+  republished whenever what it shows changes — no deps list); a page that
   doesn't still gets a name and next places from `lib/island/routes.ts` — add a
   route there when adding a page. Its size is a per-device
   setting (Settings › Island size, `lib/island/scale.ts`, CSS `--island-scale`).

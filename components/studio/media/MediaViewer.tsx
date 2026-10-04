@@ -32,7 +32,7 @@ export function MediaViewer({ media, src, playerRef }: { media: Pick<Media, 'kin
     return <div className={s.viewer}><span className={s.spinner} aria-label="Loading" /></div>;
   }
   if (media.kind === 'image' && src) {
-    // eslint-disable-next-line @next/next/no-img-element
+    // eslint-disable-next-line @next/next/no-img-element -- signed storage URL (short-lived token; the optimizer would cache one copy per signature)
     return <div className={s.viewer}><img src={src} alt={media.title} /></div>;
   }
   if (media.kind === 'video' && src) {

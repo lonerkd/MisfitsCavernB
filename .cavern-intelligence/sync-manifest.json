@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-04T04:40:00.948Z",
+  "last_synchronized": "2026-10-04T05:57:58.394Z",
   "stats": {
     "totalFiles": 545,
-    "totalSize": 4088089,
+    "totalSize": 4088611,
     "byExtension": {
       ".json": 13,
       ".md": 11,
@@ -475,8 +475,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 82801,
-      "last_modified": "2026-10-03T09:47:26.562Z"
+      "size": 82651,
+      "last_modified": "2026-10-04T05:39:13.965Z"
     },
     {
       "path": "app/error.tsx",
@@ -500,8 +500,8 @@
     },
     {
       "path": "app/jobs/page.tsx",
-      "size": 42544,
-      "last_modified": "2026-10-03T11:39:56.384Z"
+      "size": 42549,
+      "last_modified": "2026-10-04T05:42:07.235Z"
     },
     {
       "path": "app/layout.tsx",
@@ -525,8 +525,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 98645,
-      "last_modified": "2026-10-03T11:37:05.712Z"
+      "size": 98515,
+      "last_modified": "2026-10-04T05:39:13.967Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -560,8 +560,8 @@
     },
     {
       "path": "app/portfolio/page.tsx",
-      "size": 24734,
-      "last_modified": "2026-10-03T08:45:01.876Z"
+      "size": 24708,
+      "last_modified": "2026-10-04T05:39:13.968Z"
     },
     {
       "path": "app/privacy/page.tsx",
@@ -580,8 +580,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 69339,
-      "last_modified": "2026-10-03T11:40:38.268Z"
+      "size": 69341,
+      "last_modified": "2026-10-04T05:41:26.384Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -600,8 +600,8 @@
     },
     {
       "path": "app/projects/page.tsx",
-      "size": 35362,
-      "last_modified": "2026-10-03T08:45:08.942Z"
+      "size": 35335,
+      "last_modified": "2026-10-04T05:39:13.966Z"
     },
     {
       "path": "app/s/[token]/page.tsx",
@@ -640,8 +640,8 @@
     },
     {
       "path": "app/split/page.tsx",
-      "size": 11783,
-      "last_modified": "2026-10-03T11:41:35.228Z"
+      "size": 11706,
+      "last_modified": "2026-10-04T05:36:44.872Z"
     },
     {
       "path": "app/studio/error.tsx",
@@ -655,8 +655,8 @@
     },
     {
       "path": "app/studio/page.tsx",
-      "size": 12278,
-      "last_modified": "2026-10-03T11:35:26.347Z"
+      "size": 12184,
+      "last_modified": "2026-10-04T05:39:47.913Z"
     },
     {
       "path": "app/terms/page.tsx",
@@ -680,8 +680,8 @@
     },
     {
       "path": "components/Avatar.tsx",
-      "size": 1536,
-      "last_modified": "2026-10-03T09:48:50.924Z"
+      "size": 1604,
+      "last_modified": "2026-10-04T05:34:54.681Z"
     },
     {
       "path": "components/ClientShell.tsx",
@@ -690,8 +690,8 @@
     },
     {
       "path": "components/CommandPalette.tsx",
-      "size": 15074,
-      "last_modified": "2026-10-03T11:31:23.684Z"
+      "size": 15042,
+      "last_modified": "2026-10-04T05:37:03.886Z"
     },
     {
       "path": "components/Confirm.tsx",
@@ -705,8 +705,8 @@
     },
     {
       "path": "components/EcosystemTaskbar.tsx",
-      "size": 28669,
-      "last_modified": "2026-10-03T09:48:50.929Z"
+      "size": 28629,
+      "last_modified": "2026-10-04T05:37:33.816Z"
     },
     {
       "path": "components/EmptyState.tsx",
@@ -980,8 +980,8 @@
     },
     {
       "path": "components/progress/PhasePanel.tsx",
-      "size": 14971,
-      "last_modified": "2026-10-03T11:44:12.466Z"
+      "size": 14980,
+      "last_modified": "2026-10-04T05:41:15.038Z"
     },
     {
       "path": "components/progress/ToolIntro.tsx",
@@ -1005,8 +1005,8 @@
     },
     {
       "path": "components/studio/CastingBoard.tsx",
-      "size": 13897,
-      "last_modified": "2026-10-03T11:43:54.214Z"
+      "size": 13888,
+      "last_modified": "2026-10-04T05:38:02.177Z"
     },
     {
       "path": "components/studio/CharacterBible.tsx",
@@ -1020,8 +1020,8 @@
     },
     {
       "path": "components/studio/PitchDeck.tsx",
-      "size": 10769,
-      "last_modified": "2026-10-03T08:45:01.879Z"
+      "size": 10877,
+      "last_modified": "2026-10-04T05:35:07.107Z"
     },
     {
       "path": "components/studio/StudioContext.tsx",
@@ -1035,8 +1035,8 @@
     },
     {
       "path": "components/studio/media/FindReferences.tsx",
-      "size": 4477,
-      "last_modified": "2026-09-29T14:43:54.483Z"
+      "size": 4528,
+      "last_modified": "2026-10-04T05:34:54.682Z"
     },
     {
       "path": "components/studio/media/MediaDetail.tsx",
@@ -1055,13 +1055,13 @@
     },
     {
       "path": "components/studio/media/MediaThumb.tsx",
-      "size": 2879,
-      "last_modified": "2026-09-29T14:10:11.578Z"
+      "size": 3009,
+      "last_modified": "2026-10-04T05:34:54.682Z"
     },
     {
       "path": "components/studio/media/MediaViewer.tsx",
-      "size": 2609,
-      "last_modified": "2026-10-03T08:10:27.123Z"
+      "size": 2701,
+      "last_modified": "2026-10-04T05:34:54.682Z"
     },
     {
       "path": "components/studio/media/TranscriptPanel.tsx",
@@ -1075,8 +1075,8 @@
     },
     {
       "path": "components/studio/post/CutPlayer.tsx",
-      "size": 4776,
-      "last_modified": "2026-09-26T19:35:11.444Z"
+      "size": 4735,
+      "last_modified": "2026-10-04T05:37:53.382Z"
     },
     {
       "path": "components/studio/post/CutScript.tsx",
@@ -1115,8 +1115,8 @@
     },
     {
       "path": "components/studio/production/OnSetView.tsx",
-      "size": 28210,
-      "last_modified": "2026-10-03T11:46:14.148Z"
+      "size": 28406,
+      "last_modified": "2026-10-04T05:41:22.665Z"
     },
     {
       "path": "components/studio/production/PaperworkView.tsx",
@@ -1550,8 +1550,8 @@
     },
     {
       "path": "lib/context/PillContext.tsx",
-      "size": 6163,
-      "last_modified": "2026-10-03T09:41:36.240Z"
+      "size": 6477,
+      "last_modified": "2026-10-04T05:39:13.963Z"
     },
     {
       "path": "lib/context/PresenceContext.tsx",
@@ -2040,8 +2040,8 @@
     },
     {
       "path": "lib/scriptos/sync.ts",
-      "size": 5546,
-      "last_modified": "2026-10-03T09:41:36.240Z"
+      "size": 5668,
+      "last_modified": "2026-10-04T05:38:12.457Z"
     },
     {
       "path": "lib/scriptos/tableRead.ts",
@@ -2460,8 +2460,8 @@
     },
     {
       "path": "lib/webrtc/voice.ts",
-      "size": 8556,
-      "last_modified": "2026-09-24T20:05:03.648Z"
+      "size": 8607,
+      "last_modified": "2026-10-04T05:38:38.723Z"
     },
     {
       "path": "lib/writing/core.test.ts",

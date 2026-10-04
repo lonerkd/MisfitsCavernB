@@ -386,8 +386,7 @@ export default function ProjectsPage() {
       actions: user ? [
         { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
       ] : [],
-    },
-    [projectsList, user],
+    }
   );
 
   useEffect(() => {

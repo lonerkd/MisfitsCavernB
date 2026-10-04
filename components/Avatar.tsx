@@ -21,7 +21,7 @@ export default function Avatar({ src, name, size = 40, radius, accent = 'var(--a
     return (
       // Avatars can be any URL a person pastes in; next/image only serves listed
       // hosts, so a plain img (with an initial as the fallback) is the honest choice.
-      // eslint-disable-next-line @next/next/no-img-element
+      // eslint-disable-next-line @next/next/no-img-element -- any URL a person pastes in (next/image serves only listed hosts)
       <img
         src={src}
         alt={name || ''}

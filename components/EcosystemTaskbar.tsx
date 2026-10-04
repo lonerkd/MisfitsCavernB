@@ -6,7 +6,7 @@
 // the whole suite when you reach for it; a keyboard deck under Caps Lock; a dot
 // while you type. Which shape, and why: lib/island/mode.
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass } from 'lucide-react';
 import Link from 'next/link';
@@ -185,8 +185,11 @@ export default function EcosystemTaskbar() {
     return () => { window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
   }, [noDock, scale]);
 
-  const modules = getProjectModules(activeProject?.settings);
-  const visibleApps = APPS.filter(app => !app.module || modules[app.module]);
+  const projectSettings = activeProject?.settings;
+  const visibleApps = useMemo(() => {
+    const modules = getProjectModules(projectSettings);
+    return APPS.filter(app => !app.module || modules[app.module]);
+  }, [projectSettings]);
 
   // ── What the person is doing ─────────────────────────────────────────────
   const islandRef = useRef<HTMLDivElement>(null);
@@ -222,7 +225,7 @@ export default function EcosystemTaskbar() {
     clearPin();
     const active = document.activeElement as HTMLElement | null;
     if (active && islandRef.current?.contains(active)) active.blur();
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pathname, clearPin]);
 
   // Clicking away closes whatever the island had open.
   useEffect(() => {
@@ -269,12 +272,13 @@ export default function EcosystemTaskbar() {
 
   // Switching project is worth a word.
   const lastProject = useRef<string | null>(null);
+  const projectId = activeProject?.id ?? null;
+  const projectTitle = activeProject?.title;
   useEffect(() => {
-    const id = activeProject?.id ?? null;
     // From one project to another — not the first one arriving as the page loads.
-    if (lastProject.current && id && lastProject.current !== id && activeProject) emit(`Now in ${activeProject.title}`, 'accent');
-    lastProject.current = id;
-  }, [activeProject?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (lastProject.current && projectId && lastProject.current !== projectId) emit(`Now in ${projectTitle}`, 'accent');
+    lastProject.current = projectId;
+  }, [projectId, projectTitle, emit]);
 
   // ── What it has to offer here ────────────────────────────────────────────
   const route = useMemo(() => islandRoute(pathname, !!activeProject), [pathname, activeProject]);
@@ -295,7 +299,7 @@ export default function EcosystemTaskbar() {
       // Places the strip below doesn't already reach.
       ...route.links.filter(l => !inReach.has(l.href)).map((l): Control => ({ id: l.id, kind: 'link', label: l.label, href: l.href, run: () => router.push(l.href) })),
     ].slice(0, CONTROL_KEYS.length);
-  }, [activeDescriptor, route, visibleApps.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeDescriptor, route, visibleApps, router]);
 
   useOnChange(keys, (k) => { if (!k) setKbFocusIndex(-1); });
   useOnChange(controls.length, () => setKbFocusIndex(-1));
@@ -305,35 +309,35 @@ export default function EcosystemTaskbar() {
   const openSplit = () => router.push(splitHref(window.location.pathname + window.location.search));
 
   // ── The Caps Lock layer: the deck, on keys ───────────────────────────────
+  const onDeckKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return;
+    const key = e.key.toLowerCase();
+    const done = () => { e.preventDefault(); };
+
+    if (key === 'escape') { done(); setCapsDismissed(true); setProjectsOpen(false); return; }
+    if (key >= '1' && key <= '9') {
+      const target = visibleApps[parseInt(key, 10) - 1];
+      if (target) { done(); router.push(target.path); }
+      return;
+    }
+    if (key === '/') { done(); openSearch(); return; }
+    if (key === '\\') { done(); openSplit(); return; }
+    if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
+
+    const byKey = controls[CONTROL_KEYS.indexOf(key as typeof CONTROL_KEYS[number])];
+    if (byKey) { done(); byKey.run(); return; }
+
+    if (!controls.length) return;
+    if (key === 'arrowright' || key === ']') { done(); setKbFocusIndex(i => (i + 1) % controls.length); return; }
+    if (key === 'arrowleft' || key === '[') { done(); setKbFocusIndex(i => (i - 1 + controls.length) % controls.length); return; }
+    if (key === 'enter' && kbFocusIndex >= 0 && controls[kbFocusIndex]) { done(); controls[kbFocusIndex].run(); }
+  });
   useEffect(() => {
     if (noDock || !kbActive || capsDismissed) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return;
-      const key = e.key.toLowerCase();
-      const done = () => { e.preventDefault(); };
-
-      if (key === 'escape') { done(); setCapsDismissed(true); setProjectsOpen(false); return; }
-      if (key >= '1' && key <= '9') {
-        const target = visibleApps[parseInt(key, 10) - 1];
-        if (target) { done(); router.push(target.path); }
-        return;
-      }
-      if (key === '/') { done(); openSearch(); return; }
-      if (key === '\\') { done(); openSplit(); return; }
-      if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
-
-      const byKey = controls[CONTROL_KEYS.indexOf(key as typeof CONTROL_KEYS[number])];
-      if (byKey) { done(); byKey.run(); return; }
-
-      if (!controls.length) return;
-      if (key === 'arrowright' || key === ']') { done(); setKbFocusIndex(i => (i + 1) % controls.length); return; }
-      if (key === 'arrowleft' || key === '[') { done(); setKbFocusIndex(i => (i - 1 + controls.length) % controls.length); return; }
-      if (key === 'enter' && kbFocusIndex >= 0 && controls[kbFocusIndex]) { done(); controls[kbFocusIndex].run(); }
-    };
+    const handler = (e: KeyboardEvent) => onDeckKey(e);
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noDock, kbActive, capsDismissed, controls, kbFocusIndex, visibleApps.length]);
+  }, [noDock, kbActive, capsDismissed]);
 
   if (noDock) return null;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { videoEmbed, type Media, type PostCut } from '@/lib/studio';
 import s from '../studio.module.css';
@@ -28,7 +28,7 @@ export const CutPlayer = forwardRef<CutPlayerHandle, {
   const [live, setLive] = useState(false);
 
   const url = cut.url ?? media?.external_url ?? null;
-  const embed = videoEmbed(url);
+  const embed = useMemo(() => videoEmbed(url), [url]);
   const file = cut.media_id && media?.storage_path ? fileUrl ?? null : null;
 
   useEffect(() => { onLive?.(live); }, [live, onLive]);
@@ -58,7 +58,7 @@ export const CutPlayer = forwardRef<CutPlayerHandle, {
     let tries = 0;
     const timer = window.setInterval(() => { if (time.current !== null || ++tries > 20) window.clearInterval(timer); else subscribe(); }, 500);
     return () => { window.removeEventListener('message', onMessage); window.clearInterval(timer); };
-  }, [embed?.provider, embed?.id, cut.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [embed, cut.id]);
 
   useImperativeHandle(ref, () => ({
     time: () => (file ? video.current?.currentTime ?? null : time.current),

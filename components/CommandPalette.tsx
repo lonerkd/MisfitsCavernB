@@ -111,9 +111,8 @@ export default function CommandPalette() {
     }
   }, [open]);
 
-  const go = (path: string) => () => { router.push(path); setOpen(false); };
-
   const commands = useMemo<Command[]>(() => {
+    const go = (path: string) => () => { router.push(path); setOpen(false); };
     const nav: Command[] = [
       { id: 'nav-home', label: 'Go to Hub', icon: <Home size={15} />, run: go('/'), group: 'Navigate', keywords: 'home dashboard' },
       { id: 'nav-editor', label: 'Open ScriptOS', hint: 'Screenplay editor', icon: <FileText size={15} />, run: go('/editor'), group: 'Navigate', keywords: 'write script screenplay' },
@@ -194,7 +193,7 @@ export default function CommandPalette() {
     const foundIds = new Set(hits.map((h) => h.id));
     const quick = [...scriptCmds, ...assetCmds].filter((c) => !foundIds.has(c.id.replace(/^(script|asset)-/, '')));
     return [...nav, ...hitCmds, ...proj.filter((c) => !foundIds.has(c.id.replace(/^proj-/, ''))), ...quick];
-  }, [projects, router, scripts, assets, hits]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [projects, router, scripts, assets, hits, setActiveProject]);
 
   const filtered = useMemo(() => {
     const list = commands.filter(c => c.found || fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));

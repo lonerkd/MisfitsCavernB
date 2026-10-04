@@ -32,13 +32,13 @@ export function MediaThumbVisual({ media, src }: { media: Pick<Media, 'kind' | '
   const embed = media.kind === 'video' && media.external_url ? videoEmbed(media.external_url) : null;
 
   if (media.kind === 'image' && src && !broken) {
-    // eslint-disable-next-line @next/next/no-img-element
+    // eslint-disable-next-line @next/next/no-img-element -- signed storage URL (short-lived token; the optimizer would cache one copy per signature)
     return <img src={src} alt={media.title} loading="lazy" decoding="async" onError={() => setBroken(true)} />;
   }
   if (embed?.thumbnail && !broken) {
     return (
       <>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- YouTube/Vimeo/Drive thumbnail host */}
         <img src={embed.thumbnail} alt={media.title} loading="lazy" onError={() => setBroken(true)} />
         <span className={s.playBadge}><Play size={9} /> {embed.provider === 'youtube' ? 'YouTube' : embed.provider === 'vimeo' ? 'Vimeo' : 'Drive'}</span>
       </>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-react';
@@ -475,13 +475,15 @@ export default function JobsPage() {
     setApplied(Object.fromEntries(rows.filter((r) => r.jobs).map((r) => [r.jobs!.id, r.status])));
   };
 
+  const loadMine = useEffectEvent((userId: string) => { loadMyJobs(userId); void loadMyApplications(userId); });
+  const loadBoard = useEffectEvent(() => { void showJobs(fetchJobs()); });
   useEffect(() => {
     awaitOSUser().then((user) => {
       setUser(user);
-      if (user) { loadMyJobs(user.id); void loadMyApplications(user.id); }
+      if (user) loadMine(user.id);
     });
-    void showJobs(fetchJobs());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on mount
+    loadBoard();
+  }, []);
 
   /** Applies with an optional note and tells the poster. */
   const handleApply = async (jobId: string, note: string): Promise<boolean> => {
@@ -528,8 +530,7 @@ export default function JobsPage() {
       actions: user ? [
         { id: 'post-job', label: '+ Post Position', onClick: () => setShowPost(true) },
       ] : [],
-    },
-    [tab, jobs.length, filtered.length, myJobs.length, roleFilter, user],
+    }
   );
 
   // The filter lists the crafts that have postings, in the crafts list's order.
