@@ -46,7 +46,9 @@ function diff(expected, actual) {
 
 async function main() {
   const targetMode = args.has('--target');
-  const url = targetMode ? process.env.DRIFT_TARGET_DB_URL : LOCAL_DB_URL;
+  // Trimmed: a secret pasted with a trailing space or newline otherwise asks for
+  // database "postgres ".
+  const url = (targetMode ? process.env.DRIFT_TARGET_DB_URL : LOCAL_DB_URL)?.trim();
   if (!url) {
     console.error('DRIFT_TARGET_DB_URL is not set.');
     process.exit(2);
