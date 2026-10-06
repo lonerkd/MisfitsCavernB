@@ -123,35 +123,28 @@ What guards `main`, and the commands behind each guard:
 | Every e2e spec (the public smoke specs too) against a fresh local stack, in 5 parts balanced by time | CI `e2e-local` | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |
 | Production = committed schema | `production-drift.yml`: nightly and after schema changes land on main. Needs the `PRODUCTION_DB_URL` secret (a read-only role) and **fails without it** | `DRIFT_TARGET_DB_URL=… npm run db:drift -- --target` |
 
-**`PRODUCTION_DB_URL`** (set 2026-10-05) logs in as `drift_reader`: a login
-role with no grants — it reads only the system catalogs, which is all
-`supabase/fingerprint.sql` needs, and can't see or change any data. Its
-password lives only in the GitHub secret; nobody needs to keep a copy. It goes
+**The production drift login.** The workflow logs in as `drift_reader`: a
+login role with no grants — it reads only the system catalogs, which is all
+`supabase/fingerprint.sql` needs, and can't see or change any data. It goes
 through the **session pooler** (GitHub's runners are IPv4-only; the direct
-`db.<ref>.supabase.co` host is IPv6-only):
-`postgresql://drift_reader.fxsryglwpwcqkfjljbrm:<password>@aws-0-us-west-2.pooler.supabase.com:5432/postgres`.
-To replace the password (lost, leaked, rotated — or the check reports
-"password authentication failed for user drift_reader"), run this in the
-Supabase SQL Editor. It sets a new random password and prints the finished
-connection string, so nothing is edited by hand:
+`db.<ref>.supabase.co` host is IPv6-only). The one secret is the role's
+password, **`PRODUCTION_DB_PASSWORD`**; the workflow builds the address itself
+(`drift_reader.fxsryglwpwcqkfjljbrm` @ `aws-0-us-west-2.pooler.supabase.com:5432`).
+Nobody needs to keep a copy of the password — to change it (lost, leaked,
+rotated, or the check says "password authentication failed"), pick a new
+passphrase and type it in two places:
 
-```sql
-CREATE FUNCTION pg_temp.reset_drift_reader() RETURNS text LANGUAGE plpgsql AS $$
-DECLARE pw text := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'drift_reader')
-  THEN EXECUTE format('ALTER ROLE drift_reader WITH LOGIN PASSWORD %L', pw);
-  ELSE EXECUTE format('CREATE ROLE drift_reader LOGIN PASSWORD %L', pw);
-  END IF;
-  RETURN concat('postgresql', '://', 'drift_reader.fxsryglwpwcqkfjljbrm', ':', pw, '@', 'aws-0-us-west-2.pooler.supabase.com:5432/postgres');
-END $$;
-SELECT pg_temp.reset_drift_reader() AS production_db_url;
-```
+1. Supabase › SQL Editor: `ALTER ROLE drift_reader PASSWORD 'the passphrase';`
+   (no apostrophes inside it; `CREATE ROLE drift_reader LOGIN PASSWORD '…';`
+   if the role doesn't exist).
+2. GitHub › Settings › Secrets and variables › Actions ›
+   `PRODUCTION_DB_PASSWORD` › Update — the same passphrase.
 
-Copy the whole result into the secret (GitHub › Settings › Secrets and
-variables › Actions › `PRODUCTION_DB_URL` › Update), then run *Production
-schema drift* from the Actions tab. A failed login shows in the Supabase
-logs (`supavisor_logs`), not in the workflow's annotations.
+Then run *Production schema drift* from the Actions tab. If it can't connect,
+the run's annotation says why and what the target looked like (user, host,
+password length — never its characters); a refused login also shows in the
+Supabase logs (`supavisor_logs`). (Typing beats copying: a 161-character
+connection string copied from the SQL results on a phone arrived as 100.)
 
 - `e2e-local` runs the whole `e2e/` folder; each spec skips itself unless its
   stack is there, so a new spec is in CI the moment it's added.

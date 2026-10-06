@@ -5,9 +5,12 @@ name: Production schema drift
 # production outside a migration, or if a merged migration was never applied.
 # Runs every night, and right after any change to the schema lands on main.
 #
-# Needs the repo secret PRODUCTION_DB_URL: a Postgres connection string for
-# production, ideally a read-only role (the check only reads the catalog).
-# Without it the check fails — a check that can't run must not look green.
+# Logs in as `drift_reader` (a role with no grants: it reads only the system
+# catalogs) through Supabase's session pooler — GitHub's runners are IPv4-only
+# and the direct db.<ref>.supabase.co host is IPv6-only. The one secret is
+# that role's password, PRODUCTION_DB_PASSWORD; the address is built here.
+# (A full PRODUCTION_DB_URL secret is used only when that one is unset.)
+# Without either the check fails — a check that can't run must not look green.
 on:
   schedule:
     - cron: '17 6 * * *'
@@ -20,7 +23,10 @@ jobs:
   drift:
     runs-on: ubuntu-latest
     env:
-      DRIFT_TARGET_DB_URL: ${{ secrets.PRODUCTION_DB_URL }}
+      PRODUCTION_DB_URL: ${{ secrets.PRODUCTION_DB_URL }}
+      PRODUCTION_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+      DRIFT_DB_USER: drift_reader.fxsryglwpwcqkfjljbrm
+      DRIFT_DB_HOST: aws-0-us-west-2.pooler.supabase.com:5432
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -30,8 +36,13 @@ jobs:
       - run: npm ci
       - name: Compare production with the committed schema
         run: |
-          if [ -z "$DRIFT_TARGET_DB_URL" ]; then
-            echo "::error::PRODUCTION_DB_URL secret is not set, so production was not checked. Add it under Settings → Secrets and variables → Actions (a read-only Postgres role is enough)."
+          if [ -n "$PRODUCTION_DB_PASSWORD" ]; then
+            PW=$(node -e 'process.stdout.write(encodeURIComponent(process.env.PRODUCTION_DB_PASSWORD.trim()))')
+            export DRIFT_TARGET_DB_URL="postgresql://${DRIFT_DB_USER}:${PW}@${DRIFT_DB_HOST}/postgres"
+          elif [ -n "$PRODUCTION_DB_URL" ]; then
+            export DRIFT_TARGET_DB_URL="$PRODUCTION_DB_URL"
+          else
+            echo "::error::The PRODUCTION_DB_PASSWORD secret is not set, so production was not checked. See .cavern-intelligence/tools-and-access.md §7."
             exit 1
           fi
           npm run db:drift -- --target
