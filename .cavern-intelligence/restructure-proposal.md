@@ -26,7 +26,7 @@ The bones are sound, and moving them would cost more than it gives:
 
 | Problem | Where |
 |---|---|
-| Stray top-level folders | `hooks/` (one file, unused), `types/` (one file), `progress/` and `.harnesskit/` (leftovers of an earlier agent harness), `docs/` (July–September audits the bible supersedes) |
+| Stray top-level folders | `hooks/` (one file, unused), `types/` (one file), `docs/` (July–September audits the bible supersedes) |
 | Dead files | `hooks/useColorExtractor.ts`, `components/ui/AmbientGradient.tsx` (nothing imports them) |
 | `components/` root is a pile | 22 files mixing the app shell (island, palette, cursor, bell, service worker, error reporter, audio widget) with UI primitives (Avatar, Toast, Confirm, EmptyState…) |
 | `lib/` root is a pile | 17 loose files (`crafts` + `crafts-core`, `formats` + `formats-core`, `themes`, `search`, `legal`, `onboarding`, `color`, `password-strength`, `useEscapeKey`, `api-rate-limit`); one-file folders (`lib/types`, `lib/storage`); providers split between `lib/context` and `lib/os` |
@@ -69,7 +69,7 @@ share pages), and the suite layout owns the island and tab bar.
 
 | # | PR | Size | What moves | Risk |
 |---|---|---|---|---|
-| 1 | **Clean-up** | S | delete the 2 dead files; `types/screenplay.ts` → `lib/scriptos/types.ts`; remove `progress/`, `.harnesskit/` (agent leftovers — confirm); `docs/` → `.cavern-intelligence/archive/` | none — no behaviour |
+| 1 | **Clean-up** | S | delete the 2 dead files; `types/screenplay.ts` → `lib/scriptos/types.ts`; `docs/` → `.cavern-intelligence/archive/` | none — no behaviour |
 | 2 | **Brand: The Cavern** (3.12) | M | every product string, metadata, manifest (`name` "The Cavern", `short_name` "Cavern"), service worker texts, legal pages (`product`: The Cavern; maker: Misfits Cavern), Discord sender, Spotify player name, export filename, package name `the-cavern`, README / AGENTS / docs. Footer and legal say "The Cavern — by Misfits Cavern". Needs the mark (decision 1) | low; e2e text assertions updated |
 | 3 | **iPhone install** (3.13, PWA part) | M | PNG icons (180 apple-touch, 192/512 maskable), splash images, Add to Home Screen coaching on phones, then Web Push (subscriptions table, VAPID, an Edge Function sender) | low → medium (push is new infra) |
 | 4 | **Shell and primitives** | M | `components/` root → `components/shell/` and `components/ui/`; `lib/context` → `lib/os`; loose `lib/*.ts` → domain folders and `lib/hooks`, `lib/util`. `git mv` (history kept) + a codemod for imports | low — moves only; typecheck catches every missed import |
@@ -106,7 +106,7 @@ Still open:
 
 5. **Internal prefixes** — keep `mc_` / `mc-` (recommended) or migrate.
 6. **Domain** — is there one for The Cavern?
-7. **Agent leftovers** — OK to delete `.harnesskit/` and `progress/`?
+7. ~~Agent leftovers~~ — removed 2026-10-06 (owner: "remove old tools"): `.harnesskit/` and `progress/`, a September agent harness nothing referenced.
 
 ## Launch repository
 

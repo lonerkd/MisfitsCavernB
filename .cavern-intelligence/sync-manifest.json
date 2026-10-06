@@ -1,12 +1,12 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T15:42:33.324Z",
+  "last_synchronized": "2026-10-06T15:48:51.164Z",
   "stats": {
-    "totalFiles": 546,
-    "totalSize": 4090485,
+    "totalFiles": 541,
+    "totalSize": 4087036,
     "byExtension": {
-      ".json": 14,
-      ".md": 11,
+      ".json": 10,
+      ".md": 10,
       ".tsx": 170,
       ".ts": 301,
       ".js": 7,
@@ -332,31 +332,6 @@
       "path": ".github/pull_request_template.md",
       "size": 635,
       "last_modified": "2026-09-29T20:45:30.101Z"
-    },
-    {
-      "path": ".harnesskit/bible.md",
-      "size": 2297,
-      "last_modified": "2026-10-03T08:10:27.072Z"
-    },
-    {
-      "path": ".harnesskit/config.json",
-      "size": 770,
-      "last_modified": "2026-10-03T08:10:27.073Z"
-    },
-    {
-      "path": ".harnesskit/detected.json",
-      "size": 349,
-      "last_modified": "2026-10-03T08:10:27.073Z"
-    },
-    {
-      "path": ".harnesskit/failures.json",
-      "size": 17,
-      "last_modified": "2026-10-03T08:10:27.073Z"
-    },
-    {
-      "path": ".harnesskit/insights-history.json",
-      "size": 16,
-      "last_modified": "2026-10-03T08:10:27.073Z"
     },
     {
       "path": "AGENTS.md",

@@ -19,8 +19,8 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    thin pages, optional Studio routes). Decided: keep "Welcome back,
    misfit."; landing "THE CAVERN / by Misfits Cavern"; no repo rename (new
    repo at launch, 3.16). The mark is chosen: R13 (`brand/mark/`, icons
-   exported). Still open: prefixes, domain, agent
-   leftovers. Nothing has moved.
+   exported). Still open: prefixes, domain. (Agent
+   leftovers removed.) No code has moved yet.
 3. **Security and launch blockers**: script share links token-gated (3.3) ·
    password recovery (3.4).
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
@@ -84,6 +84,8 @@ No migration. Docs and two scripts only.
   mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
   makes the iPhone, manifest and favicon icons. Owner decisions in
   `restructure-proposal.md`; launch-repository practice is 3.16.
+- **Old agent tooling removed**: `.harnesskit/` and `progress/` (a September
+  harness; nothing referenced them).
 - Naming: The Cavern is the product, Misfits Cavern the company
   (`overview-and-goals.md`); the rename is 3.12.
 
