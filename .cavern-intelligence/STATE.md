@@ -6,9 +6,9 @@
 
 ## Resume here (handoff, 2026-10-06 — cloud → local)
 
-1. **Owner merges** PR #136 (bible, audit, restructure plan, the R13 mark,
-   skills restored) once CI is green, and Dependabot #135. (Cloud sessions
-   can't merge here.) Then `git switch main && git pull`.
+1. **Merged** 2026-10-06: #136 (bible, audit, restructure plan, the R13
+   mark, one source of rules, skills restored) and Dependabot #135. Start
+   from `git switch main && git pull`.
 2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
    skills (`run-misfits-cavern`, `supabase`,
    `supabase-postgres-best-practices`) — no symlinks, so they load on
@@ -20,15 +20,16 @@
    R13 from `brand/mark/` into `public/`, the manifest and `app/layout.tsx`
    — iPhone icon included). Then 3.3 (script share links, security) and
    3.4 (password recovery).
-4. Still open with the owner: keep the `mc_` prefixes (recommended), the
-   domain.
+4. Decided: the internal `mc_` / `mc-` prefixes stay. Still open with the
+   owner: the domain.
 
 ## Open work — start here
 
 Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 [`bible/`](bible/README.md). In order:
 
-1. **Owner, outside the code**: Supabase usage (grace period over — which
+1. **Owner, outside the code** (owner, 2026-10-06: "good for now" — not
+   blocking the next PRs; revisit before launch): Supabase usage (grace period over — which
    line?); count shared scripts in production (3.3); an email sender (SMTP);
    lawyer review of `/privacy` and `/terms`; leaked-password protection; the
    two old Windows stashes; 18 stale remote branches; optionally branch
@@ -38,7 +39,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    thin pages, optional Studio routes). Decided: keep "Welcome back,
    misfit."; landing "THE CAVERN / by Misfits Cavern"; no repo rename (new
    repo at launch, 3.16). The mark is chosen: R13 (`brand/mark/`, icons
-   exported). Still open: prefixes, domain. (Agent
+   exported). Prefixes stay (decided). Still open: the domain. (Agent
    leftovers removed.) No code has moved yet.
 3. **Security and launch blockers**: script share links token-gated (3.3) ·
    password recovery (3.4).
