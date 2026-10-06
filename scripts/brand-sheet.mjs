@@ -4,7 +4,7 @@
 // favicon size and in the landing lockup, rendered with the app's own fonts.
 //
 //   node scripts/brand-sheet.mjs   → .cavern-intelligence/brand/concepts/<sheet>.png
-//                                     (sheet.png: round one · rockies.png: two · rockies-3.png: three · rockies-4.png: four)
+//                                     (sheet.png: round one · rockies.png: two · rockies-3.png: three · rockies-4.png: four · rockies-5.png: five)
 //
 // MC_LOCAL_CHROMIUM points at a Chromium when Playwright's own isn't installed.
 import { readFileSync } from 'node:fs';
@@ -42,6 +42,10 @@ const SHEETS = {
     ['rockies-10-alpenglow-moon', 'R10 · Alpenglow, moon beside the summit', 'R6 as drawn, with the moon where A had it. Peaks = M, crescent = C: the old MC, hidden in the landscape.'],
     ['rockies-11-alpenglow-balanced', 'R11 · Alpenglow, balanced', 'R10 with the mountains balanced — equal summits, a gentler slab — so the M reads first.'],
     ['rockies-12-alpenglow-mc', 'R12 · Alpenglow, MC', 'R11 a little smaller, with a larger crescent rising low at its right like the next letter: M · C.']]],
+  'rockies-5': ['ROUND FIVE — LIT BY THE MOON', [
+    ['rockies-10-alpenglow-moon', 'R10 · Before', 'Lit from the upper left while the moon sits at the upper right — the light and its source disagree.'],
+    ['rockies-13-moonlit', 'R13 · Moonlit', 'R10 relit by its own moon: the faces toward it vanilla (the pyramid\'s east face, the slab\'s cliff), the faces away in sinopia.'],
+    ['rockies-14-moonlit-mc', 'R14 · Moonlit, MC', 'R13 a little smaller, the crescent larger and lower at its right like the next letter: M · C.']]],
 };
 let n = 0;
 const col = ([f, title, note]) => `

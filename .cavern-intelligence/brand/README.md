@@ -29,6 +29,12 @@ Decisions and the plan: [`../restructure-proposal.md`](../restructure-proposal.m
     `rockies-11-alpenglow-balanced` (equal summits, a gentler slab — the
     owner felt R6's weights fight the hidden letters), R12
     `rockies-12-alpenglow-mc` (a larger crescent low at the right, M · C).
+  - **Round five** (`rockies-5.png`): the owner prefers R10's off-weight
+    (the tall tilted slab) but felt the light was wrong — it was: R10 is lit
+    from the upper left while its moon sits at the upper right. R13
+    `rockies-13-moonlit` relights it from the moon (faces toward it vanilla,
+    faces away sinopia); R14 `rockies-14-moonlit-mc` is R13 with the larger,
+    lower crescent (M · C).
   - Owner to choose a direction; the chosen one is then drawn properly
     (curves, optical balance, a simplified small-size cut for 16–32 px).
 - Voice: "Welcome back, misfit." stays.
