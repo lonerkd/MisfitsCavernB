@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { parseScript } from '@/lib/scriptos/parser';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine } from '@/lib/scriptos/types';
 import type { PublicProfile } from '@/lib/supabase/profiles';
 
 interface SharedScript {
@@ -173,7 +173,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
         <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)' }}>
           POWERED BY{' '}
           <Link href="/auth" style={{ color: 'rgba(var(--ink-rgb), 0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(var(--ink-rgb), 0.2)' }}>
-            MISFITS CAVERN
+            THE CAVERN
           </Link>
         </span>
       </footer>

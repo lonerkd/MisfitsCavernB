@@ -1,4 +1,4 @@
-# Tools & Access — Misfits Cavern
+# Tools & Access — The Cavern
 
 Everything an AI agent can reach in this repo, and how it's wired. This is the
 single source of truth for **capabilities**; `.claude/settings.json` is the
@@ -172,7 +172,7 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   get much slower: run the suite with `--reporter=json` into a file, then
   `node scripts/e2e-shard.mjs --update <file>`. One worker per shard — on 4
   CPUs, 3 workers ran no faster and timed out.
-- **Docs-only PRs** (only `*.md`, `.cavern-intelligence/`, `docs/`) skip
+- **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip
   `database` and `e2e-local` (the `changes` job decides); `checks` still runs.
   Pushes to `main` always run everything.
 - **What to run locally before pushing** (CI runs the rest in parallel,

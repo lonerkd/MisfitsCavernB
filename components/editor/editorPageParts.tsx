@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { ScriptLine, LineType } from '@/types/screenplay';
+import type { ScriptLine, LineType } from '@/lib/scriptos/types';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 
 export const PRINT_COLORS: Record<string, string> = {

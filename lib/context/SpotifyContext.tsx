@@ -86,7 +86,7 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
       if (!token) return;
 
       localPlayer = new window.Spotify.Player({
-        name: 'Misfits Cavern Web Player',
+        name: 'The Cavern Web Player',
         getOAuthToken: (cb: (token: string) => void) => {
           getValidToken().then(t => {
             if (t) cb(t);

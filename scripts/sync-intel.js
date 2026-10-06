@@ -35,7 +35,7 @@ function walk(dir, fileList = []) {
 }
 
 function generateManifest() {
-  console.log('Scanning Misfits Cavern codebase...');
+  console.log('Scanning The Cavern codebase...');
   const files = walk(ROOT_DIR);
 
   // Group files by top-level category
@@ -109,7 +109,7 @@ function generateManifest() {
   };
 
   const manifest = {
-    project: "Misfits Cavern",
+    project: "The Cavern",
     last_synchronized: new Date().toISOString(),
     stats: fileStats,
     modules: modules,

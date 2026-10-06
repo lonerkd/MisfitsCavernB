@@ -8,7 +8,7 @@
 // resolved to their standard form) but meaning is preserved.
 
 import { parseScript } from './parser';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine } from '@/lib/scriptos/types';
 
 const isAllCaps = (s: string): boolean => s.length > 0 && s === s.toUpperCase() && /[A-Z]/.test(s);
 

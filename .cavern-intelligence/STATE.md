@@ -7,25 +7,24 @@
 ## Resume here (handoff, 2026-10-06 — cloud → local)
 
 1. **Merged** 2026-10-06: #136 (bible, audit, restructure plan, the R13
-   mark, one source of rules, skills restored) and Dependabot #135. Start
-   from `git switch main && git pull`.
+   mark, one source of rules), #135, #138, #139 (run driver stops by port).
+   This branch's PR: restructure phases 1–2 (the clean-up and the brand).
+   Start from `git switch main && git pull` once it's merged.
 2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
    skills (`run-misfits-cavern`, `supabase`,
    `supabase-postgres-best-practices`) — no symlinks, so they load on
    Windows. Session context loads from `CLAUDE.md` (it `@`-imports
    `RULES.md` + `STATE.md`) — no hook.
-3. **Next PR — restructure phases 1–2** (`restructure-proposal.md`):
-   clean-up (two dead files, `types/`, `docs/` → archive) and the brand
-   (The Cavern everywhere, "by Misfits Cavern" where the maker is named,
-   R13 from `brand/mark/` into `public/`, the manifest and `app/layout.tsx`
-   — iPhone icon included). Then 3.3 (script share links, security) and
-   3.4 (password recovery).
-4. **Branches and stashes**: once the driver-fix PR is merged, delete the
-   18 stale remote branches with the one-liner in BACKLOG §1 (all verified;
-   the cloud proxy can't delete branches). On the Windows machine, check
-   `git stash list` — two old stashes were never reconciled (BACKLOG §1).
+3. **Next**: 3.3 (script share links token-gated, security), then 3.4
+   (password recovery). Then restructure phase 3 (splash images, Add to
+   Home Screen coaching, Web Push — 3.13).
+4. **Branches and stashes**: delete the 18 stale remote branches with the
+   one-liner in BACKLOG §1 (all verified; the cloud proxy can't delete
+   branches). On the Windows machine, check `git stash list` — two old
+   stashes were never reconciled (BACKLOG §1).
 5. Decided: the internal `mc_` / `mc-` prefixes stay. Still open with the
-   owner: the domain.
+   owner: the domain. An installed iPhone app keeps its old icon until it
+   is removed and added to the Home Screen again (iOS caches it).
 
 ## Open work — start here
 
@@ -38,19 +37,17 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    lawyer review of `/privacy` and `/terms`; leaked-password protection; the
    two old Windows stashes; 18 stale remote branches (one-liner in BACKLOG §1); optionally branch
    protection on `main`.
-2. **Restructure** — `restructure-proposal.md` (8 phases: clean-up, brand,
-   iPhone install, shell/primitives, route groups, one permission model,
-   thin pages, optional Studio routes). Decided: keep "Welcome back,
-   misfit."; landing "THE CAVERN / by Misfits Cavern"; no repo rename (new
-   repo at launch, 3.16). The mark is chosen: R13 (`brand/mark/`, icons
-   exported). Prefixes stay (decided). Still open: the domain. (Agent
-   leftovers removed.) No code has moved yet.
+2. **Restructure** — `restructure-proposal.md`: phases 1–2 done (clean-up;
+   The Cavern with the R13 mark and icons). Next: 3 iPhone install (splash,
+   coaching, push), 4 shell/primitives, 5 route groups, 6 one permission
+   model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
+   at launch, 3.16). Still open: the domain.
 3. **Security and launch blockers**: script share links token-gated (3.3) ·
    password recovery (3.4).
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
-5. **Upgrades**: data access through `lib/` (3.2, L) · brand rename (3.12) ·
+5. **Upgrades**: data access through `lib/` (3.2, L) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
    activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
    dev-toolchain advisories (3.1, watch upstream).
@@ -73,7 +70,38 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
   users (24 more) — the intended API, each gated, reviewed in
   `database-and-security.md` §2.D.
 
-## Latest Session — The bible: the whole suite, top to bottom
+## Latest Session — Restructure phases 1–2: clean-up and The Cavern
+
+No migration.
+
+- **Brand**: the product is **The Cavern** everywhere it's named — titles
+  and metadata, the manifest (`name` The Cavern, `short_name` Cavern), the
+  service worker, share and press pages, Discord sender, Spotify player,
+  export filename, legal (`LEGAL.product` The Cavern, `LEGAL.maker` Misfits
+  Cavern; effective date moved to 6 October), README, package name
+  `the-cavern`, doc headings. Misfits Cavern stays only as the maker:
+  the landing hero is "THE / CAVERN" with the mark and "by Misfits
+  Cavern" under it; the footer reads "The Cavern · by Misfits Cavern ·
+  © 2026 Peter Olowude". "Welcome back, misfit." and the `mc_`/`mc-`
+  prefixes stay.
+- **The mark in the app**: `components/brand/Mark.tsx` (R13 in theme
+  tokens) replaces the "MC" text in the nav, Studio, projects, jobs,
+  Lounge and portfolio headers. `public/` gets the R13 icons
+  (`icon.svg`, `favicon-32.png`, `apple-touch-icon.png`, 192/512 and
+  maskable PNGs); `app/layout.tsx` declares them; the service worker cache
+  is `mc-shell-v3` so installed apps refresh.
+- **Clean-up**: deleted `hooks/useColorExtractor.ts` and
+  `components/ui/AmbientGradient.tsx` (unused); `types/screenplay.ts` →
+  `lib/scriptos/types.ts` (17 imports); `docs/` → `.cavern-intelligence/archive/`;
+  dead `tsconfig` aliases (`@/types`, `@/hooks`, `@/utils`, `@/styles`)
+  removed; CI's docs-only filter no longer lists `docs/`.
+- Docs: bible gaps closed (01, 03, 05, 08, 10), `restructure-proposal.md`
+  phases 1–2 marked done, `brand/README.md` says how the icons get into
+  `public/`; BACKLOG 3.12 done and removed, 3.13 narrowed.
+- Verified: typecheck, lint, 472 unit tests, build, budget (36 pages);
+  the landing and showcase looked at on desktop and phone.
+
+## Earlier — The bible: the whole suite, top to bottom
 
 No migration. Docs and two scripts only.
 
@@ -122,25 +150,3 @@ No migration. Docs and two scripts only.
   harness; nothing referenced them).
 - Naming: The Cavern is the product, Misfits Cavern the company
   (`overview-and-goals.md`); the rename is 3.12.
-
-## Earlier — Lint pass 3: no hidden dependencies
-
-No migration.
-
-- **`react-hooks/exhaustive-deps` has no disables left** (was 20). Each hid a
-  dependency; now an effect event (`useEffectEvent`) wraps the helper or
-  callback the effect calls (editor mount + project follow, jobs, project
-  hub, script sync's remote handler, voice presence, on-set offline seed,
-  phase reveal, the island's Caps Lock keys), or the effect depends on
-  extracted keys (Lounge crew, island project switch) or memoised values
-  (island apps, CutPlayer embed, split-pane refs, CastingBoard loader).
-  The editor's keydown handler is a plain function (its `useCallback` hid
-  stale helpers and memoised nothing).
-- **`usePillStage(descriptor)`** no longer takes a hand-kept deps list: it
-  republishes when the JSON of what it shows changes (6 pages updated).
-- **Every remaining disable carries a `-- reason`**: 22
-  `@next/next/no-img-element` (signed storage URLs, pasted links,
-  third-party thumbnails — `next/image` doesn't fit) and 2 justified
-  `set-state-in-effect`. Patterns in `conventions.md` §10.
-- Lint, typecheck, unit tests (472), build: clean.
-

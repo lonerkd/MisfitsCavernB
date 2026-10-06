@@ -17,7 +17,7 @@ import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/character
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine, LineType } from '@/types/screenplay';
+import type { ScriptLine, LineType } from '@/lib/scriptos/types';
 import { useToast } from '@/components/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';

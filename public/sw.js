@@ -1,4 +1,4 @@
-// Misfits Cavern — offline-first service worker.
+// The Cavern — offline-first service worker.
 // Strategy: every visited route is cached (network-first, cache fallback), and
 // hashed /_next/static assets are cache-first (immutable). Cross-origin calls
 // (Supabase, Spotify, Openverse) are never intercepted, so a missing network
@@ -8,10 +8,12 @@
 // failed navigation falls back to that same page's cache or an offline notice —
 // never to the cached home page, which rewrote the URL to "/" and made sign-in
 // look like it dropped the user on the landing page.
-const CACHE = 'mc-shell-v2';
-const SHELL = ['/', '/manifest.webmanifest', '/icon.svg'];
+//
+// v3: The Cavern's R13 icons (the old "M" icon was cached in v2).
+const CACHE = 'mc-shell-v3';
+const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/apple-touch-icon.png'];
 
-const OFFLINE_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · Misfits Cavern</title></head>
+const OFFLINE_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · The Cavern</title></head>
 <body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#080808;color:#e0ddae;font-family:monospace;text-align:center;padding:24px">
 <div><p style="letter-spacing:4px;text-transform:uppercase;font-size:12px">You're offline</p><p style="opacity:.6;font-size:12px">This page hasn't been opened on this device yet. Reconnect and try again.</p>
 <button onclick="location.reload()" style="margin-top:12px;background:#d7340b;color:#080808;border:0;padding:10px 18px;font-family:monospace;letter-spacing:2px;cursor:pointer">RETRY</button></div></body></html>`;

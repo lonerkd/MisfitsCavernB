@@ -28,18 +28,6 @@
       ],
       "@/lib/*": [
         "./lib/*"
-      ],
-      "@/utils/*": [
-        "./utils/*"
-      ],
-      "@/types/*": [
-        "./types/*"
-      ],
-      "@/hooks/*": [
-        "./hooks/*"
-      ],
-      "@/styles/*": [
-        "./styles/*"
       ]
     },
     "allowJs": true,

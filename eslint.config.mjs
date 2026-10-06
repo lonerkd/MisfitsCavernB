@@ -9,7 +9,7 @@ const config = [
   ...coreWebVitals,
   {
     rules: {
-      // The design scales (docs/DESIGN_DIRECTION_2026-09.md): the 11px text floor and the radius scale.
+      // The design scales (.cavern-intelligence/archive/DESIGN_DIRECTION_2026-09.md): the 11px text floor and the radius scale.
       'no-restricted-syntax': [
         "error",
         {

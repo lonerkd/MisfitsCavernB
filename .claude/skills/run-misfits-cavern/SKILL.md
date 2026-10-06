@@ -1,9 +1,9 @@
 ---
 name: run-misfits-cavern
-description: Run, build, test, and drive the Misfits Cavern production suite locally
+description: Run, build, test, and drive The Cavern production suite locally
 ---
 
-Misfits Cavern is a Next.js 14 web app for indie filmmakers with TypeScript, Tailwind, Supabase, and WebRTC. This skill documents how to build, launch, and drive the app locally.
+The Cavern is a Next.js 16 web app for indie filmmakers with TypeScript, Tailwind, Supabase, and WebRTC. This skill documents how to build, launch, and drive the app locally.
 
 ## Prerequisites
 

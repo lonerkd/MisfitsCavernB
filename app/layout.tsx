@@ -58,12 +58,18 @@ const courierPrime = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Misfits Cavern — Creative Collaboration Platform',
-  description: 'The ultimate creative platform for screenwriting, portfolio showcase, and immersive digital collaboration.',
-  applicationName: 'Misfits Cavern',
+  title: 'The Cavern — by Misfits Cavern',
+  description: 'The production suite for independent filmmakers — script, pre-production, the shoot, post and release in one connected system.',
+  applicationName: 'The Cavern',
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/icon.svg' },
-  appleWebApp: { capable: true, title: 'Misfits Cavern', statusBarStyle: 'black-translucent' },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+  },
+  appleWebApp: { capable: true, title: 'The Cavern', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {

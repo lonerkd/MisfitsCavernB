@@ -15,7 +15,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" other={{ href: '/terms', label: 'Terms of Service' }}>
       <p>
-        {LEGAL.product} is a production suite for independent filmmakers, run by {LEGAL.operator}, an individual
+        {LEGAL.product}, by {LEGAL.maker}, is a production suite for independent filmmakers, run by {LEGAL.operator}, an individual
         in {LEGAL.province}, {LEGAL.country} (&ldquo;we&rdquo;, &ldquo;us&rdquo;). This policy explains what
         information we collect when you use {LEGAL.product}, why, who else handles it, and the choices you have.
         We follow Canada&rsquo;s <em>Personal Information Protection and Electronic Documents Act</em> (PIPEDA).

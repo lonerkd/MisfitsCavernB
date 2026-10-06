@@ -4,7 +4,7 @@ import { TimingPanel } from './TimingPanel';
 import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine } from '@/lib/scriptos/types';
 import type { CharacterStats } from '@/lib/scriptos/characters';
 import type { LintIssue } from '@/lib/scriptos/validator';
 import { TYPE_COLORS } from './editorConstants';

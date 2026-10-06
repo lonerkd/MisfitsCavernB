@@ -165,29 +165,15 @@ title or image (`/shared` has Open Graph). Server-render both with
 (none today) and `/m/[id]` signed out. Done when both pages unfurl in a chat
 and the specs pass.
 
-### 3.12 Brand: the suite is **The Cavern** — M
-Owner decision (2026-10-06): the product is **The Cavern**; **Misfits Cavern**
-(with the s) is the company/media brand that makes it (`overview-and-goals.md`). ~30 places
-in `app/`, `components/`, `lib/` say "Misfits Cavern" (titles, metadata,
-landing copy, emails, legal pages, the manifest), plus the repo/package names
-and docs. Part of the restructure pass.
-Owner decisions (2026-10-06): keep "Welcome back, misfit."; landing hero
-"THE CAVERN" with "by Misfits Cavern" under it; the mark replaces "MC" —
-chosen: R13 — `brand/mark/` (the mark, a small cut, one colour, and the
-app/iPhone icons ready to wire in: `public/`, the manifest, `app/layout.tsx`
-icons and `appleWebApp`); repo not renamed (new repo at launch, 3.16).
-Done when the UI, metadata and docs say The Cavern, and the company appears
-only as the maker.
-
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
 routes, to decide together:
 - **PWA first (M):** much is already there — `public/manifest.webmanifest`
   (standalone, starts at `/today`), `public/sw.js` (offline shell),
-  `appleWebApp` metadata, Pocket and the on-set offline cache. Missing for
-  iPhone: a 180×180 PNG `apple-touch-icon` and PNG manifest icons (iOS ignores
-  SVG), splash images, "Share → Add to Home Screen" coaching (iOS has no
-  install prompt), the name (The Cavern, 3.12), and **Web Push** (iOS 16.4+,
+  `appleWebApp` metadata, the R13 icons (180 px touch icon, 192/512 and
+  maskable manifest PNGs), the name, Pocket and the on-set offline cache.
+  Missing for iPhone: splash images, "Share → Add to Home Screen" coaching
+  (iOS has no install prompt), and **Web Push** (iOS 16.4+,
   installed web apps only; needs VAPID keys, a `push_subscriptions` table and
   a sender — an Edge Function — for call sheets, DMs and mentions). iOS
   ignores manifest shortcuts and `share_target`. No App Store review; ships

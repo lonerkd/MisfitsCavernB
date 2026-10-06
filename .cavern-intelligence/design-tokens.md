@@ -1,4 +1,4 @@
-# Design Tokens — Misfits Cavern
+# Design Tokens — The Cavern
 
 Source of truth: `tailwind.config.js` (Tailwind classes) + `app/globals.css` (CSS custom properties + component classes).
 
@@ -76,7 +76,7 @@ h3 { font-size: clamp(1.2rem, 3vw, 2rem); }
 
 ## Scales (enforced by lint)
 
-Defined in `app/globals.css`. See `docs/DESIGN_DIRECTION_2026-09.md`.
+Defined in `app/globals.css`. See `archive/DESIGN_DIRECTION_2026-09.md`.
 
 - **Type:** `--text-2xs` 11 (floor, uppercase labels) · `xs` 12 · `sm` 13 · `base` 14 · `md` 16 · `lg` 20 · `xl` 24 · `2xl` 32. Literal `fontSize` under 11 fails lint.
 - **Script face:** `--script` (Courier Prime) for screenplay surfaces only.

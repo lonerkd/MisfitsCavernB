@@ -1,7 +1,7 @@
-# Database and Security — Misfits Cavern
+# Database and Security — The Cavern
 
 ## 1. Schema Overview
-Misfits Cavern is powered by a relational PostgreSQL database hosted on Supabase. Row-Level Security (RLS) is enabled on every single table to enforce strict user boundaries.
+The Cavern is powered by a relational PostgreSQL database hosted on Supabase. Row-Level Security (RLS) is enabled on every single table to enforce strict user boundaries.
 
 ### Core Tables & Relationships
 - **`profiles`**: Linked directly to Supabase Auth (`auth.users`). Auto-created on user signup via a trigger on `auth.users`. Holds username, bio, location, notification preferences, and admin roles. **Column-restricted:** anon/authenticated may only select the public columns (`PUBLIC_PROFILE_COLUMNS` in `lib/supabase/profile-columns.ts`); `select('*')` fails. The owner reads `is_admin`, `notification_prefs`, `discord_id` through `get_my_account()`; admins list users through `admin_list_users()`; admin rights change only through `set_user_admin()` (trigger `profiles_guard`).

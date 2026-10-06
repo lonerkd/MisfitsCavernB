@@ -1,4 +1,4 @@
-# Conventions — Misfits Cavern
+# Conventions — The Cavern
 
 The patterns that are usually implicit / inline in the code. Follow these so new
 work is indistinguishable from existing work. When in doubt, read a sibling file

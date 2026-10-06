@@ -14,6 +14,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 import { Button } from '@/components/ui/Button';
+import { Mark } from '@/components/brand/Mark';
 import { useProject } from '@/lib/os';
 import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
@@ -567,7 +568,7 @@ export default function Home() {
             </div>
           </motion.div>
 
-          <h1 className="sr-only">Misfits Cavern — the production suite for independent filmmakers</h1>
+          <h1 className="sr-only">The Cavern — the production suite for independent filmmakers, by Misfits Cavern</h1>
           <div style={{ position: 'relative', display: 'inline-block' }} aria-hidden>
             <motion.div
               initial={{ opacity: 0, y: 50, filter: 'blur(16px)' }}
@@ -587,7 +588,7 @@ export default function Home() {
                 color: 'transparent',
                 display: 'block',
               }}>
-                MISFITS
+                THE
               </span>
               <span style={{
                 color: 'var(--accent)',
@@ -600,6 +601,25 @@ export default function Home() {
               <Viewfinder size={22} color="rgba(232, 67, 26,0.45)" />
             </motion.div>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.4 }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              marginTop: 18,
+              fontFamily: 'var(--mono)',
+              fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
+              letterSpacing: 4,
+              textTransform: 'uppercase',
+              color: 'var(--fg-dim)',
+            }}
+            aria-hidden
+          >
+            <Mark size={28} title="" />
+            by Misfits Cavern
+          </motion.div>
 
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -624,7 +644,7 @@ export default function Home() {
           >
            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 40 }}>
             <Button href={loggedIn ? '/projects' : '/auth'} variant="solid" size="lg">
-              {loggedIn ? 'Enter Studio' : 'Enter Cavern'}
+              {loggedIn ? 'Enter Studio' : 'Enter The Cavern'}
             </Button>
             <Button href="/portfolio" variant="ghost" size="lg">
               View Work
@@ -867,7 +887,7 @@ export default function Home() {
         letterSpacing: 4,
         textTransform: 'uppercase',
         fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
-        © 2026 Peter Olowude · Misfits Cavern Productions
+        The Cavern · by Misfits Cavern · © 2026 Peter Olowude
         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
           <Link href="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
           <Link href="/terms" style={{ color: 'inherit' }}>Terms</Link>
