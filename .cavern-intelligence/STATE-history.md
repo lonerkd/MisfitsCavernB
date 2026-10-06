@@ -2,6 +2,21 @@
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
 
+## Earlier — `has_discord_webhook` is gated
+
+Migration `20261004010000_discord_webhook_gate.sql` (applied to production;
+fingerprint checked).
+
+- The definer-function review found one function without a check:
+  `has_discord_webhook(cid)` told any signed-in user whether any channel had
+  a Discord webhook. It now answers only for someone who can manage the
+  channel (`can_manage_channel`) — the people who set or remove the webhook,
+  and the only caller (the channel-manage dialog). Same signature and
+  grants; only the body changed (one fingerprint line).
+- `tests/integration/discord-webhook.test.ts`: the owner sees true; crew who
+  can't manage the channel and an outsider see false. Full integration
+  suite: 289 pass.
+
 ## Earlier — Definer-function review; README
 
 No migration.

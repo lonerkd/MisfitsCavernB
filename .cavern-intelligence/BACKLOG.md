@@ -25,33 +25,6 @@ the advisors that day).
   and were never reconciled. Look at each (`git stash show -p stash@{n}`);
   anything not on `main` goes into a branch, then drop them. (The cloud
   container's only stash, "legal", is fully on `main` — checked line by line.)
-- **Delete 18 stale remote branches** (approved 2026-10-03; the session's
-  GitHub proxy can't delete branches, so it's a one-liner from your machine:
-  `git push origin --delete <names…>`, or GitHub › Branches). Audited: 14
-  are ancestors of `main` (merged with merge commits), 3 were squash-merged
-  with identical content (#96 `design-scales`, #111 `studio-tab-scroll`,
-  #39 `repo-technical-audit`), and #41 `repo-reacquaintance` was closed on
-  purpose (a dev quick-login + auth-bypass cookie — the local-stack e2e signs
-  in for real instead). `staging` is an old July snapshot nothing in the repo
-  refers to. Tips, to restore any (`git push origin <sha>:refs/heads/<name>`):
-  - `chore/analyze-engine` `46b120c47485`
-  - `chore/auth-journey-fix` `a4d30c6e078a`
-  - `chore/fountain-conformance` `9afcc91c7dfc`
-  - `chore/fountain-serializer` `0d610ed6fde7`
-  - `chore/offline-foundation` `caa49daf8642`
-  - `chore/production-hardening` `7d271728a063`
-  - `chore/scheduler-and-deps` `01a7ba64894e`
-  - `chore/scriptos-normalize` `cbef576b8cec`
-  - `chore/suite-bridge` `8ba95ac8a4cc`
-  - `chore/suite-completeness` `460b4379663e`
-  - `chore/visibility-activity-consolidate` `f6da2b2bfe1e`
-  - `claude/charming-galileo-fewe3n` `c2e71a8dc718`
-  - `claude/design-scales` `21ffd98c81b2`
-  - `claude/expand-access-autonomy-3ajtsg` `bab2c7f6a7cd`
-  - `claude/repo-reacquaintance-q2bm6w` `9a61d35f911a`
-  - `claude/repo-technical-audit-rj40tm` `717889d89184`
-  - `claude/studio-tab-scroll` `f4c08f20425b`
-  - `staging` `d42fb7b225d7`
 
 ## 2. To verify
 
@@ -64,19 +37,24 @@ the advisors that day).
 
 ### 3.1 Dev-toolchain advisories — watch, S when upstream moves
 Production dependencies: **0** vulnerabilities (`npm audit --omit=dev`,
-2026-10-03, after `npm audit fix` bumped `dompurify`, `fflate`,
-`brace-expansion`, `postcss-selector-parser` and the Next ESLint config).
-Left: 7 high, all `braces` (every version flagged) reached only through dev
-tools — `tailwindcss` → `chokidar`, and `eslint-config-next` → `fast-glob`.
-Nothing ships to the browser or server; the only offered fix is
-`--force` (breaking). Re-run `npm audit` when Tailwind or `eslint-config-next`
+2026-10-06, after `source-map-js` 1.2.2; 2026-10-03's fix bumped `dompurify`,
+`fflate`, `brace-expansion`, `postcss-selector-parser` and the Next ESLint
+config). Left: 7 high, all `braces` (every version flagged) reached only
+through dev tools — `tailwindcss` → `chokidar`, and `eslint-config-next` →
+`fast-glob` — and 2 moderate, `postcss-selector-parser` under Tailwind 3's
+`postcss-nested`. Nothing ships to the browser or server; the only offered
+fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
+changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
 release; take the plain fix then. Done when `npm audit` reports 0.
 
 ### 3.2 Data access through `lib/` — L (incremental)
 `conventions.md` §1 says components never call `supabase.from()` directly;
-**110 calls** in `app/` and `components/` do. Move them into the typed
-modules a page at a time (admin, jobs, lounge, crew, projects/[id], today,
-call sheet, soundtrack, …), with the page's loading done the §10 way
+**94 calls** in `app/` and `components/` still do (110 on 2026-10-03; jobs,
+profile, crew, crew member and Settings › Export are done). Count with
+`grep -rE "supabase\s*\.from\(" app components | wc -l`. Move them into the
+typed modules a page at a time — left, by count: projects/[id] (32), lounge
+(12), soundtrack (10), call sheet (8), today (6), pitch (6), then the
+small ones — with the page's loading done the §10 way
 (`useLoad` or a tagged state). Finish with a `no-restricted-syntax` lint rule
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
