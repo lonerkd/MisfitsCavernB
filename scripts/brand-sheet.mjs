@@ -4,7 +4,7 @@
 // favicon size and in the landing lockup, rendered with the app's own fonts.
 //
 //   node scripts/brand-sheet.mjs   → .cavern-intelligence/brand/concepts/<sheet>.png
-//                                     (sheet.png: round one · rockies.png: two · rockies-3.png: three)
+//                                     (sheet.png: round one · rockies.png: two · rockies-3.png: three · rockies-4.png: four)
 //
 // MC_LOCAL_CHROMIUM points at a Chromium when Playwright's own isn't installed.
 import { readFileSync } from 'node:fs';
@@ -37,6 +37,11 @@ const SHEETS = {
     ['rockies-6-sinopia', 'R6 · Alpenglow', 'R5 with the shadows in the brand red, as alpenglow; the moon in vanilla.'],
     ['rockies-7-strata', 'R7 · Rundle strata', 'R5 with the rock bands of the slab drawn along its dip, and the moon rising behind the summit.'],
     ['rockies-8-engraved', 'R8 · Engraved', 'One colour, for print, embossing and stamps: the outline, ridges, snow and strata as lines; the moon solid.']]],
+  'rockies-4': ['ROUND FOUR', [
+    ['rockies-9-woodcut-foothills', 'R9 · R1 + A\'s moon + R3 + R4', 'R1\'s peaks, the moon where A had it, R3\'s woodcut shading, R4\'s spruce along the foothills.'],
+    ['rockies-10-alpenglow-moon', 'R10 · Alpenglow, moon beside the summit', 'R6 as drawn, with the moon where A had it. Peaks = M, crescent = C: the old MC, hidden in the landscape.'],
+    ['rockies-11-alpenglow-balanced', 'R11 · Alpenglow, balanced', 'R10 with the mountains balanced — equal summits, a gentler slab — so the M reads first.'],
+    ['rockies-12-alpenglow-mc', 'R12 · Alpenglow, MC', 'R11 a little smaller, with a larger crescent rising low at its right like the next letter: M · C.']]],
 };
 let n = 0;
 const col = ([f, title, note]) => `

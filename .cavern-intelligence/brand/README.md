@@ -20,6 +20,15 @@ Decisions and the plan: [`../restructure-proposal.md`](../restructure-proposal.m
     from the upper left, slate shadows, snow, a small sinopia moon between
     them: `rockies-5-assiniboine-rundle`, `rockies-6-sinopia` (alpenglow),
     `rockies-7-strata`, `rockies-8-engraved` (one colour).
+  - **Round four** (`rockies-4.png`), the owner's picks: R9
+    `rockies-9-woodcut-foothills` (R1's peaks + A's moon placement + R3's
+    woodcut shading + R4's foothills); and R6 (the owner's favourite —
+    "pretty much there") with the moon where A had it, so the peaks read M
+    and the crescent C — Misfits Cavern's old MC, hidden in the landscape:
+    R10 `rockies-10-alpenglow-moon` (R6's tall tilted slab), R11
+    `rockies-11-alpenglow-balanced` (equal summits, a gentler slab — the
+    owner felt R6's weights fight the hidden letters), R12
+    `rockies-12-alpenglow-mc` (a larger crescent low at the right, M · C).
   - Owner to choose a direction; the chosen one is then drawn properly
     (curves, optical balance, a simplified small-size cut for 16–32 px).
 - Voice: "Welcome back, misfit." stays.
