@@ -102,9 +102,9 @@ Made by the owner, 2026-10-06:
 4. **Repo** — no rename now. The owner makes a new repository at launch
    (see *Launch repository* below).
 
-Still open:
+Decided since, and still open:
 
-5. **Internal prefixes** — keep `mc_` / `mc-` (recommended) or migrate.
+5. **Internal prefixes** — decided 2026-10-06: **keep `mc_` / `mc-`** (localStorage keys, CSS helpers, DOM events). Internal only; renaming would wipe saved device settings for nothing anyone sees.
 6. **Domain** — is there one for The Cavern?
 7. ~~Agent leftovers~~ — removed 2026-10-06 (owner: "remove old tools"): `.harnesskit/` and `progress/`, a September agent harness nothing referenced.
 
