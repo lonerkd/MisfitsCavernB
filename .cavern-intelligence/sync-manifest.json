@@ -1,9 +1,9 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-06T22:04:52.759Z",
+  "last_synchronized": "2026-10-06T22:32:11.308Z",
   "stats": {
     "totalFiles": 579,
-    "totalSize": 4120442,
+    "totalSize": 4120554,
     "byExtension": {
       ".json": 10,
       ".md": 46,
@@ -533,7 +533,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-06T21:38:07.959Z"
+      "last_modified": "2026-10-06T22:04:52.758Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -543,12 +543,12 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-06T21:38:07.959Z"
+      "last_modified": "2026-10-06T22:04:52.758Z"
     },
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-06T21:38:07.959Z"
+      "last_modified": "2026-10-06T22:04:52.758Z"
     },
     {
       "path": "README.md",
@@ -727,8 +727,8 @@
     },
     {
       "path": "app/page.tsx",
-      "size": 39820,
-      "last_modified": "2026-10-06T22:00:08.015Z"
+      "size": 39932,
+      "last_modified": "2026-10-06T22:27:46.855Z"
     },
     {
       "path": "app/portfolio/loading.tsx",
@@ -768,7 +768,7 @@
     {
       "path": "app/projects/[id]/pitch/page.tsx",
       "size": 32412,
-      "last_modified": "2026-10-03T08:10:27.099Z"
+      "last_modified": "2026-10-06T22:22:55.594Z"
     },
     {
       "path": "app/projects/error.tsx",
@@ -788,7 +788,7 @@
     {
       "path": "app/s/[token]/page.tsx",
       "size": 7347,
-      "last_modified": "2026-10-06T21:29:52.113Z"
+      "last_modified": "2026-10-06T22:22:55.598Z"
     },
     {
       "path": "app/settings/loading.tsx",
@@ -978,7 +978,7 @@
     {
       "path": "components/brand/Mark3D.tsx",
       "size": 10158,
-      "last_modified": "2026-10-06T22:03:12.962Z"
+      "last_modified": "2026-10-06T22:22:55.602Z"
     },
     {
       "path": "components/breakdown/CategoryChips.tsx",
@@ -1028,7 +1028,7 @@
     {
       "path": "components/editor/EditorHeader.tsx",
       "size": 16530,
-      "last_modified": "2026-10-06T21:29:52.114Z"
+      "last_modified": "2026-10-06T22:22:55.602Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -1643,12 +1643,12 @@
     {
       "path": "lib/brand/mark3d.test.ts",
       "size": 2697,
-      "last_modified": "2026-10-06T21:59:16.392Z"
+      "last_modified": "2026-10-06T22:22:55.603Z"
     },
     {
       "path": "lib/brand/mark3d.ts",
       "size": 5357,
-      "last_modified": "2026-10-06T22:03:12.959Z"
+      "last_modified": "2026-10-06T22:22:55.604Z"
     },
     {
       "path": "lib/breakdown/api.ts",
@@ -2528,7 +2528,7 @@
     {
       "path": "lib/supabase/database.types.ts",
       "size": 117832,
-      "last_modified": "2026-10-03T08:45:01.887Z"
+      "last_modified": "2026-10-06T22:22:55.604Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2663,12 +2663,12 @@
     {
       "path": "package-lock.json",
       "size": 353700,
-      "last_modified": "2026-10-06T21:57:37.754Z"
+      "last_modified": "2026-10-06T22:22:55.604Z"
     },
     {
       "path": "package.json",
       "size": 2462,
-      "last_modified": "2026-10-06T21:57:28.722Z"
+      "last_modified": "2026-10-06T22:22:55.607Z"
     },
     {
       "path": "performance-budget.json",
@@ -3093,7 +3093,7 @@
     {
       "path": "tests/integration/privacy.test.ts",
       "size": 11180,
-      "last_modified": "2026-09-27T05:03:52.390Z"
+      "last_modified": "2026-10-06T22:22:55.607Z"
     },
     {
       "path": "tests/integration/production-records.test.ts",

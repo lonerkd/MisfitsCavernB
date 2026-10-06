@@ -599,9 +599,11 @@ export default function Home() {
 
           <motion.p
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 0.45, y: 0 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.55 }}
             style={{
+              // --fg-dim is the 4.5:1 floor; a faded opacity fell below it.
+              color: 'var(--fg-dim)',
               fontFamily: 'var(--serif)',
               fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
               fontStyle: 'italic',

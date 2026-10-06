@@ -101,6 +101,8 @@ No migration.
 - Docs: bible gaps closed (01, 03, 05, 08, 10), `restructure-proposal.md`
   phases 1–2 marked done, `brand/README.md` says how the icons get into
   `public/`; BACKLOG 3.12 done and removed, 3.13 narrowed.
+- The landing tagline was drawn at 45% opacity (2.3:1); now `--fg-dim` at
+  full opacity (the 4.5:1 floor) — axe caught it once the hero loaded later.
 - Verified: typecheck, lint, unit tests (479, 7 new for the 3D mark's
   geometry), build, budget (36 pages; `/` 291 kB — three.js isn't in the
   first load); the landing (at rest, hovered, dragged) and showcase looked
