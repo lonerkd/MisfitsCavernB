@@ -4,6 +4,25 @@
 > session only. Every open task, scoped: [BACKLOG.md](BACKLOG.md). Older
 > sessions: [STATE-history.md](STATE-history.md).
 
+## Resume here (handoff, 2026-10-06 — cloud → local)
+
+1. **Owner merges** PR #136 (bible, audit, restructure plan, the R13 mark,
+   skills restored) once CI is green, and Dependabot #135. (Cloud sessions
+   can't merge here.) Then `git switch main && git pull`.
+2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
+   skills (`run-misfits-cavern`, `supabase`,
+   `supabase-postgres-best-practices`) — no symlinks, so they load on
+   Windows; the SessionStart hook is `bash .claude/hooks/session-bootstrap.sh`
+   (Git Bash on Windows).
+3. **Next PR — restructure phases 1–2** (`restructure-proposal.md`):
+   clean-up (two dead files, `types/`, `docs/` → archive) and the brand
+   (The Cavern everywhere, "by Misfits Cavern" where the maker is named,
+   R13 from `brand/mark/` into `public/`, the manifest and `app/layout.tsx`
+   — iPhone icon included). Then 3.3 (script share links, security) and
+   3.4 (password recovery).
+4. Still open with the owner: keep the `mc_` prefixes (recommended), the
+   domain.
+
 ## Open work — start here
 
 Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
@@ -84,6 +103,9 @@ No migration. Docs and two scripts only.
   mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
   makes the iPhone, manifest and favicon icons. Owner decisions in
   `restructure-proposal.md`; launch-repository practice is 3.16.
+- **Skills restored**: `supabase` and `supabase-postgres-best-practices`
+  were dangling links since July (`65bb696` deleted their files); now real
+  folders in `.claude/skills/` with `skills-lock.json` (`tools-and-access.md` §4).
 - **Old agent tooling removed**: `.harnesskit/` and `progress/` (a September
   harness; nothing referenced them).
 - Naming: The Cavern is the product, Misfits Cavern the company

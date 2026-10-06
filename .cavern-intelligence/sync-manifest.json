@@ -1,12 +1,12 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T15:48:51.164Z",
+  "last_synchronized": "2026-10-06T15:51:49.608Z",
   "stats": {
-    "totalFiles": 541,
-    "totalSize": 4087036,
+    "totalFiles": 582,
+    "totalSize": 4161338,
     "byExtension": {
-      ".json": 10,
-      ".md": 10,
+      ".json": 11,
+      ".md": 50,
       ".tsx": 170,
       ".ts": 301,
       ".js": 7,
@@ -327,6 +327,206 @@
       "path": ".claude/skills/run-misfits-cavern/SKILL.md",
       "size": 6679,
       "last_modified": "2026-10-03T08:10:27.067Z"
+    },
+    {
+      "path": ".claude/skills/supabase/CHANGELOG.md",
+      "size": 3290,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase/SKILL.md",
+      "size": 11265,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase/assets/feedback-issue-template.md",
+      "size": 459,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase/references/skill-feedback.md",
+      "size": 1035,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/CHANGELOG.md",
+      "size": 2036,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/SKILL.md",
+      "size": 2576,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "size": 4113,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/_sections.md",
+      "size": 1682,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/_template.md",
+      "size": 1040,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "size": 1468,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "size": 1444,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "size": 1282,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "size": 1325,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "size": 1382,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "size": 1529,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "size": 1287,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "size": 1361,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "size": 1358,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "size": 1390,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "size": 1531,
+      "last_modified": "2026-10-06T15:51:06.146Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "size": 1855,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "size": 1350,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "size": 1353,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "size": 1441,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "size": 1418,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "size": 1506,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "size": 1454,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "size": 1287,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "size": 1521,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "size": 1218,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "size": 1347,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "size": 1880,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "size": 1453,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "size": 1679,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "size": 1728,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "size": 1548,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "size": 1821,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "size": 1566,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "size": 1372,
+      "last_modified": "2026-10-06T15:51:06.147Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "size": 2103,
+      "last_modified": "2026-10-06T15:51:06.147Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -2527,6 +2727,11 @@
       "path": "scripts/test-anon-rls.js",
       "size": 2490,
       "last_modified": "2026-09-24T20:05:03.659Z"
+    },
+    {
+      "path": "skills-lock.json",
+      "size": 549,
+      "last_modified": "2026-10-06T15:50:52.240Z"
     },
     {
       "path": "supabase/fingerprint.sql",

@@ -68,11 +68,17 @@ moving rules between `allow` / `ask` / `deny`.
 
 ## 4. Skills
 
-Locked in `skills-lock.json`, symlinked into `.claude/skills/` (survives fresh
-containers):
+Vendored as real folders in `.claude/skills/` (committed, so they survive
+fresh containers and work on Windows, which checks symlinks out as text
+files); `skills-lock.json` records each one's source and hash. Restored
+2026-10-06 — a July clean-up (`65bb696`) had deleted the files and left the
+links dangling. To refresh from upstream: `npx skills add supabase/agent-skills`,
+then copy `.agents/skills/<name>` over `.claude/skills/<name>` and delete
+`.agents/` (the installer writes symlinks).
 
 | Skill | Use for |
 |---|---|
+| `run-misfits-cavern` | run, build, test and drive the suite locally (`driver.mjs`) |
 | `supabase` | database design, auth, realtime, storage, edge functions, RLS |
 | `supabase-postgres-best-practices` | indexing, RLS performance, migration hygiene |
 
