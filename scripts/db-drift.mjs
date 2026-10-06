@@ -81,6 +81,13 @@ async function main() {
   console.error(`Schema drift: ${label} differs from supabase/schema.fingerprint.\n`);
   for (const l of missing) console.error(`- ${l}`);
   for (const l of unexpected) console.error(`+ ${l}`);
+  if (process.env.GITHUB_ACTIONS) {
+    // The same lines as an annotation, readable without the run log (schema
+    // lines only — no data, no credentials). Newlines encoded as %0A.
+    const shown = [...missing.map((l) => `- ${l}`), ...unexpected.map((l) => `+ ${l}`)];
+    const body = shown.slice(0, 40).join('%0A') + (shown.length > 40 ? `%0A… and ${shown.length - 40} more` : '');
+    console.log(`::error title=Schema drift (${missing.length} missing, ${unexpected.length} unexpected)::${body}`);
+  }
   console.error(
     targetMode
       ? '\n(-) in the repo but not in the target, (+) in the target but not in the repo. Someone changed the target outside a migration, or a migration was not applied.'
