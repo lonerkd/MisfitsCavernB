@@ -52,59 +52,136 @@ export async function getBudgetItemIdsWithJobs(projectId: string): Promise<Set<s
   return new Set((data || []).map(j => j.budget_item_id as string));
 }
 
-export async function getOpenJobs(limit = 50) {
+export interface NewPosting {
+  title: string;
+  role: string;
+  description: string;
+  rate: number | null;
+  projectId: string | null;
+  /** A casting call: accepting an applicant casts them in this role of the project. */
+  character: string | null;
+  userId: string;
+}
+
+/** Posts a job from the Jobs board; returns the new posting's id. */
+export async function postJob(p: NewPosting): Promise<string> {
+  const { data, error } = await supabase.from('jobs').insert({
+    title: p.title,
+    description: p.description,
+    role: p.role,
+    rate: p.rate,
+    project_id: p.projectId,
+    character_name: p.character,
+    created_by: p.userId,
+    status: 'open',
+  }).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+const BOARD_COLUMNS = '*, projects(title), profiles!jobs_created_by_fkey(username)';
+
+/** Every open posting, newest first. */
+export async function listOpenJobs(): Promise<JobWithRelations[]> {
   const { data, error } = await supabase
     .from('jobs')
-    .select('*, projects(title)')
+    .select(BOARD_COLUMNS)
     .eq('status', 'open')
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
+    .order('created_at', { ascending: false });
   if (error) throw error;
-  return data;
+  return (data as unknown as JobWithRelations[]) ?? [];
 }
 
-export async function searchJobs(query: string, role?: string) {
-  let qb = supabase
+/** The postings someone made, newest first, each with how many people applied. */
+export async function listJobsPostedBy(userId: string): Promise<JobWithRelations[]> {
+  const { data, error } = await supabase
     .from('jobs')
-    .select('*, projects(title)')
-    .eq('status', 'open');
-
-  if (query) {
-    qb = qb.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
-  }
-
-  if (role) {
-    qb = qb.eq('role', role);
-  }
-
-  const { data, error } = await qb;
-
+    .select(`${BOARD_COLUMNS}, job_applications(count)`)
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false });
   if (error) throw error;
-  return data;
+  return ((data ?? []) as unknown as (JobWithRelations & { job_applications?: { count: number }[] })[])
+    .map(({ job_applications, ...job }) => ({ ...job, application_count: job_applications?.[0]?.count ?? 0 }));
 }
 
-export async function applyForJob(jobId: string, userId: string) {
-  const { data, error } = await supabase
-    .from('job_applications')
-    .insert({
-      job_id: jobId,
-      applicant_id: userId
-    })
-    .select();
-
-  if (error) throw error;
-  return data;
+export interface MyApplication {
+  status: string;
+  applied_at: string | null;
+  jobs: { id: string; title: string; role: string; status: string | null; projects: { title: string } | null } | null;
 }
 
-export async function getJobApplications(jobId: string) {
+/** Someone's own applications, newest first, with the posting each is for. */
+export async function listMyApplications(userId: string): Promise<MyApplication[]> {
   const { data, error } = await supabase
     .from('job_applications')
-    .select('*, profiles(id, username, avatar_url, bio, role, location, status)')
-    .eq('job_id', jobId);
-
+    .select('status, applied_at, jobs(id, title, role, status, projects(title))')
+    .eq('applicant_id', userId)
+    .order('applied_at', { ascending: false });
   if (error) throw error;
-  return data;
+  return (data ?? []) as unknown as MyApplication[];
+}
+
+/** One posting, with who posted it and its project; null when it doesn't exist or can't be seen. */
+export async function getJob(jobId: string): Promise<JobWithRelations | null> {
+  const { data, error } = await supabase
+    .from('jobs')
+    .select('*, profiles!jobs_created_by_fkey(username, role), projects(title)')
+    .eq('id', jobId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as unknown as JobWithRelations | null;
+}
+
+/** Whether this person has already applied to the posting. */
+export async function hasApplied(jobId: string, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('id')
+    .eq('job_id', jobId)
+    .eq('applicant_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
+export interface JobApplication {
+  id: string;
+  job_id: string;
+  applicant_id: string;
+  cover_note?: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  applied_at: string;
+  profiles?: { username: string; role: string; avatar_url?: string };
+}
+
+/** A posting's applications, newest first (the poster sees them; RLS hides them from anyone else). */
+export async function listApplications(jobId: string): Promise<JobApplication[]> {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('*, profiles(username, role, avatar_url)')
+    .eq('job_id', jobId)
+    .order('applied_at', { ascending: false });
+  if (error) throw error;
+  return (data as unknown as JobApplication[]) ?? [];
+}
+
+/**
+ * Applies to a posting with an optional note. 'duplicate' when this person
+ * already applied (the unique key on job + applicant); throws on anything else.
+ */
+export async function applyToJob(jobId: string, userId: string, note: string): Promise<'sent' | 'duplicate'> {
+  const { error } = await supabase
+    .from('job_applications')
+    .insert({ job_id: jobId, applicant_id: userId, cover_note: note.trim() || null });
+  if (!error) return 'sent';
+  if (error.code === '23505') return 'duplicate';
+  throw error;
+}
+
+/** Closes a posting so it stops taking applications. */
+export async function closeJob(jobId: string): Promise<void> {
+  const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
+  if (error) throw error;
 }
 
 export interface ApplicationResponse { status: 'accepted' | 'rejected'; joined_crew: boolean; cast_as: string | null; closed: boolean }

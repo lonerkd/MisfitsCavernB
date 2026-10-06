@@ -1,26 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { ArrowLeft, DollarSign, CheckCircle, XCircle, Clock, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
 import { Textarea } from '@/components/ui/Textarea';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/Toast';
-import { respondToApplication, type JobWithRelations as Job } from '@/lib/supabase/jobs';
+import { applyToJob, getJob, hasApplied, listApplications, respondToApplication, type JobApplication as Application, type JobWithRelations as Job } from '@/lib/supabase/jobs';
 import Avatar from '@/components/Avatar';
 import { awaitOSUser } from '@/lib/os';
-
-interface Application {
-  id: string;
-  job_id: string;
-  applicant_id: string;
-  cover_note?: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  applied_at: string;
-  profiles?: { username: string; role: string; avatar_url?: string };
-}
 
 const statusBadgeStyle = (status: string): React.CSSProperties => {
   const base: React.CSSProperties = {
@@ -78,20 +67,18 @@ export default function JobDetailPage() {
 
   const appsLoading = !!isCreator && appsFor !== jobId;
 
+  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
+
   useEffect(() => {
     if (!jobId) return;
     let alive = true;
     const loadJob = async () => {
       try {
-        const { data, error } = await supabase
-          .from('jobs')
-          .select('*, profiles!jobs_created_by_fkey(username, role), projects(title)')
-          .eq('id', jobId)
-          .single();
-        if (error) throw error;
-        if (alive) setJob(data as unknown as Job);
+        const found = await getJob(jobId);
+        if (alive) setJob(found);
       } catch (err) {
         console.error('Error loading job:', err);
+        if (alive) reportError('Could not load this posting.');
       } finally {
         if (alive) setLoadedFor(jobId);
       }
@@ -101,13 +88,8 @@ export default function JobDetailPage() {
       if (!alive) return;
       setUser(u);
       if (!u) return;
-      const { data } = await supabase
-        .from('job_applications')
-        .select('id')
-        .eq('job_id', jobId)
-        .eq('applicant_id', u.id)
-        .maybeSingle();
-      if (alive) setAlreadyApplied(!!data);
+      const applied = await hasApplied(jobId, u.id).catch(() => false);
+      if (alive) setAlreadyApplied(applied);
     };
     void loadJob();
     void checkAlreadyApplied();
@@ -119,15 +101,11 @@ export default function JobDetailPage() {
     let alive = true;
     const loadApplications = async () => {
       try {
-        const { data, error } = await supabase
-          .from('job_applications')
-          .select('*, profiles(username, role, avatar_url)')
-          .eq('job_id', jobId)
-          .order('applied_at', { ascending: false });
-        if (error) throw error;
-        if (alive) setApplications((data as unknown as Application[]) || []);
+        const rows = await listApplications(jobId);
+        if (alive) setApplications(rows);
       } catch (err) {
         console.error('Error loading applications:', err);
+        if (alive) reportError('Could not load the applications.');
       } finally {
         if (alive) setAppsFor(jobId);
       }
@@ -141,20 +119,15 @@ export default function JobDetailPage() {
     setApplying(true);
     setApplyError('');
     try {
-      const { error } = await supabase.from('job_applications').insert({
-        job_id: job.id,
-        applicant_id: user.id,
-        cover_note: coverNote.trim() || null,
-        status: 'pending',
-      });
-      if (error) {
-        if (error.code === '23505') {
-          setAlreadyApplied(true);
-        } else {
-          setApplyError(error.message);
-        }
-      } else {
-        setAlreadyApplied(true);
+      let result: 'sent' | 'duplicate';
+      try {
+        result = await applyToJob(job.id, user.id, coverNote);
+      } catch (error) {
+        setApplyError((error as { message?: string })?.message || 'Could not send the application.');
+        return;
+      }
+      setAlreadyApplied(true);
+      if (result === 'sent') {
         setCoverNote('');
 
         notify(job.created_by, {

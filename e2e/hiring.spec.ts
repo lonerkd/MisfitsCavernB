@@ -71,6 +71,12 @@ test.describe('Hiring loop (local Supabase)', () => {
     await expect(card.getByRole('status')).toHaveText(/Applied · pending/i);
     expect((await admin.from('job_applications').select('cover_note').eq('job_id', jobId).single()).data?.cover_note).toBe('Stage and screen, reel on my profile.');
 
+    // The owner's own postings count the application.
+    await sam.goto('/jobs');
+    await sam.getByRole('button', { name: /^My Jobs/ }).click();
+    await expect(sam.getByText('Casting: Maya')).toBeVisible();
+    await expect(sam.getByText('1 applicant', { exact: true })).toBeVisible();
+
     // The owner accepts; the posting closes.
     await sam.goto(`/jobs/${jobId}`);
     await expect(sam.getByText(/Accepting adds them to Tidewater .* crew as Actor and casts them as Maya/)).toBeVisible({ timeout: 20_000 });
