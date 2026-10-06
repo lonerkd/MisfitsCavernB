@@ -16,9 +16,11 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    protection on `main`.
 2. **Restructure** — `restructure-proposal.md` (8 phases: clean-up, brand,
    iPhone install, shell/primitives, route groups, one permission model,
-   thin pages, optional Studio routes) waits on the owner's sign-off and
-   7 decisions (the mark, voice, hero, repo name, prefixes, domain,
-   agent leftovers). Nothing has moved.
+   thin pages, optional Studio routes). Decided: keep "Welcome back,
+   misfit."; landing "THE CAVERN / by Misfits Cavern"; no repo rename (new
+   repo at launch, 3.16). Owner to pick the mark from `brand/concepts/`
+   (A peaks M · B moon C · C both); still open: prefixes, domain, agent
+   leftovers. Nothing has moved.
 3. **Security and launch blockers**: script share links token-gated (3.3) ·
    password recovery (3.4).
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
@@ -76,6 +78,9 @@ No migration. Docs and two scripts only.
   `components/ui/AmbientGradient.tsx`).
 - Dependabot #135 (4 updates, approved) is green; the merge needs the owner
   (the session's merge was refused).
+- **Brand**: three mark concepts drawn (`brand/concepts/`, sheet rebuilt by
+  `node scripts/brand-sheet.mjs`); owner decisions recorded in
+  `restructure-proposal.md`; launch-repository practice is 3.16.
 - Naming: The Cavern is the product, Misfits Cavern the company
   (`overview-and-goals.md`); the rename is 3.12.
 

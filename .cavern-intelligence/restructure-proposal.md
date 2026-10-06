@@ -1,6 +1,7 @@
 # Restructure proposal — folders, logic, branding
 
-**Status: proposal, waiting for the owner's sign-off. No file has moved.**
+**Status: proposal. Owner decisions 1–4 made 2026-10-06 (below); the mark
+is down to three concepts; no file has moved.**
 Written 2026-10-06 from the bible and its audit (`bible/`). Each phase is one
 PR that leaves CI green; phases can be approved one at a time.
 
@@ -80,21 +81,60 @@ share pages), and the suite layout owns the island and tab bar.
 Phases 1–2 first, since everything after is easier once the name is settled.
 Phase 3 can run beside 4–7.
 
-## Decisions for the owner
+## Decisions
 
-1. **The mark.** "MC" goes. What replaces it on the island, the favicon and
-   the iPhone icon — a "C", a cave/aperture glyph, or a wordmark you have?
-   (I can draw two or three options to pick from.)
-2. **The voice.** Keep "Welcome back, misfit." / "Join the cavern." — the
-   brand speaking — or neutral sign-in copy?
-3. **The landing hero.** "THE CAVERN" with "by Misfits Cavern" under it — or
-   keep the company wordmark big on the front door and the product name in
-   the app?
-4. **Repo and package names.** Rename the GitHub repo `MisfitsCavernB` →
-   `the-cavern` (GitHub redirects the old URL; Vercel follows)? That one is
-   in GitHub settings, yours to do.
-5. **Internal prefixes.** Keep `mc_` / `mc-` (recommended), or migrate them
-   (reads old keys once, writes new).
-6. **Domain.** Is there one for The Cavern? Metadata, emails, the share links
-   and the iPhone app name follow it.
-7. **Agent leftovers.** OK to delete `.harnesskit/` and `progress/`?
+Made by the owner, 2026-10-06:
+
+1. **The mark** — "MC" goes. Two ideas: two mountain peaks that make the M,
+   lit from one side so they cast shadow, or a crescent moon that makes the
+   C. Drawn as three concepts — A peaks, B moon crest, C moon over peaks —
+   in `brand/concepts/` (`sheet.png`: both themes, the iPhone icon, favicon
+   sizes, the landing lockup; rebuild with `node scripts/brand-sheet.mjs`).
+   **Owner to pick one**; then it's refined and exported (SVG, PNGs, the
+   iPhone icon) in phase 2.
+2. **The voice** — keep "Welcome back, misfit." The brand speaks.
+3. **The landing page** — "THE CAVERN" as the hero, "by Misfits Cavern"
+   under it.
+4. **Repo** — no rename now. The owner makes a new repository at launch
+   (see *Launch repository* below).
+
+Still open:
+
+5. **Internal prefixes** — keep `mc_` / `mc-` (recommended) or migrate.
+6. **Domain** — is there one for The Cavern?
+7. **Agent leftovers** — OK to delete `.harnesskit/` and `progress/`?
+
+## Launch repository
+
+The owner wants the launch repository to stand up to investors', buyers'
+and media companies' technical due diligence. Two honest ways to start it:
+
+- **Carry the history over** (recommended): push this repository's history
+  into the new one. It's the provenance record — who wrote what, when, and
+  every decision's PR — which is what diligence teams read. Clean practice
+  from now on makes the recent history read well.
+- **Start fresh, archive this one**: one "initial import" commit in the new
+  repository, this one kept private and read-only as the record of how it
+  was built.
+
+Never rewrite history to look different from how it happened (backdated
+commits, invented authors, squashed-away contributors): diligence teams
+check, and it costs more trust than it gains. Note that much of the code
+was written with AI assistance (commits carry `Co-Authored-By` trailers) —
+say so plainly; acquirers ask about code provenance.
+
+What makes the repository launch-grade, and can start **here, now**, so it's
+real practice by launch (BACKLOG 3.16):
+
+| Practice | State |
+|---|---|
+| Every change through a reviewed PR with CI green | ✓ (CI: lint, types, 472 unit, 289 integration, 39 e2e, schema drift) |
+| Architecture and product docs | ✓ (`.cavern-intelligence/`, the bible) |
+| Branch protection on `main`, required checks | owner (GitHub settings) |
+| Conventional commit messages (`feat:`, `fix:`, `docs:`…) | partly — make it the rule |
+| Releases: semantic versions, tags, a `CHANGELOG.md` | missing |
+| `LICENSE` (proprietary), `SECURITY.md`, `CODEOWNERS` | missing |
+| Decision records (why X over Y) | partly (PR bodies, STATE history) — an `adr/` folder |
+| Secret scan of the whole history; dependency licence report (SBOM) | GitGuardian on PRs; full-history scan + SBOM missing |
+| Test coverage report in CI | missing |
+| Signed commits | owner (GitHub settings + a signing key) |

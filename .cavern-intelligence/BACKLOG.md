@@ -169,6 +169,10 @@ Owner decision (2026-10-06): the product is **The Cavern**; **Misfits Cavern**
 in `app/`, `components/`, `lib/` say "Misfits Cavern" (titles, metadata,
 landing copy, emails, legal pages, the manifest), plus the repo/package names
 and docs. Part of the restructure pass.
+Owner decisions (2026-10-06): keep "Welcome back, misfit."; landing hero
+"THE CAVERN" with "by Misfits Cavern" under it; the mark replaces "MC" —
+three concepts in `brand/concepts/` (peaks M, moon C, moon over peaks),
+owner to pick; repo not renamed (new repo at launch, 3.16).
 Done when the UI, metadata and docs say The Cavern, and the company appears
 only as the maker.
 
@@ -206,3 +210,14 @@ hourly limit). With a custom SMTP sender (owner, §1): branded auth emails
 (The Cavern), and opt-in email for call sheets issued / changed and job
 responses, honouring `notification_prefs`. Done when a call sheet issue
 emails the crew who opted in (e2e with the local mail catcher).
+
+### 3.16 Launch-grade repository practice — S each, start now
+The owner will open a new repository at launch and wants it to stand up to
+investor and acquirer due diligence (`restructure-proposal.md` › *Launch
+repository*). Start the practices here so they're real by then: conventional
+commit messages; semantic-version releases with tags and a `CHANGELOG.md`;
+`LICENSE` (proprietary — owner/lawyer), `SECURITY.md`, `CODEOWNERS`; an
+`adr/` folder for decisions; a coverage report in CI; a full-history secret
+scan and a dependency licence report (SBOM). Owner: branch protection and
+signed commits. Done when each is in place and CI enforces the commit and
+coverage rules.

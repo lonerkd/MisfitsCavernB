@@ -19,6 +19,7 @@ duplicated across them.
 | File | Read when… |
 |---|---|
 | **`bible/`** | **The whole suite, top to bottom** — every page (with screenshots), state, feature, rule and connection; the generated inventory; the latest audit. Start at `bible/README.md` |
+| `brand/` | The mark concepts and brand decisions (The Cavern, by Misfits Cavern) |
 | `restructure-proposal.md` | The planned restructure (folders, logic, The Cavern brand), phase by phase — **waiting for the owner's sign-off** |
 | `CLAW.md` | Session start — condensed working rules & product shape |
 | `overview-and-goals.md` | Understanding product vision & the interconnected modules |

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="The Cavern — peaks">
+  <title>The Cavern — peaks (M)</title>
+  <!-- Two peaks make the M. Light from the upper left: the faces that meet it are vanilla, the faces turned away fall into sinopia shadow, and the right peak throws a long shadow down the ground line. -->
+  <polygon points="8,52 22,14 19,52" fill="#e0ddae"/>
+  <polygon points="22,14 32,41 32,52 19,52" fill="#e8431a"/>
+  <polygon points="42,14 32,41 32,52 40,52" fill="#e0ddae"/>
+  <polygon points="42,14 56,52 40,52" fill="#e8431a"/>
+  <polygon points="40,52 56,52 63,56 47,56" fill="#e8431a" opacity=".35"/>
+</svg>
