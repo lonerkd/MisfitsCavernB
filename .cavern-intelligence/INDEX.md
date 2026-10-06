@@ -1,6 +1,6 @@
 # .cavern-intelligence — Knowledge Hub Index
 
-The single source of truth for Misfits Cavern. Any AI agent (Claude Code,
+The single source of truth for The Cavern (the suite; made by Misfits Cavern). Any AI agent (Claude Code,
 Copilot, Cursor, Cline, Codex, Gemini, …) or human should start here. Adapter
 files (`CLAUDE.md`, `.github/copilot-instructions.md`) and the universal
 `AGENTS.md` are thin pointers into this directory — knowledge is **not**
@@ -18,6 +18,7 @@ duplicated across them.
 
 | File | Read when… |
 |---|---|
+| **`bible/`** | **The whole suite, top to bottom** — every page (with screenshots), state, feature, rule and connection; the generated inventory; the latest audit. Start at `bible/README.md` |
 | `CLAW.md` | Session start — condensed working rules & product shape |
 | `overview-and-goals.md` | Understanding product vision & the interconnected modules |
 | **`tools-and-access.md`** | You need to know what tools/MCP/permissions/skills/env exist and how access is wired |
