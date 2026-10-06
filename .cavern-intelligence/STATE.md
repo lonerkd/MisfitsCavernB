@@ -14,8 +14,11 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    lawyer review of `/privacy` and `/terms`; leaked-password protection; the
    two old Windows stashes; 18 stale remote branches; optionally branch
    protection on `main`.
-2. **Restructure proposal** (folders, logic, branding — The Cavern) for the
-   owner's sign-off before any file moves.
+2. **Restructure** — `restructure-proposal.md` (8 phases: clean-up, brand,
+   iPhone install, shell/primitives, route groups, one permission model,
+   thin pages, optional Studio routes) waits on the owner's sign-off and
+   7 decisions (the mark, voice, hero, repo name, prefixes, domain,
+   agent leftovers). Nothing has moved.
 3. **Security and launch blockers**: script share links token-gated (3.3) ·
    password recovery (3.4).
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
@@ -68,6 +71,11 @@ No migration. Docs and two scripts only.
   revisions), `routing-and-surface.md` (`/shared`, `/api/links`, `/m`; the
   data-layer claim), `database-and-security.md` (portfolios are public),
   `conventions.md` §5 (the hooks the UI really uses), the definer count (24).
+- **`restructure-proposal.md`**: the plan for folders, logic and the brand,
+  for sign-off. Found two dead files (`hooks/useColorExtractor.ts`,
+  `components/ui/AmbientGradient.tsx`).
+- Dependabot #135 (4 updates, approved) is green; the merge needs the owner
+  (the session's merge was refused).
 - Naming: The Cavern is the product, Misfits Cavern the company
   (`overview-and-goals.md`); the rename is 3.12.
 
