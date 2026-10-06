@@ -1,14 +1,14 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-06T21:38:07.959Z",
+  "last_synchronized": "2026-10-06T22:04:52.759Z",
   "stats": {
-    "totalFiles": 576,
-    "totalSize": 4100449,
+    "totalFiles": 579,
+    "totalSize": 4120442,
     "byExtension": {
       ".json": 10,
       ".md": 46,
-      ".tsx": 170,
-      ".ts": 300,
+      ".tsx": 171,
+      ".ts": 302,
       ".js": 7,
       ".sql": 43
     }
@@ -175,6 +175,7 @@
         "components/Toast.tsx",
         "components/availability/AwayEditor.tsx",
         "components/brand/Mark.tsx",
+        "components/brand/Mark3D.tsx",
         "components/breakdown/CategoryChips.tsx",
         "components/breakdown/ElementCard.tsx",
         "components/brief/BriefHints.tsx",
@@ -532,7 +533,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-06T21:37:57.683Z"
+      "last_modified": "2026-10-06T21:38:07.959Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -542,12 +543,12 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-06T21:37:57.679Z"
+      "last_modified": "2026-10-06T21:38:07.959Z"
     },
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-06T21:37:57.679Z"
+      "last_modified": "2026-10-06T21:38:07.959Z"
     },
     {
       "path": "README.md",
@@ -726,8 +727,8 @@
     },
     {
       "path": "app/page.tsx",
-      "size": 40619,
-      "last_modified": "2026-10-06T21:28:36.311Z"
+      "size": 39820,
+      "last_modified": "2026-10-06T22:00:08.015Z"
     },
     {
       "path": "app/portfolio/loading.tsx",
@@ -973,6 +974,11 @@
       "path": "components/brand/Mark.tsx",
       "size": 4275,
       "last_modified": "2026-10-06T21:26:22.135Z"
+    },
+    {
+      "path": "components/brand/Mark3D.tsx",
+      "size": 10158,
+      "last_modified": "2026-10-06T22:03:12.962Z"
     },
     {
       "path": "components/breakdown/CategoryChips.tsx",
@@ -1633,6 +1639,16 @@
       "path": "lib/availability/index.ts",
       "size": 2606,
       "last_modified": "2026-10-03T11:47:00.098Z"
+    },
+    {
+      "path": "lib/brand/mark3d.test.ts",
+      "size": 2697,
+      "last_modified": "2026-10-06T21:59:16.392Z"
+    },
+    {
+      "path": "lib/brand/mark3d.ts",
+      "size": 5357,
+      "last_modified": "2026-10-06T22:03:12.959Z"
     },
     {
       "path": "lib/breakdown/api.ts",
@@ -2646,13 +2662,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 351177,
-      "last_modified": "2026-10-06T21:29:18.783Z"
+      "size": 353700,
+      "last_modified": "2026-10-06T21:57:37.754Z"
     },
     {
       "path": "package.json",
-      "size": 2405,
-      "last_modified": "2026-10-06T21:29:01.872Z"
+      "size": 2462,
+      "last_modified": "2026-10-06T21:57:28.722Z"
     },
     {
       "path": "performance-budget.json",

@@ -14,7 +14,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import Navigation from '@/components/Navigation';
 import AnimatedSection from '@/components/AnimatedSection';
 import { Button } from '@/components/ui/Button';
-import { Mark } from '@/components/brand/Mark';
+import { Mark3D } from '@/components/brand/Mark3D';
 import { useProject } from '@/lib/os';
 import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
@@ -564,43 +564,20 @@ export default function Home() {
               color: 'var(--accent)',
             }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
-              Digital Film Studio
+              The Cavern
             </div>
           </motion.div>
 
           <h1 className="sr-only">The Cavern — the production suite for independent filmmakers, by Misfits Cavern</h1>
-          <div style={{ position: 'relative', display: 'inline-block' }} aria-hidden>
-            <motion.div
-              initial={{ opacity: 0, y: 50, filter: 'blur(16px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                fontFamily: 'var(--display)',
-                fontSize: 'clamp(4rem, 18vw, 13rem)',
-                lineHeight: 0.84,
-                letterSpacing: -2,
-                padding: '16px 8px',
-                position: 'relative',
-              }}
-            >
-              <span style={{
-                WebkitTextStroke: '2px rgba(var(--fg-rgb), 0.85)',
-                color: 'transparent',
-                display: 'block',
-              }}>
-                THE
-              </span>
-              <span style={{
-                color: 'var(--accent)',
-                display: 'block',
-                textShadow: '0 0 80px rgba(232, 67, 26,0.25)',
-              }}>
-                CAVERN
-              </span>
-
-              <Viewfinder size={22} color="rgba(232, 67, 26,0.45)" />
-            </motion.div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 40, filter: 'blur(16px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
+            style={{ position: 'relative', display: 'inline-block', padding: 8 }}
+          >
+            <Mark3D />
+            <Viewfinder size={22} color="rgba(232, 67, 26,0.45)" />
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -617,7 +594,6 @@ export default function Home() {
             }}
             aria-hidden
           >
-            <Mark size={28} title="" />
             by Misfits Cavern
           </motion.div>
 

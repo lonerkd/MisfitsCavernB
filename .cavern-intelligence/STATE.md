@@ -80,8 +80,11 @@ No migration.
   export filename, legal (`LEGAL.product` The Cavern, `LEGAL.maker` Misfits
   Cavern; effective date moved to 6 October), README, package name
   `the-cavern`, doc headings. Misfits Cavern stays only as the maker:
-  the landing hero is "THE / CAVERN" with the mark and "by Misfits
-  Cavern" under it; the footer reads "The Cavern · by Misfits Cavern ·
+  the landing tag reads "The Cavern", the hero is the mark in 3D
+  (`Mark3D`: three.js loaded after the page, lit by its own moon, turns
+  with the pointer or a drag; the flat mark is the fallback), "by Misfits
+  Cavern" under it (owner's call, revising "THE CAVERN" as a wordmark);
+  the footer reads "The Cavern · by Misfits Cavern ·
   © 2026 Peter Olowude". "Welcome back, misfit." and the `mc_`/`mc-`
   prefixes stay.
 - **The mark in the app**: `components/brand/Mark.tsx` (R13 in theme
@@ -98,8 +101,10 @@ No migration.
 - Docs: bible gaps closed (01, 03, 05, 08, 10), `restructure-proposal.md`
   phases 1–2 marked done, `brand/README.md` says how the icons get into
   `public/`; BACKLOG 3.12 done and removed, 3.13 narrowed.
-- Verified: typecheck, lint, 472 unit tests, build, budget (36 pages);
-  the landing and showcase looked at on desktop and phone.
+- Verified: typecheck, lint, unit tests (479, 7 new for the 3D mark's
+  geometry), build, budget (36 pages; `/` 291 kB — three.js isn't in the
+  first load); the landing (at rest, hovered, dragged) and showcase looked
+  at on desktop and phone.
 
 ## Earlier — The bible: the whole suite, top to bottom
 

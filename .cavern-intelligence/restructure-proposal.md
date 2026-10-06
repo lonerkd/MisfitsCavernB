@@ -99,7 +99,9 @@ Made by the owner, 2026-10-06:
    (`components/brand/Mark.tsx`, `public/` icons).
 2. **The voice** — keep "Welcome back, misfit." The brand speaks.
 3. **The landing page** — "THE CAVERN" as the hero, "by Misfits Cavern"
-   under it.
+   under it. Revised the same day: the tag above reads "The Cavern", the
+   hero is the mark in 3D and interactive (`components/brand/Mark3D.tsx`),
+   "by Misfits Cavern" under it.
 4. **Repo** — no rename now. The owner makes a new repository at launch
    (see *Launch repository* below).
 

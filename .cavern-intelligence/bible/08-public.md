@@ -23,7 +23,7 @@ policy on an explicit "published" flag. Security model:
 
 | Route | Rendered | What it shows | Gate |
 |---|---|---|---|
-| `/` | client | the hero ("THE CAVERN", the R13 mark, "by Misfits Cavern"), "Script to Screen — one integrated studio", pipeline, live platform totals and ticker, module tiles with real recent work, footer (The Cavern · by Misfits Cavern · © Peter Olowude, Privacy, Terms) | `get_platform_stats`, `get_recent_work` (samples excluded) |
+| `/` | client | the hero (a "The Cavern" tag, the R13 mark in 3D — the moon lights the mountains and they turn with the pointer or a drag — then "by Misfits Cavern"), "Script to Screen — one integrated studio", pipeline, live platform totals and ticker, module tiles with real recent work, footer (The Cavern · by Misfits Cavern · © Peter Olowude, Privacy, Terms) | `get_platform_stats`, `get_recent_work` (samples excluded) |
 | `/shared/[token]` | **server**, `force-dynamic`, Open Graph metadata | a project's lookbook: title, logline, creator, published items under their scenes, cast & crew and laurels (press kit) — never notes or unpublished items | `get_shared_project`, `get_shared_lookbook`, `get_press_kit`: exact token + visibility link/public |
 | `/m/[id]` | route handler | a published file: 302 to a fresh signed URL (5 min images, 1 h video/audio), `no-store` | `get_published_media` + storage "shared read" policy |
 | `/p/[token]` | client | a portfolio piece as a press kit: media, blocks from the pitch board, credits | `portfolio_projects` / `portfolio_blocks` / `portfolio_media` are readable by everyone (all portfolio work is public by design) |

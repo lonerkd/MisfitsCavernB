@@ -24,8 +24,12 @@ faces turned away sinopia, snow on the summits.
 
 **In the app** (restructure phase 2): `components/brand/Mark.tsx` draws the
 same polygons with the colours as theme tokens (vanilla → `--fg`, sinopia →
-`--accent`), so the mark follows every theme — the nav, the page headers and
-the landing lockup. `public/icon.svg`, `favicon-32.png`, `apple-touch-icon.png`,
+`--accent`), so the mark follows every theme — the nav and the page headers.
+The landing hero is the mark in 3D (`components/brand/Mark3D.tsx`, geometry in
+`lib/brand/mark3d.ts`): three.js, loaded after the page; the crescent is the
+light, so faces toward it are vanilla and faces away sinopia, and the range
+turns with the pointer (drag on a phone). The flat mark stands in until it's
+drawn and wherever WebGL isn't available. `public/icon.svg`, `favicon-32.png`, `apple-touch-icon.png`,
 `icon-192.png`, `icon-512.png` and `icon-maskable-512.png` are copies of
 `export/`; re-copy them after `node scripts/brand-export.mjs` (and bump the
 service worker's `CACHE` so installed apps pick them up).
