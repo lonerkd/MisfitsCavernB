@@ -8,6 +8,7 @@ import {
   Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
 } from 'lucide-react';
 import Link from 'next/link';
+import { ShareScriptButton } from './ShareScriptButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
@@ -200,6 +201,8 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 <Icon size={14} />
               </button>
             ))}
+
+            <ShareScriptButton script={currentScript} projectCreatorId={activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null} />
 
             <div style={{ position: 'relative' }}>
               <button

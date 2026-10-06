@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**34 pages · 5 API routes · 62 tables · 47 database functions · 39 e2e specs**
+**34 pages · 5 API routes · 62 tables · 48 database functions · 40 e2e specs**
 
 ## Routes
 
@@ -18,26 +18,26 @@
 | `/api/links` (api) | open (page checks) | `app/api/links/route.ts` (53) | 4 files · components: — · lib: api-rate-limit, integrations, studio | **none** |
 | `/api/references/search` (api) | open (page checks) | `app/api/references/search/route.ts` (61) | 3 files · components: — · lib: api-rate-limit, validation | **none** |
 | `/auth/callback` | public | `app/auth/callback/page.tsx` (121) | 3 files · components: — · lib: supabase | **none** |
-| `/auth` | public | `app/auth/page.tsx` (392) | 34 files · components: GrainOverlay, Toast, ui · lib: context, hooks, os, password-strength, scriptos, supabase, types, validation | accessibility, account-deletion, auth-journey, auth-validation, availability, breakdown, brief, call-sheets, community, credits, cut-notes, documents, errors, guides, hiring, island, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, phases, readiness, real-data, route-smoke, search, shot-designer, split, studio-journey, table-read, themes, transcripts, writing-loop |
+| `/auth` | public | `app/auth/page.tsx` (392) | 34 files · components: GrainOverlay, Toast, ui · lib: context, hooks, os, password-strength, scriptos, supabase, types, validation | accessibility, account-deletion, auth-journey, auth-validation, availability, breakdown, brief, call-sheets, community, credits, cut-notes, documents, errors, guides, hiring, island, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, phases, readiness, real-data, route-smoke, script-share, search, shot-designer, split, studio-journey, table-read, themes, transcripts, writing-loop |
 | `/auth/spotify-callback` | public | `app/auth/spotify-callback/page.tsx` (77) | 31 files · components: Toast, ui · lib: context, hooks, os, scriptos, spotify, supabase, types | **none** |
 | `/call/[id]` | signed in | `app/call/[id]/page.tsx` (225) | 40 files · components: Toast · lib: brief, context, os, scriptos, studio, supabase, types | call-sheets |
 | `/crew/[id]` | signed in | `app/crew/[id]/page.tsx` (388) | 37 files · components: Avatar, EmptyState, Toast · lib: color, context, credits, hooks, os, scriptos, studio, supabase, types | accessibility, credits |
 | `/crew` | signed in | `app/crew/page.tsx` (304) | 40 files · components: Avatar, EmptyState, Toast, crafts · lib: color, context, crafts, crafts-core, hooks, os, scriptos, supabase, types | accessibility, auth-journey, layout, mobile, route-smoke |
-| `/editor` | signed in | `app/editor/page.tsx` (1611) | 123 files · components: Confirm, EmptyState, Toast, breakdown, editor, studio, ui · lib: breakdown, brief, color, context, formats, formats-core, guides, hooks, integrations, os, pocket, scriptos, split, spotify, storage, studio, supabase, themes, types, writing | accessibility, auth-journey, breakdown, cut-notes, layout, onboarding, phases, route-smoke, split, studio-journey, table-read, writing-loop |
+| `/editor` | signed in | `app/editor/page.tsx` (1611) | 126 files · components: Confirm, EmptyState, Toast, breakdown, editor, studio, ui · lib: breakdown, brief, color, context, formats, formats-core, guides, hooks, integrations, os, pocket, scriptos, split, spotify, storage, studio, supabase, themes, types, useEscapeKey, writing | accessibility, auth-journey, breakdown, cut-notes, layout, onboarding, phases, route-smoke, script-share, split, studio-journey, table-read, writing-loop |
 | `/jobs/[id]` | signed in | `app/jobs/[id]/page.tsx` (580) | 34 files · components: Avatar, Toast, brand, ui · lib: color, context, hooks, os, scriptos, supabase, types | accessibility, hiring |
 | `/jobs` | signed in | `app/jobs/page.tsx` (860) | 43 files · components: Confirm, EmptyState, GrainOverlay, Toast, brand, crafts, ui · lib: color, context, crafts, crafts-core, hooks, os, scriptos, supabase, types | accessibility, auth-journey, brief, hiring, layout, mobile, onboarding, route-smoke |
 | `/lounge` | signed in | `app/lounge/page.tsx` (1532) | 50 files · components: Avatar, Confirm, GrainOverlay, Toast, brand, lounge, ui · lib: brief, color, context, hooks, lounge, os, scriptos, supabase, types, webrtc | accessibility, auth-journey, brief, community, island, layout, lounge, mobile, route-smoke |
 | `/m/[id]` (api) | open (page checks) | `app/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | **none** |
 | `/p/[token]` | open (page checks) | `app/p/[token]/page.tsx` (780) | 35 files · components: Avatar, EmptyState, Toast · lib: color, context, hooks, os, scriptos, studio, supabase, types | accessibility, split |
-| `/` | public | `app/page.tsx` (875) | 40 files · components: AnimatedSection, GrainOverlay, Navigation, NotificationBell, Toast, brand, ui · lib: brand, color, context, home, hooks, os, scriptos, supabase, types | accessibility, account-deletion, home-page-crash, legal, real-data, route-smoke |
+| `/` | public | `app/page.tsx` (877) | 40 files · components: AnimatedSection, GrainOverlay, Navigation, NotificationBell, Toast, brand, ui · lib: brand, color, context, home, hooks, os, scriptos, supabase, types | accessibility, account-deletion, home-page-crash, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/portfolio/manage/page.tsx` (247) | 35 files · components: Confirm, EmptyState, Toast, ui · lib: context, formats, formats-core, os, scriptos, supabase, types | accessibility |
 | `/portfolio` | signed in | `app/portfolio/page.tsx` (514) | 34 files · components: AnimatedSection, GrainOverlay, SectionLabel, Toast, brand · lib: context, os, scriptos, studio, supabase, types | accessibility, auth-journey, route-smoke |
 | `/privacy` | open (page checks) | `app/privacy/page.tsx` (138) | 3 files · components: legal · lib: legal | legal |
 | `/profile` | signed in | `app/profile/page.tsx` (390) | 16 files · components: Avatar, Confirm, Toast, availability, crafts · lib: availability, color, crafts, crafts-core, hooks, supabase | accessibility, auth-journey, availability |
 | `/projects/[id]` | signed in | `app/projects/[id]/page.tsx` (1256) | 75 files · components: Confirm, GrainOverlay, Toast, brief, crafts, formats, guides, progress, ui · lib: breakdown, brief, color, context, crafts, crafts-core, formats, formats-core, guides, hooks, lounge, os, pocket, scriptos, studio, supabase, themes, types, writing | accessibility, brief, guides, layout, mobile, phases, table-read, themes |
-| `/projects/[id]/pitch` | signed in | `app/projects/[id]/pitch/page.tsx` (615) | 33 files · components: Confirm, Toast · lib: color, context, os, scriptos, supabase, types | accessibility |
+| `/projects/[id]/pitch` | signed in | `app/projects/[id]/pitch/page.tsx` (630) | 33 files · components: Confirm, Toast · lib: color, context, os, scriptos, supabase, types | accessibility |
 | `/projects` | signed in | `app/projects/page.tsx` (757) | 49 files · components: EmptyState, GrainOverlay, Toast, brand, formats, ui · lib: brief, color, context, formats, formats-core, lounge, onboarding, os, scriptos, supabase, types, useEscapeKey | accessibility, auth-journey, island, layout, login-smoke, mobile, onboarding, route-smoke, search, themes |
-| `/s/[token]` | open (page checks) | `app/s/[token]/page.tsx` (183) | 29 files · components: Toast · lib: context, os, scriptos, supabase, types | **none** |
+| `/s/[token]` | open (page checks) | `app/s/[token]/page.tsx` (165) | 6 files · components: — · lib: scriptos, supabase | **none** |
 | `/settings` | signed in | `app/settings/page.tsx` (348) | 19 files · components: Confirm, MotionPreference, ThemePicker, Toast, guides, settings, ui · lib: account, guides, island, os, password-strength, pocket, supabase, themes | accessibility, account-deletion, auth-journey, island, mobile, phases, route-smoke, themes |
 | `/shared/[token]` | open (page checks) | `app/shared/[token]/page.tsx` (202) | 9 files · components: GrainOverlay · lib: credits, studio, supabase | accessibility, credits |
 | `/showcase` | open (page checks) | `app/showcase/page.tsx` (174) | 8 files · components: AnimatedSection, GrainOverlay, ParticleBackground, PhotoGallery · lib: studio, supabase | accessibility, route-smoke |
@@ -214,9 +214,8 @@
 
 ### `/s/[token]`
 
-- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`
-- **Realtime:** `project`, `projects:list`
+- **Tables:** —
+- **Functions:** `get_shared_script`
 
 ### `/settings`
 
@@ -271,17 +270,17 @@
 
 | Table | Used by |
 |---|---|
-| `activity_feed` | `/crew/[id]`, `/crew`, `/jobs`, `/lounge`, `/p/[token]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/studio`, `/welcome` |
-| `audit_logs` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `activity_feed` | `/crew/[id]`, `/crew`, `/jobs`, `/lounge`, `/p/[token]`, `/projects/[id]/pitch`, `/projects`, `/studio`, `/welcome` |
+| `audit_logs` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `breakdown_categories` | `/editor`, `/projects/[id]`, `/studio` |
 | `breakdown_dismissals` | `/editor`, `/projects/[id]`, `/studio` |
 | `breakdown_elements` | `/editor`, `/projects/[id]`, `/studio` |
 | `brief_questions` | `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
-| `budget_items` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/shared/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `budget_items` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/shared/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `call_sheet_acks` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `call_sheet_calls` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio`, `/today` |
 | `call_sheets` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio`, `/today` |
-| `campaigns` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `campaigns` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `channel_members` | `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `channel_presets` | `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `channels` | `/api/discord/notify`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/today`, `/welcome` |
@@ -297,23 +296,23 @@
 | `lounge_reads` | **no route** (server-side, triggers or functions only) |
 | `media` | `/call/[id]`, `/editor`, `/lounge`, `/`, `/projects/[id]`, `/projects/[id]/pitch`, `/shared/[token]`, `/studio` |
 | `messages` | `/lounge`, `/`, `/today` |
-| `notifications` | `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/projects/[id]`, `/projects/[id]/pitch`, `/s/[token]`, `/settings`, `/studio`, `/today` |
+| `notifications` | `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/projects/[id]`, `/projects/[id]/pitch`, `/settings`, `/studio`, `/today` |
 | `portfolio_blocks` | `/p/[token]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
 | `portfolio_media` | `/p/[token]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
 | `portfolio_projects` | `/crew/[id]`, `/p/[token]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch` |
 | `post_cuts` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `post_items` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `post_notes` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
-| `profiles` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/api/discord/notify`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `profiles` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/api/discord/notify`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `project_audio_references` | `/editor`, `/soundtrack` |
-| `project_beats` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `project_beats` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `project_brief` | `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
-| `project_crew` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `project_crew` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `project_documents` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `project_formats` | `/call/[id]`, `/editor`, `/lounge`, `/portfolio/manage`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `project_locations` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `project_tasks` | `/projects/[id]`, `/projects`, `/studio`, `/today`, `/welcome` |
-| `projects` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `projects` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `scene_elements` | `/editor`, `/projects/[id]`, `/studio` |
 | `scene_media` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `scenes` | `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/shared/[token]`, `/studio`, `/welcome` |
@@ -322,12 +321,12 @@
 | `script_metadata` | `/editor` |
 | `script_revisions` | `/editor` |
 | `script_stash` | `/editor` |
-| `scripts` | `/call/[id]`, `/editor`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `scripts` | `/call/[id]`, `/editor`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `set_log` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `sfx_assets` | `/soundtrack` |
 | `shots` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `spotify_connections` | `/auth/spotify-callback`, `/editor`, `/soundtrack` |
-| `timeline_items` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/s/[token]`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `timeline_items` | `/admin/analytics`, `/admin/audit-logs`, `/admin/errors`, `/admin`, `/admin/users`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/p/[token]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `timesheets` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `transcript_lines` | `/call/[id]`, `/editor`, `/projects/[id]`, `/shared/[token]`, `/studio` |
 | `unavailability` | `/profile`, `/studio` |
@@ -359,6 +358,7 @@
 | `get_recent_work` | called from a route |
 | `get_shared_lookbook` | called from a route |
 | `get_shared_project` | called from a route |
+| `get_shared_script` | called from a route |
 | `handle_new_user` | internal (policies, triggers, other functions) |
 | `has_discord_webhook` | called from a route |
 | `issue_call_sheet` | called from a route |
@@ -421,6 +421,7 @@
 | `readiness.spec.ts` | `/auth`, `/studio` |
 | `real-data.spec.ts` | `/`, `/auth`, `/studio` |
 | `route-smoke.spec.ts` | `/`, `/auth`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/portfolio`, `/projects`, `/settings`, `/showcase`, `/studio`, `/this-path-does-not-exist` |
+| `script-share.spec.ts` | `/auth`, `/editor` |
 | `search.spec.ts` | `/auth`, `/editor\\`, `/projects`, `/studio` |
 | `shot-designer.spec.ts` | `/auth`, `/studio` |
 | `split.spec.ts` | `/auth`, `/editor`, `/p/not-a-token`, `/split`, `/studio` |

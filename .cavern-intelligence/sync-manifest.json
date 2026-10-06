@@ -1,16 +1,16 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-06T22:32:11.308Z",
+  "last_synchronized": "2026-10-06T22:48:50.883Z",
   "stats": {
-    "totalFiles": 579,
-    "totalSize": 4120554,
+    "totalFiles": 585,
+    "totalSize": 4145621,
     "byExtension": {
       ".json": 10,
       ".md": 46,
-      ".tsx": 171,
-      ".ts": 302,
+      ".tsx": 172,
+      ".ts": 306,
       ".js": 7,
-      ".sql": 43
+      ".sql": 44
     }
   },
   "modules": {
@@ -35,6 +35,8 @@
         "lib/scriptos/pdfImport.ts",
         "lib/scriptos/revisions.ts",
         "lib/scriptos/sceneVisuals.ts",
+        "lib/scriptos/share.test.ts",
+        "lib/scriptos/share.ts",
         "lib/scriptos/stash.ts",
         "lib/scriptos/storage.test.ts",
         "lib/scriptos/storage.ts",
@@ -191,6 +193,7 @@
         "components/editor/EditorSidePanels.tsx",
         "components/editor/PreviewView.tsx",
         "components/editor/SceneReferencesPanel.tsx",
+        "components/editor/ShareScriptButton.tsx",
         "components/editor/TimingPanel.tsx",
         "components/editor/WriteFooter.tsx",
         "components/editor/WriteView.tsx",
@@ -310,7 +313,8 @@
         "supabase/migrations/20260929080000_client_errors.sql",
         "supabase/migrations/20260929090000_account_deletion.sql",
         "supabase/migrations/20260930010000_advisor_fixes.sql",
-        "supabase/migrations/20261004010000_discord_webhook_gate.sql"
+        "supabase/migrations/20261004010000_discord_webhook_gate.sql",
+        "supabase/migrations/20261006000000_script_share_links.sql"
       ]
     }
   },
@@ -533,7 +537,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-06T22:04:52.758Z"
+      "last_modified": "2026-10-06T22:46:20.860Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -543,12 +547,12 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-06T22:04:52.758Z"
+      "last_modified": "2026-10-06T22:46:20.856Z"
     },
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-06T22:04:52.758Z"
+      "last_modified": "2026-10-06T22:46:20.860Z"
     },
     {
       "path": "README.md",
@@ -728,7 +732,7 @@
     {
       "path": "app/page.tsx",
       "size": 39932,
-      "last_modified": "2026-10-06T22:27:46.855Z"
+      "last_modified": "2026-10-06T22:46:16.393Z"
     },
     {
       "path": "app/portfolio/loading.tsx",
@@ -767,8 +771,8 @@
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
-      "size": 32412,
-      "last_modified": "2026-10-06T22:22:55.594Z"
+      "size": 33253,
+      "last_modified": "2026-10-06T22:46:16.525Z"
     },
     {
       "path": "app/projects/error.tsx",
@@ -787,8 +791,8 @@
     },
     {
       "path": "app/s/[token]/page.tsx",
-      "size": 7347,
-      "last_modified": "2026-10-06T22:22:55.598Z"
+      "size": 6981,
+      "last_modified": "2026-10-06T22:46:16.526Z"
     },
     {
       "path": "app/settings/loading.tsx",
@@ -978,7 +982,7 @@
     {
       "path": "components/brand/Mark3D.tsx",
       "size": 10158,
-      "last_modified": "2026-10-06T22:22:55.602Z"
+      "last_modified": "2026-10-06T22:46:16.398Z"
     },
     {
       "path": "components/breakdown/CategoryChips.tsx",
@@ -1027,8 +1031,8 @@
     },
     {
       "path": "components/editor/EditorHeader.tsx",
-      "size": 16530,
-      "last_modified": "2026-10-06T22:22:55.602Z"
+      "size": 16747,
+      "last_modified": "2026-10-06T22:46:16.527Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -1054,6 +1058,11 @@
       "path": "components/editor/SceneReferencesPanel.tsx",
       "size": 7742,
       "last_modified": "2026-10-03T08:10:27.117Z"
+    },
+    {
+      "path": "components/editor/ShareScriptButton.tsx",
+      "size": 7264,
+      "last_modified": "2026-10-06T22:46:16.527Z"
     },
     {
       "path": "components/editor/TimingPanel.tsx",
@@ -1571,6 +1580,11 @@
       "last_modified": "2026-09-25T01:42:14.973Z"
     },
     {
+      "path": "e2e/script-share.spec.ts",
+      "size": 3935,
+      "last_modified": "2026-10-06T22:46:16.528Z"
+    },
+    {
       "path": "e2e/search.spec.ts",
       "size": 4741,
       "last_modified": "2026-10-03T08:45:01.883Z"
@@ -1643,12 +1657,12 @@
     {
       "path": "lib/brand/mark3d.test.ts",
       "size": 2697,
-      "last_modified": "2026-10-06T22:22:55.603Z"
+      "last_modified": "2026-10-06T22:46:16.398Z"
     },
     {
       "path": "lib/brand/mark3d.ts",
       "size": 5357,
-      "last_modified": "2026-10-06T22:22:55.604Z"
+      "last_modified": "2026-10-06T22:46:16.399Z"
     },
     {
       "path": "lib/breakdown/api.ts",
@@ -2191,6 +2205,16 @@
       "last_modified": "2026-10-06T21:29:52.117Z"
     },
     {
+      "path": "lib/scriptos/share.test.ts",
+      "size": 520,
+      "last_modified": "2026-10-06T22:46:16.528Z"
+    },
+    {
+      "path": "lib/scriptos/share.ts",
+      "size": 2055,
+      "last_modified": "2026-10-06T22:46:16.529Z"
+    },
+    {
       "path": "lib/scriptos/stash.ts",
       "size": 1372,
       "last_modified": "2026-09-26T18:32:43.090Z"
@@ -2527,8 +2551,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 117832,
-      "last_modified": "2026-10-06T22:22:55.604Z"
+      "size": 118146,
+      "last_modified": "2026-10-06T22:46:16.529Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2663,12 +2687,12 @@
     {
       "path": "package-lock.json",
       "size": 353700,
-      "last_modified": "2026-10-06T22:22:55.604Z"
+      "last_modified": "2026-10-06T22:46:16.400Z"
     },
     {
       "path": "package.json",
       "size": 2462,
-      "last_modified": "2026-10-06T22:22:55.607Z"
+      "last_modified": "2026-10-06T22:46:16.405Z"
     },
     {
       "path": "performance-budget.json",
@@ -2941,6 +2965,11 @@
       "last_modified": "2026-10-04T01:27:12.429Z"
     },
     {
+      "path": "supabase/migrations/20261006000000_script_share_links.sql",
+      "size": 3698,
+      "last_modified": "2026-10-06T22:46:16.530Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1650,
       "last_modified": "2026-09-24T20:05:03.659Z"
@@ -3092,8 +3121,8 @@
     },
     {
       "path": "tests/integration/privacy.test.ts",
-      "size": 11180,
-      "last_modified": "2026-10-06T22:22:55.607Z"
+      "size": 11253,
+      "last_modified": "2026-10-06T22:46:16.532Z"
     },
     {
       "path": "tests/integration/production-records.test.ts",
@@ -3124,6 +3153,11 @@
       "path": "tests/integration/scene-index.test.ts",
       "size": 9233,
       "last_modified": "2026-09-27T06:25:11.614Z"
+    },
+    {
+      "path": "tests/integration/script-share.test.ts",
+      "size": 6516,
+      "last_modified": "2026-10-06T22:46:16.419Z"
     },
     {
       "path": "tests/integration/scripts-access.test.ts",

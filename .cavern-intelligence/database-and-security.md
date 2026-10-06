@@ -86,7 +86,7 @@ CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
 
 ### C. Public Sharing Security Gutter
 Anonymous, logged-out users are identified under the Postgres `anon` role. For sharing to function:
-- **Scripts:** `CREATE POLICY "Shared scripts publicly viewable" ON scripts FOR SELECT TO anon USING (shared = TRUE);`
+- **Scripts** (`/s/<share_token>`): no policy reads a script for being shared. A link resolves only through `get_shared_script(token)` — the exact token while `shared` is on; title, words, format, updated, the author's public profile. The `scripts_share_guard` trigger lets only the owner (a project script: its shapers) change `shared` or `share_token`, and refuses tokens under 24 characters; a new token is a revoke (`20261006000000`; before it, anyone could list every shared script).
 - **Portfolios:** every portfolio piece, its media and its pitch-board blocks are readable by everyone (`using true`) — a portfolio is public by design; there is no `is_public` column. `/p/<share_token>` is just its address.
 - Private data (budgets, crew rosters, chats) must have **no** select policy granted to `anon`.
 - **Project share links** (`/shared/<share_token>`) resolve only through `SECURITY DEFINER` RPCs that check the exact token and `visibility in ('link','public')`: `get_shared_project` (overview fields) and `get_shared_lookbook` (published media + the scene headings they're linked to — never notes or unpublished items).
@@ -111,6 +111,7 @@ Callable by **anyone** (anon + signed in) — public pages:
 | Function | Gate |
 |---|---|
 | `get_shared_project(token)` / `get_shared_lookbook(token)` / `get_press_kit(token)` | exact `share_token` and `visibility in ('link','public')`; lookbook returns only `shared` media |
+| `get_shared_script(token)` | exact `scripts.share_token`, non-empty, while `shared`; returns the words and the author's public profile only |
 | `get_published_media(id)` | media `shared` on a `link`/`public` project |
 | `get_public_showcase(limit)` | `shared` image/video media of `public`, non-sample projects; limit 1–100 |
 | `get_recent_work(limit)` | portfolio pieces (already public), non-sample; limit 1–24 |

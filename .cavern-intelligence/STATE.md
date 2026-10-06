@@ -6,18 +6,18 @@
 
 ## Resume here (handoff, 2026-10-06 — cloud → local)
 
-1. **Merged** 2026-10-06: #136 (bible, audit, restructure plan, the R13
-   mark, one source of rules), #135, #138, #139 (run driver stops by port).
-   This branch's PR: restructure phases 1–2 (the clean-up and the brand).
-   Start from `git switch main && git pull` once it's merged.
+1. **Merged** 2026-10-06: #136, #135, #138, #139, #140 (restructure phases
+   1–2: The Cavern, the R13 mark and icons, the 3D landing hero; live). This
+   branch's PR: 3.3, script share links. **After it merges, apply
+   `20261006000000_script_share_links.sql` to production** (Supabase SQL
+   editor or MCP `apply_migration`), then run *Production schema drift*.
 2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
    skills (`run-misfits-cavern`, `supabase`,
    `supabase-postgres-best-practices`) — no symlinks, so they load on
    Windows. Session context loads from `CLAUDE.md` (it `@`-imports
    `RULES.md` + `STATE.md`) — no hook.
-3. **Next**: 3.3 (script share links token-gated, security), then 3.4
-   (password recovery). Then restructure phase 3 (splash images, Add to
-   Home Screen coaching, Web Push — 3.13).
+3. **Next**: 3.4 (password recovery). Then restructure phase 3 (splash
+   images, Add to Home Screen coaching, Web Push — 3.13).
 4. **Branches and stashes**: delete the 18 stale remote branches with the
    one-liner in BACKLOG §1 (all verified; the cloud proxy can't delete
    branches). On the Windows machine, check `git stash list` — two old
@@ -33,7 +33,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 
 1. **Owner, outside the code** (owner, 2026-10-06: "good for now" — not
    blocking the next PRs; revisit before launch): Supabase usage (grace period over — which
-   line?); count shared scripts in production (3.3); an email sender (SMTP);
+   line?); an email sender (SMTP);
    lawyer review of `/privacy` and `/terms`; leaked-password protection; the
    two old Windows stashes; 18 stale remote branches (one-liner in BACKLOG §1); optionally branch
    protection on `main`.
@@ -42,8 +42,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    coaching, push), 4 shell/primitives, 5 route groups, 6 one permission
    model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
    at launch, 3.16). Still open: the domain.
-3. **Security and launch blockers**: script share links token-gated (3.3) ·
-   password recovery (3.4).
+3. **Launch blocker**: password recovery (3.4).
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
@@ -70,7 +69,40 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
   users (24 more) — the intended API, each gated, reviewed in
   `database-and-security.md` §2.D.
 
-## Latest Session — Restructure phases 1–2: clean-up and The Cavern
+## Latest Session — Script share links: the token is the only way in (3.3)
+
+Migration `20261006000000_script_share_links.sql` — **apply to production
+after merge**.
+
+- **The leak, closed**: the anon policy "Shared scripts publicly viewable"
+  (`using (shared = true)`) and the same arm in "scripts view" let anyone
+  list every shared script without its link. Both arms are gone; a link
+  resolves only through `get_shared_script(token)` (definer: the exact
+  token while `shared`; the words and the author's public profile). In
+  production 0 of 41 scripts were shared, so nothing was exposed.
+- **Who shares**: `internal.scripts_share_guard` (trigger) — only the
+  owner, or a project script's shapers, may change `shared` or
+  `share_token`; tokens under 24 characters are refused. A new token is a
+  revoke. Viewers still edit the words.
+- **`/s/[token]`** is server-rendered through the public client: link
+  previews (title, writer), never indexed, no cache — off or a new link
+  closes it at once.
+- **The editor's Share** (`components/editor/ShareScriptButton.tsx`,
+  `lib/scriptos/share.ts`): link on/off, copy, new link (confirmed);
+  shown to whoever the database lets share; every save checks its error.
+- **Pitch board** says "This is public" (blocks are readable by everyone
+  by design); its copy-link checks for failure.
+- Tests: `tests/integration/script-share.test.ts` (11, failed 9 before the
+  migration — the leak reproduced); `privacy.test.ts` updated (it asserted
+  the leak); `e2e/script-share.spec.ts` (on, read signed out, new link,
+  off); `lib/scriptos/share.test.ts`. Docs: `database-and-security.md` §C
+  and the §2.D allowlist, bible 04/08/11, BACKLOG 3.3 removed, 3.11
+  narrowed to `/p` and `/m`.
+- Verified: typecheck, lint, unit tests, integration (all files), build,
+  drift snapshot and types regenerated; e2e: script-share, accessibility,
+  route-smoke, legal, writing-loop.
+
+## Earlier — Restructure phases 1–2: clean-up and The Cavern
 
 No migration.
 
@@ -107,53 +139,3 @@ No migration.
   geometry), build, budget (36 pages; `/` 291 kB — three.js isn't in the
   first load); the landing (at rest, hovered, dragged) and showcase looked
   at on desktop and phone.
-
-## Earlier — The bible: the whole suite, top to bottom
-
-No migration. Docs and two scripts only.
-
-- **`.cavern-intelligence/bible/`**: a front door (`README.md`: ecosystem
-  map, the threads that tie it together, how to refresh), eleven chapters
-  (shell; account; home, Today and projects; ScriptOS; Studio; Lounge and
-  sound; the network; public pages; admin; platform systems; rulesets — the
-  RLS permission matrix and phase gating), each with its screens, states,
-  rules, connections and known gaps.
-- **Generated**: `npm run bible` → `bible/inventory.md` (34 pages, 5 API
-  routes, what each touches, tables → routes, functions, specs → routes);
-  `npm run bible:shots` → 96 screenshots (desktop + phone) of every page on
-  the demo world (local stack only).
-- **Audit** (`bible/audit-2026-10-06.md`): shared scripts are readable
-  without their link (3.3, security); no password recovery (3.4); two phone
-  layout bugs (3.6); `jobs` double SELECT policy (3.9); an unused permission
-  model (3.10); share pages without previews (3.11); no admin catalogues or
-  moderation (3.14); no email (3.15). All in BACKLOG.
-- **Docs that had drifted, corrected**: `scriptos-engine.md` (no worker, no
-  `script_versions`: the real sync, conflict rule, offline queue and
-  revisions), `routing-and-surface.md` (`/shared`, `/api/links`, `/m`; the
-  data-layer claim), `database-and-security.md` (portfolios are public),
-  `conventions.md` §5 (the hooks the UI really uses), the definer count (24).
-- **`restructure-proposal.md`**: the plan for folders, logic and the brand,
-  for sign-off. Found two dead files (`hooks/useColorExtractor.ts`,
-  `components/ui/AmbientGradient.tsx`).
-- Dependabot #135 (4 updates, approved) is green; the merge needs the owner
-  (the session's merge was refused).
-- **Brand**: five rounds of the mark with the owner (`brand/concepts/`,
-  sheets by `node scripts/brand-sheet.mjs`); **R13 chosen** — Assiniboine
-  and Rundle make the M, lit by the crescent C. `brand/mark/` holds the
-  mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
-  makes the iPhone, manifest and favicon icons. Owner decisions in
-  `restructure-proposal.md`; launch-repository practice is 3.16.
-- **One source of rules**: `.cavern-intelligence/RULES.md` replaces
-  `AGENTS.md`'s hand-written rules, `CLAW.md`, `playbook.md` and
-  `sync-protocol.md` (all drifted). `CLAUDE.md`, `AGENTS.md` and
-  `.github/copilot-instructions.md` are generated from it by
-  `npm run sync-intel`; CI's `checks` job fails if they drift. The
-  SessionStart hook is gone (CLAUDE.md's imports replace it). `INDEX.md`
-  is the map: one home per fact.
-- **Skills restored**: `supabase` and `supabase-postgres-best-practices`
-  were dangling links since July (`65bb696` deleted their files); now real
-  folders in `.claude/skills/` with `skills-lock.json` (`tools-and-access.md` §4).
-- **Old agent tooling removed**: `.harnesskit/` and `progress/` (a September
-  harness; nothing referenced them).
-- Naming: The Cavern is the product, Misfits Cavern the company
-  (`overview-and-goals.md`); the rename is 3.12.

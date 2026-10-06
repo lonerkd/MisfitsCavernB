@@ -1033,6 +1033,7 @@ function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb177
 function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
+function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=94eebb05bb53f6f692a20c77ad4d51a1
@@ -1058,6 +1059,7 @@ function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658
 function public.get_recent_work(p_limit integer) body=d2c23183a53dc8b9a97c74a9782fe80d
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
+function public.get_shared_script(p_token text) body=165d26baee415ec5ddfbd3fb2642e388
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
 function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
@@ -1115,6 +1117,7 @@ grant function internal.project_documents_sync_permit() postgres
 grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
+grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
@@ -1140,6 +1143,7 @@ grant function public.get_published_media(p_media_id uuid) anon,authenticated,po
 grant function public.get_recent_work(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
+grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
 grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
@@ -1572,11 +1576,10 @@ policy public.script_revisions "Script members can manage revisions" PERMISSIVE 
 policy public.script_stash "script_stash delete" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
 policy public.script_stash "script_stash insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_script(script_id))
 policy public.script_stash "script_stash view" PERMISSIVE SELECT to authenticated using internal.can_access_script(script_id) check -
-policy public.scripts "Shared scripts publicly viewable" PERMISSIVE SELECT to anon using (shared = true) check -
 policy public.scripts "scripts delete" PERMISSIVE DELETE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND (internal.is_project_creator(project_id) OR ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))))) check -
 policy public.scripts "scripts insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
 policy public.scripts "scripts update" PERMISSIVE UPDATE to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id)))
-policy public.scripts "scripts view" PERMISSIVE SELECT to authenticated using ((shared = true) OR ((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check -
+policy public.scripts "scripts view" PERMISSIVE SELECT to authenticated using (((project_id IS NULL) AND (created_by = ( SELECT auth.uid() AS uid))) OR ((project_id IS NOT NULL) AND internal.can_access_project(project_id))) check -
 policy public.set_log "set_log delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.set_log "set_log insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.set_log "set_log update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check internal.can_access_project(project_id)
@@ -1732,6 +1735,7 @@ trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.scripts_share_guard()
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
