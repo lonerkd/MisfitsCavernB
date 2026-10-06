@@ -101,3 +101,28 @@ safe version appends a beat to the project's script with a server-side merge
 that can't clobber unsynced editor edits (`lib/scriptos/sync.ts` has the
 outbox). Done when a beat lands in the open script for a co-writer without
 losing either side's edits (two-session test).
+
+### 3.12 Brand: the suite is **The Cavern** — M
+Owner decision (2026-10-06): the product is **The Cavern**; **Misfits Cavern**
+(with the s) is the company/media brand that makes it (`overview-and-goals.md`). ~30 places
+in `app/`, `components/`, `lib/` say "Misfits Cavern" (titles, metadata,
+landing copy, emails, legal pages, the manifest), plus the repo/package names
+and docs. Part of the restructure pass.
+Done when the UI, metadata and docs say The Cavern, and the company appears
+only as the maker.
+
+### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
+Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
+routes, to decide together:
+- **PWA first (M):** a web app manifest + icons + a service worker, so Safari's
+  *Add to Home Screen* installs The Cavern full-screen with its own icon; iOS
+  16.4+ gives installed web apps **push notifications** (call sheets, Lounge
+  mentions, call-time reminders). Builds on Pocket (`lib/pocket`, the phone
+  tab bar) and the on-set offline cache (`lib/studio/onset-offline.ts`). No
+  App Store review, ships with every deploy.
+- **App Store app (L):** the same web app in a native shell (Capacitor) for an
+  App Store listing, native push and the camera/files pickers — needs an Apple
+  Developer account ($99/yr), App Review, and a release process.
+PWA first, App Store wrapper after, is the usual order. Done when The Cavern
+installs on an iPhone, opens without browser chrome, works offline on set, and
+a call sheet issued on the desk arrives as a notification on the phone.

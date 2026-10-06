@@ -1,4 +1,12 @@
-# Overview and Goals — The Misfits Cavern
+# Overview and Goals — The Cavern
+
+> **Naming (owner decision, 2026-10-06):** the suite is **The Cavern**.
+> **Misfits Cavern** is the owner's network company and media-production brand —
+> the maker of The Cavern, not the product's name. Use "The Cavern" for the
+> product everywhere (UI, titles, metadata, emails, docs); the company name
+> belongs where the maker is named (legal pages, footer credit, "by …").
+> The code still says "Misfits Cavern" in ~30 places — the rename is part of
+> the restructure (BACKLOG 3.12).
 
 ## 1. Product Vision
 **Misfits Cavern** is an all-in-one interconnected production suite designed specifically for independent filmmakers and micro-budget productions. It consolidates multiple disparate tools into a single, cohesive workflow:

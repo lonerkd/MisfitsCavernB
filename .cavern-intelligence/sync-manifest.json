@@ -1,9 +1,9 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T06:31:48.881Z",
+  "last_synchronized": "2026-10-06T07:26:38.040Z",
   "stats": {
     "totalFiles": 546,
-    "totalSize": 4089665,
+    "totalSize": 4090485,
     "byExtension": {
       ".json": 14,
       ".md": 11,
@@ -2495,13 +2495,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 350458,
-      "last_modified": "2026-10-03T15:09:00.911Z"
+      "size": 351188,
+      "last_modified": "2026-10-06T07:01:37.201Z"
     },
     {
       "path": "package.json",
-      "size": 2319,
-      "last_modified": "2026-10-03T15:09:00.791Z"
+      "size": 2409,
+      "last_modified": "2026-10-06T07:09:56.545Z"
     },
     {
       "path": "performance-budget.json",
