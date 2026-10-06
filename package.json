@@ -24,7 +24,9 @@
     "db:types:check": "npm run db:types && git diff --exit-code -- lib/supabase/database.types.ts",
     "budget": "node scripts/bundle-budget.mjs",
     "stack:up": "bash scripts/dev-stack.sh",
-    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
+    "bible": "node scripts/bible.mjs",
+    "bible:shots": "node scripts/bible-shots.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

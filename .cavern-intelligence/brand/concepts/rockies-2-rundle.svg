@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="The Cavern — Rockies with Rundle strata">
+  <title>The Cavern — Rockies with Rundle strata</title>
+  <!-- As 1, with the tilted sedimentary bands of the Front Ranges (Mount Rundle) and alpenglow on the shaded snow; the moon rises behind the right shoulder. --><defs><mask id="m2"><rect width="120" height="120" fill="#fff"/><circle cx="97.73" cy="41.05" r="5.59" fill="#000"/></mask></defs>
+  <circle cx="95" cy="43" r="6.5" fill="#fbf8e8" mask="url(#m2)"/>
+  <polygon points="8,96 14,86 17,88 22,76 25,78 30,62 33,64 36,46 38,47 41,24 40,34 42,44 38,56 41,68 37,82 39,96" fill="#e0ddae"/>
+  <polygon points="41,24 44,32 46,31 49,42 52,44 55,52 57,51 60,60 59,72 61,84 60,96 39,96 37,82 41,68 38,56 42,44 40,34" fill="#e8431a"/>
+  <polygon points="60,60 63,51 65,52 68,42 70,43 73,32 75,33 79,18 78,30 81,42 77,55 80,70 76,84 78,96 60,96 61,84 59,72" fill="#e0ddae"/>
+  <polygon points="79,18 82,27 84,26 88,40 91,39 95,52 98,51 103,66 106,65 112,96 78,96 76,84 80,70 77,55 81,42 78,30" fill="#e8431a"/><defs><clipPath id="s2"><polygon points="8,96 14,86 17,88 22,76 25,78 30,62 33,64 36,46 38,47 41,24 44,32 46,31 49,42 52,44 55,52 57,51 60,60 63,51 65,52 68,42 70,43 73,32 75,33 79,18 82,27 84,26 88,40 91,39 95,52 98,51 103,66 106,65 112,96"/></clipPath></defs>
+  <g clip-path="url(#s2)" stroke="#040710" stroke-width=".9" opacity=".28"><line x1="0" y1="46" x2="120" y2="0"/><line x1="0" y1="52.5" x2="120" y2="6.5"/><line x1="0" y1="59" x2="120" y2="13"/><line x1="0" y1="65.5" x2="120" y2="19.5"/><line x1="0" y1="72" x2="120" y2="26"/><line x1="0" y1="78.5" x2="120" y2="32.5"/><line x1="0" y1="85" x2="120" y2="39"/><line x1="0" y1="91.5" x2="120" y2="45.5"/><line x1="0" y1="98" x2="120" y2="52"/><line x1="0" y1="104.5" x2="120" y2="58.5"/><line x1="0" y1="111" x2="120" y2="65"/><line x1="0" y1="117.5" x2="120" y2="71.5"/><line x1="0" y1="124" x2="120" y2="78"/><line x1="0" y1="130.5" x2="120" y2="84.5"/><line x1="0" y1="137" x2="120" y2="91"/><line x1="0" y1="143.5" x2="120" y2="97.5"/><line x1="0" y1="150" x2="120" y2="104"/><line x1="0" y1="156.5" x2="120" y2="110.5"/><line x1="0" y1="163" x2="120" y2="117"/><line x1="0" y1="169.5" x2="120" y2="123.5"/></g>
+  <polygon points="38.4,44 41,24 40,34 41.6,42 40.3,40.5 39.4,43.5" fill="#fbf8e8"/>
+  <polygon points="41,24 44,32 46,31 47.9,38 46.4,39.5 45,37 43.4,40.6 41.6,42 40,34" fill="#f3a184"/>
+  <polygon points="75.8,30 79,18 78,30 79.7,37 78.5,35 77.3,37.5 76.5,34" fill="#fbf8e8"/>
+  <polygon points="79,18 82,27 84,26 86,33 84.8,35 83.6,32.5 82,36 80.6,34.5 79.7,37 78,30" fill="#f3a184"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -7 120 120" role="img" aria-label="The Cavern">
+  <title>The Cavern</title>
+  <!-- One colour (currentColor), for print, embossing, stamps and dark/light-agnostic use: the silhouette with its ridges cut out, and the crescent. --><defs><mask id="mo"><rect x="-10" y="-10" width="140" height="140" fill="#fff"/>
+    <g fill="none" stroke="#000" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><polyline points="36,30 37.6,40 38,44 37,56 40,68 37,82 39,94"/><polyline points="56,62 55,74 57,86 56,94"/><polyline points="90,20 89,34 92,48 88,62 91,76 88,94"/></g></mask>
+    <mask id="mm2"><rect width="120" height="120" fill="#fff"/><circle cx="109.70" cy="16.08" r="5.04" fill="#000"/></mask></defs>
+  <g fill="currentColor"><circle cx="107" cy="18" r="6" mask="url(#mm2)"/><polygon points="2,94 9,86 13,87 18,76 21,77 26,62 29,62 32,48 34,49 36,30 40,40 42,39 46,50 49,49 53,58 56,62 60,56 63,57 68,47 71,47 76,38 79,38 84,28 86,28 90,20 93,30 95,29 98,44 101,46 104,60 108,62 112,78 118,94" mask="url(#mo)"/></g>
+</svg>

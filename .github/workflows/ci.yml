@@ -48,6 +48,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # CLAUDE.md, AGENTS.md and .github/copilot-instructions.md are generated
+      # from .cavern-intelligence/RULES.md; fail if one was edited or is stale.
+      - run: node scripts/sync-intel.js --check
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test

@@ -1,4 +1,12 @@
-# Overview and Goals — The Misfits Cavern
+# Overview and Goals — The Cavern
+
+> **Naming (owner decision, 2026-10-06):** the suite is **The Cavern**.
+> **Misfits Cavern** is the owner's network company and media-production brand —
+> the maker of The Cavern, not the product's name. Use "The Cavern" for the
+> product everywhere (UI, titles, metadata, emails, docs); the company name
+> belongs where the maker is named (legal pages, footer credit, "by …").
+> The code still says "Misfits Cavern" in ~30 places — the rename is part of
+> the restructure (BACKLOG 3.12).
 
 ## 1. Product Vision
 **Misfits Cavern** is an all-in-one interconnected production suite designed specifically for independent filmmakers and micro-budget productions. It consolidates multiple disparate tools into a single, cohesive workflow:
@@ -11,35 +19,8 @@ Instead of bouncing between multiple platforms and copying data back and forth, 
 
 ---
 
-## 2. Core Architectural Mandates
+## 2. Rules and personas
 
-### A. The "No Mocks" Mandate
-Every interface control or module shown to the user must be backed by real, fully functional, and persistent database interactions via Supabase. Cosmetic elements or fake "under construction" stubs are strictly forbidden. If a control exists, it must carry out the real database operation.
-
-### B. One Cohesive System (Global Services)
-- **Shared Feedback:** All UI-level notifications must leverage the global, customized toast system: `useToast()` / `<Toast />`. Native alerts or other libraries are prohibited.
-- **Shared Confirmation:** All user actions requiring verification must use the shared `useConfirm()` modal provider (`components/Confirm.tsx`). Native `window.confirm()` or native alerts must never be used.
-- **Unified Caching & Preferences:** 
-  - **Account-level preferences** (e.g., email notification toggles) live in Postgres (`profiles.notification_prefs`).
-  - **Device-level preferences** (e.g., custom cursor settings, collapsing dock state) live in `localStorage` or `IndexedDB`.
-
----
-
-## 3. Testing Personas (End-to-End Logic)
-To ensure the security, integrity, and operational flow of the application, all development and automated testing must evaluate three key testing personas:
-
-1. **Sam (The Project Creator/Owner):**
-   - Creates the project, writes the screenplay, schedules the shoot, posts jobs, and manages Lounge channels.
-   - Must have absolute CRUD permissions across all project scopes.
-   - Actively tests the happy path for project orchestration.
-
-2. **Jordan (Co-Writer, Crew Member):**
-   - Collaborates on the script in realtime, posts messages in text channels, participates in WebRTC voice channels, and updates assigned task trackers.
-   - Restricted from destructive administrative actions (e.g., deleting projects, removing other creators, altering billing details).
-   - Must be unable to view or access private channels/sections unless explicitly invited.
-
-3. **Riley (The Outsider):**
-   - A logged-out user or logged-in user who is not a member of the project or crew.
-   - Must see absolutely **nothing** project-scoped: no files, no chats, no timelines, no budgets, and no script text.
-   - **Exception:** Can access explicit tokenized links that have public-sharing enabled (e.g., `/s/<share_token>` for scripts and `/p/<share_token>` for public portfolio showcases).
-   - Any leak of private project data to Riley is classified as a Critical P0 security vulnerability.
+The working rules (No Mocks, one cohesive system, the security floor) and
+the testing personas (Sam, Jordan, Riley) live in [`RULES.md`](RULES.md) —
+one copy, read by every agent.

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="The Cavern — alpenglow, balanced">
+  <title>The Cavern — alpenglow, balanced</title>
+  <!-- R10 with the two mountains balanced: equal summits, a gentler slab, so the M reads first; the moon beside the right summit. --><defs><mask id="m11"><rect width="120" height="120" fill="#fff"/><circle cx="103.70" cy="18.08" r="5.04" fill="#000"/></mask></defs><circle cx="101" cy="20" r="6" fill="#fbf8e8" mask="url(#m11)"/>
+  <polygon points="2,94 8,86 12,87 17,74 20,75 25,58 28,59 31,42 33,43 34,26 35.6,36 36,42 35,54 38,66 35,80 37,94" fill="#e0ddae"/><polygon points="2,94 8,86 12,87 17,74 20,75 25,58 28,59 29,72 25,84 23,94" fill="#c4c093"/>
+  <polygon points="34,26 38,36 40,35 44,46 47,45 52,55 55,54 58,60 57,72 59,84 58,94 37,94 35,80 38,66 35,54 36,42 35.6,36" fill="#e8431a"/><polygon points="38,66 44,72 57,72 59,84 58,94 37,94 35,80" fill="#b8320f"/>
+  <polygon points="58,60 61,54 64,55 68,46 71,46 75,36 78,36 82,24 81.6,36 84,48 81,60 84,74 81,94 58,94 59,84 57,72" fill="#e0ddae"/><polygon points="59,84 70,79 84,74 81,94 58,94" fill="#c4c093"/>
+  <polygon points="82,24 86,32 88,31 92,44 95,46 99,58 103,60 108,75 116,94 81,94 84,74 81,60 84,48 81.6,36" fill="#e8431a"/><polygon points="84,48 99,58 103,60 108,75 116,94 81,94 84,74 81,60" fill="#b8320f"/>
+  <polygon points="33.2,40 34,26 35.6,36 34.9,38.2 34.2,36.4 33.7,39.5" fill="#fbf8e8"/><polygon points="34,26 38,36 40,35 41.1,38 40,40 39,37.6 37.6,40.4 36.6,38.4 35.6,36" fill="#f3a184"/>
+  <polygon points="38.4,41 39.3,41 41,52 40.1,52.3" fill="#f3a184"/><polygon points="36.6,41.5 37.3,41.5 37.6,48 37,48.2" fill="#f3a184"/>
+  <polygon points="68,46 71,46 75,36 78,36 82,24 81.3,28.6 79.6,33.6 78.6,39.6 75.9,39.4 74.6,41 71.5,49.6 69.7,49 68.4,49.8" fill="#fbf8e8"/><polygon points="82,24 86,32 88,31 89.2,35 87.5,34.2 86,37 84.4,34.8 83,37.4 81.6,36" fill="#f3a184"/>
+  <polygon points="84,44 95,46.5 94.3,47.6" fill="#f3a184" opacity=".85"/><polygon points="82.4,56 99,59.5 98.2,60.6" fill="#f3a184" opacity=".85"/><polygon points="83.4,68 105,71 104.2,72.2" fill="#f3a184" opacity=".85"/>
+</svg>
