@@ -97,8 +97,10 @@ API routes are rate-limited (`lib/api-rate-limit.ts`) and validate input
 
 `public/manifest.webmanifest`: standalone, starts at `/today`, shortcuts
 (Capture, Today, Lounge), a `share_target` into Capture. `appleWebApp`
-metadata is set. **For iPhone** it still needs a 180×180 PNG
-`apple-touch-icon` (iOS ignores SVG icons), splash images, an install prompt
+metadata is set, with the R13 icons: `icon.svg` and `favicon-32.png` for
+tabs, a 180×180 `apple-touch-icon.png`, and 192/512 and maskable PNGs in
+the manifest (iOS ignores SVG icons). **For iPhone** it still needs splash
+images, an install prompt
 ("Share → Add to Home Screen" coaching, since iOS has no install event), and
 Web Push (iOS 16.4+, home-screen apps only) for call sheets and DMs. iOS
 ignores manifest shortcuts and `share_target`. BACKLOG 3.13.

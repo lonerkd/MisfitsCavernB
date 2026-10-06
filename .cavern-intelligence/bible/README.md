@@ -6,8 +6,8 @@ system, rule and connection, with a picture of each screen. Written
 
 > **The Cavern** is the product: a production suite for independent
 > filmmakers. **Misfits Cavern** is the company and media-production brand
-> that makes it (owner decision, 2026-10-06; the code still says "Misfits
-> Cavern" in ~30 places — BACKLOG 3.12).
+> that makes it (owner decision, 2026-10-06; renamed in the code the same
+> day — the company appears only as the maker).
 
 ## How to read it
 

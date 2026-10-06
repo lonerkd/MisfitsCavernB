@@ -1,6 +1,27 @@
-# Misfits Cavern — State History
+# The Cavern — State History
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
+
+## Earlier — Lint pass 3: no hidden dependencies
+
+No migration.
+
+- **`react-hooks/exhaustive-deps` has no disables left** (was 20). Each hid a
+  dependency; now an effect event (`useEffectEvent`) wraps the helper or
+  callback the effect calls (editor mount + project follow, jobs, project
+  hub, script sync's remote handler, voice presence, on-set offline seed,
+  phase reveal, the island's Caps Lock keys), or the effect depends on
+  extracted keys (Lounge crew, island project switch) or memoised values
+  (island apps, CutPlayer embed, split-pane refs, CastingBoard loader).
+  The editor's keydown handler is a plain function (its `useCallback` hid
+  stale helpers and memoised nothing).
+- **`usePillStage(descriptor)`** no longer takes a hand-kept deps list: it
+  republishes when the JSON of what it shows changes (6 pages updated).
+- **Every remaining disable carries a `-- reason`**: 22
+  `@next/next/no-img-element` (signed storage URLs, pasted links,
+  third-party thumbnails — `next/image` doesn't fit) and 2 justified
+  `set-state-in-effect`. Patterns in `conventions.md` §10.
+- Lint, typecheck, unit tests (472), build: clean.
 
 ## Earlier — `has_discord_webhook` is gated
 

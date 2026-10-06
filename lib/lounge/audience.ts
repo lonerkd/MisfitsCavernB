@@ -9,7 +9,7 @@ export type ChannelAudience = CommunityAudience | ProjectAudience;
 export interface AudienceOption { id: ChannelAudience; label: string; hint: string }
 
 export const COMMUNITY_AUDIENCES: AudienceOption[] = [
-  { id: 'users', label: 'Everyone', hint: 'All members of Misfits Cavern' },
+  { id: 'users', label: 'Everyone', hint: 'All members of The Cavern' },
   { id: 'admins', label: 'Admins', hint: 'Only the people running the Cavern' },
 ];
 

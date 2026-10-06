@@ -1,6 +1,6 @@
 
 
-import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/types/screenplay';
+import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { eighthsOf } from './timing';
 
 export const KNOWLEDGE = {

@@ -206,7 +206,7 @@ export default function SettingsPage() {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = `misfits-cavern-data-${user.id.slice(0, 8)}.json`; a.click();
+      a.href = url; a.download = `the-cavern-data-${user.id.slice(0, 8)}.json`; a.click();
       URL.revokeObjectURL(url);
       flash('Your data export has downloaded.');
     } catch (e: any) {
@@ -278,7 +278,7 @@ export default function SettingsPage() {
         </Section>
 
         <Section icon={<Palette size={15} />} title="Appearance">
-          <Row label="Custom cursor" hint="The adaptive Misfits cursor on mouse/trackpad devices." control={<Toggle on={cursor} onChange={setCursorPref} />} />
+          <Row label="Custom cursor" hint="The adaptive Cavern cursor on mouse/trackpad devices." control={<Toggle on={cursor} onChange={setCursorPref} />} />
           <Row label="Reduce motion" hint="Minimise animations and transitions across the app." control={<Toggle on={motion} onChange={setMotionPref} />} />
           <div style={{ borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)' }}>
             <div style={{ padding: '14px 16px 0' }}>
@@ -335,7 +335,7 @@ export default function SettingsPage() {
         </Section>
 
         <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
-          MISFITS CAVERN · {user.email}
+          THE CAVERN · {user.email}
           <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
             <Link href="/privacy" style={{ color: 'inherit' }}>PRIVACY</Link>
             <Link href="/terms" style={{ color: 'inherit' }}>TERMS</Link>

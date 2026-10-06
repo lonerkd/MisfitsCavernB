@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Misfits Cavern dev server driver
+ * The Cavern dev server driver
  *
  * Usage:
  *   node driver.mjs start         # Start dev server (background)

@@ -24,6 +24,7 @@ import { readable } from '@/lib/color';
 import { awaitOSUser } from '@/lib/os';
 import { useCrafts, type Craft } from '@/lib/crafts';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { Mark } from '@/components/brand/Mark';
 
 // Crafts (and their colours) come from public.crafts — see lib/crafts.
 const craftColor = (byName: Map<string, Craft>, role: string) => byName.get(role)?.color ?? '#737373';
@@ -556,7 +557,7 @@ export default function JobsPage() {
             <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
-            >MC</div>
+            ><Mark size={22} title="The Cavern home" /></div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase' }}>Jobs</div>

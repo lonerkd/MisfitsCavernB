@@ -57,7 +57,7 @@ test.describe('Community Lounge (local Supabase)', () => {
 
     const boss = await signIn(browser, users.boss.email);
     await boss.page.getByRole('button', { name: 'New community channel' }).click({ timeout: 20_000 });
-    await expect(boss.page.getByText('Community · everyone on Misfits Cavern')).toBeVisible();
+    await expect(boss.page.getByText('Community · everyone on The Cavern')).toBeVisible();
     await expect(boss.page.getByRole('button', { name: 'admins', exact: true })).toBeVisible();
     await boss.page.getByLabel('Name').fill(`screenwriting ${TAG}`);
     const who = boss.page.getByRole('radiogroup', { name: 'Who it’s for' });

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Mark } from '@/components/brand/Mark';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -68,9 +69,7 @@ export default function Navigation() {
           prefetch={false}
               href="/"
           style={{
-            fontFamily: 'var(--display)',
-            fontSize: '1rem',
-            letterSpacing: 7,
+            display: 'inline-flex',
             color: 'var(--fg)',
             textDecoration: 'none',
             opacity: 0.9,
@@ -79,7 +78,7 @@ export default function Navigation() {
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.5')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '0.9')}
         >
-          MC
+          <Mark size={26} title="The Cavern home" />
         </Link>
 
         <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

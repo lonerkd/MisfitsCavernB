@@ -1,7 +1,7 @@
 
 
 import { parseScript, type ScriptFormat } from './parser';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine } from '@/lib/scriptos/types';
 
 export type BlockType =
   | 'scene'

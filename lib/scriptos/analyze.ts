@@ -3,7 +3,7 @@
 // the on-device model (Transformers.js NER / zero-shot) upgrades later behind
 // the same interface.
 
-import type { ParseResult } from '@/types/screenplay';
+import type { ParseResult } from '@/lib/scriptos/types';
 import { KNOWLEDGE, BREAKDOWN_STOPWORDS } from './parser';
 import { analyzeCharacters } from './characters';
 

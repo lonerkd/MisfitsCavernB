@@ -203,7 +203,7 @@ function PaneBar({ current, title, onPick, onFull, onClose }: {
     <div className={s.paneBar}>
       <div className={s.pickWrap}>
         <button ref={btnRef} type="button" className={s.pick} aria-expanded={open} aria-haspopup="true" onClick={() => setOpen((v) => !v)}>
-          {here?.label ?? (title.replace(/ — Misfits Cavern.*$/, '') || 'Page')} <ChevronDown size={12} aria-hidden />
+          {here?.label ?? (title.replace(/ — The Cavern.*$/, '') || 'Page')} <ChevronDown size={12} aria-hidden />
         </button>
         {open && (
           <div ref={menuRef} className={s.menu} role="dialog" aria-label="Show in this pane">

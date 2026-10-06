@@ -751,7 +751,7 @@ function FooterLink() {
           (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(var(--ink-rgb), 0.15)';
         }}
       >
-        MISFITS CAVERN
+        THE CAVERN
       </Link>
       {' · '}
       <Link

@@ -161,7 +161,7 @@ function Recorder({ onDone, onCancel }: { onDone: (c: { blob: Blob; type: string
 export interface CaptureStart { mode?: Mode; text?: string; url?: string; title?: string }
 
 /**
- * What another app shared (the phone's share menu → Misfits Cavern, via the
+ * What another app shared (the phone's share menu → The Cavern, via the
  * manifest's share_target): a link becomes a link, anything else a note.
  * The home-screen shortcut (?capture=1) just opens Capture.
  */

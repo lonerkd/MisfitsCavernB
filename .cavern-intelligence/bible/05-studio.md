@@ -82,6 +82,5 @@ editor margins. Brief → Cast & crew hints, Breakdown hints, role posts.
 
 ## Known gaps
 
-- The `MC` mark in the header (rename 3.12).
 - Studio's graph is 140 files; tabs are client-rendered in one page — a
   candidate for route segments per tab in the restructure.

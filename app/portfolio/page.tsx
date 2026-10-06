@@ -15,6 +15,7 @@ import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
 import { awaitOSUser } from '@/lib/os';
 import { videoEmbed } from '@/lib/studio/media-kind';
+import { Mark } from '@/components/brand/Mark';
 
 interface Video {
   id: string;
@@ -355,7 +356,7 @@ export default function PortfolioPage() {
             <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
-            >MC</div>
+            ><Mark size={22} title="The Cavern home" /></div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
           <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--warn)', textTransform: 'uppercase' }}>Portfolio</div>

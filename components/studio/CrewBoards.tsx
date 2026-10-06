@@ -173,7 +173,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
             style={{ width: 500, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 32 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Recruit Talent</h2>
-            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search the Misfits database for crew members and cast.</p>
+            <p style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 24 }}>Search The Cavern for crew members and cast.</p>
 
             {!selectedUser ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
