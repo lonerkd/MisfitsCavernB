@@ -1,6 +1,6 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T16:10:42.296Z",
+  "last_synchronized": "2026-10-06T16:18:46.863Z",
   "stats": {
     "totalFiles": 583,
     "totalSize": 4166940,
@@ -531,7 +531,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-06T16:10:03.073Z"
+      "last_modified": "2026-10-06T16:10:42.293Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -541,12 +541,12 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-06T16:10:03.073Z"
+      "last_modified": "2026-10-06T16:10:42.293Z"
     },
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-06T16:10:03.073Z"
+      "last_modified": "2026-10-06T16:10:42.293Z"
     },
     {
       "path": "README.md",

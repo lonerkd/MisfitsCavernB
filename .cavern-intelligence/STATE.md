@@ -20,7 +20,11 @@
    R13 from `brand/mark/` into `public/`, the manifest and `app/layout.tsx`
    — iPhone icon included). Then 3.3 (script share links, security) and
    3.4 (password recovery).
-4. Decided: the internal `mc_` / `mc-` prefixes stay. Still open with the
+4. **Branches and stashes**: once the driver-fix PR is merged, delete the
+   18 stale remote branches with the one-liner in BACKLOG §1 (all verified;
+   the cloud proxy can't delete branches). On the Windows machine, check
+   `git stash list` — two old stashes were never reconciled (BACKLOG §1).
+5. Decided: the internal `mc_` / `mc-` prefixes stay. Still open with the
    owner: the domain.
 
 ## Open work — start here
@@ -32,7 +36,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    blocking the next PRs; revisit before launch): Supabase usage (grace period over — which
    line?); count shared scripts in production (3.3); an email sender (SMTP);
    lawyer review of `/privacy` and `/terms`; leaked-password protection; the
-   two old Windows stashes; 18 stale remote branches; optionally branch
+   two old Windows stashes; 18 stale remote branches (one-liner in BACKLOG §1); optionally branch
    protection on `main`.
 2. **Restructure** — `restructure-proposal.md` (8 phases: clean-up, brand,
    iPhone install, shell/primitives, route groups, one permission model,
