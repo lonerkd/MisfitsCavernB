@@ -28,6 +28,10 @@ async function fingerprint(url) {
   const client = new pg.Client({ connectionString: url });
   await client.connect();
   try {
+    // Expressions print relative to the search_path (`uuid_generate_v4()` vs
+    // `extensions.uuid_generate_v4()`), so every role reads with Supabase's
+    // own default — the one the snapshot was taken with.
+    await client.query('set search_path = "$user", public, extensions');
     const { rows } = await client.query(QUERY);
     return rows.map((r) => r.line);
   } finally {
@@ -46,7 +50,9 @@ function diff(expected, actual) {
 
 async function main() {
   const targetMode = args.has('--target');
-  const url = targetMode ? process.env.DRIFT_TARGET_DB_URL : LOCAL_DB_URL;
+  // Trimmed: a secret pasted with a trailing space or newline otherwise asks for
+  // database "postgres ".
+  const url = (targetMode ? process.env.DRIFT_TARGET_DB_URL : LOCAL_DB_URL)?.trim();
   if (!url) {
     console.error('DRIFT_TARGET_DB_URL is not set.');
     process.exit(2);
@@ -79,6 +85,13 @@ async function main() {
   console.error(`Schema drift: ${label} differs from supabase/schema.fingerprint.\n`);
   for (const l of missing) console.error(`- ${l}`);
   for (const l of unexpected) console.error(`+ ${l}`);
+  if (process.env.GITHUB_ACTIONS) {
+    // The same lines as an annotation, readable without the run log (schema
+    // lines only — no data, no credentials). Newlines encoded as %0A.
+    const shown = [...missing.map((l) => `- ${l}`), ...unexpected.map((l) => `+ ${l}`)];
+    const body = shown.slice(0, 40).join('%0A') + (shown.length > 40 ? `%0A… and ${shown.length - 40} more` : '');
+    console.log(`::error title=Schema drift (${missing.length} missing, ${unexpected.length} unexpected)::${body}`);
+  }
   console.error(
     targetMode
       ? '\n(-) in the repo but not in the target, (+) in the target but not in the repo. Someone changed the target outside a migration, or a migration was not applied.'
@@ -87,7 +100,27 @@ async function main() {
   process.exit(1);
 }
 
+// What a target URL looks like with its password hidden, so a broken secret
+// can be diagnosed from the workflow's annotations (the log isn't always at hand).
+function describeTarget(raw) {
+  const text = raw ?? '';
+  const notes = [];
+  if (text !== text.trim()) notes.push('has leading/trailing whitespace');
+  if (/\s/.test(text.trim())) notes.push('contains whitespace');
+  if (/^["'`]|["'`]$/.test(text.trim())) notes.push('is wrapped in quotes');
+  try {
+    const u = new URL(text.trim());
+    return `${u.protocol}//${decodeURIComponent(u.username)}:<${u.password.length} chars>@${u.hostname}:${u.port || '(default)'}${u.pathname}${notes.length ? ` (${notes.join(', ')})` : ''}`;
+  } catch {
+    const start = /^postgres(ql)?:\/\//.test(text.trim()) ? 'starts with postgresql://' : 'does not start with postgresql://';
+    return `not a valid URL: ${text.length} chars, ${start}${notes.length ? `, ${notes.join(', ')}` : ''}`;
+  }
+}
+
 main().catch((err) => {
   console.error(err.message);
+  if (process.env.GITHUB_ACTIONS && args.has('--target')) {
+    console.log(`::error title=Could not check the target database::${err.message} — target: ${describeTarget(process.env.DRIFT_TARGET_DB_URL)}`);
+  }
   process.exit(2);
 });
