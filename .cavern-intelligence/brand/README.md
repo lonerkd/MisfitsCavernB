@@ -3,6 +3,29 @@
 **The Cavern** is the product; **Misfits Cavern** is the company that makes it.
 Decisions and the plan: [`../restructure-proposal.md`](../restructure-proposal.md) › Decisions.
 
+## The mark — chosen 2026-10-06: R13
+
+Two Front Range mountains make the **M** — a pyramid like Mount Assiniboine
+and a tilted slab like Mount Rundle (the brand was born in Alberta) — lit by
+the crescent at the upper right, which is the **C**: Misfits Cavern's MC,
+hidden in the landscape. The faces turned toward the moon are vanilla, the
+faces turned away sinopia, snow on the summits.
+
+`mark/` (rebuild the icons with `node scripts/brand-export.mjs`):
+
+| File | Use |
+|---|---|
+| `the-cavern-mark.svg` | the mark — 48 px and up, the landing lockup, decks |
+| `the-cavern-mark-small.svg` | the small cut (two tones, no snow detail, a larger crescent) — 16–48 px: favicon, tab, the island |
+| `the-cavern-mark-mono.svg` | one colour (`currentColor`) — print, embossing, stamps |
+| `export/apple-touch-icon.png` | iPhone home screen (180) |
+| `export/icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | the web app manifest |
+| `export/favicon.svg`, `favicon-32.png`, `favicon-16.png` | browser tabs |
+
+The sheet: `concepts/final.png`. These are drawn from coordinates in code;
+before investors see it, have a designer redraw the final in Illustrator from
+this brief (curves, optical balance) — the shapes and colours stay.
+
 - `concepts/` — the mark that replaces "MC". 64×64 or 120×120 SVGs in the
   house colours (night ink `#040710`, vanilla `#e0ddae`, sinopia `#e8431a`,
   slate `#336467`). Each round has a sheet (both themes, the iPhone icon,
@@ -35,7 +58,6 @@ Decisions and the plan: [`../restructure-proposal.md`](../restructure-proposal.m
     `rockies-13-moonlit` relights it from the moon (faces toward it vanilla,
     faces away sinopia); R14 `rockies-14-moonlit-mc` is R13 with the larger,
     lower crescent (M · C).
-  - Owner to choose a direction; the chosen one is then drawn properly
-    (curves, optical balance, a simplified small-size cut for 16–32 px).
+  - **Chosen: R13** (above).
 - Voice: "Welcome back, misfit." stays.
 - Landing: "THE CAVERN", "by Misfits Cavern" beneath.

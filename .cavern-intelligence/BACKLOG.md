@@ -171,8 +171,9 @@ landing copy, emails, legal pages, the manifest), plus the repo/package names
 and docs. Part of the restructure pass.
 Owner decisions (2026-10-06): keep "Welcome back, misfit."; landing hero
 "THE CAVERN" with "by Misfits Cavern" under it; the mark replaces "MC" —
-three concepts in `brand/concepts/` (peaks M, moon C, moon over peaks),
-owner to pick; repo not renamed (new repo at launch, 3.16).
+chosen: R13 — `brand/mark/` (the mark, a small cut, one colour, and the
+app/iPhone icons ready to wire in: `public/`, the manifest, `app/layout.tsx`
+icons and `appleWebApp`); repo not renamed (new repo at launch, 3.16).
 Done when the UI, metadata and docs say The Cavern, and the company appears
 only as the maker.
 

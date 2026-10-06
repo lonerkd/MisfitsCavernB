@@ -4,7 +4,7 @@
 // favicon size and in the landing lockup, rendered with the app's own fonts.
 //
 //   node scripts/brand-sheet.mjs   → .cavern-intelligence/brand/concepts/<sheet>.png
-//                                     (sheet.png: round one · rockies.png: two · rockies-3.png: three · rockies-4.png: four · rockies-5.png: five)
+//                                     (final.png: the chosen mark · sheet.png: round one · rockies.png: two · rockies-3.png: three · rockies-4.png: four · rockies-5.png: five)
 //
 // MC_LOCAL_CHROMIUM points at a Chromium when Playwright's own isn't installed.
 import { readFileSync } from 'node:fs';
@@ -22,6 +22,10 @@ const mark = (f, id) => readFileSync(`${dir}/${f}.svg`, 'utf8')
   .replaceAll('#fbf8e8', 'var(--snow)').replaceAll('#f3a184', 'var(--snowshade)').replaceAll('#040710', 'var(--ink)')
   .replace('<svg ', '<svg class="m" ');
 const SHEETS = {
+  final: ['THE MARK — R13', [
+    ['../mark/the-cavern-mark', 'The mark', 'Assiniboine and Rundle make the M, lit by the crescent — the C. For 48 px and up.'],
+    ['../mark/the-cavern-mark-small', 'The small cut', 'Two tones, no snow detail, a larger crescent: favicon, browser tab, the island (16–48 px).'],
+    ['../mark/the-cavern-mark-mono', 'One colour', 'currentColor: print, embossing, stamps, any background.']]],
   sheet: ['ROUND ONE', [
     ['peaks', 'A · Peaks — the M', 'Two peaks; light from the upper left, the turned-away faces in sinopia shadow, a long cast shadow.'],
     ['moon', 'B · Moon crest — the C', 'A crescent opening right is the C; one sinopia star.'],
@@ -72,9 +76,9 @@ h1{font-family:Bebas;font-size:44px;letter-spacing:6px}
 main{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
 h2{font-family:Bebas;font-size:26px;letter-spacing:3px}
 .note{font-size:11px;opacity:.65;min-height:34px;margin:4px 0 12px;line-height:1.5}
-.night{--lit:#e0ddae;--shade:#e8431a;--snow:#fbf8e8;--snowshade:#f3a184;--ink:#040710;--lit2:#c4c093;--slate:#336467;--slate2:#24484b;--cool:#9fb8b6;--shade2:#b8320f;background:#040710}
-.paper{--lit:#1f1a14;--shade:#b3361a;--snow:#7d7462;--snowshade:#d9876a;--ink:#f6f1e7;--lit2:#4a4236;--slate:#336467;--slate2:#24484b;--cool:#a8bdbb;--shade2:#8a2a10;background:#f6f1e7}
-.sin{--lit:#040710;--shade:#f6f1e7;--snow:#3a2a24;--snowshade:#fbd9cc;--ink:#e8431a;--lit2:#2a1a14;--slate:#f6f1e7;--slate2:#e9dccb;--cool:#fbe3d8;--shade2:#f0d2c4;background:#e8431a}
+.night{color:#e0ddae;--lit:#e0ddae;--shade:#e8431a;--snow:#fbf8e8;--snowshade:#f3a184;--ink:#040710;--lit2:#c4c093;--slate:#336467;--slate2:#24484b;--cool:#9fb8b6;--shade2:#b8320f;background:#040710}
+.paper{color:#1f1a14;--lit:#1f1a14;--shade:#b3361a;--snow:#7d7462;--snowshade:#d9876a;--ink:#f6f1e7;--lit2:#4a4236;--slate:#336467;--slate2:#24484b;--cool:#a8bdbb;--shade2:#8a2a10;background:#f6f1e7}
+.sin{color:#040710;--lit:#040710;--shade:#f6f1e7;--snow:#3a2a24;--snowshade:#fbd9cc;--ink:#e8431a;--lit2:#2a1a14;--slate:#f6f1e7;--slate2:#e9dccb;--cool:#fbe3d8;--shade2:#f0d2c4;background:#e8431a}
 .tile{border-radius:14px;display:grid;place-items:center;margin-bottom:12px;border:1px solid #e0ddae1f}
 .big{height:260px}.big .m{width:200px;height:200px}
 .row{display:flex;gap:12px;align-items:center;margin-bottom:12px}

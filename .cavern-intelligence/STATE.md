@@ -18,8 +18,8 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    iPhone install, shell/primitives, route groups, one permission model,
    thin pages, optional Studio routes). Decided: keep "Welcome back,
    misfit."; landing "THE CAVERN / by Misfits Cavern"; no repo rename (new
-   repo at launch, 3.16). Owner to pick the mark from `brand/concepts/`
-   (A peaks M · B moon C · C both); still open: prefixes, domain, agent
+   repo at launch, 3.16). The mark is chosen: R13 (`brand/mark/`, icons
+   exported). Still open: prefixes, domain, agent
    leftovers. Nothing has moved.
 3. **Security and launch blockers**: script share links token-gated (3.3) ·
    password recovery (3.4).
@@ -78,8 +78,11 @@ No migration. Docs and two scripts only.
   `components/ui/AmbientGradient.tsx`).
 - Dependabot #135 (4 updates, approved) is green; the merge needs the owner
   (the session's merge was refused).
-- **Brand**: three mark concepts drawn (`brand/concepts/`, sheet rebuilt by
-  `node scripts/brand-sheet.mjs`); owner decisions recorded in
+- **Brand**: five rounds of the mark with the owner (`brand/concepts/`,
+  sheets by `node scripts/brand-sheet.mjs`); **R13 chosen** — Assiniboine
+  and Rundle make the M, lit by the crescent C. `brand/mark/` holds the
+  mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
+  makes the iPhone, manifest and favicon icons. Owner decisions in
   `restructure-proposal.md`; launch-repository practice is 3.16.
 - Naming: The Cavern is the product, Misfits Cavern the company
   (`overview-and-goals.md`); the rename is 3.12.
