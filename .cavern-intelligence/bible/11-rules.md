@@ -79,7 +79,7 @@ milestones — never the first or last.
   fields 16px on phones (no iOS zoom); no sideways scroll.
 - Feedback only by toast, confirmation only by the confirm dialog.
 
-## Code rules (`conventions.md`, `CLAW.md`)
+## Code rules (`RULES.md`, `conventions.md`)
 
 - **No mocks**: every control persists to real data; anything cosmetic is
   removed.

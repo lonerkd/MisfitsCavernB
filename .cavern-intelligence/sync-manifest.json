@@ -1,12 +1,12 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T15:51:49.608Z",
+  "last_synchronized": "2026-10-06T15:59:04.447Z",
   "stats": {
-    "totalFiles": 582,
-    "totalSize": 4161338,
+    "totalFiles": 583,
+    "totalSize": 4166953,
     "byExtension": {
       ".json": 11,
-      ".md": 50,
+      ".md": 51,
       ".tsx": 170,
       ".ts": 301,
       ".js": 7,
@@ -315,8 +315,8 @@
   "all_monitored_files": [
     {
       "path": ".claude/settings.json",
-      "size": 6845,
-      "last_modified": "2026-10-03T08:10:27.067Z"
+      "size": 6528,
+      "last_modified": "2026-10-06T15:58:25.903Z"
     },
     {
       "path": ".claude/settings.local.json",
@@ -529,19 +529,24 @@
       "last_modified": "2026-10-06T15:51:06.147Z"
     },
     {
+      "path": ".github/copilot-instructions.md",
+      "size": 691,
+      "last_modified": "2026-10-06T15:58:16.701Z"
+    },
+    {
       "path": ".github/pull_request_template.md",
       "size": 635,
       "last_modified": "2026-09-29T20:45:30.101Z"
     },
     {
       "path": "AGENTS.md",
-      "size": 3414,
-      "last_modified": "2026-10-03T11:59:31.674Z"
+      "size": 6097,
+      "last_modified": "2026-10-06T15:59:04.165Z"
     },
     {
       "path": "CLAUDE.md",
-      "size": 1541,
-      "last_modified": "2026-10-03T11:59:41.018Z"
+      "size": 751,
+      "last_modified": "2026-10-06T15:58:16.701Z"
     },
     {
       "path": "README.md",
@@ -2720,8 +2725,8 @@
     },
     {
       "path": "scripts/sync-intel.js",
-      "size": 4183,
-      "last_modified": "2026-10-03T08:45:01.892Z"
+      "size": 7531,
+      "last_modified": "2026-10-06T15:58:16.565Z"
     },
     {
       "path": "scripts/test-anon-rls.js",

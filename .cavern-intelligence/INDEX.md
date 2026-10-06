@@ -1,52 +1,52 @@
-# .cavern-intelligence — Knowledge Hub Index
+# .cavern-intelligence — the map
 
-The single source of truth for The Cavern (the suite; made by Misfits Cavern). Any AI agent (Claude Code,
-Copilot, Cursor, Cline, Codex, Gemini, …) or human should start here. Adapter
-files (`CLAUDE.md`, `.github/copilot-instructions.md`) and the universal
-`AGENTS.md` are thin pointers into this directory — knowledge is **not**
-duplicated across them.
+The one source of truth for The Cavern, for every agent and person, local or
+cloud. Nothing about how to work here lives anywhere else: the tool entry
+files at the root are generated from [`RULES.md`](RULES.md) by
+`npm run sync-intel`, and CI fails if they drift.
 
-## Read order at session start
+## Layers — each fact lives in exactly one
 
-1. `../AGENTS.md` — universal rules (stack, core rules, workflow, personas)
-2. `STATE.md` — open work, known issues, the latest session (**living doc**, injected every session)
-3. `BACKLOG.md` — every open task and planned pass, scoped (**the one list**)
-4. This `INDEX.md` — route to the file you need
-5. `sync-manifest.json` — machine-readable file map (regen: `npm run sync-intel`)
+| Layer | File(s) | Holds | Changes |
+|---|---|---|---|
+| **Rules** | [`RULES.md`](RULES.md) | how to work: non-negotiables, the change cycle, personas, where to look | rarely, by decision |
+| **Now** | [`STATE.md`](STATE.md) · [`BACKLOG.md`](BACKLOG.md) · [`STATE-history.md`](STATE-history.md) | open work and the latest session · every open task, scoped · past sessions | every session |
+| **What it is** | [`bible/`](bible/README.md) | every part of the suite: purpose, screens, states, rules, connections, gaps; the generated inventory; the audit | when a part changes |
+| **How it works** | the deep docs below | the engineering of each system | with the code |
+| **Product and brand** | [`overview-and-goals.md`](overview-and-goals.md) · [`brand/`](brand/README.md) · [`restructure-proposal.md`](restructure-proposal.md) | vision · the mark and the brand decisions · the plan for the repo | by decision |
+| **Generated** | `sync-manifest.json` · `bible/inventory.md` · `bible/screens/` | file map · what each route touches · every screen | `npm run sync-intel` · `npm run bible` · `npm run bible:shots` |
 
-## Files
+## Deep docs (how it works)
 
-| File | Read when… |
+| File | Read when |
 |---|---|
-| **`bible/`** | **The whole suite, top to bottom** — every page (with screenshots), state, feature, rule and connection; the generated inventory; the latest audit. Start at `bible/README.md` |
-| `brand/` | The mark concepts and brand decisions (The Cavern, by Misfits Cavern) |
-| `restructure-proposal.md` | The planned restructure (folders, logic, The Cavern brand), phase by phase — **waiting for the owner's sign-off** |
-| `CLAW.md` | Session start — condensed working rules & product shape |
-| `overview-and-goals.md` | Understanding product vision & the interconnected modules |
-| **`tools-and-access.md`** | You need to know what tools/MCP/permissions/skills/env exist and how access is wired |
-| **`routing-and-surface.md`** | Working on any route — gating tiers, page/API map, providers, module ownership |
-| **`conventions.md`** | Writing code — data-access layer, client/server, toast/confirm, prefs, TS/styling, migrations, git |
-| `database-and-security.md` | DB schema, RLS architecture, `internal` helpers, sharing security |
-| `design-tokens.md` | UI work — colors, typography, component classes, aesthetic |
-| `playbook.md` | The detailed 7-step change cycle |
-| `scriptos-engine.md` | ScriptOS editor — Fountain parser, realtime sync, offline storage |
-| **`project-brief.md`** | The shared project model — the brief, project context, what each tool adapts to |
-| `lounge-and-audio.md` | Lounge chat + channels + WebRTC voice |
-| `studio-and-preproduction.md` | The Studio — boards, breakdown, casting, scheduling |
-| `sync-protocol.md` | Multi-agent / multi-tool cooperation & keeping this hub in sync |
-| `STATE.md` | Open work, known issues, latest session (update every session; keep it short) |
-| `BACKLOG.md` | Every open task and planned pass, scoped — add what you find, delete what you finish |
-| `STATE-history.md` | Archived past sessions (read on demand; rotate old sessions here from STATE.md) |
-| `sync-manifest.json` | Generated file registry (do not hand-edit) |
+| [`tools-and-access.md`](tools-and-access.md) | tools, MCP servers, permissions, skills, env, CI, the drift check |
+| [`routing-and-surface.md`](routing-and-surface.md) | routes, gating tiers, providers, the island, layers |
+| [`conventions.md`](conventions.md) | writing code: data layer, client/server, feedback, prefs, TS/styling, migrations, effects |
+| [`database-and-security.md`](database-and-security.md) | schema, RLS, `internal` helpers, sharing, the definer allowlist, the migration workflow |
+| [`design-tokens.md`](design-tokens.md) | colours, type, scales, components, themes, accessibility |
+| [`scriptos-engine.md`](scriptos-engine.md) | the script editor: parser, co-writing, offline, the writing loop |
+| [`studio-and-preproduction.md`](studio-and-preproduction.md) | the Studio: library, scenes, production, on set, post, sharing |
+| [`project-brief.md`](project-brief.md) | the brief and project context every tool adapts to |
+| [`lounge-and-audio.md`](lounge-and-audio.md) | the Lounge, channels, voice |
 
-**Bold** = tools / routing / conventions ("the stuff usually inline"), added so
-every AI has the full operating picture, not just product docs.
+## Who reads what
+
+| Tool | Entry file | It is |
+|---|---|---|
+| Claude Code (local and cloud) | `CLAUDE.md` | `@`-imports `RULES.md` and `STATE.md`, plus Claude-only notes — generated |
+| Codex, Cursor, Cline, Windsurf, Zed, Gemini, Jules, Copilot's agent | `AGENTS.md` | a generated mirror of `RULES.md` |
+| GitHub Copilot chat | `.github/copilot-instructions.md` | a generated pointer here |
+| People | `README.md` | setup and commands; points here |
+
+Claude skills live in `.claude/skills/` (the one place Claude Code loads
+them from); they're listed in `tools-and-access.md` §4. Adding a tool: add
+its entry file to `adapters()` in `scripts/sync-intel.js` — never a
+hand-written copy of the rules.
 
 ## The contract
 
-- Treat this directory as **Source of Truth** and codebase memory.
-- Any change to files, architecture, or access **must** update the relevant doc
-  here in the same PR, then run `npm run sync-intel` and update `STATE.md`
-  and `BACKLOG.md`.
-- Adapters stay thin: if a rule belongs to all tools, it goes in `AGENTS.md` or
-  here — never copied into `CLAUDE.md`/`copilot-instructions.md`.
+- A change to files, architecture or access updates the doc that owns it in
+  the same PR, then `npm run sync-intel`, then `STATE.md` and `BACKLOG.md`.
+- One fact, one home. If you find the same thing in two places, keep the
+  owner (the table above) and link to it from the other.

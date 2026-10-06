@@ -12,8 +12,8 @@
 2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
    skills (`run-misfits-cavern`, `supabase`,
    `supabase-postgres-best-practices`) — no symlinks, so they load on
-   Windows; the SessionStart hook is `bash .claude/hooks/session-bootstrap.sh`
-   (Git Bash on Windows).
+   Windows. Session context loads from `CLAUDE.md` (it `@`-imports
+   `RULES.md` + `STATE.md`) — no hook.
 3. **Next PR — restructure phases 1–2** (`restructure-proposal.md`):
    clean-up (two dead files, `types/`, `docs/` → archive) and the brand
    (The Cavern everywhere, "by Misfits Cavern" where the maker is named,
@@ -103,6 +103,13 @@ No migration. Docs and two scripts only.
   mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
   makes the iPhone, manifest and favicon icons. Owner decisions in
   `restructure-proposal.md`; launch-repository practice is 3.16.
+- **One source of rules**: `.cavern-intelligence/RULES.md` replaces
+  `AGENTS.md`'s hand-written rules, `CLAW.md`, `playbook.md` and
+  `sync-protocol.md` (all drifted). `CLAUDE.md`, `AGENTS.md` and
+  `.github/copilot-instructions.md` are generated from it by
+  `npm run sync-intel`; CI's `checks` job fails if they drift. The
+  SessionStart hook is gone (CLAUDE.md's imports replace it). `INDEX.md`
+  is the map: one home per fact.
 - **Skills restored**: `supabase` and `supabase-postgres-best-practices`
   were dangling links since July (`65bb696` deleted their files); now real
   folders in `.claude/skills/` with `skills-lock.json` (`tools-and-access.md` §4).
