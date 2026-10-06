@@ -5,7 +5,8 @@
   "installedPlugins": [
     "typescript-lsp@claude-plugins-official",
     "code-simplifier@claude-plugins-official",
-    "security-guidance@claude-plugins-official"
+    "security-guidance@claude-plugins-official",
+    "pr-review-toolkit@claude-plugins-official"
   ],
   "overrides": {
     "mergeMode": true,

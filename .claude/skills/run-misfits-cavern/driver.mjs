@@ -78,20 +78,51 @@ function startServer() {
   });
 }
 
+// PIDs of whatever is listening on PORT. Scoped to the port so we never
+// touch unrelated Node processes (editors, other dev servers, Claude Code).
+function pidsOnPort() {
+  try {
+    if (process.platform === 'win32') {
+      const out = execSync('netstat -ano -p tcp', { encoding: 'utf8' });
+      const pids = new Set();
+      for (const line of out.split(/\r?\n/)) {
+        const cols = line.trim().split(/\s+/);
+        // Proto  Local Address  Foreign Address  State  PID
+        if (cols.length >= 5 && cols[3] === 'LISTENING' && cols[1].endsWith(`:${PORT}`)) {
+          pids.add(cols[4]);
+        }
+      }
+      return [...pids].filter(p => p !== '0');
+    }
+    const out = execSync(`lsof -ti tcp:${PORT} -sTCP:LISTEN`, { encoding: 'utf8' });
+    return out.split(/\s+/).filter(Boolean);
+  } catch {
+    // lsof exits 1 when nothing is listening.
+    return [];
+  }
+}
+
 // Stop dev server
 function stopServer() {
-  try {
-    // Kill any node processes running "next dev" on port 3000
-    if (process.platform === 'win32') {
-      execSync('taskkill /f /im node.exe', { stdio: 'ignore' });
-    } else {
-      execSync('pkill -f "node.*next dev"', { stdio: 'ignore' });
-    }
-    log('Dev server stopped');
-  } catch (e) {
-    // Process may not exist
+  const pids = pidsOnPort();
+  if (pids.length === 0) {
+    log(`Nothing listening on port ${PORT}`);
+    serverProcess = null;
+    return true;
   }
+  let ok = true;
+  for (const pid of pids) {
+    try {
+      // /T kills the process tree (npm -> next -> workers).
+      execSync(process.platform === 'win32' ? `taskkill /PID ${pid} /T /F` : `kill ${pid}`, { stdio: 'ignore' });
+    } catch (e) {
+      error(`Could not stop PID ${pid}: ${e.message}`);
+      ok = false;
+    }
+  }
+  if (ok) log(`Dev server stopped (PID ${pids.join(', ')})`);
   serverProcess = null;
+  return ok;
 }
 
 // Verify code quality
@@ -159,8 +190,7 @@ async function main() {
         break;
 
       case 'stop':
-        stopServer();
-        process.exit(0);
+        process.exit(stopServer() ? 0 : 1);
         break;
 
       default:
