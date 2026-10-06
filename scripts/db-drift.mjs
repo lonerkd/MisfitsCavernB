@@ -28,6 +28,10 @@ async function fingerprint(url) {
   const client = new pg.Client({ connectionString: url });
   await client.connect();
   try {
+    // Expressions print relative to the search_path (`uuid_generate_v4()` vs
+    // `extensions.uuid_generate_v4()`), so every role reads with Supabase's
+    // own default — the one the snapshot was taken with.
+    await client.query('set search_path = "$user", public, extensions');
     const { rows } = await client.query(QUERY);
     return rows.map((r) => r.line);
   } finally {
