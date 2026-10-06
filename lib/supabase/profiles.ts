@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { logActivity } from './activity';
+import type { TablesInsert } from './database.types';
 
 export interface Profile {
   id: string;
@@ -42,15 +43,88 @@ export async function searchProfiles(query: string): Promise<Profile[]> {
   return (data as unknown as Profile[]) || [];
 }
 
+/** Someone's public profile; null when there is none. Throws when the query fails. */
 export async function getProfile(id: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select(PUBLIC_PROFILE_COLUMNS)
     .eq('id', id)
-    .single();
+    .maybeSingle();
+  if (error) throw error;
+  return data as unknown as Profile | null;
+}
 
-  if (error) return null;
-  return data as unknown as Profile;
+export interface DirectoryFilter {
+  /** Matched against username and bio. */
+  search: string;
+  /** A craft, or 'All'. */
+  role: string;
+  availability: 'all' | 'OPEN' | 'BUSY';
+}
+
+/** The crew directory: real people (no samples), newest first, filtered. */
+export async function listDirectory(f: DirectoryFilter): Promise<Profile[]> {
+  let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('is_sample', false).order('created_at', { ascending: false });
+  // Characters that would break out of the PostgREST or() filter become spaces.
+  const clean = f.search.replace(/[(),.:\\]/g, ' ').trim();
+  if (clean) query = query.or(`username.ilike.%${clean}%,bio.ilike.%${clean}%`);
+  if (f.role && f.role !== 'All') query = query.eq('role', f.role);
+  if (f.availability !== 'all') query = query.eq('status', f.availability);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as unknown as Profile[]) ?? [];
+}
+
+/** Saves the signed-in person's own profile fields. */
+export async function saveMyProfile(userId: string, fields: Omit<TablesInsert<'profiles'>, 'id' | 'updated_at'>): Promise<void> {
+  const { error } = await supabase.from('profiles').upsert({
+    ...fields,
+    id: userId,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+}
+
+export interface MyWork {
+  scripts: { id: string; title: string; updated_at: string | null }[];
+  projects: { id: string; title: string; status: string | null; accent_color: string | null }[];
+  jobs: { id: string; title: string; role: string; status: string | null; created_at: string | null }[];
+}
+
+/** What someone has made, for their profile: scripts they wrote or edited, projects they own, jobs they posted. */
+export async function getMyWork(userId: string): Promise<MyWork> {
+  const [scripts, projects, jobs] = await Promise.all([
+    supabase.from('scripts').select('id, title, updated_at').or(`created_by.eq.${userId},last_edited_by.eq.${userId}`).order('updated_at', { ascending: false }),
+    supabase.from('projects').select('id, title, status, accent_color').eq('creator_id', userId).order('updated_at', { ascending: false }),
+    supabase.from('jobs').select('id, title, role, status, created_at').eq('created_by', userId).order('created_at', { ascending: false }),
+  ]);
+  for (const r of [scripts, projects, jobs]) if (r.error) throw r.error;
+  return {
+    scripts: (scripts.data ?? []) as MyWork['scripts'],
+    projects: (projects.data ?? []) as MyWork['projects'],
+    jobs: (jobs.data ?? []) as MyWork['jobs'],
+  };
+}
+
+/**
+ * Everything Settings › Export puts in the file. Throws if any part fails to
+ * load, so an export is never quietly missing a section.
+ */
+export async function collectMyData(userId: string) {
+  const [profile, account, projects, scripts, jobs] = await Promise.all([
+    supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', userId).maybeSingle(),
+    supabase.rpc('get_my_account'),
+    supabase.from('projects').select('*').eq('creator_id', userId),
+    supabase.from('scripts').select('*').eq('last_edited_by', userId),
+    supabase.from('jobs').select('*').eq('created_by', userId),
+  ]);
+  for (const r of [profile, account, projects, scripts, jobs]) if (r.error) throw r.error;
+  return {
+    profile: profile.data ? { ...(profile.data as object), ...(account.data?.[0] ?? {}) } : null,
+    projects: projects.data ?? [],
+    scripts: scripts.data ?? [],
+    jobs: jobs.data ?? [],
+  };
 }
 
 export async function inviteToCrew(projectId: string, userId: string, role: string) {

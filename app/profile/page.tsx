@@ -5,7 +5,7 @@ import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Setti
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
+import { getMyWork, getProfile, saveMyProfile } from '@/lib/supabase/profiles';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import Avatar from '@/components/Avatar';
 import { useConfirm } from '@/components/Confirm';
@@ -48,29 +48,19 @@ export default function ProfilePage() {
       }
       setUser(data.session.user);
 
-      const { data: prof } = await supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', data.session.user.id).single();
+      const userId = data.session.user.id;
+      const [prof, work] = await Promise.all([getProfile(userId), getMyWork(userId)]);
       if (prof) setProfile(prof);
 
-      const userId = data.session.user.id;
-      const [scriptsRes, projectsRes, jobsRes] = await Promise.all([
-        supabase.from('scripts').select('id, title, updated_at').or(`created_by.eq.${userId},last_edited_by.eq.${userId}`).order('updated_at', { ascending: false }),
-        supabase.from('projects').select('id, title, status, accent_color').eq('creator_id', userId).order('updated_at', { ascending: false }),
+      setScriptsList(work.scripts);
+      setProjectsList(work.projects);
+      setJobsList(work.jobs);
 
-        supabase.from('jobs').select('id, title, role, status, created_at').eq('created_by', userId).order('created_at', { ascending: false }),
-      ]);
-
-      const sData = scriptsRes.data || [];
-      const pData = projectsRes.data || [];
-      const jData = jobsRes.data || [];
-
-      setScriptsList(sData);
-      setProjectsList(pData);
-      setJobsList(jData);
-
-      setStats({ scripts: sData.length, projects: pData.length, jobs: jData.length });
+      setStats({ scripts: work.scripts.length, projects: work.projects.length, jobs: work.jobs.length });
       setLoading(false);
     }).catch((err) => {
       console.error('Failed to load profile:', err);
+      setMessage('Error: could not load your profile');
       setLoading(false);
     });
   }, []);
@@ -79,14 +69,11 @@ export default function ProfilePage() {
     if (!user) return;
     setSaving(true);
 
-    const { error } = await supabase.from('profiles').upsert({
-      id: user.id,
-      ...profile,
-      updated_at: new Date().toISOString(),
-    });
+    let error: { message?: string } | null = null;
+    try { await saveMyProfile(user.id, profile); } catch (e) { error = e as { message?: string }; }
 
     setSaving(false);
-    setMessage(error ? `Error: ${error.message}` : '✓ SAVED');
+    setMessage(error ? `Error: ${error.message ?? 'could not save'}` : '✓ SAVED');
     setTimeout(() => setMessage(''), 3000);
   };
 

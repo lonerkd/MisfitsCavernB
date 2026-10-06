@@ -5,7 +5,7 @@ import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, M
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
+import { collectMyData } from '@/lib/supabase/profiles';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
@@ -188,20 +188,10 @@ export default function SettingsPage() {
     if (!user) return;
     setBusy('export');
     try {
-      const [profile, account, projects, scripts, jobs] = await Promise.all([
-        supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', user.id).single(),
-        supabase.rpc('get_my_account'),
-        supabase.from('projects').select('*').eq('creator_id', user.id),
-        supabase.from('scripts').select('*').eq('last_edited_by', user.id),
-        supabase.from('jobs').select('*').eq('created_by', user.id),
-      ]);
       const payload = {
         exported_at: new Date().toISOString(),
         account: { id: user.id, email: user.email, created_at: user.created_at },
-        profile: profile.data ? { ...profile.data, ...(account.data?.[0] ?? {}) } : null,
-        projects: projects.data ?? [],
-        scripts: scripts.data ?? [],
-        jobs: jobs.data ?? [],
+        ...(await collectMyData(user.id)),
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
