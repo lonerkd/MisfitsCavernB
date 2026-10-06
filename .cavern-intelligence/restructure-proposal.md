@@ -90,8 +90,11 @@ Made by the owner, 2026-10-06:
    C. Drawn as three concepts — A peaks, B moon crest, C moon over peaks —
    in `brand/concepts/` (`sheet.png`: both themes, the iPhone icon, favicon
    sizes, the landing lockup; rebuild with `node scripts/brand-sheet.mjs`).
-   **Owner to pick one**; then it's refined and exported (SVG, PNGs, the
-   iPhone icon) in phase 2.
+   Owner's direction (round two): A's peaks with a small crescent in the
+   distance behind them, drawn as the Rocky Mountains — the brand was born
+   in Alberta. Rounds two and three in `brand/concepts/` (`rockies.png`,
+   `rockies-3.png`). **Owner to choose**; then it's drawn properly and
+   exported (SVG, PNGs, the iPhone icon) in phase 2.
 2. **The voice** — keep "Welcome back, misfit." The brand speaks.
 3. **The landing page** — "THE CAVERN" as the hero, "by Misfits Cavern"
    under it.

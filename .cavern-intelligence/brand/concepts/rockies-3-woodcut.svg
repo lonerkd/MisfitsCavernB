@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="The Cavern — Rockies, woodcut">
+  <title>The Cavern — Rockies, woodcut</title>
+  <!-- A park-badge engraving: lit faces solid, shaded faces hatched in sinopia, the moon in the notch. --><defs><pattern id="h3" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="2.6" stroke="#e8431a" stroke-width="1.15"/></pattern></defs><defs><mask id="m3"><rect width="120" height="120" fill="#fff"/><circle cx="62.44" cy="44.9" r="6.02" fill="#000"/></mask></defs>
+  <circle cx="59.5" cy="47" r="7" fill="#fbf8e8" mask="url(#m3)"/>
+  <polygon points="8,96 14,86 17,88 22,76 25,78 30,62 33,64 36,46 38,47 41,24 40,34 42,44 38,56 41,68 37,82 39,96" fill="#e0ddae"/><polygon points="41,24 44,32 46,31 49,42 52,44 55,52 57,51 60,60 59,72 61,84 60,96 39,96 37,82 41,68 38,56 42,44 40,34" fill="url(#h3)"/>
+  <polygon points="60,60 63,51 65,52 68,42 70,43 73,32 75,33 79,18 78,30 81,42 77,55 80,70 76,84 78,96 60,96 61,84 59,72" fill="#e0ddae"/><polygon points="79,18 82,27 84,26 88,40 91,39 95,52 98,51 103,66 106,65 112,96 78,96 76,84 80,70 77,55 81,42 78,30" fill="url(#h3)"/>
+  <polyline points="8,96 14,86 17,88 22,76 25,78 30,62 33,64 36,46 38,47 41,24 44,32 46,31 49,42 52,44 55,52 57,51 60,60 63,51 65,52 68,42 70,43 73,32 75,33 79,18 82,27 84,26 88,40 91,39 95,52 98,51 103,66 106,65 112,96" fill="none" stroke="#e0ddae" stroke-width="1" stroke-linejoin="round"/>
+  <polygon points="38.4,44 41,24 40,34 41.6,42 40.3,40.5 39.4,43.5" fill="#fbf8e8"/><polygon points="75.8,30 79,18 78,30 79.7,37 78.5,35 77.3,37.5 76.5,34" fill="#fbf8e8"/>
+</svg>
