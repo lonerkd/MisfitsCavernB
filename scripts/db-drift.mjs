@@ -87,7 +87,27 @@ async function main() {
   process.exit(1);
 }
 
+// What a target URL looks like with its password hidden, so a broken secret
+// can be diagnosed from the workflow's annotations (the log isn't always at hand).
+function describeTarget(raw) {
+  const text = raw ?? '';
+  const notes = [];
+  if (text !== text.trim()) notes.push('has leading/trailing whitespace');
+  if (/\s/.test(text.trim())) notes.push('contains whitespace');
+  if (/^["'`]|["'`]$/.test(text.trim())) notes.push('is wrapped in quotes');
+  try {
+    const u = new URL(text.trim());
+    return `${u.protocol}//${decodeURIComponent(u.username)}:<${u.password.length} chars>@${u.hostname}:${u.port || '(default)'}${u.pathname}${notes.length ? ` (${notes.join(', ')})` : ''}`;
+  } catch {
+    const start = /^postgres(ql)?:\/\//.test(text.trim()) ? 'starts with postgresql://' : 'does not start with postgresql://';
+    return `not a valid URL: ${text.length} chars, ${start}${notes.length ? `, ${notes.join(', ')}` : ''}`;
+  }
+}
+
 main().catch((err) => {
   console.error(err.message);
+  if (process.env.GITHUB_ACTIONS && args.has('--target')) {
+    console.log(`::error title=Could not check the target database::${err.message} — target: ${describeTarget(process.env.DRIFT_TARGET_DB_URL)}`);
+  }
   process.exit(2);
 });
