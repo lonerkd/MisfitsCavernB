@@ -1,4 +1,4 @@
-# Routing & Surface Map — Misfits Cavern
+# Routing & Surface Map — The Cavern
 
 Every route in the app, how it's gated, which module owns it, and the key
 libs/components behind it. Auth gating is enforced in `proxy.ts` (real
@@ -52,7 +52,8 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 | `/showcase` | public | Showcase | public filmmaker directory |
 | `/privacy`, `/terms` | public | Legal | `app/privacy`, `app/terms`, `components/legal/LegalPage`, `lib/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
 | `/p/[token]` | **public** | Portfolio share | logged-out; RLS-gated on `is_public`/token |
-| `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` |
+| `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` (not on the token — BACKLOG 3.3; no control in the app sets `shared` yet) |
+| `/shared/[token]` | **public** | Project lookbook | server-rendered (`force-dynamic`, Open Graph metadata); `get_shared_project` / `get_shared_lookbook` / `get_press_kit` — exact token, visibility link/public |
 | `/admin` | admin | Admin | dashboard |
 | `/admin/users` | admin | Admin | user management |
 | `/admin/analytics` | admin | Admin | `lib/supabase/stats.ts` |
@@ -70,7 +71,9 @@ mid-OAuth from an authed session.
 |---|---|---|---|
 | `/api/discord/notify` | POST | **Bearer access token** (401 without); derives sender from verified JWT; 403 unless caller can view the channel under RLS | posts a channel message to a Discord webhook |
 | `/api/discord/test` | POST | **Bearer access token** (401 without) + rate limited | webhook connectivity test |
-| `/api/references/search` | GET | — (public; IP rate limited) | reference-image search for Studio boards |
+| `/api/references/search` | GET | — (public; IP rate limited) | reference-image search for Studio boards (Openverse) |
+| `/api/links` | GET | — (public; rate limited) | what a pasted link is: a YouTube/Vimeo title (oEmbed) or a public Pinterest board's pins; fetches only fixed provider endpoints built from a checked address |
+| `/m/[id]` | GET | — (public) | stable permalink to a published file: `get_published_media`, then a 302 to a short-lived signed URL (`no-store`) |
 
 `/api/discord/notify` uses `SUPABASE_SERVICE_ROLE_KEY` server-side to read
 `discord_integrations.webhook_url` (no client-readable RLS by design). Both
@@ -151,11 +154,12 @@ Chrome lives in two places, and nothing else mounts itself globally:
 
 ## 5. Data-access layer
 
-The app never calls `supabase.from()` ad hoc in components — every table has a
-typed module in `lib/supabase/*.ts` (e.g. `projects.ts`, `channels.ts`,
-`scripts.ts`, `portfolio.ts`). Add new queries there, typed against
-`lib/supabase/database.types.ts` (generated — regenerate with the Supabase MCP
-`generate_typescript_types` after schema changes). See `conventions.md`.
+The rule: every table has a typed module in `lib/supabase/*.ts` (or a domain
+module — `lib/studio/api.ts`, `lib/breakdown`, `lib/brief`, …), typed
+against `lib/supabase/database.types.ts` (generated: `npm run db:types`).
+**The code is partway there**: 30 files in `app/` and `components/` still
+call `supabase.from()` directly (BACKLOG 3.2). New queries go in `lib/`. See
+`conventions.md`.
 
 ## Framing
 

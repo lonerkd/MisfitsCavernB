@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="The Cavern — moon over peaks">
+  <title>The Cavern — moon over peaks (C + M)</title>
+  <!-- Both ideas at once: the crescent C, and the two lit peaks of the M rising inside its opening. -->
+  <defs>
+    <mask id="c2"><rect width="64" height="64" fill="#fff"/><circle cx="40" cy="27" r="17" fill="#000"/></mask>
+  </defs>
+  <circle cx="31" cy="32" r="22" fill="#e0ddae" mask="url(#c2)"/>
+  <polygon points="31,40 37,23 35.5,40" fill="#e0ddae"/>
+  <polygon points="37,23 41,33 41,40 35.5,40" fill="#e8431a"/>
+  <polygon points="45,24 41,33 41,40 44,40" fill="#e0ddae"/>
+  <polygon points="45,24 50,40 44,40" fill="#e8431a"/>
+</svg>

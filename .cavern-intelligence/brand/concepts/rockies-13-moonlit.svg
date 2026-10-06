@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="The Cavern — moonlit">
+  <title>The Cavern — moonlit</title>
+  <!-- R10 relit by its own moon: the moon sits at the upper right, so the faces turned toward it (the pyramid's east face, the slab's cliff) are vanilla and the faces turned away are sinopia. Peaks = M, crescent = C. --><defs><mask id="m13"><rect width="120" height="120" fill="#fff"/><circle cx="109.70" cy="16.08" r="5.04" fill="#000"/></mask></defs><circle cx="107" cy="18" r="6" fill="#fbf8e8" mask="url(#m13)"/>
+  <polygon points="2,94 9,86 13,87 18,76 21,77 26,62 29,62 32,48 34,49 36,30 37.6,40 38,44 37,56 40,68 37,82 39,94" fill="#e8431a"/><polygon points="2,94 9,86 13,87 18,76 21,77 26,62 29,62 30,74 26,86 24,94" fill="#b8320f"/>
+  <polygon points="36,30 40,40 42,39 46,50 49,49 53,58 56,62 55,74 57,86 56,94 39,94 37,82 40,68 37,56 38,44 37.6,40" fill="#e0ddae"/><polygon points="40,68 45,74 55,74 57,86 56,94 39,94 37,82" fill="#c4c093"/>
+  <polygon points="56,62 60,56 63,57 68,47 71,47 76,38 79,38 84,28 86,28 90,20 89,34 92,48 88,62 91,76 88,94 56,94 57,86 55,74" fill="#e8431a"/><polygon points="57,86 70,80 91,76 88,94 56,94" fill="#b8320f"/>
+  <polygon points="90,20 93,30 95,29 98,44 101,46 104,60 108,62 112,78 118,94 88,94 91,76 88,62 92,48 89,34" fill="#e0ddae"/><polygon points="92,48 104,60 108,62 112,78 118,94 88,94 91,76 88,62" fill="#c4c093"/>
+  <polygon points="34.5,44 36,30 37.6,40 36.8,42 36,39.8 35.2,43" fill="#f3a184"/><polygon points="36,30 40,40 42,39 43.2,42.4 42,44 41,41.5 39.6,44.5 38.5,42.5 37.6,40" fill="#fbf8e8"/>
+  <polygon points="40.4,45 41.4,45 43.4,57 42.4,57.4" fill="#fbf8e8" opacity=".9"/><polygon points="38.4,45.5 39.2,45.5 39.6,53 38.9,53.2" fill="#fbf8e8" opacity=".9"/>
+  <polygon points="68,47 71,47 76,38 79,38 84,28 86,28 90,20 89.7,24.5 88,27.6 86.4,31.6 84.6,31.2 83,33.4 79.8,41.6 77.6,41 76.2,42.4 71.6,50.8 70,50 68.6,51" fill="#f3a184"/><polygon points="90,20 93,30 95,29 96.2,34 94.4,33 92.6,35.6 91.2,33 89.7,34.8 89,34" fill="#fbf8e8"/>
+  <polygon points="92.5,44 99,46 98.4,47" fill="#fbf8e8" opacity=".9"/><polygon points="90.4,58 103,62 102,63.2" fill="#fbf8e8" opacity=".9"/><polygon points="90.8,70 108,74 107,75.2" fill="#fbf8e8" opacity=".9"/>
+</svg>

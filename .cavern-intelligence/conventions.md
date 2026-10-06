@@ -75,12 +75,12 @@ Rules:
 - Server/DB truth: RLS + `internal.*` SECURITY DEFINER helpers
   (`is_project_creator`, `is_project_member`, `can_access_script`,
   `can_view/post/manage_channel`). See `database-and-security.md`.
-- Client mirror (for gating UI, never for security): `lib/os/access-matrix.ts`
-  (unit-tested) and `lib/os/permissions.ts`. The old `lib/permissions/` tree
-  (`access-control.tsx`, `role-permissions.ts`, `usePermissions.ts`) was deleted
-  in the core-state consolidation.
-  Gate destructive controls (e.g. crew role dropdowns) on the matrix so they
-  don't render enabled and then silently fail at RLS.
+- Client side (for hiding what RLS would refuse, never for security): the
+  page's own `isOwner`, `useCanShape(projectId)` (owner, lead, contributor —
+  mirrors `internal.can_shape_project`). Gate
+  destructive controls on these so they don't render enabled and then fail
+  at RLS. `lib/os/permissions.ts` / `access-matrix.ts` are an older
+  global-role model nothing reads, nor `useProjectAccess` (BACKLOG 3.10) — don't build on them.
 
 ---
 

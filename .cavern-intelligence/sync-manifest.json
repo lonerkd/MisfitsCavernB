@@ -1,12 +1,12 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T16:24:40.809Z",
+  "last_synchronized": "2026-10-06T17:01:37.329Z",
   "stats": {
-    "totalFiles": 550,
-    "totalSize": 4190798,
+    "totalFiles": 587,
+    "totalSize": 4279895,
     "byExtension": {
-      ".json": 16,
-      ".md": 12,
+      ".json": 13,
+      ".md": 52,
       ".tsx": 170,
       ".ts": 302,
       ".js": 7,
@@ -315,8 +315,8 @@
   "all_monitored_files": [
     {
       "path": ".claude/settings.json",
-      "size": 6845,
-      "last_modified": "2026-09-29T21:35:21.860Z"
+      "size": 6731,
+      "last_modified": "2026-10-06T17:00:46.496Z"
     },
     {
       "path": ".claude/settings.local.json",
@@ -329,34 +329,214 @@
       "last_modified": "2026-09-28T02:28:08.056Z"
     },
     {
+      "path": ".claude/skills/supabase/assets/feedback-issue-template.md",
+      "size": 476,
+      "last_modified": "2026-10-06T17:00:46.513Z"
+    },
+    {
+      "path": ".claude/skills/supabase/CHANGELOG.md",
+      "size": 3325,
+      "last_modified": "2026-10-06T17:00:46.512Z"
+    },
+    {
+      "path": ".claude/skills/supabase/references/skill-feedback.md",
+      "size": 1052,
+      "last_modified": "2026-10-06T17:00:46.514Z"
+    },
+    {
+      "path": ".claude/skills/supabase/SKILL.md",
+      "size": 11400,
+      "last_modified": "2026-10-06T17:00:46.512Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/CHANGELOG.md",
+      "size": 2065,
+      "last_modified": "2026-10-06T17:00:46.496Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "size": 1523,
+      "last_modified": "2026-10-06T17:00:46.499Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "size": 1493,
+      "last_modified": "2026-10-06T17:00:46.500Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "size": 1328,
+      "last_modified": "2026-10-06T17:00:46.500Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "size": 1369,
+      "last_modified": "2026-10-06T17:00:46.500Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "size": 1423,
+      "last_modified": "2026-10-06T17:00:46.500Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "size": 1575,
+      "last_modified": "2026-10-06T17:00:46.502Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "size": 1341,
+      "last_modified": "2026-10-06T17:00:46.502Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "size": 1414,
+      "last_modified": "2026-10-06T17:00:46.502Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "size": 1408,
+      "last_modified": "2026-10-06T17:00:46.503Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "size": 1440,
+      "last_modified": "2026-10-06T17:00:46.503Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "size": 1587,
+      "last_modified": "2026-10-06T17:00:46.503Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "size": 1923,
+      "last_modified": "2026-10-06T17:00:46.504Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "size": 1400,
+      "last_modified": "2026-10-06T17:00:46.504Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "size": 1407,
+      "last_modified": "2026-10-06T17:00:46.504Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "size": 1486,
+      "last_modified": "2026-10-06T17:00:46.505Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "size": 1473,
+      "last_modified": "2026-10-06T17:00:46.505Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "size": 1561,
+      "last_modified": "2026-10-06T17:00:46.506Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "size": 1498,
+      "last_modified": "2026-10-06T17:00:46.506Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "size": 1327,
+      "last_modified": "2026-10-06T17:00:46.507Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "size": 1569,
+      "last_modified": "2026-10-06T17:00:46.507Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "size": 1261,
+      "last_modified": "2026-10-06T17:00:46.507Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "size": 1392,
+      "last_modified": "2026-10-06T17:00:46.508Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "size": 1960,
+      "last_modified": "2026-10-06T17:00:46.508Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "size": 1499,
+      "last_modified": "2026-10-06T17:00:46.509Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "size": 1738,
+      "last_modified": "2026-10-06T17:00:46.509Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "size": 1783,
+      "last_modified": "2026-10-06T17:00:46.510Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "size": 1603,
+      "last_modified": "2026-10-06T17:00:46.510Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "size": 1882,
+      "last_modified": "2026-10-06T17:00:46.510Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "size": 1620,
+      "last_modified": "2026-10-06T17:00:46.511Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "size": 1422,
+      "last_modified": "2026-10-06T17:00:46.511Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "size": 2166,
+      "last_modified": "2026-10-06T17:00:46.511Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "size": 4283,
+      "last_modified": "2026-10-06T17:00:46.498Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/_sections.md",
+      "size": 1721,
+      "last_modified": "2026-10-06T17:00:46.498Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/references/_template.md",
+      "size": 1074,
+      "last_modified": "2026-10-06T17:00:46.499Z"
+    },
+    {
+      "path": ".claude/skills/supabase-postgres-best-practices/SKILL.md",
+      "size": 2640,
+      "last_modified": "2026-10-06T17:00:46.497Z"
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "size": 703,
+      "last_modified": "2026-10-06T17:00:46.515Z"
+    },
+    {
       "path": ".github/pull_request_template.md",
       "size": 655,
       "last_modified": "2026-09-29T21:33:47.917Z"
-    },
-    {
-      "path": ".harnesskit/bible.md",
-      "size": 2297,
-      "last_modified": "2026-09-28T08:55:35.675Z"
-    },
-    {
-      "path": ".harnesskit/config.json",
-      "size": 846,
-      "last_modified": "2026-10-06T15:43:50.120Z"
-    },
-    {
-      "path": ".harnesskit/detected.json",
-      "size": 349,
-      "last_modified": "2026-09-28T08:53:32.268Z"
-    },
-    {
-      "path": ".harnesskit/failures.json",
-      "size": 17,
-      "last_modified": "2026-09-28T08:55:57.279Z"
-    },
-    {
-      "path": ".harnesskit/insights-history.json",
-      "size": 16,
-      "last_modified": "2026-09-28T08:55:57.328Z"
     },
     {
       "path": ".review-20260928-030156.md",
@@ -375,8 +555,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 3479,
-      "last_modified": "2026-10-06T15:43:49.897Z"
+      "size": 6201,
+      "last_modified": "2026-10-06T17:00:46.516Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -680,8 +860,8 @@
     },
     {
       "path": "CLAUDE.md",
-      "size": 1575,
-      "last_modified": "2026-10-06T15:43:49.897Z"
+      "size": 768,
+      "last_modified": "2026-10-06T17:00:46.516Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -2510,13 +2690,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 351188,
-      "last_modified": "2026-10-06T16:03:12.991Z"
+      "size": 361316,
+      "last_modified": "2026-10-06T17:00:46.518Z"
     },
     {
       "path": "package.json",
-      "size": 2389,
-      "last_modified": "2026-10-06T15:43:49.966Z"
+      "size": 2481,
+      "last_modified": "2026-10-06T17:00:46.519Z"
     },
     {
       "path": "performance-budget.json",
@@ -2565,13 +2745,18 @@
     },
     {
       "path": "scripts/sync-intel.js",
-      "size": 4314,
-      "last_modified": "2026-10-01T07:47:33.121Z"
+      "size": 7739,
+      "last_modified": "2026-10-06T17:00:46.521Z"
     },
     {
       "path": "scripts/test-anon-rls.js",
       "size": 2581,
       "last_modified": "2026-09-15T00:00:10.266Z"
+    },
+    {
+      "path": "skills-lock.json",
+      "size": 566,
+      "last_modified": "2026-10-06T17:00:46.521Z"
     },
     {
       "path": "supabase/fingerprint.sql",

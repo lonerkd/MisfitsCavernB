@@ -87,7 +87,7 @@ CREATE POLICY "Project members can view" ON projects FOR SELECT USING (
 ### C. Public Sharing Security Gutter
 Anonymous, logged-out users are identified under the Postgres `anon` role. For sharing to function:
 - **Scripts:** `CREATE POLICY "Shared scripts publicly viewable" ON scripts FOR SELECT TO anon USING (shared = TRUE);`
-- **Portfolios:** Scoped via `share_token` or `is_public = true`.
+- **Portfolios:** every portfolio piece, its media and its pitch-board blocks are readable by everyone (`using true`) — a portfolio is public by design; there is no `is_public` column. `/p/<share_token>` is just its address.
 - Private data (budgets, crew rosters, chats) must have **no** select policy granted to `anon`.
 - **Project share links** (`/shared/<share_token>`) resolve only through `SECURITY DEFINER` RPCs that check the exact token and `visibility in ('link','public')`: `get_shared_project` (overview fields) and `get_shared_lookbook` (published media + the scene headings they're linked to — never notes or unpublished items).
 - **Published files** are readable by anon only while `media.shared` and the project is link/public (storage policy `project-media: shared read`). `/m/<media_id>` is the stable permalink: it checks `get_published_media` and redirects to a fresh short-lived signed URL, uncached, so unpublishing takes effect at once.

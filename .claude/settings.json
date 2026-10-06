@@ -4,20 +4,6 @@
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-bootstrap.sh\"",
-            "timeout": 15,
-            "statusMessage": "Loading Cavern context"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "defaultMode": "default",
     "allow": [

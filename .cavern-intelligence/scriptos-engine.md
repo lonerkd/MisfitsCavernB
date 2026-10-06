@@ -10,36 +10,44 @@
   - **Dialogue & Parentheticals:** Lines nested immediately beneath a character block.
   - **Transitions:** Matches high-frequency patterns like `CUT TO:`, `FADE OUT:`, `DISSOLVE TO:`.
   - **Action Blocks:** The fallback line type when no other lexical rules trigger.
-- **Worker Isolation:** For extremely large scripts (120+ pages), parsing is delegated to a background web worker (`parser.worker.ts`) to keep the React rendering loop fully interactive (60fps) and prevent blocking the main UI thread.
+- **On the main thread:** there is no parser worker. Pagination, timing (`timing.ts`, eighths of a page)
+  and analysis (`analyze.ts`) run from the same parsed blocks.
 
 ---
 
-## 2. Realtime Co-Editing & Caret Sync
-Multiple writers can co-edit the same screenplay simultaneously. The synchronization engine is designed to handle network latency and write collisions cleanly.
+## 2. Realtime co-writing (`lib/scriptos/sync.ts`)
 
-### Realtime Pipeline (`lib/scriptos/sync.ts`)
-- **Transport Layer:** Leverages Supabase Realtime `broadcast` channels.
-- **Shared States Broadcasted:**
-  - **Content Sync:** Broadcasts lightweight text updates.
-  - **Presence Avatars:** Renders where other co-writers are active on the page.
-  - **Caret Tracking:** Renders colored remote cursors with named labels directly inside the editor area.
-
-### Conflict Resolution Strategy
-When two users write to the exact same line at the exact same millisecond:
-- **Client Locks:** The UI immediately stops compiling and freezes inputs for the affected block.
-- **Conflict Banner:** A modal/banner prompts: **"KEEP MINE" or "TAKE THEIRS"**.
-- This avoids automated character-by-character merging that typically corrupts screenplay layout elements (like dual-dialogue configurations or action alignments).
+- **One channel per script** (`script_<id>`): Supabase Realtime broadcast
+  (`content_update`) plus presence (who's in, their line, a colour each).
+  Carets are broadcast too (`broadcastCursor`).
+- **Saving**: 1.5 s after typing stops, the writer broadcasts the whole text
+  and updates `scripts.content` (`last_edited_by`, `updated_at`). Others apply
+  a remote version when it differs from theirs.
+- **Conflict rule**: if a remote version arrives while you're typing (an edit
+  in the last second) and both your text and theirs differ by more than five
+  characters from the last shared version, nothing is applied: the editor
+  shows **KEEP MINE / TAKE THEIRS** (`resolveConflict`, banner at the foot of
+  `app/editor/page.tsx`). Otherwise it's whole-document last-writer-wins —
+  no character merge (a CRDT would be the next step).
 
 ---
 
-## 3. Offline Caching Strategy
-Filmmakers often work in locations without reliable internet access (e.g., sound stages, remote scouting spots). ScriptOS implements a robust offline fallback mechanism.
+## 3. Offline (`lib/scriptos/storage.ts`)
 
-- **Primary DB Sync:** While online, content auto-saves directly to the Supabase `scripts` table with a throttled debounce (default: 1000ms).
-- **Offline Caches:** All scripts, character bibles, and metadata updates are copied synchronously to:
-  - **IndexedDB (`idb-keyval`)**: For storing the raw content and version histories.
-  - **`localStorage`**: Stores active editing configurations, typewriter mode flags, and focus settings.
-- **Reconciliation:** When the client detects network restoration (monitored via `lib/hooks/useNetworkStatus.ts`), the caching module triggers a background sync, publishing any offline revisions back to the database as new incremental versions inside `script_versions`.
+- **Device first**: `saveScript` writes the script to IndexedDB
+  (`idb-keyval`, key `script_<id>`, `syncPending: true`), then to Supabase if
+  `navigator.onLine`; on success it clears `syncPending` (unless a newer local
+  save landed meanwhile).
+- **Retry**: a failed save schedules `syncPendingScripts` in 15 s
+  (`scheduleScriptSync`) — the `online` event alone misses failures while the
+  browser still thinks it's online; the `online` event also triggers it.
+- **Offline deletes** are tombstones replayed on the next sync, so a deleted
+  script never comes back and its text doesn't linger on the server.
+- **The open script** per project is a pointer in `localStorage`
+  (`getCurrentScriptId` / `setCurrentScriptId`).
+- **Revisions** are `script_revisions` (`lib/scriptos/revisions.ts`: lock a
+  draft, coloured pages after it — `REVISION_COLORS`, diff view), not an
+  automatic version history.
 
 ## Writing loop
 
