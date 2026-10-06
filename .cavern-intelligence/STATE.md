@@ -8,8 +8,9 @@
 
 Full scope for each in `BACKLOG.md`. In order:
 
-1. **Owner, outside the code**: the `PRODUCTION_DB_URL` secret (the nightly
-   drift check fails without it); lawyer review of `/privacy` and `/terms`;
+1. **Owner, outside the code**: Supabase usage — the dashboard says the
+   free-plan grace period is over (Organization › Usage: which line is over);
+   lawyer review of `/privacy` and `/terms`;
    leaked-password protection (Supabase › Auth › Passwords); the two old
    stashes on the Windows machine; 18 stale remote branches to delete
    (audited — all merged or closed on purpose; tips recorded); optionally
@@ -25,8 +26,12 @@ No PRs are open.
 ## Known issues
 
 - Leaked-password protection is off (owner toggle; security advisor WARN).
-- *Production schema drift* fails nightly: the `PRODUCTION_DB_URL` secret
-  isn't set (owner). Production is checked by hand at each migration.
+- *Production schema drift*: `PRODUCTION_DB_URL` set 2026-10-05 (the
+  `drift_reader` login, `tools-and-access.md` §7); first run waits on a
+  GitHub Actions incident.
+- Supabase free plan: "grace period is over" banner. Database 23 MB, storage
+  46 kB, 20 users, ~200 requests/day — all well inside the limits, so the
+  overage is something only the dashboard shows (likely egress or Realtime).
 - `npm audit`: production deps clean; 7 high in dev tooling only (`braces`
   via Tailwind's watcher and `eslint-config-next`; fix needs upstream) —
   BACKLOG 3.1.
