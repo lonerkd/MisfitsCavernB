@@ -123,28 +123,39 @@ What guards `main`, and the commands behind each guard:
 | Every e2e spec (the public smoke specs too) against a fresh local stack, in 5 parts balanced by time | CI `e2e-local` | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |
 | Production = committed schema | `production-drift.yml`: nightly and after schema changes land on main. Needs the `PRODUCTION_DB_URL` secret (a read-only role) and **fails without it** | `DRIFT_TARGET_DB_URL=… npm run db:drift -- --target` |
 
-**The production drift login.** The workflow logs in as `drift_reader`: a
-login role with no grants — it reads only the system catalogs, which is all
-`supabase/fingerprint.sql` needs, and can't see or change any data. It goes
-through the **session pooler** (GitHub's runners are IPv4-only; the direct
-`db.<ref>.supabase.co` host is IPv6-only). The one secret is the role's
-password, **`PRODUCTION_DB_PASSWORD`**; the workflow builds the address itself
-(`drift_reader.fxsryglwpwcqkfjljbrm` @ `aws-0-us-west-2.pooler.supabase.com:5432`).
-Nobody needs to keep a copy of the password — to change it (lost, leaked,
-rotated, or the check says "password authentication failed"), pick a new
-passphrase and type it in two places:
+**The production drift login** (working since 2026-10-06). The workflow logs
+in as `drift_reader` through the **session pooler** (GitHub's runners are
+IPv4-only; the direct `db.<ref>.supabase.co` host is IPv6-only). The role has
+no table grants beyond what `supabase/fingerprint.sql` reads:
 
-1. Supabase › SQL Editor: `ALTER ROLE drift_reader PASSWORD 'the passphrase';`
-   (no apostrophes inside it; `CREATE ROLE drift_reader LOGIN PASSWORD '…';`
-   if the role doesn't exist).
-2. GitHub › Settings › Secrets and variables › Actions ›
-   `PRODUCTION_DB_PASSWORD` › Update — the same passphrase.
+- `USAGE` on schema `storage` and `SELECT` on `storage.buckets` (bucket
+  settings — ids, public flag, limits; no files), plus `BYPASSRLS`, because
+  `storage.buckets` has RLS with no policies. It can't read any other table,
+  so the bypass reaches nothing else.
+- `USAGE` on schema `extensions`, so column defaults print as
+  `uuid_generate_v4()` like the snapshot, not `extensions.uuid_generate_v4()`
+  (a schema without USAGE is skipped in the search_path). `db:drift` also
+  sets Supabase's default search_path on every connection.
 
-Then run *Production schema drift* from the Actions tab. If it can't connect,
-the run's annotation says why and what the target looked like (user, host,
-password length — never its characters); a refused login also shows in the
-Supabase logs (`supavisor_logs`). (Typing beats copying: a 161-character
-connection string copied from the SQL results on a phone arrived as 100.)
+The secret is **`PRODUCTION_DB_URL`** — the full session-pooler string,
+`postgresql://drift_reader.fxsryglwpwcqkfjljbrm:<password>@aws-0-us-west-2.pooler.supabase.com:5432/postgres`
+(surrounding spaces are trimmed). The workflow also accepts just the password
+as **`PRODUCTION_DB_PASSWORD`** (preferred when set; it builds the address).
+Nobody needs to keep a copy of the password. To change it, or to rebuild the
+role from scratch, in the Supabase SQL Editor:
+
+```sql
+-- new role only: CREATE ROLE drift_reader LOGIN;
+ALTER ROLE drift_reader WITH LOGIN BYPASSRLS PASSWORD 'a passphrase you type';
+GRANT USAGE ON SCHEMA storage, extensions TO drift_reader;
+GRANT SELECT ON storage.buckets TO drift_reader;
+```
+
+then set `PRODUCTION_DB_PASSWORD` to the same passphrase (or rebuild the URL),
+and run *Production schema drift* from the Actions tab. When it fails, its
+annotation says why: a connection error with the target's shape (user, host,
+password length — never its characters), or the differing schema lines. A
+refused login also shows in the Supabase logs (`supavisor_logs`).
 
 - `e2e-local` runs the whole `e2e/` folder; each spec skips itself unless its
   stack is there, so a new spec is in CI the moment it's added.

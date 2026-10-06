@@ -26,10 +26,9 @@ No PRs are open.
 ## Known issues
 
 - Leaked-password protection is off (owner toggle; security advisor WARN).
-- *Production schema drift*: not passing yet — it logs in as `drift_reader`
-  with the `PRODUCTION_DB_PASSWORD` secret (owner sets it;
-  `tools-and-access.md` §7). The first secret (a pasted connection string)
-  arrived broken.
+- *Production schema drift* runs nightly and passes (2026-10-06: production
+  matches the snapshot). It logs in as `drift_reader` (catalog reads +
+  bucket settings only; `tools-and-access.md` §7).
 - Supabase free plan: "grace period is over" banner. Database 23 MB, storage
   46 kB, 20 users, ~200 requests/day — all well inside the limits, so the
   overage is something only the dashboard shows (likely egress or Realtime).
