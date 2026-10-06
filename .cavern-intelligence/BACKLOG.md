@@ -29,38 +29,40 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   green PR merges itself instead of waiting for a session to notice.
 - **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
   Still flagged by the security advisor (`auth_leaked_password_protection`).
-- **Old stashes on the Windows machine** (the one that made the island
+- **Stashes**: the cloud container's ("legal") is dropped — every line was
+  already on `main` (re-checked 2026-10-06). **Old stashes on the Windows machine** (the one that made the island
   branch): `stash@{1}` and `stash@{2}`, from June–July, predate the rewrites
   and were never reconciled. Look at each (`git stash show -p stash@{n}`);
   anything not on `main` goes into a branch, then drop them. (The cloud
   container's only stash, "legal", is fully on `main` — checked line by line.)
-- **Delete 18 stale remote branches** (approved 2026-10-03; the session's
-  GitHub proxy can't delete branches, so it's a one-liner from your machine:
-  `git push origin --delete <names…>`, or GitHub › Branches). Audited: 14
-  are ancestors of `main` (merged with merge commits), 3 were squash-merged
-  with identical content (#96 `design-scales`, #111 `studio-tab-scroll`,
-  #39 `repo-technical-audit`), and #41 `repo-reacquaintance` was closed on
-  purpose (a dev quick-login + auth-bypass cookie — the local-stack e2e signs
-  in for real instead). `staging` is an old July snapshot nothing in the repo
-  refers to. Tips, to restore any (`git push origin <sha>:refs/heads/<name>`):
-  - `chore/analyze-engine` `46b120c47485`
-  - `chore/auth-journey-fix` `a4d30c6e078a`
-  - `chore/fountain-conformance` `9afcc91c7dfc`
-  - `chore/fountain-serializer` `0d610ed6fde7`
-  - `chore/offline-foundation` `caa49daf8642`
-  - `chore/production-hardening` `7d271728a063`
-  - `chore/scheduler-and-deps` `01a7ba64894e`
-  - `chore/scriptos-normalize` `cbef576b8cec`
-  - `chore/suite-bridge` `8ba95ac8a4cc`
-  - `chore/suite-completeness` `460b4379663e`
-  - `chore/visibility-activity-consolidate` `f6da2b2bfe1e`
-  - `claude/charming-galileo-fewe3n` `c2e71a8dc718`
-  - `claude/design-scales` `21ffd98c81b2`
-  - `claude/expand-access-autonomy-3ajtsg` `bab2c7f6a7cd`
-  - `claude/repo-reacquaintance-q2bm6w` `9a61d35f911a`
-  - `claude/repo-technical-audit-rj40tm` `717889d89184`
-  - `claude/studio-tab-scroll` `f4c08f20425b`
-  - `staging` `d42fb7b225d7`
+- **Delete 18 stale remote branches** (re-verified 2026-10-06; the cloud
+  session's GitHub proxy can't delete branches — run from your machine once
+  the driver-fix PR is merged):
+
+  ```
+  git push origin --delete chore/analyze-engine chore/auth-journey-fix chore/fountain-conformance chore/fountain-serializer chore/offline-foundation chore/production-hardening chore/scheduler-and-deps chore/scriptos-normalize chore/suite-bridge chore/suite-completeness chore/visibility-activity-consolidate claude/charming-galileo-fewe3n claude/expand-access-autonomy-3ajtsg staging claude/repo-technical-audit-rj40tm claude/studio-tab-scroll claude/design-scales claude/repo-reacquaintance-q2bm6w
+  ```
+
+  What each is: 14 are ancestors of `main` (all 11 `chore/*`,
+  `charming-galileo`, `expand-access-autonomy`, `staging`); `repo-technical-audit`
+  is byte-identical to what #39 merged (`d42fb7b`); `studio-tab-scroll` is
+  identical to #111's squash; `design-scales` was identical to #96's squash
+  until a local session pushed one more commit on 2026-10-06 (`292d2b7`, the
+  run-driver stop-by-port fix) — ported to `main` in its own PR, the rest of
+  that commit only touched the deleted `.harnesskit/`; `repo-reacquaintance`
+  was #41, closed on purpose (a dev quick-login + auth-bypass cookie — never
+  ship it). Tips, to restore any (`git push origin <sha>:refs/heads/<name>`):
+  `chore/analyze-engine` `46b120c47485` · `chore/auth-journey-fix` `a4d30c6e078a` ·
+  `chore/fountain-conformance` `9afcc91c7dfc` · `chore/fountain-serializer` `0d610ed6fde7` ·
+  `chore/offline-foundation` `caa49daf8642` · `chore/production-hardening` `7d271728a063` ·
+  `chore/scheduler-and-deps` `01a7ba64894e` · `chore/scriptos-normalize` `cbef576b8cec` ·
+  `chore/suite-bridge` `8ba95ac8a4cc` · `chore/suite-completeness` `460b4379663e` ·
+  `chore/visibility-activity-consolidate` `f6da2b2bfe1e` · `claude/charming-galileo-fewe3n` `c2e71a8dc718` ·
+  `claude/expand-access-autonomy-3ajtsg` `bab2c7f6a7cd` · `staging` `d42fb7b225d7` ·
+  `claude/repo-technical-audit-rj40tm` `717889d89184` · `claude/studio-tab-scroll` `f4c08f20425b` ·
+  `claude/design-scales` `292d2b71b129` · `claude/repo-reacquaintance-q2bm6w` `9a61d35f911a`.
+  (The working branch `claude/state-assessment-testing-r0tf3y` stays — it's
+  the session branch.)
 
 ## 2. To verify
 
