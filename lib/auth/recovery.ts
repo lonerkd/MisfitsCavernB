@@ -1,4 +1,3 @@
-import { passwordSchema } from '@/lib/validation';
 import { checkPasswordWeakness } from '@/lib/password-strength';
 
 /** Where the reset email sends the person: the page that sets a new password. */
@@ -10,8 +9,9 @@ export const RECOVERY_PATH = '/auth/reset';
  * separately (`checkHibpBreach`), after these.
  */
 export function checkNewPassword(password: string, confirm: string, email?: string): string | null {
-  const parsed = passwordSchema.safeParse(password);
-  if (!parsed.success) return parsed.error.issues[0]?.message ?? 'Choose a different password.';
+  // Same limits as `passwordSchema`; not imported, so the sign-in page doesn't load zod up front.
+  if (password.length < 6) return 'Password must be at least 6 characters.';
+  if (password.length > 200) return 'Password cannot exceed 200 characters.';
   const weak = checkPasswordWeakness(password, email);
   if (weak) return weak;
   if (password !== confirm) return "The two passwords don't match.";
