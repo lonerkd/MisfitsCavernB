@@ -13,9 +13,10 @@ import { useToast } from '@/components/Toast';
 import { osSignIn as signIn, osSignUp as signUp, useSession } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
+import { RECOVERY_PATH, recoveryErrorMessage } from '@/lib/auth/recovery';
 import { supabase } from '@/lib/supabase/client';
 
-type Mode = 'signin' | 'signup';
+type Mode = 'signin' | 'signup' | 'forgot';
 
 interface Field {
   name: string;
@@ -31,6 +32,8 @@ export default function AuthPage() {
   const [mode, setMode] = useState<Mode>('signin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // A calm confirmation (the reset link was sent) — not an error, so not red.
+  const [notice, setNotice] = useState('');
 
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [hydrated, setHydrated] = useState(false);
@@ -51,6 +54,10 @@ export default function AuthPage() {
   // target), instead of dumping everyone on /projects.
   const { status } = useSession();
   const raw = useSearchParam('redirect') || '';
+  // /auth?forgot=1 opens straight on the reset form (the expired-link page links here).
+  const wantsForgot = useSearchParam('forgot') === '1';
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the URL, an external system
+  useEffect(() => { if (wantsForgot) setMode('forgot'); }, [wantsForgot]);
   const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/projects';
 
   // Navigate when the session is actually established in the OS store — not on a
@@ -68,12 +75,41 @@ export default function AuthPage() {
     if (error) setError('');
   }, [error]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formEl = e.currentTarget; // gone after the first await
     setError('');
+    setNotice('');
     // The validator (zod) loads on submit, not with the page — it is most of
     // the sign-in page's weight otherwise.
-    const { signInSchema, signUpSchema, firstIssue } = await import('@/lib/validation');
+    const { signInSchema, signUpSchema, emailSchema, firstIssue } = await import('@/lib/validation');
+
+    if (mode === 'forgot') {
+      const typedEmail = String(new FormData(formEl).get('email') ?? '');
+      const parsed = emailSchema.safeParse(typedEmail);
+      if (!parsed.success) { setError(firstIssue(parsed.error)); return; }
+      setLoading(true);
+      try {
+        const { error: sendError } = await withTimeout(
+          supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: `${window.location.origin}${RECOVERY_PATH}` }),
+          30000,
+          'Request timed out.',
+        );
+        // The same answer whether or not the address has an account: the page
+        // must not tell a stranger who is signed up. Only a failure that has
+        // nothing to do with the address (rate limit, offline) is shown.
+        if (sendError && !(sendError.status && sendError.status < 500 && sendError.status !== 429)) {
+          setError(recoveryErrorMessage(sendError));
+          return;
+        }
+        setNotice('If that address has an account, a reset link is on its way. It works once and expires within the hour.');
+      } catch (err) {
+        setError(/timed out/i.test((err as Error).message) ? 'This is taking too long — check your connection and try again.' : recoveryErrorMessage(err as Error));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     if (mode === 'signup') {
       const parsed = signUpSchema.safeParse({
@@ -148,6 +184,7 @@ export default function AuthPage() {
   const switchMode = () => {
     setMode(m => m === 'signin' ? 'signup' : 'signin');
     setError('');
+    setNotice('');
   };
 
   return (
@@ -205,7 +242,7 @@ export default function AuthPage() {
             MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
           </h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', fontStyle: 'italic', color: 'var(--fg-muted)', margin: 0 }}>
-            {mode === 'signin' ? 'Welcome back, misfit.' : 'Join the cavern.'}
+            {mode === 'signin' ? 'Welcome back, misfit.' : mode === 'signup' ? 'Join the cavern.' : 'Forgot it? It happens.'}
           </p>
         </motion.div>
 
@@ -221,7 +258,7 @@ export default function AuthPage() {
             borderRadius: 'var(--radius-sm)',
           }}
         >
-          <div style={{
+          {mode !== 'forgot' && <div style={{
             display: 'flex',
             marginBottom: 32,
             background: 'rgba(var(--ink-rgb), 0.03)',
@@ -231,7 +268,8 @@ export default function AuthPage() {
             {(['signin', 'signup'] as Mode[]).map(m => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setError(''); }}
+                type="button"
+                onClick={() => { setMode(m); setError(''); setNotice(''); }}
                 style={{
                   flex: 1,
                   padding: '10px',
@@ -249,7 +287,7 @@ export default function AuthPage() {
                 {m === 'signin' ? 'Sign In' : 'Sign Up'}
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* method="post" + a submit button disabled until hydration: before the
               JS loads, a native submit would otherwise GET /auth?email=…&password=…,
@@ -284,14 +322,41 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            <Input
-              name="password"
-              label="Password"
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-            />
+            {mode !== 'forgot' && (
+              <Input
+                name="password"
+                label="Password"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                type="password"
+                value={form.password}
+                onChange={handleChange}
+              />
+            )}
+            {mode === 'signin' && (
+              <p style={{ margin: '-8px 0 20px', textAlign: 'right' }}>
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot'); setError(''); setNotice(''); }}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  Forgot password?
+                </button>
+              </p>
+            )}
+            {mode === 'forgot' && (
+              <p style={{ margin: '0 0 20px', fontSize: 13, lineHeight: 1.5, color: 'var(--fg-muted)' }}>
+                Enter your email and we&apos;ll send a link to choose a new password.
+              </p>
+            )}
+
+            {notice && (
+              <div
+                role="status"
+                style={{ padding: '10px 14px', background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', marginBottom: 20, letterSpacing: 0.5, lineHeight: 1.5 }}
+              >
+                {notice}
+              </div>
+            )}
 
             <AnimatePresence>
               {error && (
@@ -323,7 +388,7 @@ export default function AuthPage() {
               disabled={!hydrated}
               variant="solid"
             >
-              {mode === 'signin' ? 'Sign In' : 'Create Account'}
+              {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send reset link'}
             </Button>
             {mode === 'signup' && (
               <p style={{ margin: '14px 0 0', fontSize: 11, lineHeight: 1.5, color: 'var(--fg-dim)', textAlign: 'center' }}>
