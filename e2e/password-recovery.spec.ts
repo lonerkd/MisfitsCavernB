@@ -1,11 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
 
 // Password recovery end to end, on the local stack: the reset email lands in
 // the local mail catcher (Mailpit, behind Supabase's `inbucket` port 54324).
 // Skipped when that catcher isn't reachable (a run against a deployed URL).
 const MAIL = process.env.MAIL_CATCHER_URL || 'http://127.0.0.1:54324';
-const OLD_PASSWORD = 'Cavern-Recover-Old-2026!';
-const NEW_PASSWORD = 'Violet-Lantern-Reset-92!';
+// Made per run, so no password literal sits in the repo.
+const OLD_PASSWORD = `Old-${randomUUID()}!`;
+const NEW_PASSWORD = `New-${randomUUID()}!`;
 
 async function mailCatcherUp(): Promise<boolean> {
   try {
