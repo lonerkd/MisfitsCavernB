@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useEffectEvent, useMemo } from 'react';
+import React, { useState, useEffect, useEffectEvent, useMemo, useRef } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -748,17 +748,28 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
   const [festivals, setFestivals] = useState<FestivalRow[]>([]);
 
-  const load = React.useCallback(() => fetchProjectPage(projectId).then((d) => {
-    setTasks(d.tasks);
-    setBudget(d.budget);
-    setTimeline(d.timeline);
-    setCrew(d.crew);
-    setPortfolio(d.portfolio);
-    setPostedBudgetIds(d.posted);
-    if (d.settings) setSettings(d.settings);
-    setFestivals(d.festivals);
-    setOwner(d.owner);
-  }, (e: { message?: string }) => setErr(e?.message || 'Could not load the production details.')), [projectId]);
+  // Every write bumps this. A load that a write overtook would put back the
+  // list from before it (a task added while the panel was still loading
+  // vanished), so such a load is dropped and asked again.
+  const writes = useRef(0);
+  const load = React.useCallback((): Promise<void> => {
+    const run = (): Promise<void> => {
+      const at = writes.current;
+      return fetchProjectPage(projectId).then((d) => {
+        if (writes.current !== at) return run();
+        setTasks(d.tasks);
+        setBudget(d.budget);
+        setTimeline(d.timeline);
+        setCrew(d.crew);
+        setPortfolio(d.portfolio);
+        setPostedBudgetIds(d.posted);
+        if (d.settings) setSettings(d.settings);
+        setFestivals(d.festivals);
+        setOwner(d.owner);
+      }, (e: { message?: string }) => setErr(e?.message || 'Could not load the production details.'));
+    };
+    return run();
+  }, [projectId]);
 
   useEffect(() => {
     awaitOSUser().then((user) => setUserId(user?.id ?? null));
@@ -771,6 +782,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
 
   // A write's failure, shown above the panel (null when it worked).
   const attempt = async (write: () => Promise<unknown>): Promise<boolean> => {
+    writes.current += 1;
     try { await write(); return true; }
     catch (e) { setErr((e as { message?: string })?.message || 'That did not save.'); return false; }
   };
@@ -811,6 +823,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const postJobFromBudget = async (b: BudgetRow) => {
     if (!userId || postedBudgetIds.has(b.id)) return;
     setPostingBudgetId(b.id);
+    writes.current += 1;
     try {
       // The job's craft: the one this budget line is about (a job needs one from the crafts list).
       const craft = suggestCraft(b.category, await loadCrafts());
