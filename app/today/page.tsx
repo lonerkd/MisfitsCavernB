@@ -11,7 +11,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getTodayWork, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
+import { updateTask } from '@/lib/supabase/project-hub';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES } from '@/lib/os';
 import { useToast } from '@/components/Toast';
 import { fetchNotifications, markRead, type Notification } from '@/lib/supabase/notifications';
@@ -21,8 +22,8 @@ import { readable } from '@/lib/color';
 import { ContinueOffer } from '@/components/mobile/Continue';
 import t from './today.module.css';
 
-interface Sheet { id: string; project_id: string; shoot_date: string | null; shoot_day: number; general_call: string | null; location_address: string | null; weather: string | null; issued_at: string | null }
-interface Task { id: string; project_id: string; title: string; completed: boolean | null; due_date: string | null }
+type Sheet = TodaySheet;
+type Task = TodayTask;
 interface Unread { key: string; label: string; href: string; count: number }
 
 export default function TodayPage() {
@@ -46,41 +47,36 @@ export default function TodayPage() {
   const load = useCallback(() => {
     if (!user) return Promise.resolve();
     return (async () => {
-      const [sh, calls, tk, un, notes] = await Promise.all([
-        projectIds.length
-          ? supabase.from('call_sheets').select('id, project_id, shoot_date, shoot_day, general_call, location_address, weather, issued_at').in('project_id', projectIds).gte('shoot_date', today).order('shoot_date').limit(12)
-          : Promise.resolve({ data: [] as Sheet[] }),
-        supabase.from('call_sheet_calls').select('call_sheet_id, call_time').eq('crew_user_id', user.id),
-        projectIds.length
-          ? supabase.from('project_tasks').select('id, project_id, title, completed, due_date').eq('assigned_to', user.id).eq('completed', false).in('project_id', projectIds).limit(40)
-          : Promise.resolve({ data: [] as Task[] }),
+      const [work, un, notes] = await Promise.all([
+        getTodayWork(user.id, projectIds, today),
         getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
         fetchNotifications(user.id, 8).catch(() => [] as Notification[]),
       ]);
 
       // Name what's unread: channels by name (and project), people by username.
-      const channelIds = Object.keys(un.channels), peopleIds = Object.keys(un.people);
-      const [ch, ppl] = await Promise.all([
-        channelIds.length ? supabase.from('channels').select('id, name, project_id').in('id', channelIds) : Promise.resolve({ data: [] }),
-        peopleIds.length ? supabase.from('profiles').select('id, username').in('id', peopleIds) : Promise.resolve({ data: [] }),
-      ]);
+      // (Unread is a nicety: if the names don't load, it's left out.)
+      const named = await nameUnread(un).catch(() => ({ channels: [], people: [] }));
       const rows: Unread[] = [
-        ...((ch.data ?? []) as Array<{ id: string; name: string; project_id: string | null }>).map((c) => ({
+        ...named.channels.map((c) => ({
           key: c.id, count: un.channels[c.id], href: `/lounge?channel=${c.id}`,
           label: `#${c.name}${c.project_id && projectById.get(c.project_id) ? ` · ${projectById.get(c.project_id)!.title}` : ''}`,
         })),
-        ...((ppl.data ?? []) as Array<{ id: string; username: string }>).map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
+        ...named.people.map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
       ].sort((a, b) => b.count - a.count);
-      return { sh, calls, tk, notes, rows };
-    })().then(({ sh, calls, tk, notes, rows }) => {
-      setSheets((sh.data ?? []) as Sheet[]);
-      setMyCalls(Object.fromEntries(((calls.data ?? []) as Array<{ call_sheet_id: string; call_time: string | null }>).map((c) => [c.call_sheet_id, c.call_time])));
-      setTasks((tk.data ?? []) as Task[]);
+      return { work, notes, rows };
+    })().then(({ work, notes, rows }) => {
+      setSheets(work.sheets);
+      setMyCalls(work.myCalls);
+      setTasks(work.tasks);
       setUpdates(notes);
       setUnread(rows);
       setLoaded(true);
+    }, (e) => {
+      console.error('Failed to load Today:', e);
+      toast('Could not load your days and tasks. Reload to try again.', 'error');
+      setLoaded(true);
     });
-  }, [user, projectIds, today, projectById]);
+  }, [user, projectIds, today, projectById, toast]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -97,8 +93,8 @@ export default function TodayPage() {
 
   const complete = async (task: Task) => {
     setTasks((list) => list.filter((x) => x.id !== task.id));
-    const { error } = await supabase.from('project_tasks').update({ completed: true }).eq('id', task.id);
-    if (error) { setTasks((list) => [...list, task]); toast('Could not tick that off', 'error'); return; }
+    try { await updateTask(task.id, { completed: true }); }
+    catch { setTasks((list) => [...list, task]); toast('Could not tick that off', 'error'); return; }
     toast('Done', 'success');
   };
 

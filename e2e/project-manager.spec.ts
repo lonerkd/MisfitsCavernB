@@ -96,6 +96,14 @@ test.describe('Production Management (local Supabase)', () => {
     await expect(sam.getByText(`Tidewater Fest ${TAG}`)).toBeVisible();
     await expect(sam.getByText(newcomer.username).filter({ visible: true }).first()).toBeVisible();
 
+    // The pitch board: opening it makes one; opening it again reuses it.
+    await sam.goto(`/projects/${projectId}/pitch`);
+    await expect(sam.getByText(`Ferry ${TAG}`).first()).toBeVisible({ timeout: 30_000 });
+    await expect.poll(async () => (await admin.from('portfolio_projects').select('id').eq('source_project_id', projectId)).data?.length).toBe(1);
+    await sam.reload();
+    await expect(sam.getByText(`Ferry ${TAG}`).first()).toBeVisible({ timeout: 30_000 });
+    expect((await admin.from('portfolio_projects').select('id').eq('source_project_id', projectId)).data?.length).toBe(1);
+
     // Crew work the tasks, but festivals and settings are the owner's.
     const jo = await signIn(browser, crew);
     await jo.goto(`/projects/${projectId}`);
