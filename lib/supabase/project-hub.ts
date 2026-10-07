@@ -201,3 +201,28 @@ export async function saveFestivals(projectId: string, festivals: FestivalRow[])
   const { error } = await supabase.from('projects').update({ festival_submissions: festivals as unknown as Json }).eq('id', projectId);
   if (error) throw error;
 }
+
+export type FeedKind = 'scene' | 'budget' | 'milestone' | 'crew' | 'reference' | 'note';
+export interface FeedItem { kind: FeedKind; label: string; t: string }
+
+/** The latest things added to a project (scenes, budget, milestones, crew, references, script notes), newest first. */
+export async function getProductionFeed(projectId: string, limit = 8): Promise<FeedItem[]> {
+  const [sc, bd, tl, cr, ca, sn] = await Promise.all([
+    supabase.from('scenes').select('title,created_at').eq('project_id', projectId).is('removed_at', null).order('created_at', { ascending: false }).limit(4),
+    supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+    supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+    supabase.from('project_crew').select('role,craft,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+    supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+    supabase.from('script_annotations').select('type,text,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
+  ]);
+  check(sc, bd, tl, cr, ca, sn);
+  const items: FeedItem[] = [
+    ...(sc.data ?? []).map((x) => ({ kind: 'scene' as const, label: `Scene — ${x.title}`, t: x.created_at ?? '' })),
+    ...(bd.data ?? []).map((x) => ({ kind: 'budget' as const, label: `Budget — ${x.category}`, t: x.created_at ?? '' })),
+    ...(tl.data ?? []).map((x) => ({ kind: 'milestone' as const, label: `Milestone — ${x.title}`, t: x.created_at ?? '' })),
+    ...(cr.data ?? []).map((x) => ({ kind: 'crew' as const, label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at ?? '' })),
+    ...(ca.data ?? []).map((x) => ({ kind: 'reference' as const, label: `Reference — ${x.title || 'untitled'}`, t: x.created_at ?? '' })),
+    ...(sn.data ?? []).map((x) => ({ kind: 'note' as const, label: `Script ${x.type} — "${x.text}"`, t: x.created_at ?? '' })),
+  ];
+  return items.sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, limit);
+}

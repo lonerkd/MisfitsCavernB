@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useEffectEvent, useCallback, useMemo } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
 import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, MessageSquare, X, Volume2, Mic, MicOff, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Trash2, Pin, PinOff, Pencil, Search, ChevronLeft } from 'lucide-react';
 import { audienceLabel, audienceOptions, defaultPostPolicy, groupChannels, type ChannelAudience } from '@/lib/lounge/audience';
@@ -10,10 +10,13 @@ import GrainOverlay from '@/components/GrainOverlay';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase/client';
+import { getProductionFeed, type FeedKind } from '@/lib/supabase/project-hub';
+import { getProjectTeam } from '@/lib/supabase/crew-management';
+import { useLoad } from '@/lib/hooks/useLoad';
 import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid, deleteMessage, editMessage, pinMessage, markLoungeRead, getLoungeUnread, type LoungeHit, type LoungeUnread } from '@/lib/supabase/messages';
 import { LoungeSearch, PinnedPanel } from '@/components/lounge/LoungePanels';
-import { getMyAccount } from '@/lib/supabase/profiles';
-import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, type Channel, type ChannelMember } from '@/lib/supabase/channels';
+import { findPeopleByName, getMyAccount, getProfile } from '@/lib/supabase/profiles';
+import { listChannels, createChannel, canPostChannel, canManageChannel, listChannelMembers, addChannelMember, removeChannelMember, updateChannel, deleteChannel, hasDiscordWebhook, setDiscordWebhook, removeDiscordWebhook, setChannelMemberRights, type Channel, type ChannelMember } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useOSGate } from '@/lib/os';
@@ -45,33 +48,15 @@ interface Message {
 
 const REACTION_CHOICES = ['👍', '❤️', '🔥', '🎬', '😂', '🎉', '👀', '🙏'];
 
-function ProductionFeed({ projectId }: { projectId: string }) {
-  const [items, setItems] = useState<{ label: string; t: string; color: string }[]>([]);
+const FEED_COLOR: Record<FeedKind, string> = {
+  scene: 'var(--warn)', budget: 'var(--ok)', milestone: 'var(--violet)', crew: '#ec4899', reference: '#a855f7', note: 'var(--danger)',
+};
 
-  useEffect(() => {
-    let on = true;
-    (async () => {
-      const [sc, bd, tl, cr, ca, sn] = await Promise.all([
-        supabase.from('scenes').select('title,created_at').eq('project_id', projectId).is('removed_at', null).order('created_at', { ascending: false }).limit(4),
-        supabase.from('budget_items').select('category,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('timeline_items').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('project_crew').select('role,craft,created_at,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('media').select('title,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-        supabase.from('script_annotations').select('type,text,created_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(4),
-      ]);
-      if (!on) return;
-      const merged = [
-        ...(sc.data || []).map((x: any) => ({ label: `Scene — ${x.title}`, t: x.created_at, color: 'var(--warn)' })),
-        ...(bd.data || []).map((x: any) => ({ label: `Budget — ${x.category}`, t: x.created_at, color: 'var(--ok)' })),
-        ...(tl.data || []).map((x: any) => ({ label: `Milestone — ${x.title}`, t: x.created_at, color: 'var(--violet)' })),
-        ...(cr.data || []).map((x: any) => ({ label: `Crew — ${x.profiles?.username || 'member'}`, t: x.created_at, color: '#ec4899' })),
-        ...(ca.data || []).map((x: any) => ({ label: `Reference — ${x.title || 'untitled'}`, t: x.created_at, color: '#a855f7' })),
-        ...(sn.data || []).map((x: any) => ({ label: `Script ${x.type} — "${x.text}"`, t: x.created_at, color: 'var(--danger)' })),
-      ].sort((a, b) => new Date(b.t).getTime() - new Date(a.t).getTime()).slice(0, 8);
-      setItems(merged);
-    })();
-    return () => { on = false; };
-  }, [projectId]);
+/** What was added to the project lately. A side panel: if it can't load, it stays hidden (and says why in the console). */
+function ProductionFeed({ projectId }: { projectId: string }) {
+  const feed = useLoad(projectId, () => getProductionFeed(projectId));
+  useEffect(() => { if (feed.error) console.error('Production feed failed to load:', feed.error); }, [feed.error]);
+  const items = (feed.data ?? []).map((it) => ({ ...it, color: FEED_COLOR[it.kind] }));
 
   const now = useNow();
   const ago = (iso: string) => { const d = (now - new Date(iso).getTime()) / 3600000; return d < 1 ? `${Math.max(1, Math.floor(d * 60))}m` : d < 24 ? `${Math.floor(d)}h` : `${Math.floor(d / 24)}d`; };
@@ -436,8 +421,8 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
     if (!q) return;
     let live = true;
     const t = setTimeout(async () => {
-      const { data } = await supabase.from('profiles').select('id, username').ilike('username', `%${q}%`).eq('is_sample', false).limit(8);
-      if (live) setFound({ q, users: (data as { id: string; username: string }[] | null) || [] });
+      const users = await findPeopleByName(q).catch(() => { if (live) setErr('Could not search people.'); return []; });
+      if (live) setFound({ q, users });
     }, 220);
     return () => { live = false; clearTimeout(t); };
   }, [q]);
@@ -451,9 +436,11 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
   };
   const doRemove = async (m: ChannelMember) => { setBusy(true); const e = await removeChannelMember(m.id); setBusy(false); if (e) { setErr(e); return; } await refresh(); onChanged(); };
   const toggle = async (m: ChannelMember, field: 'can_post' | 'can_manage') => {
-    setBusy(true);
-    await supabase.from('channel_members').update({ [field]: !m[field] } as { can_post?: boolean; can_manage?: boolean }).eq('id', m.id);
-    setBusy(false); await refresh();
+    setBusy(true); setErr(null);
+    const e = await setChannelMemberRights(m.id, { [field]: !m[field] });
+    setBusy(false);
+    if (e) setErr(e);
+    await refresh();
   };
   const savePolicy = async (p: 'viewers' | 'members' | 'managers') => {
     const was = postPolicy; setPostPolicy(p); setErr(null);
@@ -626,6 +613,7 @@ const NO_REPLIES: Message[] = [];
 export default function LoungePage() {
   const { isLoading } = useOSGate();
   const { toast } = useToast();
+  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
   const confirm = useConfirm();
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -680,8 +668,9 @@ export default function LoungePage() {
     const channel = q.get('channel'), dm = q.get('dm');
     if (channel) pendingChannel.current = channel;
     if (dm) {
-      supabase.from('profiles').select('id, username').eq('id', dm).maybeSingle()
-        .then(({ data }) => { if (data) openDM({ id: data.id, name: data.username || 'someone' }); });
+      getProfile(dm)
+        .then((p) => { if (p) openDM({ id: p.id, name: p.username || 'someone' }); })
+        .catch(() => reportError('Could not open that conversation.'));
     }
   }, []);
 
@@ -729,22 +718,10 @@ export default function LoungePage() {
   useEffect(() => {
     let alive = true;
     if (!crewProjectId) return;
-    (async () => {
-      const [{ data: crew }, { data: owner }] = await Promise.all([
-        supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', crewProjectId),
-        crewCreatorId
-          ? supabase.from('profiles').select('id, username, avatar_url').eq('id', crewCreatorId).maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
-      if (!alive) return;
-      const team = [
-        ...(owner ? [{ id: owner.id, name: owner.username || 'Owner', role: 'Owner', avatar: owner.avatar_url }] : []),
-        ...(crew || [])
-          .filter((c) => c.user_id !== owner?.id)
-          .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
-      ];
-      setCrew({ projectId: crewProjectId, team });
-    })();
+    getProjectTeam(crewProjectId, crewCreatorId).then(
+      (team) => { if (alive) setCrew({ projectId: crewProjectId, team }); },
+      (e) => { console.error('Failed to load the crew:', e); if (alive) reportError('Could not load the crew list.'); },
+    );
     return () => { alive = false; };
   }, [crewProjectId, crewCreatorId]);
 
@@ -792,7 +769,7 @@ export default function LoungePage() {
       const user = await awaitOSUser();
       if (user && mounted) {
         setCurrentUser(user);
-        const { data: mine } = await supabase.from('profiles').select('username, avatar_url, role, status').eq('id', user.id).single();
+        const mine = await getProfile(user.id).catch(() => null);
         if (mounted) setMyProfile(mine);
       }
     })();

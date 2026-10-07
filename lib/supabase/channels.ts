@@ -132,3 +132,9 @@ export async function removeDiscordWebhook(channelId: string): Promise<string | 
   const { error } = await supabase.from('discord_integrations').delete().eq('channel_id', channelId);
   return error?.message || null;
 }
+
+/** Lets a channel member post or manage (or not); the error's message, or null. */
+export async function setChannelMemberRights(id: string, rights: { can_post?: boolean; can_manage?: boolean }): Promise<string | null> {
+  const { error } = await supabase.from('channel_members').update(rights).eq('id', id);
+  return error?.message || null;
+}

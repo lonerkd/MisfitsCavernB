@@ -163,3 +163,22 @@ export async function updateCrewMemberRole(
     throw error;
   }
 }
+
+export interface TeamMember { id: string; name: string; role: string; avatar: string | null | undefined }
+
+/** A project's people: its owner first, then the crew (each once). */
+export async function getProjectTeam(projectId: string, ownerId: string | null | undefined): Promise<TeamMember[]> {
+  const [crew, owner] = await Promise.all([
+    supabase.from('project_crew').select('user_id, role, craft, profiles!project_crew_user_id_fkey(username, avatar_url)').eq('project_id', projectId),
+    ownerId ? supabase.from('profiles').select('id, username, avatar_url').eq('id', ownerId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (crew.error) throw crew.error;
+  if (owner.error) throw owner.error;
+  const o = owner.data;
+  return [
+    ...(o ? [{ id: o.id, name: o.username || 'Owner', role: 'Owner', avatar: o.avatar_url }] : []),
+    ...(crew.data ?? [])
+      .filter((c) => c.user_id !== o?.id)
+      .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
+  ];
+}

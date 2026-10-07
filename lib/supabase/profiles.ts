@@ -156,3 +156,10 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
   return data;
 }
 
+
+/** Real people (no samples) whose username contains the text, for pickers. */
+export async function findPeopleByName(text: string, limit = 8): Promise<{ id: string; username: string }[]> {
+  const { data, error } = await supabase.from('profiles').select('id, username').ilike('username', `%${text}%`).eq('is_sample', false).limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
