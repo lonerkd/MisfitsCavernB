@@ -1,9 +1,9 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-06T22:48:50.883Z",
+  "last_synchronized": "2026-10-07T00:38:42.374Z",
   "stats": {
     "totalFiles": 585,
-    "totalSize": 4145621,
+    "totalSize": 4145897,
     "byExtension": {
       ".json": 10,
       ".md": 46,
@@ -326,8 +326,8 @@
     },
     {
       "path": ".claude/settings.local.json",
-      "size": 609,
-      "last_modified": "2026-10-02T05:11:30.982Z"
+      "size": 659,
+      "last_modified": "2026-10-07T00:38:42.038Z"
     },
     {
       "path": ".claude/skills/run-misfits-cavern/SKILL.md",
@@ -537,7 +537,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-06T22:46:20.860Z"
+      "last_modified": "2026-10-06T22:48:50.884Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -547,12 +547,12 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-06T22:46:20.856Z"
+      "last_modified": "2026-10-06T22:48:50.884Z"
     },
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-06T22:46:20.860Z"
+      "last_modified": "2026-10-06T22:48:50.884Z"
     },
     {
       "path": "README.md",
@@ -2552,7 +2552,7 @@
     {
       "path": "lib/supabase/database.types.ts",
       "size": 118146,
-      "last_modified": "2026-10-06T22:46:16.529Z"
+      "last_modified": "2026-10-06T22:51:37.240Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -2751,8 +2751,8 @@
     },
     {
       "path": "supabase/fingerprint.sql",
-      "size": 4099,
-      "last_modified": "2026-09-26T06:53:04.334Z"
+      "size": 4325,
+      "last_modified": "2026-10-07T00:31:30.827Z"
     },
     {
       "path": "supabase/migrations/20260926000000_baseline.sql",
